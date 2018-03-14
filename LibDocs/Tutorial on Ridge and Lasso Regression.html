@@ -1,0 +1,508 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html;  charset=utf-8">
+
+<style type="text/css">
+
+body {
+ margin-top: 5%; 
+ margin-bottom: 5%; 
+ margin-right: 10%; 
+ margin-left: 10%; 
+ background-color: #000000; 
+ color: #109080; 
+ font-size: 24px; 
+}
+a { text-decoration: none; 
+	color: #28B8B8; }
+a:visited {	color: #389898; }
+A:hover {	color: yellow; }
+A:focus {	color: red; }
+code { color: pink;  background-color: #302030}
+pre { color: gray;  background-color: #001010}
+div {display: inline-block;  width: 48%;  padding: 2px;  border-radius: 4px;  
+border: 1px solid gray;  margin: 3px;  vertical-align:middle; }
+</STYLE>
+</head>
+<body>
+<h1>A Complete Tutorial on Ridge and Lasso Regression in Python</h1>
+<h2>Introduction</h2>
+<p>When we talk about Regression, we often end up discussing Linear and Logistics Regression. But, that&#8217;s not the end. Do you know there are 
+
+<a href="https://www.analyticsvidhya.com/blog/2015/08/comprehensive-guide-regression/" target="_blank">7 types of Regressions</a> ?</p>
+<p style="text-align: justify;">Linear and logistic regression is just the most loved members from the family of regressions.  Last week, I saw a recorded talk at 
+
+<a href="http://nycdatascience.com/featured-talk-1-kaggle-data-scientist-owen-zhang/" target="_blank" rel="nofollow">NYC Data Science Academy</a> from <strong>Owen Zhang</strong>, current 
+
+<a href="https://www.kaggle.com/owenzhang1" target="_blank">Kaggle rank 3</a>  and Chief Product Officer at DataRobot. He said, <strong>&#8216;if you are using regression without regularization, you have to be very special!&#8217;</strong>. I hope you get what a person of his stature referred to.</p>
+<p style="text-align: justify;">I understood it very well and decided to explore regularization techniques in detail.</p>
+<p style="text-align: justify;">In this article, I have explained the complex science behind &#8216;<em>Ridge Regression</em>&#8216; and &#8216;<em>Lasso Regression</em>&#8216; which are the most fundamental regularization techniques, sadly still not used by many.</p>
+<p style="text-align: justify;">The overall idea of regression remains the same. It&#8217;s the way in which the model coefficients are determined which makes all the difference. I strongly encourage you to go through multiple regression before reading this. You can take help from 
+
+<a href="https://www.analyticsvidhya.com/blog/2015/10/regression-python-beginners/" target="_blank">this article</a> or any other preferred material.</p>
+<p><a name="one"></a></p>
+
+<p>&nbsp;</p>
+<h3>Table of Contents</h3>
+<ol>
+<li>
+
+<a href="#one">Brief Overview</a>&#8211; How is Ridge and Lasso Regression different?</li>
+<li>
+
+<a href="#two">Why Penalize the Magnitude of Coefficients</a>&#8211; Why should they work?</li>
+<li>
+
+<a href="#three">Ridge Regression</a>&#8211; How ridge works?</li>
+<li>
+
+<a href="#four">Lasso Regression</a>&#8211; How lasso works?</li>
+<li>
+
+<a href="#five">Sneak Peak into Mathematics (Optional)</a>&#8211; Some underlying mathematical principles.</li>
+<li>
+
+<a href="#six">Conclusion</a>&#8211; Comparing Ridge and Lasso Regression</li>
+</ol>
+<p>&nbsp;</p>
+<h2>1. Brief Overview</h2>
+<p style="text-align: justify;">Ridge and Lasso regression are powerful techniques generally used for creating parsimonious models in presence of a &#8216;large&#8217; number of features. Here &#8216;large&#8217; can typically mean either of two things:</p>
+<ol>
+<li style="text-align: justify;">Large enough to enhance the <em>tendency of a model to overfit</em> (as low as 10 variables might cause overfitting)</li>
+<li style="text-align: justify;">Large enough to <em>cause computational challenges</em>. With modern systems, this situation might arise in case of millions or billions of features</li>
+</ol>
+<p style="text-align: justify;">Though Ridge and Lasso might appear to work towards a common goal, the inherent properties and practical use cases differ substantially. If you&#8217;ve heard of them before, you must know that they work by penalizing the magnitude of coefficients of features along with minimizing the error between predicted and actual observations. These are called &#8216;regularization&#8217; techniques. The key difference is in how they assign penalty to the coefficients:</p>
+<ol>
+<li><strong>Ridge Regression:</strong>
+<ul>
+<li>Performs L2 regularization, i.e. adds penalty equivalent to <strong>square of the magnitude</strong> of coefficients</li>
+<li>Minimization objective = LS Obj + α * (sum of square of coefficients)</li>
+</ul>
+</li>
+<li><strong>Lasso Regression:</strong>
+<ul>
+<li>Performs L1 regularization, i.e. adds penalty equivalent to <strong>absolute value of the magnitude</strong> of coefficients</li>
+<li>Minimization objective = LS Obj + α * (sum of absolute value of coefficients)</li>
+</ul>
+</li>
+</ol>
+<p>Note that here &#8216;LS Obj&#8217; refers to &#8216;least squares objective&#8217;, i.e. the linear regression objective without regularization.<a name="two"></a></p>
+<p style="text-align: justify;">If terms like &#8216;penalty&#8217; and &#8216;regularization&#8217; seem very unfamiliar to you, don&#8217;t worry we&#8217;ll talk about these in more detail through the course of this article. Before digging further into how they work, lets try to get some intuition into why penalizing the magnitude of coefficients should work in the first place.</p>
+<p>&nbsp;</p>
+<h2>2. Why Penalize the Magnitude of Coefficients?</h2>
+<p style="text-align: justify;">Lets try to understand the impact of model complexity on the magnitude of coefficients. As an example, I have simulated a <strong>sine curve</strong> (between 60° and 300°) and added some random noise using the following code:</p>
+<pre>#Importing libraries. The same will be used throughout the article.
+import numpy as np
+import pandas as pd
+import random
+import matplotlib.pyplot as plt
+%matplotlib inline
+from matplotlib.pylab import rcParams
+rcParams['figure.figsize'] = 12, 10
+
+#Define input array with angles from 60deg to 300deg converted to radians
+x = np.array([i*np.pi/180 for i in range(60,300,4)])
+np.random.seed(10)  #Setting seed for reproducability
+y = np.sin(x) + np.random.normal(0,0.15,len(x))
+data = pd.DataFrame(np.column_stack([x,y]),columns=['x','y'])
+plt.plot(data['x'],data['y'],'.')</pre>
+<p>The input-output looks like:<br />
+
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/1.sine-curve-300x245.png">
+</p>
+<p style="text-align: justify;">This resembles a sine curve but not exactly because of the noise. We&#8217;ll use this as an example to test different scenarios in this article. Lets try to estimate the sine function using <strong>polynomial regression</strong> with powers of x form 1 to 15. Lets add a column for each power upto 15 in our dataframe. This can be accomplished using the following code:</p>
+<pre>for i in range(2,16):  #power of 1 is already there
+    colname = 'x_%d'%i      #new var will be x_power
+    data[colname] = data['x']**i
+print data.head()</pre>
+<p>The dataframe looks like:<br />
+
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/1.2-15-powers-1024x527.png"></p>
+<p style="text-align: justify;">Now that we have all the 15 powers, lets make 15 different linear regression models with each model containing variables with powers of x from 1 to the particular model number. For example, the feature set of model 8 will be &#8211; {x, x_2, x_3, &#8230; ,x_8}.</p>
+<p style="text-align: justify;">First, we&#8217;ll define a generic function which takes in the required maximum power of x as an input and returns a list containing &#8211; <em>[ model RSS, intercept, coef_x, coef_x2, &#8230; upto entered power ]</em>. Here RSS refers to &#8216;Residual Sum of Squares&#8217; which is nothing but the sum of square of errors between the predicted and actual values in the training data set. The python code defining the function is:</p>
+<pre>#Import Linear Regression model from scikit-learn.
+from sklearn.linear_model import LinearRegression
+def linear_regression(data, power, models_to_plot):
+    #initialize predictors:
+    predictors=['x']
+    if power&gt;=2:
+        predictors.extend(['x_%d'%i for i in range(2,power+1)])
+    
+    #Fit the model
+    linreg = LinearRegression(normalize=True)
+    linreg.fit(data[predictors],data['y'])
+    y_pred = linreg.predict(data[predictors])
+    
+    #Check if a plot is to be made for the entered power
+    if power in models_to_plot:
+        plt.subplot(models_to_plot[power])
+        plt.tight_layout()
+        plt.plot(data['x'],y_pred)
+        plt.plot(data['x'],data['y'],'.')
+        plt.title('Plot for power: %d'%power)
+    
+    #Return the result in pre-defined format
+    rss = sum((y_pred-data['y'])**2)
+    ret = [rss]
+    ret.extend([linreg.intercept_])
+    ret.extend(linreg.coef_)
+    return ret</pre>
+<p style="text-align: justify;">Note that this function will not plot the model fit for all the powers but will return the RSS and coefficients for all the models. I&#8217;ll skip the details of the code for now to maintain brevity. I&#8217;ll be happy to discuss the same through comments below if required.</p>
+<p style="text-align: justify;">Now, we can make all 15 models and compare the results. For ease of analysis, we&#8217;ll store all the results in a Pandas dataframe and plot 6 models to get an idea of the trend. Consider the following code:</p>
+<pre>#Initialize a dataframe to store the results:
+col = ['rss','intercept'] + ['coef_x_%d'%i for i in range(1,16)]
+ind = ['model_pow_%d'%i for i in range(1,16)]
+coef_matrix_simple = pd.DataFrame(index=ind, columns=col)
+
+#Define the powers for which a plot is required:
+models_to_plot = {1:231,3:232,6:233,9:234,12:235,15:236}
+
+#Iterate through all powers and assimilate results
+for i in range(1,16):
+    coef_matrix_simple.iloc[i-1,0:i+2] = linear_regression(data, power=i, models_to_plot=models_to_plot)</pre>
+<p>&nbsp;</p>
+<p style="text-align: justify;">We would expect the models with increasing complexity to better fit the data and result in lower RSS values. This can be verified by looking at the plots generated for 6 models:</p>
+<p>&nbsp;</p>
+<p>
+
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/2.-lin-reg-op-1024x854.png"></p>
+<p style="text-align: justify;">This clearly aligns with our initial understanding. As the model complexity increases, the models tends to fit even smaller deviations in the training data set. Though this leads to overfitting, lets keep this issue aside for some time and come to our main objective, i.e. the impact on the magnitude of coefficients. This can be analysed by looking at the data frame created above.</p>
+<p>Python Code:</p>
+<pre>#Set the display format to be scientific for ease of analysis
+pd.options.display.float_format = '{:,.2g}'.format
+coef_matrix_simple</pre>
+<p>The output looks like:<br />
+
+
+<img class="alignnone wp-image-22963 size-large" src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/3-linear_output_modIFIED-1024x486.png"></p>
+<p style="text-align: justify;">It is clearly evident that the <strong>size of coefficients increase exponentially with increase in model complexity</strong>. I hope this gives some intuition into why putting a constraint on the magnitude of coefficients can be a good idea to reduce model complexity.</p>
+<p style="text-align: justify;">Lets try to understand this even better.</p>
+<p><a name="three"></a></p>
+<p style="text-align: justify;">What does a large coefficient signify? It means that we&#8217;re putting a lot of emphasis on that feature, i.e. the particular feature is a good predictor for the outcome. When it becomes too large, the algorithm starts modelling intricate relations to estimate the output and ends up overfitting to the particular training data.</p>
+<p style="text-align: justify;">I hope the concept is clear. I&#8217;ll be happy to discuss further in comments if needed. Now, lets understand ridge and lasso regression in detail and see how well they work for the same problem.</p>
+<p>&nbsp;</p>
+<h2>3. Ridge Regression</h2>
+<p style="text-align: justify;">As mentioned before, ridge regression performs &#8216;<strong>L2 regularization</strong>&#8216;, i.e. it adds a factor of sum of squares of coefficients in the optimization objective. Thus, ridge regression optimizes the following:</p>
+<h4>Objective = RSS + α * (sum of square of coefficients)</h4>
+<p style="text-align: justify;">Here, α (alpha) is the parameter which balances the amount of emphasis given to minimizing RSS vs minimizing sum of square of coefficients. α can take various values:</p>
+<ol>
+<li><strong>α = 0:</strong>
+<ul>
+<li>The objective becomes same as simple linear regression.</li>
+<li>We&#8217;ll get the same coefficients as simple linear regression.</li>
+</ul>
+</li>
+<li><strong>α = ∞:</strong>
+<ul>
+<li>The coefficients will be zero. Why? Because of infinite weightage on square of coefficients, anything less than zero will make the objective infinite.</li>
+</ul>
+</li>
+<li><strong>0 &lt; α &lt; ∞:</strong>
+<ul>
+<li>The magnitude of α will decide the weightage given to different parts of objective.</li>
+<li>The coefficients will be somewhere between 0 and ones for simple linear regression.</li>
+</ul>
+</li>
+</ol>
+<p style="text-align: justify;">I hope this gives some sense on how α would impact the magnitude of coefficients. One thing is for sure that any non-zero value would give values less than that of simple linear regression. By how much? We&#8217;ll find out soon. Leaving the mathematical details for later, lets see ridge regression in action on the same problem as above.</p>
+<p style="text-align: justify;">First, lets define a generic function for ridge regression similar to the one defined for simple linear regression. The Python code is:</p>
+<pre>from sklearn.linear_model import Ridge
+def ridge_regression(data, predictors, alpha, models_to_plot={}):
+    #Fit the model
+    ridgereg = <strong>Ridge(alpha=alpha,normalize=True)</strong>
+    ridgereg.fit(data[predictors],data['y'])
+    y_pred = ridgereg.predict(data[predictors])
+    
+    #Check if a plot is to be made for the entered alpha
+    if alpha in models_to_plot:
+        plt.subplot(models_to_plot[alpha])
+        plt.tight_layout()
+        plt.plot(data['x'],y_pred)
+        plt.plot(data['x'],data['y'],'.')
+        plt.title('Plot for alpha: %.3g'%alpha)
+    
+    #Return the result in pre-defined format
+    rss = sum((y_pred-data['y'])**2)
+    ret = [rss]
+    ret.extend([ridgereg.intercept_])
+    ret.extend(ridgereg.coef_)
+    return ret</pre>
+<p style="text-align: justify;">Note the &#8216;Ridge&#8217; function used here. It takes &#8216;alpha&#8217; as a parameter on initialization. Also, keep in mind that normalizing the inputs is generally a good idea in every type of regression and should be used in case of ridge regression as well.</p>
+<p style="text-align: justify;">Now, lets analyze the result of Ridge regression for 10 different values of α ranging from 1e-15 to 20. These values have been chosen so that we can easily analyze the trend with change in values of α. These would however differ from case to case.</p>
+<p style="text-align: justify;">Note that each of these 10 models will contain all the 15 variables and only the value of alpha would differ. This is different from the simple linear regression case where each model had a subset of features.</p>
+<p>Python Code:</p>
+<pre>#Initialize predictors to be set of 15 powers of x
+predictors=['x']
+predictors.extend(['x_%d'%i for i in range(2,16)])
+
+#Set the different values of alpha to be tested
+alpha_ridge = [1e-15, 1e-10, 1e-8, 1e-4, 1e-3,1e-2, 1, 5, 10, 20]
+
+#Initialize the dataframe for storing coefficients.
+col = ['rss','intercept'] + ['coef_x_%d'%i for i in range(1,16)]
+ind = ['alpha_%.2g'%alpha_ridge[i] for i in range(0,10)]
+coef_matrix_ridge = pd.DataFrame(index=ind, columns=col)
+
+models_to_plot = {1e-15:231, 1e-10:232, 1e-4:233, 1e-3:234, 1e-2:235, 5:236}
+for i in range(10):
+    coef_matrix_ridge.iloc[i,] = ridge_regression(data, predictors, alpha_ridge[i], models_to_plot)</pre>
+<p>This would generate the following plot:<br />
+
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/4.-ridge-output-1024x847.png"></p>
+<p style="text-align: justify;">Here we can clearly observe that <strong>as the value of alpha increases, the model complexity reduces</strong>. Though higher values of alpha reduce overfitting, significantly high values can cause underfitting as well (eg. alpha = 5). Thus alpha should be chosen wisely. A widely accept technique is cross-validation, i.e. the value of alpha is iterated over a range of values and the one giving higher cross-validation score is chosen.</p>
+<p>Lets have a look at the value of coefficients in the above models:</p>
+<p>Python Code:</p>
+<pre>#Set the display format to be scientific for ease of analysis
+pd.options.display.float_format = '{:,.2g}'.format
+coef_matrix_ridge</pre>
+<p>The table looks like:<br />
+
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/5.-ridge-table_modified-1024x334.png"></p>
+<p>This straight away gives us the following inferences:</p>
+<ol>
+<li style="text-align: justify;">The RSS increases with increase in alpha, this model complexity reduces</li>
+<li style="text-align: justify;">An alpha as small as 1e-15 gives us significant reduction in magnitude of coefficients. How? Compare the coefficients in the first row of this table to the last row of simple linear regression table.</li>
+<li style="text-align: justify;">High alpha values can lead to significant underfitting. Note the rapid increase in RSS for values of alpha greater than 1</li>
+<li style="text-align: justify;">Though the coefficients are <strong>very very small</strong>, they are <strong>NOT zero</strong>.</li>
+</ol>
+<p style="text-align: justify;">The first 3 are very intuitive. But #4 is also a crucial observation. Let&#8217;s reconfirm the same by determining the number of zeros in each row of the coefficients data set:</p>
+<p>Python Code:</p>
+<pre>coef_matrix_ridge.apply(lambda x: sum(x.values==0),axis=1)</pre>
+<p>Output:<br />
+
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/6.-ridge-zeros-249x300.png"><a name="four"></a></p>
+<p style="text-align: justify;">This confirms that all the 15 coefficients are greater than zero in magnitude (can be +ve or -ve). Remember this observation and have a look again until its clear. This will play an important role in later while comparing ridge with lasso regression.</p>
+<p>&nbsp;</p>
+<h2>4. Lasso Regression</h2>
+<p style="text-align: justify;">LASSO stands for <em>Least Absolute Shrinkage and Selection Operator</em>. I know it doesn&#8217;t give much of an idea but there are 2 key words here &#8211; &#8216;<em>absolute</em>&#8216; and &#8216;<em>selection</em>&#8216;.</p>
+<p>Lets consider the former first and worry about the latter later.</p>
+<p style="text-align: justify;">Lasso regression performs <strong>L1 regularization</strong>, i.e. it adds a factor of sum of absolute value of coefficients in the optimization objective. Thus, lasso regression optimizes the following:</p>
+<h4>Objective = RSS + α * (sum of absolute value of coefficients)</h4>
+<p style="text-align: justify;">Here, α (alpha) works similar to that of ridge and provides a trade-off between balancing RSS and magnitude of coefficients. Like that of ridge, α can take various values. Lets iterate it here briefly:</p>
+<ol>
+<li>α = 0: Same coefficients as simple linear regression</li>
+<li>α = ∞: All coefficients zero (same logic as before)</li>
+<li>0 &lt; α &lt; ∞: coefficients between 0 and that of simple linear regression</li>
+</ol>
+<p style="text-align: justify;">Yes its <em>appearing to be very similar to Ridge till now</em>. But just hang on with me and you&#8217;ll know the difference by the time we finish. Like before, lets run lasso regression on the same problem as above. First we&#8217;ll define a generic function:</p>
+<pre>from sklearn.linear_model import Lasso
+def lasso_regression(data, predictors, alpha, models_to_plot={}):
+    #Fit the model
+    lassoreg = <strong>Lasso(alpha=alpha,normalize=True, max_iter=1e5)</strong>
+    lassoreg.fit(data[predictors],data['y'])
+    y_pred = lassoreg.predict(data[predictors])
+    
+    #Check if a plot is to be made for the entered alpha
+    if alpha in models_to_plot:
+        plt.subplot(models_to_plot[alpha])
+        plt.tight_layout()
+        plt.plot(data['x'],y_pred)
+        plt.plot(data['x'],data['y'],'.')
+        plt.title('Plot for alpha: %.3g'%alpha)
+    
+    #Return the result in pre-defined format
+    rss = sum((y_pred-data['y'])**2)
+    ret = [rss]
+    ret.extend([lassoreg.intercept_])
+    ret.extend(lassoreg.coef_)
+    return ret</pre>
+<p style="text-align: justify;">Notice the additional parameters defined in Lasso function &#8211; &#8216;<em>max_iter</em>&#8216;. This is the maximum number of iterations for which we want the model to run if it doesn&#8217;t converge before. This exists for Ridge as as well but setting this to a higher than default value was required in this case. Why? I&#8217;ll come to this in next section, just keep it in the back of the envelope.</p>
+<p>Lets check the output for 10 different values of alpha using the following code:</p>
+<pre>#Initialize predictors to all 15 powers of x
+predictors=['x']
+predictors.extend(['x_%d'%i for i in range(2,16)])
+
+#Define the alpha values to test
+alpha_lasso = [1e-15, 1e-10, 1e-8, 1e-5,1e-4, 1e-3,1e-2, 1, 5, 10]
+
+#Initialize the dataframe to store coefficients
+col = ['rss','intercept'] + ['coef_x_%d'%i for i in range(1,16)]
+ind = ['alpha_%.2g'%alpha_lasso[i] for i in range(0,10)]
+coef_matrix_lasso = pd.DataFrame(index=ind, columns=col)
+
+#Define the models to plot
+models_to_plot = {1e-10:231, 1e-5:232,1e-4:233, 1e-3:234, 1e-2:235, 1:236}
+
+#Iterate over the 10 alpha values:
+for i in range(10):
+    coef_matrix_lasso.iloc[i,] = lasso_regression(data, predictors, alpha_lasso[i], models_to_plot)</pre>
+<p>This gives us the following plots:<br />
+
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/7.-lasso-output1-1024x833.png"></p>
+<p>This again tells us that the model complexity decreases with increase in the values of alpha. But notice the straight line at alpha=1. Appears a bit strange to me. Let&#8217;s explore this further by looking at the coefficients:</p>
+<p>
+
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/8.-lasso-table_modified-1024x334.png"></p>
+<p>Apart from the expected inference of higher RSS for higher alphas, we can see the following:</p>
+<ol>
+<li>For the same values of alpha, the coefficients of lasso regression are much smaller as compared to that of ridge regression (compare row 1 of the 2 tables).</li>
+<li>For the same alpha, lasso has higher RSS (poorer fit) as compared to ridge regression</li>
+<li>Many of the coefficients are zero even for very small values of alpha</li>
+</ol>
+<p style="text-align: justify;">Inferences #1,2 might not generalize always but will hold for many cases. The real difference from ridge is coming out in the last inference. Lets check the number of coefficients which are zero in each model using following code:</p>
+<pre>coef_matrix_lasso.apply(lambda x: sum(x.values==0),axis=1)</pre>
+<p>Output:<br />
+
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/9.-lasso-zeros-251x300.png"></p>
+<p style="text-align: justify;">We can observe that <strong>even for a small value of alpha, a significant number of coefficients are zero</strong>. This also explains the horizontal line fit for alpha=1 in the lasso plots, its just a baseline model! This phenomenon of most of the coefficients being zero is called &#8216;<strong>sparsity</strong>&#8216;. Although lasso performs feature selection, this level of sparsity is achieved in special cases only which we&#8217;ll discuss towards the end.</p>
+<p><a name="five"></a></p>
+<p style="text-align: justify;">This has some really interesting implications on the use cases of lasso regression as compared to that of ridge regression. But before coming to the final comparison, lets take a <strong>bird&#8217;s eye view</strong> of the mathematics behind why coefficients are zero in case of lasso but not ridge.</p>
+<p>&nbsp;</p>
+<h2>5. Sneak Peak into Statistics (Optional)</h2>
+<p style="text-align: justify;">I personally love statistics but many of you might not. That&#8217;s why I have specifically marked this section as &#8216;<strong>OPTIONAL</strong>&#8216;. If you feel you can handle the algorithms without going into the maths behind them, I totally respect the decision and you can feel free to skip this section.</p>
+<p style="text-align: justify;">But I personally feel that getting some elementary understanding of how the thing works can be helpful in the long run.</p>
+<p style="text-align: justify;">As promised, I&#8217;ll keep it to a bird&#8217;s eye view. If you wish to get into the details, I recommend taking a good statistics textbook. One of my favorites is the 
+
+<a href="http://statweb.stanford.edu/~tibs/ElemStatLearn/" target="_blank">Elements of Statistical Learning</a>. The best part about this is that it has been made available for free by the authors.</p>
+<p>Let&#8217;s start by reviewing the basic structure of data in a regression problem.</p>
+<p>
+
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/fig31-1024x838.png"></p>
+<p>In this infographic, you can see there are 4 data elements:</p>
+<ol>
+<li><strong>X</strong>: the matrix of input features (nrow: N, ncol: M+1)</li>
+<li><strong>Y</strong>: the actual outcome variable (length:N)</li>
+<li><strong>Yhat</strong>: these are predicted values of Y (length:N)</li>
+<li><strong>W</strong>: the weights or the coefficients (length: M+1)</li>
+</ol>
+<p style="text-align: justify;">Here, N is the total number of data points available and M is the total number of features. X has M+1 columns because of M features and 1 intercept.</p>
+<p>The predicted outcome for any data point i is:</p>
+<p>
+
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/eq1-300x102.png"></p>
+<p style="text-align: justify;">It is simply the weighted sum of each data point with coefficients as the weights. This prediction is achieved by finding the optimum value of weights based on certain criteria, which depends on the type of regression algorithm being used. Lets consider all 3 cases:</p>
+<p>&nbsp;</p>
+<h3>1. Simple Linear Regression</h3>
+<p style="text-align: justify;">The objective function (also called as the cost) to be minimized is just the RSS (Residual Sum of Squares), i.e. the sum of squared errors of the predicted outcome as compared to the actual outcome. This can be depicted mathematically as:</p>
+<p>
+
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/eq2-1024x138.png"></p>
+<p style="text-align: justify;">In order to minimize this cost, we generally use a &#8216;gradient descent&#8217; algorithm. I&#8217;ll not go into the details right now but you can refer this. The overall algorithm works as:</p>
+<pre>1. initialize weights (say w=0)
+2. iterate till not converged
+   2.1 iterate over all features (j=0,1...M)
+       2.1.1 determine the gradient
+       2.1.2 update the jth weight by subtracting learning rate times the gradient
+             w(t+1) = w(t) - learning rate * gradient</pre>
+<p style="text-align: justify;">Here the important step is #2.1.1 where we compute the gradient. Gradient is nothing but a partial differential of the cost with respect to a particular weight (denoted as w<sub>j</sub>). The gradient for the j<sup>th</sup> weight will be:</p>
+<p>&nbsp;</p>
+<p>
+
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/eq3_updated-1024x130.png"></p>
+<p>This is formed from 2 parts:</p>
+<ol>
+<li>2*{..} : This is formed because we&#8217;ve differentiated the square of the term in {..}</li>
+<li style="text-align: justify;">-w<sub>j</sub> : This is the differentiation of the part in {..} wrt w<sub>j</sub>. Since its a summation, all other would become 0 and only w<sub>j</sub> would remain.</li>
+</ol>
+<p style="text-align: justify;">Step #2.1.2 involves updating the weights using the gradient. This update step for simple linear regression looks like:</p>
+<p style="text-align: justify;">
+
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/eq4-1-1024x130.png"></p>
+<p>&nbsp;</p>
+<p style="text-align: justify;">I hope you are able to follow along. Note the +ve sign in the RHS is formed after multiplication of 2 -ve signs. I would like to explain point #2 of the gradient descent algorithm mentioned above &#8216;<strong>iterate till not converged</strong>&#8216;. Here convergence refers to attaining the optimum solution within pre-defined limit.</p>
+<p style="text-align: justify;">It is checked using the value of gradient. If the gradient is small enough, that means we are very close to optimum and further iterations won&#8217;t have a substantial impact on coefficients. The lower-limit on gradient can be changed using the &#8216;<strong>tol</strong>&#8216; parameter.</p>
+<p>Lets consider the case of ridge regression now.</p>
+<p>&nbsp;</p>
+<h3>2. Ridge Regression</h3>
+<p style="text-align: justify;">The objective function (also called the cost) to be minimized is the RSS plus the sum of square of the magnitude of weights. This can be depicted mathematically as:</p>
+<p>
+
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/eq5-1-1024x206.png"></p>
+<p style="text-align: justify;">In this case, the gradient would be:</p>
+<p style="text-align: justify;">
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/eq6-1-1024x130.png"></p>
+<p>&nbsp;</p>
+<p style="text-align: justify;">Again in the regularization part of gradient, only w<sub>j</sub> remains and all other would become zero. The corresponding update rule is:</p>
+<p style="text-align: justify;">
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/eq7-1-1024x272.png"></p>
+<p>&nbsp;</p>
+<p style="text-align: justify;">Here we can see that second part of the RHS is same as that of simple linear regression. Thus, ridge regression is equivalent to reducing the weight by a factor of (1-2λη) first and then applying the same update rule as simple linear regression. I hope this gives some intuition into why the coefficients get reduced to small numbers but never become zero.</p>
+<p style="text-align: justify;">Note that the criteria for convergence in this case remains similar to simple linear regression, i.e. checking the value of gradients. Lets discuss Lasso regression now.</p>
+<p>&nbsp;</p>
+<h3>3. Lasso Regression</h3>
+<p style="text-align: justify;">The objective function (also called the cost) to be minimized is the RSS plus the sum of absolute value of the magnitude of weights. This can be depicted mathematically as:</p>
+<p>
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/eq8-1-1024x198.png"></p>
+<p style="text-align: justify;">In this case, the gradient is not defined as the absolute function is not differentiable at x=0. This can be illustrated as:</p>
+<p>
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/fig1.png"></p>
+<p style="text-align: justify;">We can see that the parts on the left and right side of 0 are straight lines with defined derivates but the function can&#8217;t be differentiated at x=0. In this case, we have to use a different technique called as <strong>coordinate descent</strong> which is based on the concept of sub-gradients. One of the coordinate descent follows the following algorithms (this is also the default in sklearn):</p>
+<pre>1. initialize weights (say w=0)
+2. iterate till not converged
+   2.1 iterate over all features (j=0,1...M)
+       2.1.1 update the jth weight with a value which minimizes the cost</pre>
+<p>#2.1.1 might look too generalized. But I&#8217;m intentionally leaving the details and jumping to the update rule:</p>
+<p>
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/eq9.png"></p>
+<p style="text-align: justify;">Here <strong>g(w<sub>-j</sub>)</strong> represents (but not exactly) the difference between actual outcome and the predicted outcome considering <strong>all EXCEPT the j<sup>th</sup> variable</strong>. If this value is small, it means that the algorithm is able to predict the outcome fairly well even without the jth variable and thus it can be removed from the equation by setting a zero coefficient. This gives us some intuition into why the coefficients become zero in case of lasso regression.</p>
+<p style="text-align: justify;">In coordinate descent, checking convergence is another issue. Since gradients are not defined, we need an alternate method. Many alternatives exist but the simplest one is to <strong>check the step size of the algorithm</strong>. We can check the maximum difference in weights in any particular cycle over all feature weights (#2.1 of algo above).</p>
+<p style="text-align: justify;">If this is lower than &#8216;tol&#8217; specified, algo will stop. The convergence is not as fast as gradient descent and we might have to set the &#8216;max_iter&#8217; parameter if a warning appears saying that the algo stopped before convergence. This is why I specified this parameter in the Lasso generic function.</p>
+<p style="text-align: justify;">Lets summarize our understanding by comparing the coefficients in all the three cases using the following visual, which shows how the ridge and lasso coefficients behave in comparison to the simple linear regression case.</p>
+<p>
+
+<img src="https://www.analyticsvidhya.com/wp-content/uploads/2016/01/fig2-300x169.png"></p>
+<p style="text-align: justify;">Apologies for the lack of visual appeal. But I think it is good enough to re-inforced the following facts:</p>
+<ol style="text-align: justify;">
+<li>The ridge coefficients are a reduced factor of the simple linear regression coefficients and thus never attain zero values but very small values</li>
+<li>The lasso coefficients become zero in a certain range and are reduced by a constant factor, which explains there low magnitude in comparison to ridge.</li>
+</ol>
+<p style="text-align: justify;">Before going further, one important issue in case of both ridge and lasso regression is <strong>intercept handling</strong>. Generally, regularizing the intercept is not a good idea and it should be left out of regularization. This requires slight changes in the implementation, which I&#8217;ll leave for you to explore.</p>
+<p><a name="six"></a></p>
+<p style="text-align: justify;">If you&#8217;re still confused and things are a bit fuzzy, I recommend taking the course on Regression which is part of the 
+
+<a href="https://www.coursera.org/specializations/machine-learning" target="_blank">Machine Learning Specialization</a> by University of Washington at Coursera.</p>
+<p>Now, lets come to the concluding part where we compare the Ridge and Lasso techniques and see where these can be used.</p>
+<p>&nbsp;</p>
+<h2>6. Conclusion</h2>
+<p style="text-align: justify;">Now that we have a fair idea of how ridge and lasso regression work, lets try to consolidate our understanding by comparing them and try to appreciate their specific use cases. I will also compare them with some alternate approaches. Lets analyze these under three buckets:</p>
+<h3>1. Key Difference</h3>
+<ul>
+<li style="text-align: justify;"><strong>Ridge:</strong> It includes all (or none) of the features in the model. Thus, the major advantage of ridge regression is coefficient shrinkage and reducing model complexity.</li>
+<li style="text-align: justify;"><strong>Lasso:</strong> Along with shrinking coefficients, lasso performs feature selection as well. (Remember the &#8216;<em>selection</em>&#8216; in the lasso full-form?) As we observed earlier, some of the coefficients become exactly zero, which is equivalent to the particular feature being excluded from the model.</li>
+</ul>
+<p style="text-align: justify;">Traditionally, techniques like <strong>stepwise regression</strong> were used to perform feature selection and make parsimonious models. But with advancements in Machine Learning, ridge and lasso regression provide very good alternatives as they give much<strong> better output</strong>, require <strong>fewer tuning parameters</strong> and can be <strong>automated</strong> to a large extend.</p>
+<p>&nbsp;</p>
+<h3>2. Typical Use Cases</h3>
+<ul>
+<li style="text-align: justify;"><strong>Ridge:</strong> It is majorly used to <em>prevent overfitting</em>. Since it includes all the features, it is not very useful in case of exorbitantly high #features, say in millions, as it will pose computational challenges.</li>
+<li style="text-align: justify;"><strong>Lasso:</strong> Since it provides <em>sparse solutions</em>, it is generally the model of choice (or some variant of this concept) for modelling cases where the #features are in millions or more. In such a case, getting a sparse solution is of great computational advantage as the features with zero coefficients can simply be ignored.</li>
+</ul>
+<p style="text-align: justify;">Its not hard to see why the stepwise selection techniques become practically very cumbersome to implement in high dimensionality cases. Thus, lasso provides a significant advantage.</p>
+<p>&nbsp;</p>
+<h3>3. Presence of Highly Correlated Features</h3>
+<ul>
+<li style="text-align: justify;"><strong>Ridge:</strong> It generally works well even in presence of highly correlated features as it will include all of them in the model but the coefficients will be distributed among them depending on the correlation.</li>
+<li style="text-align: justify;"><strong>Lasso:</strong> It arbitrarily selects any one feature among the highly correlated ones and reduced the coefficients of the rest to zero. Also, the chosen variable changes randomly with change in model parameters. This generally doesn&#8217;t work that well as compared to ridge regression.</li>
+</ul>
+<p style="text-align: justify;">This disadvantage of lasso can be observed in the example we discussed above. Since we used a polynomial regression, the variables were highly correlated. ( Not sure why? Check the output of data.corr() ). Thus, we saw that even small values of alpha were giving significant sparsity (i.e. high #coefficients as zero).</p>
+<p style="text-align: justify;">Along with Ridge and Lasso, Elastic Net is another useful techniques which combines both L1 and L2 regularization. It can be used to balance out the pros and cons of ridge and lasso regression. I encourage you to explore it further.</p>
+<p>&nbsp;</p>
+<h2>End Notes</h2>
+<p style="text-align: justify;">In this article, I gave an overview of regularization using ridge and lasso regression. Then, I focused on reasons behind penalizing the magnitude of coefficients should give us parsimonious models. Next, we went into details of ridge and lasso regression and saw their advantages over simple linear regression. We got some intuition into why they should work and also how they work. If you read the optional mathematical part, you probably understood the underlying fundamentals.</p>
+<p style="text-align: justify;">Regularization techniques are really useful and I encourage you to implement them. If you&#8217;re ready to take the challenge, why not try them on the 
+
+<a href="http://datahack.analyticsvidhya.com/contest/practice-problem-bigmart-sales-prediction" target="_blank">BigMart Sales Prediction</a> problem and share your results in the 
+
+<a href="http://discuss.analyticsvidhya.com" target="_blank">discussion forum</a>.</p>
+<p style="text-align: justify;">Did you find the article useful? Was it was too convoluted for you or just a walk in the park? Is there something you would like me to improve upon. Please share your valuable feedback and help me treat you with better content in future.</p>
+
+</body>
+</html>

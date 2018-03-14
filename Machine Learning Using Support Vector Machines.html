@@ -1,0 +1,233 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<base target=_blank>
+<style>
+body { margin: 10%; font-size: 24px; background-color: #000000; color: #109030;}
+a { text-decoration: none; color: #28B8B8;}
+a:visited { color: #389898;}
+A:hover { color: yellow;}
+A:focus { color: red;}
+code { color: pink; background-color: #001500}
+pre { color: gray; background-color: #001010}
+div {display: inline-block; width: 30%; padding: 3px; border-radius: 4px; border: 1px solid GoldenRod; margin: 3px; vertical-align:middle;}
+</style>
+
+</head>
+<body>
+
+<h1>Machine Learning Using Support Vector Machines</h1>
+
+ <p><span style="font-weight: 400">Support Vector Machines (SVM) is a data classification method that separates data using hyperplanes. The concept of SVM is very intuitive and easily understandable. If we have labeled data, SVM can be used to generate multiple separating hyperplanes such that the data space is divided into segments and each segment contains only one kind of data. SVM technique is generally useful for data which has non-regularity which means, data whose distribution is unknown. </span></p>
+<p><span style="font-weight: 400">Let’s take a simple example to understand how SVM works. Say you have only two kinds of values and we can represent them as in the figure:</span></p>
+<p>
+<img src="https://i2.wp.com/r-posts.com/wp-content/uploads/2017/04/svm1.png?resize=450%2C410">
+</p>
+<p><span style="font-weight: 400">This data is simple to classify and one can see that the data is clearly separated into two segments. Any line that separates the red and blue items can be used to classify the above data. Had this data been multi-dimensional data, any plane can separate and successfully classify the data. However, we want to find the “most optimal” solution. What will then be the characteristic of this most optimal line? We have to remember that this is just the training data and we can have more data points which can lie anywhere in the subspace. If our line is too close to any of the datapoints, noisy test data is more likely to get classified in a wrong segment. We have to choose the line which lies between these groups and is at the farthest distance from each of the segments.</span></p>
+<p><span style="font-weight: 400">To solve this classifier line, we draw the line as y=ax+b and make it equidistant from the respective data points closest to the line. So we want to maximize the margin (m).</span></p>
+<p>
+<img src="https://i2.wp.com/r-posts.com/wp-content/uploads/2017/04/svm2.png?resize=450%2C411">
+</p>
+<p><span style="font-weight: 400">We know that all points on the line ax+b=0 will satisfy the equation. If we draw two parallel lines &#8211; ax+b=-1 for one segment and ax+b=1 for the other segment such that these lines pass through a datapoint in the segment which is nearest to our line then the distance between these two lines will be our margin. Hence, our margin will be m=2/||a||. Looked at another way, if we have a training dataset (x1,x2,x3&#8230;xn) and want to produce and outcome y such that y is either -1 or 1 (depending on which segment the datapoint belongs to), then our classifier should correctly classify data points in the form of y=ax+b. This also means that y(ax+b)&gt;1 for all data points. Since we have to maximize the margin, we have the solve this problem with the constraint of maximizing 2/||a|| or, minimizing ||a||^2/2 which is basically the dual form of the constraint. Solving this can be easy or complex depending upon the dimensionality of data. However, we can do this quickly with R and try out with some sample dataset.</span></p>
+<p><span style="font-weight: 400">To use SVM in R, I just created a random data with two features x and y in excel. I took all the values of x as just a sequence from 1 to 20 and the corresponding values of y as derived using the formula y(t)=y(t-1) + r(-1:9) where r(a,b) generates a random integer between a and b. I took y(1) as 3. The following code in R illustrates a set of sample generated values:</span></p>
+<pre class="brush: r; title: ; notranslate">
+x=c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)
+y=c(3,4,5,4,8,10,10,11,14,20,23,24,32,34,35,37,42,48,53,60)
+
+#Create a data frame of the data
+train=data.frame(x,y)
+
+Let’s see how our data looks like. For this we use the plot function
+
+#Plot the dataset
+plot(train,pch=16)
+</pre>
+<p>&nbsp;</p>
+<p>
+<img src="https://i2.wp.com/r-posts.com/wp-content/uploads/2017/04/svm3.png?resize=450%2C515"><br/>
+<span style="font-weight: 400">Seems to be a fairly good data. Looking at the plot, it also seems like a linear regression should also be a good fit to the data. We’ll use both the models and compare them. First, the code for linear regression:</span></p>
+<p>&nbsp;</p>
+<pre class="brush: r; title: ; notranslate">
+
+#Linear regression
+
+model &lt;- lm(y ~ x, train)
+
+
+#Plot the model using abline
+
+abline(model)
+
+</pre>
+<p> 
+<img src="https://i1.wp.com/r-posts.com/wp-content/uploads/2017/04/svm4.png?resize=450%2C515"></p>
+<p>&nbsp;</p>
+<p><b>SVM</b></p>
+<p><span style="font-weight: 400">To use SVM in R, we have a package e1071. The package is not preinstalled, hence one needs to run the line “install.packages(“e1071”) to install the package and then import the package contents using the library command. The syntax of svm package is quite similar to linear regression. We use svm function here.</span></p>
+<pre class="brush: r; title: ; notranslate">
+
+#SVM
+
+library(e1071)
+
+#Fit a model. The function syntax is very similar to lm function
+
+model_svm &lt;- svm(y ~ x , train)
+
+#Use the predictions on the data
+
+pred &lt;- predict(model_svm, train)
+
+
+#Plot the predictions and the plot to see our model fit
+
+points(train$x, pred, col = &quot;blue&quot;, pch=4)
+
+</pre>
+<p>
+
+<img src="https://i0.wp.com/r-posts.com/wp-content/uploads/2017/04/svm5.png?resize=450%2C515"></p>
+<p>&nbsp;</p>
+<p><span style="font-weight: 400">The points follow the actual values much more closely than the abline. Can we verify that? Let’s calculate the rmse errors for both the models:</span></p>
+<pre class="brush: r; title: ; notranslate">
+
+#Linear model has a residuals part which we can extract and directly calculate rmse
+
+error &lt;- model$residuals
+
+lm_error &lt;- sqrt(mean(error^2)) # 3.832974
+
+#For svm, we have to manually calculate the difference between actual values (train$y) with our predictions (pred)
+
+error_2 &lt;- train$y - pred
+
+svm_error &lt;- sqrt(mean(error_2^2)) &amp;amp;amp;amp;amp;amp;nbsp;# 2.696281
+
+</pre>
+<p><span style="font-weight: 400">In this case, the rmse for linear model is ~3.83 whereas our svm model has a lower error of ~2.7. A straightforward implementation of SVM has an accuracy higher than the linear regression model. However, the SVM model goes far beyond that. We can further improve our SVM model and tune it so that the error is even lower. We will now go deeper into the SVM function and the tune function. We can specify the values for the cost parameter and epsilon which is 0.1 by default. A simple way is to try for each value of epsilon between 0 and 1 (I will take steps of 0.01) and similarly try for cost function from 4 to 2^9 (I will take exponential steps of 2 here). I am taking 101 values of epsilon and 8 values of cost function. I will thus be testing 808 models and see which ones performs best. The code may take a short while to run all the models and find the best version. The corresponding code will be</span></p>
+<pre class="brush: r; title: ; notranslate">
+
+svm_tune &lt;- tune(svm, y ~ x, &amp;amp;amp;amp;amp;amp;nbsp;data = train,
+            ranges = list(epsilon = seq(0,1,0.01), cost = 2^(2:9))
+)
+print(svm_tune)
+
+#Printing gives the output:
+#Parameter tuning of ‘svm’:
+# - sampling method: 10-fold cross validation 
+
+#- best parameters:
+# epsilon cost
+#0.09 256
+
+#- best performance: 2.569451
+#This best performance denotes the MSE. The corresponding RMSE is 1.602951 which is square root of MSE
+</pre>
+<p><span style="font-weight: 400">An advantage of tuning in R is that it lets us extract the best function directly. We don’t have to do anything and just extract the best function from the svm_tune list. We can now see the improvement in our model by calculating its RMSE error using the following code</span></p>
+<pre class="brush: r; title: ; notranslate">
+#The best model
+best_mod &lt;- svm_tune$best.model
+best_mod_pred &lt;- predict(best_mod, train) 
+
+error_best_mod &lt;- train$y - best_mod_pred 
+
+# this value can be different on your computer
+# because the tune method randomly shuffles the data
+best_mod_RMSE &lt;- sqrt(mean(error_best_mod^2)) # 1.290738
+</pre>
+<p><span style="font-weight: 400">This tuning method is known as grid search. R runs all various models with all the possible values of epsilon and cost function in the specified range and gives us the model which has the lowest error. We can also plot our tuning model to see the performance of all the models together</span></p>
+<pre class="brush: r; title: ; notranslate">
+plot(svm_tune)
+</pre>
+<p>
+<img src="https://i0.wp.com/r-posts.com/wp-content/uploads/2017/04/svm6.png?resize=450%2C264"></p>
+<p><span style="font-weight: 400">This plot shows the performance of various models using color coding. Darker regions imply better accuracy. The use of this plot is to determine the possible range where we can narrow down our search to and try further tuning if required. For instance, this plot shows that I can run tuning for epsilon in the new range of 0 to 0.2 and while I’m at it, I can move in even lower steps (say 0.002) but going further may lead to overfitting so I can stop at this point. From this model, we have improved on our initial error of 2.69 and come as close as 1.29 which is about half of our original error in SVM. We have come very far in our model accuracy. Let’s see how the best model looks like when plotted.</span></p>
+<pre class="brush: r; title: ; notranslate">
+plot(train,pch=16)
+points(train$x, best_mod_pred, col = &quot;blue&quot;, pch=4)
+</pre>
+<p>
+<img src="https://i1.wp.com/r-posts.com/wp-content/uploads/2017/04/svm7.png?resize=450%2C279"></p>
+<p><span style="font-weight: 400">Visually, the points predicted by our tuned model almost follow the data. This is the power of SVM and we are just seeing this for data with two features. Imagine the abilities of the model with more number of complex features!</span></p>
+<p>&nbsp;</p>
+<p><b>Summary</b></p>
+<p><span style="font-weight: 400">SVM is a powerful technique and especially useful for data whose distribution is unknown (also known as non-regularity in data). Because the example considered here consisted of only two features, the SVM fitted by R here is also known as linear SVM. SVM is powered by a kernel for dealing with various kinds of data and its kernel can also be set during model tuning. Some such examples include gaussian and radial. Hence, SVM can also be used for non-linear data and does not require any assumptions about its functional form. Because we separate data with the maximum possible margin, the model becomes very robust and can deal with incongruencies such as noisy test data or biased train data. We can also interpret the results produced by SVM through visualization. A common disadvantage with SVM is associated with its tuning. The level of accuracy in predicting over the training data has to be defined in our data. Because our example was custom generated data, we went ahead and tried to get our model accuracy as high as possible by reducing the error. However, in business situations when one needs to train the model and continually predict over test data, SVM may fall into the trap of overfitting. This is the reason SVM needs to be carefully modeled &#8211; otherwise the model accuracy may not be satisfactory. As I did in the example, SVM technique is closely related to regression technique. For linear data, we can compare SVM with linear regression while non-linear SVM is comparable to logistic regression. As the data becomes more and more linear in nature, linear regression becomes more and more accurate. At the same time, tuned SVM can also fit the data. However, noisiness and bias can severely impact the ability of regression. In such cases, SVM comes in really handy!</span></p>
+<p>&nbsp;</p>
+<p><span style="font-weight: 400">With this article, I hope one may understand the basics of SVM and its implementation in R. One can also deep dive into the SVM technique by using model tuning. The full R code used in the article is laid out as under:</span></p>
+<pre class="brush: r; title: ; notranslate">
+
+x=c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)
+y=c(3,4,5,4,8,10,10,11,14,20,23,24,32,34,35,37,42,48,53,60)
+
+#Create a data frame of the data
+train=data.frame(x,y)
+
+#Plot the dataset
+plot(train,pch=16)
+
+#Linear regression
+model &lt;- lm(y ~ x, train)
+
+#Plot the model using abline
+abline(model)
+
+#SVM
+library(e1071)
+
+#Fit a model. The function syntax is very similar to lm function
+model_svm &lt;- svm(y ~ x , train)
+
+#Use the predictions on the data
+pred &lt;- predict(model_svm, train)
+
+#Plot the predictions and the plot to see our model fit
+points(train$x, pred, col = &quot;blue&quot;, pch=4)
+
+#Linear model has a residuals part which we can extract and directly calculate rmse
+error &lt;- model$residuals 
+lm_error &lt;- sqrt(mean(error^2)) # 3.832974
+
+#For svm, we have to manually calculate the difference between actual values (train$y) with our predictions (pred)
+error_2 &lt;- train$y - pred
+svm_error &lt;- sqrt(mean(error_2^2)) # 2.696281
+
+
+# perform a grid search
+svm_tune &lt;- tune(svm, y ~ x, data = train,
+ ranges = list(epsilon = seq(0,1,0.01), cost = 2^(2:9))
+)
+print(svm_tune)
+
+#Parameter tuning of ‘svm’:
+ 
+# - sampling method: 10-fold cross validation 
+
+#- best parameters:
+# epsilon cost
+#0 8
+
+#- best performance: 2.872047 
+
+#The best model
+best_mod &lt;- svm_tune$best.model
+best_mod_pred &lt;- predict(best_mod, train) 
+
+error_best_mod &lt;- train$y - best_mod_pred 
+
+# this value can be different on your computer
+# because the tune method randomly shuffles the data
+best_mod_RMSE &lt;- sqrt(mean(error_best_mod^2)) # 1.290738 
+
+plot(svm_tune)
+
+plot(train,pch=16)
+points(train$x, best_mod_pred, col = &quot;blue&quot;, pch=4)
+
+</pre>
+<p><b>Bio</b><span style="font-weight: 400">: </span><a href="https://www.linkedin.com/in/chaitanyasagar/" rel="nofollow" target="_blank"><span style="font-weight: 400">Chaitanya Sagar</span></a><span style="font-weight: 400"> is the Founder and CEO of </span><a href="http://www.perceptive-analytics.com/" rel="nofollow" target="_blank"><span style="font-weight: 400">Perceptive Analytics</span></a><span style="font-weight: 400">. Perceptive Analytics has been chosen as one of the top 10 analytics companies to watch out for by Analytics India Magazine. It works on Marketing Analytics for e-commerce, Retail and Pharma companies.</span></p>
+
+</body>
+</html>
+ 
+ 
+ 

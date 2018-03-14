@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en-US" prefix="og: http://ogp.me/ns#">
+<head>
+	<meta charset="UTF-8">
+	<title>Data Cleaning and Merging in R | Michael Grogan</title>
+<base target="_blank">
+
+<style>
+body {
+ margin: 10%;
+ font-size: 20px;
+ background-color: #000000;
+ color: #109030;
+}
+a { text-decoration: none;
+	color: #28B8B8;}
+a:visited {	color: #389898;}
+A:hover {	color: yellow;}
+A:focus {	color: red;}
+code { color: pink; background-color: #001000}
+pre { color: gray; background-color: #001010}
+</style>
+</head>
+
+<body>
+<h1>Data Cleaning and Merging in R</h1>
+
+<div>
+
+<p>One of the big issues when it comes to working with data in any context is the issue of <strong>data cleaning and merging of datasets</strong>, since it is often the case that you will find yourself having to collate data across multiple files, and will need to rely on R to carry out functions that you would normally carry out using commands like <code>VLOOKUP</code> in Excel.</p>
+<h1>Data Cleaning and Merging Functions</h1>
+<p>For our example, we have two datasets:</p>
+<ol>
+<li><strong>sales.csv:</strong> This file contains the variables <strong>Date</strong>, <strong>ID</strong> (which is Product ID), and <strong>Sales</strong>. We load this into R under the name <code>mydata</code>.</p>
+</li>
+<li>
+<p><strong>customers.csv:</strong> This file contains the variables <strong>ID</strong>, <strong>Age</strong>, and <strong>Country</strong>. We load this into R under the name <code>mydata2</code>.</p>
+</li>
+</ol>
+<p>The following are examples of popular techniques employed in R to clean a dataset, along with how to format variables effectively to facilitate analysis. The below functions work particularly well with panel datasets, where we have a mixture of cross-sectional and time series data:<br />
+&nbsp;</p>
+<h1>1. Storing variables in a data frame</h1>
+<p>To start off with a simple example, let us choose the customers dataset. Suppose that we only wish to include the variables ID and Age in our data. To do this, we define our data frame as follows:</p>
+<p><code>dataframe<-data.frame(ID,Age)</code><br />
+&nbsp;</p>
+<h1>2. Mimic VLOOKUP by using the merge functions</h1>
+<p>Often times, it is necessary to combine two variables from different datasets similar to how <strong>VLOOKUP</strong> is used in Excel to join two variables based on certain criteria. In R, this can be done using the <code>merge</code> function.</p>
+<p>For instance, suppose that we wish to link the <strong>Date</strong> variable in the sales dataset with the <strong>Age</strong> and <strong>Country</strong>  variables in the customers dataset – with the <strong>ID</strong>  variable being the common link.</p>
+<p>Therefore, we do as follows:</p>
+<p><code>mergeinfo<-merge(mydata[, c("ID", "Sales")],mydata2[, c("ID", "Age", "Country")])</code></p>
+<p>Upon doing this, we see that a new dataset is formed in R joining our chosen variables:</p>
+<p><img src="http://www.michaeljgrogan.com/wp-content/uploads/2016/12/image1.png"><br />
+&nbsp;</p>
+<h1>3. Using as.date to format dates and calculate duration</h1>
+<p>Suppose that we now wish to calculate the number of days between the current date and the date of sale as listed in the sales file. In order to accomplish this, we can use as.date as follows:</p>
+<p><code>currentdate=as.Date('2016-12-15')</code><br />
+<code>dateinfile=as.Date(Date)</code><br />
+<code>Duration=currentdate-dateinfile</code></p>
+<p>Going back to the example above, suppose that we now wish to combine this duration variable with the rest of our data.</p>
+<p>Hence, we can now combine our new <strong>Duration</strong> variable with the <code>merge</code> function as above, and can do this as follows:</p>
+<p><code>durationasdouble=as.double.difftime(Duration, units='days')</code><br />
+<code>updateddataframe=data.frame(ID,Sales,Date,durationasdouble)</code><br />
+<code>updateddataframe</code></p>
+<p><img src="http://www.michaeljgrogan.com/wp-content/uploads/2016/12/image2.png"><br />
+&nbsp;</p>
+<h1>4. grepl: Remove instances of a string from a variables</h1>
+<p>Let us look to the <strong>Country</strong> variable. Suppose that we wish to remove all instances of <strong>“Greenland”</strong> from our variable. This is accomplished using the <code>grepl</code> command:</p>
+<p><code>countryremoved<-mydata2[!grepl("Greenland", mydata2$Country),]</code><br />
+&nbsp;</p>
+<h1>5. Delete observations using head and tail functions</h1>
+<p>The head and tail functions can be used if we wish to delete certain observations from a variable, e.g. Sales. The head function allows us to delete the first 30 rows, while the tail function allows us to delete the last 30 rows.</p>
+<p>When it comes to using a variable edited in this way for calculation purposes, e.g. a regression, the as.matrix function is also used to convert the variable into matrix format:</p>
+<p><code>Salesminus30days←head(Sales,-30)</code><br />
+<code>X1=as.matrix(Salesminus30days)</code><br />
+<code>X1</code></p>
+<p><code>Salesplus30days<-tail(Sales,-30)</code><br />
+<code>X2=as.matrix(Salesplus30days)</code><br />
+<code>X2</code><br />
+&nbsp;</p>
+<h1>6. Replicate SUMIF using the "aggregate" function</h1>
+<p>Let us suppose that we have created the following table as below, and want to obtain the sum of web visits and average minutes spent on a website in any particular period:</p>
+<p><img src="http://www.michaeljgrogan.com/wp-content/uploads/2016/12/webvisits_table.png"></p>
+<p>In this instance, we can replicate the <strong>SUMIF</strong> function in Excel (where the values associated with a specific identifier are summed up) by using the <strong>aggregate</strong> function in R. This can be done as follows (where <strong>raw_table</strong> is the table specified as above):</p>
+<p><code>sumif_table<-aggregate(. ~ names, data=raw_table, sum)</code><br />
+<code>sumif_table</code></p>
+<p>Thus, the values associated with identifiers (in this case, names) are summed up as follows:</p>
+<p><img src="http://www.michaeljgrogan.com/wp-content/uploads/2016/12/summedup.png"></p>
+<p>Hope you enjoyed this tutorial!<br />
+&nbsp;<br />
+<a href="http://michaeljwgrogan.us9.list-manage.com/subscribe?u=86e585b1851f52c8eda84911d&#038;id=6bca0edbda">-> To get access to the datasets and full R code for this tutorial, please subscribe to my e-book package and receive your free guide titled, <strong>“R: Regression Analysis and Data Structuring Methods”</strong>.</a></p>
+
+</body>
+</html>

@@ -1,0 +1,2929 @@
+<base href=https://www.ntu.edu.sg/home/ehchua/programming/sql/>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>MySQL Tutorial - MySQL By Examples for Beginners</title>
+<script type="text/javascript" src="../scripts/programming_notes_v1.js"></script>
+<style type="text/css">a {text-decoration: none}</style>
+</head>
+
+
+<body bgcolor="#000000" text="#109030" leftmargin="200" topmargin="10" marginwidth="200" link="#00CCCC" vlink="#CC66CC" alink="#FFFF00" target=_blank>
+<FONT size=3>
+https://www.ntu.edu.sg/home/ehchua/programming/sql/MySQL_Beginner.html
+<br>
+<div id="content-header">
+<h1>MySQL by Examples for Beginners</h1>
+</div>
+
+<div id="wrap-outer">
+
+<!-- header filled by JavaScript -->
+<div id="header" class="header-footer"><p>&nbsp;</p></div>
+
+<div id="wrap-inner">
+
+<div id="wrap-toc">
+<h5>TABLE OF CONTENTS <a id="show-toc" href="#show-toc">(HIDE)</a></h5>
+<div id="toc"></div>  <!-- for showing the "Table of Content" -->
+</div>
+
+
+<div id="content-main">
+
+<p>Read &quot;<a href="MySQL_HowTo.html">How to Install MySQL and Get Started</a>&quot; on how to install, customize, and get started with MySQL.</p>
+
+<h3>Summary of MySQL Commands Used in this Tutorial</h3>
+
+<p>For detailed syntax, check MySQL manual &quot;SQL Statement Syntax&quot; @ <a href="http://dev.mysql.com/doc/refman/5.5/en/sql-syntax.html">http://dev.mysql.com/doc/refman/5.5/en/sql-syntax.html</a>.</p>
+
+<pre class="color-syntax">
+<span class="color-comment">-- Database-Level</span>
+DROP DATABASE <em>databaseName</em>                 <span class="color-comment">-- Delete the database (irrecoverable!)</span>
+DROP DATABASE IF EXISTS <em>databaseName</em>       <span class="color-comment">-- Delete if it exists</span>
+CREATE DATABASE <em>databaseName</em>               <span class="color-comment">-- Create a new database</span>
+CREATE DATABASE IF NOT EXISTS <em>databaseName</em> <span class="color-comment">-- Create only if it does not exists</span>
+SHOW DATABASES                             <span class="color-comment">-- Show all the databases in this server</span>
+USE <em>databaseName</em>                           <span class="color-comment">-- Set the default (current) database</span>
+SELECT DATABASE()                          <span class="color-comment">-- Show the default database</span>
+SHOW CREATE DATABASE <em>databaseName</em>          <span class="color-comment">-- Show the CREATE DATABASE statement</span>
+ 
+<span class="color-comment">-- Table-Level</span>
+DROP TABLE [IF EXISTS] <em>tableName</em>, ...
+CREATE TABLE [IF NOT EXISTS] <em>tableName</em> (
+   <em>columnName columnType columnAttribute</em>, ...
+   PRIMARY KEY(<em>columnName</em>),
+   FOREIGN KEY (<em>columnNmae</em>) REFERENCES <em>tableName</em> (<em>columnNmae</em>)
+)
+SHOW TABLES              <span class="color-comment">  -- Show all the tables in the default database</span>
+DESCRIBE|DESC <em>tableName</em>    <span class="color-comment">-- Describe the details for a table</span>
+ALTER TABLE <em>tableName</em> ...  <span class="color-comment">-- Modify a table, e.g., ADD COLUMN and DROP COLUMN</span>
+ALTER TABLE <em>tableName</em> ADD <em>columnDefinition</em>
+ALTER TABLE <em>tableName</em> DROP <em>columnName</em>
+ALTER TABLE <em>tableName</em> ADD FOREIGN KEY (<em>columnNmae</em>) REFERENCES <em>tableName</em> (<em>columnNmae</em>)<em>
+</em>ALTER TABLE <em>tableName</em> DROP FOREIGN KEY <em>constraintName</em>
+SHOW CREATE TABLE <em>tableName</em>        <span class="color-comment">-- Show the CREATE TABLE statement for this <em>tableName</em></span>
+ 
+<span class="color-comment">-- Row-Level</span>
+INSERT INTO <em>tableName</em> 
+   VALUES (<em>column1Value</em>, <em>column2Value</em>,...)               <span class="color-comment">-- Insert on all Columns</span>
+INSERT INTO <em>tableName</em> 
+   VALUES (<em>column1Value</em>, <em>column2Value</em>,...), ...          <span class="color-comment">-- Insert multiple rows</span>
+INSERT INTO <em>tableName</em> (<em>column1Name</em>, ..., <em>columnNName</em>)
+   VALUES (<em>column1Value</em>, ..., <em>columnNValue</em>)              <span class="color-comment">-- Insert on selected Columns</span>
+DELETE FROM <em>tableName</em> WHERE <em>criteria</em>
+UPDATE <em>tableName</em> SET <em>columnName</em> = <em>expr</em>, ... WHERE <em>criteria</em>
+SELECT * | <em>column1Name</em> AS <em>alias1</em>, ..., <em>columnNName</em> AS <em>aliasN</em> 
+   FROM <em>tableName</em>
+   WHERE <em>criteria</em>
+   GROUP BY <em>columnName</em>
+   ORDER BY <em>columnName</em> <span class="underline">ASC</span>|DESC, <em></em>...
+   HAVING <em>groupConstraints</em>
+   LIMIT <em>count</em> | <em>offset count</em>
+ 
+<span class="color-comment">-- Others</span>
+SHOW WARNINGS;   <span class="color-comment">-- Show the warnings of the previous statement</span></pre>
+
+<h3>An Example for the Beginners (But NOT for the dummies)</h3>
+<p>A MySQL database server  contains many <span class="underline">databases</span> (or <span class="underline">schemas)</span>. Each database consists of one or more <span class="underline">tables</span>. A table is made up of <span class="underline">columns</span> (or <span class="underline">fields</span>) and <span class="underline">rows</span> (<span class="underline">records</span>).</p>
+
+<p>The SQL keywords and commands are NOT case-sensitive. For clarity, they are shown in uppercase. The <em>names</em> or <em>identifiers</em> (database names, table names, column names, etc.) are case-sensitive in some systems, but not in other systems. Hence, it is best to treat <em>identifiers</em> as case-sensitive.</p>
+
+<h5><span class="font-code">SHOW DATABASES</span></h5>
+<p>You can use <code>SHOW DATABASES</code> to list all the existing databases in the server.</p>
+<pre class="color-example">
+mysql&gt; <strong>SHOW DATABASES;</strong>
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| test               |
+........</pre>
+
+<p>The databases &quot;<code>mysql</code>&quot;, &quot;<code>information_schema</code>&quot; and  &quot;<code>performance_schema</code>&quot; are system databases used internally by MySQL. A &quot;<code>test</code>&quot; database is  provided during installation for your  testing.</p>
+
+<p>Let us begin with a simple example - a <em>product sales database</em>. A product sales database typically consists of many tables, e.g., products, customers, suppliers, orders, payments, employees, among others. Let's call our database &quot;<code>southwind</code>&quot; (inspired from Microsoft's Northwind  Trader sample database). We shall begin with the first table called &quot;<code>products</code>&quot; with the following columns (having data types as indicated) and rows:</p>
+
+<table class="table-zebra font-code" style="width:60%">
+<tr>
+<th colspan="5" style="text-align:left">Database: southwind<br />Table: products</th>
+</tr>
+<tr>
+<th>productID<br />INT</th>
+<th>productCode<br />CHAR(3)</th>
+<th>name<br />VARCHAR(30)</th>
+<th>quantity<br />INT</th>
+<th>price<br />DECIMAL(10,2)</th>
+</tr>
+<tr>
+<td>1001</td>
+<td>PEN</td>
+<td>Pen Red</td>
+<td>5000</td>
+<td>1.23</td>
+</tr>
+<tr class="tr-alt">
+<td>1002</td>
+<td>PEN</td>
+<td>Pen Blue</td>
+<td>8000</td>
+<td>1.25</td>
+</tr>
+<tr>
+<td>1003</td>
+<td>PEN</td>
+<td>Pen Black</td>
+<td>2000</td>
+<td>1.25</td>
+</tr>
+<tr class="tr-alt">
+<td>1004</td>
+<td>PEC</td>
+<td>Pencil 2B</td>
+<td>10000</td>
+<td>0.48</td>
+</tr>
+<tr>
+  <td>1005</td>
+  <td>PEC</td>
+  <td>Pencil 2H</td>
+  <td>8000</td>
+  <td>0.49</td>
+</tr>
+</table>
+
+<h4>Creating and Deleting a Database - <span class="font-code">CREATE DATABASE</span> and <span class="font-code">DROP DATABASE</span></h4>
+
+<p>You can create a new database using SQL command &quot;<code>CREATE DATABASE <em>databaseName</em></code>&quot;; and delete a database using &quot;<code>DROP DATABASE <em>databaseName</em></code>&quot;. You could optionally apply condition &quot;<code>IF EXISTS</code>&quot; or &quot;<code>IF NOT EXISTS</code>&quot; to these commands. For example,</p>
+
+<pre class="color-example">
+mysql&gt; <strong>CREATE DATABASE southwind;</strong>
+Query OK, 1 row affected (0.03 sec)
+   
+mysql&gt; <strong>DROP DATABASE southwind;</strong>
+Query OK, 0 rows affected (0.11 sec)
+   
+mysql&gt; <strong>CREATE DATABASE IF NOT EXISTS southwind;</strong>
+Query OK, 1 row affected (0.01 sec)
+   
+mysql&gt; <strong>DROP DATABASE IF EXISTS southwind;</strong>
+Query OK, 0 rows affected (0.00 sec)</pre>
+
+<p><strong>IMPORTANT</strong>: Use SQL <code>DROP</code> (and <code>DELETE</code>) commands with extreme care, as the deleted entities are irrecoverable. <strong>THERE IS NO UNDO!!!</strong></p>
+
+<h5><span class="font-code">SHOW CREATE DATABASE</span></h5>
+
+<p>The <code>CREATE DATABASE</code> commands uses some defaults. You can issue a &quot;<code>SHOW CREATE DATABASE <em>databaseName</em></code>&quot; to display the full command and check these default values. We use <code>\G</code> (instead of <code>';'</code>) to display the results vertically. (Try comparing the outputs produced by <code>';'</code> and <code>\G</code>.)</p>
+
+
+<pre class="color-example">
+mysql&gt; <strong>CREATE DATABASE IF NOT EXISTS southwind;</strong>
+   
+mysql&gt; <strong>SHOW CREATE DATABASE southwind \G</strong>
+*************************** 1. row ***************************
+       Database: southwind
+Create Database: <span class="color-new">CREATE DATABASE `southwind` /*!40100 DEFAULT CHARACTER SET latin1 */</span></pre>
+
+<h5>Back-Quoted Identifiers (<span class="font-code">`name`</span>)</h5>
+
+<p>Unquoted names or identifiers (such as database name, table name and column name) cannot contain blank and special characters, or crash with MySQL keywords (such as <code>ORDER</code> and  <code>DESC</code>). You can include blanks and special characters or use MySQL keyword as identifier by enclosing it with a pair of back-quote, in the form of <code>`<em>name</em>`</code>.</p>
+<p>For robustness, the <code>SHOW </code>command back-quotes all the identifiers, as illustrated in the above example.</p>
+
+<h5>Comments and Version Comments</h5>
+<p> MySQL <em>multi-line comments</em> are enclosed within <code>/*</code> and <code>*/</code>; <em>end-of-line comments</em> begins with <code>--</code> (followed by a space) or <code>#</code>.</p>
+<p>The <code>/*!40100 ...... */</code> is known as <em>version comment</em>, which will only be run if the server is at or above this version number <code>4.01.00</code>. To check the version of your MySQL server, issue query &quot;<code>SELECT version()</code>&quot;.</p>
+
+<h4>Setting the Default Database - <span class="font-code">USE</span></h4>
+<p>The command &quot;<code>USE <em>databaseName</em></code>&quot; sets a particular database as the default (or current) database. You can reference a table in the default database using <code><em>tableName</em></code> directly. But you need to use the fully-qualified <em><code>databaseName.tableName</code></em> to reference a table NOT in the default database.</p>
+<p>In our example, we have a database named &quot;<code>southwind</code>&quot; with a table named &quot;<code>products</code>&quot;. If we issue &quot;<code>USE southwind</code>&quot; to set <code>southwind</code> as the default database, we can simply call the table as &quot;<code>products</code>&quot;. Otherwise, we need to reference the table as &quot;<code>southwind.products</code>&quot;.</p>
+<p>To display the current default database, issue command &quot;<code>SELECT DATABASE()</code>&quot;.</p>
+
+<h4>Creating and Deleting a Table - <span class="font-code">CREATE TABLE</span> and <span class="font-code">DROP TABLE</span></h4>
+<p>You can create a new table <em>in the default database</em> using command &quot;<code>CREATE TABLE <em>tableName</em></code>&quot; and &quot;<code>DROP TABLE <em>tableName</em></code>&quot;. You can also apply condition &quot;<code>IF EXISTS</code>&quot; or &quot;<code>IF NOT EXISTS</code>&quot;. To create a table, you need to define all its columns, by providing the columns' <em>name</em>, <em>type</em>, and <em>attributes</em>.</p> 
+<p> Let's create a table &quot;<code>products</code>&quot; in our database &quot;<code>southwind</code>&quot;.</p>
+
+<pre class="color-example">
+<span class="color-comment">-- Remove the database &quot;southwind&quot;, if it exists.
+-- Beware that DROP (and DELETE) actions are irreversible and not recoverable!</span>
+mysql&gt; <strong>DROP DATABASE IF EXISTS southwind;</strong>
+Query OK, 1 rows affected (0.31 sec)
+ 
+<span class="color-comment">-- Create the database &quot;southwind&quot;</span>
+mysql&gt; <strong>CREATE DATABASE southwind;</strong>
+Query OK, 1 row affected (0.01 sec)
+ 
+<span class="color-comment">-- Show all the databases in the server
+--   to confirm that &quot;southwind&quot; database has been created.</span>
+mysql&gt; <strong>SHOW DATABASES;</strong>
++--------------------+
+| Database           |
++--------------------+
+| southwind          |
+| ......             |
+ 
+<span class="color-comment">-- Set &quot;southwind&quot; as the default database so as to reference its table directly.</span>
+mysql&gt; <strong>USE southwind;</strong>
+Database changed
+ 
+<span class="color-comment">-- Show the current (default) database</span>
+mysql&gt; <strong>SELECT DATABASE();</strong>
++------------+
+| DATABASE() |
++------------+
+| southwind  |
++------------+
+ 
+<span class="color-comment">-- Show all the tables in the current database.
+-- &quot;southwind&quot; has no table (empty set).</span>
+mysql&gt; <strong>SHOW TABLES;</strong>
+Empty set (0.00 sec)
+ 
+<span class="color-comment">-- Create the table &quot;products&quot;. Read &quot;explanations&quot; below for the column defintions</span>
+mysql&gt; <strong>CREATE TABLE IF NOT EXISTS products (
+         productID    INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+         productCode  CHAR(3)       NOT NULL DEFAULT '',
+         name         VARCHAR(30)   NOT NULL DEFAULT '',
+         quantity     INT UNSIGNED  NOT NULL DEFAULT 0,
+         price        DECIMAL(7,2)  NOT NULL DEFAULT 99999.99,
+         PRIMARY KEY  (productID)
+       );</strong>
+Query OK, 0 rows affected (0.08 sec)
+ 
+<span class="color-comment">-- Show all the tables to confirm that the &quot;products&quot; table has been created</span>
+mysql&gt; <strong>SHOW TABLES;</strong>
++---------------------+
+| Tables_in_southwind |
++---------------------+
+| products            |
++---------------------+
+ 
+<span class="color-comment">-- Describe the fields (columns) of the &quot;products&quot; table</span>
+mysql&gt; <strong>DESCRIBE products;</strong>
++-------------+------------------+------+-----+------------+----------------+
+| Field       | Type             | Null | Key | Default    | Extra          |
++-------------+------------------+------+-----+------------+----------------+
+| productID   | int(10) unsigned | NO   | PRI | NULL       | auto_increment |
+| productCode | char(3)          | NO   |     |            |                |
+| name        | varchar(30)      | NO   |     |            |                |
+| quantity    | int(10) unsigned | NO   |     | 0          |                |
+| price       | decimal(7,2)     | NO   |     | 99999.99   |                |
++-------------+------------------+------+-----+------------+----------------+
+ 
+<span class="color-comment">-- Show the complete CREATE TABLE statement used by MySQL to create this table</span>
+mysql&gt; <strong>SHOW CREATE TABLE products \G</strong>
+*************************** 1. row ***************************
+       Table: products
+Create Table: 
+<span class="color-new">CREATE TABLE `products` (
+  `productID`    int(10) unsigned  NOT NULL AUTO_INCREMENT,
+  `productCode`  char(3)           NOT NULL DEFAULT '',
+  `name`         varchar(30)       NOT NULL DEFAULT '',
+  `quantity`     int(10) unsigned  NOT NULL DEFAULT '0',
+  `price`        decimal(7,2)      NOT NULL DEFAULT '99999.99',
+  PRIMARY KEY (`productID`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1</span></pre>
+
+<h5>Explanations</h5>
+
+<p>We define 5 columns in the table <code>products</code>: <code>productID</code>, <code>productCode</code>, <code>name</code>, <code>quantity</code> and <code>price</code>. The  types are:</p>
+
+<ul>
+<li><code>productID</code> is<code> INT UNSIGNED  </code> - non-negative integers.</li>
+<li><code>productCode</code> is <code>CHAR(3)</code> - a fixed-length alphanumeric string of 3 characters.</li>
+<li><code>name</code> is <code>VARCHAR(30)</code> - a variable-length string of up to 30 characters.<br />
+We use fixed-length string for <code>productCode</code>, as we assume that the <code>productCode</code> contains <em>exactly</em> 3 characters. On the other hand, we use variable-length string for <code>name</code>, as its length varies - <code>VARCHAR</code> is more efficient than <code>CHAR</code>.</li>
+<li><code>quantity</code> is also <code>INT UNSIGNED</code> (non-negative integers).</li>
+<li><code>price</code> is<code> DECIMAL(10,2) </code>- a decimal number with 2 decimal places.<br />
+<code>DECIMAL</code> is <em>precise</em> (represented as integer with a fix decimal point). On the other hand, <code>FLOAT</code> and <code>DOUBLE</code> (real numbers) are not precise and are approximated. <code>DECIMAL</code> type is recommended for currency.</li>
+
+</ul>
+
+
+<p>The attribute &quot;<code>NOT NULL</code>&quot; specifies that the column cannot contain the <code>NULL</code> value. <code>NULL</code> is a special value indicating &quot;no value&quot;, &quot;unknown value&quot; or &quot;missing value&quot;. In our case, these columns shall have a proper value. We also set the default value of the columns. The column will take on its default value, if no value is specified during the record creation.</p>
+
+<p>We set the column <code>productID</code> as the so-called <em>primary key</em>. Values of the primary-key column must be unique. Every table shall contain a primary key. This ensures that every row can be distinguished from other rows. You can specify a single column or a set of columns (e.g., <code>firstName</code> and <code>lastName</code>) as the primary key. An <em>index</em> is build automatically on the primary-key column to facilitate fast search. Primary key is also used as reference by other tables.</p>
+
+<p>We set the column <code>productID</code> to <code>AUTO_INCREMENT</code>.
+with default starting value of 1. When you insert a row with <code>NULL</code> (recommended) (or 0, or a missing value) for the <code>AUTO_INCREMENT</code> column, the maximum value of that column plus 1 would be inserted. You can also insert a valid value to an <code>AUTO_INCREMENT</code> column, bypassing the auto-increment.</p>
+
+
+<h4>Inserting Rows - <span class="font-code">INSERT INTO</span></h4>
+<p>Let's fill up our &quot;<code>products</code>&quot; table with rows. We set the <code>productID</code> of the first record to 1001, and use <code>AUTO_INCREMENT</code> for the rest of records by inserting a <span class="font-code"><code>NULL</code></span>, or with a missing column value. Take note that strings must be enclosed with a pair of single quotes (or double quotes).</p>
+
+<pre class="color-example">
+<span class="color-comment">-- Insert a row with all the column values</span>
+mysql&gt; <strong>INSERT INTO products VALUES (1001, 'PEN', 'Pen Red', 5000, 1.23);</strong>
+Query OK, 1 row affected (0.04 sec)
+ 
+<span class="color-comment">-- Insert multiple rows in one command
+-- Inserting NULL to the auto_increment column results in max_value + 1</span>
+mysql&gt; <strong>INSERT INTO products VALUES
+         (NULL, 'PEN', 'Pen Blue',  8000, 1.25),
+         (NULL, 'PEN', 'Pen Black', 2000, 1.25);</strong>
+Query OK, 2 rows affected (0.03 sec)
+Records: 2  Duplicates: 0  Warnings: 0
+ 
+<span class="color-comment">-- Insert value to selected columns
+-- Missing value for the auto_increment column also results in max_value + 1</span>
+mysql&gt; <strong>INSERT INTO products (productCode, name, quantity, price) VALUES
+         ('PEC', 'Pencil 2B', 10000, 0.48),
+         ('PEC', 'Pencil 2H', 8000, 0.49);</strong>
+Query OK, 2 row affected (0.03 sec)
+ 
+<span class="color-comment">-- Missing columns get their default values</span>
+mysql&gt; <strong>INSERT INTO products (productCode, name) VALUES ('PEC', 'Pencil HB');</strong>
+Query OK, 1 row affected (0.04 sec)
+
+<span class="color-comment">-- 2nd column (productCode) is defined to be NOT NULL</span>
+mysql&gt; <strong>INSERT INTO products values (NULL, NULL, NULL, NULL, NULL);</strong>
+<span class="color-new">ERROR 1048 (23000): Column 'productCode' cannot be null</span>
+ 
+<span class="color-comment">-- Query the table</span>
+mysql&gt; <strong>SELECT * FROM products;</strong>
++-----------+-------------+-----------+----------+------------+
+| productID | productCode | name      | quantity | price      |
++-----------+-------------+-----------+----------+------------+
+|      1001 | PEN         | Pen Red   |     5000 |       1.23 |
+|      1002 | PEN         | Pen Blue  |     8000 |       1.25 |
+|      1003 | PEN         | Pen Black |     2000 |       1.25 |
+|      1004 | PEC         | Pencil 2B |    10000 |       0.48 |
+|      1005 | PEC         | Pencil 2H |     8000 |       0.49 |
+|      1006 | PEC         | Pencil HB |        <span class="color-new">0 | 9999999.99</span> |
++-----------+-------------+-----------+----------+------------+
+6 rows in set (0.02 sec)
+ 
+<span class="color-comment">-- Remove the last row</span>
+mysql&gt; <strong>DELETE FROM products WHERE productID = 1006;</strong></pre>
+
+<h5><span class="font-code">INSERT INTO</span> Syntax</h5>
+
+<p>We can use the <code>INSERT INTO</code> statement to insert a new row with all the column values, using the following syntax:</p>
+
+<pre class="color-syntax">
+INSERT INTO <em>tableName</em> VALUES (<em>firstColumnValue</em>, ..., <em>lastColumnValue</em>)  <span class="color-comment">-- All columns</span></pre>
+
+
+<p>You need to list the values in the same order in which the columns are defined in the <code>CREATE TABLE</code>, separated by commas. For columns of string data type (<code>CHAR</code>, <code>VARCHAR</code>), enclosed the value with a pair of single quotes (or double quotes). For columns of numeric data type (<code>INT</code>, <code>DECIMAL</code>, <code>FLOAT</code>, <code>DOUBLE</code>), simply place the number.</p>
+
+<p>You can also insert multiple rows in one <code>INSERT INTO</code> statement:</p>
+<pre class="color-syntax">
+INSERT INTO <em>tableName</em> VALUES 
+   (<em>row1FirstColumnValue</em>, ..., <em>row1lastColumnValue</em>),
+   (<em>row2FirstColumnValue</em>, ..., <em>row2lastColumnValue</em>), 
+   ...</pre>
+
+<p>To insert a row with values on selected columns only, use:</p>
+<pre class="color-syntax">
+<span class="color-comment">-- Insert single record with selected columns</span>
+INSERT INTO <em>tableName</em> (<em>column1Name</em>, ..., <em>columnNName</em>) VALUES (<em>column1Value</em>, ..., <em>columnNValue</em>)
+<span class="color-comment">-- Alternately, use SET to set the values</span>
+INSERT INTO <em>tableName</em> SET <em>column1</em>=<em>value1</em>, <em>column2</em>=<em>value2</em>, ...
+ 
+<span class="color-comment">-- Insert multiple records</span>
+INSERT INTO <em>tableName</em> 
+   (<em>column1Name</em>, ..., <em>columnNName</em>)
+VALUES 
+   (<em>row1column1Value</em>, ..., <em>row2ColumnNValue</em>),
+   (<em>row2column1Value</em>, ..., <em>row2ColumnNValue</em>),
+   ...</pre>
+<p>The remaining columns will receive their default value, such as <code>AUTO_INCREMENT</code>, default, or <code>NULL</code>.</p>
+
+<h4>Querying the Database - <span class="font-code">SELECT</span></h4>
+<p>The most common, important and complex task is to query a database for a subset of data that meets your needs - with the <code>SELECT</code> command. The <code>SELECT</code> command has the following syntax:</p>
+
+<pre class="color-syntax">
+<span class="color-comment">-- List all the rows of the specified columns</span>
+SELECT <em>column1Name</em>, <em>column2Name</em>, ... FROM <em>tableName</em>
+<span class="color-comment">   
+-- List all the rows of ALL columns, * is a wildcard denoting all columns</span>
+SELECT <em>*</em> FROM <em>tableName</em>
+<span class="color-comment">  
+-- List rows that meet the specified <em>criteria</em> in WHERE clause</span>
+SELECT <em>column1Name</em>, <em>column2Name</em>,... FROM <em>tableName</em> WHERE <em>criteria</em>
+SELECT <em>*</em> FROM <em>tableName</em> WHERE <em>criteria</em></pre>
+
+<p>For examples,</p>
+
+<pre class="color-example">
+<span class="color-comment">-- List all rows for the specified columns</span>
+mysql&gt; <strong>SELECT name, price FROM products;</strong>
++-----------+-------+
+| name      | price |
++-----------+-------+
+| Pen Red   |  1.23 |
+| Pen Blue  |  1.25 |
+| Pen Black |  1.25 |
+| Pencil 2B |  0.48 |
+| Pencil 2H |  0.49 |
++-----------+-------+
+5 rows in set (0.00 sec)
+    
+<span class="color-comment">-- List all rows of ALL the columns. The wildcard * denotes ALL columns</span>
+mysql&gt; <strong>SELECT * FROM products;</strong>
++-----------+-------------+-----------+----------+-------+
+| productID | productCode | name      | quantity | price |
++-----------+-------------+-----------+----------+-------+
+|      1001 | PEN         | Pen Red   |     5000 |  1.23 |
+|      1002 | PEN         | Pen Blue  |     8000 |  1.25 |
+|      1003 | PEN         | Pen Black |     2000 |  1.25 |
+|      1004 | PEC         | Pencil 2B |    10000 |  0.48 |
+|      1005 | PEC         | Pencil 2H |     8000 |  0.49 |
++-----------+-------------+-----------+----------+-------+
+5 rows in set (0.00 sec)</pre>
+
+<h5>SELECT without Table</h5>
+<p>You can also issue <code>SELECT</code> without a table. For example, you can <code>SELECT</code> an expression or evaluate a built-in function.</p>
+<pre class="color-example">
+mysql&gt; <strong>SELECT 1+1;</strong>
++-----+
+| 1+1 |
++-----+
+|   2 |
++-----+
+1 row in set (0.00 sec)
+ 
+mysql&gt; <strong>SELECT NOW();</strong>
++---------------------+
+| NOW()               |
++---------------------+
+| 2012-10-24 22:13:29 |
++---------------------+
+1 row in set (0.00 sec)
+
+<span class="color-comment">// Multiple columns</span>
+mysql&gt; <strong>SELECT 1+1, NOW();</strong>
++-----+---------------------+
+| 1+1 | NOW()               |
++-----+---------------------+
+|   2 | 2012-10-24 22:16:34 |
++-----+---------------------+
+1 row in set (0.00 sec)</pre>
+
+<h5>Comparison Operators</h5>
+   
+<p>For numbers (<code>INT</code>, <code>DECIMAL</code>, <code>FLOAT</code>), you could use comparison operators: <code>'='</code> (equal to), <code>'&lt;&gt;'</code> or <code>'!='</code> (not equal to), <code>'&gt;'</code> (greater than), <code>'&lt;'</code> (less than), <code>'&gt;='</code> (greater than or equal to), <code>'&lt;='</code> (less than or equal to), to compare two numbers.  For example, <code>price &gt; 1.0</code>, <code>quantity &lt;= 500</code>.</p>
+
+<pre class="color-example">mysql&gt; SELECT name, price FROM products <strong>WHERE price &lt; 1.0</strong>;
++-----------+-------+
+| name      | price |
++-----------+-------+
+| Pencil 2B |  0.48 |
+| Pencil 2H |  0.49 |
++-----------+-------+
+2 rows in set (0.00 sec)
+   
+mysql&gt; SELECT name, quantity FROM products <strong>WHERE quantity &lt;= 2000</strong>;
++-----------+----------+
+| name      | quantity |
++-----------+----------+
+| Pen Black |     2000 |
++-----------+----------+
+1 row in set (0.00 sec)</pre>
+
+<p>CAUTION: Do not compare <code>FLOAT</code>s (real numbers) for equality (<code>'='</code> or <code>'&lt;&gt;'</code>), as they are not precise. On the other hand, <code>DECIMAL</code> are precise.</p>
+
+<p>For strings, you could also use <code>'='</code>, <code>'&lt;&gt;'</code>, <code>'&gt;'</code>, <code>'&lt;'</code>, <code>'&gt;='</code>, <code>'&lt;='</code> to compare two strings (e.g., <code>productCode = 'PEC').</code> The ordering of string depends on the so-called <em>collation</em> chosen. For example,</p>
+
+<pre class="color-example">
+mysql&gt; SELECT name, price FROM products <strong>WHERE productCode = 'PEN'</strong>;
+                                      <span class="color-comment">-- String values are quoted</span>
++-----------+-------+
+| name      | price |
++-----------+-------+
+| Pen Red   |  1.23 |
+| Pen Blue  |  1.25 |
+| Pen Black |  1.25 |
++-----------+-------+
+3 rows in set (0.00 sec)</pre>
+
+<h5>String Pattern Matching - <span class="font-code">LIKE</span> and <span class="font-code">NOT LIKE</span></h5>
+
+<p>For strings, in addition to full matching using operators like <code>'='</code> and <code>'&lt;&gt;'</code>, we can perform <em>pattern matching</em> using operator <code>LIKE</code> (or <code>NOT LIKE</code>) with wildcard characters. The wildcard <code>'_'</code> matches any single character; <code>'%'</code> matches any number of characters (including zero). For example,</p>
+
+<ul>
+<li><code>'abc%'</code> matches strings beginning with <code>'abc'</code>;</li>
+<li><code>'%xyz'</code> matches strings ending with <code>'xyz'</code>;</li>
+<li><code>'%aaa%'</code> matches strings containing <code>'aaa'</code>;</li>
+<li><code>'___'</code> matches strings containing exactly three characters; and</li>
+<li><code>'a_b%'</code> matches strings beginning with <code>'a'</code>, followed by any single character, followed by <code>'b'</code>, followed by zero or more characters.</li>
+</ul>
+
+
+<pre class="color-example">
+<span class="color-comment">-- &quot;name&quot; begins with 'PENCIL'</span>
+mysql&gt; SELECT name, price FROM products <strong>WHERE name LIKE 'PENCIL%'</strong>;
++-----------+-------+
+| name      | price |
++-----------+-------+
+| Pencil 2B |  0.48 |
+| Pencil 2H |  0.49 |
++-----------+-------+
+ 
+<span class="color-comment">-- &quot;name&quot; begins with 'P', followed by any two characters, 
+--   followed by space, followed by zero or more characters</span>
+mysql&gt; SELECT name, price FROM products <strong>WHERE name LIKE 'P__ %'</strong>;
++-----------+-------+
+| name      | price |
++-----------+-------+
+| Pen Red   |  1.23 |
+| Pen Blue  |  1.25 |
+| Pen Black |  1.25 |
++-----------+-------+</pre>
+
+<p>MySQL also support regular expression matching via the <code>REGEXE</code> operator.</p>
+
+<h5>Arithmetic Operators</h5>
+<p>You can perform arithmetic operations on numeric fields using arithmetic operators, as tabulated below:</p>
+<table class="table-zebra" style="width:40%">
+<tr>
+<th>Operator</th>
+<th>Description</th>
+</tr>
+<tr>
+<td class="text-center font-code">+</td>
+<td>Addition</td>
+</tr>
+<tr>
+<td class="text-center font-code">-</td>
+<td>Subtraction</td>
+</tr>
+<tr>
+<td class="text-center font-code">*</td>
+<td>Multiplication</td>
+</tr>
+<tr>
+<td class="text-center font-code">/</td>
+<td>Division</td>
+</tr>
+<tr>
+<td class="text-center font-code">DIV</td>
+<td>Integer Division</td>
+</tr>
+<tr>
+<td class="text-center font-code">%</td>
+<td>Modulus (Remainder)</td>
+</tr>
+</table>
+
+
+<h5>Logical Operators - <span class="font-code">AND</span>, <span class="font-code">OR</span>, <span class="font-code">NOT</span>, <span class="font-code">XOR</span></h5>
+
+<p>You can combine multiple conditions with boolean operators <code>AND</code>, <code>OR</code>, <code>XOR</code>. You can also invert a condition using operator <code>NOT</code>. For examples,</p>
+
+<pre class="color-example">
+mysql&gt; SELECT * FROM products <strong>WHERE quantity &gt;= 5000 AND name LIKE 'Pen %'</strong>;
++-----------+-------------+----------+----------+-------+
+| productID | productCode | name     | quantity | price |
++-----------+-------------+----------+----------+-------+
+|      1001 | PEN         | Pen Red  |     5000 |  1.23 |
+|      1002 | PEN         | Pen Blue |     8000 |  1.25 |
++-----------+-------------+----------+----------+-------+
+ 
+mysql&gt; SELECT * FROM products <strong>WHERE quantity &gt;= 5000 AND price &lt; 1.24 AND name LIKE 'Pen %'</strong>;
++-----------+-------------+---------+----------+-------+
+| productID | productCode | name    | quantity | price |
++-----------+-------------+---------+----------+-------+
+|      1001 | PEN         | Pen Red |     5000 |  1.23 |
++-----------+-------------+---------+----------+-------+
+   
+mysql&gt; SELECT * FROM products <strong>WHERE NOT (quantity &gt;= 5000 AND name LIKE 'Pen %')</strong>;
++-----------+-------------+-----------+----------+-------+
+| productID | productCode | name      | quantity | price |
++-----------+-------------+-----------+----------+-------+
+|      1003 | PEN         | Pen Black |     2000 |  1.25 |
+|      1004 | PEC         | Pencil 2B |    10000 |  0.48 |
+|      1005 | PEC         | Pencil 2H |     8000 |  0.49 |
++-----------+-------------+-----------+----------+-------+</pre>
+
+<h5><span class="font-code">IN</span>, <span class="font-code">NOT IN</span></h5>
+   
+<p>You can select from members of a set with <code>IN</code> (or <code>NOT IN</code>) operator. This is easier and clearer than the equivalent <code>AND-OR</code> expression.</p>
+
+<pre class="color-example">
+mysql&gt; SELECT * FROM products <strong>WHERE name IN ('Pen Red', 'Pen Black')</strong>;
++-----------+-------------+-----------+----------+-------+
+| productID | productCode | name      | quantity | price |
++-----------+-------------+-----------+----------+-------+
+|      1001 | PEN         | Pen Red   |     5000 |  1.23 |
+|      1003 | PEN         | Pen Black |     2000 |  1.25 |
++-----------+-------------+-----------+----------+-------+</pre>
+
+<h5><span class="font-code">BETWEEN</span>, <span class="font-code">NOT BETWEEN</span></h5>
+
+<p>To check if the value is within a range, you could use <code>BETWEEN ... AND ...</code> operator. Again, this is easier and clearer than the equivalent <code>AND-OR</code> expression.</p>
+<pre class="color-example">
+mysql&gt; SELECT * FROM products 
+       <strong>WHERE (price BETWEEN 1.0 AND 2.0) AND (quantity BETWEEN 1000 AND 2000)</strong>;
++-----------+-------------+-----------+----------+-------+
+| productID | productCode | name      | quantity | price |
++-----------+-------------+-----------+----------+-------+
+|      1003 | PEN         | Pen Black |     2000 |  1.25 |
++-----------+-------------+-----------+----------+-------+</pre>
+
+<h5><span class="font-code">IS NULL</span>, <span class="font-code">IS NOT NULL</span></h5>
+
+<p><code>NULL</code> is a special value, which represent &quot;no value&quot;, &quot;missing value&quot; or &quot;unknown value&quot;. You can checking if a column contains <code>NULL</code> by <code>IS NULL</code> or <code>IS NOT NULL</code>. For example,</p>
+<pre class="color-example">
+mysql&gt; <strong>SELECT * FROM products WHERE productCode IS NULL</strong>;
+Empty set (0.00 sec)</pre>
+
+<p>Using comparison operator (such as <code>=</code> or <code>&lt;&gt;</code>) to check for <code>NULL</code> is a <em>mistake</em> - a very <em>common mistake</em>. For example,</p>
+<pre class="color-example">
+SELECT * FROM products WHERE <span class="color-new">productCode = NULL</span>;
+<span class="color-comment">-- This is a common mistake. NULL cannot be compared.</span></pre>
+
+<h5><span class="font-code">ORDER BY</span> Clause</h5>
+<p>You can order the rows selected using <code>ORDER BY</code> clause, with the following syntax:</p>
+<pre class="color-syntax">
+SELECT ... FROM <em>tableName</em>
+WHERE <em>criteria</em>
+<strong>ORDER BY <em>columnA</em> <span class="underline">ASC</span>|DESC, <em>columnB</em> <span class="underline">ASC</span>|DESC, ...</strong>
+</pre>
+
+<p>The selected row will be ordered according to the values in <em><code>columnA</code></em>, in either ascending (<code>ASC</code>) (default) or descending (<code>DESC</code>) order. If several rows have the same value in <em><code>columnA</code></em>, it will be ordered according to <em><code>columnB</code></em>, and so on. For strings, the ordering could be case-sensitive or case-insensitive, depending on the so-called character collating sequence used. For examples,</p>
+
+<pre class="color-example">
+<span class="color-comment">-- Order the results by price in descending order</span>
+mysql&gt; SELECT * FROM products WHERE name LIKE 'Pen %' <strong>ORDER BY price DESC</strong>;
++-----------+-------------+-----------+----------+-------+
+| productID | productCode | name      | quantity | price |
++-----------+-------------+-----------+----------+-------+
+|      1002 | PEN         | Pen Blue  |     8000 |  1.25 |
+|      1003 | PEN         | Pen Black |     2000 |  1.25 |
+|      1001 | PEN         | Pen Red   |     5000 |  1.23 |
++-----------+-------------+-----------+----------+-------+
+ 
+<span class="color-comment">-- Order by price in descending order, followed by quantity in ascending (default) order</span>
+mysql&gt; SELECT * FROM products WHERE name LIKE 'Pen %' <strong>ORDER BY price DESC, quantity</strong>;
++-----------+-------------+-----------+----------+-------+
+| productID | productCode | name      | quantity | price |
++-----------+-------------+-----------+----------+-------+
+|      1003 | PEN         | Pen Black |     2000 |  1.25 |
+|      1002 | PEN         | Pen Blue  |     8000 |  1.25 |
+|      1001 | PEN         | Pen Red   |     5000 |  1.23 |
++-----------+-------------+-----------+----------+-------+</pre>
+
+<p>You can randomize the returned records via function <code>RAND()</code>, e.g.,</p>
+<pre class="color-example">
+mysql&gt; SELECT * FROM products <strong>ORDER BY RAND();</strong></pre>
+
+<h5><span class="font-code">LIMIT</span> Clause</h5>
+<p>A <code>SELECT</code> query on a large database may produce many rows. You could use the <code>LIMIT</code> clause to limit the number of rows displayed, e.g.,</p>
+
+<pre class="color-example">
+<span class="color-comment">-- Display the first two rows</span>
+mysql&gt; SELECT * FROM products ORDER BY price <strong>LIMIT 2</strong>;
++-----------+-------------+-----------+----------+-------+
+| productID | productCode | name      | quantity | price |
++-----------+-------------+-----------+----------+-------+
+|      1004 | PEC         | Pencil 2B |    10000 |  0.48 |
+|      1005 | PEC         | Pencil 2H |     8000 |  0.49 |
++-----------+-------------+-----------+----------+-------+</pre> 
+
+<p>To continue to the following records , you could specify the number of rows to be skipped, followed by the number of rows to be displayed in the <code>LIMIT</code> clause, as follows:</p>
+<pre class="color-example">
+<span class="color-comment">-- Skip the first two rows and display the next 1 row</span>
+mysql&gt; SELECT * FROM products ORDER BY price <strong>LIMIT 2, 1</strong>;
++-----------+-------------+---------+----------+-------+
+| productID | productCode | name    | quantity | price |
++-----------+-------------+---------+----------+-------+
+|      1001 | PEN         | Pen Red |     5000 |  1.23 |
++-----------+-------------+---------+----------+-------+</pre>
+
+<h5><span class="font-code">AS</span> - Alias</h5>
+<p>You could use the keyword <code>AS</code> to define an <em>alias</em> for an identifier (such as column name, table name). The alias will be used in displaying the name. It can also be used as reference. For example,</p>
+
+<pre class="color-example">
+mysql&gt; SELECT <strong>productID AS ID</strong>, <strong>productCode AS Code</strong>,
+              <strong>name AS Description</strong>, <strong>price AS `Unit Price`</strong>  <span class="color-comment">-- Define aliases to be used as display names</span>
+       FROM products
+       <strong>ORDER BY ID</strong>;  <span class="color-comment">-- Use alias ID as reference</span>
++------+------+-------------+------------+
+| ID   | Code | Description | Unit Price |
++------+------+-------------+------------+
+| 1001 | PEN  | Pen Red     |       1.23 |
+| 1002 | PEN  | Pen Blue    |       1.25 |
+| 1003 | PEN  | Pen Black   |       1.25 |
+| 1004 | PEC  | Pencil 2B   |       0.48 |
+| 1005 | PEC  | Pencil 2H   |       0.49 |
++------+------+-------------+------------+</pre>
+
+<p>Take note that the identifier &quot;<code>Unit Price</code>&quot; contains a blank and must be <em>back-quoted</em>.</p>
+
+<h5>Function <span class="font-code">CONCAT()</span></h5>
+
+<p>You can also concatenate a few columns as one (e.g., joining the last name and first name) using function <code>CONCAT()</code>. For example,</p>
+<pre class="color-example">
+mysql&gt; SELECT <strong>CONCAT(productCode, ' - ', name) AS `Product Description`</strong>, price FROM products;
++---------------------+-------+
+| Product Description | price |
++---------------------+-------+
+| PEN - Pen Red       |  1.23 |
+| PEN - Pen Blue      |  1.25 |
+| PEN - Pen Black     |  1.25 |
+| PEC - Pencil 2B     |  0.48 |
+| PEC - Pencil 2H     |  0.49 |
++---------------------+-------+</pre>
+
+<h4>Producing Summary Reports</h4>
+<p>To produce a summary report, we often need to <em>aggregate related rows</em>.</p>
+
+<h5><span class="font-code">DISTINCT</span></h5>
+<p>A column may have duplicate values, we could use keyword <code>DISTINCT</code> to select only distinct values. We can also apply <code>DISTINCT</code> to several columns to select distinct combinations of these columns. For examples,</p>
+
+<pre class="color-example">
+<span class="color-comment">-- Without DISTINCT</span>
+mysql&gt; <strong>SELECT price FROM products;</strong>
++-------+
+| price |
++-------+
+|  1.23 |
+|  1.25 |
+|  1.25 |
+|  0.48 |
+|  0.49 |
++-------+
+   
+<span class="color-comment">-- With DISTINCT on price</span>
+mysql&gt; SELECT <strong>DISTINCT price</strong> AS `Distinct Price` FROM products<strong>;</strong>
++----------------+
+| Distinct Price |
++----------------+
+|           1.23 |
+|           1.25 |
+|           0.48 |
+|           0.49 |
++----------------+
+ 
+<span class="color-comment">-- DISTINCT combination of price and name</span>
+mysql&gt; SELECT <strong>DISTINCT price, name</strong> FROM products<strong>;</strong>
++-------+-----------+
+| price | name      |
++-------+-----------+
+|  1.23 | Pen Red   |
+|  1.25 | Pen Blue  |
+|  1.25 | Pen Black |
+|  0.48 | Pencil 2B |
+|  0.49 | Pencil 2H |
++-------+-----------+</pre>
+
+<h5><span class="font-code">GROUP BY</span> Clause</h5>
+
+<p>The <code>GROUP BY</code> clause allows you to <em>collapse</em> multiple records with a common value into groups. For example,</p>
+
+<pre class="color-example">
+mysql&gt; <strong>SELECT * FROM products ORDER BY productCode, productID;</strong>
++-----------+-------------+-----------+----------+-------+
+| productID | productCode | name      | quantity | price |
++-----------+-------------+-----------+----------+-------+
+|      <span class="color-new">1004 | PEC         | Pencil 2B |    10000 |  0.48</span> |
+|      1005 | PEC         | Pencil 2H |     8000 |  0.49 |
+|      <span class="color-new">1001 | PEN         | Pen Red   |     5000 |  1.23</span> |
+|      1002 | PEN         | Pen Blue  |     8000 |  1.25 |
+|      1003 | PEN         | Pen Black |     2000 |  1.25 |
++-----------+-------------+-----------+----------+-------+
+ 
+mysql&gt; <strong>SELECT * FROM products <span class="color-new">GROUP BY productCode</span>;</strong>
+       <span class="color-comment">-- Only first record in each group is shown</span>
++-----------+-------------+-----------+----------+-------+
+| productID | productCode | name      | quantity | price |
++-----------+-------------+-----------+----------+-------+
+|      1004 | PEC         | Pencil 2B |    10000 |  0.48 |
+|      1001 | PEN         | Pen Red   |     5000 |  1.23 |
++-----------+-------------+-----------+----------+-------+</pre>
+
+<p><code>GROUP BY</code> by itself is not meaningful. It is used together with <code>GROUP BY</code> aggregate functions (such as <code>COUNT()</code>, <code>AVG()</code>, <code>SUM()</code>) to produce group summary.</p>
+
+
+<h5><span class="font-code">GROUP BY</span> Aggregate Functions: <span class="font-code">COUNT</span>, <span class="font-code">MAX</span>, <span class="font-code">MIN</span>, <span class="font-code">AVG</span>, <span class="font-code">SUM</span>, <span class="font-code">STD</span>, <span class="font-code">GROUP_CONCAT</span></h5>
+
+<p>We can apply <code>GROUP BY</code> Aggregate functions to each group to produce group summary report.</p>
+<p>The function <code>COUNT(*)</code> returns the rows selected; <code>COUNT(<em>columnName</em>)</code> counts only the non-<code>NULL</code> values of the given column. For example,</p>
+<pre class="color-example">
+<span class="color-comment">-- Function COUNT(*) returns the number of rows selected</span>
+mysql&gt; SELECT <span class="color-new">COUNT(*)</span> AS `Count` FROM products<strong>;</strong>
+       <span class="color-comment">-- All rows without GROUP BY clause</span>
++-------+<br />| Count |<br />+-------+<br />|     5 |<br />+-------+
+   
+mysql&gt; SELECT <span class="color-new">productCode, COUNT(*)</span> FROM products <span class="color-new">GROUP BY productCode</span>;
++-------------+----------+
+| productCode | COUNT(*) |
++-------------+----------+
+| PEC         |        2 |
+| PEN         |        3 |
++-------------+----------+
+ 
+<span class="color-comment">-- Order by COUNT - need to define an alias to be used as reference</span>
+mysql&gt; SELECT <span class="color-new">productCode, COUNT(*) AS count</span> 
+       FROM products 
+       <span class="color-new">GROUP BY productCode</span>
+       ORDER BY <span class="color-new">count</span> DESC;
++-------------+-------+
+| productCode | count |
++-------------+-------+
+| PEN         |     3 |
+| PEC         |     2 |
++-------------+-------+</pre>
+
+<p>Besides <code>COUNT()</code>, there are many other <code>GROUP BY</code> aggregate functions such as <code>AVG()</code>, <code>MAX()</code>, <code>MIN()</code> and <code>SUM()</code>. For example,</p>
+
+<pre class="color-example">
+mysql&gt; SELECT <span class="color-new">MAX(price), MIN(price), AVG(price), STD(price), SUM(quantity)</span>
+       FROM products;
+       <span class="color-comment">-- Without GROUP BY - All rows</span>
++------------+------------+------------+------------+---------------+
+| MAX(price) | MIN(price) | AVG(price) | STD(price) | SUM(quantity) |
++------------+------------+------------+------------+---------------+
+|       1.25 |       0.48 |   0.940000 |   0.371591 |         33000 |
++------------+------------+------------+------------+---------------+
+ 
+mysql&gt; SELECT <span class="color-new">productCode, MAX(price) AS `Highest Price`, MIN(price) AS `Lowest Price`</span>
+       FROM products
+       <span class="color-new">GROUP BY productCode</span>;
++-------------+---------------+--------------+
+| productCode | Highest Price | Lowest Price |
++-------------+---------------+--------------+
+| PEC         |          0.49 |         0.48 |
+| PEN         |          1.25 |         1.23 |
++-------------+---------------+--------------+
+ 
+mysql&gt; SELECT productCode, MAX(price), MIN(price),
+              <span class="color-new">CAST(AVG(price) AS DECIMAL(7,2)) AS `Average`,
+              CAST(STD(price) AS DECIMAL(7,2)) AS `Std Dev`,
+              </span>SUM(quantity)
+       FROM products
+       GROUP BY productCode;
+       <span class="color-comment">-- Use CAST(... AS ...) function to format floating-point numbers</span>
++-------------+------------+------------+---------+---------+---------------+
+| productCode | MAX(price) | MIN(price) | Average | Std Dev | SUM(quantity) |
++-------------+------------+------------+---------+---------+---------------+
+| PEC         |       0.49 |       0.48 |    0.49 |    0.01 |         18000 |
+| PEN         |       1.25 |       1.23 |    1.24 |    0.01 |         15000 |
++-------------+------------+------------+---------+---------+---------------+</pre>
+
+<h5><span class="font-code">HAVING</span> clause</h5>
+
+<p><code>HAVING</code> is similar to <code>WHERE</code>, but it can operate on the <code>GROUP BY</code> aggregate functions; whereas <code>WHERE</code> operates only on columns.</p>
+
+<pre class="color-example">
+mysql&gt; SELECT
+          productCode AS `Product Code`,
+          <span class="color-new">COUNT(*) AS `Count`</span>,
+          CAST(AVG(price) AS DECIMAL(7,2)) AS `Average`
+       FROM products 
+       GROUP BY productCode
+       <span class="color-new">HAVING Count &gt;=3</span>;
+          <span class="color-comment">-- CANNOT use WHERE count &gt;= 3</span>
++--------------+-------+---------+
+| Product Code | Count | Average |
++--------------+-------+---------+
+| PEN          |     3 |    1.24 |
++--------------+-------+---------+</pre>
+
+<h5><span class="font-code">WITH ROLLUP</span></h5>
+
+<p>The <code>WITH ROLLUP</code> clause shows the <em>summary of group summary</em>, e.g.,</p>
+
+<pre class="color-example">
+mysql&gt; SELECT 
+          productCode, 
+          MAX(price), 
+          MIN(price), 
+          CAST(AVG(price) AS DECIMAL(7,2)) AS `Average`,
+          SUM(quantity)
+       FROM products
+       <span class="color-new">GROUP BY</span> productCode
+       <span class="color-new">WITH ROLLUP</span>;        <span class="color-comment">-- Apply aggregate functions to all groups</span>
++-------------+------------+------------+---------+---------------+
+| productCode | MAX(price) | MIN(price) | Average | SUM(quantity) |
++-------------+------------+------------+---------+---------------+
+| PEC         |       0.49 |       0.48 |    0.49 |         18000 |
+| PEN         |       1.25 |       1.23 |    1.24 |         15000 |
+| <span class="color-new">NULL        |       1.25 |       0.48 |    0.94 |         33000</span> |
++-------------+------------+------------+---------+---------------+</pre>
+
+
+<h4>Modifying Data - <span class="font-code">UPDATE</span></h4>
+<p>To modify existing data, use <code>UPDATE ... SET </code> command, with the following syntax:</p>
+
+<pre class="color-syntax">
+UPDATE <em>tableName</em> SET <em>columnName</em> = {<em>value</em>|NULL|DEFAULT}, ...<em> </em>WHERE <em>criteria</em></pre>
+
+<p>For example,</p>
+
+<pre class="color-example">
+<span class="color-comment">-- Increase the price by 10% for all products</span>
+mysql&gt; <strong>UPDATE products SET price = price * 1.1;</strong>
+   
+mysql&gt; <strong>SELECT * FROM products;</strong>
++-----------+-------------+-----------+----------+-------+
+| productID | productCode | name      | quantity | price |
++-----------+-------------+-----------+----------+-------+
+|      1001 | PEN         | Pen Red   |     5000 |  1.35 |
+|      1002 | PEN         | Pen Blue  |     8000 |  1.38 |
+|      1003 | PEN         | Pen Black |     2000 |  1.38 |
+|      1004 | PEC         | Pencil 2B |    10000 |  0.53 |
+|      1005 | PEC         | Pencil 2H |     8000 |  0.54 |
++-----------+-------------+-----------+----------+-------+
+   
+<span class="color-comment">-- Modify selected rows</span>
+mysql&gt; <strong>UPDATE products SET quantity = quantity - 100 WHERE name = 'Pen Red';</strong>
+   
+mysql&gt; <strong>SELECT * FROM products WHERE name = 'Pen Red';</strong>
++-----------+-------------+---------+----------+-------+
+| productID | productCode | name    | quantity | price |
++-----------+-------------+---------+----------+-------+
+|      1001 | PEN         | Pen Red |     4900 |  1.35 |
++-----------+-------------+---------+----------+-------+
+   
+<span class="color-comment">-- You can modify more than one values</span>
+mysql&gt; <strong>UPDATE products SET quantity = quantity + 50, price = 1.23 WHERE name = 'Pen Red';</strong>
+   
+mysql&gt; <strong>SELECT * FROM products WHERE name = 'Pen Red';</strong>
++-----------+-------------+---------+----------+-------+
+| productID | productCode | name    | quantity | price |
++-----------+-------------+---------+----------+-------+
+|      1001 | PEN         | Pen Red |     4950 |  1.23 |
++-----------+-------------+---------+----------+-------+</pre>
+
+<p><strong>CAUTION</strong>: If the <code>WHERE</code> clause is omitted in the <code>UPDATE</code> command, ALL ROWS will be updated. Hence, it is a good practice to issue a <code>SELECT</code> query, using the same criteria, to check the result set before issuing the <code>UPDATE</code>. This also applies to the <code>DELETE</code> statement in the following section.</p>
+
+
+
+
+<h4>Deleting Rows - <span class="font-code">DELETE FROM</span></h4>
+<p>Use the <code>DELELE FROM</code> command to delete row(s) from a table, with the following syntax:</p>
+
+<pre class="color-syntax">
+<span class="color-comment">-- Delete all rows from the table. Use with extreme care! Records are NOT recoverable!!!</span>
+DELETE FROM <em>tableName</em>
+<span class="color-comment">-- Delete only row(s) that meets the <em>criteria</em></span>
+DELETE FROM <em>tableName</em> WHERE <em>criteria</em></pre>
+
+<p>For example,</p>
+
+<pre class="color-example">
+mysql&gt; <strong>DELETE FROM products WHERE name LIKE 'Pencil%';</strong>
+Query OK, 2 row affected (0.00 sec)
+   
+mysql&gt; <strong>SELECT * FROM products;</strong>
++-----------+-------------+-----------+----------+-------+
+| productID | productCode | name      | quantity | price |
++-----------+-------------+-----------+----------+-------+
+|      1001 | PEN         | Pen Red   |     4950 |  1.23 |
+|      1002 | PEN         | Pen Blue  |     8000 |  1.38 |
+|      1003 | PEN         | Pen Black |     2000 |  1.38 |
++-----------+-------------+-----------+----------+-------+
+  
+<span class="color-comment">-- Use this with extreme care, as the deleted records are irrecoverable!</span>
+mysql&gt; <strong>DELETE FROM products;</strong>
+Query OK, 3 rows affected (0.00 sec)
+   
+mysql&gt; <strong>SELECT * FROM products;</strong>
+Empty set (0.00 sec)</pre>
+
+<p>Beware that <code>&quot;DELETE FROM <em>tableName</em></code>&quot; without a <code>WHERE</code> clause deletes ALL records from the table. Even with a <code>WHERE</code> clause, you might have deleted some records unintentionally. It is always advisable to issue a <code>SELECT</code> command with the same <code>WHERE</code> clause to check the result set before issuing the <code>DELETE</code> (and <code>UPDATE</code>).</p>
+
+<h4>Loading/Exporting Data from/to a Text File</h4>
+<p>There are several ways to add data into the database: (a) manually issue the <code>INSERT</code> commands; (b) run the <code>INSERT</code> commands from a script; or (c) load raw data from a file using <code>LOAD DATA</code> or via <code>mysqlimport</code> utility.</p>
+
+<h5><span class="font-code">LOAD DATA LOCAL INFILE ... INTO TABLE ...</span></h5>
+<p>Besides using <code>INSERT </code> commands to insert rows, you could keep your <em>raw data</em> in a text file, and load them into the table via the <code>LOAD DATA</code> command. For example, use a text editor to <span class="color-new">CREATE a NEW FILE</span> called &quot;<code>products_in.csv</code>&quot;, under &quot;<code>d:\myProject</code>&quot; (for Windows) or &quot;<code>Documents</code>&quot; (for Mac), containing the following records, where the values are separated by <code>','</code>. The file extension of &quot;<code>.csv</code>&quot; stands for <em>Comma-Separated Values</em> text file.</p>
+<pre class="color-syntax">
+\N,PEC,Pencil 3B,500,0.52
+\N,PEC,Pencil 4B,200,0.62
+\N,PEC,Pencil 5B,100,0.73
+\N,PEC,Pencil 6B,500,0.47</pre>
+
+<p>You can load the raw data into the <code>products</code> table as follows:</p>
+<pre class="color-example">
+<span class="color-new"><strong>(For Windows)</strong></span>
+<span class="color-comment">-- Need to use forward-slash (instead of back-slash) as directory separator</span>
+mysql&gt; <strong>LOAD DATA LOCAL INFILE 'd:/myProject/products_in.csv' INTO TABLE products
+         COLUMNS TERMINATED BY ','
+         LINES TERMINATED BY '\r\n';</strong>
+ 
+<span class="color-new"><strong>(For Macs)</strong></span>
+mysql&gt; <strong>LOAD DATA LOCAL INFILE '~/Documents/products_in.csv' INTO TABLE products
+         COLUMNS TERMINATED BY ',';</strong></pre>
+
+<pre class="color-example">
+mysql&gt; <strong>SELECT * FROM products;</strong>
++-----------+-------------+-----------+----------+-------+
+| productID | productCode | name      | quantity | price |
++-----------+-------------+-----------+----------+-------+
+|      1007 | PEC         | Pencil 3B |      500 |  0.52 |
+|      1008 | PEC         | Pencil 4B |      200 |  0.62 |
+|      1009 | PEC         | Pencil 5B |      100 |  0.73 |
+|      1010 | PEC         | Pencil 6B |      500 |  0.47 |
++-----------+-------------+-----------+----------+-------+</pre>
+
+<p>Notes:</p>
+<ul>
+<li>You need to provide the path (absolute or relative) and the filename. Use Unix-style forward-slash <code>'/'</code> as the directory separator, instead of Windows-style back-slash <code>'\'</code>.</li>
+<li>The default line delimiter (or end-of-line) is <code>'\n'</code> (Unix-style). If the text file is prepared in Windows, you need to include <code>LINES TERMINATED BY '\r\n'</code>.</li>
+<li>The default column delimiter is &quot;tab&quot; (in a so-called TSV file - Tab-Separated Values). If you use another delimiter, e.g. <code>','</code>, include <code>COLUMNS TERMINATED BY ','</code>.</li>
+<li>You need to use <code>\N</code> for <code>NULL</code>.</li>
+</ul>
+
+<h5><span class="font-code">mysqlimport</span> Utility Program</h5>
+<p>You can also use the <code>mysqlimport</code> utility program to load data from a text file.</p>
+
+<pre class="color-command">
+<span class="color-comment">-- SYNTAX</span>
+&gt; <strong>mysqlimport -u <em>username</em> -p --local <em>databaseName</em> <em>tableName</em>.tsv
+</strong>   <span class="color-comment">-- The raw data must be kept in a TSV (Tab-Separated Values) file with filename the same as tablename</span>
+ 
+<span class="color-comment">-- EXAMPLES
+-- Create a new file called &quot;products.tsv&quot; containing the following record,
+--  and saved under &quot;d:\myProject&quot; (for Windows) or &quot;Documents&quot; (for Mac)
+-- The values are separated by tab (not spaces).</span>
+\N  PEC  Pencil 3B  500  0.52
+\N  PEC  Pencil 4B  200  0.62
+\N  PEC  Pencil 5B  100  0.73
+\N  PEC  Pencil 6B  500  0.47
+
+<span class="color-new"><strong>(For Windows)</strong></span>
+&gt; <strong>cd <span class="color-new"><em>path-to-mysql-bin</em></span></strong>
+&gt; <strong>mysqlimport -u root -p --local southwind d:/myProject/products.tsv</strong>
+
+<span class="color-new"><strong>(For Macs)</strong></span>
+$ <strong>cd /usr/local/mysql/bin</strong>
+$ <strong>./mysqlimport -u root -p --local southwind ~/Documents/products.tsv</strong>
+</pre>
+
+
+<h5><span class="font-code">SELECT ... INTO OUTFILE ...</span></h5>
+
+<p>Complimenting <code>LOAD DATA</code> command, you can use <code>SELECT ... INTO OUTFILE <em>fileName</em> FROM <em>tableName</em></code> to export data from a table to a text file. For example,</p>
+
+<pre class="color-example">
+<span class="color-new"><strong>(For Windows)</strong></span>
+mysql&gt; <strong>SELECT * FROM products INTO OUTFILE 'd:/myProject/products_out.csv' 
+         COLUMNS TERMINATED BY ','
+         LINES TERMINATED BY '\r\n';</strong>
+ 
+<span class="color-new"><strong>(For Macs)</strong></span>
+mysql&gt; <strong>SELECT * FROM products INTO OUTFILE '~/Documents/products_out.csv'
+         COLUMNS TERMINATED BY ',';</strong></pre>
+
+<h4>Running a SQL Script</h4>
+
+<p>Instead of manually entering each of the SQL statements, you can keep many SQL statements in a text file, called SQL script, and run the script. For example, use a programming text editor to prepare the following script and save as &quot;<code>load_products.sql</code>&quot; under &quot;<code>d:\myProject</code>&quot; (for Windows) or &quot;<code>Documents</code>&quot; (for Mac).</p>
+
+<pre class="color-example">DELETE FROM products;
+INSERT INTO products VALUES (2001, 'PEC', 'Pencil 3B', 500, 0.52),
+                            (NULL, 'PEC', 'Pencil 4B', 200, 0.62),
+                            (NULL, 'PEC', 'Pencil 5B', 100, 0.73),
+                            (NULL, 'PEC', 'Pencil 6B', 500, 0.47);
+SELECT * FROM products;</pre>
+
+<p>You can run the script either:</p>
+
+<ol>
+<li>via the &quot;<code>source</code>&quot; command in a MySQL client. For example, to restore the <code>southwind</code> backup earlier:
+
+<pre class="color-example">
+<span class="color-new"><strong>(For Windows)</strong></span>
+mysql&gt; <strong>source d:/myProject/load_products.sql</strong>
+<span class="color-comment">   -- Use Unix-style forward slash (/) as directory separator</span>
+ 
+<span class="color-new"><strong>(For Macs)</strong></span>
+mysql&gt; <strong>source ~/Documents/load_products.sql</strong></pre>
+</li>
+
+<li>via the  &quot;batch mode&quot; of the <code>mysql</code> client program, by re-directing the input from the script:
+
+<pre class="color-example">
+<span class="color-new"><strong>(For Windows)</strong></span>
+&gt; <strong>cd <span class="color-new"><em>path-to-mysql-bin</em></span></strong>
+&gt; <strong>mysql -u root -p southwind &lt; d:\myProject\load_products.sql</strong>
+ 
+<span class="color-new"><strong>(For Macs)</strong></span>
+$ <strong>cd /usr/local/mysql/bin</strong>
+$ ./<strong>mysql -u root -p southwind &lt; ~\Documents\load_products.sql</strong></pre></li>
+</ol>
+
+<h3>More Than One Tables</h3>
+
+<p>Our example so far involves only one table &quot;<code>products</code>&quot;. A practical database contains many <em>related</em> tables.</p>
+<p>Products have suppliers. If each product has one supplier, and each supplier supplies only one product (known as <em>one-to-one relationship</em>), we can simply add the supplier's data (name, address, phone number) into the <code>products</code> table. Suppose that each product has one supplier, and a supplier may supply zero or more products (known as <em>one-to-many</em> relationship). Putting the supplier's data into the <code>products</code> table results in duplication of data. This is because one supplier may supply many products, hence, the same supplier's data appear in many rows. This not only wastes the storage but also easily leads to inconsistency (as all duplicate data must be updated simultaneously). The situation is even more complicated if one product has many suppliers, and each supplier can supply many products, in a <em>many-to-many</em> relationship.</p>
+
+
+<h4>One-To-Many Relationship</h4>
+<p>Suppose that each product has one supplier, and each supplier supplies one or more products. We could create a table called <code>suppliers</code> to store suppliers' data (e.g., name, address and phone number). We  create a column with unique value called <code>supplierID</code> to identify every suppliers. We set <code>supplierID</code> as the <em>primary key</em> for the table <code>suppliers</code> (to ensure uniqueness and facilitate fast search).</p>
+<p> To relate the <code>suppliers</code> table to the <code>products</code> table, we add a new column into the <code>products</code> table - the <code>supplierID</code>. We then set the <code>supplierID</code> column of the <code>products</code> table as a foreign key references the <code>supplierID</code> column of the <code>suppliers</code> table to ensure the so-called <em>referential integrity</em>.</p>
+
+<table class="table-zebra font-code" style="width:40%">
+<tr>
+<th colspan="3" style="text-align:left">Database: southwind<br />Table: suppliers</th>
+</tr>
+<tr>
+<th>supplierID<br />INT</th>
+<th>name<br />VARCHAR(3)</th>
+<th>phone<br />CHAR(8)</th>
+</tr>
+<tr>
+<td><strong>501</strong></td>
+<td>ABC Traders</td>
+<td>88881111</td>
+</tr>
+<tr  class="tr-alt">
+<td><strong>502</strong></td>
+<td>XYZ Company</td>
+<td>88882222</td>
+</tr>
+<tr>
+<td><strong>503</strong></td>
+<td>QQ Corp</td>
+<td>88883333</td>
+</tr>
+</table>
+
+<br />
+
+<table class="table-zebra font-code" style="width:70%">
+<tr>
+<th colspan="6" style="text-align:left">Database: southwind<br />Table: products</th>
+</tr>
+<tr>
+<th>productID<br />INT</th>
+<th>productCode<br />CHAR(3)</th>
+<th>name<br />VARCHAR(30)</th>
+<th>quantity<br />INT</th>
+<th>price<br />DECIMAL(10,2)</th>
+<th>supplierID<br />INT<br />(Foreign Key)</th>
+</tr>
+<tr>
+<td>2001</td>
+<td>PEC</td>
+<td>Pencil 3B</td>
+<td>500</td>
+<td>0.52</td>
+<td><strong>501</strong></td>
+</tr>
+<tr class="tr-alt">
+<td>2002</td>
+<td>PEC</td>
+<td>Pencil 4B</td>
+<td>200</td>
+<td>0.62</td>
+<td><strong>501</strong></td>
+</tr>
+<tr>
+<td>2003</td>
+<td>PEC</td>
+<td>Pencil 5B</td>
+<td>100</td>
+<td>0.73</td>
+<td><strong>501</strong></td>
+</tr>
+<tr class="tr-alt">
+<td>2004</td>
+<td>PEC</td>
+<td>Pencil 6B</td>
+<td>500</td>
+<td>0.47</td>
+<td><strong>502</strong></td>
+</tr>
+</table>
+
+<p>We need to first create the <code>suppliers</code> table, because the <code>products</code> table references the <code>suppliers</code> table. The <code>suppliers</code> table is known as the <em>parent</em> table; while the <code>products</code> table is known as the <em>child</em> table in this relationship.</p>
+
+<pre class="color-example">
+mysql&gt; <strong>USE southwind;</strong>
+   
+mysql&gt; <strong>DROP TABLE IF EXISTS suppliers;</strong>
+   
+mysql&gt; <strong>CREATE TABLE suppliers (
+         supplierID  INT UNSIGNED  NOT NULL AUTO_INCREMENT, 
+         name        VARCHAR(30)   NOT NULL DEFAULT '', 
+         phone       CHAR(8)       NOT NULL DEFAULT '',
+         PRIMARY KEY (supplierID)
+       );</strong>
+   
+mysql&gt; <strong>DESCRIBE suppliers;</strong>
++------------+------------------+------+-----+---------+----------------+
+| Field      | Type             | Null | Key | Default | Extra          |
++------------+------------------+------+-----+---------+----------------+
+| supplierID | int(10) unsigned | NO   | PRI | NULL    | auto_increment |
+| name       | varchar(30)      | NO   |     |         |                |
+| phone      | char(8)          | NO   |     |         |                |
++------------+------------------+------+-----+---------+----------------+
+   
+mysql&gt; <strong>INSERT INTO suppliers VALUE
+          (501, 'ABC Traders', '88881111'), 
+          (502, 'XYZ Company', '88882222'), 
+          (503, 'QQ Corp', '88883333');</strong>
+   
+mysql&gt; <strong>SELECT * FROM suppliers;</strong>
++------------+-------------+----------+
+| supplierID | name        | phone    |
++------------+-------------+----------+
+|        501 | ABC Traders | 88881111 |
+|        502 | XYZ Company | 88882222 |
+|        503 | QQ Corp     | 88883333 |
++------------+-------------+----------+</pre>
+
+<h5><span class="font-code">ALTER TABLE</span></h5>
+
+<p>Instead of deleting and re-creating the <code>products</code> table, we shall use  &quot;<code>ALTER TABLE</code>&quot; to add a new column <code>supplierID</code> into the <code>products</code> table.</p>
+<pre class="color-example">
+mysql&gt; <strong>ALTER TABLE products
+       ADD COLUMN supplierID INT UNSIGNED NOT NULL;</strong>
+Query OK, 4 rows affected (0.13 sec)
+Records: 4  Duplicates: 0  Warnings: 0
+   
+mysql&gt; <strong>DESCRIBE products;</strong>
++-------------+------------------+------+-----+------------+----------------+
+| Field       | Type             | Null | Key | Default    | Extra          |
++-------------+------------------+------+-----+------------+----------------+
+| productID   | int(10) unsigned | NO   | PRI | NULL       | auto_increment |
+| productCode | char(3)          | NO   |     |            |                |
+| name        | varchar(30)      | NO   |     |            |                |
+| quantity    | int(10) unsigned | NO   |     | 0          |                |
+| price       | decimal(10,2)    | NO   |     | 9999999.99 |                |
+| <span class="color-new">supplierID  | int(10) unsigned | NO   |     | NULL       |</span>                |
++-------------+------------------+------+-----+------------+----------------+</pre>
+
+<p>Next, we shall add a <em>foreign key constraint</em> on the <code>supplierID</code> columns of the <code>products</code> child table 
+
+to the <code>suppliers</code> parent table, to ensure that every <code>supplierID</code> in the <code>products</code> table always refers to a <em>valid</em> <code>supplierID</code> in the <code>suppliers</code> table - this is called <em>referential integrity</em>.</p>
+<p>Before we can add the foreign key, we need to set the <code>supplierID</code> of the existing records in the <code>products</code> table to a valid <code>supplierID</code> in the <code>suppliers<span class="color-comment"></span></code> table (say <code>supplierID=501</code>).</p>
+<pre class="color-example">
+<span class="color-comment">-- Set the supplierID of the existing records in &quot;products&quot; table to a VALID supplierID
+--   of &quot;suppliers&quot; table</span>
+mysql&gt; <strong>UPDATE products SET supplierID = 501;</strong>
+ 
+<span class="color-comment">-- Add a foreign key constrain</span>
+mysql&gt; <strong>ALTER TABLE products
+       ADD FOREIGN KEY (supplierID) REFERENCES suppliers (supplierID);</strong>
+ 
+mysql&gt; <strong>DESCRIBE products;</strong>
++-------------+------------------+------+-----+------------+----------------+
+| Field       | Type             | Null | Key | Default    | Extra          |
++-------------+------------------+------+-----+------------+----------------+
+  ......
+| supplierID  | int(10) unsigned | NO   | <span class="color-new">MUL</span> |            |                |
++-------------+------------------+------+-----+------------+----------------+
+ 
+mysql&gt; <strong>UPDATE products SET supplierID = 502 WHERE productID  = 2004;</strong>
+  <span class="color-comment">-- Choose a valid productID</span>
+   
+mysql&gt; <strong>SELECT * FROM products;</strong>
++-----------+-------------+-----------+----------+-------+------------+
+| productID | productCode | name      | quantity | price | supplierID |
++-----------+-------------+-----------+----------+-------+------------+
+|      2001 | PEC         | Pencil 3B |      500 |  0.52 |        501 |
+|      2002 | PEC         | Pencil 4B |      200 |  0.62 |        501 |
+|      2003 | PEC         | Pencil 5B |      100 |  0.73 |        501 |
+|      2004 | PEC         | Pencil 6B |      500 |  0.47 |        502 |
++-----------+-------------+-----------+----------+-------+------------+</pre>
+
+<h5><span class="font-code">SELECT</span> with <span class="font-code">JOIN</span></h5>
+
+<p><code>SELECT</code> command can be used to query and join data from two related tables. For example, to list the product's <code>name</code> (in <code>products</code> table) and supplier's <code>name</code> (in <code>suppliers</code> table), we could join the two table via the two common <code>supplierID</code> columns:</p>
+
+<pre class="color-example">
+<span class="color-comment">-- ANSI style: JOIN ... ON ...</span>
+mysql&gt; <strong>SELECT products.name, price, suppliers.name 
+       FROM products 
+          JOIN suppliers ON products.supplierID = suppliers.supplierID
+       WHERE price &lt; 0.6;</strong>
++-----------+-------+-------------+
+| name      | price | name        |
++-----------+-------+-------------+
+| Pencil 3B |  0.52 | ABC Traders |
+| Pencil 6B |  0.47 | XYZ Company |
++-----------+-------+-------------+
+    <span class="color-comment">-- Need to use products.name and suppliers.name to differentiate the two &quot;names&quot;
+</span> 
+<span class="color-comment">-- Join via WHERE clause (lagacy and not recommended)</span>
+mysql&gt; <strong>SELECT products.name, price, suppliers.name 
+       FROM products, suppliers 
+       WHERE products.supplierID = suppliers.supplierID
+          AND price &lt; 0.6;</strong>
++-----------+-------+-------------+
+| name      | price | name        |
++-----------+-------+-------------+
+| Pencil 3B |  0.52 | ABC Traders |
+| Pencil 6B |  0.47 | XYZ Company |
++-----------+-------+-------------+</pre>
+
+<p>In the above query result, two of the columns have the same heading &quot;<code>name</code>&quot;. We could create <em>aliases</em> for heading<code></code>s.</p>
+<pre class="color-example">
+<span class="color-comment">-- Use aliases for column names for display</span>
+mysql&gt; <strong>SELECT products.name AS `Product Name`, price, suppliers.name AS `Supplier Name` 
+       FROM products 
+          JOIN suppliers ON products.supplierID = suppliers.supplierID
+       WHERE price &lt; 0.6;</strong>
++--------------+-------+---------------+
+| Product Name | price | Supplier Name |
++--------------+-------+---------------+
+| Pencil 3B    |  0.52 | ABC Traders   |
+| Pencil 6B    |  0.47 | XYZ Company   |
++--------------+-------+---------------+
+ 
+<span class="color-comment"></span><span class="color-comment">-- Use aliases for table names too</span>
+mysql&gt; <strong>SELECT p.name AS `Product Name`, p.price, s.name AS `Supplier Name` 
+       FROM products AS p 
+          JOIN suppliers AS s ON p.supplierID = s.supplierID
+       WHERE p.price &lt; 0.6;</strong>
+</pre>
+
+<p>The database diagram is as illustrated. The link indicates a one-to-many relationship between <code>products</code> and <code>suppliers</code>.</p>
+<img class="image-center image-border" src="images/SouthWind_OneToManyEER.png" alt="Database diagram" />
+
+<h4>Many-To-Many Relationship</h4>
+<p>Suppose that a product  has many suppliers; and a supplier supplies many products in a so-called many-to-many relationship. The above solution breaks. You cannot include the <code>supplierID</code> in the <code>products</code> table, as you cannot determine the number of suppliers, and hence, the number of columns needed for the <code>supplierID</code>s. Similarly, you cannot include the <code>productID</code> in the <code>suppliers</code> table, as you cannot determine the number of products.</p>
+<p>To resolve this problem, you need to create a new table, known as a <em>junction table</em> (or <em>joint table</em>), to provide the linkage. Let's call the junction table <code>products_suppliers</code>, as illustrated.</p>
+
+<table class="table-zebra font-code" style="width:40%">
+<tr>
+<th colspan="3" style="text-align:left">Database: southwind<br />Table: products_suppliers</th>
+</tr>
+<tr>
+<th>productID<br />INT<br />(Foreign Key)</th>
+<th>supplierID<br />INT<br />(Foreign Key)</th>
+</tr>
+
+<tr>
+<td>2001</td>
+<td>501</td>
+</tr>
+
+<tr class="tr-alt">
+<td>2002</td>
+<td>501</td>
+</tr>
+
+<tr>
+<td>2003</td>
+<td>501</td>
+</tr>
+
+<tr class="tr-alt">
+<td>2004</td>
+<td>502</td>
+</tr>
+<tr>
+  <td>2001</td>
+  <td>503</td>
+</tr>
+</table>
+<br />
+
+<table class="table-zebra font-code" style="width:40%">
+<tr>
+<th colspan="3" style="text-align:left">Database: southwind<br />Table: suppliers</th>
+</tr>
+<tr>
+  <th>supplierID<br />INT</th>
+  <th>name<br />VARCHAR(30)</th>
+  <th>phone<br />CHAR(8)</th>
+</tr>
+<tr>
+  <td><strong>501</strong></td>
+  <td>ABC Traders</td>
+  <td>88881111</td>
+</tr>
+<tr  class="tr-alt">
+  <td><strong>502</strong></td>
+  <td>XYZ Company</td>
+  <td>88882222</td>
+</tr>
+<tr>
+  <td><strong>503</strong></td>
+  <td>QQ Corp</td>
+  <td>88883333</td>
+</tr>
+</table>
+<br />
+
+<table class="table-zebra font-code"  style="width:60%">
+<tr>
+  <th colspan="5" style="text-align:left">Database: southwind<br />Table: products</th>
+</tr>
+<tr>
+  <th>productID<br />INT</th>
+  <th>productCode<br />CHAR(3)</th>
+  <th>name<br />VARCHAR(30)</th>
+  <th>quantity<br />INT</th>
+  <th>price<br />DECIMAL(10,2)</th>
+</tr>
+<tr>
+  <td><strong>2001</strong></td>
+  <td>PEC</td>
+  <td>Pencil 3B</td>
+  <td>500</td>
+  <td>0.52</td>
+</tr>
+<tr  class="tr-alt">
+  <td><strong>2002</strong></td>
+  <td>PEC</td>
+  <td>Pencil 4B</td>
+  <td>200</td>
+  <td>0.62</td>
+</tr>
+<tr>
+  <td><strong>2003</strong></td>
+  <td>PEC</td>
+  <td>Pencil 5B</td>
+  <td>100</td>
+  <td>0.73</td>
+</tr>
+<tr  class="tr-alt">
+  <td><strong>2004</strong></td>
+  <td>PEC</td>
+  <td>Pencil 6B</td>
+  <td>500</td>
+  <td>0.47</td>
+</tr>
+</table>
+
+<p>Let's create the <code>products_suppliers</code> table.  The primary key of the table consists of two columns: <code>productID</code> and <code>supplierID</code>, as their combination uniquely identifies each rows. This primary key is defined to ensure uniqueness. Two foreign keys are defined to set the constraint to the two parent tables.</p>
+
+<pre class="color-example">
+mysql&gt; <strong>CREATE TABLE products_suppliers (
+         productID   INT UNSIGNED  NOT NULL,
+         supplierID  INT UNSIGNED  NOT NULL,
+                     <span class="color-comment">-- Same data types as the parent tables</span>
+         PRIMARY KEY (productID, supplierID),
+                     <span class="color-comment">-- uniqueness</span>
+         FOREIGN KEY (productID)  REFERENCES products  (productID),
+         FOREIGN KEY (supplierID) REFERENCES suppliers (supplierID)
+       );</strong>
+   
+mysql&gt; <strong>DESCRIBE products_suppliers;</strong>
++------------+------------------+------+-----+---------+-------+
+| Field      | Type             | Null | Key | Default | Extra |
++------------+------------------+------+-----+---------+-------+
+| productID  | int(10) unsigned | NO   | PRI | NULL    |       |
+| supplierID | int(10) unsigned | NO   | PRI | NULL    |       |
++------------+------------------+------+-----+---------+-------+
+  
+mysql&gt; <strong>INSERT INTO products_suppliers VALUES (2001, 501), (2002, 501),
+       (2003, 501), (2004, 502), (2001, 503);</strong>
+<span class="color-comment">-- Values in the foreign-key columns (of the child table) must match 
+--   valid values in the columns they reference (of the parent table)</span>
+   
+mysql&gt; <strong>SELECT * FROM products_suppliers;</strong>
++-----------+------------+
+| productID | supplierID |
++-----------+------------+
+|      2001 |        501 |
+|      2002 |        501 |
+|      2003 |        501 |
+|      2004 |        502 |
+|      2001 |        503 |
++-----------+------------+</pre>
+
+<p>Next, remove the <code>supplierID</code> column from the <code>products</code> table.  (This column was added to establish the one-to-many relationship. It is no longer needed in the many-to-many relationship.)</p>
+<p>Before this column can be removed, you need to remove the foreign key that builds on this column. To remove a key in MySQL, you need to know its constraint name, which was generated by the system. To find the constraint name, issue a &quot;<code>SHOW CREATE TABLE products</code>&quot; and take note of the foreign key's constraint name in the clause &quot;<code>CONSTRAINT constraint_name FOREIGN KEY ....</code>&quot;. You can then drop the foreign key using &quot;<code>ALTER TABLE products DROP FOREIGN KEY <em>constraint_name</em></code>&quot;</p>
+
+<pre class="color-example">
+mysql&gt; <strong>SHOW CREATE TABLE products \G</strong>
+Create Table: CREATE TABLE `products` (
+  `productID`   int(10) unsigned  NOT NULL AUTO_INCREMENT,
+  `productCode` char(3)           NOT NULL DEFAULT '',
+  `name`        varchar(30)       NOT NULL DEFAULT '',
+  `quantity`    int(10) unsigned  NOT NULL DEFAULT '0',
+  `price`       decimal(7,2)      NOT NULL DEFAULT '99999.99',
+  `supplierID`  int(10) unsigned   NOT NULL DEFAULT '501',
+  PRIMARY KEY (`productID`),
+  KEY `supplierID` (`supplierID`),
+  CONSTRAINT <span class="color-new"><strong>`products_ibfk_1`</strong></span> FOREIGN KEY (`supplierID`) 
+     REFERENCES `suppliers` (`supplierID`)
+) ENGINE=InnoDB AUTO_INCREMENT=1006 DEFAULT CHARSET=latin1
+ 
+mysql&gt; <strong>ALTER TABLE products DROP FOREIGN KEY products_ibfk_1;</strong>
+
+mysql&gt; <strong>SHOW CREATE TABLE products \G</strong></pre>
+
+<p>Now, we can remove the column redundant <code>supplierID</code> column.</p>
+<pre class="color-example">
+mysql&gt; <strong>ALTER TABLE products DROP supplierID;</strong>
+ 
+mysql> <strong>DESC products;</strong></pre>
+
+<h5>Querying</h5>
+
+<p>Similarly, we can use <code>SELECT</code> with <code>JOIN</code> to query data from the 3 tables, for examples,</p>
+<pre class="color-example">
+mysql&gt; <strong>SELECT products.name AS `Product Name`, price, suppliers.name AS `Supplier Name`
+       FROM products_suppliers 
+          JOIN products  ON products_suppliers.productID = products.productID
+          JOIN suppliers ON products_suppliers.supplierID = suppliers.supplierID
+       WHERE price &lt; 0.6;</strong>
++--------------+-------+---------------+
+| Product Name | price | Supplier Name |
++--------------+-------+---------------+
+| Pencil 3B    |  0.52 | ABC Traders   |
+| Pencil 3B    |  0.52 | QQ Corp       |
+| Pencil 6B    |  0.47 | XYZ Company   |
++--------------+-------+---------------+
+
+<span class="color-comment">-- Define aliases for tablenames too</span> 
+mysql&gt; <strong>SELECT p.name AS `Product Name`, s.name AS `Supplier Name`
+       FROM products_suppliers AS ps 
+          JOIN products AS p ON ps.productID = p.productID
+          JOIN suppliers AS s ON ps.supplierID = s.supplierID
+       WHERE p.name = 'Pencil 3B';</strong>
++--------------+---------------+
+| Product Name | Supplier Name |
++--------------+---------------+
+| Pencil 3B    | ABC Traders   |
+| Pencil 3B    | QQ Corp       |
++--------------+---------------+
+  
+<span class="color-comment">-- Using WHERE clause to join (legacy and not recommended)</span>
+mysql&gt; <strong>SELECT p.name AS `Product Name`, s.name AS `Supplier Name`
+       FROM products AS p, products_suppliers AS ps, suppliers AS s
+       WHERE p.productID = ps.productID
+          AND ps.supplierID = s.supplierID
+          AND s.name = 'ABC Traders';</strong>
++--------------+---------------+
+| Product Name | Supplier Name |
++--------------+---------------+
+| Pencil 3B    | ABC Traders   |
+| Pencil 4B    | ABC Traders   |
+| Pencil 5B    | ABC Traders   |
++--------------+---------------+</pre>
+
+<p>The database diagram is as follows. Both <code>products</code> and <code>suppliers</code> tables exhibit a one-to-many relationship to the junction table. The many-to-many relationship is supported via the junction table.</p>
+
+<img class="image-center image-border" src="images/SouthWind_ManyToManyEER.png" alt="Database diagram" />
+
+<h4>One-to-one Relationship</h4>
+<p>Suppose that some products have <em>optional</em> data (e.g., photo, comment). Instead of keeping these optional data in the <code>products</code> table, it is more efficient to create another table called <code>product_detail</code>s, and link it to <code>products</code> with a <em>one-to-one relationship</em>, as illustrated.</p>
+
+<img class="image-center image-border" src="images/SouthWind_EER.png" alt="Database diagram" />
+
+<pre class="color-example">
+mysql&gt; <strong>CREATE TABLE product_details (
+          productID  INT UNSIGNED   NOT NULL,
+                     <span class="color-comment">-- same data type as the parent table</span>
+          comment    TEXT  NULL,
+                     <span class="color-comment">-- up to 64KB</span>
+          PRIMARY KEY (productID),
+          FOREIGN KEY (productID) REFERENCES products (productID)
+       );</strong>
+
+mysql&gt; <strong>DESCRIBE product_details;</strong>
++-----------+------------------+------+-----+---------+-------+
+| Field     | Type             | Null | Key | Default | Extra |
++-----------+------------------+------+-----+---------+-------+
+| productID | int(10) unsigned | NO   | PRI | NULL    |       |
+| comment   | text             | YES  |     | NULL    |       |
++-----------+------------------+------+-----+---------+-------+
+
+mysql&gt; <strong>SHOW CREATE TABLE product_details \G</strong>
+*************************** 1. row ***************************
+       Table: product_details
+Create Table: CREATE TABLE `product_details` (
+  `productID`  int(10) unsigned  NOT NULL,
+  `comment`    text,
+  PRIMARY KEY (`productID`),
+  CONSTRAINT `product_details_ibfk_1` FOREIGN KEY (`productID`) REFERENCES `products` (`productID`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1</pre>
+
+<h4>Backup and Restore</h4>
+
+<p><span class="line-heading">Backup:</span> Before we conclude this example, let's run the <code>mysqldump</code> utility program to dump out (backup) the entire <code>southwind</code> database.</p>
+
+<pre class="color-command">
+<span class="color-new"><strong>(For Windows)</strong></span>
+<span class="color-comment">-- Start a NEW &quot;cmd&quot;</span>
+&gt; <strong>cd <span class="color-new"><em>path-to-mysql-bin</em></span></strong>
+&gt; <strong>mysqldump -u root -p --databases southwind &gt; &quot;d:\myProject\backup_southwind.sql&quot;</strong>
+ 
+<span class="color-new"><strong>(For Macs)</strong></span>
+<span class="color-comment">-- Start a NEW &quot;terminal&quot;</span>
+$ <strong>cd /usr/local/mysql/bin</strong>
+$ <strong>./mysqldump -u root -p --databases southwind &gt; ~/Documents/backup_southwind.sql</strong></pre>
+
+<p>Study the output file, which contains <code>CREATE DATABASE</code>, <code>CREATE TABLE</code> and <code>INSERT</code> statements to re-create the tables dumped.</p>
+<p>The SYNTAX for the <code>mysqldump</code> utility program is as follows:</p>
+
+<pre class="color-command">
+<span class="color-comment">-- Dump selected databases with --databases option</span>
+&gt; mysqldump -u <em>username</em> -p --databases <em>database1Name</em> [<em>database2Name</em> ...] &gt; <em>backupFile</em>.sql
+<span class="color-comment">-- Dump all databases in the server with --all-databases option, except mysql.user table (for security)</span>
+&gt; mysqldump -u root -p --all-databases --ignore-table=mysql.user &gt; <em>backupServer</em>.sql
+  
+<span class="color-comment">-- Dump all the tables of a particular database</span>
+&gt; mysqldump -u <em>username</em> -p <em>databaseName</em> &gt; <em>backupFile</em>.sql
+<span class="color-comment">-- Dump selected tables of a particular database</span>
+&gt; mysqldump -u <em>username</em> -p <em>databaseName</em> <em>table1Name</em> [<em>table2Name</em> ...] &gt; <em>backupFile</em>.sql</pre>
+
+<p><span class="line-heading">Restore:</span> The utility <code>mysqldump</code> produces a SQL script (consisting of <code>CREATE TABLE</code> and <code>INSERT</code> commands to re-create the tables and loading their data). You can restore from the backup by running the script either:</p>
+
+<ol>
+<li>via the &quot;<code>source</code>&quot; command in an interactive client. For example, to restore the <code>southwind</code> backup earlier:
+
+<pre class="color-example">
+<span class="color-new"><strong>(For Windows)</strong></span>
+<span class="color-comment">-- Start a MySQL client</span>
+<span class="color-comment"></span>mysql&gt; <strong>source d:/myProject/backup_southwind.sql</strong>
+   <span class="color-comment">-- Provide absolute or relative filename of the script
+   -- Use Unix-style forward slash (/) as path separator</span>
+ 
+<span class="color-new"><strong>(For Macs)</strong></span>
+<span class="color-comment">-- Start a MySQL client</span>
+<span class="color-comment"></span>mysql&gt; <strong>source ~/Documents/backup_southwind.sql</strong></pre></li>
+
+<li>via the  &quot;batch mode&quot; of the <code>mysql</code> client program by re-directing the input from the script:
+<pre class="color-example">
+<span class="color-new"><strong>(For Windows)</strong></span>
+<span class="color-comment">-- Start a NEW &quot;cmd&quot;</span>
+&gt; <strong>cd <span class="color-new"><em>path-to-mysql-bin</em></span></strong>
+&gt; <strong>mysql -u root -p southwind &lt; d:\myProject\backup_southwind.sql</strong>
+ 
+<span class="color-new"><strong>(For Macs)</strong></span>
+<span class="color-comment">-- Start a NEW &quot;terminal&quot;</span>
+$ <strong>cd /usr/local/mysql/bin</strong>
+$ <strong>./mysql -u root -p southwind &lt; ~/Documents/backup_southwind.sql</strong></pre>
+
+</li>
+
+</ol>
+
+<h3>More on Primary Key, Foreign Key and Index</h3>
+
+<h4>Primary Key</h4>
+
+<p>In the relational model, a table shall not contain duplicate rows, because that would create ambiguity in retrieval. To ensure uniqueness, each table should have a column (or a set of columns), called <em>primary key</em>, that uniquely identifies every record of the table. For example, an unique number <code>customerID</code> can be used as the primary key for the <code>customers</code> table; <code>productCode</code> for <code>products</code> table; <code>isbn</code> for <code>books</code> table. A primary key is called a <em>simple key</em> if it is a single column; it is called a <em>composite key</em> if it is made up of several columns. Most RDBMSs build an index on the primary key to facilitate fast search. The primary key is often used to relate to other tables.</p>
+
+<h4>Foreign Key</h4>
+<p>A <em>foreign key</em> of a child table is used to reference the parent table. <em>Foreign key constraint</em> can be imposed to ensure so-called <em>referential integrity</em> - values in the child table must be valid values in the parent table.</p>
+
+<p>We define the foreign key when defining the child table, which references a parent table, as follows:</p>
+
+<pre class="color-syntax">
+<span class="color-comment">-- Child table definition</span>
+CREATE TABLE <em>tableName</em> (
+   ......
+   ......
+   CONSTRAINT <em>constraintName</em> FOREIGN KEY (<em>columName</em>) REFERENCES <em>parentTableName</em> (<em>columnName</em>)
+     [ON DELETE <span class="underline">RESTRICT</span> | CASCADE | SET NULL | NO ACTION]   <span class="color-comment">-- On DELETE reference action</span>
+     [ON UPDATE <span class="underline">RESTRICT</span> | CASCADE | SET NULL | NO ACTION]   <span class="color-comment">-- On UPDATE reference action</span>
+)</pre>
+
+<p>You can specify the <em>reference action</em> for <code>UPDATE</code> and <code>DELETE</code> via the optional <code>ON UPDATE</code> and <code>ON DELETE</code> clauses:</p>
+
+<ol>
+<li><code>RESTRICT</code> (default): disallow <code>DELETE</code> or <code>UPDATE</code> of the parent's row, if there are matching rows in child table.</li>
+<li><code>CASCADE</code>: cascade the <code>DELETE</code> or <code>UPDATE</code> action to the matching rows in the child table.</li>
+<li><code>SET NULL</code>: set the foreign key value in the child table to <code>NULL</code> (if <code>NULL</code> is allowed).</li>
+<li><code>NO ACTION</code>: a SQL term which means no action on the parent's row. Same as <code>RESTRICT</code> in MySQL, which disallows <code>DELETE</code> or <code>UPDATE</code> (do nothing).</li>
+</ol>
+
+<p>Try deleting a record in the <code>suppliers</code> (parent) table that is referenced by <code>products_suppliers</code> (child) table, e.g.,</p>
+
+<pre class="color-example">
+mysql&gt; <strong>SELECT * FROM products_suppliers;</strong>
++-----------+------------+
+| productID | supplierID |
++-----------+------------+
+|      2001 |        <strong>501</strong> |
+|      2002 |        <strong>501</strong> |
+|      2003 |        <strong>501</strong> |
+|      2004 |        502 |
+|      2001 |        503 |
++-----------+------------+
+ 
+<span class="color-comment">-- Try deleting a row from parent table with matching rows in the child table</span>
+mysql&gt; DELETE FROM suppliers WHERE <span class="color-new">supplierID = 501</span>;
+<strong>ERROR 1451 (23000): Cannot delete or update a parent row: a foreign key constraint fails 
+(`southwind`.`products_suppliers`, CONSTRAINT `products_suppliers_ibfk_2` 
+FOREIGN KEY (`supplierID`) REFERENCES `suppliers` (`supplierID`))</strong></pre>
+
+<p>The record cannot be deleted as the default &quot;<code>ON DELETE RESTRICT</code>&quot; constraint was imposed.</p>
+
+<h4>Indexes (or Keys)</h4>
+
+<p>Indexes (or Keys) can be created on selected column(s) to facilitate <em>fast search</em>. Without index, a &quot;<code>SELECT * FROM products WHERE productID=<em>x</em></code>&quot; needs to match with the <code>productID</code> column of all the records in the <code>products</code> table. If <code>productID</code> column is indexed (e.g., using a binary tree), the matching can be greatly improved (via the binary tree search).</p>
+<p>You should index columns which are frequently used in the <code>WHERE</code> clause; and as <code>JOIN</code> columns.</p>
+<p>The drawback about indexing is cost and space. Building and maintaining indexes require computations and memory spaces. Indexes facilitate fast search but deplete the performance on modifying the table (<code>INSERT/UPDATE/DELETE</code>), and need to be justified. Nevertheless, relational databases are typically optimized for queries and retrievals, but NOT for updates.</p>
+<p>In MySQL, the keyword <code>KEY</code> is synonym to <code>INDEX</code>. </p>
+
+<p>In MySQL, indexes can be built on:</p>
+<ol>
+<li>a single column (column-index)</li>
+<li>a set of columns (concatenated-index)</li>
+<li>on unique-value column (<code>UNIQUE INDEX</code> or <code>UNIQUE KEY</code>)</li>
+<li>on a prefix of a column for strings (<code>VARCHAR</code> or <code>CHAR</code>), e.g., first 5 characters.</li>
+  
+</ol>
+
+<p>There can be more than one indexes in a table. Index are automatically built on the primary-key column(s).</p>
+
+<p>You can build index via <code>CREATE TABLE</code>, <code>CREATE INDEX</code> or <code>ALTER TABLE</code>.</p>
+<pre class="color-syntax">
+CREATE TABLE <em>tableName</em> (
+   ......
+   [UNIQUE] INDEX|KEY <em>indexName</em> (<em>columnName</em>, ...),
+      <span class="color-comment">-- The optional keyword UNIQUE ensures that all values in this column are distinct
+      -- KEY is synonym to INDEX</span>
+   ......
+   PRIMAY KEY (<em>columnName</em>, ...)  <span class="color-comment">-- Index automatically built on PRIMARY KEY column</span>
+);
+ 
+CREATE [UNIQUE] INDEX <em>indexName</em> ON <em>tableName</em>(<em>columnName</em>, ...);
+ 
+ALTER TABLE <em>tableName</em> ADD UNIQUE|INDEX|PRIMARY KEY <em>indexName</em> (<em>columnName</em>, ...)
+ 
+SHOW INDEX FROM <em>tableName</em>;</pre>
+
+<h5>Example</h5>
+
+<pre class="color-example">mysql&gt; <strong>CREATE TABLE employees (
+          emp_no      INT UNSIGNED   NOT NULL AUTO_INCREMENT,
+          name        VARCHAR(50)    NOT NULL,
+          gender      ENUM ('M','F') NOT NULL,    
+          birth_date  DATE           NOT NULL,
+          hire_date   DATE           NOT NULL,
+          PRIMARY KEY (emp_no)  <span class="color-comment">-- Index built automatically on primary-key column</span>
+       );</strong>
+ 
+mysql&gt; <strong>DESCRIBE employees;</strong>
++------------+------------------+------+-----+---------+----------------+
+| Field      | Type             | Null | Key | Default | Extra          |
++------------+------------------+------+-----+---------+----------------+
+| emp_no     | int(10) unsigned | NO   | <span class="color-new">PRI</span> | NULL    | auto_increment |
+| name       | varchar(50)      | NO   |     | NULL    |                |
+| gender     | enum('M','F')    | NO   |     | NULL    |                |
+| birth_date | date             | NO   |     | NULL    |                |
+| hire_date  | date             | NO   |     | NULL    |                |
++------------+------------------+------+-----+---------+----------------+
+ 
+mysql&gt; <strong>SHOW INDEX FROM employees \G</strong>
+*************************** 1. row ***************************
+        Table: employees
+   Non_unique: 0
+     Key_name: PRIMARY
+ Seq_in_index: 1
+  Column_name: emp_no
+     .......
+
+mysql&gt; <strong>CREATE TABLE departments (
+         dept_no    CHAR(4)      NOT NULL,
+         dept_name  VARCHAR(40)  NOT NULL,
+         PRIMARY KEY  (dept_no),   <span class="color-comment">-- Index built automatically on primary-key column</span>
+         UNIQUE INDEX (dept_name)  <span class="color-comment">-- Build INDEX on this unique-value column</span>
+       );</strong>
+ 
+mysql&gt; <strong>DESCRIBE departments;</strong>
++-----------+-------------+------+-----+---------+-------+
+| Field     | Type        | Null | Key | Default | Extra |
++-----------+-------------+------+-----+---------+-------+
+| dept_no   | char(4)     | NO   | <span class="color-new">PRI</span> | NULL    |       |
+| dept_name | varchar(40) | NO   | <span class="color-new">UNI</span> | NULL    |       |
++-----------+-------------+------+-----+---------+-------+
+
+mysql&gt; <strong>SHOW INDEX FROM departments \G</strong>
+*************************** 1. row ***************************
+        Table: departments
+   Non_unique: 0
+     Key_name: PRIMARY
+ Seq_in_index: 1
+  Column_name: dept_no
+      .......
+*************************** 2. row ***************************
+        Table: departments
+   Non_unique: 0
+     Key_name: dept_name
+ Seq_in_index: 1
+  Column_name: dept_name
+      .......
+ 
+<span class="color-comment">-- Many-to-many junction table between employees and departments</span>
+mysql&gt; <strong>CREATE TABLE dept_emp (
+         emp_no     INT UNSIGNED  NOT NULL,
+         dept_no    CHAR(4)       NOT NULL,
+         from_date  DATE          NOT NULL,
+         to_date    DATE          NOT NULL,
+         INDEX       (emp_no),          <span class="color-comment">-- Build INDEX on this non-unique-value column</span>
+         INDEX       (dept_no),         <span class="color-comment">-- Build INDEX on this non-unique-value column</span>
+         FOREIGN KEY (emp_no)  REFERENCES employees (emp_no) 
+            ON DELETE CASCADE ON UPDATE CASCADE,
+         FOREIGN KEY (dept_no) REFERENCES departments (dept_no)
+            ON DELETE CASCADE ON UPDATE CASCADE,
+         PRIMARY KEY (emp_no, dept_no)  <span class="color-comment">-- Index built automatically</span>
+     );</strong>
+ 
+mysql&gt; <strong>DESCRIBE dept_emp;</strong>
++-----------+------------------+------+-----+---------+-------+
+| Field     | Type             | Null | Key | Default | Extra |
++-----------+------------------+------+-----+---------+-------+
+| emp_no    | int(10) unsigned | NO   | <span class="color-new">PRI</span> | NULL    |       |
+| dept_no   | char(4)          | NO   | <span class="color-new">PRI</span> | NULL    |       |
+| from_date | date             | NO   |     | NULL    |       |
+| to_date   | date             | NO   |     | NULL    |       |
++-----------+------------------+------+-----+---------+-------+
+ 
+mysql&gt; <strong>SHOW INDEX FROM dept_emp \G</strong>
+*************************** 1. row ***************************
+        Table: dept_emp
+   Non_unique: 0
+     Key_name: PRIMARY
+ Seq_in_index: 1
+  Column_name: emp_no
+     ........ 
+*************************** 2. row ***************************
+        Table: dept_emp
+   Non_unique: 0
+     Key_name: PRIMARY
+ Seq_in_index: 2
+  Column_name: dept_no
+     ........ 
+*************************** 3. row ***************************
+        Table: dept_emp
+   Non_unique: 1
+     Key_name: emp_no
+ Seq_in_index: 1
+  Column_name: emp_no
+     ........ 
+*************************** 4. row ***************************
+        Table: dept_emp
+   Non_unique: 1
+     Key_name: dept_no
+ Seq_in_index: 1
+  Column_name: dept_no
+     ........</pre>
+
+<h3>More SQL</h3>
+
+<h4>Sub-Query</h4>
+<p>Results of one query can be used in another SQL statement. Subquery is useful if more than one tables are involved.</p>
+
+<h5><span class="font-code">SELECT</span> with Subquery</h5>
+
+<p>In the previous many-to-many product sales example, how to find the suppliers that do not supply any product? You can query for the suppliers that supply at least one product in the <code>products_suppliers</code> table, and then query the <code>suppliers</code> table for those that are not in the previous result set.</p>
+
+<pre class="color-example">
+mysql&gt; SELECT suppliers.name from suppliers
+       WHERE suppliers.supplierID
+          NOT IN (<span class="color-new">SELECT DISTINCT supplierID from products_suppliers</span>);</pre>
+
+<p>Can you do this without sub-query?</p>
+
+<p>A subquery may return a scalar, a single column, a single row, or a table. You can use comparison operator (e.g., <code>'='</code>, <code>'&gt;'</code>) on scalar, <code>IN</code> or <code>NOT IN</code> for single row or column, <code>EXISTS</code> or <code>NOT EXIST</code> to test for empty set.</p>
+
+<h5><span class="font-code">INSERT|UPDATE|DELETE</span> with Subquery</h5>
+<p>You can also use a subquery with other SQL statements such as <code>INSERT</code>, <code>DELETE</code>, or <code>UPDATE</code>. For example,</p>
+<pre class="color-example">
+<span class="color-comment">-- Supplier 'QQ Corp' now supplies 'Pencil 6B'</span>
+<span class="color-comment">-- You need to put the SELECT subqueies in parentheses</span>
+mysql&gt; INSERT INTO products_suppliers VALUES (
+          <span class="color-new">(SELECT productID  FROM products  WHERE name = 'Pencil 6B')</span>,
+          <span class="color-new">(SELECT supplierID FROM suppliers WHERE name = 'QQ Corp')</span>);
+ 
+<span class="color-comment">-- Supplier 'QQ Copr' no longer supplies any item</span>
+mysql&gt; DELETE FROM products_suppliers
+       WHERE supplierID = <span class="color-new">(SELECT supplierID FROM suppliers WHERE name = 'QQ Corp')</span>;</pre>
+
+<h4>Working with Date and Time</h4>
+
+<p>Date and time are of particular interest for database applications. This is because business records often carry date/time information (e.g., <code>orderDate</code>, <code>deliveryDate</code>, <code>paymentDate</code>, <code>dateOfBirth</code>), as well as the need to time-stamp the creation and last-update of the records for auditing and security.</p>
+<p>With date/time data types, you can sort the results by date, search for a particular date or a range of dates, calculate the difference between dates, compute a new date by adding/subtracting an interval from a given date.</p>
+
+<h5>Date By Example</h5>
+<p>Let's begin with Date (without Time) with the following example. Take note that date value must be written as a string in the format of <code>'yyyy-mm-dd'</code>, e.g., <code>'2012-01-31'</code>.</p>
+<pre class="color-example">
+<span class="color-comment">-- Create a table 'patients' of a clinic
+</span>mysql&gt; <strong>CREATE TABLE patients (
+          patientID      INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+          name           VARCHAR(30)   NOT NULL DEFAULT '',
+          dateOfBirth    <span class="color-new">DATE</span>          NOT NULL,
+          lastVisitDate  <span class="color-new">DATE</span>          NOT NULL,
+          nextVisitDate  <span class="color-new">DATE</span>          NULL,
+<span class="color-comment">                         -- The 'Date' type contains a date value in 'yyyy-mm-dd'</span>
+          PRIMARY KEY (patientID)
+       );</strong>
+ 
+mysql&gt; <strong>INSERT INTO patients VALUES
+          (1001, 'Ah Teck', '1991-12-31', '2012-01-20', NULL),
+          (NULL, 'Kumar', '2011-10-29', '2012-09-20', NULL),
+          (NULL, 'Ali', '2011-01-30', CURDATE(), NULL);</strong>
+<span class="color-comment">-- Date must be written as 'yyyy-mm-dd'
+-- Function CURDATE() returns today's date</span>
+ 
+mysql&gt; <strong>SELECT * FROM patients;</strong>
++-----------+---------+-------------+---------------+---------------+
+| patientID | name    | dateOfBirth | lastVisitDate | nextVisitDate |
++-----------+---------+-------------+---------------+---------------+
+|      1001 | Ah Teck | 1991-12-31  | 2012-01-20    | NULL          |
+|      1002 | Kumar   | 2011-10-29  | 2012-09-20    | NULL          |
+|      1003 | Ali     | 2011-01-30  | 2012-10-21    | NULL          |
++-----------+---------+-------------+---------------+---------------+
+
+<span class="color-comment">-- Select patients who last visited on a particular range of date
+</span>mysql&gt; <strong>SELECT * FROM patients
+       WHERE lastVisitDate BETWEEN '2012-09-15' AND CURDATE()
+       ORDER BY lastVisitDate;</strong>
++-----------+-------+-------------+---------------+---------------+
+| patientID | name  | dateOfBirth | lastVisitDate | nextVisitDate |
++-----------+-------+-------------+---------------+---------------+
+|      1002 | Kumar | 2011-10-29  | 2012-09-20    | NULL          |
+|      1003 | Ali   | 2011-01-30  | 2012-10-21    | NULL          |
++-----------+-------+-------------+---------------+---------------+
+ 
+<span class="color-comment">-- Select patients who were born in a particular year and sort by birth-month
+-- Function YEAR(<em>date</em>), MONTH(<em>date</em>), DAY(<em>date</em>) returns 
+--   the year, month, day part of the given <em>date</em></span>
+mysql&gt; <strong>SELECT * FROM patients
+       WHERE YEAR(dateOfBirth) = 2011
+       ORDER BY MONTH(dateOfBirth), DAY(dateOfBirth);</strong>
++-----------+-------+-------------+---------------+---------------+
+| patientID | name  | dateOfBirth | lastVisitDate | nextVisitDate |
++-----------+-------+-------------+---------------+---------------+
+|      1003 | Ali   | 2011-01-30  | 2012-10-21    | NULL          |
+|      1002 | Kumar | 2011-10-29  | 2012-09-20    | NULL          |
++-----------+-------+-------------+---------------+---------------+
+ 
+<span class="color-comment"></span><span class="color-comment">-- Select patients whose birthday is today
+</span>mysql&gt; <strong>SELECT * FROM patients
+       WHERE MONTH(dateOfBirth) = MONTH(CURDATE()) 
+          AND DAY(dateOfBirth) = DAY(CURDATE());</strong>
+ 
+<span class="color-comment">-- List the age of patients
+-- Function TIMESTAMPDIFF(<em>unit</em>, <em>start</em>, <em>end</em>) returns the difference in the <em>unit</em> specified</span>
+mysql&gt; <strong>SELECT name, dateOfBirth, TIMESTAMPDIFF(YEAR, dateOfBirth, CURDATE()) AS age 
+       FROM patients
+       ORDER BY age, dateOfBirth;</strong>
++---------+-------------+------+
+| name    | dateOfBirth | age  |
++---------+-------------+------+
+| Kumar   | 2011-10-29  |    0 |
+| Ali     | 2011-01-30  |    1 |
+| Ah Teck | 1991-12-31  |   20 |
++---------+-------------+------+
+ 
+<span class="color-comment">-- List patients whose last visited more than 60 days ago</span>
+mysql&gt; <strong>SELECT name, lastVisitDate FROM patients
+       WHERE TIMESTAMPDIFF(DAY, lastVisitDate, CURDATE()) &gt; 60;</strong>
+<span class="color-comment">-- Functions TO_DAYS(<em>date</em>) converts the <em>date</em> to days</span>
+mysql&gt; <strong>SELECT name, lastVisitDate FROM patients
+       WHERE TO_DAYS(CURDATE()) - TO_DAYS(lastVisitDate) &gt; 60;</strong>
+ 
+<span class="color-comment">-- Select patients 18 years old or younger
+-- Function DATE_SUB(<em>date</em>, INTERVAL <em>x</em> <em>unit</em>) returns the date 
+--   by subtracting the given <em>date</em> by <em>x unit</em>.</span>
+mysql&gt; <strong>SELECT * FROM patients 
+       WHERE dateOfBirth &gt; DATE_SUB(CURDATE(), INTERVAL 18 YEAR);</strong>
+ 
+<span class="color-comment">-- Schedule Ali's next visit to be 6 months from now
+-- Function DATE_ADD(date, INTERVAL <em>x unit</em>) returns the date
+--   by adding the given <em>date</em> by <em>x unit</em></span>
+mysql&gt; <strong>UPDATE patients 
+       SET nextVisitDate = DATE_ADD(CURDATE(), INTERVAL 6 MONTH)
+       WHERE name = 'Ali';</strong></pre>
+
+<h5>Date/Time Functions</h5>
+
+<p>MySQL provides these built-in functions for getting the <em>current</em> date, time and datetime:</p>
+<ul>
+  <li><code>NOW()</code>: returns the current date and time in the format of <code>'YYYY-MM-DD HH:MM:SS'</code>.</li>
+  <li><code>CURDATE()</code> (or <code>CURRENT_DATE()</code>, or <code>CURRENT_DATE</code>): returns the current date in the format of <code>'YYYY-MM-DD'</code>.</li>
+  <li><code>CURTIME()</code> (or <code>CURRENT_TIME()</code>, or <code>CURRENT_TIME</code>): returns the current time in the format of <code>'HH:MM:SS'</code>.</li>
+</ul>
+<p>For examples,</p>
+<pre class="color-example">
+mysql&gt; <strong>select now(), curdate(), curtime();</strong>
++---------------------+------------+-----------+
+| now()               | curdate()  | curtime() |
++---------------------+------------+-----------+
+| 2012-10-19 19:53:20 | 2012-10-19 | 19:53:20  |
++---------------------+------------+-----------+</pre>
+
+<h5>SQL Date/Time Types</h5>
+<p>MySQL provides these date/time data types:</p>
+<ul>
+  <li><strong><code>DATETIME</code></strong>: stores both date and time in the format of <code>'YYYY-MM-DD HH:MM:SS'</code>. The valid range is <code>'1000-01-01 00:00:00'</code> to <code>'9999-12-31 23:59:59'</code>. You can set a value  using the valid format (e.g., <code>'2011-08-15 00:00:00'</code>). You could also apply functions <code>NOW()</code> or <code>CURDATE()</code> (time will be set to <code>'00:00:00'</code>), but not <code>CURTIME()</code>.</li>
+  <li><code><strong>DATE</strong></code>: stores date only in the format of <code>'YYYY-MM-DD'</code>. The range is <code>'1000-01-01'</code> to <code>'9999-12-31'</code>. You could apply <code>CURDATE()</code> or <code>NOW()</code> (the time discarded) on this field.</li>
+  <li><code><strong>TIME</strong></code>: stores time only in the format of <code>'HH:MM:SS'</code>. You could apply <code>CURTIME()</code> or <code>NOW()</code> (the date discarded) for this field.</li>
+  <li><code><strong>YEAR(4|2)</strong></code>: in <code>'YYYY'</code> or <code>'YY'</code>. The range of years is 1901 to 2155. Use <code>DATE</code> type for year outside this range. You could apply <code>CURDATE()</code> to this field (month and day discarded).</li>
+</ul>
+<ul>
+  <li><code><strong>TIMESTAMP</strong></code>: similar to <code>DATETIME</code> but stored the number of seconds since January 1, 1970 UTC (Unix-style). The range is <code>'1970-01-01 00:00:00'</code> to <code>'2037-12-31 23:59:59'</code>.<br />
+    The differences between <code>DATETIME</code> and <code>TIMESTAMP</code> are:
+    <ol>
+      <li>the range,</li>
+      <li>support for time zone,</li>
+      <li><code>TIMESTAMP</code> column could be declared with <code>DEFAULT CURRENT_TIMESTAMP</code> to set the default value to the current date/time. (All other data types' default, including <code>DATETIME</code>, must be a constant and not a function return value). You can also declare a <code>TIMESTAMP</code> column with &quot;<code>ON UPDATE CURRENT_TIMESTAMP</code>&quot; to capture the timestamp of the last update.</li>
+    </ol>
+  </li>
+</ul>
+<p>The date/time value can be entered manually as a string literal (e.g., <code>'2010-12-31 23:59:59'</code> for <code>DATAETIME</code>). MySQL will issue a warning and insert all zeros (e.g., <code>'0000-00-00 00:00:00'</code> for <code>DATAETIME</code>), if the value of date/time to be inserted is invalid or out-of-range. <code>'0000-00-00'</code> is called a &quot;dummy&quot; date.</p>
+
+<h5>More Date/Time Functions</h5>
+
+<p>Reference: MySQL's &quot;Date and Time Functions&quot; @ <a href="http://dev.mysql.com/doc/refman/5.5/en/date-and-time-functions.html">http://dev.mysql.com/doc/refman/5.5/en/date-and-time-functions.html</a>.</p>
+<p>There are many date/time functions:</p>
+
+<ul>
+<li>Extracting part of a date/time: <code>YEAR()</code>, <code>MONTH()</code>, <code>DAY()</code>, <code>HOUR()</code>, <code>MINUTE()</code>, <code>SECOND()</code>, e.g.,
+  <pre class="color-example">
+mysql&gt; SELECT YEAR(NOW()), MONTH(NOW()), DAY(NOW()), HOUR(NOW()), MINUTE(NOW()), SECOND(NOW());
++-------------+--------------+------------+-------------+---------------+---------------+
+| YEAR(NOW()) | MONTH(NOW()) | DAY(NOW()) | HOUR(NOW()) | MINUTE(NOW()) | SECOND(NOW()) |
++-------------+--------------+------------+-------------+---------------+---------------+
+|        2012 |           10 |         24 |          11 |            54 |     45        |
++-------------+--------------+------------+-------------+---------------+---------------+</pre>
+</li>
+
+<li>Extracting information: <code>DAYNAME()</code> (e.g., <code>'Monday'</code>), <code>MONTHNAME()</code> (e.g., <code>'March'</code>), <code>DAYOFWEEK()</code> (1=Sunday, …, 7=Saturday), <code>DAYOFYEAR()</code> (1-366), ...
+  <pre class="color-example">
+mysql&gt; <strong>SELECT DAYNAME(NOW()), MONTHNAME(NOW()), DAYOFWEEK(NOW()), DAYOFYEAR(NOW());</strong>
++----------------+------------------+------------------+------------------+
+| DAYNAME(NOW()) | MONTHNAME(NOW()) | DAYOFWEEK(NOW()) | DAYOFYEAR(NOW()) |
++----------------+------------------+------------------+------------------+
+| Wednesday      | October          |                4 |              298 |
++----------------+------------------+------------------+------------------+</pre>
+</li>
+
+<li>Computing another date/time: <code>DATE_SUB(<em>date</em>, INTERVAL <em>expr</em> <em>unit</em>)</code>, <code>DATE_ADD(<em>date</em>, INTERVAL <em>expr</em> <em>unit</em>)</code>, <code>TIMESTAMPADD(<em>unit</em>, <em>interval</em>, <em>timestamp</em>)</code>, e.g.,
+<pre class="color-example">
+mysql&gt; <strong>SELECT DATE_ADD('2012-01-31', INTERVAL 5 DAY);</strong>
+2012-02-05
+ 
+mysql&gt; <strong>SELECT DATE_SUB('2012-01-31', INTERVAL 2 MONTH);</strong>
+2011-11-30</pre>
+</li>
+
+<li>Computing interval: <code>DATEDIFF(<em>end_date</em>, <em>start_date</em>)</code>, <code>TIMEDIFF(<em>end_time</em>, <em>start_time</em>)</code>, <code>TIMESTAMPDIFF(<em>unit</em>, <em>start_timestamp</em>, <em>end_timestamp</em>)</code>, e.g.,
+  <pre class="color-example">
+mysql&gt; <strong>SELECT DATEDIFF('2012-02-01', '2012-01-28');</strong>
+4
+ 
+mysql&gt; <strong>SELECT TIMESTAMPDIFF(DAY, '2012-02-01', '2012-01-28');</strong>
+-4</pre>
+</li>
+
+<li>Representation: <code>TO_DAYS(<em>date</em>)</code> (days since year 0), <code>FROM_DAYS(<em>day_number</em>)</code>, e.g.,
+<pre class="color-example">
+mysql&gt; <strong>SELECT TO_DAYS('2012-01-31');</strong>
+734898
+ 
+mysql&gt; <strong>SELECT FROM_DAYS(734899);</strong>
+2012-02-01</pre></li>
+
+<li>Formatting: <span class="font-code"><code>DATE_FORMAT(<em>date</em>, <em>formatSpecifier</em>)</code></span>, e.g.,
+  <pre class="color-example">
+mysql&gt; <strong>SELECT DATE_FORMAT('2012-01-01', '%W %D %M %Y');</strong>
+Sunday 1st January 2012
+       <span class="color-comment">-- %W: Weekday name
+       -- %D: Day with suffix
+       -- %M: Month name
+       -- %Y: 4-digit year
+       -- The format specifiers are case-sensitive</span>
+ 
+mysql&gt; <strong>SELECT DATE_FORMAT('2011-12-31 23:59:30', '%W %D %M %Y %r');</strong>
+Saturday 31st December 2011 11:59:30 PM
+       <span class="color-comment">-- %r: Time in 12-hour format with suffix AM/PM</span>
+</pre>
+</li>
+</ul>
+
+
+<h5>Example</h5>
+<ol>
+  <li>Create a table with various date/time columns. Only the <code>TIMESTAMP</code> column can have the <code>DEFAULT CURRENT_TIMESTAMP</code> and <code>ON UPDATE CURRENT_TIMESTAMP</code>.
+    <pre class="color-example">
+mysql&gt; <strong>CREATE TABLE IF NOT EXISTS `datetime_arena` (</strong>
+          <strong>`description`  VARCHAR(50)  DEFAULT NULL,</strong>
+         <strong> `cDateTime`    DATETIME     DEFAULT '0000-00-00 00:00:00',</strong>
+         <strong> `cDate`        DATE         DEFAULT '0000-00-00',</strong>
+         <strong> `cTime`        TIME         DEFAULT '00:00:00',</strong>
+         <strong> `cYear`        YEAR         DEFAULT '0000',</strong>
+         <strong> `cYear2`       YEAR(2)      DEFAULT '00',</strong>
+         <strong> `cTimeStamp`   TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</strong>
+       );
+ 
+mysql&gt; <strong>DESCRIBE `datetime_arena`;</strong>
++-------------+-------------+------+-----+---------------------+-----------------------------+
+| Field       | Type        | Null | Key | Default             | Extra                       |
++-------------+-------------+------+-----+---------------------+-----------------------------+
+| description | varchar(50) | YES  |     | NULL                |                             |
+| cDateTime   | datetime    | YES  |     | 0000-00-00 00:00:00 |                             |
+| cDate       | date        | YES  |     | 0000-00-00          |                             |
+| cTime       | time        | YES  |     | 00:00:00            |                             |
+| cYear       | year(4)     | YES  |     | 0000                |                             |
+| cYear2      | year(2)     | YES  |     | 00                  |                             |
+| cTimeStamp  | timestamp   | NO   |     | CURRENT_TIMESTAMP   | on update CURRENT_TIMESTAMP |
++-------------+-------------+------+-----+---------------------+-----------------------------+</pre>
+
+</li>
+<li>Insert values manually using string literals.
+  <pre class="color-example">
+mysql&gt; <strong>INSERT INTO `datetime_arena` 
+          (`description`, `cDateTime`, `cDate`, `cTime`, `cYear`, `cYear2`)</strong>
+       <strong>VALUES 
+          ('Manual Entry', '2001-01-01 23:59:59', '2002-02-02', '12:30:30', '2004', '05');</strong>
+   
+mysql&gt; <strong>SELECT * FROM `datetime_arena` WHERE description='Manual Entry';</strong>
++--------------+---------------------+------------+----------+-------+--------+---------------------+
+| description  | cDateTime           | cDate      | cTime    | cYear | cYear2 | cTimeStamp          |
++--------------+---------------------+------------+----------+-------+--------+---------------------+
+| Manual Entry | 2001-01-01 23:59:59 | 2002-02-02 | 12:30:30 |  2004 |     05 | 2010-04-08 14:44:37 |
++--------------+---------------------+------------+----------+-------+--------+---------------------+</pre>
+</li>
+
+  <li>Checking the on-update for <code>TIMSTAMP</code>.
+  <pre class="color-example">
+mysql&gt; <strong>UPDATE `datetime_arena` SET `cYear2`='99' WHERE description='Manual Entry';</strong>
+   
+mysql&gt; <strong>SELECT * FROM `datetime_arena` WHERE description='Manual Entry';</strong>
++--------------+---------------------+------------+----------+-------+--------+---------------------+
+| description  | cDateTime           | cDate      | cTime    | cYear | cYear2 | cTimeStamp          |
++--------------+---------------------+------------+----------+-------+--------+---------------------+
+| Manual Entry | 2001-01-01 23:59:59 | 2002-02-02 | 12:30:30 |  2004 |     99 | 2010-04-08 14:44:48 |
++--------------+---------------------+------------+----------+-------+--------+---------------------+</pre>
+</li>
+
+  <li>Insert values using MySQL built-in functions <code>now()</code>, <code>curdate()</code>, <code>curtime()</code>.
+  <pre class="color-example">
+mysql&gt; <strong>INSERT INTO `datetime_arena` 
+          (`description`, `cDateTime`, `cDate`, `cTime`, `cYear`, `cYear2`)</strong>
+       <strong>VALUES 
+          ('Built-in Functions', now(), curdate(), curtime(), now(), now());</strong>
+   
+mysql&gt; <strong>SELECT * FROM `datetime_arena` WHERE description='Built-in Functions';</strong>
++--------------------+---------------------+------------+----------+-------+--------+---------------------+
+| description        | cDateTime           | cDate      | cTime    | cYear | cYear2 | cTimeStamp          |
++--------------------+---------------------+------------+----------+-------+--------+---------------------+
+| Built-in Functions | 2010-04-08 14:45:48 | 2010-04-08 | 14:45:48 |  2010 |     10 | 2010-04-08 14:45:48 |
++--------------------+---------------------+------------+----------+-------+--------+---------------------+</pre>
+</li>
+
+  <li>Insert invalid or out-of-range values. MySQL replaces with all zeros.
+  <pre class="color-example">
+mysql&gt; <strong>INSERT INTO `datetime_arena`
+          (`description`, `cDateTime`, `cDate`, `cTime`, `cYear`, `cYear2`)</strong>
+       <strong>VALUES 
+          ('Error Input', '2001-13-31 23:59:59', '2002-13-31', '12:61:61', '99999', '999');</strong>
+   
+mysql&gt; <strong>SELECT * FROM `datetime_arena` WHERE description='Error Input';</strong>
++-------------+---------------------+------------+----------+-------+--------+---------------------+
+| description | cDateTime           | cDate      | cTime    | cYear | cYear2 | cTimeStamp          |
++-------------+---------------------+------------+----------+-------+--------+---------------------+
+| Error Input | 0000-00-00 00:00:00 | 0000-00-00 | 00:00:00 |  0000 |     00 | 2010-04-08 14:46:10 |
++-------------+---------------------+------------+----------+-------+--------+---------------------+</pre>
+</li>
+
+  <li>An useful built-in function <code>INTERVAL</code> can be used to compute a future date, e.g.,
+  <pre class="color-example">
+mysql&gt; <strong>SELECT `cDate`, `cDate` + INTERVAL 30 DAY, `cDate` + INTERVAL 1 MONTH FROM `datetime_arena`;</strong>
++------------+---------------------------+----------------------------+
+| cDate      | `cDate` + INTERVAL 30 DAY | `cDate` + INTERVAL 1 MONTH |
++------------+---------------------------+----------------------------+
+| 2002-02-02 | 2002-03-04                | 2002-03-02                 |
+| 2010-04-08 | 2010-05-08                | 2010-05-08                 |
+| 0000-00-00 | NULL                      | NULL                       |
++------------+---------------------------+----------------------------+</pre>
+</li>
+</ol>
+
+<h4>View</h4>
+<p>A view is a <em>virtual table</em> that contains no physical data. It provide an alternative way to look at the data.</p>
+
+<h5>Example</h5>
+
+<pre class="color-example">
+<span class="color-comment">-- Define a VIEW called supplier_view from products, suppliers and products_suppliers tables</span>
+mysql&gt; <strong><span class="color-new">CREATE VIEW supplier_view
+       AS</span>
+       SELECT suppliers.name as `Supplier Name`, products.name as `Product Name`
+       FROM products 
+          JOIN suppliers ON products.productID = products_suppliers.productID
+          JOIN products_suppliers ON suppliers.supplierID = products_suppliers.supplierID;</strong>
+ 
+<span class="color-comment">-- You can treat the VIEW defined like a normal table</span>
+mysql&gt; SELECT * FROM supplier_view;
++---------------+--------------+
+| Supplier Name | Product Name |
++---------------+--------------+
+| ABC Traders   | Pencil 3B    |
+| ABC Traders   | Pencil 4B    |
+| ABC Traders   | Pencil 5B    |
+| XYZ Company   | Pencil 6B    |
++---------------+--------------+
+ 
+mysql&gt; <strong>SELECT * FROM <span class="color-new">supplier_view</span> WHERE `Supplier Name` LIKE 'ABC%';</strong>
++---------------+--------------+
+| Supplier Name | Product Name |
++---------------+--------------+
+| ABC Traders   | Pencil 3B    |
+| ABC Traders   | Pencil 4B    |
+| ABC Traders   | Pencil 5B    |
++---------------+--------------+</pre>
+
+<h5>Example</h5>
+
+<pre class="color-example">
+mysql&gt; <strong>DROP VIEW IF EXISTS patient_view;</strong>
+  
+mysql&gt; <strong><span class="color-new">CREATE VIEW patient_view
+       AS</span>
+       SELECT 
+          patientID AS ID, 
+          name AS Name, 
+          dateOfBirth AS DOB,
+          TIMESTAMPDIFF(YEAR, dateOfBirth, NOW()) AS Age
+       FROM patients
+       ORDER BY Age, DOB;</strong>
+ 
+mysql&gt; <strong>SELECT * FROM patient_view WHERE Name LIKE 'A%';</strong>
++------+---------+------------+------+
+| ID   | Name    | DOB        | Age  |
++------+---------+------------+------+
+| 1003 | Ali     | 2011-01-30 |    1 |
+| 1001 | Ah Teck | 1991-12-31 |   20 |
++------+---------+------------+------+
+  
+mysql&gt; <strong>SELECT * FROM patient_view WHERE age &gt;= 18;</strong>
++------+---------+------------+------+
+| ID   | Name    | DOB        | Age  |
++------+---------+------------+------+
+| 1001 | Ah Teck | 1991-12-31 |   20 |
++------+---------+------------+------+</pre>
+
+<h4>Transactions</h4>
+<p>A <em>atomic transaction</em> is a set of SQL statements that either ALL succeed or ALL fail. Transaction is important to ensure that there is no <em>partial</em> update to the database, given an atomic of SQL statements. Transactions are carried out via <code>COMMIT</code> and <code>ROLLBACK</code>.</p>
+
+<h5>Example</h5>
+<pre class="color-example">
+mysql&gt; CREATE TABLE accounts (
+          name     VARCHAR(30),
+          balance  DECIMAL(10,2)
+       );
+ 
+mysql&gt; INSERT INTO accounts VALUES ('Paul', 1000), ('Peter', 2000);
+mysql&gt; SELECT * FROM accounts;
++-------+---------+
+| name  | balance |
++-------+---------+
+| Paul  | 1000.00 |
+| Peter | 2000.00 |
++-------+---------+
+ 
+<span class="color-comment">-- Transfer money from one account to another account</span>
+mysql&gt; <span class="color-new">START TRANSACTION;</span>
+mysql&gt; UPDATE accounts SET balance = balance - 100 WHERE name = 'Paul';
+mysql&gt; UPDATE accounts SET balance = balance + 100 WHERE name = 'Peter';
+mysql&gt; <span class="color-new">COMMIT;</span>     <span class="color-comment">-- Commit the transaction and end transaction</span>
+mysql&gt; SELECT * FROM accounts;
++-------+---------+
+| name  | balance |
++-------+---------+
+| Paul  |  900.00 |
+| Peter | 2100.00 |
++-------+---------+
+ 
+mysql&gt; <span class="color-new">START TRANSACTION;</span>
+mysql&gt; UPDATE accounts SET balance = balance - 100 WHERE name = 'Paul';
+mysql&gt; UPDATE accounts SET balance = balance + 100 WHERE name = 'Peter';
+mysql&gt; <span class="color-new">ROLLBACK;</span>    <span class="color-comment">-- Discard all changes of this transaction and end Transaction</span>
+mysql&gt; SELECT * FROM accounts;
++-------+---------+
+| name  | balance |
++-------+---------+
+| Paul  |  900.00 |
+| Peter | 2100.00 |
++-------+---------+</pre>
+
+<p>If you start another <code>mysql</code> client and do a <code>SELECT</code> during the transaction (before the commit or rollback), you will not see the changes.</p>
+
+<p>Alternatively, you can also disable the so-called <code>autocommit</code> mode, which is set by default and commit every single SQL statement.</p>
+
+<pre class="color-example">
+<span class="color-comment">-- Disable autocommit by setting it to false (0)</span>
+mysql&gt; <span class="color-new">SET autocommit = 0;</span>
+mysql&gt; UPDATE accounts SET balance = balance - 100 WHERE name = 'Paul';
+mysql&gt; UPDATE accounts SET balance = balance + 100 WHERE name = 'Peter';
+mysql&gt; <span class="color-new">COMMIT;</span>
+mysql&gt; SELECT * FROM accounts;
++-------+---------+
+| name  | balance |
++-------+---------+
+| Paul  |  800.00 |
+| Peter | 2200.00 |
++-------+---------+
+ 
+mysql&gt; UPDATE accounts SET balance = balance - 100 WHERE name = 'Paul';
+mysql&gt; UPDATE accounts SET balance = balance + 100 WHERE name = 'Peter';
+mysql&gt; <span class="color-new">ROLLBACK;</span>
+mysql&gt; SELECT * FROM accounts;
++-------+---------+
+| name  | balance |
++-------+---------+
+| Paul  |  800.00 |
+| Peter | 2200.00 |
++-------+---------+
+ 
+mysql&gt; <span class="color-new">SET autocommit = 1;</span>   <span class="color-comment">-- Enable autocommit</span></pre>
+
+<p>A <em>transaction</em> groups a set of operations into a unit that meets the ACID test:</p>
+<ol>
+<li>Atomicity: If all the operations succeed, changes are <em>committed</em> to the database. If any of the operations fails, the entire transaction is <em>rolled back</em>, and no change is made to the database. In other words, there is no partial update.</li>
+<li>Consistency: A transaction transform the database from one consistent state to another consistent state.</li>
+<li>Isolation: Changes to a transaction are not visible to another transaction until they are committed.</li>
+<li>Durability: Committed changes are durable and never lost.</li>
+</ol>
+
+<h4>User Variables</h4>
+
+<p>In MySQL, you can define user variables via:</p>
+<ol>
+<li><code>@varname :=value</code> in a <code>SELECT</code> command, or</li>
+<li><code>SET @varname := value</code> or <code>SET @varname = value</code> command.</li>
+</ol>
+
+<p>For examples,</p>
+<pre class="color-example">
+mysql&gt; SELECT <strong>@ali_dob := dateOfBirth</strong> FROM patients WHERE name = 'Ali';
+mysql&gt; SELECT name WHERE dateOfBirth &lt; <strong>@ali_dob</strong>;
+ 
+mysql&gt; <strong>SET @today := CURDATE()</strong>;
+mysql&gt; SELECT name FROM patients WHERE nextVisitDate = <strong>@today</strong>;</pre>
+
+<h3>More on <span class="font-code">JOIN</span></h3>
+
+<h4><span class="font-code">INNER JOIN</span></h4>
+<p>In an  inner join of two tables, each row of the first table is combined (joined) with every row of second table. Suppose that there are <em>n1</em> rows in the first table and <em>n2</em> rows in the second table, <code>INNER JOIN</code> produces all combinations of <em>n1</em>&times;<em>n2</em> rows - it is known as <em>Cartesian Product</em> or <em>Cross Product</em>.</p>
+
+<h5>Example</h5>
+
+<pre class="color-example">
+mysql&gt; <strong>DROP TABLE IF EXISTS t1, t2;</strong>
+ 
+mysql&gt; <strong>CREATE TABLE t1 (
+          id      INT PRIMARY KEY,
+          `desc`  VARCHAR(30)
+       );</strong>
+<span class="color-comment">-- `desc` is a reserved word - must be back-quoted</span>
+ 
+mysql&gt; <strong>CREATE TABLE t2 (
+          id      INT PRIMARY KEY,
+          `desc`  VARCHAR(30)
+       );</strong>
+ 
+mysql&gt; <strong>INSERT INTO t1 VALUES
+         (1, 'ID 1 in t1'),
+         (2, 'ID 2 in t1'),
+         (3, 'ID 3 in t1');</strong>
+
+mysql&gt; <strong>INSERT INTO t2 VALUES
+         (2, 'ID 2 in t2'),
+         (3, 'ID 3 in t2'),
+         (4, 'ID 4 in t2');</strong>
+ 
+mysql&gt; <strong>SELECT * FROM t1;</strong>
++----+------------+
+| id | desc       |
++----+------------+
+|  1 | ID 1 in t1 |
+|  2 | ID 2 in t1 |
+|  3 | ID 3 in t1 |
++----+------------+
+ 
+mysql&gt; <strong>SELECT * FROM t2;</strong>
++----+------------+
+| id | desc       |
++----+------------+
+|  2 | ID 2 in t2 |
+|  3 | ID 3 in t2 |
+|  4 | ID 4 in t2 |
++----+------------+
+ 
+mysql&gt; <strong>SELECT * 
+       <span class="color-new">FROM t1 INNER JOIN t2</span>;</strong>
++----+------------+----+------------+
+| id | desc       | id | desc       |
++----+------------+----+------------+
+|  1 | ID 1 in t1 |  2 | ID 2 in t2 |
+|  2 | ID 2 in t1 |  2 | ID 2 in t2 |
+|  3 | ID 3 in t1 |  2 | ID 2 in t2 |
+|  1 | ID 1 in t1 |  3 | ID 3 in t2 |
+|  2 | ID 2 in t1 |  3 | ID 3 in t2 |
+|  3 | ID 3 in t1 |  3 | ID 3 in t2 |
+|  1 | ID 1 in t1 |  4 | ID 4 in t2 |
+|  2 | ID 2 in t1 |  4 | ID 4 in t2 |
+|  3 | ID 3 in t1 |  4 | ID 4 in t2 |
++----+------------+----+------------+
+<span class="color-comment">-- SELECT all columns in t1 and t2 (*)
+-- INNER JOIN produces ALL combinations of rows in t1 and t2</span>
+</pre>
+
+<p>You can impose constrain by using the <code>ON</code> clause, for example,</p>
+<pre class="color-example">
+mysql&gt; <strong>SELECT *
+       FROM t1 INNER JOIN t2 ON t1.id = t2.id;</strong>
++----+------------+----+------------+
+| id | desc       | id | desc       |
++----+------------+----+------------+
+|  2 | ID 2 in t1 |  2 | ID 2 in t2 |
+|  3 | ID 3 in t1 |  3 | ID 3 in t2 |
++----+------------+----+------------+</pre>
+
+<p>Take note that the following are equivalent:</p>
+<pre class="color-example">
+mysql&gt; <strong>SELECT *
+       FROM t1 INNER JOIN t2 ON t1.id = t2.id;</strong>
+mysql&gt; <strong>SELECT *
+       FROM t1 JOIN t2 ON t1.id = t2.id;</strong>        <span class="color-comment">-- default JOIN is INNER JOIN</span>
+mysql&gt; <strong>SELECT *
+       FROM t1 CROSS JOIN t2 ON t1.id = t2.id;</strong>  <span class="color-comment">-- Also called CROSS JOIN</span>
+ 
+<span class="color-comment">-- You can use USING clause if the join-columns have the same name</span>
+mysql&gt; <strong>SELECT *
+       FROM t1 INNER JOIN t2 USING (id);</strong>
++----+------------+------------+
+| id | desc       | desc       |
++----+------------+------------+
+|  2 | ID 2 in t1 | ID 2 in t2 |
+|  3 | ID 3 in t1 | ID 3 in t2 |
++----+------------+------------+
+   <span class="color-comment">-- Only 3 columns in the result set, instead of 4 columns with ON clause</span>
+ 
+mysql&gt; <strong>SELECT *
+       FROM t1 INNER JOIN t2 WHERE t1.id = t2.id;</strong>  <span class="color-comment">-- Use WHERE instead of ON</span>
+mysql&gt; <strong>SELECT *
+       FROM t1, t2 WHERE t1.id = t2.id;</strong>            <span class="color-comment">-- Use &quot;commas&quot; operator to join</span></pre>
+
+
+<h4><span class="font-code"><span class="font-code">OUTER JOIN</span> - LEFT JOIN</span> and <span class="font-code">RIGHT JOIN</span></h4>
+
+<p><code>INNER JOIN</code> with constrain (<code>ON</code> or <code>USING</code>) produces rows that are found in both tables. On the other hand, <code>OUTER JOIN</code> can produce rows that are in one table, but not in another table. There are two kinds of <code>OUTER JOIN</code>s: <code>LEFT JOIN</code> produces rows that are in the left table, but may not in the right table; whereas <code>RIGHT JOIN</code> produces rows that are in the right table but may not in the left table.</p>
+<p>In a <code>LEFT JOIN</code>, when a row in the left table does not match with the right table, it is still selected but by combining with a &quot;fake&quot; record of all <code>NULL</code>s for the right table.</p>
+
+<pre class="color-example">
+mysql&gt; <strong>SELECT *
+       FROM t1 <span class="color-new">LEFT JOIN</span> t2 <span class="color-new">ON</span> t1.id = t2.id;</strong>
++----+------------+------+------------+
+| id | desc       | id   | desc       |
++----+------------+------+------------+
+|  <span class="color-new">1 | ID 1 in t1 | NULL | NULL</span>       |
+|  2 | ID 2 in t1 |    2 | ID 2 in t2 |
+|  3 | ID 3 in t1 |    3 | ID 3 in t2 |
++----+------------+------+------------+
+ 
+mysql&gt; <strong>SELECT *
+       FROM t1 <span class="color-new">LEFT JOIN</span> t2 <span class="color-new">USING</span> (id);</strong>
++----+------------+------------+
+| id | desc       | desc       |
++----+------------+------------+
+|  <span class="color-new">1 | ID 1 in t1 | NULL</span>       |
+|  2 | ID 2 in t1 | ID 2 in t2 |
+|  3 | ID 3 in t1 | ID 3 in t2 |
++----+------------+------------+
+ 
+mysql&gt; <strong>SELECT *
+       FROM t1 <span class="color-new">RIGHT JOIN</span> t2 ON t1.id = t2.id;</strong>
++------+------------+----+------------+
+| id   | desc       | id | desc       |
++------+------------+----+------------+
+|    2 | ID 2 in t1 |  2 | ID 2 in t2 |
+|    3 | ID 3 in t1 |  3 | ID 3 in t2 |
+| <span class="color-new">NULL | NULL       |  4 | ID 4 in t2</span> |
++------+------------+----+------------+
+ 
+mysql&gt; <strong>SELECT *
+       FROM t1 <span class="color-new">RIGHT JOIN</span> t2 USING (id);</strong>
++----+------------+------------+
+| id | desc       | desc       |
++----+------------+------------+
+|  2 | ID 2 in t2 | ID 2 in t1 |
+|  3 | ID 3 in t2 | ID 3 in t1 |
+| <span class="color-new"> 4 | ID 4 in t2 | NULL</span>       |
++----+------------+------------+</pre>
+
+<p>As the result, <code>LEFT JOIN</code> ensures that the result set contains every row on the left table. This is important, as in some queries, you are interested to have result on every row on the left table, with no match in the right table, e.g., searching for items without supplier. For example,</p>
+
+<pre class="color-example">
+mysql&gt; <strong>SELECT t1.id, t1.desc
+       FROM t1 LEFT JOIN t2 USING (id)
+       WHERE <span class="color-new">t2.id IS NULL</span>;</strong>
++----+------------+
+| id | desc       |
++----+------------+
+|  1 | ID 1 in t1 |
++----+------------+</pre>
+
+<p>Take note that the followings are equivalent:</p>
+<pre class="color-example">mysql&gt; <strong>SELECT *
+       FROM t1 <span class="color-new">LEFT JOIN</span> t2 ON t1.id = t2.id;</strong>
+mysql&gt; <strong>SELECT *
+       FROM t1 <span class="color-new">LEFT OUTER JOIN</span> t2 ON t1.id = t2.id;</strong>
+ 
+mysql&gt; <strong>SELECT *
+       FROM t1 <span class="color-new">LEFT JOIN</span> t2 <span class="color-new">USING (id)</span>;</strong>  <span class="color-comment">-- join-columns have same name</span>
++----+------------+------------+
+| id | desc       | desc       |
++----+------------+------------+
+|  1 | ID 1 in t1 | NULL       |
+|  2 | ID 2 in t1 | ID 2 in t2 |
+|  3 | ID 3 in t1 | ID 3 in t2 |
++----+------------+------------+
+ 
+<span class="color-comment">-- WHERE clause CANNOT be used on OUTER JOIN</span>
+mysql&gt; <strong>SELECT *
+       FROM t1 <span class="color-new">LEFT JOIN</span> t2 <span class="color-new">WHERE</span> t1.id = t2.id;</strong>
+ERROR 1064 (42000): You have an error in your SQL syntax;</pre>
+
+<h3>Exercises</h3>
+
+<h4>Rental System</h4>
+
+<p>Peter runs a small car rental company with 10 cars and 5 trucks. He engages you to design a web portal to put his operation online.</p>
+<p>For the initial phase, the web portal shall provide these basic functions:</p>
+<ol>
+<li>Maintaining the records of the vehicles and customers.</li>
+<li>Inquiring about the availability of vehicle, and</li>
+<li>Reserving a vehicle for rental.</li></ol>
+
+<p>A customer record contains his/her name, address and phone number.</p>
+<p>A vehicle, identified by the vehicle registration number, can be rented on a daily basis. The  rental rate is different for different vehicles.  There is a discount of 20% for rental of 7 days or more.</p>
+<p>A customer can rental a vehicle from a start date to an end date. A special customer discount, ranging from 0-50%, can be given to preferred customers.</p>
+<h5>Database</h5>
+<p>The initial database contains 3 tables: <code>vehicles</code>, <code>customers</code>, and <code>rental_records</code>. The <code>rental_records</code> is a <em>junction table</em> supporting many-to-many relationship between <code>vehicles</code> and <code>customers</code>.</p>
+
+<pre class="color-example">DROP DATABASE IF EXISTS `rental_db`;
+CREATE DATABASE `rental_db`;
+USE `rental_db`;
+ 
+<span class="color-comment">-- Create `vehicles` table</span>
+DROP TABLE IF EXISTS `vehicles`;
+CREATE TABLE `vehicles` (
+   `veh_reg_no`  VARCHAR(8)    NOT NULL,
+   `category`    ENUM('car', 'truck')  NOT NULL DEFAULT 'car',  <span class="color-comment">
+                 -- Enumeration of one of the items in the list</span>
+   `brand`       VARCHAR(30)   NOT NULL DEFAULT '',
+   `desc`        VARCHAR(256)  NOT NULL DEFAULT '',
+                 <span class="color-comment">-- desc is a keyword (for descending) and must be back-quoted</span>
+   `photo`       BLOB          NULL,   <span class="color-comment">-- binary large object of up to 64KB</span>
+                 <span class="color-comment">-- to be implemented later</span>
+   `daily_rate`  DECIMAL(6,2)  NOT NULL DEFAULT 9999.99,
+                 <span class="color-comment">-- set default to max value</span>
+   PRIMARY KEY (`veh_reg_no`),
+   INDEX (`category`)  <span class="color-comment">-- Build index on this column for fast search</span>
+) ENGINE=InnoDB;
+   <span class="color-comment">-- MySQL provides a few ENGINEs.
+   -- The InnoDB Engine supports foreign keys and transactions</span>
+DESC `vehicles`;
+SHOW CREATE TABLE `vehicles` \G
+SHOW INDEX FROM `vehicles` \G
+ 
+<span class="color-comment">-- Create `customers` table</span>
+DROP TABLE IF EXISTS `customers`;
+CREATE TABLE `customers` (
+   `customer_id`  INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+                  <span class="color-comment">-- Always use INT for AUTO_INCREMENT column to avoid run-over</span>
+   `name`         VARCHAR(30)   NOT NULL DEFAULT '',
+   `address`      VARCHAR(80)   NOT NULL DEFAULT '',
+   `phone`        VARCHAR(15)   NOT NULL DEFAULT '',
+   `discount`     DOUBLE        NOT NULL DEFAULT 0.0,
+   PRIMARY KEY (`customer_id`),
+   UNIQUE INDEX (`phone`),  <span class="color-comment">-- Build index on this unique-value column</span>
+   INDEX (`name`)           <span class="color-comment">-- Build index on this column</span>
+) ENGINE=InnoDB;
+DESC `customers`;
+SHOW CREATE TABLE `customers` \G
+SHOW INDEX FROM `customers` \G
+ 
+<span class="color-comment">-- Create `rental_records` table</span>
+DROP TABLE IF EXISTS `rental_records`;
+CREATE TABLE `rental_records` (
+   `rental_id`    INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+   `veh_reg_no`   VARCHAR(8)    NOT NULL, 
+   `customer_id`  INT UNSIGNED  NOT NULL,
+   `start_date`   DATE          NOT NULL DEFAULT '0000-00-00',
+   `end_date`     DATE          NOT NULL DEFAULT '0000-00-00',
+   `lastUpdated`  TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      <span class="color-comment">-- Keep the created and last updated timestamp for auditing and security</span>
+   PRIMARY KEY (`rental_id`),
+   FOREIGN KEY (`customer_id`) REFERENCES `customers` (`customer_id`)
+      ON DELETE RESTRICT ON UPDATE CASCADE,
+      <span class="color-comment">-- Disallow deletion of parent record if there are matching records here
+      -- If parent record (customer_id) changes, update the matching records here</span>
+   FOREIGN KEY (`veh_reg_no`) REFERENCES `vehicles` (`veh_reg_no`)
+      ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB;
+DESC `rental_records`;
+SHOW CREATE TABLE `rental_records` \G
+SHOW INDEX FROM `rental_records` \G
+ 
+<span class="color-comment">-- Inserting test records</span>
+INSERT INTO `vehicles` VALUES
+   ('SBA1111A', 'car', 'NISSAN SUNNY 1.6L', '4 Door Saloon, Automatic', NULL, 99.99),
+   ('SBB2222B', 'car', 'TOYOTA ALTIS 1.6L', '4 Door Saloon, Automatic', NULL, 99.99),
+   ('SBC3333C', 'car', 'HONDA CIVIC 1.8L',  '4 Door Saloon, Automatic', NULL, 119.99),
+   ('GA5555E', 'truck', 'NISSAN CABSTAR 3.0L',  'Lorry, Manual ', NULL, 89.99),
+   ('GA6666F', 'truck', 'OPEL COMBO 1.6L',  'Van, Manual', NULL, 69.99);
+   <span class="color-comment">-- No photo yet, set to NULL</span>
+SELECT * FROM `vehicles`;
+ 
+INSERT INTO `customers` VALUES
+   (1001, 'Tan Ah Teck', '8 Happy Ave', '88888888', 0.1),
+   (NULL, 'Mohammed Ali', '1 Kg Java', '99999999', 0.15),
+   (NULL, 'Kumar', '5 Serangoon Road', '55555555', 0),
+   (NULL, 'Kevin Jones', '2 Sunset boulevard', '22222222', 0.2);
+SELECT * FROM `customers`;
+ 
+INSERT INTO `rental_records` VALUES
+  (NULL, 'SBA1111A', 1001, '2012-01-01', '2012-01-21', NULL),
+  (NULL, 'SBA1111A', 1001, '2012-02-01', '2012-02-05', NULL),
+  (NULL, 'GA5555E',  1003, '2012-01-05', '2012-01-31', NULL),
+  (NULL, 'GA6666F',  1004, '2012-01-20', '2012-02-20', NULL);
+SELECT * FROM `rental_records`;</pre>
+
+<h5>Exercises</h5>
+
+<ol>
+<li>Customer <code>'Tan Ah Teck'</code> has rented <code>'SBA1111A'</code> from today for 10 days. (Hint: You need to insert a rental record. Use a <code>SELECT</code> subquery to get the <code>customer_id</code>. Use <code>CURDATE()</code> (or <code>NOW()</code>) for today; and <code>DATE_ADD(CURDATE(), INTERVAL x unit)</code> to compute a future date.)
+  <pre class="color-example">
+INSERT INTO rental_records VALUES
+   (NULL,
+    'SBA1111A', 
+    (SELECT customer_id FROM customers WHERE name='Tan Ah Teck'),
+    CURDATE(),
+    DATE_ADD(CURDATE(), INTERVAL 10 DAY),
+    NULL);</pre></li>
+
+<li>Customer <code>'Kumar'</code> has rented <code>'GA5555E'</code> from tomorrow for 3 months.</li>
+<!--
+INSERT INTO rental_records VALUES
+   (NULL,
+    'GA5555E', 
+    (SELECT customer_id FROM customers WHERE name='Kumar'),
+    DATE_ADD(CURDATE(), INTERVAL 1 DAY),
+    DATE_ADD(CURDATE(), INTERVAL 31 DAY),
+    NULL); 
+-->
+
+<li>List all rental records (start date, end date) with vehicle's registration number, brand, and customer name, sorted by vehicle's categories followed by start date.
+<pre class="color-example">
+SELECT
+   r.start_date  AS `Start Date`,
+   r.end_date    AS `End Date`,
+   r.veh_reg_no  AS `Vehicle No`,
+   v.brand       AS `Vehicle Brand`,
+   c.name        AS `Customer Name`
+FROM rental_records AS r
+   INNER JOIN vehicles  AS v USING (veh_reg_no)
+   INNER JOIN customers AS c USING (customer_id)
+ORDER BY v.category, start_date;</pre></li>
+
+<li>List all the expired rental records (end_date before <code>CURDATE()</code>).</li>
+<!--
+SELECT * FROM rental_records WHERE end_date < CURDATE();
+SELECT * FROM rental_records WHERE end_date < NOW();
+-->
+
+<li>List the vehicles rented out on <code>'2012-01-10'</code> (not available for rental), in columns of vehicle registration no, customer name, start date and end date. (Hint: the given date is in between the <code>start_date</code> and <code>end_date</code>.)</li>
+<!--
+SELECT
+   r.veh_reg_no AS `Vehicle No`,
+   c.name AS `Customer Name`,
+   r.start_date AS `Start Date`,
+   r.end_date AS `End Date`
+FROM rental_records AS r
+   INNER JOIN vehicles AS v USING (veh_reg_no)
+   INNER JOIN customers AS c USING (customer_id)
+WHERE '2012-01-10' BETWEEN start_date AND end_date;
+-->
+
+<li>List all vehicles rented out today, in columns registration number, customer name, start date, end date.</li>
+<!--
+SELECT
+   veh_reg_no AS `Vehicle No`,
+   name AS `Customer Name`,
+   start_date AS `Start Date`,
+   end_date AS `End Date`
+FROM rental_records
+   INNER JOIN customers USING (customer_id)
+WHERE
+   CURDATE() BETWEEN start_date AND end_date;
+-->
+
+<li> Similarly, list the vehicles rented out (not available for rental) for the period from <code>'2012-01-03'</code> to <code>'2012-01-18'</code>. (Hint: <code>start_date</code> is inside the range; or <code>end_date</code> is inside the range; or <code>start_date</code> is before the range and <code>end_date</code> is beyond the range.)</li>
+<!--
+SELECT
+   r.veh_reg_no AS `Vehicle No`,
+   c.name AS `Customer Name`,
+   r.start_date AS `Start Date`,
+   r.end_date AS `End Date`
+FROM rental_records AS r
+   INNER JOIN vehicles AS v USING (veh_reg_no)
+   INNER JOIN customers AS c USING (customer_id)
+WHERE start_date BETWEEN '2012-01-03' AND '2012-01-18'
+   OR end_date BETWEEN '2012-01-03' AND '2012-01-18'
+   OR (start_date < '2012-01-03' AND end_date > '2012-01-18');
+-->
+
+<li>List the vehicles (registration number, brand and description) available for rental (not rented out) on <code>'2012-01-10'</code> (Hint: You could use a subquery based on a earlier query<code></code>).</li>
+
+<!--
+Using Subquery
+SELECT
+   veh_reg_no AS `Vehicle No`,
+   brand AS `Brand`,
+   `desc` AS `Description`
+FROM vehicles
+WHERE
+   veh_reg_no NOT IN
+      (SELECT DISTINCT veh_reg_no FROM rental_records
+       WHERE '2012-01-10' BETWEEN start_date AND end_date);
+
+Can we use LEFT JOIN? The following don't work because of one-to-many
+SELECT
+   veh_reg_no AS `Vehicle No`,
+   brand AS `Brand`,
+   `desc` AS `Description`
+FROM vehicles
+   LEFT JOIN rental_records USING (veh_reg_no)
+WHERE start_date IS NULL
+   OR '2012-01-10' NOT BETWEEN start_date AND end_date;
+-->
+
+<li>Similarly, list the vehicles available for rental for the period from <code>'2012-01-03'</code> to <code>'2012-01-18'</code>.</li>
+
+<li>Similarly, list the vehicles available for rental from today for 10 days.</li>
+
+<li>Foreign Key Test:
+<ol>
+<li>Try deleting a parent row with matching row(s) in child table(s), e.g., delete <code>'GA6666F'</code> from <code>vehicles</code> table (<code>ON DELETE RESTRICT</code>).</li>
+<li>Try updating a parent row with matching row(s) in child table(s), e.g., rename <code>'GA6666F'</code> to <code>'GA9999F'</code> in <code>vehicles</code> table. Check the effects on the child table <code>rental_records</code>  (<code>ON UPDATE CASCADE</code>).</li>
+<li>Remove <code>'GA6666F'</code> from the database (Hints: Remove it from child table <code>rental_records</code>; then parent table <code>vehicles</code>.)</li></ol></li>
+
+<li>Payments: A rental could be paid over a number of payments (e.g., deposit, installments, full payment). Each payment is for one rental. Create a new table called <code>payments</code>. Need to create columns to facilitate proper audit check (such as <code>create_date</code>, <code>create_by</code>, <code>last_update_date</code>, <code>last_update_by</code>, etc.)
+  <pre class="color-example">
+DROP TABLE IF EXISTS `payments`;
+CREATE TABLE payments (
+   `payment_id`  INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+   `rental_id`   INT UNSIGNED  NOT NULL,
+   `amount`      DECIMAL(8,2)  NOT NULL DEFAULT 0,
+   `mode`        ENUM('cash', 'credit card', 'check'),
+   `type`        ENUM('deposit', 'partial', 'full') NOT NULL DEFAULT 'full',
+   `remark`      VARCHAR(255),
+   `created_date`       DATETIME      NOT NULL,
+   `created_by`         INT UNSIGNED  NOT NULL,  <span class="color-comment">-- staff_id</span>
+                       <span class="color-comment">-- Use a trigger to update create_date and create_by automatically</span>
+   `last_updated_date`  TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                       <span class="color-comment">-- Updated by the system automatically</span>
+   `last_updated_by`    INT UNSIGNED  NOT NULL,
+                       <span class="color-comment">-- Use a trigger to update created_by</span>
+   PRIMARY KEY (`payment_id`),
+   INDEX       (`rental_id`),
+   FOREIGN KEY (`rental_id`) REFERENCES rental_records (`rental_id`)
+) ENGINE=InnoDB;
+DESC `payments`;
+SHOW CREATE TABLE `payments` \G
+SHOW INDEX FROM `payments` \G</pre></li>
+
+<li>Staff: Keeping track of staff serving the customers. Create a new <code>staff</code> table. Assume that each transaction is handled by one staff, we can add a new column called <code>staff_id</code> in the <code>rental_records</code> table,
+<pre class="color-example">
+DROP TABLE IF EXISTS `staff`;
+CREATE TABLE `staff` (
+   `staff_id`   INT UNSIGNED  NOT NULL AUTO_INCREMENT, 
+                <span class="color-comment">-- Always use INT for AUTO_INCREMENT column to prvent run-over</span>
+   `name`       VARCHAR(30)   NOT NULL DEFAULT '',
+   `title`      VARCHAR(30)   NOT NULL DEFAULT '',
+   `address`    VARCHAR(80)   NOT NULL DEFAULT '',
+   `phone`      VARCHAR(15)   NOT NULL DEFAULT '',
+   `report_to`  INT UNSIGNED  NOT NULL,
+                <span class="color-comment">-- Reports to manager staff_id. Boss reports to himself</span>
+   PRIMARY KEY  (`staff_id`),
+   UNIQUE INDEX (`phone`),  <span class="color-comment">-- Build index on this unique-value column</span>
+   INDEX        (`name`),   <span class="color-comment">-- Build index on this column</span>
+   FOREIGN KEY  (`report_to`) REFERENCES `staff` (`staff_id`)
+      <span class="color-comment">-- Reference itself</span>
+) ENGINE=InnoDB;
+DESC `staff`;
+SHOW INDEX FROM `staff` \G
+ 
+INSERT INTO staff VALUE (8001, 'Peter Johns', 'Managing Director', '1 Happy Ave', '12345678', 8001);
+SELECT * FROM staff;
+ 
+<span class="color-comment">-- Add a new column to rental_records table</span>
+ALTER TABLE `rental_records` ADD COLUMN `staff_id`  INT UNSIGNED  NOT NULL;
+<span class="color-comment">-- Need to set to a valid value, before adding the foreign key</span>
+UPDATE `rental_records` SET `staff_id` = 8001;
+ALTER TABLE `rental_records` ADD FOREIGN KEY (`staff_id`) REFERENCES staff (`staff_id`) 
+   ON DELETE RESTRICT ON UPDATE CASCADE;
+ 
+SHOW CREATE TABLE `rental_records` \G
+SHOW INDEX FROM `rental_records` \G
+
+<span class="color-comment">-- Also Add a new column to payments table</span>
+ALTER TABLE `payments` ADD COLUMN `staff_id`  INT UNSIGNED  NOT NULL;
+<span class="color-comment">-- Need to set to a valid value, before adding the foreign key</span>
+UPDATE `payments` SET `staff_id` = 8001;
+ALTER TABLE `payments` ADD FOREIGN KEY (`staff_id`) REFERENCES staff (`staff_id`) 
+   ON DELETE RESTRICT ON UPDATE CASCADE;
+ 
+SHOW CREATE TABLE `payments` \G
+SHOW INDEX FROM `payments` \G</pre>
+</li>
+
+
+</ol>
+
+<h5>Advanced Exercises</h5>
+<ol>
+
+<li>Adding Photo: We could store photo in MySQL using data type of <code>BLOB</code> (Binary Large Object) (up to 64KB), <code>MEDIUMBLOB</code> (up to 16MBytes), <code>LONGBOLB</code> (up to 4GBytes). For example,
+  <pre class="color-example">
+<span class="color-comment">-- Use function LOAD_FILE to load a picture file into a BLOB field</span>
+UPDATE vehicles SET photo=LOAD_FILE('d:/temp/car.jpg') WHERE veh_reg_no = 'SBA1111A';
+SELECT * FROM vehicles WHERE veh_reg_no = 'SBA1111A' \G</pre>
+
+You can conveniently load and view the photo via graphical tools such as MySQL Workbench. To load a image in MySQL Workbench &rArr; right-click on the cell &rArr; Load Value From File &rArr; Select the image file. To view the image &rArr; right-click on the BLOB cell &rArr; Open Value in Editor &rArr; choose &quot;Image&quot; pane.<br />
+
+I also include a Java program for reading and writing image BLOB from/to the database, based on this example: &quot;<a href="codes/TestImageBLOB.java.txt"><code>TestImageBLOB.java</code></a>&quot;.</li>
+
+<li><code>VIEW</code>: Create a <code>VIEW</code> called <code>rental_prices</code> on the <code>rental_records</code> with an additional column called <code>price</code>. Show all the records of the <code>VIEW</code>.
+  <pre class="color-example">
+DROP VIEW IF EXISTS rental_prices;
+CREATE VIEW <strong>rental_prices</strong>
+AS
+SELECT
+   v.veh_reg_no    AS `Vehicle No`,
+   v.daily_rate    AS `Daily Rate`,
+   c.name          AS `Customer Name`,
+   c.discount*100  AS `Customer Discount (%)`,
+   r.start_date    AS `Start Date`,
+   r.end_date      AS `End Date`,
+   DATEDIFF(r.end_date, r.start_date) AS `Duration`,
+   <span class="color-comment">-- Compute the rental price
+   -- Preferred customer has discount, 20% discount for 7 or more days
+   -- CAST the result from DOUBLE to DECIMAL(8,2)</span>
+   CAST(
+      IF (DATEDIFF(r.end_date, r.start_date) &lt; 7,
+          DATEDIFF(r.end_date, r.start_date)*daily_rate*(1-discount),
+          DATEDIFF(r.end_date, r.start_date)*daily_rate*(1-discount)*0.8)
+      AS DECIMAL(8,2)) AS price
+FROM rental_records AS r
+   INNER JOIN vehicles  AS v USING (veh_reg_no)
+   INNER JOIN customers AS c USING (customer_id);
+ 
+DESC `rental_prices`;
+SHOW CREATE VIEW `rental_prices` \G
+ 
+<span class="color-comment">-- Try selecting all rows</span>
+SELECT * FROM `rental_prices`;</pre>
+
+It is probably easier to compute the price using a program/procedure, instead of inside the view.</li>
+
+<li>From the <code>payments</code> table, create a view to show the outstanding balance.</li>
+
+<li>Define more views.</li>
+
+<li><code>FUNCTION</code>: Write a function to compute the rental price.</li>
+
+<li>Define more procedures and functions.</li>
+
+<li><code>TRIGGER</code>: Write a trigger for the <code>created_date<code></code></code> and <code>created_by</code> columns of the <code>payments</code> table.</li>
+
+<li>Define more triggers.</li>
+
+<li>Implement discount on weekday (Monday to Friday, except public holiday): Need to set up a new table called <code>public_hoilday</code> with columns <code>date</code> and <code>description</code>. Use function <code>DAYOFWEEK</code> (1=Sunday, …, 7=Saturday) to check for weekday or weekend.
+  <pre class="color-example">
+<span class="color-comment">-- pseudocode for calculating rental price</span>
+price = 0;
+for each date from start_date to end_date {
+   if date is weekend or public_holiday, price += daily_rate;
+   else price += daily_rate*(1-discount);
+}
+if (duration &gt;= 7) price *= (1 - long_duration_discount);
+price *= (1 - perferred_customer_discount);</pre>
+</li>
+
+</ol>
+
+<h4>Product Sales Database</h4>
+
+<img class="image-center" src="images/ProductSalesSampleDatabase.png" alt="Database diagram" />
+
+<p>[TODO] Explanation</p>
+
+<a class="references" href="../howto/References.html#mysql">Link to MySQL References &amp; Resources</a>
+
+</div> <!-- End the content-main division -->
+
+<div id="content-footer">
+<p>Latest version tested: MySQL Community Server 5.6.20<br />
+Last modified: September, 2014</p>
+</div>
+
+</div>  <!-- End the wrap-inner division -->
+
+<!-- footer filled by JavaScript -->
+<div id="footer" class="header-footer"><p>&nbsp;</p></div>
+
+</div>  <!-- End the wrap-outer division -->
+</body>
+</html>

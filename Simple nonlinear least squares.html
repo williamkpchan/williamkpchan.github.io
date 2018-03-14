@@ -1,0 +1,68 @@
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css" target=_blank>a {text-decoration: none}</style>
+</head>
+<body bgcolor="#000000" text="#109030" leftmargin="150" topmargin="10" marginwidth="150" link="#00CCCC" vlink="#CC66CC" alink="#FFFF00" target=_blank>
+<FONT size=3>
+
+<h2>Simple nonlinear least squares curve fitting in R</h2>
+<p>How can I do <a href="http://en.wikipedia.org/wiki/Non-linear_least_squares">nonlinear least squares</a> curve fitting in X?&#8217;
+<p><strong>The problem</strong></p>
+<pre>xdata = -2,-1.64,-1.33,-0.7,0,0.45,1.2,1.64,2.32,2.9
+ydata = 0.699369,0.700462,0.695354,1.03905,1.97389,2.41143,1.91091,0.919576,-0.730975,-1.42001</pre>
+<p>and you&#8217;d like to fit the function</p>
+<p><img src="http://www.walkingrandomly.com/wp-content/ql-cache/quicklatex.com-17f46b025dd91e024cf2dc04211e19ba_l3.png" class="ql-img-inline-formula quicklatex-auto-format" alt="&#32;&#70;&#40;&#112;&#95;&#49;&#44;&#112;&#95;&#50;&#44;&#120;&#41;&#32;&#61;&#32;&#112;&#95;&#49;&#32;&#92;&#99;&#111;&#115;&#40;&#112;&#95;&#50;&#32;&#120;&#41;&#43;&#112;&#95;&#50;&#32;&#92;&#115;&#105;&#110;&#40;&#112;&#95;&#49;&#32;&#120;&#41;&#32;" title="Rendered by QuickLaTeX.com" height="18" width="297" style="vertical-align: -4px;"/></p>
+<p>using nonlinear least squares.  You&#8217;re starting guesses for the parameters are p1=1 and P2=0.2</p>
+<p>For now, we are primarily interested in the following results:</p>
+<ul>
+<li>The fit parameters</li>
+<li>Sum of squared residuals</li>
+<li>Parameter confidence intervals</li>
+</ul>
+<p><strong>Solution in R</strong></p>
+<pre># construct the data vectors using c()
+xdata = c(-2,-1.64,-1.33,-0.7,0,0.45,1.2,1.64,2.32,2.9)
+ydata = c(0.699369,0.700462,0.695354,1.03905,1.97389,2.41143,1.91091,0.919576,-0.730975,-1.42001)
+
+# look at it
+plot(xdata,ydata)
+
+# some starting values
+p1 = 1
+p2 = 0.2
+
+# do the fit
+fit = nls(ydata ~ p1*cos(p2*xdata) + p2*sin(p1*xdata), start=list(p1=p1,p2=p2))
+
+# summarise
+summary(fit)</pre>
+<p>This gives</p>
+<pre>Formula: ydata ~ p1 * cos(p2 * xdata) + p2 * sin(p1 * xdata)
+
+Parameters:
+   Estimate Std. Error t value Pr(&gt;|t|)    
+p1 1.881851   0.027430   68.61 2.27e-12 ***
+p2 0.700230   0.009153   76.51 9.50e-13 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.08202 on 8 degrees of freedom
+
+Number of iterations to convergence: 7 
+Achieved convergence tolerance: 2.189e-06</pre>
+<p>Draw the fit on the plot by getting the prediction from the fit at 200 x-coordinates across the range of xdata</p>
+<pre>new = data.frame(xdata = seq(min(xdata),max(xdata),len=200))
+lines(new$xdata,predict(fit,newdata=new))</pre>
+<p><img src="http://www.walkingrandomly.com/wp-content/uploads/2013/12/R_nonlinear.png"></a><br />
+Getting the sum of squared residuals is easy enough:</p>
+<pre>sum(resid(fit)^2)</pre>
+<p>Which gives</p>
+<pre>[1] 0.0538127</pre>
+<p>Finally, lets get the parameter confidence intervals.</p>
+<pre>confint(fit)</pre>
+<p>Which gives</p>
+<pre>Waiting for profiling to be done...
+        2.5%     97.5%
+p1 1.8206081 1.9442365
+p2 0.6794193 0.7209843</pre>

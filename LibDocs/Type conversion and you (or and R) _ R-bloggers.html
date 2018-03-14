@@ -1,0 +1,92 @@
+<base href=http://www.statmethods.net/management>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+  a {text-decoration: none}
+  A:hover { color: yellow }
+  A:focus { color: red }
+ #newtype { color: pink}
+ #brownword { color: #ff8000}
+}
+</STYLE>
+</head>
+<body bgcolor="#000000" text="#109030" leftmargin="10" topmargin="10" marginwidth="100" link="#08C8A8" vlink="#389898" alink="#28B8B8" target=_blank>
+<FONT size=3>
+
+<h1>Type conversion</h1>
+
+<p>Types and type conversion can be a tricky and intricate topic, and sometimes can lead to some real head-scratcher issues in R. Hence a somewhat confusing title.</p>
+<p>This is for people still relatively new to R, and I will skip some gory details. Actually I will skip most of them, the canonical source for type and conversion information is the official R documentation, and the help pages for the functions at hand.</p>
+<p>Instead I thought I would walk through some examples of when the type engine can behave in seemingly odd ways, and take a look at what is going on when mysterious errors arise and what can be done to track down their source.</p>
+<h3><span style="font-size: large;">What are types.&nbsp;</span></h3>
+<p>Types describe the nature of data R is dealing with, at least as far as R calls. If you want to use the + operator, R needs to look at the data type on either side and work out if + is defined for those, and what type the result should be.</p>
+<p>For example 1 + 1 will behave as you might expect, summing the two number and returning a numeric result, but what should R do if you add a character to a matrix? It uses types to answer these questions, and give an error message if no answer can be found. </p>
+<p>Let’s get started, first we will create a vector with some numeric data</p>
+<p>a &lt;- c(1,2,3)<br />sum(a)<br />#[1] 6<br />a<br />#[1] 1 2 3</p>
+<p>Nothing too exciting, we created a vector with three numeric values, and the builtin sum function behaves as we would expect. Let’s see what happens when we try to mix types in the vector:</p>
+<p>a &lt;- c(a, &#8220;hi&#8221;)<br />a<br />#[1] &#8220;1&#8221; &nbsp;&#8220;2&#8221; &nbsp;&#8220;3&#8221; &nbsp;&#8220;hi&#8221;</p>
+<p>When we look at the contents of our vector, the numeric values have been converted to strings. This is because a vector is for homogenous storage, that is, it can only hold data of the same type. When we appended the string to it, R converted the numeric values to strings.</p>
+<p>This is an example of implicit type conversion aka type coercion. R knows the vector can only hold data of the same type, and since it does not know how to turn ‘hi’ into a numeric value, it has turned the integers into strings. This has done magically (or implicitly) in the background.</p>
+<p>What happens when we try to sum our vector?</p>
+<p>sum(a)<br />#Error in sum(a) : invalid &#8216;type&#8217; (character) of argument</p>
+<p>We get an error, because R does not know how to add strings, at least in the conventional numerical sense of addition.</p>
+<p>The general rule of thumb for conversion is “the bigger type wins.” Strings can represent more data than numeric values, so the numeric values are converted to strings. There aren’t that many data types in R, so often you will end up with strings when types are being mixed.</p>
+<p>Type conversion is not particularly smart, which is generally a good idea in programming languages. If, instead of “hi”, we passed in the character representation of a numeric one “1”, it still would have converted the existing numeric values to strings, even though in theory the literal 1 could be converted to a numeric type. The type engine just sees strings and numerics, the biggest wins and the numerics are coerced.</p>
+<h3><span style="font-size: large;">Type conversion and apply</span></h3>
+<p>Sometimes when using apply and friends, you will get errors that at first glance must clearly be bugs in R. Let’s take a look at another example, this time using a data frame.</p>
+<p>Unlike a vector or a matrix, a data frame is a heterogeneous type container; it is possible for it to store columns with different types. We will have five rows, a categorical factor column and two columns of numeric data.</p>
+<p>n &lt;- 5<br />#make some dummy data<br />df &lt;- data.frame(cbind(rbinom(n, 1, 0.5), rnorm(n, 10, 5), rnorm(n, 20, 10)))<br />#make the first column a factor<br />df[,1] &lt;- as.factor(df[,1])<br />head(df)<br /># &nbsp;X1 &nbsp; &nbsp; &nbsp; &nbsp;X2 &nbsp; &nbsp; &nbsp; X3<br />#1 &nbsp;1 &nbsp;8.911567 27.28325<br />#2 &nbsp;1 &nbsp;9.933021 13.74879<br />#3 &nbsp;0 10.177231 20.65490<br />#4 &nbsp;0 &nbsp;6.368177 27.10183<br />#5 &nbsp;1 12.084135 14.54369</p>
+<p>Now let’s try and sum the two numeric columns using apply</p>
+<p>apply(df, 1, function(x) x[2] + x[3] )<br />#Error in x[2] + x[3] : non-numeric argument to binary operator</p>
+<p>That’s weird. I’m pretty sure they are numeric, so addition should work</p>
+<p>df[,2] + df[,3]<br />#[1] 36.19481 23.68181 30.83213 33.47001 26.62783</p>
+<p>And it does. What gives?</p>
+<p>We can see what datatype R thinks it is working with by using the mode() function.</p>
+<p>apply(df, 1, function(x) mode(x))<br />#[1] &#8220;character&#8221; &#8220;character&#8221; &#8220;character&#8221; &#8220;character&#8221; &#8220;character&#8221;</p>
+<p>Each row is being passed as character types, not the mixed data types we were expecting (i.e. factor, numeric, numeric).</p>
+<p>In a nutshell, apply will first convert our data frame to a matrix before passing the rows to the defined function. Which it says in the help page, and I never took any notice of until things started getting weird.</p>
+<p>The matrix container wants to store data all of the same type, and much like our initial vector example, our numeric values are being coerced into strings. Only once this coercion has taken place do the rows of the matrix get passed to the function we supplied apply with.</p>
+<p>This is why we see our “non-numeric argument to binary operator” error message. What we thought was numeric data has been converted to character data, which we subsequently try to add.</p>
+<p>Just to really drive this home, let’s look at the first row of our data frame:</p>
+<p>a &lt;- df[1,]<br />a<br /># &nbsp;X1 &nbsp; &nbsp; &nbsp; X2 &nbsp; &nbsp; &nbsp; X3<br />#1 &nbsp;1 8.911567 27.28325</p>
+<p>Now let’s see what happens when we convert it to a matrix as apply does:</p>
+<p>b &lt;- as.matrix(a)<br />b<br /># &nbsp;X1 &nbsp;X2 &nbsp; &nbsp; &nbsp; &nbsp; X3 &nbsp; &nbsp; &nbsp; <br />#1 &#8220;1&#8221; &#8220;8.911567&#8221; &#8220;27.28325&#8221;<br />b[2] + b[3]<br />#Error in b[2] + b[3] : non-numeric argument to binary operator</p>
+<p>We can see it has been converted to strings, and we end up with the same error message we saw when we used apply.</p>
+<p>In this case the resolution is quite simple, we use the index operator in our call to apply</p>
+<p>apply(df[,2:3], 1, function(x) x[1] + x[2])<br />#[1] 36.19481 23.68181 30.83213 33.47001 26.62783</p>
+<p>Which works as we expect. Note in our function we changed the indexes to 1 and 2 as we are now only passing two columns of data to apply.</p>
+<p>So, remember that in many cases apply will convert what you pass it to a matrix. The matrix wants all data to be of the same type, and will coerce as required. For the specific conditions see the help page for apply.</p>
+<h3><span style="font-size: large;">A second look</span></h3>
+<p>I’d like to take a look at another example. This time instead of a factor, we will have one column as a string type, and two numeric columns as before:</p>
+<p>df &lt;- data.frame(cbind(paste(&#8220;subject&#8221;, 1:n, sep=&#8221;), rnorm(n, 10, 5), rnorm(n, 20, 10)))<br /># &nbsp; &nbsp; &nbsp; &nbsp;X1 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; X2 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; X3<br />#1 subject1 14.6619839711866 6.94472759446703<br />#2 subject2 &nbsp;11.603910222178 27.6225162121889<br />#3 subject3 5.21881004622993 20.3409476386206<br />#4 subject4 16.3574724782284 39.0904723579448<br />#5 subject5 9.35407053787977 23.8568796326835</p>
+<p>We know that apply will coerce its input data to a matrix, so pass in only the numeric columns:</p>
+<p>apply(df[,2:3], 1, function(x) x[1] + x[2])<br />#Error in x[1] + x[2] : non-numeric argument to binary operator</p>
+<p>Uh oh!</p>
+<p>Lets take a look at the data we are passing in</p>
+<p>a &lt;- df[,2:3]<br />mode(a[,1])<br />#[1] &#8220;numeric&#8221;<br />as.matrix(a)<br /># &nbsp; &nbsp; X2 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;X3 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <br />#[1,] &#8220;-3.89274205212847&#8243; &#8220;12.7336046818466&#8221;<br />#[2,] &#8220;12.3494043977024&#8221; &nbsp;&#8220;17.9329667214396&#8221;<br />#[3,] &#8220;4.7419241278816&#8221; &nbsp; &#8220;16.0664073330786&#8221;<br />#[4,] &#8220;8.50784944656814&#8221; &nbsp;&#8220;8.65139145569206&#8221;<br />#[5,] &#8220;9.56191506080518&#8221; &nbsp;&#8220;21.2114650777001&#8221;</p>
+<p>What. Why are you strings? mode says you&#8217;re numeric!</p>
+<p>a[,1]<br />#[1] -3.89274205212847 12.3494043977024 &nbsp;4.7419241278816 &nbsp; 8.50784944656814 &nbsp;9.56191506080518<br />#Levels: -3.89274205212847 12.3494043977024 4.7419241278816 8.50784944656814 9.56191506080518</p>
+<p>Why has our numeric data turned into a factor??</p>
+<p>Generally at this point, I take a quiet moment to reflect on what I’m doing with my life and why I&#8217;m not living in a yurt on a mountain somewhere, I mean people do it and they seem happy enough? Could it really be that bad? But where would I charge my laptop? Oh well, back to the task at hand. I bet the coffee would be terrible as well.</p>
+<p>What is going on here? We created a data frame with a column of strings and two numeric columns. Why have we ended up with factors?</p>
+<p>Lets take a look at our string column</p>
+<p>df[,1]<br />#[1] subject1 subject2 subject3 subject4 subject5<br />#Levels: subject1 subject2 subject3 subject4 subject5</p>
+<p>The strings were converted to factors, checking the data.frame help page we see a stringsAsFactors option. A likely culprit, lets see how we go</p>
+<p>df &lt;- data.frame(cbind(paste(&#8220;subject&#8221;, 1:n, sep=&#8221;), rnorm(n, 10, 5), rnorm(n, 20, 10)), stringsAsFactors=FALSE)<br />as.matrix(df[,2:3])<br /># &nbsp; &nbsp; X2 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; X3 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <br />#[1,] &#8220;7.19530271823023&#8221; &#8220;26.4186991862312&#8221;<br />#[2,] &#8220;13.6715492467442&#8221; &#8220;25.452128137706&#8221;<br />#[3,] &#8220;8.89363806613213&#8221; &#8220;20.1618970554355&#8221;<br />#[4,] &#8220;16.296512734304&#8221; &nbsp;&#8220;16.2581582721134&#8221;<br />#[5,] &#8220;11.6454577442585&#8221; &#8220;17.5241594066948&#8221;</p>
+<p>Why are they still strings?</p>
+<p>In this case, the culprit is actually the cbind call, which is coercing our mixed strings and numerics into strings. When cbind finishes, the resulting matrix is passed to data.frame and our now string data gets converted to factors as due to stringsAsFactors being TRUE.</p>
+<p>cbind(paste(&#8220;subject&#8221;, 1:n, sep=&#8221;), rnorm(n, 10, 5), rnorm(n, 20, 10))<br /># &nbsp; &nbsp; [,1] &nbsp; &nbsp; &nbsp; [,2] &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;[,3] &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <br />#[1,] &#8220;subject1&#8243; &#8220;14.0342542696833&#8221; &nbsp;&#8220;30.5672885598002&#8221;<br />#[2,] &#8220;subject2&#8243; &#8220;8.44141744459018&#8221; &nbsp;&#8220;35.1337567509022&#8221;<br />#[3,] &#8220;subject3&#8243; &#8220;11.6550656524794&#8221; &nbsp;&#8220;10.1554349193507&#8221;<br />#[4,] &#8220;subject4&#8243; &#8220;18.0303214118231&#8221; &nbsp;&#8220;14.9638066872277&#8221;<br />#[5,] &#8220;subject5&#8243; &#8220;0.180686583194847&#8221; &#8220;11.7124424267387&#8221;</p>
+<p>Dropping the cbind gives us what we are after</p>
+<p>df &lt;- data.frame(paste(&#8220;subject&#8221;, 1:n, sep=&#8221;), rnorm(n, 10, 5), rnorm(n, 20, 10))<br />as.matrix(df[,2:3])<br /># &nbsp; &nbsp; rnorm.n..10..5. rnorm.n..20..10.<br />#[1,] &nbsp; &nbsp; &nbsp; 13.557665 &nbsp; &nbsp; &nbsp; &nbsp;33.519719<br />#[2,] &nbsp; &nbsp; &nbsp; 15.086483 &nbsp; &nbsp; &nbsp; &nbsp;41.457651<br />#[3,] &nbsp; &nbsp; &nbsp; &nbsp;7.010492 &nbsp; &nbsp; &nbsp; &nbsp; 1.757224<br />#[4,] &nbsp; &nbsp; &nbsp; 11.008779 &nbsp; &nbsp; &nbsp; &nbsp;29.707944<br />#[5,] &nbsp; &nbsp; &nbsp; 15.777351 &nbsp; &nbsp; &nbsp; &nbsp;10.280138<br />apply(df[,2:3], 1, function(x) x[1] + x[2])<br />#[1] 47.077384 56.544134 &nbsp;8.767716 40.716723 26.057489</p>
+<p>Phew.</p>
+<p>The cbind call is not necessary when creating a data frame, which is designed to take a variable amount of data. It&#8217;s excessive use is a bad habit I picked up learning to navigate the waters of R, I must be sure to use it only when necessary.</p>
+<h3><u><span style="font-size: large;">Summary</span></u></h3>
+<p>As you have seen, type conversion and coercion happens quite frequently, and usually you may not even realize it has happened. At least until mysterious error messages start appearing.</p>
+<p>When they do, using mode() is the best way to see what is going on. If you are after specific type information I am wary of the is.* family, they are useful, but tend to be fairly generous when you are after specifics.</p>
+<p>Also be sure to check the help pages for the functions you are using, they do usually note when conversion takes place.</p>
+<p>A good rule of thumb is vector and matrix are used for data of the same type, list and data frame are used for data of mixed types.</p>
+<p>The reason mode prints “numeric” for factors is that internally, factors are numeric. They just come with a list of strings (the factor levels), which are printed out in lieu of the internal numeric representation. You might also notice that calling mode on a matrix tells you it is a list, at which point I make a dry coughing sound and busy myself with a yurt catalogue.</p>
+<p>You can find technical details about types here&nbsp;<a href="http://cran.r-project.org/doc/manuals/r-release/R-lang.html#Objects" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'http://cran.r-project.org/doc/manuals/r-release/R-lang.html#Objects', 'http://cran.r-project.org/doc/manuals/r-release/R-lang.html#Objects']);" ref="nofollow" target="_blank">http://cran.r-project.org/doc/manuals/r-release/R-lang.html#Objects</a></p>
+<p>Finally, it is possible to force R to use a specific mode using the storage.mode() function. In this case values that cannot be represented in the given mode will be converted to NA</p>
+<p>a &lt;- c(1:3, &#8220;hi&#8221;)<br />storage.mode(a)<br />#[1] &#8220;character&#8221;<br />storage.mode(a) &lt;- &#8216;integer&#8217;<br />#Warning message:<br />#In storage.mode(a) &lt;- &#8220;integer&#8221; : NAs introduced by coercion<br />a<br />#[1] &nbsp;1 &nbsp;2 &nbsp;3 NA</p>
+<p>Code in one file is&nbsp;<a href="https://github.com/petewerner/misc/blob/master/type-conversion.R" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'https://github.com/petewerner/misc/blob/master/type-conversion.R', 'here']);" ref="nofollow" target="_blank">here</a>.

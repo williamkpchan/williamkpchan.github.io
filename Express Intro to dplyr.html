@@ -1,0 +1,575 @@
+
+<base target="_blank">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+
+<style type="text/css">
+a {	text-decoration: none;}
+A:hover {	color: yellow;}
+A:focus {	color: red;}
+#newtype { color: pink}
+#redpink { color: #cc0099}
+#redword { color: red}
+#yellowword { color: yellow}
+#greenword { color: green}
+#orangeword { color: orange}
+#whiteword { color: white}
+#grayword { color: gray}
+#brownword { color: #ff8000}
+#yellowgreen { color: #bfff00}
+#palered { color: #ffcccc}
+#goldword { color: GoldenRod}
+
+.highlight { 
+    color: gray;
+    background-color: #002030
+  }
+</STYLE>
+
+</head>
+<body bgcolor="#000000" text="#109030" leftmargin="10" topmargin="10" marginwidth="100" link="#08C8A8" vlink="#389898" alink="#28B8B8">
+<FONT size=3>
+
+<h1>Express Intro to dplyr</h1>
+<h4>Working The Data Like a Boss !</h4>
+
+<p>I recently introduced the <a href="https://rollingyours.wordpress.com/2016/06/14/fast-aggregation-of-large-data-with-the-data-table-package/" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'https://rollingyours.wordpress.com/2016/06/14/fast-aggregation-of-large-data-with-the-data-table-package/', 'data.table']);" ref="nofollow" target="_blank">data.table</a> package which provides a nice way to manage and aggregate large data sources using the standard bracket notation that is commonly employed when manipulating data frames in R. As data sources grow larger one must be prepared with a variety of approaches to efficiently handle this information. Using databases (both SQL and NoSQL) are a possibility wherein one queries for a subset of information although this assumes that the database is pre-existing or that you are prepared to create it yourself. The <strong>dplyr</strong> package offers ways to read in large files, interact with databases, and accomplish aggregation and summary. Some feel that <strong>dplyr</strong> is a competitor to the <strong>data.table</strong> package though I do not share that view. I think that each offers a well-conceived philosophy and approach and does a good job of delivering on their respective design goals. That there is overlap in their potential applications simply means to me that there is another way to do something. They are just great tools in a larger toolbox so I have no complaints. Let&#8217;s dig into <strong>dplyr</strong> to learn what it can do. Note that this post is part one of two. The second dplyr blog will apply the knowledge learned in this post.
+</p>
+<h3>Upcoming Class</h3>
+<p>Before we get too deep into this I wanted to indicate that I will be teaching a 3-day Intro to R BootCamp in the Atlanta, GA area of the US sometime in August or September. I say &#8220;sometime&#8221; because the logistics are still under development. If interested please feel free to <a href="/cdn-cgi/l/email-protection#52263b313d223b262633203612353f333b3e7c313d3f" title="Email to me" ref="nofollow" target="_blank">email me</a> and once I get everything lined up I will get back to you with the details. You can also visit my <a href="http://pconsdec.com/training" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'http://pconsdec.com/training', 'home page']);" ref="nofollow" target="_blank">home page</a>. Thanks for indulging my self-promotion. Steve &#8211; Now Back to the Action&#8230;</p>
+<h4>Verbs in Action !</h4>
+</p>
+<p><strong>dplyr</strong> is based on the idea that when working with data there are a number of common activities one will pursue: reading, filtering rows on some condition, selecting or excluding columns, arranging/sorting, grouping, summarize, merging/joining, and mutating/transforming columns. There are other activities but these describe the main categories. <strong>dplyr</strong> presents a number of commands or &#8220;verbs&#8221; that help you accomplish the work. Note that dplyr does not replace any existing commands &#8211; it simply gives you new commands:</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>select()</td>
+<td>Select columns from a data frame</td>
+</tr>
+<tr>
+<td>filter()</td>
+<td>Filter rows according to some condition(s)</td>
+</tr>
+<tr>
+<td>arrange()</td>
+<td>Sort / Re-order rows in a data frame</td>
+</tr>
+<tr>
+<td>mutate()</td>
+<td>Create new columns or transform existing ones</td>
+</tr>
+<tr>
+<td>group_by()</td>
+<td>Group a data frame by some factor(s) usually in conjunction to summary</td>
+</tr>
+<tr>
+<td>summarize()</td>
+<td>Summarize some values from the data frame or across groups</td>
+</tr>
+<tr>
+<td>inner_join(x,y,by=&#8221;col&#8221;)</td>
+<td>return all rows from ‘x’ where there are matching values in ‘x’, and all columns from ‘x’ and ‘y’. If there are multiple matches between ‘x’ and ‘y’, all combination of the matches are returned.</td>
+</tr>
+<tr>
+<td>left_join(x,y,by=&#8221;col&#8221;)</td>
+<td>return all rows from ‘x’, and all columns from ‘x’ and ‘y’. Rows in ‘x’ with no match in ‘y’ will have ‘NA’ values in the new columns. If there are multiple matches between ‘x’ and ‘y’, all combinations of the matches are returned.</td>
+</tr>
+<tr>
+<td>right_join(x,y,by=&#8221;col&#8221;)</td>
+<td>return all rows from ‘y’, and all columns from ‘x’ and y. Rows in ‘y’ with no match in ‘x’ will have ‘NA’ values in the new columns. If there are multiple matches between ‘x’ and ‘y’, all combinations of the matches are returned</td>
+</tr>
+<td>anti_join(x,y,by=&#8221;col&#8221;)</td>
+<td>return all rows from ‘x’ where there are not matching values in ‘y’, keeping just columns from ‘x’</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p><strong>readr</strong></p>
+<p>There is also an associated package called <a href="https://blog.rstudio.org/2015/04/09/readr-0-1-0/" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'https://blog.rstudio.org/2015/04/09/readr-0-1-0/', 'readr']);" ref="nofollow" target="_blank"><strong>readr</strong></a> that is more efficient at ingesting CSV files than the base R functions such as <strong>read.csv</strong>. While it is not part of the actual <strong>dplyr</strong> package it does in fact produce a dplyr structure as it reads in files. <strong>readr</strong> provides the <strong>read_csv</strong> function to do the work. It is also pretty smart and can figure things out like if there is a header or not so you don&#8217;t have to provide a lot of additional arguments. Here is an example using a file that contains information on weather station measurements in the year 2013.</p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+install.packages(&quot;readr&quot;)  # one time only 
+library(readr)
+
+url &lt;- &quot;http://steviep42.bitbucket.org/YOUTUBE.DIR/weather.csv&quot;
+download.file(url,&quot;weather.csv&quot;)
+
+system(&quot;head -5 weather.csv&quot;)  # Take a peak at the first 5 lines
+
+&quot;origin&quot;,&quot;year&quot;,&quot;month&quot;,&quot;day&quot;,&quot;hour&quot;,&quot;temp&quot;,&quot;dewp&quot;,&quot;humid&quot;,&quot;wind_dir&quot;,&quot;wind_speed&quot;,&quot;wind_gust&quot;,&quot;precip&quot;,&quot;pressure&quot;,&quot;visib&quot;
+&quot;EWR&quot;,2013,1,1,0,37.04,21.92,53.97,230,10.35702,11.9186514756,0,1013.9,10
+&quot;EWR&quot;,2013,1,1,1,37.04,21.92,53.97,230,13.80936,15.8915353008,0,1013,10
+&quot;EWR&quot;,2013,1,1,2,37.94,21.92,52.09,230,12.65858,14.5672406924,0,1012.6,10
+&quot;EWR&quot;,2013,1,1,3,37.94,23,54.51,230,13.80936,15.8915353008,0,1012.7,10
+
+weather &lt;- read_csv(&quot;weather.csv&quot;)
+
+weather
+Source: local data frame [8,719 x 14]
+
+   origin  year month   day  hour  temp  dewp humid wind_dir wind_speed
+    (chr) (int) (int) (int) (int) (dbl) (dbl) (dbl)    (int)      (dbl)
+1     EWR  2013     1     1     0 37.04 21.92 53.97      230   10.35702
+2     EWR  2013     1     1     1 37.04 21.92 53.97      230   13.80936
+3     EWR  2013     1     1     2 37.94 21.92 52.09      230   12.65858
+4     EWR  2013     1     1     3 37.94 23.00 54.51      230   13.80936
+5     EWR  2013     1     1     4 37.94 24.08 57.04      240   14.96014
+6     EWR  2013     1     1     6 39.02 26.06 59.37      270   10.35702
+7     EWR  2013     1     1     7 39.02 26.96 61.63      250    8.05546
+8     EWR  2013     1     1     8 39.02 28.04 64.43      240   11.50780
+9     EWR  2013     1     1     9 39.92 28.04 62.21      250   12.65858
+10    EWR  2013     1     1    10 39.02 28.04 64.43      260   12.65858
+..    ...   ...   ...   ...   ...   ...   ...   ...      ...        ...
+Variables not shown: wind_gust (dbl), precip (dbl), pressure (dbl), visib (dbl)
+
+</pre>
+<p><strong>tbl_df</strong></p>
+<p>It is important to note that <strong>dplyr</strong> works transparently with existing R data frames though ideally one should explicitly create or transform an existing data frame to a <strong>dplyr</strong> structure to get the full benefit of the package. Let&#8217;s use the dplyr <strong>tbl_df</strong> command to wrap an existing data frame. We&#8217;ll convert the infamous mtcars data frame into a dplyr table since it is a small data frame that is easy to understand. The main advantage in using a ‘tbl_df’ over a regular data frame is the printing: tbl objects only print a few rows and all the columns that fit on one screen, describing the rest of it as text.</p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+dp_mtcars &lt;- tbl_df(mtcars)
+
+# dp_mtcars is a data frame as well as a dplyr object
+
+class(dp_mtcars)
+[1] &quot;tbl_df&quot;     &quot;tbl&quot;        &quot;data.frame&quot;
+</pre>
+<p>In the example below (as with the <strong>readr</strong> example above) notice how only a subset of the data gets printed by default. This is actually very nice especially if you have ever accidentally typed the name of a really, really large native data frame. R will dutifully try to print a large portion of the data even if it locks up your R session. So wrapping the data frame in a dplyr table will prevent this. Also notice how you get a summary of the number of rows and columns as well as the type of each column. </p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+dp_mtcars
+Source: local data frame [32 x 11]
+
+     mpg   cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb
+   (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl)
+1   21.0     6 160.0   110  3.90 2.620 16.46     0     1     4     4
+2   21.0     6 160.0   110  3.90 2.875 17.02     0     1     4     4
+3   22.8     4 108.0    93  3.85 2.320 18.61     1     1     4     1
+4   21.4     6 258.0   110  3.08 3.215 19.44     1     0     3     1
+5   18.7     8 360.0   175  3.15 3.440 17.02     0     0     3     2
+6   18.1     6 225.0   105  2.76 3.460 20.22     1     0     3     1
+7   14.3     8 360.0   245  3.21 3.570 15.84     0     0     3     4
+8   24.4     4 146.7    62  3.69 3.190 20.00     1     0     4     2
+9   22.8     4 140.8    95  3.92 3.150 22.90     1     0     4     2
+10  19.2     6 167.6   123  3.92 3.440 18.30     1     0     4     4
+..
+</pre>
+<p>Now we could start to operate on this data frame / dplyr table by using some of the commands on offer from dplyr. They do pretty much what the name implies and you could use them in isolation though the power of <strong>dplyr</strong> comes through when using the piping operator to chain together commands. We&#8217;ll get there soon enough. Here are some basic examples:</p>
+<p><strong>filter()</strong></p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+
+# Find all rows where MPG is &gt;= 30 and Weight is over 1.8 tons
+
+filter(dp_mtcars, mpg &gt;= 30 &amp; wt &gt; 1.8)
+Source: local data frame [2 x 11]
+
+    mpg   cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb
+  (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl)
+1  32.4     4  78.7    66  4.08 2.200 19.47     1     1     4     1
+2  33.9     4  71.1    65  4.22 1.835 19.90     1     1     4     1
+</pre>
+<p><strong>select()</strong></p>
+<p>The following example illustrates how the <strong>select()</strong> function works. We will select all columns whose name begins with the letter &#8220;m&#8221;. This is more useful when you have lots of columns that are named according to some pattern. For example some Public Health data sets can have many, many columns (hundreds even) so counting columns becomes impractical which is why <strong>select()</strong> supports a form of regular expressions to find columns by name. Other helpful arguments in this category include: </p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ends_with(x, ignore.case=TRUE)</td>
+<td>Finds columns whose nqme ends with &#8220;x&#8221;</td>
+</tr>
+<tr>
+<td>contains(x, ignore.case=TRUE)</td>
+<td>Finds columns whose nqme contains &#8220;x&#8221;</td>
+</tr>
+<tr>
+<td>matches(x, ignore.case=TRUE)</td>
+<td>Finds columns whose names match the regular expression &#8220;x&#8221;</td>
+</tr>
+<tr>
+<td>num_range(&#8220;x&#8221;,1:5, width=2)</td>
+<td>selects all variables (numerically) from x01 to x05 </td>
+</tr>
+<tr>
+<td>one_of(&#8220;x&#8221;, &#8220;y&#8221;, &#8220;z&#8221;)</td>
+<td>Selects variables provided in a character vector</td>
+</tr>
+</tbody>
+</table>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+select(dp_mtcars,starts_with(&quot;m&quot;))
+Source: local data frame [32 x 1]
+
+     mpg
+   (dbl)
+1   21.0
+2   21.0
+3   22.8
+4   21.4
+5   18.7
+6   18.1
+7   14.3
+8   24.4
+9   22.8
+10  19.2
+
+# Get all columns except columns 5 through 10 
+
+select(dp_mtcars,-(5:10))
+Source: local data frame [32 x 5]
+
+     mpg   cyl  disp    hp  carb
+   (dbl) (dbl) (dbl) (dbl) (dbl)
+1   21.0     6 160.0   110     4
+2   21.0     6 160.0   110     4
+3   22.8     4 108.0    93     1
+4   21.4     6 258.0   110     1
+5   18.7     8 360.0   175     2
+6   18.1     6 225.0   105     1
+7   14.3     8 360.0   245     4
+8   24.4     4 146.7    62     2
+9   22.8     4 140.8    95     2
+10  19.2     6 167.6   123     4
+..   ...   ...   ...   ...   ...
+</pre>
+<p><strong>mutate()</strong></p>
+<p>Here we use the <strong>mutate()</strong> function to transform the wt variable by multiplying it by 1,000 and then we create a new variable called &#8220;good_mpg&#8221; which takes on a value of &#8220;good&#8221; or &#8220;bad&#8221; depending on if a given row&#8217;s MPG value is &gt; 25 or not</p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+mutate(dp_mtcars, wt=wt*1000, good_mpg=ifelse(mpg &gt; 25,&quot;good&quot;,&quot;bad&quot;))
+Source: local data frame [32 x 12]
+
+     mpg   cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb good_mpg
+   (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl)    (chr)
+1   21.0     6 160.0   110  3.90  2620 16.46     0     1     4     4      bad
+2   21.0     6 160.0   110  3.90  2875 17.02     0     1     4     4      bad
+3   22.8     4 108.0    93  3.85  2320 18.61     1     1     4     1      bad
+4   21.4     6 258.0   110  3.08  3215 19.44     1     0     3     1      bad
+5   18.7     8 360.0   175  3.15  3440 17.02     0     0     3     2      bad
+6   18.1     6 225.0   105  2.76  3460 20.22     1     0     3     1      bad
+7   14.3     8 360.0   245  3.21  3570 15.84     0     0     3     4      bad
+8   24.4     4 146.7    62  3.69  3190 20.00     1     0     4     2      bad
+9   22.8     4 140.8    95  3.92  3150 22.90     1     0     4     2      bad
+10  19.2     6 167.6   123  3.92  3440 18.30     1     0     4     4      bad
+..   ...   ...   ...   ...   ...   ...   ...   ...   ...   ...   ...      ...
+</pre>
+<p><strong>arrange()</strong></p>
+<p>Next we could sort or arrange the data according to some column values. This is usually to make visual inspection of the data easier. Let&#8217;s sort the data frame by cars with the worst MPG and then sort by weight from heaviest to lightest. </p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+arrange(dp_mtcars,mpg,desc(wt))
+Source: local data frame [32 x 11]
+
+     mpg   cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb
+   (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl)
+1   10.4     8 460.0   215  3.00 5.424 17.82     0     0     3     4
+2   10.4     8 472.0   205  2.93 5.250 17.98     0     0     3     4
+3   13.3     8 350.0   245  3.73 3.840 15.41     0     0     3     4
+4   14.3     8 360.0   245  3.21 3.570 15.84     0     0     3     4
+5   14.7     8 440.0   230  3.23 5.345 17.42     0     0     3     4
+6   15.0     8 301.0   335  3.54 3.570 14.60     0     1     5     8
+7   15.2     8 275.8   180  3.07 3.780 18.00     0     0     3     3
+8   15.2     8 304.0   150  3.15 3.435 17.30     0     0     3     2
+9   15.5     8 318.0   150  2.76 3.520 16.87     0     0     3     2
+10  15.8     8 351.0   264  4.22 3.170 14.50     0     1     5     4
+..   ...   ...   ...   ...   ...   ...   ...   ...   ...   ...   ...
+</pre>
+</p>
+<h4>Ceci n&#8217;est pas une pipe</h4>
+</p>
+<p>While the above examples are instructive they are not, at least in my opinion, the way to best use dplyr. Once you get up to speed with dplyr functions I think you will soon agree that using &#8220;pipes&#8221; to create chains of commands is the way to go.  If you come from a UNIX background you will no doubt have heard of &#8220;pipes&#8221; which is a construct allowing you to take the output of one command and route it or &#8220;pipe&#8221; it to the input of another program. This can be done for several commands thus creating a chain of piped commands. One can save typing while creating, in effect, a &#8220;one line program&#8221; that does a lot. Here is an example of a UNIX pipeline. I&#8217;m using Apple OSX but this should work on a Linux machine just as well. This example will pipe the output of the /etc/passwd file into the input of the awk command (a program used to parse files) and the output of the awk command will go into the input of the tail command which lists the last 10 lines of the final result. </p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+ $ cat /etc/passwd | awk -F: '{print $1}' | tail
+_krb_krbtgt
+_krb_kadmin
+_krb_changepw
+_krb_kerberos
+_krb_anonymous
+_assetcache
+_coremediaiod
+_xcsbuildagent
+_xcscredserver
+_launchservicesd
+
+$ 
+</pre>
+<p>This is a great paradigm for working on UNIX that also maps well for what one does in data exploration. When first encountering data you rarely know what it is you want to get from it (unless you are a student and your teacher told you specifically what she or he wants). So you embark on some exploratory work and start to interrogate the data which might first require some filtering and maybe exclusion of incomplete data or maybe some imputation for missing values. Until you have worked with it for a while you don&#8217;t want to change the data &#8211; you just want to experiment with various transformed and grouped versions of it which is much easier if you use <strong>dplyr</strong>. Just pipe various commands together to clean up your data, make some visualizations, and perhaps generate some hypotheses about your data. You find yourself generating some pretty involved adhoc command chains without having to create a standalone script file. The <strong>dplyr</strong> package uses the <strong>magrittr</strong> package to enable this piping capability within R. The &#8220;pipe&#8221; character is &#8220;%&gt;%&#8221; which is different from the traditional UNIX pipe which is the vertical bar &#8220;|&#8221;. But don&#8217;t let the visual difference confuse you as, conceptually, pipes in R work just like they do in UNIX. The <strong>magrittr</strong> package has a motto <em>&#8220;Ceci n&#8217;est pas une pipe&#8221;</em> presumably in acknowledgement of the noted difference and also as a tribute to the painter Rene Magritte&#8217;s work <em>La trahison des images</em>.
+</p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+
+# Here we filter rows where MPG is &gt;= 25 and then select only rows 1-4
+# and 10-11.
+
+dp_mtcars %&gt;% filter(mpg &gt;= 25) %&gt;% select(-c(5:9)) 
+Source: local data frame [6 x 6]
+
+    mpg   cyl  disp    hp  gear  carb
+  (dbl) (dbl) (dbl) (dbl) (dbl) (dbl)
+1  32.4     4  78.7    66     4     1
+2  30.4     4  75.7    52     4     2
+3  33.9     4  71.1    65     4     1
+4  27.3     4  79.0    66     4     1
+5  26.0     4 120.3    91     5     2
+6  30.4     4  95.1   113     5     2
+</pre>
+<p>Next we filter rows where MPG is &gt;= 25 and then select only rows 1-4 and 10-11 after which we sort the result by MPG from highest to lowest. You can keep adding as many pipes as you wish. At first, while you are becoming familiar with the idea, it is best to keep the pipeline relatively short so you can check your work. But it will not be long before you are stringing together lots of different commands. <strong>dplyr</strong> enables and encourages this type of activity so don&#8217;t be shy. </p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+dp_mtcars %&gt;% filter(mpg &gt;= 25) %&gt;% select(-c(5:9)) %&gt;% arrange(desc(mpg))
+Source: local data frame [6 x 6]
+
+    mpg   cyl  disp    hp  gear  carb
+  (dbl) (dbl) (dbl) (dbl) (dbl) (dbl)
+1  33.9     4  71.1    65     4     1
+2  32.4     4  78.7    66     4     1
+3  30.4     4  75.7    52     4     2
+4  30.4     4  95.1   113     5     2
+5  27.3     4  79.0    66     4     1
+6  26.0     4 120.3    91     5     2
+</pre>
+<p>
+That was pretty cool wasn&#8217;t it ? We don&#8217;t need to alter <strong>dp_mtcars</strong> at all to explore it. We could change our minds about how and if we want to filter, select, or sort. The way this works is that the output of the <strong>dp_mtcars</strong> data frame/table gets sent to the input of the <strong>filter</strong> function that is aware of the source which is why we don&#8217;t need to explicitly reference <strong>dp_mtcars</strong> by name. The output of the <strong>filter</strong> step gets sent to the <strong>select</strong> function which in turns pipes or chains its output into the input of the <strong>arrange</strong> function which sends its output to the screen. We could even pipe the output of these operations to the <strong>ggplot2 </strong> package. But first let&#8217;s convert some of the columns into factors so the resulting plot will look better.</p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+# Turn the cyl and am variables into factors. Notice that the resulting
+# output reflects the change
+
+dp_mtcars %&gt;%
+mutate(cyl=factor(cyl,levels=c(4,6,8)),
+am=factor(am,labels=c(&quot;Auto&quot;,&quot;Manual&quot; )))
+mpg    cyl  disp    hp  drat    wt  qsec    vs     am  gear  carb
+(dbl) (fctr) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (fctr) (dbl) (dbl)
+1   21.0      6 160.0   110  3.90 2.620 16.46     0 Manual     4     4
+2   21.0      6 160.0   110  3.90 2.875 17.02     0 Manual     4     4
+3   22.8      4 108.0    93  3.85 2.320 18.61     1 Manual     4     1
+4   21.4      6 258.0   110  3.08 3.215 19.44     1   Auto     3     1
+5   18.7      8 360.0   175  3.15 3.440 17.02     0   Auto     3     2
+6   18.1      6 225.0   105  2.76 3.460 20.22     1   Auto     3     1
+7   14.3      8 360.0   245  3.21 3.570 15.84     0   Auto     3     4
+8   24.4      4 146.7    62  3.69 3.190 20.00     1   Auto     4     2
+9   22.8      4 140.8    95  3.92 3.150 22.90     1   Auto     4     2
+10  19.2      6 167.6   123  3.92 3.440 18.30     1   Auto     4     4
+..   ...    ...   ...   ...   ...   ...   ...   ...    ...   ...   ...
+</pre>
+<p>But that was kind of boring &#8211; Let&#8217;s visualize this using the <strong>ggplot</strong> package whose author, Hadley Wickham, is also the author of <strong>dplyr. </strong></p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+dp_mtcars %&gt;% mutate(cyl=factor(cyl,levels=c(4,6,8)),
+                     am=factor(am,labels=c(&quot;Auto&quot;,&quot;Manual&quot; ))) %&gt;%
+                     ggplot(aes(x=wt,y=mpg,color=cyl)) +
+                     geom_point() + facet_wrap(~am)
+</pre>
+<p><img class="alignnone size-full wp-image-1322" src="http://i0.wp.com/rollingyours.files.wordpress.com/2016/06/ggplot_out.png?w=456&#038;ssl=1" alt="ggplot_out"   data-recalc-dims="1" /></p>
+<p>Okay well that might have been too much for you and that&#8217;s okay if it is. Let&#8217;s break this down into two steps. First let&#8217;s save the results of the mutate operation into a new data frame.</p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+new_dp_mtcars &lt;- dp_mtcars %&gt;% mutate(cyl=factor(cyl,levels=c(4,6,8)),
+                     am=factor(am,labels=c(&quot;Auto&quot;,&quot;Manual&quot; )))
+
+# Now we can call the ggplot command separately
+
+ggplot(new_dp_mtcars,aes(x=wt,y=mpg,color=cyl)) +
+                     geom_point() + facet_wrap(~am)
+</pre>
+<p>Pick whatever approach you want to break things down to the level you need. However, I guarantee that after a while you will probably wind up writing lots of one line programs.</p>
+<h4>Split-Apply-Combine</h4>
+</p>
+<p>There are two more commands from the <strong>dplyr</strong> package that are particularly useful in aggregating data. The <strong>group_by() </strong>and <strong>summarize()</strong> functions help us group a data frame according to some factors and then apply some summary functions across those groups. The idea is to first &#8220;split&#8221; the data into groups, &#8220;apply&#8221; some functions (e.g. mean()) to some continuous quantity relating to each group, and then combine those group specific results back into an integrated result. In the next example we will group (or split) the data frame by the cylinder variable and then summarize the mean MPG for each group and then combine that into a final aggregated result.</p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+dp_mtcars %&gt;% group_by(cyl) %&gt;% summarize(avg_mpg=mean(mpg))
+Source: local data frame [3 x 2]
+
+    cyl  avg_mpg
+  (dbl)    (dbl)
+1     4 26.66364
+2     6 19.74286
+3     8 15.10000
+
+# Let's group by cylinder then by transmission type and then apply the mean
+# and sd functions to mpg
+
+dp_mtcars %&gt;% group_by(cyl,am) %&gt;% summarize(avg_mpg=mean(mpg),sd=sd(mpg))
+Source: local data frame [6 x 4]
+Groups: cyl [?]
+
+    cyl    am  avg_mpg        sd
+  (dbl) (dbl)    (dbl)     (dbl)
+1     4     0 22.90000 1.4525839
+2     4     1 28.07500 4.4838599
+3     6     0 19.12500 1.6317169
+4     6     1 20.56667 0.7505553
+5     8     0 15.05000 2.7743959
+6     8     1 15.40000 0.5656854
+
+# Note that just grouping a data frame without summary doesn't appear to do 
+# much from a visual point of view. 
+
+dp_mtcars %&gt;% group_by(cyl)
+Source: local data frame [32 x 11]
+Groups: cyl [3]
+
+     mpg   cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb
+   (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl) (dbl)
+1   21.0     6 160.0   110  3.90 2.620 16.46     0     1     4     4
+2   21.0     6 160.0   110  3.90 2.875 17.02     0     1     4     4
+3   22.8     4 108.0    93  3.85 2.320 18.61     1     1     4     1
+4   21.4     6 258.0   110  3.08 3.215 19.44     1     0     3     1
+5   18.7     8 360.0   175  3.15 3.440 17.02     0     0     3     2
+6   18.1     6 225.0   105  2.76 3.460 20.22     1     0     3     1
+7   14.3     8 360.0   245  3.21 3.570 15.84     0     0     3     4
+8   24.4     4 146.7    62  3.69 3.190 20.00     1     0     4     2
+9   22.8     4 140.8    95  3.92 3.150 22.90     1     0     4     2
+10  19.2     6 167.6   123  3.92 3.440 18.30     1     0     4     4
+..   ...   ...   ...   ...   ...   ...   ...   ...   ...   ...   ...
+
+</pre>
+<h4>Merging Data Frames</h4>
+</p>
+<p>One of the strengths of <strong>dplyr</strong> is it&#8217;s ability to do merges via various &#8220;joins&#8221; like those associated with database joins. There is already a built-in R command called <strong>merge</strong> that can handle merging duties but dplyr offers flexible and extended capabilities in this regard. Moreover it does so in a way that is consistent (for the most part) with SQL which you can use for a wife variety of data mining tasks. If you already know SQL then you will understand these commands  without much effort. Let&#8217;s set up two example simple data frames to explain the concept of joining.</p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+df1 &lt;- data.frame(id=c(1,2,3),m1=c(0.98,0.45,0.22))
+df2 &lt;- data.frame(id=c(3,4),m1=c(0.17,0.66))
+
+df1
+  id   m1
+1  1 0.98
+2  2 0.45
+3  3 0.22
+
+df2
+  id   m1
+1  3 0.17
+2  4 0.66
+</pre>
+<p><strong>Left Join</strong></p>
+<p>Think about what it means to merge these data frames. It makes sense to want to join the data frames with respect to some common column name. In this case it is clear that the <strong>id</strong> column is in both data frames. So let&#8217;s join the data frames using &#8220;id&#8221; as a &#8220;key&#8221;. The question is what to do about the fact that there is no id in df2 corresponding to id number 2. This is why different types of joins exist. Let&#8217;s see how they work. We&#8217;ll start with the <strong>left join</strong>:</p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+left_join(df1,df2,by=&quot;id&quot;)
+  id m1.x m1.y
+1  1 0.98   NA
+2  2 0.45   NA
+3  3 0.22 0.17
+</pre>
+<p>So the left join looks at the first data frame df1 and then attempts to find corresponding &#8220;id&#8221; values in df2 that match all id values in df1. Of course there are no ids matching 2 or 3 in df2 so what happens ? The left join will insert NAs in the m1.y column since there are no values in df2. Note that there is in fact an id of value 3 in both data frames so it fills in both measurement columns with the values. Also note that since in both data frames there is a column named &#8220;m1&#8221; so it has to create unique names to accommodate both columns. The &#8220;x&#8221; and &#8220;y&#8221; come from the fact that df1 comes before df2 in the calling sequence to <strong>left_join</strong>. Thus &#8220;x&#8221; matches df1 and &#8220;y&#8221; matches df2. </p>
+<p><strong>Inner Join</strong></p>
+<p>Let&#8217;s join the two data frames in a way that yields only the intersection of the two data structures based on &#8220;id&#8221;. Using visual examination we can see that there is only one id in common to both data frames &#8211; id 3. </p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+inner_join(df1,df2,by=&quot;id&quot;)
+  id m1.x m1.y
+1  3 0.22 0.17
+</pre>
+<h4>More Involved Join Examples</h4>
+</p>
+<p>Now we&#8217;ll look at a more advanced example. Let&#8217;s create two data frames where the first, (we&#8217;ll call it &#8220;authors&#8221;), presents a list of, well, authors. The second data frame presents a list of books published by various authors. Each data frame has some additional attributes of interest.</p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+# For reference sake - these data frames come from the examples contained in 
+# the help pages for the built-in R merge command
+
+authors &lt;- data.frame(
+         surname = I(c(&quot;Tukey&quot;, &quot;Venables&quot;, &quot;Tierney&quot;, &quot;Ripley&quot;, &quot;McNeil&quot;)),
+         nationality = c(&quot;US&quot;, &quot;Australia&quot;, &quot;US&quot;, &quot;UK&quot;, &quot;Australia&quot;),
+         deceased = c(&quot;yes&quot;, rep(&quot;no&quot;, 4)))
+     
+books &lt;- data.frame(
+         name = I(c(&quot;Tukey&quot;, &quot;Venables&quot;, &quot;Tierney&quot;,
+                  &quot;Ripley&quot;, &quot;Ripley&quot;, &quot;McNeil&quot;, &quot;R Core&quot;)),
+         title = c(&quot;Exploratory Data Analysis&quot;,
+                   &quot;Modern Applied Statistics ...&quot;,
+                   &quot;LISP-STAT&quot;,
+                   &quot;Spatial Statistics&quot;, &quot;Stochastic Simulation&quot;,
+                   &quot;Interactive Data Analysis&quot;,
+                   &quot;An Introduction to R&quot;),
+         other.author = c(NA, &quot;Ripley&quot;, NA, NA, NA, NA,
+                          &quot;Venables &amp; Smith&quot;))
+
+authors
+   surname nationality deceased
+1    Tukey          US      yes
+2 Venables   Australia       no
+3  Tierney          US       no
+4   Ripley          UK       no
+5   McNeil   Australia       no
+ 
+books
+      name                         title     other.author
+1    Tukey     Exploratory Data Analysis             &lt;NA&gt;
+2 Venables Modern Applied Statistics ...           Ripley
+3  Tierney                     LISP-STAT             &lt;NA&gt;
+4   Ripley            Spatial Statistics             &lt;NA&gt;
+5   Ripley         Stochastic Simulation             &lt;NA&gt;
+6   McNeil     Interactive Data Analysis             &lt;NA&gt;
+7   R Core          An Introduction to R Venables &amp; Smith
+
+</pre>
+<p>At first glance it appears that there is nothing in common between these two data frames in terms of column names. However, it is fairly obvious that the &#8220;surname&#8221; column in the authors data frame matches the &#8220;name&#8221; column in books so we could probably use those as keys to join the two data frames. We also see that there is an author ,&#8221;R Core&#8221; (meaning the R Core Team), who appears in the books table though is not listed as an author in the authors data frame. This kind of thing happens all the time in real life so better get used to it. Let&#8217;s do some reporting using these two data frames:</p>
+<p>Let&#8217;s find all authors listed in the authors table who published a book along with their book titles, other authors, nationality, and living status. Let&#8217;s try an inner join on this. Because we don&#8217;t have any common column names between books and authors we have to tell the join what columns to use for matching. The <strong>by </strong>argument exists for this purpose. Note also that the author &#8220;R Core&#8221; listed in books isn&#8217;t printed here because that author does not also exist in the authors table. This is because the inner join looks for the intersection of the tables. </p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+
+inner_join(books,authors,by=c(&quot;name&quot;=&quot;surname&quot;))
+      name                         title other.author nationality deceased
+1    Tukey     Exploratory Data Analysis         &lt;NA&gt;          US      yes
+2 Venables Modern Applied Statistics ...       Ripley   Australia       no
+3  Tierney                     LISP-STAT         &lt;NA&gt;          US       no
+4   Ripley            Spatial Statistics         &lt;NA&gt;          UK       no
+5   Ripley         Stochastic Simulation         &lt;NA&gt;          UK       no
+6   McNeil     Interactive Data Analysis         &lt;NA&gt;   Australia       no
+
+# We could have also done a right join since this will require a result that has
+# all rows form the &quot;right&quot; data frame (in the &quot;y&quot; position) which in this case is 
+# authors
+
+right_join(books,authors,by=c(&quot;name&quot;=&quot;surname&quot;))
+      name                         title other.author nationality deceased
+1    Tukey     Exploratory Data Analysis         &lt;NA&gt;          US      yes
+2 Venables Modern Applied Statistics ...       Ripley   Australia       no
+3  Tierney                     LISP-STAT         &lt;NA&gt;          US       no
+4   Ripley            Spatial Statistics         &lt;NA&gt;          UK       no
+5   Ripley         Stochastic Simulation         &lt;NA&gt;          UK       no
+6   McNeil     Interactive Data Analysis         &lt;NA&gt;   Australia       no
+
+</pre>
+<p>Next, find any and all authors who published a book even if they do not appear in the authors table. The result should show names, titles, other authors, nationality, and living status. Let&#8217;s do a left join which will pull in all rows from &#8220;x&#8221; (books) and where there is no matching key/name in authors then NAs will be inserted for columns existing in the &#8220;y&#8221; (authors) table.</p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+left_join(books,authors,by=c(&quot;name&quot;=&quot;surname&quot;))
+      name                         title     other.author nationality deceased
+1    Tukey     Exploratory Data Analysis             &lt;NA&gt;          US      yes
+2 Venables Modern Applied Statistics ...           Ripley   Australia       no
+3  Tierney                     LISP-STAT             &lt;NA&gt;          US       no
+4   Ripley            Spatial Statistics             &lt;NA&gt;          UK       no
+5   Ripley         Stochastic Simulation             &lt;NA&gt;          UK       no
+6   McNeil     Interactive Data Analysis             &lt;NA&gt;   Australia       no
+7   R Core          An Introduction to R Venables &amp; Smith        &lt;NA&gt;     &lt;NA&gt;
+</pre>
+<p>Do the same as above but the result should show only the book title and name columns<br />
+in that order. This is simply a matter of doing the previous join and piping the result to a filter statement</p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+left_join(books,authors,by=c(&quot;name&quot;=&quot;surname&quot;)) %&gt;% select(title,name)
+                          title     name
+1     Exploratory Data Analysis    Tukey
+2 Modern Applied Statistics ... Venables
+3                     LISP-STAT  Tierney
+4            Spatial Statistics   Ripley
+5         Stochastic Simulation   Ripley
+6     Interactive Data Analysis   McNeil
+7          An Introduction to R   R Core
+
+</pre>
+<p>Find the book names of all US authors and who are not deceased. Well first we filter the authors table to filter out rows according the specified conditions. Then we can pass the result to an <strong>inner_join()</strong> statement to get the book titles and then we pass that result to select only the book titles. Note that because we are piping the output from the <strong>filter()</strong> results we don&#8217;t need to specify that in the call to <strong>inner_join()</strong>. That is, the <strong>inner_join</strong> function assumes that the <strong>filter()</strong> results represent the &#8220;x&#8221; position in the call to <strong>inner_join()</strong></p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+authors %&gt;% filter(deceased == &quot;no&quot; &amp; nationality == &quot;US&quot;) %&gt;%
+            inner_join(books,by=c(&quot;surname&quot;=&quot;name&quot;)) %&gt;% select(title)surname 
+title
+1 LISP-STAT
+</pre>
+<p>Find any book titles for authors who do not appear in the authors data frame. Here we use an <strong>anti_join()</strong> which returns all rows from books where there are no matching values in authors, keeping just columns from books &#8211; and then we pass that result to select for title and name</p>
+<pre class="brush: r; gutter: false; title: ; notranslate">
+anti_join(books,authors,by=c(&quot;name&quot;=&quot;surname&quot;)) %&gt;% select(title,name)
+                 title   name
+1 An Introduction to R R Core
+
+</pre>
+<h4>Up Next &#8211; Biking in San Francisco</h4>
+</p>
+<p>That&#8217;s it for now and we have covered a lot of ground in one go although once you invest some time in playing with dplyr (especially the pipes) then it becomes difficult to go back to the &#8220;old ways&#8221; of doing things. Next up we will look at some &#8220;real&#8221; data and apply our new found knowledge to working with it. The data set actually comes from the Kaggle Project page for the San Francisco Bay Area Bike Share Service. The data is about 660MB and you can <a href="https://www.kaggle.com/benhamner/sf-bay-area-bike-share" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'https://www.kaggle.com/benhamner/sf-bay-area-bike-share', 'download it']);" ref="nofollow" target="_blank">download it</a> though you will need a Kaggle account. You might want to go ahead and download that data in anticipation of the next posting.</p>

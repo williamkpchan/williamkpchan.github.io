@@ -1,0 +1,257 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312" target=_blank>
+<style type="text/css" target=_blank>a {text-decoration: none}</style>
+</head>
+<body bgcolor="#000000" text="#109030" leftmargin="150" topmargin="10" marginwidth="150" link="#00CCCC" vlink="#CC66CC" alink="#FFFF00" target=_blank>
+<FONT size=3>
+
+<h1 class="entry-title" itemprop="headline">Machine Learning with R: An Irresponsibly Fast Tutorial</h1>
+ 
+<p>A super quick, very practical, theory-free, hands-on intro to writing a simple classification model in R, using the <em>caret</em> package. If you want to skip the tutorial, you can find the R code <a href="https://github.com/wgstanton/blog-resources/blob/master/Titanic/titanic.R">here</a>. Quick note: if the code examples look weird for you on mobile, give it a try on a desktop (you can&#8217;t do the tutorial on your phone, anyway!).</p>
+<h2>The caret package</h2>
+<p>One of the biggest barriers to learning for budding data scientists is that there are so many different R packages for machine learning. Each package has different functions for training the model, different functions for getting predictions out of the model and different parameters in those functions. So in the past, trying out a new algorithm was often a huge ordeal. The <a href="http://caret.r-forge.r-project.org/">caret package</a> solves this problem in an elegant and easy-to-use way. Caret contains wrapper functions that allow you to use the exact same functions for training and predicting with dozens of different algorithms. On top of that, it includes sophisticated built-in methods for evaluating the effectiveness of the predictions you get from the model. I recommend that you do all of your machine-learning work in caret, at least as long as the algorithm you need is supported. There&#39;s a nice little intro paper to caret <a href="http://www.jstatsoft.org/v28/i05">here</a>.</p>
+<h2>The Titanic dataset</h2>
+<p>Most of you have heard of a movie called Titanic. What you may not know is that the movie is based on a real event, and Leonardo DiCaprio was not actually there. The folks at <a href="http://www.kaggle.com">Kaggle</a> put together a dataset containing data on who survived and who died on the Titanic. The challenge is to build a model that can look at characteristics of an individual who was on the Titanic and predict the likelihood that they would have survived. There are several useful variables that they include in the <a href="https://www.kaggle.com/c/titanic-gettingStarted">dataset</a> for each person: </p>
+<ul>
+<li>pclass: passenger class (1st, 2nd, or 3rd)</li>
+<li>sex</li>
+<li>age</li>
+<li>sibsp: number of Siblings/Spouses Aboard</li>
+<li>parch: number of Parents/Children Aboard</li>
+<li>fare: how much the passenger paid</li>
+<li>embarked: where they got on the boat (C = Cherbourg; Q = Queenstown; S = Southampton)</li>
+</ul>
+<h2>So what is a classification model anyway?</h2>
+<p>For our purposes, <em>machine learning</em> is just using a computer to &ldquo;learn&rdquo; from data. What do I mean by &ldquo;learn?&rdquo; Well, there are two main different possible types of learning:</p>
+<ul>
+<li>supervised learning: Think of this as pattern recognition. You give the algorithm a collection of labeled examples (a <em>training set</em>), and the algorithm then attempts to predict labels for new data points. The Titanic Kaggle challenge is an example of supervised learning, in particular <em>classification</em>. </li>
+<li>unsupervised learning: Unsupervised learning occurs when there is no training set. A common type of unsupervised learning is <em>clustering</em>, where the computer automatically groups a bunch of data points into different &ldquo;clusters&rdquo; based on the data. </li>
+</ul>
+<h2>Installing R and RStudio</h2>
+<p>In order to follow this tutorial, you will need to have R set up on your computer. Here&#39;s a link to a download page: <a href="http://www.inside-r.org/download">Inside R Download Page</a>. I also recommend RStudio, which provides a simple interface for writing and executing R code: download it <a href="http://www.rstudio.com/products/RStudio/#Desk">here</a>. Both R and RStudio are totally free and easy to install. </p>
+<h2>Installing the required R packages</h2>
+<p>Go ahead and open up RStudio (or just R, if you don&#39;t want to use RStudio). For this tutorial, you need to install the <em>caret</em> package and the <em>randomForest</em> package (you only need to do this part once, even if you repeat the tutorial later).</p>
+<pre><code class="r">install.packages(&quot;caret&quot;, dependencies = TRUE)
+install.packages(&quot;randomForest&quot;)
+</code></pre>
+<h2>Loading the required R packages</h2>
+<p>Now we have to load the packages into the working environment (unlike installing the packages, this step has to be done every time you restart your R session).</p>
+<pre><code class="r">library(caret)
+library(randomForest)
+</code></pre>
+<h2>Loading in the data</h2>
+<p>Go the Kaggle download page to find the <a href="https://www.kaggle.com/c/titanic-gettingStarted/data">dataset</a>. Download train.csv and test.csv, and be sure to save them to a place you can remember (I recommend a folder on your desktop called &ldquo;Titanic&rdquo;). You might need to sign up for Kaggle first (you should be using Kaggle anyway!)</p>
+<p>To load in the data, you first set the R working directory to the place where you downloaded the data. </p>
+<pre><code class="r">setwd(&quot;FILE PATH TO DIRECTORY&quot;)
+</code></pre>
+<p>For example, I downloaded mine to a directory on my Desktop called Titanic, so I typed in </p>
+<pre><code class="r">setwd(&quot;~/Desktop/Titanic/&quot;)
+</code></pre>
+<p>Now, in order to load the data, we will use the <em>read.table</em> function</p>
+<pre><code class="r">trainSet &lt;- read.table(&quot;train.csv&quot;, sep = &quot;,&quot;, header = TRUE)
+</code></pre>
+<p>This command reads in the file &ldquo;train.csv&rdquo;, using the delimiter &ldquo;,&rdquo;, including the header row as the column names,  and assigns it to the R object trainSet.</p>
+<p>Let&#39;s read in the testSet also:</p>
+<pre><code class="r">testSet &lt;- read.table(&quot;test.csv&quot;, sep = &quot;,&quot;, header = TRUE)
+</code></pre>
+<p>Now, just for fun, let&#39;s take a look at the first few rows of the training set: </p>
+<pre><code class="r">head(trainSet)
+</code></pre>
+<pre><code>##   PassengerId Survived Pclass
+## 1           1        0      3
+## 2           2        1      1
+## 3           3        1      3
+## 4           4        1      1
+## 5           5        0      3
+## 6           6        0      3
+##                                                  Name    Sex Age SibSp
+## 1                             Braund, Mr. Owen Harris   male  22     1
+## 2 Cumings, Mrs. John Bradley (Florence Briggs Thayer) female  38     1
+## 3                              Heikkinen, Miss. Laina female  26     0
+## 4        Futrelle, Mrs. Jacques Heath (Lily May Peel) female  35     1
+## 5                            Allen, Mr. William Henry   male  35     0
+## 6                                    Moran, Mr. James   male  NA     0
+##   Parch           Ticket    Fare Cabin Embarked
+## 1     0        A/5 21171  7.2500              S
+## 2     0         PC 17599 71.2833   C85        C
+## 3     0 STON/O2. 3101282  7.9250              S
+## 4     0           113803 53.1000  C123        S
+## 5     0           373450  8.0500              S
+## 6     0           330877  8.4583              Q
+</code></pre>
+<p>You&#39;ll see that each row has a column &ldquo;Survived,&rdquo; which is 1 if the person survived a 0 if they didn&#39;t. Now, let&#39;s compare the training set to the test set:</p>
+<pre><code class="r">head(testSet)
+</code></pre>
+<pre><code>##   PassengerId Pclass                                         Name    Sex
+## 1         892      3                             Kelly, Mr. James   male
+## 2         893      3             Wilkes, Mrs. James (Ellen Needs) female
+## 3         894      2                    Myles, Mr. Thomas Francis   male
+## 4         895      3                             Wirz, Mr. Albert   male
+## 5         896      3 Hirvonen, Mrs. Alexander (Helga E Lindqvist) female
+## 6         897      3                   Svensson, Mr. Johan Cervin   male
+##    Age SibSp Parch  Ticket    Fare Cabin Embarked
+## 1 34.5     0     0  330911  7.8292              Q
+## 2 47.0     1     0  363272  7.0000              S
+## 3 62.0     0     0  240276  9.6875              Q
+## 4 27.0     0     0  315154  8.6625              S
+## 5 22.0     1     1 3101298 12.2875              S
+## 6 14.0     0     0    7538  9.2250              S
+</code></pre>
+<p>The big difference between the training set and the test set is that the training set is <em>labeled</em>, but the test set is <em>unlabeled</em>. On Kaggle, your job is to make predictions on the unlabeled test set, and Kaggle scores you based on the percentage of passengers you correctly label. </p>
+<h2>Testing for useful variables</h2>
+<p>The single most important factor in being able to build an effective model is <em>not</em> picking the best algorithm, or using the most advanced software package, or understanding the computational complexity of the singular value decomposition. Most of machine learning is really about picking the best <em>features</em> to use in the model. In machine learning, a &ldquo;feature&rdquo; is really just a variable or some sort of combination of variables (like the sum or product of two variables). </p>
+<p>So in a classification model like the Titanic challenge, how do we pick the most useful variables to use?  The most straightforward way (but by no means the only way) is to use <a href="http://en.wikipedia.org/wiki/Contingency_table">crosstabs</a> and <a href="http://en.wikipedia.org/wiki/Box_plot">conditional box plots</a>. </p>
+<h3>Crosstabs for categorical variables</h3>
+<p>Crosstabs show the interactions between two variables in a very easy to read way. We want to know which variables are the best predictors for &ldquo;Survived,&rdquo; so we will look at the crosstabs between &ldquo;Survived&rdquo; and each other variable. In R, we use the <em>table</em> function:</p>
+<pre><code class="r">table(trainSet[,c(&quot;Survived&quot;, &quot;Pclass&quot;)])
+</code></pre>
+<pre><code>##         Pclass
+## Survived   1   2   3
+##        0  80  97 372
+##        1 136  87 119
+</code></pre>
+<p>Looking at this crosstab, we can see that &ldquo;Pclass&rdquo; could be a useful predictor of &ldquo;Survived.&rdquo; Why? The first column of the crosstab shows that of the passengers in Class 1, 136 survived and 80 died (ie. 63% of first class passengers survived). On the other hand, in Class 2, 87 survived and 97 died (ie. only 47% of second class passengers survived). Finally, in Class 3, 119 survived and 372 died (ie. only 24% of third class passengers survived). Damn, that&#39;s messed up.</p>
+<p>We definitely want to use Pclass in our model, because it definitely has strong predictive value of whether someone survived or not. Now, you can repeat this process for the other categorical variables in the dataset, and decide which variables you want to include (I&#39;ll show you which ones I picked later in the post).</p>
+<h3>Plots for continuous variables</h3>
+<p>Plots are often a better way to identify useful continuous variables than crosstabs are (this is mostly because crosstabs aren&#39;t so natural for numerical variables). We will use &ldquo;conditional&rdquo; box plots to compare the distribution of each continuous variable, conditioned on whether the passengers survived or not (&#39;Survived&#39; = 1 or &#39;Survived&#39; = 0). You may need to install the *fields* package first, just like you installed *caret* and *randomForest*.</p>
+<pre><code class="r"># Comparing Age and Survived.
+library(fields)
+bplot.xy(trainSet$Survived, trainSet$Age)
+</code></pre>
+<p>The box plot of age for those who survived and and those who died are nearly the same. That means that Age probably did not have a large effect on whether one survived or not. The y-axis is Age and the x-axis is Survived (Survived = 1 if the person survived, 0 if not).</p>
+<p>Also, there are lots of NA&#8217;s. Let&#8217;s exclude the variable Age, because it probably doesn&#8217;t have a big impact on Survived, and also because the NA&#8217;s make it a little tricky to work with.</p>
+<pre><code class="r">
+summary(trainSet$Age)
+</code></pre>
+<pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA&#39;s 
+##    0.42   20.12   28.00   29.70   38.00   80.00     177
+</code></pre>
+<pre><code class="r"># Comparing Survival Rate and Fare
+bplot.xy(trainSet$Survived, trainSet$Fare)
+</code></pre>
+<p>As you can see, the boxplots for Fares are much different for those who survived and those who died. Again, the y-axis is Fare and the x-axis is Survived (Survived = 1 if the person survived, 0 if not).</p>
+<p>Also, there are no NA&#8217;s for Fare. Let&#8217;s include this variable.</p>
+<pre><code class="r">
+summary(trainSet$Fare)
+</code></pre>
+<pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##    0.00    7.91   14.45   32.20   31.00  512.30
+</code></pre>
+<h2>Training a model</h2>
+<p>Training the model uses a pretty simple command in caret, but it&#39;s important to understand each piece of the syntax. First, we have to convert Survived to a Factor data type, so that caret builds a classification instead of a regression model. Then, we use the <em>train</em> command to train the model (go figure!). You may be asking what a <a href="http://en.wikipedia.org/wiki/Random_forest">random forest</a> algorithm is. You can think of it as training a bunch of different <a href="http://en.wikipedia.org/wiki/Decision_tree">decision trees</a> and having them vote<br />
+(remember, this is an irresponsibly fast tutorial). Random forests work pretty well in *lots* of different situations, so I often try them first. </p>
+<pre><code class="r"># Convert Survived to Factor
+trainSet$Survived &lt;- factor(trainSet$Survived)
+# Set a random seed (so you will get the same results as me)
+set.seed(42)
+# Train the model using a &quot;random forest&quot; algorithm
+model &lt;- train(Survived ~ Pclass + Sex + SibSp +   
+                          Embarked + Parch + Fare, # Survived is a function of the variables we decided to include
+                          data = trainSet, # Use the trainSet dataframe as the training data
+                          method = &quot;rf&quot;,# Use the &quot;random forest&quot; algorithm
+                          trControl = trainControl(method = &quot;cv&quot;, # Use cross-validation
+                                                   number = 5) # Use 5 folds for cross-validation
+               )
+</code></pre>
+<h2>Evaluating the model</h2>
+<p>For the purposes of this tutorial, we will use cross-validation scores to evaluate our model. Note: in real life (ie. not Kaggle), most data scientists also split the training set further into a training set and a validation set, but that is for another post. </p>
+<h3>What is cross-validation?</h3>
+<p>Cross-validation is a way to evaluate the performance of a model without needing any other data than the training data. It sounds complicated, but it&#39;s actually a pretty simple trick. Typically, you randomly split the training data into 5 equally sized pieces called &ldquo;folds&rdquo; (so each piece of the data contains 20% of the training data). Then, you train the model on 4/5 of the data, and check its accuracy on the 1/5 of the data you left out. You then repeat this process with each split of the data. At the end, you average the percentage accuracy across the five different splits of the data to get an average accuracy. Caret does this for you, and you can see the scores by looking at the model output:</p>
+<pre><code class="r">model
+</code></pre>
+<pre><code>## Random Forest 
+## 
+## 891 samples
+##  11 predictor
+##   2 classes: &#39;0&#39;, &#39;1&#39; 
+## 
+## No pre-processing
+## Resampling: Cross-Validated (5 fold) 
+## 
+## Summary of sample sizes: 712, 713, 714, 713, 712 
+## 
+## Resampling results across tuning parameters:
+## 
+##   mtry  Accuracy   Kappa      Accuracy SD  Kappa SD  
+##   2     0.8103230  0.5784801  0.03358637   0.07818032
+##   5     0.8170964  0.6039000  0.02113867   0.04573844
+##   8     0.8081011  0.5883009  0.02301564   0.05210970
+## 
+## Accuracy was used to select the optimal model using  the largest value.
+## The final value used for the model was mtry = 5.
+</code></pre>
+<p>There are few things to look at in the model output. The first thing to notice is where it says &ldquo;The final value used for the model was mtry = 5.&rdquo; The value &ldquo;mtry&rdquo; is a <em>hyperparameter</em> of the random forest model that determines how many variables the model uses to split the trees. The table shows different values of mtry along with their corresponding average accuracies (and a couple other metrics) under cross-validation. Caret automatically picks the value of the hyperparameter &ldquo;mtry&rdquo; that was the most accurate under cross validation. This approach is called using a &ldquo;tuning grid&rdquo; or a &ldquo;grid search.&rdquo;</p>
+<p>As you can see, with mtry = 5, the average accuracy was 0.8170964, or about 82 percent. As long as the training set isn&#39;t too fundamentally different from the test set, we should expect that our accuracy on the test set should be around 82 percent, as well.</p>
+<h2>Making predictions on the test set</h2>
+<p>Using <em>caret</em>, it is easy to make predictions on the test set to upload to Kaggle. You just have to call the <em>predict</em> method on the model object you trained. Let&#39;s make the predictions on the test set and add them as a new column.</p>
+<pre><code class="r">testSet$Survived &lt;- predict(model, newdata = testSet)
+</code></pre>
+<pre><code>## Error in `$&lt;-.data.frame`(`*tmp*`, &quot;Survived&quot;, value = structure(c(1L, : replacement has 417 rows, data has 418
+</code></pre>
+<p>Uh, oh! There is an error here! When you get this type of error in R, it means that you are trying to assign a vector of one length to a vector of a different length, so the two vectors don&#39;t line up. So how do we fix this problem? </p>
+<p>One annoying thing about <em>caret</em> and <em>randomForest</em> is that if there is missing data in the variables you are using to predict, it will just not return a prediction at all (and it won&#39;t throw an error!). So we have to find the missing data ourselves. </p>
+<pre><code class="r">summary(testSet)
+</code></pre>
+<pre><code>##   PassengerId         Pclass     
+##  Min.   : 892.0   Min.   :1.000  
+##  1st Qu.: 996.2   1st Qu.:1.000  
+##  Median :1100.5   Median :3.000  
+##  Mean   :1100.5   Mean   :2.266  
+##  3rd Qu.:1204.8   3rd Qu.:3.000  
+##  Max.   :1309.0   Max.   :3.000  
+##                                  
+##                                         Name         Sex     
+##  Abbott, Master. Eugene Joseph            :  1   female:152  
+##  Abelseth, Miss. Karen Marie              :  1   male  :266  
+##  Abelseth, Mr. Olaus Jorgensen            :  1               
+##  Abrahamsson, Mr. Abraham August Johannes :  1               
+##  Abrahim, Mrs. Joseph (Sophie Halaut Easu):  1               
+##  Aks, Master. Philip Frank                :  1               
+##  (Other)                                  :412               
+##       Age            SibSp            Parch             Ticket   
+##  Min.   : 0.17   Min.   :0.0000   Min.   :0.0000   PC 17608:  5  
+##  1st Qu.:21.00   1st Qu.:0.0000   1st Qu.:0.0000   113503  :  4  
+##  Median :27.00   Median :0.0000   Median :0.0000   CA. 2343:  4  
+##  Mean   :30.27   Mean   :0.4474   Mean   :0.3923   16966   :  3  
+##  3rd Qu.:39.00   3rd Qu.:1.0000   3rd Qu.:0.0000   220845  :  3  
+##  Max.   :76.00   Max.   :8.0000   Max.   :9.0000   347077  :  3  
+##  NA&#39;s   :86                                        (Other) :396  
+##       Fare                     Cabin     Embarked
+##  Min.   :  0.000                  :327   C:102   
+##  1st Qu.:  7.896   B57 B59 B63 B66:  3   Q: 46   
+##  Median : 14.454   A34            :  2   S:270   
+##  Mean   : 35.627   B45            :  2           
+##  3rd Qu.: 31.500   C101           :  2           
+##  Max.   :512.329   C116           :  2           
+##  NA&#39;s   :1         (Other)        : 80
+</code></pre>
+<p>As you can see, the variable &ldquo;Fare&rdquo; has one NA value. Let&#39;s fill (&ldquo;impute&rdquo;&ldquo;) that value in with the mean of the &quot;Fare&rdquo; column (there are better and fancier ways to do this, but that is for another post). We do this with an ifelse statement. Read it as follows: if an entry in the column &ldquo;Fare&rdquo; is NA, then replace it with the mean of the column (also removing the NA&#39;s when you take the mean). Otherwise, leave it the same.</p>
+<pre><code class="r">testSet$Fare &lt;- ifelse(is.na(testSet$Fare), mean(testSet$Fare, na.rm = TRUE), testSet$Fare)
+</code></pre>
+<p>Okay, now that we fixed that missing value, we can try again to run the predict method.</p>
+<pre><code class="r">testSet$Survived &lt;- predict(model, newdata = testSet)
+</code></pre>
+<p>Let&#39;s remove the unnecessary columns that Kaggle doesn&#39;t want, and then write the testSet to a csv file.</p>
+<pre><code class="r">submission &lt;- testSet[,c(&quot;PassengerId&quot;, &quot;Survived&quot;)]
+write.table(submission, file = &quot;submission.csv&quot;, col.names = TRUE, row.names = FALSE, sep = &quot;,&quot;)
+</code></pre>
+<h2>Uploading your predictions to Kaggle</h2>
+<p>Uploading predictions is easy. Just go to the Kaggle page for the competition, click &ldquo;Make a submission&rdquo; on the sidebar, and select the file submission.csv. Click &ldquo;Submit,&rdquo; and then Kaggle will score your results on the test set. </p>
+<p><a href="http://will-stanton.com/wp-content/uploads/2015/03/submission_screenshot.png"><img src="http://will-stanton.com/wp-content/uploads/2015/03/submission_screenshot.png" alt="submission_screenshot" width="924" height="320" class="alignnone size-full wp-image-70" srcset="http://will-stanton.com/wp-content/uploads/2015/03/submission_screenshot.png 924w, http://will-stanton.com/wp-content/uploads/2015/03/submission_screenshot-300x104.png 300w" sizes="(max-width: 924px) 100vw, 924px" /></a></p>
+<p>Well, we didn&#39;t win, but we did pretty well. In fact, we beat several hundred other people and one of the benchmarks created by Kaggle! Our accuracy on the test set was 77%, which is pretty close to the cross-validation results of 82%. Not bad for our first model <em>ever</em>.</p>
+<p>You can find the R code <a href="https://github.com/wgstanton/blog-resources/blob/master/Titanic/titanic.R">here</a>.</p>
+<h2>Improving the model</h2>
+<p>This post only scratches the surface of what you can do with R and <em>caret</em>. Here are a few ideas for things to try in order to improve the model.</p>
+<ul>
+<li>Try including different variables in the model: leave some out or add some in</li>
+<li>Try combining variables into more useful variables: sometimes you can multiply or add variables together, or concatenate different categorical variables together</li>
+<li>Try transforming the existing variables in clever ways: maybe turn a numerical variable into a categorical variable based on different ranges (e.g. 0-10, 10-90, 90-100)</li>
+<li>Try a different algorithm: maybe neural networks, logistic regression or gradient boosting machines work better. Better yet, train a few different types of models and combine the results by averaging the probabilities (this is called <em>ensembling</em>)</li>
+</ul>
+<h2>Next steps</h2>
+<p>Okay, so you&#39;ve done one machine learning classification tutorial and submitted a solution to Kaggle. That&#39;s an awesome start, and it&#39;s more than the vast majority of people ever do. So what&#39;s next? Here are a few things you can do:</p>
+<ul>
+<li>Try another Kaggle competition! There are a few competitions out there that are great for learning, like <a href="http://www.kaggle.com/c/GiveMeSomeCredit">Give me Some Credit</a>] or <a href="http://www.kaggle.com/c/DontGetKicked">Don&#8217;t Get Kicked</a>. The forums contain lots of great advice and example solutions.</li>
+<li>Learn more about predictive analytics and <em>caret</em>. The book <a href="http://appliedpredictivemodeling.com/">Applied Predictve Modeling</a> was written by Max Kuhn, the creator of <em>caret</em>. I haven&#39;t read it, but it comes highly recommended. His blog has also been incredibly useful to me. </li>
+<li>Keep reading this blog! I will continue to post about practical machine learning. If you&#39;d like, you can subscribe to my email list on the sidebar so that you never miss a post.</li>
+</ul>

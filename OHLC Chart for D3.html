@@ -1,0 +1,384 @@
+
+<base target="_blank">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<style type="text/css">
+
+body {
+background-color: #001800;
+ color: #109030;
+}
+a { text-decoration: none;
+	color: #28B8B8;}
+a:visited {	color: #389898;}
+A:hover {	color: yellow;}
+A:focus {	color: red;}
+code { color: #80A090; background-color: #001800}
+pre { color: gray; background-color: #001010}
+#newtype { color: pink}
+#redpink { color: #cc0099}
+#redword { color: red}
+#yellowword { color: yellow}
+#greenword { color: lightgreen}
+#limeword { color: #00ff00}
+#orangeword { color: orange}
+#cyanword { color: cyan}
+#whiteword { color: white}
+#grayword { color: gray}
+#brownword { color: #ff8000}
+#yellowgreen { color: #bfff00}
+#palered { color: #ffcccc}
+#blueword { color: dodgerblue}
+#purpleword { color: darkorchid}
+#goldword { color: GoldenRod}
+#silverword { color: silver}
+#blackword { color: black}
+.left {
+    position: absolute;
+    left: 100px;
+    color: GoldenRod;
+    border: 1px solid GoldenRod;
+    padding: 2px;
+    font-size: 60%;
+}
+.bord {
+    color: redpink;
+    border: 1px solid GoldenRod;
+    padding: 1px;
+    font-size: 90%;
+}
+.highlight { 
+    color: white;
+    background-color: #002030
+  }
+</STYLE>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script>
+$(document).ready(function(){
+    $('.left').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+</head>
+<body>
+<FONT size=3>
+
+        <h1>An OHLC Chart Component for D3</h1>
+        <div class="published">
+      <p>An open-high-low-close (OHLC) chart is a type of financial chart used to show price movements and help identify trends in a financial instrument over time. For each unit of time, a vertical line is plotted showing the highest and lowest prices reached in that time. Horizontal tick marks are plotted on each side of the line - the opening price for that time period on the left, and the closing price on the right. Usually an OHLC line will be coloured green if on that day the closing price exceeded the opening price (an ‘up day’), and coloured red if not (a ‘down day’).</p>
+
+<p><a href="http://d3js.org/">D3</a> is a javascript library for data visualisation on the web. It is not a charting library. Instead, it gives us the flexibility to bind data to web graphics, utilising modern web standards such as SVG, HTML5 and CSS3. Charts are just one type of visualisation we can make with it. This post assumes some familiarity with D3. There are already lots of great introductory tutorials available on the <a href="https://github.com/mbostock/d3/wiki/Tutorials">D3 wiki</a> if you need to get up to speed.</p>
+
+<p>While D3 does have a component to draw a line series on a chart (<a href="http://bl.ocks.org/mbostock/3883245">see here</a>), it does not have an inbuilt component we can use to render an OHLC series. In this post, we’ll make one.</p>
+
+<h2 id="reusable-chart-components">Reusable Chart Components</h2>
+<p>We’ll use D3 creator Mike Bostock’s <a href="http://bost.ocks.org/mike/chart/">convention for creating reusable components</a> in D3. Essentially this means our component will be a closure with getter-setter methods. This follows the same pattern used by other D3 components and plugins, so will allow us to treat our OHLC component just like any other D3 component.</p>
+
+<p>We’ll assume our data is an array of objects that look like this:</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">{</span>
+    <span class="nl">date</span><span class="p">:</span>  <span class="c1">// A Date object</span>
+    <span class="nl">open</span><span class="p">:</span>  <span class="c1">// A Number</span>
+    <span class="nl">high</span><span class="p">:</span>  <span class="c1">// A Number</span>
+    <span class="nl">low</span><span class="p">:</span>   <span class="c1">// A Number</span>
+    <span class="nl">close</span><span class="p">:</span> <span class="c1">// A Number</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>Here’s what the OHLC component will look like internally:</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">sl</span><span class="p">.</span><span class="nx">series</span><span class="p">.</span><span class="nx">ohlc</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+
+    <span class="kd">var</span> <span class="nx">xScale</span> <span class="o">=</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">time</span><span class="p">.</span><span class="nx">scale</span><span class="p">(),</span>
+        <span class="nx">yScale</span> <span class="o">=</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">scale</span><span class="p">.</span><span class="nx">linear</span><span class="p">();</span>
+
+    <span class="kd">var</span> <span class="nx">ohlc</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">selection</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">selection</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">// Generate ohlc bars here.</span>
+        <span class="p">});</span>
+    <span class="p">};</span>
+
+    <span class="nx">ohlc</span><span class="p">.</span><span class="nx">xScale</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">arguments</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">xScale</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="nx">xScale</span> <span class="o">=</span> <span class="nx">value</span><span class="p">;</span>
+        <span class="k">return</span> <span class="nx">ohlc</span><span class="p">;</span>
+    <span class="p">};</span>
+
+    <span class="nx">ohlc</span><span class="p">.</span><span class="nx">yScale</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Similar to xScale above.</span>
+    <span class="p">};</span>
+
+    <span class="k">return</span> <span class="nx">ohlc</span><span class="p">;</span>
+<span class="p">};</span></code></pre></figure>
+
+<p>Here, we are attaching our component to the <code class="highlighter-rouge">sl.series</code> namespace object. This gives us a nice way to organise the components we write. For example, if we were to implement an axis component, it could go in <code class="highlighter-rouge">sl.axis</code>.</p>
+
+<p>Internally, we have 2 scales, <code class="highlighter-rouge">xScale</code> and <code class="highlighter-rouge">yScale</code>. We’ll need these to map the dates and prices of our input to pixel positions on our chart. The scales are initialised to be default D3 scales. This allows us to use the component without attaching scales, although typically we’ll set them to the scales used by our axes.</p>
+
+<p>These scales are exposed to users of the component using getter/setter functions. For example, calling the <code class="highlighter-rouge">xScale</code> function with no arguments returns the internal <code class="highlighter-rouge">xScale</code>, and calling it with one or more arguments sets the internal <code class="highlighter-rouge">xScale</code> to the first argument. When called with arguments, these functions return the OHLC function. This allows setter calls to be chained together.</p>
+
+<p>We’ll draw the OHLC bars in the <code class="highlighter-rouge">ohlc</code> function returned by the component. We’ll use D3’s <a href="http://bl.ocks.org/mbostock/3808218">General Update Pattern</a>. This is an important D3 concept. In simple terms, we <code class="highlighter-rouge">select</code> page elements that may or may not exist, and bind data to these elements. Page elements are then created, updated or removed as necessary to reflect the data. Creation happens in the <code class="highlighter-rouge">enter()</code> selection, updating in the update selection, and removal in the <code class="highlighter-rouge">exit()</code> selection. This is nice because we can use the same function to both create and update our component to reflect changes in the bound data or in configuration.</p>
+
+<p>To use an instance of the component, we’ll set an xScale and a yScale, bind data to a selection, then call the component on the selection. This will draw the series on the selection. This is how we’ll use our component when we come to drawing the chart.</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">// Create series and bind x and y scales</span>
+<span class="kd">var</span> <span class="nx">series</span> <span class="o">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">series</span><span class="p">.</span><span class="nx">ohlc</span><span class="p">()</span>
+            <span class="p">.</span><span class="nx">xScale</span><span class="p">(</span><span class="nx">xScale</span><span class="p">)</span>
+            <span class="p">.</span><span class="nx">yScale</span><span class="p">(</span><span class="nx">yScale</span><span class="p">);</span>
+
+<span class="c1">// Bind data to a selection and call the series.</span>
+<span class="nx">d3</span><span class="p">.</span><span class="nx">select</span><span class="p">(</span><span class="s1">'.series'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">datum</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="nx">series</span><span class="p">);</span></code></pre></figure>
+
+<h2 id="ohlc-component">OHLC Component</h2>
+<p>Let’s go ahead and implement the <code class="highlighter-rouge">ohlc</code> create/update function.
+First we need an SVG group element to contain our series on the selection. We’ll use the general update pattern. We want just one element to be created, so we’ll bind the whole array of data to the ‘ohlc-series’ element. Now we can create this element in the <code class="highlighter-rouge">enter()</code> selection.</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">ohlc</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">selection</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">selection</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Generate ohlc bars here.</span>
+        <span class="nx">series</span> <span class="o">=</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">select</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">selectAll</span><span class="p">(</span><span class="s1">'.ohlc-series'</span><span class="p">).</span><span class="nx">data</span><span class="p">([</span><span class="nx">data</span><span class="p">]);</span>
+        <span class="nx">series</span><span class="p">.</span><span class="nx">enter</span><span class="p">().</span><span class="nx">append</span><span class="p">(</span><span class="s1">'g'</span><span class="p">).</span><span class="nx">classed</span><span class="p">(</span><span class="s1">'ohlc-series'</span><span class="p">,</span> <span class="kc">true</span><span class="p">);</span>
+        <span class="c1">//... </span>
+    <span class="p">});</span>
+<span class="p">};</span></code></pre></figure>
+
+<p>Next we need a group for each OHLC bar of our series. We will select all the elements with class ‘bar’ and bind a price object to each one. This time, we’ll also include a <em>key function</em> which returns the price object’s date. While not really necessary for this example, if we wanted to use D3’s transitions to animate updates to the data, this would ensure that D3 can match up existing bars with their new data, making for smooth animation. This idea is called <a href="http://bost.ocks.org/mike/constancy/">Object Constancy</a>.</p>
+
+<p>With the series data bound, we can create the bar groups in the <code class="highlighter-rouge">enter()</code> selection. In the update selection, we will give them a the css class ‘up-day’ or ‘down-day’ depending on the difference in opening and closing price. This means that we will be able to give colours to the up-day and down-day bars with CSS.</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//... </span>
+<span class="nx">bars</span> <span class="o">=</span> <span class="nx">series</span><span class="p">.</span><span class="nx">selectAll</span><span class="p">(</span><span class="s1">'.bar'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">data</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">date</span><span class="p">;</span>
+    <span class="p">});</span>
+
+<span class="nx">bars</span><span class="p">.</span><span class="nx">enter</span><span class="p">()</span>
+    <span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s1">'g'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">classed</span><span class="p">(</span><span class="s1">'bar'</span><span class="p">,</span> <span class="kc">true</span><span class="p">);</span>
+
+<span class="nx">bars</span><span class="p">.</span><span class="nx">classed</span><span class="p">({</span>
+    <span class="s1">'up-day'</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">close</span> <span class="o">&gt;</span> <span class="nx">d</span><span class="p">.</span><span class="nx">open</span><span class="p">;</span>
+        <span class="p">},</span>
+    <span class="s1">'down-day'</span><span class="p">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">close</span> <span class="o">&lt;=</span> <span class="nx">d</span><span class="p">.</span><span class="nx">open</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+
+<span class="nx">bars</span><span class="p">.</span><span class="nx">exit</span><span class="p">().</span><span class="nx">remove</span><span class="p">();</span></code></pre></figure>
+
+<p>All that’s left to do is to draw the lines inside each bar. We need to draw 3 lines for each bar - one extending from the low price to the high price, and 2 horizontal ticks for the open and closing prices. First, in the body of <code class="highlighter-rouge">sl.series.ohlc</code>, we will set up a <code class="highlighter-rouge">d3.svg.line</code> with appropriate x and y accessors. This means that we will be able to generate svg lines by supplying <code class="highlighter-rouge">line</code> with an array of points.</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">line</span> <span class="o">=</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">svg</span><span class="p">.</span><span class="nx">line</span><span class="p">()</span>
+            <span class="p">.</span><span class="nx">x</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">x</span><span class="p">;</span> <span class="p">})</span>
+            <span class="p">.</span><span class="nx">y</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">y</span><span class="p">;</span> <span class="p">});</span></code></pre></figure>
+
+<p>For each line, we’ll select a path element by its class and then append a path element in the <code class="highlighter-rouge">enter()</code> selection. The <code class="highlighter-rouge">enter()</code> selection is returned by binding data using <code class="highlighter-rouge">selection.data</code>, but what data should we bind?</p>
+
+<p>In this case we want to bind the price object that’s already bound to the the parent bar group element. It turns out that for this type of multiple selection we need to give a <em>function</em> to <code class="highlighter-rouge">selection.data</code> which returns an array containing the elements to bind (<a href="https://github.com/mbostock/d3/wiki/Selections#data">see here</a>). In the update selection, we will draw the line, scaling all x and y coordinates with the xScale and yScale respectively.</p>
+
+<p>We’ll put the high low line create/update code in a function of its own which we will call from the OHLC create/update function. It looks like this:</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">highLowLines</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">bars</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="kd">var</span> <span class="nx">paths</span> <span class="o">=</span> <span class="nx">bars</span>
+        <span class="p">.</span><span class="nx">selectAll</span><span class="p">(</span><span class="s1">'.high-low-line'</span><span class="p">)</span>
+        <span class="p">.</span><span class="nx">data</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="p">[</span><span class="nx">d</span><span class="p">];</span>
+        <span class="p">});</span>
+
+        <span class="nx">paths</span><span class="p">.</span><span class="nx">enter</span><span class="p">().</span><span class="nx">append</span><span class="p">(</span><span class="s1">'path'</span><span class="p">);</span>
+
+        <span class="nx">paths</span><span class="p">.</span><span class="nx">classed</span><span class="p">(</span><span class="s1">'high-low-line'</span><span class="p">,</span> <span class="kc">true</span><span class="p">)</span>
+        <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">'d'</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">line</span><span class="p">([</span>
+                <span class="p">{</span> <span class="na">x</span><span class="p">:</span> <span class="nx">xScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">date</span><span class="p">),</span> <span class="na">y</span><span class="p">:</span> <span class="nx">yScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">high</span><span class="p">)</span> <span class="p">},</span>
+                <span class="p">{</span> <span class="na">x</span><span class="p">:</span> <span class="nx">xScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">date</span><span class="p">),</span> <span class="na">y</span><span class="p">:</span> <span class="nx">yScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">low</span><span class="p">)</span> <span class="p">}</span>
+            <span class="p">]);</span>
+        <span class="p">});</span>
+    <span class="p">};</span></code></pre></figure>
+
+<p>It’s a similar situation for drawing the the open/close ticks:</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">openCloseTicks</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">bars</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">open</span><span class="p">,</span>
+        <span class="nx">close</span><span class="p">,</span>
+        <span class="nx">tickWidth</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+
+    <span class="nx">open</span> <span class="o">=</span> <span class="nx">bars</span><span class="p">.</span><span class="nx">selectAll</span><span class="p">(</span><span class="s1">'.open-tick'</span><span class="p">).</span><span class="nx">data</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nx">d</span><span class="p">];</span>
+    <span class="p">});</span>
+
+    <span class="nx">close</span> <span class="o">=</span> <span class="nx">bars</span><span class="p">.</span><span class="nx">selectAll</span><span class="p">(</span><span class="s1">'.close-tick'</span><span class="p">).</span><span class="nx">data</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nx">d</span><span class="p">];</span>
+    <span class="p">});</span>
+
+    <span class="nx">open</span><span class="p">.</span><span class="nx">enter</span><span class="p">().</span><span class="nx">append</span><span class="p">(</span><span class="s1">'path'</span><span class="p">);</span>
+    <span class="nx">close</span><span class="p">.</span><span class="nx">enter</span><span class="p">().</span><span class="nx">append</span><span class="p">(</span><span class="s1">'path'</span><span class="p">);</span>
+
+    <span class="nx">open</span><span class="p">.</span><span class="nx">classed</span><span class="p">(</span><span class="s1">'open-tick'</span><span class="p">,</span> <span class="kc">true</span><span class="p">)</span>
+        <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">'d'</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">line</span><span class="p">([</span>
+                <span class="p">{</span> <span class="na">x</span><span class="p">:</span> <span class="nx">xScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">date</span><span class="p">)</span> <span class="o">-</span> <span class="nx">tickWidth</span><span class="p">,</span> <span class="na">y</span><span class="p">:</span> <span class="nx">yScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">open</span><span class="p">)</span> <span class="p">},</span>
+                <span class="p">{</span> <span class="na">x</span><span class="p">:</span> <span class="nx">xScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">date</span><span class="p">),</span> <span class="na">y</span><span class="p">:</span> <span class="nx">yScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">open</span><span class="p">)</span> <span class="p">}</span>
+            <span class="p">]);</span>
+        <span class="p">});</span>
+
+    <span class="nx">close</span><span class="p">.</span><span class="nx">classed</span><span class="p">(</span><span class="s1">'close-tick'</span><span class="p">,</span> <span class="kc">true</span><span class="p">)</span>
+        <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">'d'</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">line</span><span class="p">([</span>
+                <span class="p">{</span> <span class="na">x</span><span class="p">:</span> <span class="nx">xScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">date</span><span class="p">),</span> <span class="na">y</span><span class="p">:</span> <span class="nx">yScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">close</span><span class="p">)</span> <span class="p">},</span>
+                <span class="p">{</span> <span class="na">x</span><span class="p">:</span> <span class="nx">xScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">date</span><span class="p">)</span> <span class="o">+</span> <span class="nx">tickWidth</span><span class="p">,</span> <span class="na">y</span><span class="p">:</span> <span class="nx">yScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">close</span><span class="p">)</span> <span class="p">}</span>
+            <span class="p">]);</span>
+        <span class="p">});</span>
+
+<span class="p">};</span></code></pre></figure>
+
+<h2 id="ohlc-chart">OHLC Chart</h2>
+<p>We’ve built the component, so now let’s use it in a chart! First we’ll set up margins, scales, axes and our series.</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">margin</span> <span class="o">=</span> <span class="p">{</span><span class="na">top</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="na">right</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="na">bottom</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span> <span class="na">left</span><span class="p">:</span> <span class="mi">50</span><span class="p">},</span>
+    <span class="nx">width</span> <span class="o">=</span> <span class="mi">660</span> <span class="o">-</span> <span class="nx">margin</span><span class="p">.</span><span class="nx">left</span> <span class="o">-</span> <span class="nx">margin</span><span class="p">.</span><span class="nx">right</span><span class="p">,</span>
+    <span class="nx">height</span> <span class="o">=</span> <span class="mi">400</span> <span class="o">-</span> <span class="nx">margin</span><span class="p">.</span><span class="nx">top</span> <span class="o">-</span> <span class="nx">margin</span><span class="p">.</span><span class="nx">bottom</span><span class="p">;</span>
+
+<span class="kd">var</span> <span class="nx">xScale</span> <span class="o">=</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">time</span><span class="p">.</span><span class="nx">scale</span><span class="p">(),</span>
+    <span class="nx">yScale</span> <span class="o">=</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">scale</span><span class="p">.</span><span class="nx">linear</span><span class="p">();</span>
+
+<span class="kd">var</span> <span class="nx">xAxis</span> <span class="o">=</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">svg</span><span class="p">.</span><span class="nx">axis</span><span class="p">()</span>
+    <span class="p">.</span><span class="nx">scale</span><span class="p">(</span><span class="nx">xScale</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">orient</span><span class="p">(</span><span class="s1">'bottom'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">ticks</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
+
+<span class="kd">var</span> <span class="nx">yAxis</span> <span class="o">=</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">svg</span><span class="p">.</span><span class="nx">axis</span><span class="p">()</span>
+    <span class="p">.</span><span class="nx">scale</span><span class="p">(</span><span class="nx">yScale</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">orient</span><span class="p">(</span><span class="s1">'left'</span><span class="p">);</span>
+
+<span class="kd">var</span> <span class="nx">series</span> <span class="o">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">series</span><span class="p">.</span><span class="nx">ohlc</span><span class="p">()</span>
+    <span class="p">.</span><span class="nx">xScale</span><span class="p">(</span><span class="nx">xScale</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">yScale</span><span class="p">(</span><span class="nx">yScale</span><span class="p">);</span></code></pre></figure>
+
+<p>Next, we will create an svg element. We’ll assume that our html page has a <code class="highlighter-rouge">div</code> with id ‘chart’ to draw this inside. Following the usual D3 <a href="http://bl.ocks.org/mbostock/3019563">margin convention</a>, we’ll draw our chart in a group element that translates the origin to the top left corner of the chart area. Our series will be drawn in the ‘plotArea’ - a group element which references a clipPath. The clipPath contains a <code class="highlighter-rouge">rect</code> with dimensions equal to the inner dimensions of our chart. This will ensure that OHLC bars for dates that lie outside domain of the axes are not shown.</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">// Create svg element</span>
+<span class="kd">var</span> <span class="nx">svg</span> <span class="o">=</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">select</span><span class="p">(</span><span class="s1">'#chart'</span><span class="p">).</span><span class="nx">classed</span><span class="p">(</span><span class="s1">'chart'</span><span class="p">,</span> <span class="kc">true</span><span class="p">).</span><span class="nx">append</span><span class="p">(</span><span class="s1">'svg'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">'width'</span><span class="p">,</span> <span class="nx">width</span> <span class="o">+</span> <span class="nx">margin</span><span class="p">.</span><span class="nx">left</span> <span class="o">+</span> <span class="nx">margin</span><span class="p">.</span><span class="nx">right</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">'height'</span><span class="p">,</span> <span class="nx">height</span> <span class="o">+</span> <span class="nx">margin</span><span class="p">.</span><span class="nx">top</span> <span class="o">+</span> <span class="nx">margin</span><span class="p">.</span><span class="nx">bottom</span><span class="p">);</span>
+
+<span class="c1">// Create chart</span>
+<span class="kd">var</span> <span class="nx">g</span> <span class="o">=</span> <span class="nx">svg</span><span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s1">'g'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">'transform'</span><span class="p">,</span> <span class="s1">'translate('</span> <span class="o">+</span> <span class="nx">margin</span><span class="p">.</span><span class="nx">left</span> <span class="o">+</span> <span class="s1">','</span> <span class="o">+</span> <span class="nx">margin</span><span class="p">.</span><span class="nx">top</span> <span class="o">+</span> <span class="s1">')'</span><span class="p">);</span>
+
+<span class="c1">// Create plot area</span>
+<span class="kd">var</span> <span class="nx">plotArea</span> <span class="o">=</span> <span class="nx">g</span><span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s1">'g'</span><span class="p">);</span>
+<span class="nx">plotArea</span><span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s1">'clipPath'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span> <span class="s1">'plotAreaClip'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s1">'rect'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">({</span> <span class="na">width</span><span class="p">:</span> <span class="nx">width</span><span class="p">,</span> <span class="na">height</span><span class="p">:</span> <span class="nx">height</span> <span class="p">});</span>
+<span class="nx">plotArea</span><span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">'clip-path'</span><span class="p">,</span> <span class="s1">'url(#plotAreaClip)'</span><span class="p">);</span></code></pre></figure>
+
+<p>Next, we set the domains and ranges of the scales. For this example, we’ll have the x domain extend to a day after the most recent data point from about 1 month before the most recent data point. The y domain will extend from the lowest ‘low’ to the highest ‘high’ in our data.</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">// Set scale domains</span>
+<span class="kd">var</span> <span class="nx">maxDate</span> <span class="o">=</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">max</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">date</span><span class="p">;</span>
+<span class="p">});</span>
+
+<span class="c1">// There are 8.64e7 milliseconds in a day.</span>
+<span class="nx">xScale</span><span class="p">.</span><span class="nx">domain</span><span class="p">([</span>
+    <span class="k">new</span> <span class="nb">Date</span><span class="p">(</span><span class="nx">maxDate</span><span class="p">.</span><span class="nx">getTime</span><span class="p">()</span> <span class="o">-</span> <span class="p">(</span><span class="mf">8.64e7</span> <span class="o">*</span> <span class="mf">31.5</span><span class="p">)),</span>
+    <span class="k">new</span> <span class="nb">Date</span><span class="p">(</span><span class="nx">maxDate</span><span class="p">.</span><span class="nx">getTime</span><span class="p">()</span> <span class="o">+</span> <span class="mf">8.64e7</span><span class="p">)</span>
+<span class="p">]);</span>
+
+<span class="nx">yScale</span><span class="p">.</span><span class="nx">domain</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="nx">d3</span><span class="p">.</span><span class="nx">min</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">low</span><span class="p">;</span>
+        <span class="p">}),</span>
+        <span class="nx">d3</span><span class="p">.</span><span class="nx">max</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">high</span><span class="p">;</span>
+        <span class="p">})</span>
+    <span class="p">]</span>
+<span class="p">).</span><span class="nx">nice</span><span class="p">();</span>
+
+<span class="c1">// Set scale ranges</span>
+<span class="nx">xScale</span><span class="p">.</span><span class="nx">range</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="nx">width</span><span class="p">]);</span>
+<span class="nx">yScale</span><span class="p">.</span><span class="nx">range</span><span class="p">([</span><span class="nx">height</span><span class="p">,</span> <span class="mi">0</span><span class="p">]);</span></code></pre></figure>
+
+<p>Finally, we can draw the axes and the series.</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">// Draw axes</span>
+<span class="nx">g</span><span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s1">'g'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">'class'</span><span class="p">,</span> <span class="s1">'x axis'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">'transform'</span><span class="p">,</span> <span class="s1">'translate(0,'</span> <span class="o">+</span> <span class="nx">height</span> <span class="o">+</span> <span class="s1">')'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="nx">xAxis</span><span class="p">);</span>
+
+<span class="nx">g</span><span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s1">'g'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">'class'</span><span class="p">,</span> <span class="s1">'y axis'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="nx">yAxis</span><span class="p">);</span>
+
+<span class="c1">// Draw the series.</span>
+<span class="nx">plotArea</span><span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s1">'g'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">'class'</span><span class="p">,</span> <span class="s1">'series'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">datum</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="nx">series</span><span class="p">);</span></code></pre></figure>
+
+<p>We’ll colour the up-day and down-day bars with css by styling the <code class="highlighter-rouge">stroke</code> property of the paths:</p>
+
+<figure class="highlight"><pre><code class="language-css" data-lang="css"><span class="nc">.chart</span> <span class="nc">.bar.up-day</span> <span class="nt">path</span> <span class="p">{</span>
+    <span class="py">stroke</span><span class="p">:</span> <span class="no">green</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="nc">.chart</span> <span class="nc">.bar.down-day</span> <span class="nt">path</span> <span class="p">{</span>
+    <span class="py">stroke</span><span class="p">:</span> <span class="no">red</span><span class="p">;</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>Here’s the end result:</p>
+
+<iframe src="http://tlsim.github.io/sl-blog-d3/ohlc.html" width="680" height="430" scrolling="no" frameborder="0"> </iframe>
+
+<h2 id="candlestick-component">Candlestick Component</h2>
+<p>Candlestick charts are very similar to OHLC charts, so with a small modification we can turn our OHLC component into a candlestick component. All that’s needed is to draw a rectangle between the open and close price instead of the open close ticks. The rectangle create/update function looks like this:</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">rectangles</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">bars</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">rect</span><span class="p">,</span>
+        <span class="nx">rectangleWidth</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+
+    <span class="nx">rect</span> <span class="o">=</span> <span class="nx">bars</span><span class="p">.</span><span class="nx">selectAll</span><span class="p">(</span><span class="s1">'rect'</span><span class="p">).</span><span class="nx">data</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nx">d</span><span class="p">];</span>
+    <span class="p">});</span>
+
+    <span class="nx">rect</span><span class="p">.</span><span class="nx">enter</span><span class="p">().</span><span class="nx">append</span><span class="p">(</span><span class="s1">'rect'</span><span class="p">);</span>
+
+    <span class="nx">rect</span><span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">'x'</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">xScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">date</span><span class="p">)</span> <span class="o">-</span> <span class="nx">rectangleWidth</span><span class="p">;</span>
+    <span class="p">})</span>
+        <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">'y'</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">isUpDay</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">?</span> <span class="nx">yScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">close</span><span class="p">)</span> <span class="p">:</span> <span class="nx">yScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">open</span><span class="p">);</span>
+        <span class="p">})</span>
+        <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">'width'</span><span class="p">,</span> <span class="nx">rectangleWidth</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">'height'</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">isUpDay</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span>
+                <span class="p">?</span> <span class="nx">yScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">open</span><span class="p">)</span> <span class="o">-</span> <span class="nx">yScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">close</span><span class="p">)</span>
+                <span class="p">:</span> <span class="nx">yScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">close</span><span class="p">)</span> <span class="o">-</span> <span class="nx">yScale</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">open</span><span class="p">);</span>
+        <span class="p">});</span>
+<span class="p">};</span></code></pre></figure>
+
+<p>We’ll need to style the <code class="highlighter-rouge">fill</code> property of the rectangles to get the right colours.</p>
+
+<p>The <code class="highlighter-rouge">sl.series.candlestick</code> component is identical to the <code class="highlighter-rouge">sl.series.ohlc</code> component, but its create/update function calls <code class="highlighter-rouge">rectangle</code> instead of <code class="highlighter-rouge">openCloseTicks</code>. Since the components share a lot of code, we could have a function which contains the common code, takes <code class="highlighter-rouge">rectangle</code> or <code class="highlighter-rouge">openCloseTicks</code> as input, and produces the required component (we’ll leave out the details for now).</p>
+
+<p>We can use the same code we used to create the OHLC chart. We just have to replace <code class="highlighter-rouge">sl.series.ohlc</code> with <code class="highlighter-rouge">sl.series.candlestick</code> when creating the series. Here’s what our candlestick chart looks like:</p>
+
+<iframe src="http://tlsim.github.io/sl-blog-d3/candlestick.html" width="680" height="430" scrolling="no" frameborder="0"> </iframe>
+
+<h2 id="conclusion">Conclusion</h2>
+<p>We have made 2 reusable components for financial charts with D3. This is really just the beginning of what we would need for a fully featured financial chart. There are many components we could make using this pattern, including technical studies, comparison series and chart navigators. However, with these simple examples, we can already see the power of breaking chart features into reusable components. It would also be important to see how well these charts perform for large data sets. Ideally, we should be able to smoothly pan and zoom an OHLC chart which shows multiple years of prices. We’ll look at that <a href="http://blog.scottlogic.com/2014/09/19/d3-svg-chart-performance.html">in another post</a>, where we’ll improve our OHLC component so that it is optimised for panning and zooming.</p>
+
+<p>Code for these examples is available on <a href="https://github.com/tlsim/sl-blog-d3">GitHub</a>.</p>

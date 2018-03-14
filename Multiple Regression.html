@@ -1,0 +1,114 @@
+<base href=http://www.statmethods.net/stats/>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312" target=_blank>
+<style type="text/css" target=_blank>a {text-decoration: none}</style>
+</head>
+<body bgcolor="#000000" text="#109030" leftmargin="50" topmargin="10" marginwidth="150" link="#00CCCC" vlink="#CC66CC" alink="#FFFF00" target=_blank>
+<FONT size=3>
+
+  <h1>Multiple (Linear) Regression </h1>
+
+  				<p><strong>R</strong> provides comprehensive support for multiple linear regression.  The topics below are provided in order of increasing complexity. </p>
+  				<h2>Fitting the Model </h2>
+  				<p><code># Multiple Linear Regression Example
+  		      <br />
+  				  fit &lt;- lm(y ~ x1 + x2 + x3, data=mydata)<br />
+  		  summary(fit) # show results</code></p>
+  				<p><code># Other useful functions <br />
+  				  coefficients(fit) # model coefficients<br />
+  				  confint(fit, level=0.95) # CIs for model parameters
+  			    <br />
+  			    fitted(fit) # predicted values<br />
+  				  residuals(fit) # residuals<br />
+  				  anova(fit) # anova table <br />
+          vcov(fit) # covariance matrix for model parameters <br />
+  				  influence(fit) # regression diagnostics
+  			          </code></p>
+  				<h2>Diagnostic Plots </h2>
+  				<p>Diagnostic plots provide checks for heteroscedasticity, normality, and influential observerations. </p>
+  				<p><code># diagnostic plots <br />
+  			    layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page <br />
+  plot(fit)</code></p>
+  				<p><img src="images/regdiag.png"></p>
+  				<p>For a more comprehensive evaluation of model fit see <a href="rdiagnostics.html">regression diagnostics</a>. </p>
+  				<h2>Comparing Models</h2>
+  				<p>You can compare nested models with the anova( ) function. The following code provides a simultaneous test that x3 and x4 add to linear prediction above and beyond x1 and x2.</p>
+  				<p><code># compare models<br />
+  				  fit1 &lt;- lm(y ~ x1 + x2 + x3 + x4, data=mydata)<br />
+  				  fit2 &lt;- lm(y ~ x1 + x2)<br />
+  				  anova(fit1, fit2)
+  </code></p>
+  				<h2>Cross Validation</h2>
+  				<p>You can do<a href="http://en.wikipedia.org/wiki/Cross-validation"> K-Fold cross-validation </a>using the <strong>cv.lm( )</strong> function in the <strong><a href="http://cran.r-project.org/web/packages/DAAG/index.html">DAAG</a></strong> package. </p>
+  				<p><code># K-fold cross-validation<br />
+  			    library(DAAG)<br />
+  				  cv.lm(df=mydata, fit, m=3) # 3 fold cross-validation</code></p>
+  				<p>Sum the  MSE for each fold, divide by the number of observations, and take the square root to get the cross-validated standard error of estimate.</p>
+  				<p>You can assess <strong>R2 shrinkage</strong> via K-fold cross-validation. Using the <strong>crossval() </strong>function from the <strong><a href="http://cran.r-project.org/web/packages/bootstrap/index.html">bootstrap</a> </strong>package, do the following: </p>
+  				<p><code># Assessing R2 shrinkage using 10-Fold Cross-Validation
+  				<br />
+  			    <br />
+  				  fit &lt;- lm(y~x1+x2+x3,data=mydata) <br />
+  				  <br />
+  				  library(bootstrap)<br />
+  				  # define functions <br />
+  theta.fit &lt;- function(x,y){lsfit(x,y)}<br />
+  		  theta.predict &lt;- function(fit,x){cbind(1,x)%*%fit$coef}
+  		  <br />
+  		  <br />
+  	      # matrix of predictors<br />
+  	      X
+  	      &lt;- as.matrix(mydata[c(&quot;x1&quot;,&quot;x2&quot;,&quot;x3&quot;)])<br />
+  	      # vector of predicted values<br />
+  	      y &lt;- as.matrix(mydata[c(&quot;y&quot;)]) <br />
+  	      <br />
+  	      results &lt;- crossval(X,y,theta.fit,theta.predict,ngroup=10)<br />
+  	      cor(y, fit$fitted.values)**2 # raw R2 <br />
+  	      cor(y,results$cv.fit)**2 # cross-validated R2 </code></p>
+
+  				<h2>Variable Selection</h2>
+  				<p>Selecting a subset of predictor variables from a larger set (e.g., stepwise selection) is a controversial topic. You can perform stepwise selection (forward, backward, both) using the <strong>stepAIC( )</strong> function from the <strong>MASS </strong>package. <strong>stepAIC( ) </strong> performs stepwise model selection by exact AIC. </p>
+  				<p><code># Stepwise Regression<br />
+  				  library(MASS)<br />
+  				  fit &lt;- lm(y~x1+x2+x3,data=mydata)<br />
+  				  step &lt;- stepAIC(fit, direction=&quot;both&quot;)<br />
+  		  step$anova # display results </code></p>
+  				<p> Alternatively, you can perform all-subsets regression using the <strong>leaps( )</strong> function from the <strong><a href="http://cran.r-project.org/web/packages/leaps/index.html">leaps</a></strong> package. In the following code  nbest indicates the number of subsets of each size to report. Here, the ten best models  will be reported for each subset size (1 predictor, 2 predictors, etc.). </p>
+  		  <p><code># All Subsets Regression<br />
+  			    library(leaps)<br />
+  				attach(mydata)<br />
+  				leaps&lt;-regsubsets(y~x1+x2+x3+x4,data=mydata,nbest=10)<br />
+  				# view results <br />
+  				summary(leaps)<br />
+  				# plot a table of models showing variables in each model.<br />
+  				#
+  		  models   are ordered by the selection statistic.<br />
+  		  plot(leaps,scale=&quot;r2&quot;)<br />
+  		  # plot statistic by subset size <br />
+  		  library(car)<br />
+  		  subsets(leaps, statistic=&quot;rsq&quot;) </code></p>
+  				<p><img src="images/leaps1.png"> <img src="images/leaps2.png"></p>
+  				<p>Other options for <strong>plot( )</strong> are bic, Cp, and adjr2. Other options for plotting with<strong> <br />
+  			    subset( )</strong> are bic, cp, adjr2, and rss. </p>
+  				<h2>Relative Importance</h2>
+  				<p>The <strong><a href="http://cran.r-project.org/web/packages/relaimpo/index.html">relaimpo</a></strong> package provides measures of relative importance for each of the predictors in the model. See <strong>help(calc.relimp) </strong>for details on the four measures of relative importance provided. </p>
+  				<p><code># Calculate Relative Importance for Each Predictor<br />
+  				  library(relaimpo)<br />
+  calc.relimp(fit,type=c(&quot;lmg&quot;,&quot;last&quot;,&quot;first&quot;,&quot;pratt&quot;),<br />
+  &nbsp;&nbsp; rela=TRUE)<br />
+  				<br />
+  				# Bootstrap Measures of Relative Importance (1000 samples) <br />
+  boot &lt;- boot.relimp(fit, b = 1000, type = c(&quot;lmg&quot;, <br />
+  &nbsp;&nbsp;&quot;last&quot;, &quot;first&quot;, &quot;pratt&quot;), rank = TRUE, <br />
+  &nbsp; diff = TRUE, rela = TRUE)<br />
+  				booteval.relimp(boot) # print result<br />
+  plot(booteval.relimp(boot,sort=TRUE)) # plot result </code></p>
+  				<p><img src="images/relimp.png"></p>
+  				<h2>Graphic Enhancements </h2>
+  				<p>The <strong><a href="http://cran.r-project.org/web/packages/car/index.html">car</a></strong> package offers a wide variety of plots for regression, including added variable plots, and <a href="rdiagnostics.html">enhanced diagnostic</a> and <a href="../graphs/scatterplot.html">scatter plots</a>. </p>
+  				<h2>Going Further</h2>
+  				<h3>Nonlinear Regression </h3>
+  				<p>The <strong>nls</strong> package provides functions for nonlinear regression. See John Fox's <a href="http://cran.r-project.org/doc/contrib/Fox-Companion/appendix-nonlinear-regression.pdf">Nonlinear Regression and Nonlinear Least Squares</a> for an overview. Huet and colleagues' <a href="http://www.amazon.com/Statistical-Tools-Nonlinear-Regression-Statistics/dp/0387400818">Statistical Tools for Nonlinear Regression: A Practical Guide with S-PLUS and R Examples</a>  is  a valuable reference book.   </p>
+  				<h3>Robust Regression </h3>
+  				<p>There are many functions in <strong>R</strong> to aid with robust regression. For example, you can perform robust regression with the <strong>rlm( )</strong> function in the <strong>MASS</strong> package. John Fox's (who else?) <a href="http://cran.r-project.org/doc/contrib/Fox-Companion/appendix-robust-regression.pdf">Robust Regression</a> provides a good starting overview. The UCLA Statistical Computing website has <a href="http://www.ats.ucla.edu/stat/R/dae/rreg.htm">Robust Regression Examples</a>. </p>
+		  <p>The <a href="http://cran.r-project.org/web/packages/robust/index.html"><strong>robust</strong></a> package provides a comprehensive library of robust methods, including regression. The <a href="http://cran.r-project.org/web/packages/robustbase/index.html"><strong>robustbase</strong></a> package  also provides basic robust statistics including model selection methods.  And David Olive has provided an  detailed online review of <a href="http://www.math.siu.edu/olive/ol-bookp.htm">Applied Robust Statistics</a> with sample <strong>R</strong> code. </p>

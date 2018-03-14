@@ -1,0 +1,745 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<style type="text/css">
+body { margin: 10%; font-size: 24px; background-color: #000000; color: #109030;}
+a { text-decoration: none; color: #28B8B8;}
+a:visited { color: #389898;}
+A:hover { color: yellow;}
+A:focus { color: red;}
+.left {
+    position: absolute;
+    left: 100px;
+    color: GoldenRod;
+    border: 1px solid GoldenRod;
+    padding: 2px;
+    font-size: 60%;
+}
+.bord {
+    color: redpink;
+    border: 1px solid GoldenRod;
+    padding: 1px;
+    font-size: 90%;
+}
+.highlight { 
+    color: white;
+    background-color: #001020
+  }
+code { font-size: 18px; color: pink; background-color: #001500}
+pre { font-size: 20px; color: gray; background-color: #001010}
+</STYLE>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('.left').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+
+</head>
+<body>
+<h2>dplyr tutorial </h2>
+<div id="toc"></div>
+<br>
+
+<h1 id="important-dplyr-verbs-to-remember">Important dplyr verbs to remember</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>dplyr verbs</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="highlighter-rouge">select()</code></td>
+      <td>select columns</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">filter()</code></td>
+      <td>filter rows</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">arrange()</code></td>
+      <td>re-order or arrange rows</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">mutate()</code></td>
+      <td>create new columns</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">summarise()</code></td>
+      <td>summarise values</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">group_by()</code></td>
+      <td>allows for group operations in the “split-apply-combine” concept</td>
+    </tr>
+  </tbody>
+</table>
+
+
+
+<h1 id="data-mammals-sleep">Data: mammals sleep</h1>
+
+<p>The msleep (mammals sleep) data set contains the sleeptimes and weights for a set of mammals and is available in the dagdata repository on github. This data set contains 83 rows and 11 variables.</p>
+
+<p>Download the msleep data set in CSV format and then load into R:</p>
+<pre>
+<code>
+<span class="n">url</span> <span class="o">&lt;-</span> <span class="s2">"https://raw.githubusercontent.com/genomicsclass/dagdata/master/inst/extdata/msleep_ggplot2.csv"</span>
+
+<span class="n">msleep</span> <span class="o">&lt;-</span> <span class="n">read.csv</span><span class="p">(</span><span class="s2">url</span><span class="p">)</span>
+<span class="n">head</span><span class="p">(</span><span class="n">msleep</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>##                         name      genus  vore        order conservation
+## 1                    Cheetah   Acinonyx carni    Carnivora           lc
+## 2                 Owl monkey      Aotus  omni     Primates         &lt;NA&gt;
+## 3            Mountain beaver Aplodontia herbi     Rodentia           nt
+## 4 Greater short-tailed shrew    Blarina  omni Soricomorpha           lc
+## 5                        Cow        Bos herbi Artiodactyla domesticated
+## 6           Three-toed sloth   Bradypus herbi       Pilosa         &lt;NA&gt;
+##   sleep_total sleep_rem sleep_cycle awake brainwt  bodywt
+## 1        12.1        NA          NA  11.9      NA  50.000
+## 2        17.0       1.8          NA   7.0 0.01550   0.480
+## 3        14.4       2.4          NA   9.6      NA   1.350
+## 4        14.9       2.3   0.1333333   9.1 0.00029   0.019
+## 5         4.0       0.7   0.6666667  20.0 0.42300 600.000
+## 6        14.4       2.2   0.7666667   9.6      NA   3.850
+</code></pre>
+</div>
+
+<p>The columns (in order) correspond to the following:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>column name</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>name</td>
+      <td>common name</td>
+    </tr>
+    <tr>
+      <td>genus</td>
+      <td>taxonomic rank</td>
+    </tr>
+    <tr>
+      <td>vore</td>
+      <td>carnivore, omnivore or herbivore?</td>
+    </tr>
+    <tr>
+      <td>order</td>
+      <td>taxonomic rank</td>
+    </tr>
+    <tr>
+      <td>conservation</td>
+      <td>the conservation status of the mammal</td>
+    </tr>
+    <tr>
+      <td>sleep_total</td>
+      <td>total amount of sleep, in hours</td>
+    </tr>
+    <tr>
+      <td>sleep_rem</td>
+      <td>rem sleep, in hours</td>
+    </tr>
+    <tr>
+      <td>sleep_cycle</td>
+      <td>length of sleep cycle, in hours</td>
+    </tr>
+    <tr>
+      <td>awake</td>
+      <td>amount of time spent awake, in hours</td>
+    </tr>
+    <tr>
+      <td>brainwt</td>
+      <td>brain weight in kilograms</td>
+    </tr>
+    <tr>
+      <td>bodywt</td>
+      <td>body weight in kilograms</td>
+    </tr>
+  </tbody>
+</table>
+
+
+<h1 id="dplyr-verbs-in-action">dplyr verbs in action</h1>
+
+<p>The two most basic functions are <code class="highlighter-rouge">select()</code> and <code class="highlighter-rouge">filter()</code> which selects columns and filters rows, respectively.</p>
+
+<h3 id="selecting-columns-using-select">Selecting columns using <code class="highlighter-rouge">select()</code></h3>
+
+<p>Select a set of columns: the name and the sleep_total columns.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">sleepData</span> <span class="o">&lt;-</span> <span class="n">select</span><span class="p">(</span><span class="n">msleep</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">sleep_total</span><span class="p">)</span>
+<span class="n">head</span><span class="p">(</span><span class="n">sleepData</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>##                         name sleep_total
+## 1                    Cheetah        12.1
+## 2                 Owl monkey        17.0
+## 3            Mountain beaver        14.4
+## 4 Greater short-tailed shrew        14.9
+## 5                        Cow         4.0
+## 6           Three-toed sloth        14.4
+</code></pre>
+</div>
+
+<p>To select all the columns <em>except</em> a specific column, use the “-“ (subtraction) operator (also known as negative indexing)</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">head</span><span class="p">(</span><span class="n">select</span><span class="p">(</span><span class="n">msleep</span><span class="p">,</span> <span class="o">-</span><span class="n">name</span><span class="p">))</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>##        genus  vore        order conservation sleep_total sleep_rem
+## 1   Acinonyx carni    Carnivora           lc        12.1        NA
+## 2      Aotus  omni     Primates         &lt;NA&gt;        17.0       1.8
+## 3 Aplodontia herbi     Rodentia           nt        14.4       2.4
+## 4    Blarina  omni Soricomorpha           lc        14.9       2.3
+## 5        Bos herbi Artiodactyla domesticated         4.0       0.7
+## 6   Bradypus herbi       Pilosa         &lt;NA&gt;        14.4       2.2
+##   sleep_cycle awake brainwt  bodywt
+## 1          NA  11.9      NA  50.000
+## 2          NA   7.0 0.01550   0.480
+## 3          NA   9.6      NA   1.350
+## 4   0.1333333   9.1 0.00029   0.019
+## 5   0.6666667  20.0 0.42300 600.000
+## 6   0.7666667   9.6      NA   3.850
+</code></pre>
+</div>
+
+<p>To select a range of columns by name, use the “:” (colon) operator</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">head</span><span class="p">(</span><span class="n">select</span><span class="p">(</span><span class="n">msleep</span><span class="p">,</span> <span class="n">name</span><span class="o">:</span><span class="n">order</span><span class="p">))</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>##                         name      genus  vore        order
+## 1                    Cheetah   Acinonyx carni    Carnivora
+## 2                 Owl monkey      Aotus  omni     Primates
+## 3            Mountain beaver Aplodontia herbi     Rodentia
+## 4 Greater short-tailed shrew    Blarina  omni Soricomorpha
+## 5                        Cow        Bos herbi Artiodactyla
+## 6           Three-toed sloth   Bradypus herbi       Pilosa
+</code></pre>
+</div>
+
+<p>To select all columns that start with the character string “sl”, use the function <code class="highlighter-rouge">starts_with()</code></p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">head</span><span class="p">(</span><span class="n">select</span><span class="p">(</span><span class="n">msleep</span><span class="p">,</span> <span class="n">starts_with</span><span class="p">(</span><span class="s2">"sl"</span><span class="p">)))</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>##   sleep_total sleep_rem sleep_cycle
+## 1        12.1        NA          NA
+## 2        17.0       1.8          NA
+## 3        14.4       2.4          NA
+## 4        14.9       2.3   0.1333333
+## 5         4.0       0.7   0.6666667
+## 6        14.4       2.2   0.7666667
+</code></pre>
+</div>
+
+<p>Some additional options to select columns based on a specific criteria include</p>
+
+<ol>
+  <li><code class="highlighter-rouge">ends_with()</code> = Select columns that end with a character string</li>
+  <li><code class="highlighter-rouge">contains()</code> = Select columns that contain a character string</li>
+  <li><code class="highlighter-rouge">matches()</code> = Select columns that match a regular expression</li>
+  <li><code class="highlighter-rouge">one_of()</code> = Select columns names that are from a group of names</li>
+</ol>
+
+<h3 id="selecting-rows-using-filter">Selecting rows using <code class="highlighter-rouge">filter()</code></h3>
+
+<p>Filter the rows for mammals that sleep a total of more than 16 hours.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">filter</span><span class="p">(</span><span class="n">msleep</span><span class="p">,</span> <span class="n">sleep_total</span> <span class="o">&gt;=</span> <span class="m">16</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>##                     name        genus    vore           order conservation
+## 1             Owl monkey        Aotus    omni        Primates         &lt;NA&gt;
+## 2   Long-nosed armadillo      Dasypus   carni       Cingulata           lc
+## 3 North American Opossum    Didelphis    omni Didelphimorphia           lc
+## 4          Big brown bat    Eptesicus insecti      Chiroptera           lc
+## 5   Thick-tailed opposum   Lutreolina   carni Didelphimorphia           lc
+## 6       Little brown bat       Myotis insecti      Chiroptera         &lt;NA&gt;
+## 7        Giant armadillo   Priodontes insecti       Cingulata           en
+## 8 Arctic ground squirrel Spermophilus   herbi        Rodentia           lc
+##   sleep_total sleep_rem sleep_cycle awake brainwt bodywt
+## 1        17.0       1.8          NA   7.0 0.01550  0.480
+## 2        17.4       3.1   0.3833333   6.6 0.01080  3.500
+## 3        18.0       4.9   0.3333333   6.0 0.00630  1.700
+## 4        19.7       3.9   0.1166667   4.3 0.00030  0.023
+## 5        19.4       6.6          NA   4.6      NA  0.370
+## 6        19.9       2.0   0.2000000   4.1 0.00025  0.010
+## 7        18.1       6.1          NA   5.9 0.08100 60.000
+## 8        16.6        NA          NA   7.4 0.00570  0.920
+</code></pre>
+</div>
+
+<p>Filter the rows for mammals that sleep a total of more than 16 hours <em>and</em> have a body weight of greater than 1 kilogram.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">filter</span><span class="p">(</span><span class="n">msleep</span><span class="p">,</span> <span class="n">sleep_total</span> <span class="o">&gt;=</span> <span class="m">16</span><span class="p">,</span> <span class="n">bodywt</span> <span class="o">&gt;=</span> <span class="m">1</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>##                     name      genus    vore           order conservation
+## 1   Long-nosed armadillo    Dasypus   carni       Cingulata           lc
+## 2 North American Opossum  Didelphis    omni Didelphimorphia           lc
+## 3        Giant armadillo Priodontes insecti       Cingulata           en
+##   sleep_total sleep_rem sleep_cycle awake brainwt bodywt
+## 1        17.4       3.1   0.3833333   6.6  0.0108    3.5
+## 2        18.0       4.9   0.3333333   6.0  0.0063    1.7
+## 3        18.1       6.1          NA   5.9  0.0810   60.0
+</code></pre>
+</div>
+
+<p>Filter the rows for mammals in the Perissodactyla and Primates taxonomic order</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">filter</span><span class="p">(</span><span class="n">msleep</span><span class="p">,</span> <span class="n">order</span> <span class="o">%</span><span class="k">in</span><span class="o">%</span> <span class="n">c</span><span class="p">(</span><span class="s2">"Perissodactyla"</span><span class="p">,</span> <span class="s2">"Primates"</span><span class="p">))</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>##               name         genus  vore          order conservation
+## 1       Owl monkey         Aotus  omni       Primates         &lt;NA&gt;
+## 2           Grivet Cercopithecus  omni       Primates           lc
+## 3            Horse         Equus herbi Perissodactyla domesticated
+## 4           Donkey         Equus herbi Perissodactyla domesticated
+## 5     Patas monkey  Erythrocebus  omni       Primates           lc
+## 6           Galago        Galago  omni       Primates         &lt;NA&gt;
+## 7            Human          Homo  omni       Primates         &lt;NA&gt;
+## 8   Mongoose lemur         Lemur herbi       Primates           vu
+## 9          Macaque        Macaca  omni       Primates         &lt;NA&gt;
+## 10      Slow loris     Nyctibeus carni       Primates         &lt;NA&gt;
+## 11      Chimpanzee           Pan  omni       Primates         &lt;NA&gt;
+## 12          Baboon         Papio  omni       Primates         &lt;NA&gt;
+## 13           Potto  Perodicticus  omni       Primates           lc
+## 14 Squirrel monkey       Saimiri  omni       Primates         &lt;NA&gt;
+## 15 Brazilian tapir       Tapirus herbi Perissodactyla           vu
+##    sleep_total sleep_rem sleep_cycle awake brainwt  bodywt
+## 1         17.0       1.8          NA   7.0  0.0155   0.480
+## 2         10.0       0.7          NA  14.0      NA   4.750
+## 3          2.9       0.6   1.0000000  21.1  0.6550 521.000
+## 4          3.1       0.4          NA  20.9  0.4190 187.000
+## 5         10.9       1.1          NA  13.1  0.1150  10.000
+## 6          9.8       1.1   0.5500000  14.2  0.0050   0.200
+## 7          8.0       1.9   1.5000000  16.0  1.3200  62.000
+## 8          9.5       0.9          NA  14.5      NA   1.670
+## 9         10.1       1.2   0.7500000  13.9  0.1790   6.800
+## 10        11.0        NA          NA  13.0  0.0125   1.400
+## 11         9.7       1.4   1.4166667  14.3  0.4400  52.200
+## 12         9.4       1.0   0.6666667  14.6  0.1800  25.235
+## 13        11.0        NA          NA  13.0      NA   1.100
+## 14         9.6       1.4          NA  14.4  0.0200   0.743
+## 15         4.4       1.0   0.9000000  19.6  0.1690 207.501
+</code></pre>
+</div>
+
+<p>You can use the boolean operators (e.g. &gt;, &lt;, &gt;=, &lt;=, !=, %in%) to create the logical tests.</p>
+
+<h3>Pipe operator: %&gt;%</h3>
+
+<p>Before we go any futher, let’s introduce the pipe operator: %&gt;%. dplyr imports this operator from another package (magrittr).  This operator allows you to pipe the output from one function to the input of another function. Instead of nesting functions (reading from the inside to the outside), the idea of of piping is to read the functions from left to right.</p>
+
+<p>Here’s an example you have seen:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">head</span><span class="p">(</span><span class="n">select</span><span class="p">(</span><span class="n">msleep</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">sleep_total</span><span class="p">))</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>##                         name sleep_total
+## 1                    Cheetah        12.1
+## 2                 Owl monkey        17.0
+## 3            Mountain beaver        14.4
+## 4 Greater short-tailed shrew        14.9
+## 5                        Cow         4.0
+## 6           Three-toed sloth        14.4
+</code></pre>
+</div>
+
+<p>Now in this case, we will pipe the msleep data frame to the function that will select two columns (name and sleep_total) and then pipe the new data frame to the function <code class="highlighter-rouge">head()</code> which will return the head of the new data frame.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">msleep</span> <span class="o">%&gt;%</span> 
+    <span class="n">select</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">sleep_total</span><span class="p">)</span> <span class="o">%&gt;%</span> 
+    <span class="n">head</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>##                         name sleep_total
+## 1                    Cheetah        12.1
+## 2                 Owl monkey        17.0
+## 3            Mountain beaver        14.4
+## 4 Greater short-tailed shrew        14.9
+## 5                        Cow         4.0
+## 6           Three-toed sloth        14.4
+</code></pre>
+</div>
+
+<p>You will soon see how useful the pipe operator is when we start to combine many functions.</p>
+
+<h1 id="back-to-dplyr-verbs-in-action">Back to dplyr verbs in action</h1>
+
+<p>Now that you know about the pipe operator (%&gt;%), we will use it throughout the rest of this tutorial.</p>
+
+<h3 id="arrange-or-re-order-rows-using-arrange">Arrange or re-order rows using <code class="highlighter-rouge">arrange()</code></h3>
+
+<p>To arrange (or re-order) rows by a particular column such as the taxonomic order, list the name of the column you want to arrange the rows by</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">msleep</span> <span class="o">%&gt;%</span> <span class="n">arrange</span><span class="p">(</span><span class="n">order</span><span class="p">)</span> <span class="o">%&gt;%</span> <span class="n">head</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>##       name     genus  vore        order conservation sleep_total sleep_rem
+## 1   Tenrec    Tenrec  omni Afrosoricida         &lt;NA&gt;        15.6       2.3
+## 2      Cow       Bos herbi Artiodactyla domesticated         4.0       0.7
+## 3 Roe deer Capreolus herbi Artiodactyla           lc         3.0        NA
+## 4     Goat     Capri herbi Artiodactyla           lc         5.3       0.6
+## 5  Giraffe   Giraffa herbi Artiodactyla           cd         1.9       0.4
+## 6    Sheep      Ovis herbi Artiodactyla domesticated         3.8       0.6
+##   sleep_cycle awake brainwt  bodywt
+## 1          NA   8.4  0.0026   0.900
+## 2   0.6666667  20.0  0.4230 600.000
+## 3          NA  21.0  0.0982  14.800
+## 4          NA  18.7  0.1150  33.500
+## 5          NA  22.1      NA 899.995
+## 6          NA  20.2  0.1750  55.500
+</code></pre>
+</div>
+
+<p>Now, we will select three columns from msleep, arrange the rows by the taxonomic order and then arrange the rows by sleep_total. Finally show the head of the final data frame</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">msleep</span> <span class="o">%&gt;%</span> 
+    <span class="n">select</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">sleep_total</span><span class="p">)</span> <span class="o">%&gt;%</span>
+    <span class="n">arrange</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="n">sleep_total</span><span class="p">)</span> <span class="o">%&gt;%</span> 
+    <span class="n">head</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>##       name        order sleep_total
+## 1   Tenrec Afrosoricida        15.6
+## 2  Giraffe Artiodactyla         1.9
+## 3 Roe deer Artiodactyla         3.0
+## 4    Sheep Artiodactyla         3.8
+## 5      Cow Artiodactyla         4.0
+## 6     Goat Artiodactyla         5.3
+</code></pre>
+</div>
+
+<p>Same as above, except here we filter the rows for mammals that sleep for 16 or more hours instead of showing the head of the final data frame</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">msleep</span> <span class="o">%&gt;%</span> 
+    <span class="n">select</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">sleep_total</span><span class="p">)</span> <span class="o">%&gt;%</span>
+    <span class="n">arrange</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="n">sleep_total</span><span class="p">)</span> <span class="o">%&gt;%</span> 
+    <span class="n">filter</span><span class="p">(</span><span class="n">sleep_total</span> <span class="o">&gt;=</span> <span class="m">16</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>##                     name           order sleep_total
+## 1          Big brown bat      Chiroptera        19.7
+## 2       Little brown bat      Chiroptera        19.9
+## 3   Long-nosed armadillo       Cingulata        17.4
+## 4        Giant armadillo       Cingulata        18.1
+## 5 North American Opossum Didelphimorphia        18.0
+## 6   Thick-tailed opposum Didelphimorphia        19.4
+## 7             Owl monkey        Primates        17.0
+## 8 Arctic ground squirrel        Rodentia        16.6
+</code></pre>
+</div>
+
+<p>Something slightly more complicated: same as above, except arrange the rows in the sleep_total column in a descending order. For this, use the function <code class="highlighter-rouge">desc()</code></p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">msleep</span> <span class="o">%&gt;%</span> 
+    <span class="n">select</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">sleep_total</span><span class="p">)</span> <span class="o">%&gt;%</span>
+    <span class="n">arrange</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="n">desc</span><span class="p">(</span><span class="n">sleep_total</span><span class="p">))</span> <span class="o">%&gt;%</span> 
+    <span class="n">filter</span><span class="p">(</span><span class="n">sleep_total</span> <span class="o">&gt;=</span> <span class="m">16</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>##                     name           order sleep_total
+## 1       Little brown bat      Chiroptera        19.9
+## 2          Big brown bat      Chiroptera        19.7
+## 3        Giant armadillo       Cingulata        18.1
+## 4   Long-nosed armadillo       Cingulata        17.4
+## 5   Thick-tailed opposum Didelphimorphia        19.4
+## 6 North American Opossum Didelphimorphia        18.0
+## 7             Owl monkey        Primates        17.0
+## 8 Arctic ground squirrel        Rodentia        16.6
+</code></pre>
+</div>
+
+<h3 id="create-new-columns-using-mutate">Create new columns using <code class="highlighter-rouge">mutate()</code></h3>
+
+<p>The <code class="highlighter-rouge">mutate()</code> function will add new columns to the data frame. Create a new column called rem_proportion which is the ratio of rem sleep to total amount of sleep.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">msleep</span> <span class="o">%&gt;%</span> 
+    <span class="n">mutate</span><span class="p">(</span><span class="n">rem_proportion</span> <span class="o">=</span> <span class="n">sleep_rem</span> <span class="o">/</span> <span class="n">sleep_total</span><span class="p">)</span> <span class="o">%&gt;%</span>
+    <span class="n">head</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>##                         name      genus  vore        order conservation
+## 1                    Cheetah   Acinonyx carni    Carnivora           lc
+## 2                 Owl monkey      Aotus  omni     Primates         &lt;NA&gt;
+## 3            Mountain beaver Aplodontia herbi     Rodentia           nt
+## 4 Greater short-tailed shrew    Blarina  omni Soricomorpha           lc
+## 5                        Cow        Bos herbi Artiodactyla domesticated
+## 6           Three-toed sloth   Bradypus herbi       Pilosa         &lt;NA&gt;
+##   sleep_total sleep_rem sleep_cycle awake brainwt  bodywt rem_proportion
+## 1        12.1        NA          NA  11.9      NA  50.000             NA
+## 2        17.0       1.8          NA   7.0 0.01550   0.480      0.1058824
+## 3        14.4       2.4          NA   9.6      NA   1.350      0.1666667
+## 4        14.9       2.3   0.1333333   9.1 0.00029   0.019      0.1543624
+## 5         4.0       0.7   0.6666667  20.0 0.42300 600.000      0.1750000
+## 6        14.4       2.2   0.7666667   9.6      NA   3.850      0.1527778
+</code></pre>
+</div>
+
+<p>You can add many new columns using mutate (separated by commas). Here we add a second column called bodywt_grams which is the bodywt column in grams.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">msleep</span> <span class="o">%&gt;%</span> 
+    <span class="n">mutate</span><span class="p">(</span><span class="n">rem_proportion</span> <span class="o">=</span> <span class="n">sleep_rem</span> <span class="o">/</span> <span class="n">sleep_total</span><span class="p">,</span> 
+           <span class="n">bodywt_grams</span> <span class="o">=</span> <span class="n">bodywt</span> <span class="o">*</span> <span class="m">1000</span><span class="p">)</span> <span class="o">%&gt;%</span>
+    <span class="n">head</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>##                         name      genus  vore        order conservation
+## 1                    Cheetah   Acinonyx carni    Carnivora           lc
+## 2                 Owl monkey      Aotus  omni     Primates         &lt;NA&gt;
+## 3            Mountain beaver Aplodontia herbi     Rodentia           nt
+## 4 Greater short-tailed shrew    Blarina  omni Soricomorpha           lc
+## 5                        Cow        Bos herbi Artiodactyla domesticated
+## 6           Three-toed sloth   Bradypus herbi       Pilosa         &lt;NA&gt;
+##   sleep_total sleep_rem sleep_cycle awake brainwt  bodywt rem_proportion
+## 1        12.1        NA          NA  11.9      NA  50.000             NA
+## 2        17.0       1.8          NA   7.0 0.01550   0.480      0.1058824
+## 3        14.4       2.4          NA   9.6      NA   1.350      0.1666667
+## 4        14.9       2.3   0.1333333   9.1 0.00029   0.019      0.1543624
+## 5         4.0       0.7   0.6666667  20.0 0.42300 600.000      0.1750000
+## 6        14.4       2.2   0.7666667   9.6      NA   3.850      0.1527778
+##   bodywt_grams
+## 1        50000
+## 2          480
+## 3         1350
+## 4           19
+## 5       600000
+## 6         3850
+</code></pre>
+</div>
+
+<h3 id="create-summaries-of-the-data-frame-using-summarise">Create summaries of the data frame using <code class="highlighter-rouge">summarise()</code></h3>
+
+<p>The <code class="highlighter-rouge">summarise()</code> function will create summary statistics for a given column in the data frame such as finding the mean. For example, to compute the average number of hours of sleep, apply the <code class="highlighter-rouge">mean()</code> function to the column sleep_total and call the summary value avg_sleep.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">msleep</span> <span class="o">%&gt;%</span> 
+    <span class="n">summarise</span><span class="p">(</span><span class="n">avg_sleep</span> <span class="o">=</span> <span class="n">mean</span><span class="p">(</span><span class="n">sleep_total</span><span class="p">))</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>##   avg_sleep
+## 1  10.43373
+</code></pre>
+</div>
+
+<p>There are many other summary statistics you could consider such <code class="highlighter-rouge">sd()</code>, <code class="highlighter-rouge">min()</code>, <code class="highlighter-rouge">max()</code>, <code class="highlighter-rouge">median()</code>, <code class="highlighter-rouge">sum()</code>, <code class="highlighter-rouge">n()</code> (returns the length of vector), <code class="highlighter-rouge">first()</code> (returns first value in vector), <code class="highlighter-rouge">last()</code> (returns last value in vector) and <code class="highlighter-rouge">n_distinct()</code> (number of distinct values in vector).</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">msleep</span> <span class="o">%&gt;%</span> 
+    <span class="n">summarise</span><span class="p">(</span><span class="n">avg_sleep</span> <span class="o">=</span> <span class="n">mean</span><span class="p">(</span><span class="n">sleep_total</span><span class="p">),</span> 
+              <span class="n">min_sleep</span> <span class="o">=</span> <span class="n">min</span><span class="p">(</span><span class="n">sleep_total</span><span class="p">),</span>
+              <span class="n">max_sleep</span> <span class="o">=</span> <span class="n">max</span><span class="p">(</span><span class="n">sleep_total</span><span class="p">),</span>
+              <span class="n">total</span> <span class="o">=</span> <span class="n">n</span><span class="p">())</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>##   avg_sleep min_sleep max_sleep total
+## 1  10.43373       1.9      19.9    83
+</code></pre>
+</div>
+
+<h3 id="group-operations-using-groupby">Group operations using <code class="highlighter-rouge">group_by()</code></h3>
+
+<p>The <code class="highlighter-rouge">group_by()</code> verb is an important function in dplyr. As we mentioned before it’s related to concept of “split-apply-combine”. We literally want to split the data frame by some variable (e.g. taxonomic order), apply a function to the individual data frames and then combine the output.</p>
+
+<p>Let’s do that: split the msleep data frame by the taxonomic order, then ask for the same summary statistics as above. We expect a set of summary statistics for each taxonomic order.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">msleep</span> <span class="o">%&gt;%</span> 
+    <span class="n">group_by</span><span class="p">(</span><span class="n">order</span><span class="p">)</span> <span class="o">%&gt;%</span>
+    <span class="n">summarise</span><span class="p">(</span><span class="n">avg_sleep</span> <span class="o">=</span> <span class="n">mean</span><span class="p">(</span><span class="n">sleep_total</span><span class="p">),</span> 
+              <span class="n">min_sleep</span> <span class="o">=</span> <span class="n">min</span><span class="p">(</span><span class="n">sleep_total</span><span class="p">),</span> 
+              <span class="n">max_sleep</span> <span class="o">=</span> <span class="n">max</span><span class="p">(</span><span class="n">sleep_total</span><span class="p">),</span>
+              <span class="n">total</span> <span class="o">=</span> <span class="n">n</span><span class="p">())</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>## Source: local data frame [19 x 5]
+## 
+##              order avg_sleep min_sleep max_sleep total
+## 1     Afrosoricida 15.600000      15.6      15.6     1
+## 2     Artiodactyla  4.516667       1.9       9.1     6
+## 3        Carnivora 10.116667       3.5      15.8    12
+## 4          Cetacea  4.500000       2.7       5.6     3
+## 5       Chiroptera 19.800000      19.7      19.9     2
+## 6        Cingulata 17.750000      17.4      18.1     2
+## 7  Didelphimorphia 18.700000      18.0      19.4     2
+## 8    Diprotodontia 12.400000      11.1      13.7     2
+## 9   Erinaceomorpha 10.200000      10.1      10.3     2
+## 10      Hyracoidea  5.666667       5.3       6.3     3
+## 11      Lagomorpha  8.400000       8.4       8.4     1
+## 12     Monotremata  8.600000       8.6       8.6     1
+## 13  Perissodactyla  3.466667       2.9       4.4     3
+## 14          Pilosa 14.400000      14.4      14.4     1
+## 15        Primates 10.500000       8.0      17.0    12
+## 16     Proboscidea  3.600000       3.3       3.9     2
+## 17        Rodentia 12.468182       7.0      16.6    22
+## 18      Scandentia  8.900000       8.9       8.9     1
+## 19    Soricomorpha 11.100000       8.4      14.9     5
+
+
+<b class="left">Study Notes:<br></b>
+
+split(), subset(), apply(), sapply(), lapply(), tapply() and aggregate()
+
+<b id="redword">dplyr tutorial</b>
+
+Example Script to handle download jobs
+
+library(downloader)
+url <- "https://raw.githubusercontent.com/genomicsclass/dagdata/master/inst/extdata/msleep_ggplot2.csv"
+filename <- "msleep_ggplot2.csv"
+if (!file.exists(filename)) download(url,filename)
+msleep <- read.csv("msleep_ggplot2.csv")
+
+Important dplyr verbs to remember
+select()	select columns
+filter()	filter rows
+arrange()	re-order or arrange rows
+mutate()	create new columns
+summarise()	summarise values
+group_by()	allows for group operations in the “split-apply-combine” concept
+dplyr verbs in action
+
+
+Selecting columns using select()
+sleepData <- select(msleep, name, sleep_total)
+
+Invert select, use the “-“
+
+head(select(msleep, -name))
+
+To select a range of columns by name, use the “:” (colon) operator
+To select all columns that start with the character string “sl”, use the function starts_with()
+head(select(msleep, starts_with("sl")))
+
+Additional options
+ends_with() = Select columns that end with a character string
+contains() = Select columns that contain a character string
+matches() = Select columns that match a regular expression
+one_of() = Select columns names that are from a group of names
+
+Selecting rows using filter()
+
+filter(msleep, sleep_total >= 16)
+filter(msleep, sleep_total >= 16, bodywt >= 1)
+
+Filter the rows for mammals in the Perissodactyla and Primates taxonomic order
+
+filter(msleep, order %in% c("Perissodactyla", "Primates"))
+
+
+Pipe operator: %>%
+
+msleep %>% 
+    select(name, sleep_total) %>% 
+    head
+
+
+Arrange or re-order rows using arrange()
+
+msleep %>% arrange(order) %>% head
+
+msleep %>% 
+    select(name, order, sleep_total) %>%
+    arrange(order, sleep_total) %>% 
+    head
+
+msleep %>% 
+    select(name, order, sleep_total) %>%
+    arrange(order, sleep_total) %>% 
+    filter(sleep_total >= 16)
+
+msleep %>% 
+    select(name, order, sleep_total) %>%
+    arrange(order, desc(sleep_total)) %>% 
+    filter(sleep_total >= 16)
+
+Create new columns using mutate()
+
+msleep %>% 
+    mutate(rem_proportion = sleep_rem / sleep_total) %>%
+    head
+
+msleep %>% 
+    mutate(rem_proportion = sleep_rem / sleep_total, 
+           bodywt_grams = bodywt * 1000) %>%
+    head
+
+Create summaries of the data frame using summarise()
+
+msleep %>% 
+    summarise(avg_sleep = mean(sleep_total))
+
+other summary statistics 
+sd(), min(), max(), median(), sum(), 
+n() (returns the length of vector), 
+first() (returns first value in vector), 
+last() (returns last value in vector) and 
+n_distinct() (number of distinct values in vector).
+
+msleep %>% 
+    summarise(avg_sleep = mean(sleep_total), 
+              min_sleep = min(sleep_total),
+              max_sleep = max(sleep_total),
+              total = n())
+
+Group operations using group_by()
+
+msleep %>% 
+    group_by(order) %>%
+    summarise(avg_sleep = mean(sleep_total), 
+              min_sleep = min(sleep_total), 
+              max_sleep = max(sleep_total),
+              total = n())
+</code></pre>
+
+<script>
+  $(function() {
+    var toc = $('#toc');
+
+    function makeLi(text, href) {
+      return $('<a href="' + href + '">' + text + '</a><br>');
+    }
+
+    $('h3').each(function(i) {
+      var chapter = $(this), chapterNumber = i + 1;
+      toc.append(
+        makeLi('Chapter ' + chapterNumber + ': ' + chapter.text(), '#chapter-' + chapterNumber)
+      );
+      chapter.attr('id', 'chapter-' + chapterNumber);
+      chapter.prepend('<p class="toc"><a title="Back to top" href="#toc">Top</a></p>');
+    });
+
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html;  charset=utf-8">
+
+<style type="text/css">
+
+body {
+ margin-top: 5%; 
+ margin-bottom: 5%; 
+ margin-right: 10%; 
+ margin-left: 10%; 
+ background-color: #000000; 
+ color: #109080; 
+ font-size: 24px; 
+}
+a { text-decoration: none; 
+	color: #28B8B8; }
+a:visited {	color: #389898; }
+A:hover {	color: yellow; }
+A:focus {	color: red; }
+code { color: pink;  background-color: #302030}
+pre { color: gray;  font-size: 16px; background-color: #001010}
+div {display: inline-block;  width: 48%;  padding: 2px;  border-radius: 4px;  
+border: 1px solid gray;  margin: 3px;  vertical-align:middle; }
+</STYLE>
+</head>
+<body>
+
+<h1>Deep Learning with R</h1>
+
+<p>For R users, there hasn’t been a production grade solution for deep learning (sorry <a rel="nofollow" href="http://mxnet.io/api/r/index.html" target="_blank">MXNET</a>). This post introduces the Keras interface for R and how it can be used to perform image classification. The post ends by providing some code snippets that show Keras is intuitive and powerful.</p>
+<h2>Tensorflow</h2>
+<p>Last January, <a rel="nofollow" href="https://github.com/rstudio/tensorflow" target="_blank">Tensorflow for R</a> was released, which provided access to the Tensorflow API from R. However, for most R users, the interface was not very R like. </p>
+<p>Take a look at this code chunk for training a model:</p>
+<pre>
+cross_entropy <- tf$reduce_mean(-tf$reduce_sum(y_ * tf$log(y_conv), reduction_indices=1L))
+train_step <- tf$train$AdamOptimizer(1e-4)$minimize(cross_entropy)
+correct_prediction <- tf$equal(tf$argmax(y_conv, 1L), tf$argmax(y_, 1L))
+accuracy <- tf$reduce_mean(tf$cast(correct_prediction, tf$float32))
+sess$run(tf$global_variables_initializer())
+
+for (i in 1:20000) {
+  batch <- mnist$train$next_batch(50L)
+  if (i %% 100 == 0) {
+    train_accuracy <- accuracy$eval(feed_dict = dict(
+        x = batch[[1]], y_ = batch[[2]], keep_prob = 1.0))
+    cat(sprintf("step %d, training accuracy %g\n", i, train_accuracy))
+  }
+  train_step$run(feed_dict = dict(
+    x = batch[[1]], y_ = batch[[2]], keep_prob = 0.5))
+}
+
+test_accuracy % fit(
+        x = train_x, y = train_y,
+        epochs=epochs, 
+        batch_size=batch_size,
+        validation_data=valid)
+</pre>
+<h2>Image Classification with Keras</h2>
+<p>So if you are still with me, let me show you how to build deep learning models using R, Keras, and Tensorflow together. You will find a <a rel="nofollow" href="https://github.com/rajshah4/image_keras/" target="_blank">Github repo</a> that contains the code and data you will need. Included is an <a rel="nofollow" href="http://htmlpreview.github.io/?https://github.com/rajshah4/image_keras/blob/master/Rnotebook.nb.html" target="_blank">R notebook</a> that walks through building an image classifier (telling cat from dog), but can easily be generalized to other images. The walk through includes advanced methods that are commonly used for production deep learning work including:</p>
+<ul>
+<li>augmenting data</li>
+<li>using the bottleneck features of a pre-trained network</li>
+<li>fine-tuning the top layers of a pre-trained network</li>
+<li>saving weights for your models</li>
+</ul>
+<h2>Code Snippets of Keras</h2>
+<p>The R interface to Keras truly makes it easy to build deep learning models in R.  Here are some code snippets to illustrate how intuitive and useful Keras for R is:</p>
+<p>To load picture from a folder:</p>
+<pre>
+train_generator <- flow_images_from_directory(train_directory, generator = image_data_generator(),
+  target_size = c(img_width, img_height), color_mode = "rgb",
+  class_mode = "binary", batch_size = batch_size, shuffle = TRUE,
+  seed = 123)
+</pre>
+<p>To define a simple convolutional neural network:</p>
+<pre>
+model %
+  layer_conv_2d(filter = 32, kernel_size = c(3,3), input_shape = c(img_width, img_height, 3)) %>%
+  layer_activation("relu") %>%
+  layer_max_pooling_2d(pool_size = c(2,2)) %>% 
+  
+  layer_conv_2d(filter = 32, kernel_size = c(3,3)) %>%
+  layer_activation("relu") %>%
+  layer_max_pooling_2d(pool_size = c(2,2)) %>%
+  
+  layer_conv_2d(filter = 64, kernel_size = c(3,3)) %>%
+  layer_activation("relu") %>%
+  layer_max_pooling_2d(pool_size = c(2,2)) %>%
+  
+  layer_flatten() %>%
+  layer_dense(64) %>%
+  layer_activation("relu") %>%
+  layer_dropout(0.5) %>%
+  layer_dense(1) %>%
+  layer_activation("sigmoid")
+</pre>
+<p>To augment data:</p>
+<pre>
+augment <- image_data_generator(rescale=1./255,
+                               shear_range=0.2,
+                               zoom_range=0.2,
+                               horizontal_flip=TRUE)
+</pre>
+<p>To load a pretrained network:</p>
+<pre>
+model_vgg <- application_vgg16(include_top = FALSE, weights = "imagenet")
+</pre>
+<p>To save model weights:</p>
+<pre>
+save_model_weights_hdf5(model_ft, &#039;finetuning_30epochs_vggR.h5&#039;, overwrite = TRUE)
+</pre>
+<p>I believe the Keras for R interface will make it much easier for R users and the R community to build and refine deep learning models with R.  This means you don&#039;t have to force everyone to use python to build, refine, and test your models. I really think this will open up deep learning to a wider audience that was a bit apprehensive on using Python.  So for now, give it a spin!  </p>
+<p>Grab my <a rel="nofollow" href="https://github.com/rajshah4/image_keras/" target="_blank">github repo</a>, fire up RStudio (or your IDE of choice), and go build a simple classifier using Keras.</p>
+
+
+</body>
+</html>

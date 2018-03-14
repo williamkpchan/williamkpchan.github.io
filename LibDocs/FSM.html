@@ -1,0 +1,417 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<style>
+body {
+ margin: auto;
+ width: 80%;
+ font-size: 24px;
+ background-color: #000000;
+ color: #20C030;
+}
+a { text-decoration: none; 
+	color: #28B8B8; }
+a:visited {	color: #389898; }
+A:hover {	color: yellow; }
+A:focus {	color: red; }
+code { color: gray;  background-color: #001010}
+pre { color: gray;  background-color: #001010;  font-size: 16px; }
+img { display: inline-block; width: 900px; margin-top: 2%;margin-bottom: 5%;}
+pre { color: gray; background-color: #001010}
+</style>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, .topic').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+
+
+</head>
+<body>
+<h1>有限状态机（FSM）  </h1>
+
+<div id="toc">
+<strong class="toc-title">文章目录</strong>
+<ol class="toc">
+<li><a href="#工作原理">1. 工作原理</a></li>
+<li><a href="#基本概念">2. 基本概念</a></li>
+<li><a href="#实现方式">3. 实现方式</a></li>
+<li><a href="#实例">4. 实例</a>
+<ol>
+<li><a href="#基于switch（状态）的实现">4.1. 基于switch（状态）的实现</a></li>
+<li><a href="#Matin_Fowler的状态机模型实现">4.2. Matin Fowler的状态机模型实现</a>
+<ol>
+<li><a href="#AbstractEvent">4.2.1. AbstractEvent</a></li>
+<li><a href="#Event">4.2.2. Event</a></li>
+<li><a href="#Command">4.2.3. Command</a></li>
+<li><a href="#CommandChannel">4.2.4. CommandChannel</a></li>
+<li><a href="#Transition">4.2.5. Transition</a></li>
+<li><a href="#State">4.2.6. State</a></li>
+<li><a href="#StateMachine">4.2.7. StateMachine</a></li>
+<li><a href="#Controller">4.2.8. Controller</a></li>
+<li><a href="#DoorSample">4.2.9. DoorSample</a></li>
+<li><a href="#DoorTest">4.2.10. DoorTest</a></li></ol></li>
+<li><a href="#state_pattern">4.3. state pattern</a></li></ol></li></ol>
+</div>
+
+<p>有限状态机FSM(Finite State Machine)思想广泛应用于硬件控制电路设计，也是软件上常用的一种处理方法它把复杂的控制逻辑分解成有限个稳定状态，在每个状态上判断事件，变连续处理为离散数字处理，符合计算机的工作特点。同时，因为有限状态机具有有限个状态，所以可以在实际的工程上实现。但这并不意味着其只能进行有限次的处理，相反，有限状态机是闭环系统，有限无穷，可以用有限的状态，处理无穷的事务。<br><a id="more"></a></p>
+<h2 id="工作原理">工作原理</h2><p>如下图所示，发生事件(event)后，根据当前状态(cur_state)，决定执行的动作(action)，并设置下一个状态号(nxt_state)。</p>
+<img src="http://xfhnever.com/images/post/fsm1-1.png">
+<h2 id="基本概念">基本概念</h2>
+<ol>
+
+<li><strong>状态（State）</strong>指的是对象在其生命周期中的一种状况，处于某个特定状态中的对象必然会满足某些条件、执行某些动作或者是等待某些事件。</li>
+
+<li><strong>事件（Event）</strong>指的是在时间和空间上占有一定位置，并且对状态机来讲是有意义的那些事情。事件通常会引起状态的变迁，促使状态机从一种状态切换到另一种状态。</li>
+
+<li><strong>转换（Transition）</strong>指的是两个状态之间的一种关系，表明对象将在第一个状态中执行一定的动作，并将在某个事件发生同时某个特定条件满足时进入第二个状态。</li>
+
+<li><strong>动作（Action）</strong>指的是状态机中可以执行的那些原子操作，所谓原子操作指的是它们在运行的过程中不能被其他消息所中断，必须一直执行下去。</li>
+</ol>
+<h2 id="实现方式">实现方式</h2>
+<ol>
+
+<li><p>switch/case或者if/else</p>
+<p> 这无意是最直观的方式，使用一堆条件判断，会编程的人都可以做到，对简单小巧的状态机来说最合适，但是毫无疑问，这样的方式比较原始，对庞大的状态机难以维护。</p>
+</li>
+
+<li><p>状态表</p>
+<p> 维护一个二维状态表，横坐标表示当前状态，纵坐标表示输入，表中一个元素存储下一个状态和对应的操作。这一招易于维护，但是运行时间和存储空间的代价较大。</p>
+</li>
+
+<li><p>使用State Pattern</p>
+<p>使用State Pattern使得代码的维护比switch/case方式稍好，性能上也不会有很多的影响，但是也不是100％完美。不过Robert C. Martin做了两个自动产生FSM代码的工具，for java和for C++各一个，在<a href="http://www.objectmentor.com/resources/downloads.html" target="_blank" rel="external">http://www.objectmentor.com/resources/downloads.html</a> 上有免费下载，这个工具的输入是纯文本的状态机描述，自动产生符合State Pattern的代码，这样developer的工作只需要维护状态机的文本描述，每必要冒引入bug的风险去维护code</p>
+</li>
+
+<li><p>使用宏定义描述状态机</p>
+<p>一般来说，C++编程中应该避免使用#define，但是这主要是因为如果用宏来定义函数的话，很容易产生这样那样的问题，但是巧妙的使用,还是能够产生奇妙的效果。MFC就是使用宏定义来实现大的架构的。</p>
+<p>在实现FSM的时候，可以把一些繁琐无比的if/else还有花括号的组合放在宏中，这样，在代码中可以3）中状态机描述文本一样写，通过编译器的预编译处理产生1）一样的效果，我见过产生C代码的宏，如果要产生C++代码，己软MFC可以，那么理论上也是可行的</p>
+</li>
+</ol>
+<h2 id="实例">实例</h2><p>游戏引擎是有限状态机最为成功的应用领域之一，由于设计良好的状态机能够被用来取代部分的人工智能算法，因此游戏中的每个角色或者器件都有可能内嵌一个状态机。考虑RPG游戏中城门这样一个简单的对象，它具有打开（Opened）、关闭（Closed）、上锁（Locked）、解锁（Unlocked）四种状态。如下图所示，当玩家到达一个处于状态Locked的门时，如果此时他已经找到了用来开门的钥匙，那么他就可以利用它将门的当前状态转变为Unlocked，进一步还可以通过旋转门上的把手将其状态转变为Opened，从而成功地进入城内</p>
+<img src="http://xfhnever.com/images/post/fsm1-2.png">
+<h3 id="基于switch（状态）的实现">基于switch（状态）的实现</h3><pre><code>switch (state)  {
+
+  // 处理状态Opened的分支
+  case (Opened): {
+    // 执行动作Open
+    open();
+    // 检查是否有CloseDoor事件
+    if (closeDoor()) { 
+      // 当前状态转换为Closed
+      changeState(Closed)
+    }
+    break;
+  } 
+
+  // 处理状态Closed的分支
+  case (Closed): {
+    // 执行动作Close
+    close();
+    // 检查是否有OpenDoor事件
+    if (openDoor()) {
+      // 当前状态转换为Opened
+      changeState(Opened);
+    }
+    // 检查是否有LockDoor事件
+    if (lockDoor()) {
+      // 当前状态转换为Locked
+      changeState(Locked);
+    }
+    break;
+  }
+
+  // 处理状态Locked的分支
+  case (Locked): {
+    // 执行动作Lock
+    lock();
+    // 检查是否有UnlockDoor事件
+    if (unlockDoor()) {
+      // 当前状态转换为Unlocked
+      changeState(Unlocked);
+    }
+    break;
+  }
+
+  // 处理状态Unlocked的分支
+  case (Unlocked): {
+    // 执行动作Unlock
+    unlock();
+    // 检查是否有LockDoor事件
+    if (lockDoor()) {
+      // 当前状态转换为Locked    
+      changeState(Locked)
+    }
+    // 检查是否有OpenDoor事件    
+    if (openDoor()) {
+      // 当前状态转换为Opened
+      changeSate(Opened);
+    }
+    break;
+  } 
+}
+</code>
+</pre>
+<p>使用switch语句实现的有限状态机的确能够很好地工作，在很长一段时期内，使用switch语句一直是实现有限状态机的唯一方法，甚至像编译器这样复杂的软件系统，大部分也都直接采用这种实现方式。但之后随着状态机应用的逐渐深入，构造出来的状态机越来越复杂，这种方法也开始面临各种严峻的考验，其中最令人头痛的是如果状态机中的状态非常多，或者状态之间的转换关系异常复杂，那么简单地使用switch语句构造出来的状态机将是不可维护的。</p>
+<p>同时代码的可读性并不十分理想，主要原因是在实现状态之间的转换时，检查转换条件和进行状态转换都是混杂在当前状态中来完成的。</p>
+<h3 id="Matin_Fowler的状态机模型实现">Matin Fowler的状态机模型实现</h3><p>Matin Fowler在领域特定语言中提到了状态机模型，如下图：</p>
+<img src="http://xfhnever.com/images/post/fsm1-3.png">
+<p>核心代码：</p>
+<h4 id="AbstractEvent">AbstractEvent</h4><pre><code>public abstract class AbstractEvent {
+    private String name;
+    private String code;
+
+    protected AbstractEvent(String name, String code) {
+        this.name = name;
+        this.code = code;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getCode() {
+        return code;
+    }
+}    
+</code>
+</pre>
+<h4 id="Event">Event</h4><pre><code>public class Event extends AbstractEvent {
+    public Event(String name, String code) {
+        super(name, code);
+    }
+}
+</code>
+</pre>
+<h4 id="Command">Command</h4><pre><code>public class Command extends AbstractEvent {
+    public Command(String name, String code) {
+        super(name, code);
+    }
+}
+</code>
+</pre>
+<h4 id="CommandChannel">CommandChannel</h4><pre><code>public class CommandChannel {
+    public void send( String commandCode) {
+        System.out.println(<span class="string">"send CommandCode: " + commandCode);
+    }
+}
+</code>
+</pre>
+<h4 id="Transition">Transition</h4><pre><code>public class Transition {
+    private State source;
+    private State target;
+    private Event trigger;
+
+    public Transition (State source, State target, Event trigger) {
+        this.source = source;
+        this.target = target;
+        this.trigger = trigger;
+    }
+
+    public State getSource () {
+        return source;
+    }
+
+    public State getTarget () {
+        return target;
+    }
+
+    public Event getTrigger () {
+        return trigger;
+    }
+
+    public String getEventCode () {
+        return trigger.getCode ();
+    }
+}
+</code>
+</pre>
+<h4 id="State">State</h4><pre><code>public class State {
+    private String name;
+    private List&lt;Command&gt; actions = new ArrayList&lt;Command&gt;();
+    private Map&lt;String, Transition&gt; transitions = new HashMap&lt;String, Transition&gt;();
+
+    public State( String name) {
+        this.name = name;
+    }
+
+    public void addTransition( Event event, State targetState) {
+        assert null != targetState;
+        transitions.put(event.getCode(), new Transition(this,targetState,event));
+    }
+
+    public void addAction( Command command) {
+        actions.add(command);
+    }
+
+    public Collection&lt;State&gt; getAllTargets( ) {
+        List&lt;State&gt; result = new ArrayList&lt;State&gt;();
+        for(Transition t : transitions.values()) {
+            result.add(t.getTarget());
+        }
+        return result;
+    }
+
+    public boolean hasTransition( String eventCode) {
+        return transitions.containsKey(eventCode);
+    }
+
+    public State targetState( String eventCode) {
+        return transitions.get(eventCode).getTarget();
+    }
+
+    public void executeActions( CommandChannel commandChannel) {
+        for (Command c : actions) {
+            commandChannel.send(c.getCode());
+        }
+    }
+
+    public String getName( ) {
+        return name;
+    }
+}
+</code>
+</pre>
+<h4 id="StateMachine">StateMachine</h4><pre><code>public class StateMachine {
+    private State start;
+    private List&lt;Event&gt; resetEvents = new ArrayList&lt;Event&gt;();
+
+    public State getStart() {
+        return start;
+    }
+
+    public StateMachine(State start) {
+        this.start = start;
+    }
+
+    public Collection&lt;State&gt; getStates() {
+        List&lt;State&gt; result = new ArrayList&lt;State&gt;();
+        collectStates(result, start);
+        return result;
+    }
+
+    private void collectStates(Collection&lt;State&gt; result, State s) {
+        if(result.contains(s)) {
+            return;
+        }
+        result.add(s);
+        for(State next : s.getAllTargets()) {
+            collectStates(result, next);
+        }
+    }
+
+    public void addResetEvents(Event... events) {
+        for (Event e : events) {
+            resetEvents.add(e);
+        }
+    }
+
+    public boolean isResetEvent(String eventCode) {
+        return resetEventCode().contains(eventCode);
+    }
+
+    private List&lt;String&gt; resetEventCode() {
+        List&lt;String&gt; result  = new ArrayList&lt;String&gt;();
+        for (Event e : resetEvents) {
+            result.add(e.getCode());
+        }
+
+        return result;
+    }
+}
+</code>
+</pre>
+<h4 id="Controller">Controller</h4><pre><code>public class Controller {
+    private State currentState;
+    private StateMachine machine;
+
+    private CommandChannel commandChannel;
+
+    public Controller( State currentState, StateMachine machine, CommandChannel commandChannel) {
+        this.currentState = currentState;
+        this.machine = machine;
+        this.commandChannel = commandChannel;
+    }
+
+    public void handle( String eventCode) {
+        if (currentState.hasTransition(eventCode)) {
+            transitionTo(currentState.targetState(eventCode));
+        } else if ( machine.isResetEvent(eventCode)){
+            transitionTo(machine.getStart());
+        }
+    }
+    private void transitionTo( State state) {
+        currentState = state;
+        currentState.executeActions(commandChannel);
+        System.out.println(<span class="string">"CurrentState: " + currentState.getName());
+    }
+}
+</code>
+</pre>
+<p>对于上面例子的具体实现：</p>
+<h4 id="DoorSample">DoorSample</h4><pre><code>public class DoorSample {
+    private Controller controller;
+    public DoorSample( ) {
+        Event openDoor = new Event(<span class="string">"OpenDoor",<span class="string">"DO");
+        Event closeDoor = new Event(<span class="string">"CloseDoor", <span class="string">"DC");
+        Event lockDoor = new Event(<span class="string">"LockDoor", <span class="string">"DL");
+        Event unlockDoor = new Event(<span class="string">"UnlockDoor", <span class="string">"DU");
+
+        Command openDoorCd = new Command(<span class="string">"open the door", <span class="string">"DOCD");
+        Command closeDoorCd = new Command(<span class="string">"close the door", <span class="string">"DCCD");
+        Command lockDoorCd = new Command(<span class="string">"lock the door", <span class="string">"DLCD") ;
+        Command unlockDoorCd = new Command(<span class="string">"unlock the door", <span class="string">"DUCD");
+
+        State openedState = new State(<span class="string">"Opened");
+        State closedState = new State(<span class="string">"Closed");
+        State lockedState = new State(<span class="string">"locked");
+        State unlockedState = new State(<span class="string">"unlock");
+
+        StateMachine machine = new StateMachine(openedState);
+
+        openedState.addTransition(closeDoor, closedState);
+        openedState.addAction(openDoorCd);
+        closedState.addTransition(openDoor, openedState);
+        closedState.addTransition(lockDoor, lockedState);
+        closedState.addAction(closeDoorCd);
+        lockedState.addTransition(unlockDoor, unlockedState);
+        lockedState.addAction(lockDoorCd);
+        unlockedState.addTransition(lockDoor, lockedState);
+        unlockedState.addTransition(openDoor, openedState);
+        unlockedState.addAction(unlockDoorCd);
+
+        CommandChannel commandChannel = new CommandChannel();
+
+        controller = new Controller(openedState, machine, commandChannel);
+    }
+
+    public Controller getController( ) {
+        return controller;
+    }
+}
+</code>
+</pre>
+<h4 id="DoorTest">DoorTest</h4><pre><code>public class DoorTest {
+    public static void main(String args[]) {
+        DoorSample sample = new DoorSample();
+        Controller controller = sample.getController();
+
+        controller.handle(<span class="string">"DC");
+        controller.handle(<span class="string">"DL");
+        controller.handle(<span class="string">"DU");
+        controller.handle(<span class="string">"DL");
+        controller.handle(<span class="string">"DU");
+        controller.handle(<span class="string">"DO");
+    }
+}
+</code>
+</pre>
+<p>由上面代码我们可以发现，一方面是程序库、框架或者组件的实现代码；另一方面是配置代码或组件组装代码。从本质上说，这种做法分开了公共代码和可变代码。用公共代码构建一套组件，然后根据不同的目的进行配置。</p>
+<h3 id="state_pattern">state pattern</h3><p>该模式可以参见另一篇blog <a href="http://xfhnever.github.io/blog/2014/03/30/designpattern-state/" target="_blank" rel="external">DesignPattern-State Pattern</a></p>
+</div>
+
+<br><br><br><br>

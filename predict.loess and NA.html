@@ -1,0 +1,196 @@
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+  a {text-decoration: none}
+  A:hover { color: yellow }
+  A:focus { color: red }
+ #newtype { color: pink}
+ #brownword { color: #ff8000}
+}
+</STYLE>
+</head>
+<body bgcolor="#000000" text="#109030" leftmargin="10" topmargin="10" marginwidth="150" link="#08C8A8" vlink="#389898" alink="#28B8B8" target=_blank>
+<FONT size=3>
+
+<h2>predict.loess and NA/NaN values</h2>
+
+I am fitting loess models to subsets of data in
+order to use the loess predicitons for normalization (similar to what
+is done in many microarray analyses). While working on this I ran into
+a problem when I tried to predict from the loess models and the data
+contained NAs or NaNs. I tracked down the problem to the fact that
+predict.loess will not return a value at all when fed with such
+values. A toy example:
+<br/><br/>x &lt;- rnorm(15)
+<br/>y &lt;- x + rnorm(15)
+<br/>model.lm &lt;- lm(y~x)
+<br/>model.loess &lt;- loess(y~x)
+<br/>predict(model.lm, data.frame(x=c(0.5, Inf, -Inf, NA, NaN)))
+<br/>predict(model.loess, data.frame(x=c(0.5, Inf, -Inf, NA, NaN)))
+<br/><br/>The behaviour of predict.lm meets my expectation: I get a vector of
+length 5 where the unpredictable ones are NA or NaN. predict.loess on the
+other hand returns only 3 values quietly skipping the last two.
+I was unable to find anything in the manual page that explains this
+behaviour or says how to change it. So I'm asking the community: Is
+there a way to fix this or do I have to code around it?
+
+<br/><br/><br/>-- 
+
+<br/>This is not much help, but I did a bit of digging by using
+<br/><br/>&nbsp; debug(stats:::predict.loess)
+<br/><br/>And then step through the function line-by-line. &nbsp;Apparently the
+Problem happens before the actual prediction is done. &nbsp;The code
+<br/><br/>&nbsp; &nbsp;as.matrix(model.frame(delete.response(terms(object)), newdata))
+<br/><br/>already omitted the NA and NaN. &nbsp;The problem is that that's the
+default behavior of model.frame(). &nbsp;Consulting ?model.frame, I see
+that you can override this by setting the na.action attribute of the 
+data frame passed to it. &nbsp;Thus I tried setting 
+<br/><br/>&nbsp; na.dat = data.frame(x=c(0.5, Inf, -Inf, NA, NaN))
+<br/>&nbsp; attr(na.dat, &quot;na.action&quot;) = na.pass
+<br/><br/>This does make the as.matrix(model.frame()) line retain the NA and
+<br/>NaN, but it bombs in the prediction at the subsequent step. &nbsp;I guess
+<br/>It really doesn't like NA as inputs.
+<br/><br/>What you can do is patch the code to add the NAs back after the 
+<br/>Prediction step (which many predict() methods do).
+<br/><br/>Cheers,
+<br/>Andy
+
+<br/>
+&nbsp; &nbsp; I want to do a &nbsp;nonparametric regression. Im using the function loess.
+<br/>&nbsp; &nbsp; &nbsp; The variable are &nbsp;the year from 1968 to 1977 and the dependant variable is &nbsp;a proportion P. The dependant variable have &nbsp;missing value (NA). 
+<br/>&nbsp; &nbsp; &nbsp; The script is :
+<br/>&nbsp; &nbsp; &nbsp; &nbsp;
+<br/>&nbsp; &nbsp; &nbsp; year &lt;- 1969:2002
+<br/>&nbsp; &nbsp; &nbsp; length(year) 
+<br/>&nbsp; &nbsp; &nbsp; [1] 34
+<br/>&nbsp; &nbsp; &nbsp; &nbsp;
+<br/>&nbsp; &nbsp; &nbsp; P &lt;- c(NA,0.1,0.56,NA,NA,0.5,0.4,0.75,0.9,
+<br/>&nbsp; &nbsp; &nbsp; 0.98,0.2,0.56,0.7,0.89,0.3,0.1,0.45,0.46,0.49,0.78,
+<br/>&nbsp; &nbsp; &nbsp; 0.25,0.79,0.23,0.26,0.46,0.12,0.56,0.8,0.55,0.41,
+<br/>&nbsp; &nbsp; &nbsp; 0.36,0.9,0.22,0.1)
+<br/>&nbsp; &nbsp; &nbsp; length(P)
+<br/>&nbsp; &nbsp; &nbsp; [1] 34
+<br/>&nbsp; &nbsp; &nbsp; &nbsp;
+<br/>&nbsp; &nbsp; &nbsp; lo1 &lt;- loess(P~year,span=0.3,degree=1)
+<br/>&nbsp; &nbsp; &nbsp; summary(lo1)
+<br/>&nbsp; &nbsp; &nbsp; &nbsp;
+<br/>&nbsp; &nbsp; &nbsp; yearCo &lt;- 1969:2002
+<br/>&nbsp; &nbsp; &nbsp; year_lo &lt;- data.frame(year = yearCo )
+<br/>&nbsp; &nbsp; &nbsp; length(yea
+I get 1 here, and so should you.
+<br/><br/>&gt; &nbsp; &nbsp; &nbsp;mlo &lt;- predict(loess(P~year,span=0.3,degree=1),new.data=year_lo,se=T)
+<br/><br/>It should be newdata, not new.data
+<br/><br/>&gt; &nbsp; &nbsp; &nbsp;mlo$fit
+<br/>&gt; &nbsp; &nbsp; &nbsp;mlo$se.fit
+<br/><br/>Notice that these are of length 31, not 34
+<br/><br/>You are trying to predict at the values used for fitting (possibly not 
+<br/>what you intended), so you don't actually need this. &nbsp;Try
+<br/><br/>lo1 &lt;- loess(P~year,span=0.3,degree=1, na.action=na.exclude)
+<br/>fitted(lo1)
+<br/>plot(year,P,type='o')
+<br/>lines(year, fitted(lo1))
+<br/><br/>Or if you want to try interpolation
+<br/><br/>lines(year, predict(lo1, newdata=year_lo))
+<br/><br/>This will not extrapolate to 1969, and as far as I recall the version of 
+<br/>loess in R does not allow extrapolation.
+<br/><br/>&gt; &nbsp; &nbsp; &nbsp;plot(year,P,type='o')
+<br/>&gt; &nbsp; &nbsp; &nbsp;lines(year,predict(loess(P~year,span=0.15,degree=1),new.data=year_lo,
+<br/>&gt; &nbsp; &nbsp; &nbsp;se=T,na.action=na.omit)$fit,col='blue',type='l')
+<br/>&gt;
+<br/>&gt; &nbsp; &nbsp; &nbsp;The message error &nbsp;indicates that x and y dont have the same length.
+<br/><br/>&gt; &nbsp; &nbsp; &nbsp;In fact in m$fit and m$se.fit there are 3 values who dont have a 
+<br/>&gt; fitted value.
+<br/><br/>Correct, and that's because you used na.action=na.omit and did not specify 
+<br/>newdata.
+<br/><br/>
+<br/><br/>-- 
+<h1>r - loess prediction returns NA</h1>
+
+<p>I am struggling with "out-of-sample" prediction using <code>loess</code>. I get <code>NA</code> values for new x that are outside the original sample. Can I get these predictions? </p>
+
+<pre><code>x &lt;- c(24,36,48,60,84,120,180)
+y &lt;- c(3.94,4.03,4.29,4.30,4.63,4.86,5.02)
+lo &lt;- loess(y~x)
+x.all &lt;- seq(3,200,3)
+predict(object = lo,newdata = x.all)
+</code></pre>
+
+<p>I need to model full yield curve.</p>
+<br><br>
+
+<p>From the manual page of <code>predict.loess</code>:</p>
+
+<blockquote>
+  <p>When the fit was made using surface = "interpolate" (the default), predict.loess will not extrapolate â€“ so points outside an axis-aligned hypercube enclosing the original data will have missing (NA) predictions and standard errors</p>
+</blockquote>
+
+<p>If you change the surface parameter to "direct" you can extrapolate values.</p>
+
+<p>For instance, this will work (on a side note: after plotting the prediction, my feeling is that you should increase the <code>span</code> parameter in the <code>loess</code> call a little bit):</p>
+
+<pre><code>lo &lt;- loess(y~x, control=loess.control(surface="direct"))
+predict(lo, newdata=x.all)
+</code></pre>
+
+<br><br>
+
+<p>In addition to nico's answer: I would suggest to fit a <code>gam</code> (which uses penalized regression splines) instead. However, extrapolation is not advisable if you don't have a model based on science.</p>
+
+<pre><code>x &lt;- c(24,36,48,60,84,120,180)
+y &lt;- c(3.94,4.03,4.29,4.30,4.63,4.86,5.02)
+lo &lt;- loess(y~x, control=loess.control(surface = "direct"))
+plot(x.all &lt;- seq(3,200,3),
+     predict(object = lo,newdata = x.all),
+     type="l", col="blue")
+points(x, y)
+
+library(mgcv)
+fit &lt;- gam(y ~ s(x, bs="cr", k=7, fx =FALSE), data = data.frame(x, y))
+summary(fit)
+
+lines(x.all, predict(fit, newdata = data.frame(x = x.all)), col="green")
+</code></pre>
+
+<p><img src="http://i.stack.imgur.com/u8glN.png" alt="resulting plot"></p>
+<br><br>
+<h1>loess predict with new x values</h1>
+
+<p>I am attempting to understand how the <code>predict.loess</code> function is able to compute new predicted values (<code>y_hat</code>) at points <code>x</code> that do not exist in the original data.  For example (this is a simple example and I realize loess is obviously not needed for an example of this sort but it illustrates the point):</p>
+
+<pre><code>x &lt;- 1:10
+y &lt;- x^2
+mdl &lt;- loess(y ~ x)
+predict(mdl, 1.5)
+[1] 2.25
+</code></pre>
+
+<p><code>loess</code> regression works by using polynomials at each <code>x</code> and thus it creates a predicted <code>y_hat</code> at each <code>y</code>.  However, because there are no coefficients being stored, the "model" in this case is simply the details of what was used to predict each <code>y_hat</code>, for example, the <code>span</code> or <code>degree</code>.  When I do <code>predict(mdl, 1.5)</code>, how is <code>predict</code> able to produce a value at this new <code>x</code>?  Is it interpolating between two nearest existing <code>x</code> values and their associated <code>y_hat</code>? If so, what are the details behind how it is doing this?</p>
+
+<br><br>
+<blockquote>
+  <p>However, because there are no coefficients being stored, the "model" in this case is simply the details of what was used to predict each y_hat</p>
+</blockquote>
+
+<p>Maybe you have used <code>print(mdl)</code> command or simply <code>mdl</code> to see what the model <code>mdl</code> contains, but this is not the case. The model is really complicated and stores a big number of parameters.</p>
+
+<p>To have an idea what's inside, you may use <code>unlist(mdl)</code> and see the big list of parameters in it. </p>
+
+<p>This is a part of the manual of the command describing how it really works:</p>
+
+<blockquote>
+  <p>Fitting is done locally. That is, for the fit at point x, the fit is made using points in a neighbourhood of x, weighted by their distance from x (with differences in â€˜parametricâ€™ variables being ignored when computing the distance). The size of the neighbourhood is controlled by Î± (set by span or enp.target). For Î± &lt; 1, the neighbourhood includes proportion Î± of the points, and these have tricubic weighting (proportional to (1 - (dist/maxdist)^3)^3). For Î± > 1, all points are used, with the â€˜maximum distanceâ€™ assumed to be Î±^(1/p) times the actual maximum distance for p explanatory variables.</p>
+  
+  <p>For the default family, fitting is by (weighted) least squares. For
+  family="symmetric" a few iterations of an M-estimation procedure with
+  Tukey's biweight are used. Be aware that as the initial value is the
+  least-squares fit, this need not be a very resistant fit.</p>
+</blockquote>
+
+<p>What I believe is that it tries to fit a polynomial model in the neighborhood of every point (not just a single polynomial for the whole set). But the neighborhood does not mean only one point before and one point after, if I was implementing such a function I put a big weight on the nearest points to the point x, and lower weights to distal points, and tried to fit a polynomial that fits the highest total weight.</p>
+
+<p>Then if the given x' for which height should be predicted is closest to point x, I tried to use the polynomial fitted on the neighborhoods of the point x - say P(x) - and applied it over x' - say P(x') - and that would be the prediction.</p>
+
+<span class="comment-copy">Thank you, yes, this is exactly what i describe in the question. Please note: &quot;the fit at point x, the fit is made using points in a neighbourhood of x&quot;. the question is: what happens between x_1 and x_2.. at, for example, x_1 + epsilon that does not exist in the data-set</span>
+<br><br>
+<span class="comment-copy">If every point (say x_1+epsilon) was in the dataset, what remained to be predicted? The other point is that we don&#39;t have just a single polynomial g(x), but say n polynomials g_1(x), g_2(x) ... g_n(x) such that g_i(x) is created to best fit the points in neighborhood of (x_i, y_i). Simply use the fitted polynomial to the closest point available in the dataset (say x_1) to predict it (So your answer would be g_1(x_1 + epsilon).</span>
