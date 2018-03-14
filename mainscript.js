@@ -1,0 +1,77 @@
+$(document).ready(function(){
+    $('.left, .title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+
+function chkKey() {
+  var testkey = getChar(event);
+  if(testkey == 'A'){window.open("halfHourMonA.html");}
+  if(testkey == 'c'){showChart();}
+  if(testkey == '6'){sCt("64357");}
+  if(testkey == '7'){sCt("700");}
+  if(testkey == '8'){sCt("857");}
+  if(testkey == 'C'){window.location = '#CPP';}
+  if(testkey == 'd'){window.open("LibDocs/clock.html");}
+  if(testkey == 'e'){window.location = '#ertong';}
+  if(testkey == 'f'){window.open("ForexChart.htm");}
+  if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
+  if(testkey == 'g'){window.location = '#_youxi';}
+  if(testkey == 'i'){window.location = '#IoT';}
+  if(testkey == 'j'){window.location = '#Javascript';}
+  if(testkey == 'J'){window.location = '#_jiaoyu';}
+  if(testkey == 'l'){window.location = '#dushu';}
+  if(testkey == 'm'){window.location = '#medic';}
+  if(testkey == 'M'){window.open("https://www.google.com.hk/maps/");}
+  if(testkey == 'n'){window.location = '#xinwen';}
+  if(testkey == 'N'){window.open("LibDocs/EnglishNews.html");}
+  if(testkey == 'o'){window.location = '#sclj';}
+  if(testkey == 'P'){window.location = '#Python';}
+  if(testkey == 'p'){window.location = '#Programming';}
+  if(testkey == 'q'){window.location = '#sclj';}
+  if(testkey == 'r'){window.location = '#Rlang';}
+  if(testkey == 's'){window.open("stkListVH.html");}
+  if(testkey == 'S'){window.location = '#sclj';}
+  if(testkey == 't'){window.open("http://my.weather.gov.hk/myindex_uc.htm");}
+  if(testkey == 'T'){window.open("https://translate.google.com/#en/zh-CN");}
+  if(testkey == 'v'){window.open("http://localhost:8080/StkImgViewer.html");}
+  if(testkey == 'w'){window.location = '#ruanjian';}
+  if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
+  if(testkey == 'x'){window.open("https://wx.qq.com/");}
+  if(testkey == 'y'){window.open("http://www.youtube.com");}
+  if(testkey == 'Y'){window.location = '#yinyue';}
+  if(testkey == 'z'){window.open("LibDocs\shortPeriodMain.html");}
+
+}
+
+function getChar(event) {
+  if (event.which!=0 && event.charCode!=0) {
+    return String.fromCharCode(event.which)   // the rest
+  } else {
+    return null // special key
+  }
+}
+
+function showChart() {
+    var thecode = prompt("Code Number:", "");
+    if (thecode != null && thecode != "") {sCt(thecode);}
+}
+
+function sCt(stkcode) {
+  imgHead = "<img src='http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=9&indpara1=20&indpara2=2&indpara3=0&indpara4=0&indpara5=0&subChart1=3&ref1para1=5&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&subChart3=12&ref3para1=0&ref3para2=0&ref3para3=0&scheme=3&com=100&chartwidth=1050&chartheight=690&stockid=";
+  imgPCode= "&period=";
+  imgTail="&type=1&logoStyle=1'><br>";
+
+  intv = [4, 3, 2, 1, 5012, 5007, 5000, 7, 11, 12];
+  var imgWindow = window.open("");
+  newshead = "http://www.aastocks.com/tc/stocks/analysis/stock-aafn/"
+  newstail = "/0/all/1"
+  newsStr = newshead + stkcode + newstail
+  imgAdr = "<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>" 
+
+  for( var imgPeriod = 0; imgPeriod < intv.length; imgPeriod++){
+    imgAdr = imgAdr + imgHead + stkcode + imgPCode + intv[imgPeriod] + imgTail;
+  };
+  imgWindow.document.write(imgAdr);
+}
