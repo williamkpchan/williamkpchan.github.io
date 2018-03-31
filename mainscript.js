@@ -75,3 +75,20 @@ function sCt(stkcode) {
   };
   imgWindow.document.write(imgAdr);
 }
+
+function showDate() {
+    var d = new Date();
+    var curr_date = d.getDate();
+    var curr_month = d.getMonth() + 1; //months are zero based
+    var curr_year = d.getFullYear();
+    document.write(curr_date + "-" + curr_month + "-" + curr_year);
+}
+
+function showTime() {
+	var d = new Date();
+	var secs=d.getSeconds();
+	var mins=d.getMinutes();
+	var hr=d.getHours();
+	var timemsg = hr + ":" + mins + ":" + secs
+	alert(timemsg);
+}
