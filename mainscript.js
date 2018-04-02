@@ -77,11 +77,12 @@ function sCt(stkcode) {
 }
 
 function showDate() {
+    var days = ['Sun','Mon','Tue','Wed','Thur','Fri','Sat'];
     var d = new Date();
     var curr_date = d.getDate();
     var curr_month = d.getMonth() + 1; //months are zero based
     var curr_year = d.getFullYear();
-    document.write(curr_date + "-" + curr_month + "-" + curr_year);
+    document.write(days[d.getDay()] + ", " + curr_date + "-" + curr_month + "-" + curr_year);
 }
 
 function showTime() {
