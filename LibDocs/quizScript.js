@@ -75,6 +75,10 @@ $(".answer").click(function () {
    $(this).toggleClass("appear");
 });
 
+$.fn.toggleAnswer = function () {
+   $(this).toggleClass("appear");
+};
+
 function jpButClick() {
   var jpBut = document.querySelector('.jumpButton');
   if (remainQueNo > 0) {showQues();}
@@ -93,3 +97,7 @@ function jpback() {
   }
 }
 
+function speak() {
+  var speech = new SpeechSynthesisUtterance(questionList[remainQueNo]);
+  speechSynthesis.speak(speech);
+}
