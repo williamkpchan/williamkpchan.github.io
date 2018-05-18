@@ -7,12 +7,12 @@ $(document).ready(function(){
 
 function chkKey() {
   var testkey = getChar(event);
-  if(testkey == 'A'){window.open("halfHourMonA.html");}
-  if(testkey == 'c'){showChart();}
   if(testkey == '6'){sCt("64357");}
   if(testkey == '7'){sCt("700");}
   if(testkey == '8'){sCt("857");}
-  if(testkey == 'C'){window.location = '#CPP';}
+  if(testkey == 'A'){window.open("halfHourMonA.html");}
+  if(testkey == 'c'){showChart();}
+  if(testkey == 'C'){showTime();}
   if(testkey == 'd'){window.open("LibDocs/clock.html");}
   if(testkey == 'e'){window.location = '#ertong';}
   if(testkey == 'f'){window.open("ForexChart.htm");}
