@@ -18,6 +18,7 @@ function chkKey() {
   if(testkey == 'f'){window.open("ForexChart.htm");}
   if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
   if(testkey == 'g'){window.location = '#_youxi';}
+  if(testkey == 'h'){window.open("LibDocs/News Points.html");}
   if(testkey == 'i'){window.location = '#IoT';}
   if(testkey == 'j'){window.location = '#Javascript';}
   if(testkey == 'J'){window.location = '#_jiaoyu';}
