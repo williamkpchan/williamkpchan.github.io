@@ -11,6 +11,7 @@ function chkKey() {
   if(testkey == '7'){sCt("700");}
   if(testkey == '8'){sCt("857");}
   if(testkey == 'A'){window.open("halfHourMonA.html");}
+  if(testkey == 'b'){window.open("LibDocs/Random Charts.html");}
   if(testkey == 'c'){showChart();}
   if(testkey == 'C'){showTime();}
   if(testkey == 'd'){window.open("LibDocs/clock.html");}
@@ -64,12 +65,13 @@ function sCt(stkcode) {
   imgPCode= "&period=";
   imgTail="&type=1&logoStyle=1'><br>";
 
+  // 5000, 5007, 5012, 1, 2, 3, 4, 6, 7, 9, 10, 12, 14, 16, 17, 18
   intv = [4, 3, 2, 1, 5012, 5007, 5000, 7, 11, 12];
   var imgWindow = window.open("");
   newshead = "http://www.aastocks.com/tc/stocks/analysis/stock-aafn/"
   newstail = "/0/all/1"
   newsStr = newshead + stkcode + newstail
-  imgAdr = "<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>" 
+  imgAdr = "<style>body{background-color:black;}</style><body><center>" +"<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>" 
 
   for( var imgPeriod = 0; imgPeriod < intv.length; imgPeriod++){
     imgAdr = imgAdr + imgHead + stkcode + imgPCode + intv[imgPeriod] + imgTail;

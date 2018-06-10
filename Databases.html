@@ -57,15 +57,28 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <h4 class="date">
 <em>2016-06-23</em></h4>
 
-<p>As well as working with local in-memory data like data frames and data tables, dplyr also works with remote on-disk data stored in databases. Generally, if your data fits in memory there is no advantage to putting it in a database: it will only be slower and more hassle. The reason you’d want to use dplyr with a database is because either your data is already in a database (and you don’t want to work with static csv files that someone else has dumped out for you), or you have so much data that it does not fit in memory and you have to use a database. Currently dplyr supports the three most popular open source databases (sqlite, mysql and postgresql), and google’s bigquery.</p>
+<p>As well as working with local in-memory data like data frames and data tables, dplyr also works with remote on-disk data stored in databases. <br>
+Generally, if your data fits in memory there is no advantage to putting it in a database: it will only be slower and more hassle. <br>
+The reason you’d want to use dplyr with a database is because either your data is already in a database (and you don’t want to work with static csv files that someone else has dumped out for you), or you have so much data that it does not fit in memory and you have to use a database. <br>
+Currently dplyr supports the three most popular open source databases (sqlite, mysql and postgresql), and google’s bigquery.</p>
 
-<p>Since R almost exclusively works with in-memory data, if you do have a lot of data in a database, you can’t just dump it into R. Instead, you’ll have to work with subsets or aggregates. dplyr aims to make this task as easy as possible. If you’re working with large data, it’s also likely that you’ll need support to get the data into the database and to ensure you have the right indices for good performance. While dplyr provides some simple tools to help with these tasks, they are no substitute for a local expert.</p>
+<p>Since R almost exclusively works with in-memory data, if you do have a lot of data in a database, you can’t just dump it into R. <br>
+Instead, you’ll have to work with subsets or aggregates. <br>
+dplyr aims to make this task as easy as possible. <br>
+If you’re working with large data, it’s also likely that you’ll need support to get the data into the database and to ensure you have the right indices for good performance. <br>
+While dplyr provides some simple tools to help with these tasks, they are no substitute for a local expert.</p>
 
-<p>The motivation for supporting databases in dplyr is that you never pull down the right subset or aggregate from the database on your first try. Usually you have to iterate between R and SQL many times before you get the perfect dataset. But because switching between languages is cognitively challenging (especially because R and SQL are so perilously similar), dplyr helps you by allowing you to write R code that is automatically translated to SQL. The goal of dplyr is not to replace every SQL function with an R function; that would be difficult and error prone. Instead, dplyr only generates 
+
+<p>The motivation for supporting databases in dplyr is that you never pull down the right subset or aggregate from the database on your first try. <br>
+Usually you have to iterate between R and SQL many times before you get the perfect dataset. <br>
+But because switching between languages is cognitively challenging (especially because R and SQL are so perilously similar), dplyr helps you by allowing you to write R code that is automatically translated to SQL. <br>
+The goal of dplyr is not to replace every SQL function with an R function; that would be difficult and error prone. <br>
+Instead, dplyr only generates 
 <code>SELECT</code> statements, the SQL you write most often as an analyst.</p>
 
 <p>To get the most out of this chapter, you’ll need to be familiar with querying SQL databases using the 
-<code>SELECT</code> statement. If you have some familiarity with SQL and you’d like to learn more, I found 
+<code>SELECT</code> statement. <br>
+If you have some familiarity with SQL and you’d like to learn more, I found 
 <a href="http://www.sqlite.org/queryplanner.html">how indexes work in SQLite</a> and 
 <a href="http://blog.jooq.org/2016/03/17/10-easy-steps-to-a-complete-understanding-of-sql">10 easy steps to a complete understanding of SQL</a> to be particularly helpful.</p>
 
@@ -73,14 +86,18 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h2>Getting started</h2>
 
-<p>The easiest way to experiement with databases using dplyr is to use SQLite. This is because everything you need is already included in the R package. You won’t need to install anything, and you won’t need to deal with the hassle of setting up a database server. Doing so is really easy: just give the path and the ok to create a table.</p>
+<p>The easiest way to experiement with databases using dplyr is to use SQLite. <br>
+This is because everything you need is already included in the R package. <br>
+You won’t need to install anything, and you won’t need to deal with the hassle of setting up a database server. <br>
+Doing so is really easy: just give the path and the ok to create a table.</p>
 
 <div class="sourceCode">
 <pre class="sourceCode r">
 <code class="sourceCode r">my_db &lt;-<span class="st"> </span><span class="kw">src_sqlite</span>(<span class="st">&quot;my_db.sqlite3&quot;</span>, <span class="dt">create =</span> T)</code></pre></div>
 
 <p>The main new concept here is the 
-<code>src</code>, which is a collection of types of database tables. Use 
+<code>src</code>, which is a collection of types of database tables. <br>
+Use 
 <code>src_sqlite()</code>, 
 <code>src_mysql()</code>, 
 <code>src_postgres()</code> and 
@@ -89,7 +106,9 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <p>
 <code>my_db</code> currently has no data in it, so we’ll import the 
 <code>flights</code> data using the convenient 
-<code>copy_to()</code> function. This is a quick and dirty way of getting data into a database. Because all the data has to flow through R, you should note that this is not suitable for very large datasets.</p>
+<code>copy_to()</code> function. <br>
+This is a quick and dirty way of getting data into a database. <br>
+Because all the data has to flow through R, you should note that this is not suitable for very large datasets.</p>
 
 <div class="sourceCode">
 <pre class="sourceCode r">
@@ -98,7 +117,8 @@ flights_sqlite &lt;-<span class="st"> </span><span class="kw">copy_to</span>(my_
   <span class="kw">c</span>(<span class="st">&quot;year&quot;</span>, <span class="st">&quot;month&quot;</span>, <span class="st">&quot;day&quot;</span>), <span class="st">&quot;carrier&quot;</span>, <span class="st">&quot;tailnum&quot;</span>))</code></pre></div>
 
 <p>As you can see, the 
-<code>copy_to()</code> operation has an additional argument that allows you to supply indexes for the table. Here we set up indexes that will allow us to quickly process the data by day, by carrier and by plane. 
+<code>copy_to()</code> operation has an additional argument that allows you to supply indexes for the table. <br>
+Here we set up indexes that will allow us to quickly process the data by day, by carrier and by plane. 
 <code>copy_to()</code> also executes the SQL 
 <code>ANALYZE</code> command: this ensures that the database has up-to-date table statistics and performs the appropriate query optimisations.</p>
 
@@ -205,7 +225,8 @@ flights_sqlite
 <code>filter()</code>, 
 <code>arrange()</code>, 
 <code>mutate()</code>, and 
-<code>summarise()</code> are translated into SQL so they can be run on the database. While the translations for the most common operations are almost perfect there are some limitations, which you’ll learn about later.</p>
+<code>summarise()</code> are translated into SQL so they can be run on the database. <br>
+While the translations for the most common operations are almost perfect there are some limitations, which you’ll learn about later.</p>
 </div>
 
 <div id="laziness" class="section level2">
@@ -232,8 +253,10 @@ c2 &lt;-<span class="st"> </span><span class="kw">select</span>(c1, year, month,
 c3 &lt;-<span class="st"> </span><span class="kw">mutate</span>(c2, <span class="dt">speed =</span> distance /<span class="st"> </span>air_time *<span class="st"> </span><span class="dv">60</span>)
 c4 &lt;-<span class="st"> </span><span class="kw">arrange</span>(c3, year, month, day, carrier)</code></pre></div>
 
-<p>Suprisingly, this sequence of operations never actually touches the database. It’s not until you ask for the data (e.g. by printing 
-<code>c4</code>) that dplyr generates the SQL and requests the results from the database. Even then it only pulls down 10 rows.</p>
+<p>Suprisingly, this sequence of operations never actually touches the database. <br>
+It’s not until you ask for the data (e.g. by printing 
+<code>c4</code>) that dplyr generates the SQL and requests the results from the database. <br>
+Even then it only pulls down 10 rows.</p>
 
 <div class="sourceCode">
 <pre class="sourceCode r">
@@ -275,8 +298,10 @@ c4 &lt;-<span class="st"> </span><span class="kw">arrange</span>(c3, year, month
 <span class="co">#&gt; NULL</span></code></pre></div>
 
 <p>You can also ask the database how it plans to execute the query with 
-<code>explain()</code>. The output for SQLite is described in more detail on the 
-<a href="http://www.sqlite.org/eqp.html">SQLite website</a>. It’s helpful if you’re trying to figure out which indexes are being used.</p>
+<code>explain()</code>. <br>
+The output for SQLite is described in more detail on the 
+<a href="http://www.sqlite.org/eqp.html">SQLite website</a>. <br>
+It’s helpful if you’re trying to figure out which indexes are being used.</p>
 
 <div class="sourceCode">
 <pre class="sourceCode r">
@@ -381,8 +406,10 @@ c4 &lt;-<span class="st"> </span><span class="kw">arrange</span>(c3, year, month
 </ul>
 
 <p>
-<code>collect()</code> is the function you’ll use most. Once you reach the set of operations you want, you use collect() to pull the data into a local 
-<code>tbl_df()</code>. If you know SQL, you can use 
+<code>collect()</code> is the function you’ll use most. <br>
+Once you reach the set of operations you want, you use collect() to pull the data into a local 
+<code>tbl_df()</code>. <br>
+If you know SQL, you can use 
 <code>compute()</code> and 
 <code>collapse()</code> to optimise performance.</p>
 </div>
@@ -417,7 +444,8 @@ c4 &lt;-<span class="st"> </span><span class="kw">arrange</span>(c3, year, month
 <p>When performing the simple mathematical operations used when filtering, mutating or summarising, translating R code to SQL (or indeed to any programming language) is relatively straightforward.</p>
 
 <p>To experiment with this, use 
-<code>translate_sql()</code>. The following examples work through some of the basic differences between R and SQL.</p>
+<code>translate_sql()</code>. <br>
+The following examples work through some of the basic differences between R and SQL.</p>
 
 <div class="sourceCode">
 <pre class="sourceCode r">
@@ -510,23 +538,34 @@ c4 &lt;-<span class="st"> </span><span class="kw">arrange</span>(c3, year, month
 
 <p>The basic techniques that underlie the implementation of 
 <code>translate_sql()</code> are described in the 
-<a href="http://adv-r.had.co.nz/dsl.html">Advanced R book</a>. 
-<code>translate_sql()</code> is built on top of R’s parsing engine and has been carefully designed to generate correct SQL. It also protects you against SQL injection attacks by correctly escaping the strings and variable names needed by the database that you’re connecting to.</p>
+<a href="http://adv-r.had.co.nz/dsl.html">Advanced R book</a>. <br>
 
-<p>Perfect translation is not possible because databases don’t have all the functions that R does. The goal of dplyr is to provide a semantic rather than a literal translation: what you mean rather than what is done. In fact, even for functions that exist both in databases and R, you shouldn’t expect results to be identical; database programmers have different priorities than R core programmers. For example, in R in order to get a higher level of numerical accuracy, 
-<code>mean()</code> loops through the data twice. R’s 
+<code>translate_sql()</code> is built on top of R’s parsing engine and has been carefully designed to generate correct SQL. <br>
+It also protects you against SQL injection attacks by correctly escaping the strings and variable names needed by the database that you’re connecting to.</p>
+
+<p>Perfect translation is not possible because databases don’t have all the functions that R does. <br>
+The goal of dplyr is to provide a semantic rather than a literal translation: what you mean rather than what is done. <br>
+In fact, even for functions that exist both in databases and R, you shouldn’t expect results to be identical; database programmers have different priorities than R core programmers. <br>
+For example, in R in order to get a higher level of numerical accuracy, 
+<code>mean()</code> loops through the data twice. <br>
+R’s 
 <code>mean()</code> also provides a 
-<code>trim</code> option for computing trimmed means; this is something that databases do not provide. Databases automatically drop NULLs (their equivalent of missing values) whereas in R you have to ask nicely. This means the essence of simple calls like 
+<code>trim</code> option for computing trimmed means; this is something that databases do not provide. <br>
+Databases automatically drop NULLs (their equivalent of missing values) whereas in R you have to ask nicely. <br>
+This means the essence of simple calls like 
 <code>mean(x)</code> will be translated accurately, but more complicated calls like 
 <code>mean(x, trim = 0.5, na.rm = TRUE)</code> will raise an error:</p>
 
 <div class="sourceCode">
 <pre class="sourceCode r">
 <code class="sourceCode r"><span class="kw">translate_sql</span>(<span class="kw">mean</span>(x, <span class="dt">trim =</span> T))
-<span class="co"># Error: Invalid number of args to SQL AVG. Expecting 1</span></code></pre></div>
+<span class="co"># Error: Invalid number of args to SQL AVG. <br>
+Expecting 1</span></code></pre></div>
 
-<p>Any function that dplyr doesn’t know how to convert is left as is. This means that database functions that are not covered by dplyr can be used directly via 
-<code>translate_sql()</code>. Here a couple of examples that will work with 
+<p>Any function that dplyr doesn’t know how to convert is left as is. <br>
+This means that database functions that are not covered by dplyr can be used directly via 
+<code>translate_sql()</code>. <br>
+Here a couple of examples that will work with 
 <a href="http://www.sqlite.org/lang_corefunc.html">SQLite</a>:</p>
 
 <div class="sourceCode">
@@ -541,8 +580,10 @@ c4 &lt;-<span class="st"> </span><span class="kw">arrange</span>(c3, year, month
 
 <h2>Grouping</h2>
 
-<p>SQLite lacks the window functions that are needed for grouped mutation and filtering. This means that the only really useful operations for grouped SQLite tables are found in 
-<code>summarise()</code>. The grouped summarise from the introduction translates well - the only difference is that databases always drop NULLs (their equivalent of missing values), so we don’t supply 
+<p>SQLite lacks the window functions that are needed for grouped mutation and filtering. <br>
+This means that the only really useful operations for grouped SQLite tables are found in 
+<code>summarise()</code>. <br>
+The grouped summarise from the introduction translates well - the only difference is that databases always drop NULLs (their equivalent of missing values), so we don’t supply 
 <code>na.rm = TRUE</code>.</p>
 
 <div class="sourceCode">
@@ -556,14 +597,19 @@ delay &lt;-<span class="st"> </span><span class="kw">summarise</span>(by_tailnum
 delay &lt;-<span class="st"> </span><span class="kw">filter</span>(delay, count &gt;<span class="st"> </span><span class="dv">20</span>, dist &lt;<span class="st"> </span><span class="dv">2000</span>)
 delay_local &lt;-<span class="st"> </span><span class="kw">collect</span>(delay)</code></pre></div>
 
-<p>Other databases do support window functions. You can learn about them in the corresponding vignette. It’s sometimes possible to simulate grouped filtering and mutation using self joins, which join the original table with a summarised version, but that topic is beyond the scope of this introduction.</p>
+<p>Other databases do support window functions. <br>
+You can learn about them in the corresponding vignette. <br>
+It’s sometimes possible to simulate grouped filtering and mutation using self joins, which join the original table with a summarised version, but that topic is beyond the scope of this introduction.</p>
 </div>
 
 <div id="other-databases" class="section level2">
 
 <h2>Other databases</h2>
 
-<p>Aside from SQLite, the overall workflow is essentially the same regardless of the database you’re connecting to. The following sections go in to more details about the peculiarities of each database engine. All of these databases follow a client-server model - a computer that connects to the database and the computer that is running the database (the two may be one and the same but usually isn’t). Getting one of these databases up and running is beyond the scope of this article, but there are plenty of tutorials available on the web.</p>
+<p>Aside from SQLite, the overall workflow is essentially the same regardless of the database you’re connecting to. <br>
+The following sections go in to more details about the peculiarities of each database engine. <br>
+All of these databases follow a client-server model - a computer that connects to the database and the computer that is running the database (the two may be one and the same but usually isn’t). <br>
+Getting one of these databases up and running is beyond the scope of this article, but there are plenty of tutorials available on the web.</p>
 
 <div id="postgresql" class="section level3">
 
@@ -575,8 +621,12 @@ delay_local &lt;-<span class="st"> </span><span class="kw">collect</span>(delay)
 <code>host</code>, 
 <code>port</code>, 
 <code>user</code> and 
-<code>password</code>. If you are running a local postgresql database with the default settings you only need 
-<code>dbname</code>. But in most cases, you’ll need all five. dplyr uses the RPostgreSQL package to connect to postgres databases. This means that you can’t currently connect to remote databases that require a SSL connection (e.g. Heroku).</p>
+<code>password</code>. <br>
+If you are running a local postgresql database with the default settings you only need 
+<code>dbname</code>. <br>
+But in most cases, you’ll need all five. <br>
+dplyr uses the RPostgreSQL package to connect to postgres databases. <br>
+This means that you can’t currently connect to remote databases that require a SSL connection (e.g. Heroku).</p>
 
 <p>For example, the following code allows me to connect to a local PostgreSQL database that contains a copy of the 
 <code>flights</code> data:</p>
@@ -585,7 +635,8 @@ delay_local &lt;-<span class="st"> </span><span class="kw">collect</span>(delay)
 <pre class="sourceCode r">
 <code class="sourceCode r">flights_postgres &lt;-<span class="st"> </span><span class="kw">tbl</span>(<span class="kw">src_postgres</span>(<span class="st">&quot;nycflights13&quot;</span>), <span class="st">&quot;flights&quot;</span>)</code></pre></div>
 
-<p>PostgreSQL is a considerably more powerful database than SQLite. It has:</p>
+<p>PostgreSQL is a considerably more powerful database than SQLite. <br>
+It has:</p>
 
 <ul>
 
@@ -598,7 +649,8 @@ delay_local &lt;-<span class="st"> </span><span class="kw">collect</span>(delay)
 <a href="http://www.postgresql.org/docs/9.3/static/tutorial-window.html">window functions</a>, which allow grouped subset and mutates to work.</p></li>
 </ul>
 
-<p>The following examples show how we can perform grouped filter and mutate operations with PostgreSQL. Because you can’t filter on window functions directly, the SQL generated from the grouped filter is quite complex; so they instead have to go in a subquery.</p>
+<p>The following examples show how we can perform grouped filter and mutate operations with PostgreSQL. <br>
+Because you can’t filter on window functions directly, the SQL generated from the grouped filter is quite complex; so they instead have to go in a subquery.</p>
 
 <div class="sourceCode">
 <pre class="sourceCode r">
@@ -623,14 +675,16 @@ ranked$query</code></pre></div>
 
 <p>You can connect to MySQL and MariaDB (a recent fork of MySQL) using 
 <code>src_mysql()</code>, mediated by the 
-<a href="https://github.com/jeffreyhorner/RMySQL">RMySQL</a> package. Like PostgreSQL, you’ll need to provide a 
+<a href="https://github.com/jeffreyhorner/RMySQL">RMySQL</a> package. <br>
+Like PostgreSQL, you’ll need to provide a 
 <code>dbname</code>, 
 <code>username</code>, 
 <code>password</code>, 
 <code>host</code>, and 
 <code>port</code>.</p>
 
-<p>In terms of functionality, MySQL lies somewhere between SQLite and PostgreSQL. It provides a wider range of 
+<p>In terms of functionality, MySQL lies somewhere between SQLite and PostgreSQL. <br>
+It provides a wider range of 
 <a href="http://dev.mysql.com/doc/refman/5.0/en/functions.html">built-in functions</a>, but it does not support window functions (so you can’t do grouped mutates and filters).</p>
 </div>
 
@@ -638,14 +692,19 @@ ranked$query</code></pre></div>
 
 <h3>BigQuery</h3>
 
-<p>BigQuery is a hosted database server provided by Google. To connect, you need to provide your 
+<p>BigQuery is a hosted database server provided by Google. <br>
+To connect, you need to provide your 
 <code>project</code>, 
 <code>dataset</code> and optionally a project for 
 <code>billing</code> (if billing for 
-<code>project</code> isn’t enabled). After you create the src, your web browser will open and ask you to authenticate. Your credentials are stored in a local cache, so you should only need to do this once.</p>
+<code>project</code> isn’t enabled). <br>
+After you create the src, your web browser will open and ask you to authenticate. <br>
+Your credentials are stored in a local cache, so you should only need to do this once.</p>
 
 <p>BigQuery supports only one SQL statement: 
-<a href="https://developers.google.com/bigquery/query-reference">SELECT</a>. Fortunately this is all you need for data analysis. Within SELECT, BigQuery provides comprehensive coverage at a similar level to PostgreSQL.</p>
+<a href="https://developers.google.com/bigquery/query-reference">SELECT</a>. <br>
+Fortunately this is all you need for data analysis. <br>
+Within SELECT, BigQuery provides comprehensive coverage at a similar level to PostgreSQL.</p>
 </div>
 </div>
 
@@ -653,7 +712,11 @@ ranked$query</code></pre></div>
 
 <h2>Picking a database</h2>
 
-<p>If you don’t already have a database, here’s some advice from my experiences setting up and running all of them. SQLite is by far the easiest to get started with, but the lack of window functions makes it limited for data analysis. PostgreSQL is not too much harder to use and has a wide range of built-in functions. Don’t bother with MySQL/MariaDB: it’s a pain to set up and the documentation is subpar. Google BigQuery might be a good fit if you have very large data, or if you’re willing to pay (a small amount of) money to someone who’ll look after your database.</p>
+<p>If you don’t already have a database, here’s some advice from my experiences setting up and running all of them. <br>
+SQLite is by far the easiest to get started with, but the lack of window functions makes it limited for data analysis. <br>
+PostgreSQL is not too much harder to use and has a wide range of built-in functions. <br>
+Don’t bother with MySQL/MariaDB: it’s a pain to set up and the documentation is subpar. <br>
+Google BigQuery might be a good fit if you have very large data, or if you’re willing to pay (a small amount of) money to someone who’ll look after your database.</p>
 </div>
 
 </body>
