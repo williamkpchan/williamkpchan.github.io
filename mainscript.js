@@ -71,7 +71,7 @@ function sCt(stkcode) {
   newshead = "http://www.aastocks.com/tc/stocks/analysis/stock-aafn/"
   newstail = "/0/all/1"
   newsStr = newshead + stkcode + newstail
-  imgAdr = "<style>body{background-color:black;}</style><body><center>" +"<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>" 
+  imgAdr = "<style>body { background-color: black; color: green} a { text-decoration: none; color: #28B8B8;}</style><body><center>" +"<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>" 
 
   for( var imgPeriod = 0; imgPeriod < intv.length; imgPeriod++){
     imgAdr = imgAdr + imgHead + stkcode + imgPCode + intv[imgPeriod] + imgTail;
