@@ -41,9 +41,11 @@ function chkKey() {
   if(testkey == 'w'){window.location = '#ruanjian';}
   if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
   if(testkey == 'x'){window.open("https://wx.qq.com/");}
+  if(testkey == 'X'){window.open("LibDocs/Random Charts.html");}
+
   if(testkey == 'y'){window.open("http://www.youtube.com");}
   if(testkey == 'Y'){window.location = '#yinyue';}
-  if(testkey == 'z'){window.open("LibDocs\shortPeriodMain.html");}
+  if(testkey == 'z'){window.open("LibDocs/shortPeriodMain.html");}
 
 }
 
