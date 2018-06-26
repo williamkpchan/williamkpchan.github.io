@@ -96,5 +96,5 @@ function showTime() {
 	var mins=d.getMinutes();
 	var hr=d.getHours();
 	var timemsg = hr + ":" + mins + ":" + secs
-	alert(timemsg);
+	document.write(timemsg);
 }

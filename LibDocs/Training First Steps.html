@@ -1,0 +1,198 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="..\maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, .apply, div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{font-size: x-large; width:80%; margin-left: 10%}
+h1, h2 {color: gold;}
+img{width: 90%;}
+</style>
+</head><body>
+<center><h1>Training First Steps: Fitting a Curve to Synthetic Data</h1>
+<div id="toc"></div></center>
+<br>
+
+
+<p>In this tutorial, we'll use TensorFlow.js to fit a curve to a synthetic dataset. <br>
+Given some data generated using a polynomial function with some noise added, we'll train a model to discover the coefficients used to generate the data.</p>
+<h2>Prerequisites</h2>
+<p>This tutorial assumes familiarity with the fundamental building blocks of TensorFlow.js introduced in <a href="core-concepts.html">Core Concepts in TensorFlow.js</a>: tensors, variables, and ops. <br>
+We recommend completing Core Concepts before doing this tutorial.</p>
+<h2>Running the Code</h2>
+<p>This tutorial focuses on the TensorFlow.js code used to build the model and learn its coefficients.<br>
+The full code for this tutorial (including the data-generation and chart-plotting code) can be found <a href="https://github.com/tensorflow/tfjs-examples/tree/master/polynomial-regression-core" target="_blank" rel="noopener">here</a>.</p>
+<p>To run the code locally, you need the following dependencies installed:</p>
+<ul>
+<li><a href="https://nodejs.org/" target="_blank" rel="noopener">Node.js</a> version 8.9 or higher</li>
+<li><a href="https://yarnpkg.com/en/" target="_blank" rel="noopener">Yarn</a> or <a href="https://docs.npmjs.com/cli/npm" target="_blank" rel="noopener">NPM CLI</a></li>
+</ul>
+<p>These instructions use Yarn, but if you are familiar with NPM CLI and prefer to use that instead it will still work.</p>
+<pre><code class="hljs undefined">$ git clone https://github.com/tensorflow/tfjs-examples
+$ cd tfjs-examples/polynomial-regression-core
+$ yarn
+$ yarn watch</code></pre>
+<p>The <a href="https://github.com/tensorflow/tfjs-examples/tree/master/polynomial-regression-core" target="_blank" rel="noopener">tfjs-examples/polynomial-regression-core</a> directory above is completely standalone so you can copy it to start your own project.</p>
+<h2>Input Data</h2>
+<p>Our synthetic data set is composed of x- and y-coordinates that look as follows when plotted on a Cartesian plane:</p>
+
+<img src="https://js.tensorflow.org/images/fit_curve_data.png" alt="Input data scatterplot. <br>
+Data approximates a cubic function with a local minimum around (-0.6, 0) and a local maximum around (0.4, 1)" style="max-width: 500px;" width="500">
+<p>This data was generated using a cubic function of the format <em>y</em> = <em>a</em>x<sup>3</sup> + <em>b</em>x<sup>2</sup> + <em>c</em>x + <em>d</em>.</p>
+<p>Our task is to learn the <em>coefficients</em> of this function: the values of <em>a</em>, <em>b</em>, <em>c</em>, and <em>d</em> that best fit the data. <br>
+Let's take a look at how we might learn those values using TensorFlow.js operations.</p>
+<h2>Step 1: Set up Variables</h2>
+<p>First, let's create some variables to hold our current best estimate of these values at each step of model training. <br>
+To start, we'll assign each of these variables a random number:</p>
+<pre><code class="hljs js"><span class="hljs-keyword">const</span> a = tf.variable(tf.scalar(<span class="hljs-built_in">Math</span>.random()));
+<span class="hljs-keyword">const</span> b = tf.variable(tf.scalar(<span class="hljs-built_in">Math</span>.random()));
+<span class="hljs-keyword">const</span> c = tf.variable(tf.scalar(<span class="hljs-built_in">Math</span>.random()));
+<span class="hljs-keyword">const</span> d = tf.variable(tf.scalar(<span class="hljs-built_in">Math</span>.random()));</code></pre>
+<h2>Step 2: Build a Model</h2>
+<p>We can represent our polynomial function <em>y</em> = <em>a</em>x<sup>3</sup> + <em>b</em>x<sup>2</sup> + <em>c</em>x + <em>d</em> in
+TensorFlow.js by chaining a series of mathematical operations: addition (<a href="../api/latest/index.html#add"><code>add</code></a>), multiplication (<a href="../api/latest/index.html#mul"><code>mul</code></a>), and exponentiation (<a href="../api/latest/index.html#pow"><code>pow</code></a> and <a href="../api/latest/index.html#square"><code>square</code></a>).</p>
+<p>The following code constructs a <code>predict</code> function that takes <code>x</code> as input and returns <code>y</code>:</p>
+<pre><code class="hljs js"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">predict</span>(<span class="hljs-params">x</span>) </span>&#123;
+  <span class="hljs-comment">// y = a * x ^ 3 + b * x ^ 2 + c * x + d</span>
+  <span class="hljs-keyword">return</span> tf.tidy(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> &#123;
+    <span class="hljs-keyword">return</span> a.mul(x.pow(tf.scalar(<span class="hljs-number">3</span>))) <span class="hljs-comment">// a * x^3</span>
+      .add(b.mul(x.square())) <span class="hljs-comment">// + b * x ^ 2</span>
+      .add(c.mul(x)) <span class="hljs-comment">// + c * x</span>
+      .add(d); <span class="hljs-comment">// + d</span>
+  &#125;);
+&#125;</code></pre>
+<p>Let's go ahead and plot our polynomial function using the random values for <em>a</em>, <em>b</em>, <em>c</em>, and <em>d</em> that we set in Step 1. <br>
+Our plot will likely look something like this:</p>
+<img src="https://js.tensorflow.org/images/fit_curve_random.png" alt="Cubic function that poorly fits the data in the previous graph. <br>
+The function hovers far above the data from x=-1.0 to x=0, and then zooms upward from x=0.2 to x=1.0, while the data points move downward." style="maxWidth: 500px;" width="500">
+<p>Because we started with random values, our function is likely a very poor fit for the data set. <br>
+The model has yet to learn better values for the coefficients.</p>
+<h2>Step 3: Train the Model</h2>
+<p>Our final step is to train the model to learn good values for the coefficients. <br>
+To train our model, we need to define three things:</p>
+<ul>
+<li>
+<p>A <em>loss function</em>, which measures how well a given polynomial fits the data. <br>
+The lower the loss value, the better the polynomial fits the data.</p>
+</li>
+<li>
+<p>An <em>optimizer</em>, which implements an algorithm for revising our coefficient values based on the output of the loss function. <br>
+The optimizer's goal is to minimize the output value of the loss function.</p>
+</li>
+<li>
+<p>A <em>training loop</em>, which will iteratively run the optimizer to minimize loss.</p>
+</li>
+</ul>
+<h3>Define the Loss Function</h3>
+<p>For this tutorial, we'll use <a href="https://developers.google.com/machine-learning/crash-course/glossary/#MSE" target="_blank" rel="noopener">mean squared error (MSE)</a> as our loss function. <br>
+MSE is calculated by squaring the difference between the actual <em>y</em> value and the predicted <em>y</em> value for each <em>x</em> value in our data set, and then taking the mean of all the resulting terms.</p>
+<p>We can define a MSE loss function in TensorFlow.js as follows:</p>
+<pre><code class="hljs js"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">loss</span>(<span class="hljs-params">predictions, labels</span>) </span>&#123;
+  <span class="hljs-comment">// Subtract our labels (actual values) from predictions, square the results,</span>
+  <span class="hljs-comment">// and take the mean.</span>
+  <span class="hljs-keyword">const</span> meanSquareError = predictions.sub(labels).square().mean();
+  <span class="hljs-keyword">return</span> meanSquareError;
+&#125;</code></pre>
+<h3>Define the Optimizer</h3>
+<p>For our optimizer, we'll use <a href="https://developers.google.com/machine-learning/crash-course/glossary#SGD" target="_blank" rel="noopener">Stochastic Gradient Descent</a> (SGD). <br>
+SGD works by taking the <a href="https://developers.google.com/machine-learning/crash-course/glossary#gradient" target="_blank" rel="noopener">gradient</a> of a random point in our data set and using its value to inform whether to increase or decrease the value of our model coefficients.</p>
+<p>TensorFlow.js provides a convenience function for performing SGD, so that you don't have to worry about performing all these mathematical operations yourself. <br>
+<a href="../api/latest/index.html#train.sgd"><code>tf.train.sgd</code></a> takes as input a desired learning rate, and returns an <code>SGDOptimizer</code> object, which can be invoked to optimize the value of the loss function.</p>
+<p>The <em>learning rate</em> controls how big the model's adjustments will be when improving its predictions. <br>
+A low learning rate will make the learning process run more slowly (more training iterations needed to learn good coefficients), while a high learning rate will speed up learning but might result in the model oscillating around the right values, always overcorrecting.</p>
+<p>The following code constructs an SGD optimizer with a learning rate of 0.5:</p>
+<pre><code class="hljs js"><span class="hljs-keyword">const</span> learningRate = <span class="hljs-number">0.5</span>;
+<span class="hljs-keyword">const</span> optimizer = tf.train.sgd(learningRate);</code></pre>
+<h3>Define the Training Loop</h3>
+<p>Now that we've defined our loss function and optimizer, we can build a training loop, which iteratively performs SGD to refine our model's coefficients to minimize loss (MSE). <br>
+Here's what our loop looks like:</p>
+<pre><code class="hljs js"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">train</span>(<span class="hljs-params">xs, ys, numIterations = <span class="hljs-number">75</span></span>) </span>&#123;
+
+  <span class="hljs-keyword">const</span> learningRate = <span class="hljs-number">0.5</span>;
+  <span class="hljs-keyword">const</span> optimizer = tf.train.sgd(learningRate);
+
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">let</span> iter = <span class="hljs-number">0</span>; iter &lt; numIterations; iter++) &#123;
+    optimizer.minimize(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> &#123;
+      <span class="hljs-keyword">const</span> predsYs = predict(xs);
+      <span class="hljs-keyword">return</span> loss(predsYs, ys);
+    &#125;);
+  &#125;
+&#125;</code></pre>
+<p>Let's take a closer look at the code, step by step. <br>
+First, we define our training function to take the <em>x</em> and <em>y</em> values of our dataset, as well as a specified number of iterations, as input:</p>
+<pre><code class="hljs js"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">train</span>(<span class="hljs-params">xs, ys, numIterations</span>) </span>&#123;
+...
+&#125;</code></pre>
+<p>Next, we define the learning rate and SGD optimizer as discussed in the previous section:</p>
+<pre><code class="hljs js"><span class="hljs-keyword">const</span> learningRate = <span class="hljs-number">0.5</span>;
+<span class="hljs-keyword">const</span> optimizer = tf.train.sgd(learningRate);</code></pre>
+<p>Finally, we set up a <code>for</code> loop that runs <code>numIterations</code> training iterations. <br>
+In each iteration,
+we invoke <a href="../api/latest/index.html#class:train.Optimizer"><code>minimize</code></a> on the optimizer, which is where the magic happens:</p>
+<pre><code class="hljs js"><span class="hljs-keyword">for</span> (<span class="hljs-keyword">let</span> iter = <span class="hljs-number">0</span>; iter &lt; numIterations; iter++) &#123;
+  optimizer.minimize(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> &#123;
+    <span class="hljs-keyword">const</span> predsYs = predict(xs);
+    <span class="hljs-keyword">return</span> loss(predsYs, ys);
+  &#125;);
+&#125;</code></pre>
+<p><code>minimize</code> takes a function that does two things:</p>
+<ol>
+<li>
+<p>It predicts <em>y</em> values (<code>predYs</code>) for all the <em>x</em> values using the <code>predict</code> model function we defined earlier in Step 2.</p>
+</li>
+<li>
+<p>It returns the mean squared error loss for those predictions using the loss function we defined earlier in <strong>Define the Loss Function</strong>.</p>
+</li>
+</ol>
+<p><code>minimize</code> then automatically adjusts any <code>Variable</code>s used by this function (here, the coefficients <code>a</code>, <code>b</code>, <code>c</code>, and <code>d</code>) in order to minimize the return value (our loss).</p>
+<p>After running our training loop, <code>a</code>, <code>b</code>, <code>c</code>, and <code>d</code> will contain the coefficient values learned by the model after 75 iterations of SGD.</p>
+<h2>See the Results!</h2>
+<p>Once the program finishes running, we can take the final values of our variables <code>a</code>, <code>b</code>, <code>c</code>, and <code>d</code>, and use them to plot a curve:</p>
+<img src="https://js.tensorflow.org/images/fit_curve_learned.png" alt="A cubic curve that nicely approximates the shape of our data" style="maxWidth: 500px;" width="500">
+<p>The result is much better than the curve we originally plotted using random values for the coefficient.</p>
+<h2>Additional Resources</h2>
+<ul>
+<li>
+<p>See <a href="core-concepts.html">Core Concepts in TensorFlow.js</a> for an introduction to the core building blocks in TensorFlow.js: tensors, variables, and ops.</p>
+</li>
+<li>
+<p>See <a href="https://developers.google.com/machine-learning/crash-course/descending-into-ml/" target="_blank" rel="noopener">Descending into ML</a> in <a href="https://developers.google.com/machine-learning/crash-course/" target="_blank" rel="noopener">Machine Learning Crash Course</a> for a more in-depth introduction to machine learning loss</p>
+</li>
+<li>
+<p>See <a href="https://developers.google.com/machine-learning/crash-course/reducing-loss/" target="_blank" rel="noopener">Reducing Loss</a> in <a href="https://developers.google.com/machine-learning/crash-course/" target="_blank" rel="noopener">Machine Learning Crash Course</a> for a deeper dive into gradient descent and SGD.</p>
+</li>
+</ul>
+
+</div>
+<br>
+<br>
+<br>
+
+<script>
+  $(function() {
+    var toc = $('#toc');
+
+    function makeLi(text, href) {
+      return $('<a href="' + href + '" target="_self">' + text + '</a><br>');
+    }
+
+    $('h2,h3').each(function(i) {
+      var chapter = $(this), chapterNumber = i + 1;
+      toc.append(
+        makeLi(chapter.text(), '#chapter-' + chapterNumber)
+      );
+      chapter.attr('id', 'chapter-' + chapterNumber);
+    });
+
+  });
+</script>
+</body>
+</html>
