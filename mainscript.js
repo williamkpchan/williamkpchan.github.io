@@ -87,7 +87,8 @@ function showDate() {
     var curr_date = d.getDate();
     var curr_month = d.getMonth() + 1; //months are zero based
     var curr_year = d.getFullYear();
-    document.write(days[d.getDay()] + ", " + curr_date + "-" + curr_month + "-" + curr_year);
+    var datemsg = days[d.getDay()] + ", " + curr_date + "-" + curr_month + "-" + curr_year
+    return(datemsg)
 }
 
 function showTime() {
@@ -96,5 +97,5 @@ function showTime() {
 	var mins=d.getMinutes();
 	var hr=d.getHours();
 	var timemsg = hr + ":" + mins + ":" + secs
-	document.write(timemsg);
+	return(timemsg)
 }
