@@ -13,7 +13,7 @@ function chkKey() {
   if(testkey == 'A'){window.open("halfHourMonA.html");}
   if(testkey == 'b'){window.open("LibDocs/Random Charts.html");}
   if(testkey == 'c'){showChart();}
-  if(testkey == 'C'){showTime();}
+  if(testkey == 'C'){window.location = '#cjjj';}
   if(testkey == 'd'){window.open("LibDocs/clock.html");}
   if(testkey == 'e'){window.location = '#ertong';}
   if(testkey == 'f'){window.open("ForexChart.htm");}
