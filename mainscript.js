@@ -37,6 +37,7 @@ function chkKey() {
   if(testkey == 'S'){window.location = '#sclj';}
   if(testkey == 't'){window.open("http://my.weather.gov.hk/myindex_uc.htm");}
   if(testkey == 'T'){window.open("https://translate.google.com/#en/zh-CN");}
+  if(testkey == 'u'){window.open("https://www.urbandictionary.com/");}
   if(testkey == 'v'){window.open("http://localhost:8080/StkImgViewer.html");}
   if(testkey == 'w'){window.location = '#ruanjian';}
   if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
