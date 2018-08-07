@@ -27,7 +27,8 @@ function chkKey() {
   if(testkey == 'm'){window.location = '#medic';}
   if(testkey == 'M'){window.open("https://www.google.com.hk/maps/");}
   if(testkey == 'n'){window.location = '#xinwen';}
-  if(testkey == 'N'){window.open("LibDocs/EnglishNews.html");}
+  if(testkey == 'N'){window.location = '#Notes';}
+
   if(testkey == 'o'){window.location = '#sclj';}
   if(testkey == 'P'){window.location = '#Python';}
   if(testkey == 'p'){window.location = '#Programming';}
