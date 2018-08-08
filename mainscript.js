@@ -85,11 +85,12 @@ function sCt(stkcode) {
 
 function showDate() {
     var days = ['Sun','Mon','Tue','Wed','Thur','Fri','Sat'];
+    var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     var d = new Date();
     var curr_date = d.getDate();
-    var curr_month = d.getMonth() + 1; //months are zero based
+    var curr_month = d.getMonth(); //months are zero based
     var curr_year = d.getFullYear();
-    var datemsg = days[d.getDay()] + ", " + curr_date + "-" + curr_month + "-" + curr_year
+    var datemsg = days[d.getDay()] + ", " + curr_date + " " + months[d.getMonth()] + ", " + curr_year
     return(datemsg)
 }
 
@@ -98,6 +99,19 @@ function showTime() {
 	var secs=d.getSeconds();
 	var mins=d.getMinutes();
 	var hr=d.getHours();
-	var timemsg = hr + ":" + mins + ":" + secs
+	var timemsg = FormatNumberLength(hr) + ":" + FormatNumberLength(mins) + ":" + FormatNumberLength(secs)
 	return(timemsg)
+}
+
+function showDateAndTime() {
+	var theDateTime = showDate() +" "+ showTime();
+	document.getElementById("dateAndTime").innerHTML = theDateTime;
+}
+
+function FormatNumberLength(num) {
+    var r = "" + num;
+    while (r.length < 2) {
+        r = "0" + r;
+    }
+    return r;
 }
