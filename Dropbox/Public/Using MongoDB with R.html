@@ -1,0 +1,368 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+body {
+ margin:10%;
+ font-size: 22px;
+ background-color: #000000;
+ color: #109030;
+}
+
+a {	text-decoration: none;}
+A:hover {	color: yellow;}
+A:focus {	color: red;}
+code { color: pink; background-color: #001500}
+pre { color: gray; background-color: #001010}
+
+#newtype { color: pink}
+#redpink { color: #cc0099}
+#redword { color: red}
+#yellowword { color: yellow}
+#greenword { color: green}
+#limeword { color: #00ff00}
+#orangeword { color: orange}
+#cyanword { color: cyan}
+#whiteword { color: white}
+#grayword { color: gray}
+#brownword { color: #ff8000}
+#yellowgreen { color: #bfff00}
+#palered { color: #ffcccc}
+#blueword { color: dodgerblue}
+#purpleword { color: darkorchid}
+#goldword { color: GoldenRod}
+#silverword { color: silver}
+#blackword { color: black}
+.left {
+    position: absolute;
+    left: 100px;
+    color: GoldenRod;
+    border: 1px solid GoldenRod;
+    padding: 2px;
+    font-size: 60%;
+}
+.bord {
+    color: redpink;
+    border: 1px solid GoldenRod;
+    padding: 1px;
+    font-size: 90%;
+}
+.highlight { 
+    color: white;
+    background-color: #002030
+  }
+</STYLE>
+
+</head>
+<body>
+<h1>Using MongoDB with R</h1>
+<div>
+<p>MongoDB is a NoSQL database program which uses JSON-like documents with schemas. It is free and open-source cross-platform database. MongoDB, top NoSQL database engine in use today, could be a good data storage alternative when analyzing large volume data.<br />
+To use MongoDB with R, first, we have to download and install <a rel="nofollow" href="https://docs.mongodb.com/manual/installation/" target="_blank">MongoDB</a><br />
+Next, start MongoDB. We can start MongoDB like so:</p>
+<pre>mongod</pre>
+<p>We can use the mongolite, package which is a fast and simple MongoDB client for R, to use MongoDB with R. </p>
+<h2>Inserting data</h2>
+<p>Let&#8217;s insert the crimes data from <a rel="nofollow" href="https://catalog.data.gov/dataset/crimes-2001-to-present-398a4" target="_blank">data.gov</a> to MongoDB. The dataset reflects reported incidents of crime (with the exception of murders where data exists for each victim) that occurred in the City of Chicago since 2001.</p>
+<pre>
+library(ggplot2)
+library(dplyr)
+library(maps)
+library(ggmap)
+library(mongolite)
+library(lubridate)
+library(gridExtra)
+
+crimes=data.table::fread("Crimes_2001_to_present.csv")
+names(crimes)
+<em>'ID' 'Case Number' 'Date' 'Block' 'IUCR' 'Primary Type' 'Description' 'Location Description' 'Arrest'
+'Domestic' 'Beat' 'District' 'Ward' 'Community Area' 'FBI Code' 'X Coordinate' 'Y Coordinate' 'Year' 'Updated On' 'Latitude' 'Longitude' 'Location'</em></pre>
+<p>Let&#8217;s remove spaces in the column names to avoid any problems when we query it from MongoDB.</p>
+<pre>names(crimes) = gsub(" ","",names(crimes)) 
+names(crimes)
+<em>'ID' 'CaseNumber' 'Date' 'Block' 'IUCR' 'PrimaryType' 'Description' 'LocationDescription' 'Arrest' 'Domestic' 'Beat' 'District' 'Ward' 'CommunityArea' 'FBICode' 'XCoordinate' 'YCoordinate' 'Year' 'UpdatedOn' 'Latitude' 'Longitude' 'Location'</em></pre>
+<p>we can use the insert function from the mongolite package to insert rows to a collection in MongoDB.<br />
+Let&#8217;s create a database called Chicago and call the collection crimes.</p>
+<pre>
+my_collection = mongo(collection = "crimes", db = "Chicago") # create connection, database and collection
+my_collection$insert(crimes)
+</pre>
+<p>Let&#8217;s check if we have inserted the &#8220;crimes&#8221; data.</p>
+<pre>my_collection$count()
+<em>6261148 </em></pre>
+<p>We see that the collection has 6261148 records.</p>
+<h2>Performing a query and retrieving data</h2>
+<p>First, let&#8217;s look what the data looks like by displaying one record:</p>
+<pre>my_collection$iterate()$one()
+<em>$ID
+1454164
+$CaseNumber
+'G185744'
+$Date
+'04/01/2001 06:00:00 PM'
+$Block
+'049XX N MENARD AV'
+$IUCR
+'0910'
+$PrimaryType
+'MOTOR VEHICLE THEFT'
+$Description
+'AUTOMOBILE'
+$LocationDescription
+'STREET'
+$Arrest
+'false'
+$Domestic
+'false'
+$Beat
+1622
+$District
+16
+$FBICode
+'07'
+$XCoordinate
+1136545
+$YCoordinate
+1932203
+$Year
+2001
+$UpdatedOn
+'08/17/2015 03:03:40 PM'
+$Latitude
+41.970129962
+$Longitude
+-87.773302309
+$Location
+'(41.970129962, -87.773302309)'</em>
+</pre>
+<p>How many distinct &#8220;Primary Type&#8221; do we have?</p>
+<pre>
+length(my_collection$distinct("PrimaryType"))
+<em>35</em></pre>
+<p>As shown above, there are 35 different crime primary types in the database. We will see the patterns of the most common crime types below.<br />
+From the  <em>iterate()iterate() $one()</em> command above, we have seen that one of the columns is Domestic, which shows whether the crime is domestic or not. </p>
+<h3>Now, let&#8217;s see how many domestic assualts there are in the collection.</h3>
+<pre>my_collection$count('{"PrimaryType" : "ASSAULT", "Domestic" : "true" }')
+<em>82470
+</em>
+</pre>
+<p>To get the filtered data and we can also retrieve only the columns of interest</p>
+<pre>
+query1= my_collection$find('{"PrimaryType" : "ASSAULT", "Domestic" : "true" }')
+query2= my_collection$find('{"PrimaryType" : "ASSAULT", "Domestic" : "true" }',
+                           fields = '{"_id":0, "PrimaryType":1, "Domestic":1}')
+ncol(query1) # with all the columns
+ncol(query2) # only the selected columns
+<em>22
+2
+</em></pre>
+<h2>Where do most crimes take pace?</h2>
+<pre>
+my_collection$aggregate('[{"$group":{"_id":"$LocationDescription", "Count": {"$sum":1}}}]')%&gt;%na.omit()%&gt;%
+arrange(desc(Count))%&gt;%head(10)%&gt;%
+ggplot(aes(x=reorder(`_id`,Count),y=Count))+
+geom_bar(stat="identity",color='skyblue',fill='#b35900')+geom_text(aes(label = Count), color = "blue") +coord_flip()+xlab("Location Description")
+</pre>
+<p><a href="https://datascienceplus.com/wp-content/uploads/2017/02/1-1.png" data-rel="lightbox-0" title=""><img src="https://datascienceplus.com/wp-content/plugins/lazy-load/images/1x1.trans.gif" data-lazy-src="https://datascienceplus.com/wp-content/uploads/2017/02/1-1-490x245.png" alt width="490" height="245" class="alignnone size-medium wp-image-5693" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/1-1-490x245.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/1-1-768x384.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/1-1-1024x512.png 1024w, https://datascienceplus.com/wp-content/uploads/2017/02/1-1-600x300.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/1-1-300x150.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/1-1.png 1200w" sizes="(max-width: 490px) 100vw, 490px"><noscript><img src="https://datascienceplus.com/wp-content/uploads/2017/02/1-1-490x245.png" alt="" width="490" height="245" class="alignnone size-medium wp-image-5693" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/1-1-490x245.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/1-1-768x384.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/1-1-1024x512.png 1024w, https://datascienceplus.com/wp-content/uploads/2017/02/1-1-600x300.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/1-1-300x150.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/1-1.png 1200w" sizes="(max-width: 490px) 100vw, 490px" /></noscript></a><br />
+If loading the entire dataset we are working with does not slow down our analysis, we can use data.table or dplyr but when dealing with big data, using MongoDB can give us performance boost as the whole data will not be loaded into mememory. We can reproduce the above plot without using MongoDB, like so:</p>
+<pre>crimes%&gt;%group_by(`LocationDescription`)%&gt;%summarise(Total=n())%&gt;% arrange(desc(Total))%&gt;%head(10)%&gt;%
+ggplot(aes(x=reorder(`LocationDescription`,Total),y=Total))+
+geom_bar(stat="identity",color='skyblue',fill='#b35900')+geom_text(aes(label = Total), color = "blue") +coord_flip()+xlab("Location Description")</pre>
+<p><a href="https://datascienceplus.com/wp-content/uploads/2017/02/2-1.png" data-rel="lightbox-1" title=""><img src="https://datascienceplus.com/wp-content/plugins/lazy-load/images/1x1.trans.gif" data-lazy-src="https://datascienceplus.com/wp-content/uploads/2017/02/2-1-490x245.png" alt width="490" height="245" class="alignnone size-medium wp-image-5694" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/2-1-490x245.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/2-1-768x384.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/2-1-1024x512.png 1024w, https://datascienceplus.com/wp-content/uploads/2017/02/2-1-600x300.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/2-1-300x150.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/2-1.png 1200w" sizes="(max-width: 490px) 100vw, 490px"><noscript><img src="https://datascienceplus.com/wp-content/uploads/2017/02/2-1-490x245.png" alt="" width="490" height="245" class="alignnone size-medium wp-image-5694" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/2-1-490x245.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/2-1-768x384.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/2-1-1024x512.png 1024w, https://datascienceplus.com/wp-content/uploads/2017/02/2-1-600x300.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/2-1-300x150.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/2-1.png 1200w" sizes="(max-width: 490px) 100vw, 490px" /></noscript></a></p>
+<p>What if we want to query all records for certain columns only? This helps us to load only the columns we want and to save memory for our analysis.</p>
+<pre>
+query3= my_collection$find('{}', fields = '{"_id":0, "Latitude":1, "Longitude":1,"Year":1}')
+</pre>
+<h3>Let&#8217;s explore domestic crimes</h3>
+<p>We can explore any patterns of domestic crimes. For example, are they common in certain days/hours/months?</p>
+<pre>
+domestic=my_collection$find('{"Domestic":"true"}', fields = '{"_id":0, "Domestic":1,"Date":1}')
+domestic$Date= mdy_hms(domestic$Date)
+domestic$Weekday = weekdays(domestic$Date)
+domestic$Hour = hour(domestic$Date)
+domestic$month = month(domestic$Date,label=TRUE)
+
+WeekdayCounts = as.data.frame(table(domestic$Weekday))
+WeekdayCounts$Var1 = factor(WeekdayCounts$Var1, ordered=TRUE, levels=c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday","Saturday"))
+ggplot(WeekdayCounts, aes(x=Var1, y=Freq)) + geom_line(aes(group=1),size=2,color="red") + xlab("Day of the Week") + ylab("Total Domestic Crimes")+
+ggtitle("Domestic Crimes in the City of Chicago Since 2001")+
+theme(axis.title.x=element_blank(),axis.text.y = element_text(color="blue",size=11,angle=0,hjust=1,vjust=0),
+      axis.text.x = element_text(color="blue",size=11,angle=0,hjust=.5,vjust=.5),
+     axis.title.y = element_text(size=14),
+     plot.title=element_text(size=16,color="purple",hjust=0.5))
+</pre>
+<p><a href="https://datascienceplus.com/wp-content/uploads/2017/02/3-1.png" data-rel="lightbox-2" title=""><img src="https://datascienceplus.com/wp-content/plugins/lazy-load/images/1x1.trans.gif" data-lazy-src="https://datascienceplus.com/wp-content/uploads/2017/02/3-1-490x245.png" alt width="490" height="245" class="alignnone size-medium wp-image-5695" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/3-1-490x245.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/3-1-768x384.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/3-1-600x300.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/3-1-300x150.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/3-1.png 960w" sizes="(max-width: 490px) 100vw, 490px"><noscript><img src="https://datascienceplus.com/wp-content/uploads/2017/02/3-1-490x245.png" alt="" width="490" height="245" class="alignnone size-medium wp-image-5695" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/3-1-490x245.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/3-1-768x384.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/3-1-600x300.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/3-1-300x150.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/3-1.png 960w" sizes="(max-width: 490px) 100vw, 490px" /></noscript></a></p>
+<p>Domestic crimes are common over the weekend than in weekdays? What could be the reason?<br />
+We can also see the pattern for each day by hour:</p>
+<pre>
+DayHourCounts = as.data.frame(table(domestic$Weekday, domestic$Hour))
+DayHourCounts$Hour = as.numeric(as.character(DayHourCounts$Var2))
+ggplot(DayHourCounts, aes(x=Hour, y=Freq)) + geom_line(aes(group=Var1, color=Var1), size=1.4)+ylab("Count")+
+ylab("Total Domestic Crimes")+ggtitle("Domestic Crimes in the City of Chicago Since 2001")+
+theme(axis.title.x=element_text(size=14),axis.text.y = element_text(color="blue",size=11,angle=0,hjust=1,vjust=0),
+      axis.text.x = element_text(color="blue",size=11,angle=0,hjust=.5,vjust=.5),
+     axis.title.y = element_text(size=14),
+     legend.title=element_blank(),
+     plot.title=element_text(size=16,color="purple",hjust=0.5))
+</pre>
+<p><a href="https://datascienceplus.com/wp-content/uploads/2017/02/4-1.png" data-rel="lightbox-3" title=""><img src="https://datascienceplus.com/wp-content/plugins/lazy-load/images/1x1.trans.gif" data-lazy-src="https://datascienceplus.com/wp-content/uploads/2017/02/4-1-490x294.png" alt width="490" height="294" class="alignnone size-medium wp-image-5696" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/4-1-490x294.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/4-1-768x461.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/4-1-1024x614.png 1024w, https://datascienceplus.com/wp-content/uploads/2017/02/4-1-600x360.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/4-1-300x180.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/4-1.png 1200w" sizes="(max-width: 490px) 100vw, 490px"><noscript><img src="https://datascienceplus.com/wp-content/uploads/2017/02/4-1-490x294.png" alt="" width="490" height="294" class="alignnone size-medium wp-image-5696" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/4-1-490x294.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/4-1-768x461.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/4-1-1024x614.png 1024w, https://datascienceplus.com/wp-content/uploads/2017/02/4-1-600x360.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/4-1-300x180.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/4-1.png 1200w" sizes="(max-width: 490px) 100vw, 490px" /></noscript></a><br />
+The crimes peak mainly around mid-night. We can also use one color for weekdays and another color for weekend as shown below.</p>
+<pre>
+DayHourCounts$Type = ifelse((DayHourCounts$Var1 == "Sunday") | (DayHourCounts$Var1 == "Saturday"), "Weekend", "Weekday")
+
+ggplot(DayHourCounts, aes(x=Hour, y=Freq)) + geom_line(aes(group=Var1, color=Type), size=2, alpha=0.5) +
+ylab("Total Domestic Crimes")+ggtitle("Domestic Crimes in the City of Chicago Since 2001")+
+theme(axis.title.x=element_text(size=14),axis.text.y = element_text(color="blue",size=11,angle=0,hjust=1,vjust=0),
+      axis.text.x = element_text(color="blue",size=11,angle=0,hjust=.5,vjust=.5),
+     axis.title.y = element_text(size=14),
+     legend.title=element_blank(),
+     plot.title=element_text(size=16,color="purple",hjust=0.5))
+</pre>
+<p><a href="https://datascienceplus.com/wp-content/uploads/2017/02/5-1.png" data-rel="lightbox-4" title=""><img src="https://datascienceplus.com/wp-content/plugins/lazy-load/images/1x1.trans.gif" data-lazy-src="https://datascienceplus.com/wp-content/uploads/2017/02/5-1-490x294.png" alt width="490" height="294" class="alignnone size-medium wp-image-5697" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/5-1-490x294.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/5-1-768x461.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/5-1-1024x614.png 1024w, https://datascienceplus.com/wp-content/uploads/2017/02/5-1-600x360.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/5-1-300x180.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/5-1.png 1200w" sizes="(max-width: 490px) 100vw, 490px"><noscript><img src="https://datascienceplus.com/wp-content/uploads/2017/02/5-1-490x294.png" alt="" width="490" height="294" class="alignnone size-medium wp-image-5697" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/5-1-490x294.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/5-1-768x461.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/5-1-1024x614.png 1024w, https://datascienceplus.com/wp-content/uploads/2017/02/5-1-600x360.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/5-1-300x180.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/5-1.png 1200w" sizes="(max-width: 490px) 100vw, 490px" /></noscript></a><br />
+The difference between weekend and weekdays are more clear from this figure than from the previous plot. We can also see the above pattern from a heatmap.</p>
+<pre>
+DayHourCounts$Var1 = factor(DayHourCounts$Var1, ordered=TRUE, levels=c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+ggplot(DayHourCounts, aes(x = Hour, y = Var1)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name="Total MV Thefts", low="white", high="red") +
+ggtitle("Domestic Crimes in the City of Chicago Since 2001")+theme(axis.title.y = element_blank())+ylab("")+
+theme(axis.title.x=element_text(size=14),axis.text.y = element_text(size=13),
+      axis.text.x = element_text(size=13),
+     axis.title.y = element_text(size=14),
+     legend.title=element_blank(),
+     plot.title=element_text(size=16,color="purple",hjust=0.5))
+</pre>
+<p><a href="https://datascienceplus.com/wp-content/uploads/2017/02/6-1.png" data-rel="lightbox-5" title=""><img src="https://datascienceplus.com/wp-content/plugins/lazy-load/images/1x1.trans.gif" data-lazy-src="https://datascienceplus.com/wp-content/uploads/2017/02/6-1-490x294.png" alt width="490" height="294" class="alignnone size-medium wp-image-5698" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/6-1-490x294.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/6-1-768x461.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/6-1-1024x614.png 1024w, https://datascienceplus.com/wp-content/uploads/2017/02/6-1-600x360.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/6-1-300x180.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/6-1.png 1200w" sizes="(max-width: 490px) 100vw, 490px"><noscript><img src="https://datascienceplus.com/wp-content/uploads/2017/02/6-1-490x294.png" alt="" width="490" height="294" class="alignnone size-medium wp-image-5698" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/6-1-490x294.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/6-1-768x461.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/6-1-1024x614.png 1024w, https://datascienceplus.com/wp-content/uploads/2017/02/6-1-600x360.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/6-1-300x180.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/6-1.png 1200w" sizes="(max-width: 490px) 100vw, 490px" /></noscript></a><br />
+From the heatmap, we can see more crimes over weekends and at night.</p>
+<pre>
+monthCounts = as.data.frame(table(domestic$month))
+ggplot(monthCounts, aes(x=Var1, y=Freq)) + geom_line(aes(group=1),size=2,color="red") + xlab("Day of the Week") + ylab("Total Domestic Crimes")+
+ggtitle("Domestic Crimes in the City of Chicago Since 2001")+
+theme(axis.title.x=element_blank(),axis.text.y = element_text(color="blue",size=11,angle=0,hjust=1,vjust=0),
+      axis.text.x = element_text(color="blue",size=11,angle=0,hjust=.5,vjust=.5),
+     axis.title.y = element_text(size=14),
+     plot.title=element_text(size=16,color="purple",hjust=0.5))
+</pre>
+<p><a href="https://datascienceplus.com/wp-content/uploads/2017/02/7.png" data-rel="lightbox-6" title=""><img src="https://datascienceplus.com/wp-content/plugins/lazy-load/images/1x1.trans.gif" data-lazy-src="https://datascienceplus.com/wp-content/uploads/2017/02/7-490x245.png" alt width="490" height="245" class="alignnone size-medium wp-image-5699" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/7-490x245.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/7-768x384.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/7-600x300.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/7-300x150.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/7.png 960w" sizes="(max-width: 490px) 100vw, 490px"><noscript><img src="https://datascienceplus.com/wp-content/uploads/2017/02/7-490x245.png" alt="" width="490" height="245" class="alignnone size-medium wp-image-5699" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/7-490x245.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/7-768x384.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/7-600x300.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/7-300x150.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/7.png 960w" sizes="(max-width: 490px) 100vw, 490px" /></noscript></a><br />
+Is domestic crime associated with temperature? Domestic crimes tremendously increases during the warm months.</p>
+<p>Now, let&#8217;s see the pattern of other crime types. Since there are 35 primary types, we cannot see all of them in this post. Let&#8217;s focus on four of the most common ones.</p>
+<pre>
+crimes=my_collection$find('{}', fields = '{"_id":0, "PrimaryType":1,"Year":1}')
+crimes%&gt;%group_by(PrimaryType)%&gt;%summarize(Count=n())%&gt;%arrange(desc(Count))%&gt;%head(4)
+<em>Imported 6261148 records. Simplifying into dataframe...
+PrimaryType	Count
+THEFT	        1301434
+BATTERY	        1142377
+CRIMINAL DAMAGE	720143
+NARCOTICS	687790
+</em>
+</pre>
+<p>As shown in the table above, the most common crime type is theft followed by battery. Narcotics is fourth most common while criminal damage is the third most common crime type in the city of Chicago.<br />
+Now, let&#8217;s generate plots by day and hour.</p>
+<pre>
+crimes=my_collection$find('{}', fields = '{"_id":0, "PrimaryType":1,"Date":1}')
+crimes=filter(crimes,PrimaryType %in%four_most_common)
+crimes$Date= mdy_hms(crimes$Date)
+crimes$Weekday = weekdays(crimes$Date)
+crimes$Hour = hour(crimes$Date)
+crimes$month=month(crimes$Date,label = TRUE)
+
+g = function(data){
+    WeekdayCounts = as.data.frame(table(data$Weekday))
+    WeekdayCounts$Var1 = factor(WeekdayCounts$Var1, ordered=TRUE, levels=c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday","Saturday"))
+    ggplot(WeekdayCounts, aes(x=Var1, y=Freq)) + geom_line(aes(group=1),size=2,color="red") + xlab("Day of the Week") +
+    theme(axis.title.x=element_blank(),axis.text.y = element_text(color="blue",size=10,angle=0,hjust=1,vjust=0),
+          axis.text.x = element_text(color="blue",size=10,angle=0,hjust=.5,vjust=.5),
+         axis.title.y = element_text(size=11),
+         plot.title=element_text(size=12,color="purple",hjust=0.5))
+    }
+
+g1=g(filter(crimes,PrimaryType=="THEFT"))+ggtitle("Theft")+ylab("Total Count")
+g2=g(filter(crimes,PrimaryType=="BATTERY"))+ggtitle("BATTERY")+ylab("Total Count")
+g3=g(filter(crimes,PrimaryType=="CRIMINAL DAMAGE"))+ggtitle("CRIMINAL DAMAGE")+ylab("Total Count")
+g4=g(filter(crimes,PrimaryType=="NARCOTICS"))+ggtitle("NARCOTICS")+ylab("Total Count")
+grid.arrange(g1,g2,g3,g4,ncol=2)
+</pre>
+<p><a href="https://datascienceplus.com/wp-content/uploads/2017/02/8.png" data-rel="lightbox-7" title=""><img src="https://datascienceplus.com/wp-content/plugins/lazy-load/images/1x1.trans.gif" data-lazy-src="https://datascienceplus.com/wp-content/uploads/2017/02/8-490x327.png" alt width="490" height="327" class="alignnone size-medium wp-image-5700" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/8-490x327.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/8-768x512.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/8-1024x683.png 1024w, https://datascienceplus.com/wp-content/uploads/2017/02/8-600x400.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/8-300x200.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/8.png 1440w" sizes="(max-width: 490px) 100vw, 490px"><noscript><img src="https://datascienceplus.com/wp-content/uploads/2017/02/8-490x327.png" alt="" width="490" height="327" class="alignnone size-medium wp-image-5700" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/8-490x327.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/8-768x512.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/8-1024x683.png 1024w, https://datascienceplus.com/wp-content/uploads/2017/02/8-600x400.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/8-300x200.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/8.png 1440w" sizes="(max-width: 490px) 100vw, 490px" /></noscript></a></p>
+<p>From the plots above, we see that theft is most common on Friday. Battery and criminal damage, on the other hand, are highest at weekend. We also observe that narcotics decreases over weekend.<br />
+We can also see the pattern of the above four crime types by hour:</p>
+<pre>
+g=function(data){
+    DayHourCounts = as.data.frame(table(data$Weekday, data$Hour))
+    DayHourCounts$Hour = as.numeric(as.character(DayHourCounts$Var2))
+    ggplot(DayHourCounts, aes(x=Hour, y=Freq)) + geom_line(aes(group=Var1, color=Var1), size=1.4)+ylab("Count")+
+    theme(axis.title.x=element_text(size=14),axis.text.y = element_text(color="blue",size=11,angle=0,hjust=1,vjust=0),
+      axis.text.x = element_text(color="blue",size=11,angle=0,hjust=.5,vjust=.5),
+     axis.title.y = element_text(size=14),
+     legend.title=element_blank(),
+     plot.title=element_text(size=16,color="purple",hjust=0.5))
+    }
+
+g1=g(filter(crimes,PrimaryType=="THEFT"))+ggtitle("Theft")+ylab("Total Count")
+g2=g(filter(crimes,PrimaryType=="BATTERY"))+ggtitle("BATTERY")+ylab("Total Count")
+g3=g(filter(crimes,PrimaryType=="CRIMINAL DAMAGE"))+ggtitle("CRIMINAL DAMAGE")+ylab("Total Count")
+g4=g(filter(crimes,PrimaryType=="NARCOTICS"))+ggtitle("NARCOTICS")+ylab("Total Count")
+grid.arrange(g1,g2,g3,g4,ncol=2)
+</pre>
+<p><a href="https://datascienceplus.com/wp-content/uploads/2017/02/9.png" data-rel="lightbox-8" title=""><img src="https://datascienceplus.com/wp-content/plugins/lazy-load/images/1x1.trans.gif" data-lazy-src="https://datascienceplus.com/wp-content/uploads/2017/02/9-490x245.png" alt width="490" height="245" class="alignnone size-medium wp-image-5701" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/9-490x245.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/9-768x384.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/9-1024x512.png 1024w, https://datascienceplus.com/wp-content/uploads/2017/02/9-600x300.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/9-300x150.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/9.png 1440w" sizes="(max-width: 490px) 100vw, 490px"><noscript><img src="https://datascienceplus.com/wp-content/uploads/2017/02/9-490x245.png" alt="" width="490" height="245" class="alignnone size-medium wp-image-5701" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/9-490x245.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/9-768x384.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/9-1024x512.png 1024w, https://datascienceplus.com/wp-content/uploads/2017/02/9-600x300.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/9-300x150.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/9.png 1440w" sizes="(max-width: 490px) 100vw, 490px" /></noscript></a></p>
+<pre>
+g=function(data){
+    monthCounts = as.data.frame(table(data$month))
+    ggplot(monthCounts, aes(x=Var1, y=Freq)) + geom_line(aes(group=1),size=2,color="red") + xlab("Day of the Week") + 
+    theme(axis.title.x=element_blank(),axis.text.y = element_text(color="blue",size=11,angle=0,hjust=1,vjust=0),
+          axis.text.x = element_text(color="blue",size=11,angle=0,hjust=.5,vjust=.5),
+         axis.title.y = element_text(size=14),
+         plot.title=element_text(size=16,color="purple",hjust=0.5))
+    }
+
+g1=g(filter(crimes,PrimaryType=="THEFT"))+ggtitle("Theft")+ylab("Total Count")
+g2=g(filter(crimes,PrimaryType=="BATTERY"))+ggtitle("BATTERY")+ylab("Total Count")
+g3=g(filter(crimes,PrimaryType=="CRIMINAL DAMAGE"))+ggtitle("CRIMINAL DAMAGE")+ylab("Total Count")
+g4=g(filter(crimes,PrimaryType=="NARCOTICS"))+ggtitle("NARCOTICS")+ylab("Total Count")
+grid.arrange(g1,g2,g3,g4,ncol=2)
+</pre>
+<p><a href="https://datascienceplus.com/wp-content/uploads/2017/02/11.png" data-rel="lightbox-9" title=""><img src="https://datascienceplus.com/wp-content/plugins/lazy-load/images/1x1.trans.gif" data-lazy-src="https://datascienceplus.com/wp-content/uploads/2017/02/11-490x327.png" alt width="490" height="327" class="alignnone size-medium wp-image-5703" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/11-490x327.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/11-768x512.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/11-1024x683.png 1024w, https://datascienceplus.com/wp-content/uploads/2017/02/11-600x400.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/11-300x200.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/11.png 1440w" sizes="(max-width: 490px) 100vw, 490px"><noscript><img src="https://datascienceplus.com/wp-content/uploads/2017/02/11-490x327.png" alt="" width="490" height="327" class="alignnone size-medium wp-image-5703" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/11-490x327.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/11-768x512.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/11-1024x683.png 1024w, https://datascienceplus.com/wp-content/uploads/2017/02/11-600x400.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/11-300x200.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/11.png 1440w" sizes="(max-width: 490px) 100vw, 490px" /></noscript></a></p>
+<p>Except, narcotics, all increase in the warmer months. Does this have any association with temperature?</p>
+<h3>We can also produce maps.</h3>
+<pre>
+chicago = get_map(location = "chicago", zoom = 11) # Load a map of Chicago into R:
+</pre>
+<p>Round our latitude and longitude to 2 digits of accuracy, and create a crime counts data frame for each area:</p>
+<pre>
+query3= my_collection$find('{}', fields = '{"_id":0, "Latitude":1, "Longitude":1,"Year":1}')
+LatLonCounts=as.data.frame(table(round(query3$Longitude,2),round(query3$Latitude,2)))
+</pre>
+<p>Convert our Longitude and Latitude variable to numbers:</p>
+<pre>
+LatLonCounts$Long = as.numeric(as.character(LatLonCounts$Var1))
+LatLonCounts$Lat = as.numeric(as.character(LatLonCounts$Var2))
+ggmap(chicago) + geom_tile(data = LatLonCounts, aes(x = Long, y = Lat, alpha = Freq), fill="red")+
+ggtitle("Crime Distribution")+labs(alpha="Count")+theme(plot.title = element_text(hjust=0.5))
+</pre>
+<p><a href="https://datascienceplus.com/wp-content/uploads/2017/02/12.png" data-rel="lightbox-10" title=""><img src="https://datascienceplus.com/wp-content/plugins/lazy-load/images/1x1.trans.gif" data-lazy-src="https://datascienceplus.com/wp-content/uploads/2017/02/12-490x368.png" alt width="490" height="368" class="alignnone size-medium wp-image-5704" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/12-490x368.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/12-768x576.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/12-600x450.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/12-300x225.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/12.png 960w" sizes="(max-width: 490px) 100vw, 490px"><noscript><img src="https://datascienceplus.com/wp-content/uploads/2017/02/12-490x368.png" alt="" width="490" height="368" class="alignnone size-medium wp-image-5704" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/12-490x368.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/12-768x576.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/12-600x450.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/12-300x225.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/12.png 960w" sizes="(max-width: 490px) 100vw, 490px" /></noscript></a></p>
+<p>We can also see a map for domestic crimes only:</p>
+<pre>
+domestic=my_collection$find('{"Domestic":"true"}', fields = '{"_id":0, "Latitude":1, "Longitude":1,"Year":1}')
+LatLonCounts=as.data.frame(table(round(domestic$Longitude,2),round(domestic$Latitude,2)))
+LatLonCounts$Long = as.numeric(as.character(LatLonCounts$Var1))
+LatLonCounts$Lat = as.numeric(as.character(LatLonCounts$Var2))
+ggmap(chicago) + geom_tile(data = LatLonCounts, aes(x = Long, y = Lat, alpha = Freq), fill="red")+
+ggtitle("Domestic Crimes")+labs(alpha="Count")+theme(plot.title = element_text(hjust=0.5))
+</pre>
+<p><a href="https://datascienceplus.com/wp-content/uploads/2017/02/13.png" data-rel="lightbox-11" title=""><img src="https://datascienceplus.com/wp-content/plugins/lazy-load/images/1x1.trans.gif" data-lazy-src="https://datascienceplus.com/wp-content/uploads/2017/02/13-490x368.png" alt width="490" height="368" class="alignnone size-medium wp-image-5705" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/13-490x368.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/13-768x576.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/13-600x450.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/13-300x225.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/13.png 960w" sizes="(max-width: 490px) 100vw, 490px"><noscript><img src="https://datascienceplus.com/wp-content/uploads/2017/02/13-490x368.png" alt="" width="490" height="368" class="alignnone size-medium wp-image-5705" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/13-490x368.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/13-768x576.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/13-600x450.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/13-300x225.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/13.png 960w" sizes="(max-width: 490px) 100vw, 490px" /></noscript></a><br />
+Let&#8217;s see where motor vehicle theft is common:</p>
+<pre>
+mtheft=my_collection$find('{"PrimaryType":"MOTOR VEHICLE THEFT"}', fields = '{"_id":0, "Latitude":1, "Longitude":1,"Year":1}')
+LatLonCounts=as.data.frame(table(round(mtheft$Longitude,2),round(mtheft$Latitude,2)))
+LatLonCounts$Long = as.numeric(as.character(LatLonCounts$Var1))
+LatLonCounts$Lat = as.numeric(as.character(LatLonCounts$Var2))
+ggmap(chicago) + geom_tile(data = LatLonCounts, aes(x = Long, y = Lat, alpha = Freq), fill="red")+
+ggtitle("Motor Vehicle Theft ")+labs(alpha="Count")+theme(plot.title = element_text(hjust=0.5))
+</pre>
+<p><a href="https://datascienceplus.com/wp-content/uploads/2017/02/14.png" data-rel="lightbox-12" title=""><img src="https://datascienceplus.com/wp-content/plugins/lazy-load/images/1x1.trans.gif" data-lazy-src="https://datascienceplus.com/wp-content/uploads/2017/02/14-490x368.png" alt width="490" height="368" class="alignnone size-medium wp-image-5706" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/14-490x368.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/14-768x576.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/14-600x450.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/14-300x225.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/14.png 960w" sizes="(max-width: 490px) 100vw, 490px"><noscript><img src="https://datascienceplus.com/wp-content/uploads/2017/02/14-490x368.png" alt="" width="490" height="368" class="alignnone size-medium wp-image-5706" srcset="https://datascienceplus.com/wp-content/uploads/2017/02/14-490x368.png 490w, https://datascienceplus.com/wp-content/uploads/2017/02/14-768x576.png 768w, https://datascienceplus.com/wp-content/uploads/2017/02/14-600x450.png 600w, https://datascienceplus.com/wp-content/uploads/2017/02/14-300x225.png 300w, https://datascienceplus.com/wp-content/uploads/2017/02/14.png 960w" sizes="(max-width: 490px) 100vw, 490px" /></noscript></a><br />
+Domestic crimes show concentration over two areas whereas motor vehicle theft is wide spread over large part of the city of Chicago.</p>
+<h2>Summary</h2>
+<p>In this post, we saw how to use R to analyse data stored in MongoDB, top NoSQL database engine in use today. When dealing with large volume data, using MongoDB can give us performance boost and make our life happier 🙂</p>
+            </div>
+
+
+</div></div>
+
+</body><html>

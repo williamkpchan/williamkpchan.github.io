@@ -1,0 +1,296 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="submaincss.css">
+<style>
+</style>
+
+</head>
+<body>
+<br>
+<h1>Accessing The Clipboard With JavaScript</h1><br>
+In this article we're going to show you how to use simple vanilla JavaScript snippets to:<br>
+1. Add text to the clipboard on user action, such as the press of a button.<br>
+2. Modify the content of the clipboard when a user copies something.<br>
+<br>
+The APIs we will be using don't require any external libraries, and have almost perfect browser compatibility!<br>
+<h2>Copy On Click</h2>
+An awesome accessibility feature you can add to your website is the ability to copy strings directly via button press. This interaction can be applied to quickly grab URLs, long strings such as SSH keys, terminal commands, hex colors, or any other data that is frequently copy &amp; pasted.<br>
+To make this happen we will need to use a cool JavaScript method called <br>
+<code>
+<a href="https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand" target="_blank">execCommand()</a>
+</code>. <br>
+It allows us to invoke a number of different events that manipulate editable content such as making text bold/italic, doing undo/redo, and also copy/cut/paste.<br>
+document.execCommand('copy');<br>
+</pre>
+<br>
+This works exactly like pressing CTRL/Cmd+C on your keyboard, so in order to copy any text we first need to have it selected. <br>
+This is possible in JavaScript thanks to the 
+<a href="https://developer.mozilla.org/en-US/docs/Web/API/Selection" target="_blank">Selection API</a>, which allows us to programatically make a text selection from any HTML element on the page.<br>
+<pre>
+var button = document.getElementById("copy-button"),
+    contentHolder = document.getElementById("content-holder");
+button.addEventListener("click", function() {
+    // We will need a range object and a selection.
+    var range = document.createRange(),
+        selection = window.getSelection();
+
+    // Clear selection from any previous data.
+    selection.removeAllRanges();
+
+    // Make the range select the entire content of the contentHolder paragraph.
+    range.selectNodeContents(contentHolder);
+
+    // Add that range to the selection.
+    selection.addRange(range);
+
+    // Copy the selection to clipboard.
+    document.execCommand('copy');
+
+    // Clear selection if you want to.
+    selection.removeAllRanges();
+
+}, false);
+</pre>
+To see the example in action check out the editor below:<br>
+<div>
+<div class="inline-editor" style="height:400px;" data-autorun="1">
+<pre>
+var button = document.getElementById("copy-button"),
+    contentHolder = document.getElementById("content-holder");
+
+button.addEventListener("click", function() {
+
+    // We will need a range object and a selection.
+    var range = document.createRange(),
+        selection = window.getSelection();
+
+    // Clear selection from any previous data.
+    selection.removeAllRanges();
+
+    // Make the range select the entire content of the contentHolder paragraph.
+    range.selectNodeContents(contentHolder);
+
+    // Add that range to the selection.
+    selection.addRange(range);
+
+    // Copy the selection to clipboard.
+    document.execCommand('copy');
+
+    // Clear selection if you want to.
+    selection.removeAllRanges();
+
+}, false);
+
+&lt;p id="content-holder"&gt;This text will be inserted into the clipboard.&lt;/p&gt;
+
+&lt;button id="copy-button"&gt;Copy Text&lt;/button&gt;
+
+&lt;textarea placeholder="Paste here"&gt;&lt;/textarea&gt;
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body{
+    padding: 20px;
+    font: normal 16px sans-serif;
+    color: #555;
+}
+
+p{
+    margin-bottom: 20px;
+}
+
+button{
+    padding: 8px 12px;
+    margin-bottom: 20px;
+}
+
+textarea {
+    display: block;
+    padding: 10px;
+    width: 400px;
+    height: 120px;
+}
+</pre>
+
+
+In the example above the content we want to copy is simply stored in a paragraph. If the text you need is not on the page, you will need to first write it in an element hidden off-screen.<br>
+<br>
+<h2>Modify Copied Text</h2>
+Here we will show you how to manipulate content in the clipboard after it's been copied. This can be very useful for escaping code, formatting numbers and dates, or for other text transformations such as uppercase, lowercase, etc.<br>
+JavaScript provides us with 
+<code><a href="https://developer.mozilla.org/en-US/docs/Web/Events/copy" target="_blank" rel="noreferrer noopener">copy()</a>
+</code>
+ and 
+<code><a href="https://developer.mozilla.org/en-US/docs/Web/Events/paste" target="_blank" rel="noreferrer noopener">paste()</a>
+</code>
+ events, but they are designed in such a way that the content stored in the clipboard is secure:<br>
+
+
+<ul>
+
+In the 
+<b>
+copy
+</b>
+ event handler we cannot read what's stored in clipboard, as there may be personal info which we shouldn't have access to. We can, however, overwrite the clipboard data.
+
+    
+In the 
+<b>
+paste
+</b>
+ event it's the opposite: we can read the data, but we cannot change it.
+
+
+</ul>
+
+
+
+Since we want to read and write at the same time, we will need to use the Selection API once more. Here is the solution:<br>
+<pre>
+document.addEventListener('copy', function(e){
+
+    // We need to prevent the default copy functionality,
+    // otherwise it would just copy the selection as usual.
+    e.preventDefault();
+
+    // The copy event doesn't give us access to the clipboard data,
+    // so we need to get the user selection via the Selection API.
+    var selection = window.getSelection().toString();
+
+    // Transform the selection in any way we want.
+    // In this example we will escape HTML code.
+    var escaped = escapeHTML(selection);
+
+    // Place the transformed text in the clipboard. 
+    e.clipboardData.setData('text/plain', escaped);
+
+});
+</pre>
+
+
+You can try the code in the editor below:<br>
+<div>
+<div class="inline-editor" style="height:500px;" data-autorun="1">
+<pre>
+document.addEventListener('copy', function(e){
+
+    // We need to prevent the default copy functionality,
+    // otherwise it would just copy the selection as usual.
+    e.preventDefault();
+
+    // The copy event doesn't give us access to the clipboard data,
+    // so we need to get the user selection via the Selection API.
+    var selection = window.getSelection().toString();
+
+    // Transform the selection in any way we want.
+    var escaped = escapeHtml(selection);
+
+    // Place the transformed text in the clipboard. 
+    e.clipboardData.setData('text/plain', escaped);
+
+});
+
+// Primitive HTML escape function.
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&amp;/g, "&amp;amp;")
+        .replace(/&lt;/g, "&amp;lt;")
+        .replace(/&gt;/g, "&amp;gt;")
+        .replace(/"/g, "&amp;quot;")
+        .replace(/'/g, "&amp;#039;");
+ }
+
+
+</pre>
+
+&lt;p class="copy-text"&gt;Copy and paste any of the HTML code below to escape it.&lt;/p&gt;
+<br>
+<pre>
+&lt;pre&gt;&lt;code&gt;
+&amp;lt;div class=&amp;quot;container&amp;quot;&amp;gt;
+
+    &amp;lt;div class=&amp;quot;starter-template&amp;quot;&amp;gt;
+        &amp;lt;h1&amp;gt;Lorem Ipsum&amp;lt;/h1&amp;gt;
+        &amp;lt;p class=&amp;quot;lead&amp;quot;&amp;gt;Lorem ipsum dolor sit amet.&amp;lt;/p&amp;gt;
+    &amp;lt;/div&amp;gt;
+
+&amp;lt;/div&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;textarea class="paste-text" placeholder="Paste here"&gt;&lt;/textarea&gt;
+
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body{
+    padding: 20px;
+    font: normal 16px sans-serif;
+    color: #555;
+}
+
+pre{
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+textarea {
+    padding: 10px;
+    width: 500px;
+    height: 170px;
+}
+</pre>
+
+
+
+<h2>Further Reading</h2>
+In this quick tip we presented you two useful snippets for working with the clipboard in pure vanilla JavaScript. We used a bunch of hip native APIs, so here they are again if you want to read more about them:<br>
+<ul>
+execCommand - Execute actions such as copy, paste, cut, bold, italic, underline, delete, and many others. - 
+<a href="https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand" target="_blank" rel="noreferrer noopener">
+MDN
+</a>
+, 
+<a href="http://caniuse.com/#feat=document-execcommand" target="_blank" rel="noreferrer noopener">
+Can I Use
+</a>
+  
+Selection API - Allows developers to make a range selection from any text on the page. - 
+<a href="https://developer.mozilla.org/en-US/docs/Web/API/Selection" target="_blank" rel="noreferrer noopener">
+MDN
+</a>
+, 
+<a href="http://caniuse.com/selection-api/embed/" target="_blank" rel="noreferrer noopener">
+Can I Use
+</a>
+    
+JavaScript Copy Event - An event fired when users press CTRL/Cmd+C or choose "copy" from the right-click menu. - 
+<a href="https://developer.mozilla.org/en-US/docs/Web/Events/copy" target="_blank" rel="noreferrer noopener">
+MDN
+</a>
+, 
+<a href="http://caniuse.com/#feat=clipboard" target="_blank" rel="noreferrer noopener">
+Can I Use
+</a>
+
+
+
+</ul>
+
+
+<br>
+Also, if you need more control over copy/paste/cut events, you can use a library such as 
+<a href="https://clipboardjs.com/" target="_blank" rel="noreferrer noopener">
+clipobard.js
+</a>
+. <br>
+It has lots of features and provides a nice clean API for managing the clipboard.
+

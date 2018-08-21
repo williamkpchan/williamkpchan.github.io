@@ -1,0 +1,307 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<style>
+body {
+ margin: 10%;
+ margin-top: 5%;
+ font-size: 24px;
+ background-color: #000000;
+ color: #20C030;
+}
+a { text-decoration: none; 
+	color: #28B8B8; }
+a:visited {	color: #389898; }
+A:hover {	color: yellow; }
+A:focus {	color: red; }
+code { color: #68B868;  background-color: #002010}
+pre { color: lightgray;  background-color: #001010;  font-size: 20px; }
+</STYLE>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+
+</head>
+<body>
+<div id="toc"></div>
+<h1>Working with databases in R</h1>
+<p>The <code>dplyr</code> package, which is one of my favorite R packages, works with in-memory data and with data stored in databases. In this extensive and comprehensive post, I will share my experience on using <code>dplyr</code> to work with databases. The basic functions of <code>dplyr</code> package are covered by <a href="http://datascienceplus.com/author/tejakodali/" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'http://datascienceplus.com/author/tejakodali/', 'Teja']);" ref="nofollow" target="_blank">Teja</a> in <a href="http://datascienceplus.com/data-manipulation-with-dplyr/" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'http://datascienceplus.com/data-manipulation-with-dplyr/', 'another post']);" ref="nofollow" target="_blank">another post</a> at DataScience+</p>
+<p>Using <code>dplyr</code> with databases has huge advantage when our data is big where loading it to R is impossible or slows down our analytics. If our data resides in a database, rather than loading the whole data to R, we can work with <code>subsets</code> or <code>aggregates</code> of the data that we are interested in. Further, if we have many data files, putting our data in a database, rather than in <code>csv</code> or other format, has better security and is easier to manage.</p>
+<p><code>dplyr</code> is a really powerful package for data manipulation, data exploration and feature engineering in R and if you do not know SQL, it provides the ability to work with databases just within R. Further, <code>dplyr</code> functions are easy to write and read. <code>dplyr</code> considers database tables as data frames and it uses lazy evaluation (it delays the actual operation until necessary and loads data onto R from the database only when we need it) and for someone who knows Spark, the processes and even the functions have similarities.</p>
+<p><code>dplyr</code> supports a couple of databases such as <code>sqlite</code>, <code>mysql</code> and <code>postgresql</code>. In this post, we will see how to work with sqlite database. You can get more information from the <code>dplyr</code> database vignette <a href="https://cran.r-project.org/web/packages/dplyr/vignettes/databases.html" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'https://cran.r-project.org/web/packages/dplyr/vignettes/databases.html', 'here']);" rel="nofollow" ref="nofollow" target="_blank">here</a>.</p>
+<p>When people take drugs, if they experience any adverse events, they can report it to the <a href="http://www.fda.gov/Drugs/GuidanceComplianceRegulatoryInformation/Surveillance/AdverseDrugEffects/ucm082193.htm" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'http://www.fda.gov/Drugs/GuidanceComplianceRegulatoryInformation/Surveillance/AdverseDrugEffects/ucm082193.htm', 'FDA']);" rel="nofollow" ref="nofollow" target="_blank">FDA</a>. These data are in public domain and anyone can download them and analyze them. In this post, we will download demography information of the patients, drug they used and for what indication they used it, reaction and outcome. Then, we will put all the datasets in a database and use <code>dplyr</code> to work with the databases.</p>
+<p>You can read more about the adverse events data in <a href="http://datascienceplus.com/performing-sql-selects-on-r-data-frames/" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'http://datascienceplus.com/performing-sql-selects-on-r-data-frames/', 'my previous post']);" ref="nofollow" target="_blank">my previous post</a>.</p>
+<p>You can simply run the code below and it will download the adverse events data and create one large dataset, for each category, by merging the various datasets. For demonstration purposes, let&#8217;s use the adverse event reports from 2013-2015. The adverse events are released in quarterly data files (a single data file for every category every three months).</p>
+<h3>Load R Packages</h3>
+<pre>library(dplyr)
+library(ggplot2)
+library(data.table)
+</pre>
+<h3>Download adverse events data</h3>
+<pre> year_start=2013
+year_last=2015
+for (i in year_start:year_last){
+            j=c(1:4)
+            for (m in j){
+            url1&lt;-paste0(&quot;http://www.nber.org/fda/faers/&quot;,i,&quot;/demo&quot;,i,&quot;q&quot;,m,&quot;.csv.zip&quot;)
+                download.file(url1,dest=&quot;data.zip&quot;) # Demography
+                unzip (&quot;data.zip&quot;)
+            url2&lt;-paste0(&quot;http://www.nber.org/fda/faers/&quot;,i,&quot;/drug&quot;,i,&quot;q&quot;,m,&quot;.csv.zip&quot;)
+                download.file(url2,dest=&quot;data.zip&quot;)   # Drug 
+                unzip (&quot;data.zip&quot;)
+            url3&lt;-paste0(&quot;http://www.nber.org/fda/faers/&quot;,i,&quot;/reac&quot;,i,&quot;q&quot;,m,&quot;.csv.zip&quot;)
+                download.file(url3,dest=&quot;data.zip&quot;) # Reaction
+                unzip (&quot;data.zip&quot;)
+            url4&lt;-paste0(&quot;http://www.nber.org/fda/faers/&quot;,i,&quot;/outc&quot;,i,&quot;q&quot;,m,&quot;.csv.zip&quot;)
+                download.file(url4,dest=&quot;data.zip&quot;) # Outcome
+                unzip (&quot;data.zip&quot;)
+            url5&lt;-paste0(&quot;http://www.nber.org/fda/faers/&quot;,i,&quot;/indi&quot;,i,&quot;q&quot;,m,&quot;.csv.zip&quot;)
+                download.file(url5,dest=&quot;data.zip&quot;) # Indication for use
+                unzip (&quot;data.zip&quot;)
+            }
+        }</pre>
+<h2>Concatenate the quarterly data files and create single dataset for each category</h2>
+<h3>Demography</h3>
+<pre>filenames &lt;- list.files(pattern=&quot;^demo.*.csv&quot;, full.names=TRUE)
+demo=lapply(filenames,fread)
+demography=do.call(rbind,lapply(1:length(demo), function(i) 
+            select(as.data.frame(demo[i]),primaryid,caseid, 
+             age,age_cod,event_dt,sex,wt,wt_cod, occr_country)))
+
+str(demography)
+<em>'data.frame':	3037542 obs. of  9 variables:
+ $ primaryid   : int  30375293 30936912 32481334 35865322 37005182 37108102 37820163 38283002 38346784 40096383 ...
+ $ caseid      : int  3037529 3093691 3248133 3586532 3700518 3710810 3782016 3828300 3834678 4009638 ...
+ $ age         : chr  "44" "38" "28" "45" ...
+ $ age_cod     : chr  "YR" "YR" "YR" "YR" ...
+ $ event_dt    : int  199706 199610 1996 20000627 200101 20010810 20120409 NA 20020615 20030619 ...
+ $ sex         : chr  "F" "F" "F" "M" ...
+ $ wt          : num  56 56 54 NA NA 80 102 NA NA 87.3 ...
+ $ wt_cod      : chr  "KG" "KG" "KG" "" ...
+ $ occr_country: chr  "US" "US" "US" "AR" ...</em></pre>
+<p>We see that our demography data has more than 3 million rows and the variables are age, age code, date the event happened, sex, weight, weight code and country where the event happened.</p>
+<h3>Drug</h3>
+<pre>filenames &lt;- list.files(pattern=&quot;^drug.*.csv&quot;, full.names=TRUE)
+drug_list=lapply(filenames,fread)
+drug=do.call(rbind,lapply(1:length(drug_list), function(i) 
+            select(as.data.frame(drug_list[i]),primaryid,drug_seq,drugname,route)))
+
+str(drug)
+<em>'data.frame':	9989450 obs. of  4 variables:
+ $ primaryid: chr  "" "" "" "" ...
+ $ drug_seq : chr  "" "" "20140601" "U" ...
+ $ drugname : chr  "" "" "" "" ...
+ $ route    : chr  "" "21060" "" "76273" ...</em></pre>
+<p>We can see that the drug data has about ten million rows and among the variables are drug name and route.</p>
+<h3>Diagnoses/Indications</h3>
+<pre>filenames &lt;- list.files(pattern=&quot;^indi.*.csv&quot;, full.names=TRUE)
+indi=lapply(filenames,fread)
+indication=do.call(rbind,lapply(1:length(indi), function(i) 
+            select(as.data.frame(indi[i]),primaryid,indi_drug_seq,indi_pt)))
+
+str(indication)
+<em>'data.frame':	6383312 obs. of  3 variables:
+ $ primaryid    : int  8480348 8480354 8480355 8480357 8480358 8480358 8480358 8480359 8480360 8480361 ...
+ $ indi_drug_seq: int  1020135312 1020135329 1020135331 1020135333 1020135334 1020135337 1020135338 1020135339 1020135340 1020135341 ...
+ $ indi_pt      : chr  "CONTRACEPTION" "SCHIZOPHRENIA" "ANXIETY" "SCHIZOPHRENIA" ...</em></pre>
+<p>The indication data has more than six million rows and the variables are primaryid, drug sequence and indication (indication prefered term).</p>
+<h3>Outcomes</h3>
+<pre>filenames &lt;- list.files(pattern=&quot;^outc.*.csv&quot;, full.names=TRUE)
+outc=lapply(filenames,fread)
+outcome=do.call(rbind,lapply(1:length(outc), function(i) 
+            select(as.data.frame(outc[i]),primaryid,outc_cod)))
+
+str(outcome)
+<em> 'data.frame':	2453953 obs. of  2 variables:
+ $ primaryid: int  8480347 8480348 8480350 8480351 8480352 8480353 8480353 8480354 8480355 8480356 ...
+ $ outc_cod : chr  "OT" "HO" "HO" "HO" ...</em></pre>
+<p>The outcome data has more than two million rows and the variables are primaryid and outcome code (outc_cod).</p>
+<h3>Reaction (Adverse Event)</h3>
+<pre>filenames &lt;- list.files(pattern=&quot;^reac.*.csv&quot;, full.names=TRUE)
+reac=lapply(filenames,fread)
+reaction=do.call(rbind,lapply(1:length(reac), function(i) 
+            select(as.data.frame(reac[i]),primaryid,pt)))
+
+str(reaction)
+<em>'data.frame':	9288270 obs. of  2 variables:
+ $ primaryid: int  8480347 8480348 8480349 8480350 8480350 8480350 8480350 8480350 8480350 8480351 ...
+ $ pt       : chr  "ANAEMIA HAEMOLYTIC AUTOIMMUNE" "OPTIC NEUROPATHY" "DYSPNOEA" "DEPRESSED MOOD" ...</em></pre>
+<p>So, we see that the adverse events (reaction) data has more than nine million rows and the variables are primaryid and prefered term for adverse event (pt).</p>
+<h2>Create a database</h2>
+<p>To create <code>SQLite</code> database in R, we do not need anything, just specifying the path only. We use <code>src_sqlite</code> to connect to an existing <code>sqlite</code> database, and <code>tbl</code> to connect to tables within that database. We can also use <code>src_sqlite</code> to create new <code>SQlite</code> database at the specified path. If we do not specify a path, it will be created in our working directory.</p>
+<pre>my_database&lt;- src_sqlite(&quot;adverse_events&quot;, create = TRUE) # create =TRUE creates a new database</pre>
+<h2>Put data in the database</h2>
+<p>To upload data to the database, we use the dplyr function copy_to. According to the documentation, wherever possible, the new object will be temporary, limited to the current connection to the source. So, we have to change temporary to false to make it permanent.</p>
+<pre> copy_to(my_database,demography,temporary = FALSE) # uploading demography data
+copy_to(my_database,drug,temporary = FALSE)       # uploading drug data
+copy_to(my_database,indication,temporary = FALSE) # uploading indication data
+copy_to(my_database,reaction,temporary = FALSE)   # uploading reaction data
+copy_to(my_database,outcome,temporary = FALSE)     #uploading outcome data</pre>
+<p>Now, I have put all the datasets in the &#8220;adverse_events&#8221; database. I can query it and do analytics I want.</p>
+<h2>Connect to database</h2>
+<pre>my_db &lt;- src_sqlite(&quot;adverse_events&quot;, create = FALSE)
+              # create is false now because I am connecting to an existing database</pre>
+<h3>List the tables in the database</h3>
+<pre>src_tbls(my_db)
+<em>
+    "demography" "drug" "indication" "outcome" "reaction" "sqlite_stat1" </em></pre>
+<h2>Querying the database</h2>
+<p>We use the same <code>dplyr</code> verbs that we use in data manipulation to work with databases. <code>dplyr</code> translates the R code we write to SQL code. We use <code>tbl</code> to connect to tables within the database.</p>
+<pre>demography = tbl(my_db,"demography" )
+
+class(demography)
+<em>tbl_sqlite" "tbl_sql" "tbl" </em>
+
+head(demography,3)</pre>
+<img src="http://i2.wp.com/datascienceplus.com/wp-content/uploads/2016/04/table1-490x111.png?resize=456%2C103">
+<pre>US = filter(demography, occr_country=='US')  # Filtering demography of patients from the US
+
+US$query
+<em> SELECT "primaryid", "caseid", "age", "age_cod", "event_dt", "sex", "wt", "wt_cod", "occr_country"
+FROM "demography"
+WHERE "occr_country" = 'US'
+</em></pre>
+<p>We can also see how the database plans to execute the query:</p>
+<pre>explain(US)
+<em>
+SELECT "primaryid", "caseid", "age", "age_cod", "event_dt", "sex", "wt", "wt_cod", "occr_country"
+FROM "demography"
+WHERE "occr_country" = 'US'
+  selectid order from                detail
+1        0     0    0 SCAN TABLE demography</em></pre>
+<p>Let&#8217;s similarly connect to the other tables in the database.</p>
+<pre>drug = tbl(my_db,"drug" )
+indication = tbl(my_db,"indication" )
+outcome = tbl(my_db,"outcome" )
+reaction = tbl(my_db,"reaction" )</pre>
+<p>It is very interesting to note that <code>dplyr</code> delays the actual operation until necessary and loads data onto R from the database only when we need it. When we use actions such as <code>collect()</code>, <code>head()</code>, <code>count()</code>, etc, the commands are executed.</p>
+<p>While we can use <code>head()</code> on database <code>tbls</code>, we can’t find the last rows without executing the whole query.</p>
+<pre>head(indication,3)</pre>
+<img src="http://i0.wp.com/datascienceplus.com/wp-content/uploads/2016/04/table2.png?resize=456%2C169">
+<pre>tail(indication,3)
+<em>Error: tail is not supported by sql sources</em></pre>
+<h2>dplyr verbs (select, arrange, filter, mutate, summarize, rename)</h2>
+<p>We can pipe <code>dplyr</code> operations together with %&gt;% from the <code>magrittr</code> R package. The pipeline %&gt;% takes the output from the left-hand side of the pipe as the first argument to the function on the right hand side.</p>
+<h3>Find the top ten countries with the highest number of adverse events</h3>
+<pre>demography%&gt;%group_by(Country= occr_country)%&gt;% 
+           summarize(Total=n())%&gt;%      
+           arrange(desc(Total))%&gt;%       
+           filter(Country!='')%&gt;% head(10)</pre>
+<img src="http://i2.wp.com/datascienceplus.com/wp-content/uploads/2016/04/table3.png?resize=254%2C470">
+<p>We can also include <strong>ggplot</strong> in the chain:</p>
+<pre>demography%&gt;%group_by(Country= occr_country)%&gt;% #grouped by country
+           summarize(Total=n())%&gt;%    # found the count for each country
+           arrange(desc(Total))%&gt;%    # sorted them in descending order
+           filter(Country!='')%&gt;%     # removed reports that does not have country information
+           head(10)%&gt;%                  # took the top ten
+          ggplot(aes(x=Country,y=Total))+geom_bar(stat='identity',color='skyblue',fill='#b35900')+
+          xlab("")+ggtitle('Top ten countries with highest number of adverse event reports')+
+          coord_flip()+ylab('Total number of reports')</pre>
+<img src="http://i2.wp.com/datascienceplus.com/wp-content/uploads/2016/04/fig1-490x346.png?resize=456%2C322">
+<h3>Find the most common drug</h3>
+<pre>drug%&gt;%group_by(drug_name= drugname)%&gt;% #grouped by drug_name
+           summarize(Total=n())%&gt;%    # found the count for each drug name
+           arrange(desc(Total))%&gt;%    # sorted them in descending order
+           head(1)                   # took the most frequent drug</pre>
+<img src="http://i1.wp.com/datascienceplus.com/wp-content/uploads/2016/04/table4.png?resize=253%2C94">
+<h3>What are the top 5 most common outcomes?</h3>
+<pre>head(outcome,3)  # to see the variable names</pre>
+<img src="http://i0.wp.com/datascienceplus.com/wp-content/uploads/2016/04/table5.png?resize=264%2C183">
+<pre>outcome%&gt;%group_by(Outcome_code= outc_cod)%&gt;% #grouped by Outcome_code
+           summarize(Total=n())%&gt;%    # found the count for each Outcome_code
+           arrange(desc(Total))%&gt;%    # sorted them in descending order
+           head(5)                   # took the top five</pre>
+<img src="http://i1.wp.com/datascienceplus.com/wp-content/uploads/2016/04/table6.png?resize=294%2C268">
+<h3>
+What are the top ten reactions?</h3>
+<pre>head(reaction,3)  # to see the variable names</pre>
+<img src="http://i1.wp.com/datascienceplus.com/wp-content/uploads/2016/04/table7-490x168.png?resize=456%2C156">
+<pre>reaction%&gt;%group_by(reactions= pt)%&gt;% # grouped by reactions
+           summarize(Total=n())%&gt;%    # found the count for each reaction type
+           arrange(desc(Total))%&gt;%    # sorted them in descending order
+           head(10)                   # took the top ten</pre>
+<img src="http://i0.wp.com/datascienceplus.com/wp-content/uploads/2016/04/table8.png?resize=295%2C460">
+<h3>Joins</h3>
+<p>Let&#8217;s join demography, outcome and reaction based on primary id:</p>
+<pre>inner_joined = demography%&gt;%inner_join(outcome, by='primaryid',copy = TRUE)%&gt;%
+               inner_join(reaction, by='primaryid',copy = TRUE)</pre>
+<pre>head(inner_joined)</pre>
+<img src="http://i2.wp.com/datascienceplus.com/wp-content/uploads/2016/04/table9-490x136.png?resize=456%2C127">
+<p>We can also use primary key and secondary key in our joins. Let&#8217;s join drug and indication using two keys (primary and secondary keys).</p>
+<pre>drug_indication= indication%&gt;%rename(drug_seq=indi_drug_seq)%&gt;%
+   inner_join(drug, by=c("primaryid","drug_seq"))</pre>
+<pre>head(drug_indication)</pre>
+<img src="http://i2.wp.com/datascienceplus.com/wp-content/uploads/2016/04/table10-490x162.png?resize=456%2C151">
+<p>In this post, we saw how to use the <code>dplyr</code> package to create a database and upload data to the database. We also saw how to perform various analytics by querying data from the database.<br />
+Working with databases in R has huge advantage when our data is big where loading it to R is impossible or slows down our analytics. If our data resides in a database, rather than loading the whole data to R, we can work with subsets or aggregates of the data that we are interested in. Further, if we have many data files, putting our data in a database, rather than in csv or other format, has better security and is easier to manage. </p>
+<p>This is enough for this post. See you in my next post. You can read about dplyr two-table verbs <a href="https://cran.r-project.org/web/packages/dplyr/vignettes/two-table.html" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'https://cran.r-project.org/web/packages/dplyr/vignettes/two-table.html', 'here']);" rel="nofollow" ref="nofollow" target="_blank">here</a>. If you have any questions or feedback, feel free to leave a comment.</p>
+
+<h2>Run SQL queries in R</h2>
+
+<p>
+The add-on package sqldf lets you run SQL queries on an R data frame (there are <a href="http://www.statmethods.net/input/dbinterface.html" target="_blank">separate packages</a> allowing you to connect R with a local database). Install and load sqldf, and then you can issue commands such as:</p>
+<p>
+<code>sqldf("select * from mtcars where mpg &gt; 20 order by mpg desc")</code></p>
+<p>
+This will find all rows in the mtcars sample data frame that have an mpg greater than 20, ordered from highest to lowest mpg.</p>
+
+<h2>Examine and edit data with a GUI</h2>
+<p>
+And speaking of cheating, if you don't want to use the command line to examine and edit your data, R has a couple of options. The edit() function brings up an editor where you can look at and edit an R object, such as</p>
+<p>
+<img src="https://images.techhive.com/images/idge/imported/article/ctw/2013/06/06/redit1_508p-100392405-orig.jpg" border="0"g
+<p>
+This can be useful if you've got a data set with a lot of columns that are wrapping in the small command-line window. However, since there's no way to save your work as you go along -- changes are saved only when you close the editing window -- and there's no command-history record of what you've done, the edit window probably isn't your best choice for editing data in a project where it's important to repeat/reproduce your work.</p>
+<p>
+In RStudio you can also examine a data object (although not edit it) by clicking on it in the workspace tab in the upper right window.</p><h4>Saving and exporting your data</h4>
+<p>
+In addition to saving your entire R workspace with the save.image() function and various ways to save plots to image files, you can save individual objects for use in other software. For example, if you've got a data frame just so and would like to share it with colleagues as a tab- or comma-delimited file, say for importing into a spreadsheet, you can use the command:</p>
+<p>
+<code>write.table(myData, "testfile.txt", sep="\t")</code></p>
+<p>
+This will export all the data from an R object called myData to a tab-separated file called testfile.txt in the current working directory. Changing sep="\t" to sep="c" will generated a comma-separated file and so on.</p>
+<p>
+<strong><em><a href="http://www.computerworld.com/s/article/9239799">Next: More resources for boosting your R skills</a>.</em></strong></p><aside class="sidebar">
+<h3>Learn to use R: Your hands-on guide</h3>
+<h5>Don't miss the rest:</h5>
+<ul>
+<li><a href="http://www.computerworld.com/article/2497143/business-intelligence-beginner-s-guide-to-r-introduction.html">Part 1: Introduction</a> - get started with this popular programming language.</li>
+<li><a href="http://www.computerworld.com/article/2497164/business-intelligence-beginner-s-guide-to-r-get-your-data-into-r.html">Part 2: Getting your data into R</a> - tips on how to import data in various formats, both local and on the Web.</li>
+<li><a href="http://www.computerworld.com/article/2598083/app-development-beginner-s-guide-to-r-easy-ways-to-do-basic-data-analysis.html">Part 3: Easy ways to do basic data analysis</a> - extract some simple stats.</li>
+<li><a href="http://www.computerworld.com/article/2497304/business-intelligence-beginner-s-guide-to-r-painless-data-visualization.html">Part 4: Painless data visualization</a> - simple graphics, bar graphs and a few more complex charts.</li>
+<li><a href="http://www.computerworld.com/article/2497319/business-intelligence-beginner-s-guide-to-r-syntax-quirks-you-ll-want-to-know.html">Part 5: Syntax quirks you'll want to know</a> - some R idiosyncrasies.</li>
+<li><a href="http://www.computerworld.com/article/2497464/business-intelligence-60-r-resources-to-improve-your-data-skills.html">Part 6: Useful resources</a> - not for beginners only!</li>
+</ul>
+</aside>
+<p>
+<em>This article, <a href="http://www.computerworld.com/s/article/9239757">Beginner's guide to R: Syntax quirks you'll want to know</a>, was originally published at <a href="http://www.computerworld.com" target="_blank">Computerworld.com</a>.</em></p>
+
+
+<script>
+  $(function() {
+    var toc = $('#toc');
+
+    function makeLi(text, href) {
+      return $('<a href="' + href + '">' + text + '</a><br>');
+    }
+
+    $('h1, h2, h3').each(function(i) {
+      var chapter = $(this), chapterNumber = i + 1;
+      toc.append(
+        makeLi('Chapter ' + chapterNumber + ': ' + chapter.text(), '#chapter-' + chapterNumber)
+      );
+      chapter.attr('id', 'chapter-' + chapterNumber);
+    });
+
+  });
+</script>
+
+</body>
+</html>

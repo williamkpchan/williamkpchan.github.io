@@ -1,0 +1,364 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="..\maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, .apply, div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+<body{width:80%; margin-left:10%; font-size:32px;}
+h1, h2 {color: gold;}
+img{width: 80px;}
+</style>
+</head><body>
+<center><h1></h1></center>
+<div id="toc"></div>
+<br>
+<br>
+<br>
+
+<h1>Building a Node.js application on Android - Part 1: Termux, Vim and Node.js
+</h1>
+<p>If you are excited about Node.js and own an Android device, no doubt you’ll enjoy running Node.js on it. Thanks to 
+<a href="https://termux.com/" target="_blank">Termux
+</a> a terminal emulator and Linux environment for Android, the fun of developping Node.js web applications is just a few ‘npm install’s away!
+</p>
+<h3>What we are going to do
+</h3>
+<p>I will show how to get started with Node.js using Termux on Android. We are also going to use Express and see how to store our app’s data in NeDB, a lightweight JavaScript database, whose API is a subset of MongoDB’s.
+</p>
+<p>In this first post, we will limit ourselves to setting up our Node.js development environment, that is:
+</p>
+<ol class="postList">
+<li>
+<strong class="markup--strong markup--li-strong">Install and configure Termux.
+</strong>
+</li>
+<li name="57d8" id="57d8" class="graf graf--li graf-after--li">
+<strong class="markup--strong markup--li-strong">Install and see how to use Vim as a text editor.
+</strong> (This section can be skipped if you already know Vim.)
+</li>
+<li name="8b35" id="8b35" class="graf graf--li graf-after--li">
+<strong class="markup--strong markup--li-strong">Install and run Node.js.
+</strong>
+</li>
+</ol>
+<h3 name="2be2" id="2be2" class="graf graf--h3 graf-after--li">1. Termux
+</h3>
+<p name="578c" id="578c" class="graf graf--p graf-after--figure">Termux combines terminal emulation with a Linux package collection. It comes as a free app that can be installed directly from the 
+<a href="https://play.google.com/store/apps/details?id=com.termux" data-href="https://play.google.com/store/apps/details?id=com.termux" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">Play Store
+</a> or from 
+<a href="https://f-droid.org/en/packages/com.termux/" data-href="https://f-droid.org/en/packages/com.termux/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">F-Droid
+</a> catalogue.
+</p>
+<h4>Configuration
+</h4>
+<p name="d892" id="d892" class="graf graf--p graf-after--h4">When you open Termux, you are greeted by a 
+<a href="https://en.wikipedia.org/wiki/Shell_%28computing%29" data-href="https://en.wikipedia.org/wiki/Shell_%28computing%29" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">Command Line Interface
+</a> (CLI). Right after installing Termux, it is recommended to check for updates, and upgrade if need be. So type the following commands at the prompt — that is, after the ‘$’ sign — and press &lt;Enter&gt;:
+</p>
+<pre>$ apt update &amp;&amp; apt upgrade
+</pre>
+<p name="4745" id="4745" class="graf graf--p graf-after--pre">Termux comes with a minimal base system, so you should also install ‘coreutils’ for the full-fledged variants of 
+<a href="https://devdactic.com/10-basic-bash-commands/" data-href="https://devdactic.com/10-basic-bash-commands/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">base CLI utilities such as ‘mv’, ‘ls’, etc.
+</a>
+</p>
+<pre>$ apt install coreutils
+</pre>
+<h4 name="eaf9" id="eaf9" class="graf graf--h4 graf-after--pre">Storage
+</h4>
+<p name="81b0" id="81b0" class="graf graf--p graf-after--h4">There are three main types of 
+<a href="https://wiki.termux.com/wiki/Internal_and_external_storage" data-href="https://wiki.termux.com/wiki/Internal_and_external_storage" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">storage in Termux
+</a>:
+</p>
+<ol class="postList">
+<li>
+<strong class="markup--strong markup--li-strong">App-private storage
+</strong>: This is right where you are when you start Termux.
+</li>
+<li name="9e7d" id="9e7d" class="graf graf--li graf-after--li">
+<strong class="markup--strong markup--li-strong">Shared internal storage
+</strong>: Storage in the device available to all apps.
+</li>
+<li name="b4c5" id="b4c5" class="graf graf--li graf-after--li">
+<strong class="markup--strong markup--li-strong">External storage
+</strong>: Storage on external SD cards.
+</li>
+</ol>
+<p name="8a96" id="8a96" class="graf graf--p graf-after--li">Although the environment setup in Termux is similar to that of a modern Linux distribution, running on Android implies differences and so far I have only managed to run Node.js fully while storing my data in Termux’s private storage (option 1 above).
+</p>
+<p>So let’s create a directory for our app and change to this directory:
+</p>
+<pre>$ mkdir test-node &amp;&amp; cd test-node
+</pre>
+<h4 name="c219" id="c219" class="graf graf--h4 graf-after--pre">Keyboard
+</h4>
+<p name="5240" id="5240" class="graf graf--p graf-after--h4">I have only been using a soft keyboard so far and I encountered some issues with the default touch keyboard while using 
+<a href="https://termux.com/touch-keyboard.html" data-href="https://termux.com/touch-keyboard.html" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">the volume up key
+</a> as a replacement for &lt;Esc&gt;, &lt;Tab&gt; or the Arrow keys.
+</p>
+<p>To circumvent these issues, I installed 
+<a href="https://play.google.com/store/apps/details?id=org.pocketworkstation.pckeyboard" data-href="https://play.google.com/store/apps/details?id=org.pocketworkstation.pckeyboard" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">Hacker’s Keyboard
+</a> from the Play Store and I really like it. It is a touch keyboard that can be used instead of the default one and has all the keys needed for writing code and using the terminal.
+</p>
+<p>You can find useful information about using a touch or hardware keyboard with Termux directly on 
+<a href="https://termux.com/help.html" data-href="https://termux.com/help.html" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">the Help page
+</a>.
+</p>
+<figure>
+<div>
+<div>
+</div>
+<div class="progressiveMedia js-progressiveMedia graf-image" data-image-id="1*4f2hjcG-q9zh_xn6dDOFNg.jpeg" data-width="1000" data-height="383" data-action="zoom" data-action-value="1*4f2hjcG-q9zh_xn6dDOFNg.jpeg">
+<img src="https://cdn-images-1.medium.com/freeze/max/38/1*4f2hjcG-q9zh_xn6dDOFNg.jpeg?q=20" crossorigin="anonymous" class="progressiveMedia-thumbnail js-progressiveMedia-thumbnail">
+<canvas class="progressiveMedia-canvas js-progressiveMedia-canvas">
+</canvas>
+<img class="progressiveMedia-image js-progressiveMedia-image" data-src="https://cdn-images-1.medium.com/max/1000/1*4f2hjcG-q9zh_xn6dDOFNg.jpeg">
+<noscript class="js-progressiveMedia-inner">
+<img class="progressiveMedia-noscript js-progressiveMedia-inner" src="https://cdn-images-1.medium.com/max/1000/1*4f2hjcG-q9zh_xn6dDOFNg.jpeg">
+</noscript>
+</div>
+</div>
+<figcaption class="imageCaption">The Hacker’s keyboard
+</figcaption>
+</figure>
+<h4 name="2869" id="2869" class="graf graf--h4 graf-after--figure">Using multiple sessions
+</h4>
+<p name="4cf2" id="4cf2" class="graf graf--p graf-after--h4">One more thing I would like to mention about Termux: if you swipe the screen left to right from its left edge, it opens a menu that enables to start or switch between multiple Termux sessions.
+</p>
+<h4>Accessing Help in Termux
+</h4>
+<p name="9979" id="9979" class="graf graf--p graf-after--h4">In Termux, you can access the help documentation, which contains all the necessary information, by long pressing the screen, and clicking first on ‘More’, then on ‘Help’. Note though, that this help documentation cannot be accessed when your device isn’t connected to the internet.
+</p>
+<h3>2. Vim
+</h3>
+<p>Vim is a text editor that can be used right in the Command Line Interface and it is available as a package in Termux. So let’s install it:
+</p>
+<pre>$ apt install vim
+</pre>
+<p name="4e69" id="4e69" class="graf graf--p graf-after--pre">Vim’s interface is not based on menus or icons but on commands given in a text user interface. In case you are new to it I’m going to guide you through the very basics of Vim.
+</p>
+<p>First, create the file ‘server.js’:
+</p>
+<pre>$ touch server.js 
+</pre>
+<p name="223c" id="223c" class="graf graf--p graf-after--pre">To edit this file with Vim, simply type:
+</p>
+<pre>$ vim server.js
+</pre>
+<figure name="ebe9" id="ebe9" class="graf graf--figure graf-after--pre">
+<div>
+<div>
+</div>
+<div class="progressiveMedia js-progressiveMedia graf-image" data-image-id="1*iMAqPtrYe5nBk5PsBEEILQ.png" data-width="800" data-height="566" data-action="zoom" data-action-value="1*iMAqPtrYe5nBk5PsBEEILQ.png">
+<img src="https://cdn-images-1.medium.com/freeze/max/38/1*iMAqPtrYe5nBk5PsBEEILQ.png?q=20" crossorigin="anonymous" class="progressiveMedia-thumbnail js-progressiveMedia-thumbnail">
+<canvas class="progressiveMedia-canvas js-progressiveMedia-canvas">
+</canvas>
+<img class="progressiveMedia-image js-progressiveMedia-image" data-src="https://cdn-images-1.medium.com/max/1000/1*iMAqPtrYe5nBk5PsBEEILQ.png">
+<noscript class="js-progressiveMedia-inner">
+<img class="progressiveMedia-noscript js-progressiveMedia-inner" src="https://cdn-images-1.medium.com/max/1000/1*iMAqPtrYe5nBk5PsBEEILQ.png">
+</noscript>
+</div>
+</div>
+<figcaption class="imageCaption">Vim displaying the content of the empty file server.js
+</figcaption>
+</figure>
+<h4 name="c5e8" id="c5e8" class="graf graf--h4 graf-after--figure">Using the different modes
+</h4>
+<p name="f58a" id="f58a" class="graf graf--p graf-after--h4">Vim behaves differently, depending on which mode you are in. At start, you are in what is called 
+<em class="markup--em markup--p-em">command mode
+</em>. You should see a cursor on the first line, tildes (~) on the other lines and the name of the file at the very bottom.
+</p>
+<p>Tilde lines are here to indicate that these lines are not part of the content of the file.
+</p>
+<p>To start writing into the file, you need to switch to 
+<em class="markup--em markup--p-em">writing mode.
+</em> So just type the letter “i”. At the very bottom, you should now see something like this:
+</p>
+<figure>
+<div>
+<div>
+</div>
+<div class="progressiveMedia js-progressiveMedia graf-image" data-image-id="1*lIx7lVL_ijhNrd9Nc2w0pQ.jpeg" data-width="1000" data-height="321" data-action="zoom" data-action-value="1*lIx7lVL_ijhNrd9Nc2w0pQ.jpeg">
+<img src="https://cdn-images-1.medium.com/freeze/max/38/1*lIx7lVL_ijhNrd9Nc2w0pQ.jpeg?q=20" crossorigin="anonymous" class="progressiveMedia-thumbnail js-progressiveMedia-thumbnail">
+<canvas class="progressiveMedia-canvas js-progressiveMedia-canvas">
+</canvas>
+<img class="progressiveMedia-image js-progressiveMedia-image" data-src="https://cdn-images-1.medium.com/max/1000/1*lIx7lVL_ijhNrd9Nc2w0pQ.jpeg">
+<noscript class="js-progressiveMedia-inner">
+<img class="progressiveMedia-noscript js-progressiveMedia-inner" src="https://cdn-images-1.medium.com/max/1000/1*lIx7lVL_ijhNrd9Nc2w0pQ.jpeg">
+</noscript>
+</div>
+</div>
+<figcaption class="imageCaption">Vim is now in writing 
+<em class="markup--em markup--figure-em">mode
+</em>
+</figcaption>
+</figure>
+<p name="9ed5" id="9ed5" class="graf graf--p graf-after--figure">So now go on. Write something.
+</p>
+<p>Done? So here is how you can save your changes/quit Vim. First you need to come back to the 
+<em class="markup--em markup--p-em">command mode 
+</em>by pressing &lt;Esc&gt; and then you have the choice:
+</p>
+<ol class="postList">
+<li>Type 
+<strong class="markup--strong markup--li-strong">:w
+</strong> and press &lt;Enter&gt;to save (write) the changes.
+</li>
+<li name="8502" id="8502" class="graf graf--li graf-after--li">Type 
+<strong class="markup--strong markup--li-strong">:wq
+</strong> and press &lt;Enter&gt; to save the changes and quit.
+</li>
+<li name="8177" id="8177" class="graf graf--li graf-after--li">Type 
+<strong class="markup--strong markup--li-strong">:q!
+</strong> and press &lt;Enter&gt; to quit without saving the changes.
+</li>
+</ol>
+<p name="a81a" id="a81a" class="graf graf--p graf-after--li">And that is about it for our very short introduction to Vim.
+</p>
+<h4>Not getting lost and learning more about Vim
+</h4>
+<p name="4ebd" id="4ebd" class="graf graf--p graf-after--h4">If you are lost, you can press &lt;Esc&gt; and type 
+<strong class="markup--strong markup--p-strong">:help 
+</strong>followed by &lt;Enter&gt;. This will open Vim help documentation.
+</p>
+<p>Something like this simple 
+<a href="https://simpletutorials.com/c/1238/Simple+Vim+Reference" data-href="https://simpletutorials.com/c/1238/Simple+Vim+Reference" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">Vim Reference
+</a> might be useful if you are new to Vim. Alternatively, you can type ‘vimtutor’ in the terminal for a 30 minutes tutorial, play a learning game at 
+<a href="http://vim-adventures.com/" data-href="http://vim-adventures.com/" class="markup--anchor markup--p-anchor" rel="nofollow noopener" target="_blank">http://vim-adventures.com/
+</a> or follow the interactive tutorial at 
+<a href="http://www.openvim.com/" data-href="http://www.openvim.com/" class="markup--anchor markup--p-anchor" rel="nofollow noopener" target="_blank">http://www.openvim.com/
+</a>.
+</p>
+<h3>3. Node.js
+</h3>
+<p>Installing 
+<a href="https://nodejs.org/en/" data-href="https://nodejs.org/en/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">Node.js
+</a> is very simple:
+</p>
+<pre>$ apt install nodejs
+</pre>
+<p name="ed23" id="ed23" class="graf graf--p graf-after--pre">If you haven’t done it yet, create a folder for the application, move into it and type:
+</p>
+<pre>$ npm init
+</pre>
+<p name="0cb9" id="0cb9" class="graf graf--p graf-after--pre">This will ask you a bunch of questions, and then write a ‘package.json’ file for you. (You can just press &lt;Enter&gt; for each question asked.)
+</p>
+<p>Now let us check that everything is working all right. Open server.js
+</p>
+<pre>$ vim server.js
+</pre>
+<p name="e2a9" id="e2a9" class="graf graf--p graf-after--pre">and type in it
+</p>
+<pre>console.log(&#39;This is Node.js running on Android.&#39;)
+</pre>
+<p name="11f3" id="11f3" class="graf graf--p graf-after--pre">Save the changes and quit Vim.
+</p>
+<p>Now we have everything in place and we can finally run node:
+</p>
+<pre>$ node server.js
+</pre>
+<p name="a8ba" id="a8ba" class="graf graf--p graf-after--pre">This should print the text “This is Node.js running on Android.” in the terminal.
+</p>
+<figure>
+<div>
+<div>
+</div>
+<div class="progressiveMedia js-progressiveMedia graf-image" data-image-id="1*XqfRST9jFzNJQPzdWrBITw.jpeg" data-width="1534" data-height="198" data-action="zoom" data-action-value="1*XqfRST9jFzNJQPzdWrBITw.jpeg">
+<img src="https://cdn-images-1.medium.com/freeze/max/38/1*XqfRST9jFzNJQPzdWrBITw.jpeg?q=20" crossorigin="anonymous" class="progressiveMedia-thumbnail js-progressiveMedia-thumbnail">
+<canvas class="progressiveMedia-canvas js-progressiveMedia-canvas">
+</canvas>
+<img class="progressiveMedia-image js-progressiveMedia-image" data-src="https://cdn-images-1.medium.com/max/1000/1*XqfRST9jFzNJQPzdWrBITw.jpeg">
+<noscript class="js-progressiveMedia-inner">
+<img class="progressiveMedia-noscript js-progressiveMedia-inner" src="https://cdn-images-1.medium.com/max/1000/1*XqfRST9jFzNJQPzdWrBITw.jpeg">
+</noscript>
+</div>
+</div>
+</figure>
+<h3 name="461b" id="461b" class="graf graf--h3 graf-after--figure">In a nutshell
+</h3>
+<p>As a recap, here is the whole process again (with minor differences as it is all done directly from the command line).
+</p>
+<pre>Update and upgrade Termux:
+<br>  $ apt update &amp;&amp; apt upgrade
+</pre>
+<pre name="7663" id="7663" class="graf graf--pre graf-after--pre">Install some core utilities, Vim and Node.js:
+<br>  $ apt install coreutils
+<br>  $ apt install vim
+<br>  $ apt install nodejs
+</pre>
+<pre name="4365" id="4365" class="graf graf--pre graf-after--pre">Create a directory called test-node and move into it:
+<br>  $ mkdir test-node &amp;&amp; cd test-node
+</pre>
+<pre name="f0c4" id="f0c4" class="graf graf--pre graf-after--pre">Create an empty file called server.js:
+<br>  $ touch server.js
+</pre>
+<pre name="4c7e" id="4c7e" class="graf graf--pre graf-after--pre">Interactively create a package.json file:
+<br>  $ npm init
+</pre>
+<pre name="911d" id="911d" class="graf graf--pre graf-after--pre">Add some content to server.js:
+<br>  $ echo “console.log(‘This is Node.js running on Android.’)” &gt; server.js
+</pre>
+<pre name="d5e1" id="d5e1" class="graf graf--pre graf-after--pre">Run node:
+<br>  $ node server.js
+</pre>
+<h3 name="7b11" id="7b11" class="graf graf--h3 graf-after--pre">Wrapping it up
+</h3>
+<p>We have seen how to use Termux on Android, how to edit files with Vim and how to run Node.js.
+</p>
+<p>Here are a the main links related to Termux: its 
+<a href="https://termux.com/" data-href="https://termux.com/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">web page
+</a>, its 
+<a href="https://wiki.termux.com/" data-href="https://wiki.termux.com/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">wiki
+</a> and its 
+<a href="https://github.com/termux" data-href="https://github.com/termux" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">GitHub repositories
+</a>. It can be installed from the 
+<a href="https://play.google.com/store/apps/details?id=com.termux" data-href="https://play.google.com/store/apps/details?id=com.termux" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">Play Store
+</a> or from the 
+<a href="https://f-droid.org/en/packages/com.termux/" data-href="https://f-droid.org/en/packages/com.termux/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">F-Droid
+</a> catalogue.
+</p>
+<p>In
+<a href="https://medium.freecodecamp.com/building-a-node-js-application-on-android-part-2-express-and-nedb-ced04caea7bb" data-href="https://medium.freecodecamp.com/building-a-node-js-application-on-android-part-2-express-and-nedb-ced04caea7bb" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank"> the next post
+</a> we are going to build a basic Node.js application using the 
+<a href="http://expressjs.com/" data-href="http://expressjs.com/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">Express
+</a> web framework and a lightweight JavaScript database called 
+<a href="https://github.com/louischatriot/nedb" data-href="https://github.com/louischatriot/nedb" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">NeDB
+</a> which uses 
+<a href="https://www.mongodb.org/" data-href="https://www.mongodb.org/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">MongoDB
+</a>’s API and can be used to develop and run a web application in Termux.
+</p>
+<p name="2843" id="2843" class="graf graf--p graf-after--p graf--trailing">In the meantime, happy coding!
+</p>
+
+<br>
+<br>
+<br>
+<br>
+
+<script>
+  $(function() {
+    var toc = $('#toc');
+
+    function makeLi(text, href) {
+      return $('<a href="' + href + '" target="_self">' + text + '</a><br>');
+    }
+
+    $('h2, h3').each(function(i) {
+      var chapter = $(this), chapterNumber = i + 1;
+      toc.append(
+        makeLi(chapter.text(), '#chapter-' + chapterNumber)
+      );
+      chapter.attr('id', 'chapter-' + chapterNumber);
+    });
+
+  });
+</script>
+</body>
+</html>

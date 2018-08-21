@@ -1,0 +1,308 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+  a {text-decoration: none}
+  A:hover { color: yellow }
+</STYLE>
+ <style type="text/css"> div.p { margin-top: 7pt;}</style>
+ <style type="text/css"><!--
+ td div.comp { margin-top: -0.6ex; margin-bottom: -1ex;}
+ td div.comb { margin-top: -0.6ex; margin-bottom: -.6ex;}
+ td div.hrcomp { line-height: 0.9; margin-top: -0.8ex; margin-bottom: -1ex;}
+ td div.norm {line-height:normal;}
+ span.roman {font-family: serif; font-style: normal; font-weight: normal;} 
+ span.overacc2 {position: relative;  left: .8em; top: -1.2ex;}
+ span.overacc1 {position: relative;  left: .6em; top: -1.2ex;} --></style>
+
+
+<title> Summaries and Functions</title>
+
+</head>
+<body bgcolor="#000000" text="#109030" leftmargin="10" topmargin="10" marginwidth="100" link="#00C0A0" vlink="#309090" alink="#20B0B0" target=_blank>
+<FONT size=3>
+
+
+ 
+<h1 align="center">Summaries and Functions </h1>
+
+
+
+    
+<title> Data Summaries and Functions</title>
+    
+<h1 align="center">Data Summaries and Functions </h1>
+
+ <h2><a name="tth_sEc1">
+1</a>&nbsp;&nbsp;Data Summaries</h2>
+We've looked at a few graphical techniques for exploring data, and now we're going
+to turn to a numerical one.  Consider the question "Which day of the week has the 
+highest average box office for hit movies released on that day?".  As a first step
+in answering that question, it would be helpful to look at the mean box office
+receipts for each of the days.  If you look for a function to do that specific 
+task, you probably wouldn't find one, because R takes the more general approach of 
+providing a function that will allow you to calculate anything you want from vectors
+of values broken down by groups.  In fact, there are a variety of ways to do this.
+The one we're going to look at is called <tt>aggregate</tt>.   You pass <tt>aggregate</tt>
+a vector or data frame containing the variables you want to summarize, a list of 
+the groups to summarize by, and the function you'd like to use for your summaries.
+That way, a single function can perform many tasks, and, as we'll see when we
+learn to write functions, it even allows R to do things that the developers of 
+R never imagined.  For now, we'll stick to some built in functions, like 
+<tt>mean</tt>.  To find the means for the box office receipts for each day of the 
+week, we could use a call to aggregate like this:
+
+<pre>
+&#62;&nbsp;aggregate(movies$box,movies['weekday'],mean)
+&nbsp;&nbsp;&nbsp;&nbsp;weekday&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x
+1&nbsp;&nbsp;&nbsp;&nbsp;Monday&nbsp;126.7766
+2&nbsp;&nbsp;&nbsp;Tuesday&nbsp;104.8419
+3&nbsp;Wednesday&nbsp;127.1272
+4&nbsp;&nbsp;Thursday&nbsp;104.0686
+5&nbsp;&nbsp;&nbsp;&nbsp;Friday&nbsp;102.6522
+6&nbsp;&nbsp;Saturday&nbsp;&nbsp;82.2441
+7&nbsp;&nbsp;&nbsp;&nbsp;Sunday&nbsp;103.0268
+
+</pre>
+
+<div class="p"><!----></div>
+The same thing could be done to calculate other statistics, like <tt>median</tt>,
+<tt>min</tt>, <tt>max</tt>, or any statistic that returns a single scalar value
+for each group.  Another nice feature of <tt>aggregate</tt> is that it if the 
+first argument is a data frame, it will calculate the statistic  for each column
+of the data frame.  If we passed <tt>aggregate</tt> both the <tt>rank</tt> and
+<tt>box</tt>, we'd get two columns of summaries:
+
+<pre>
+&#62;&nbsp;aggregate(movies[,c('rank','box')],movies['weekday'],mean)
+&nbsp;&nbsp;&nbsp;&nbsp;weekday&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rank&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;box
+&#62;&nbsp;aggregate(movies[,c('Rank','box')],movies['weekday'],mean)
+&nbsp;&nbsp;&nbsp;&nbsp;weekday&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rank&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;box
+1&nbsp;&nbsp;&nbsp;&nbsp;Monday&nbsp;443.1538&nbsp;126.7766
+2&nbsp;&nbsp;&nbsp;Tuesday&nbsp;511.7037&nbsp;104.8419
+3&nbsp;Wednesday&nbsp;455.0116&nbsp;127.1272
+4&nbsp;&nbsp;Thursday&nbsp;560.5122&nbsp;104.0686
+5&nbsp;&nbsp;&nbsp;&nbsp;Friday&nbsp;520.0766&nbsp;102.6522
+6&nbsp;&nbsp;Saturday&nbsp;596.1000&nbsp;&nbsp;82.2441
+7&nbsp;&nbsp;&nbsp;&nbsp;Sunday&nbsp;497.6667&nbsp;103.0268
+
+</pre>
+
+<div class="p"><!----></div>
+To add a column of counts to the table, we can create a data frame from
+the <tt>table</tt> function, and merge it with the aggregated results:
+
+<div class="p"><!----></div>
+
+<pre>
+&#62;&nbsp;dat&nbsp;=&nbsp;&nbsp;aggregate(movies[,c('Rank','box')],movies['weekday'],mean)
+&#62;&nbsp;cts&nbsp;=&nbsp;as.data.frame(table(movies$weekday))
+&#62;&nbsp;head(cts)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Var1&nbsp;Freq
+1&nbsp;&nbsp;&nbsp;&nbsp;Monday&nbsp;&nbsp;&nbsp;13
+2&nbsp;&nbsp;&nbsp;Tuesday&nbsp;&nbsp;&nbsp;27
+3&nbsp;Wednesday&nbsp;&nbsp;172
+4&nbsp;&nbsp;Thursday&nbsp;&nbsp;&nbsp;41
+5&nbsp;&nbsp;&nbsp;&nbsp;Friday&nbsp;&nbsp;744
+6&nbsp;&nbsp;Saturday&nbsp;&nbsp;&nbsp;10
+
+</pre>
+
+<div class="p"><!----></div>
+To make the merge simpler, we rename the first column of <tt>cts</tt> to 
+<tt>weekday</tt>.
+
+<pre>
+&#62;&nbsp;names(cts)[1]&nbsp;=&nbsp;'weekday'
+&#62;&nbsp;res&nbsp;=&nbsp;merge(cts,dat)
+&#62;&nbsp;head(res)
+&nbsp;&nbsp;&nbsp;weekday&nbsp;Freq&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rank&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;box
+1&nbsp;&nbsp;&nbsp;Friday&nbsp;&nbsp;744&nbsp;520.0766&nbsp;102.6522
+2&nbsp;&nbsp;&nbsp;Monday&nbsp;&nbsp;&nbsp;13&nbsp;443.1538&nbsp;126.7766
+3&nbsp;Saturday&nbsp;&nbsp;&nbsp;10&nbsp;596.1000&nbsp;&nbsp;82.2441
+4&nbsp;&nbsp;&nbsp;Sunday&nbsp;&nbsp;&nbsp;12&nbsp;497.6667&nbsp;103.0268
+5&nbsp;Thursday&nbsp;&nbsp;&nbsp;41&nbsp;560.5122&nbsp;104.0686
+6&nbsp;&nbsp;Tuesday&nbsp;&nbsp;&nbsp;27&nbsp;511.7037&nbsp;104.8419
+
+</pre>
+Finally, we can order the columns as follows:
+
+<pre>
+&#62;&nbsp;res[order(res$weekday),]
+&nbsp;&nbsp;&nbsp;&nbsp;weekday&nbsp;Freq&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rank&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;box
+2&nbsp;&nbsp;&nbsp;&nbsp;Monday&nbsp;&nbsp;&nbsp;13&nbsp;443.1538&nbsp;126.7766
+6&nbsp;&nbsp;&nbsp;Tuesday&nbsp;&nbsp;&nbsp;27&nbsp;511.7037&nbsp;104.8419
+7&nbsp;Wednesday&nbsp;&nbsp;172&nbsp;455.0116&nbsp;127.1272
+5&nbsp;&nbsp;Thursday&nbsp;&nbsp;&nbsp;41&nbsp;560.5122&nbsp;104.0686
+1&nbsp;&nbsp;&nbsp;&nbsp;Friday&nbsp;&nbsp;744&nbsp;520.0766&nbsp;102.6522
+3&nbsp;&nbsp;Saturday&nbsp;&nbsp;&nbsp;10&nbsp;596.1000&nbsp;&nbsp;82.2441
+4&nbsp;&nbsp;&nbsp;&nbsp;Sunday&nbsp;&nbsp;&nbsp;12&nbsp;497.6667&nbsp;103.0268
+
+</pre>
+
+<div class="p"><!----></div>
+ <h2><a name="tth_sEc2">
+2</a>&nbsp;&nbsp;Functions</h2>
+As you've already noticed, functions play an important role in R.  A very 
+attractive feature of R is that you can write your own functions which 
+work exactly the same as the ones that are part of the official R release.
+In fact, if you create a function with the same name as one that's already
+part of R, it will override the built-in function, and possibly cause 
+problems.  For that reason, it's a good idea to make sure that there's not
+already another function with the name you want to use.  If you type the
+name you're thinking of, and R responds with a message like 
+"<tt>object "xyz"</tt> not found" you're probably safe.
+
+<div class="p"><!----></div>
+There are several reasons why creating your own functions is a good idea.
+
+<ol type="1">
+<li>If you find yourself writing the same code over and over again as you work on
+different problems, you can write a function that incorporates whatever it is
+you're doing and call the function, instead of rewriting the code over and over.
+<div class="p"><!----></div>
+</li>
+
+<li>
+All of the functions you create are saved in your workspace along with your data.
+So if you put the bulk of your work into functions that you create, R will 
+automatically save them for you (if you tell R to save your workspace when your
+quit.)
+<div class="p"><!----></div>
+</li>
+
+<li>
+It's very easy to write "wrappers" around existing functions to make a custom
+version that sets the arguments to another function to be just what you want.
+R provides a special mechanism to "pass along" any extra arguments the other
+function might need.
+<div class="p"><!----></div>
+</li>
+
+<li>
+You can pass your own functions to built-in R functions like <tt>aggregate</tt>,
+<tt>by</tt>, <tt>apply</tt>, <tt>sapply</tt>, <tt>lapply</tt>, <tt>mapply</tt>,
+<tt>sweep</tt> and other functions to efficiently and easy perform customized
+tasks.
+<div class="p"><!----></div>
+</li>
+</ol>
+
+<div class="p"><!----></div>
+Before getting down to the details of writing your own functions, it's a good idea
+to understand how functions in R work.  Every function in R has a set of arguments that
+it accepts.  You can see the arguments that built-in functions take in a number of ways:
+viewing the help page, typing the name of the function in the interpreter, or using the
+<tt>args</tt> function.  When you call a function, you can simply pass it arguments,
+in which case they must line up exactly with the way the function is designed, or 
+you can specifically pass particular arguments in whatever order you like by providing
+the with names using the <tt>name=value</tt> syntax.   You also can combine the two,
+passing unnamed arguments (which have to match the function's definition exactly), 
+followed by named arguments in whatever order you like.
+For example, consider the function <tt>read.table</tt>.  We can view its argument list
+with the command:
+
+<pre>
+&#62;&nbsp;args(read.table)
+function&nbsp;(file,&nbsp;header&nbsp;=&nbsp;FALSE,&nbsp;sep&nbsp;=&nbsp;"",&nbsp;quote&nbsp;=&nbsp;"\"'",&nbsp;dec&nbsp;=&nbsp;".",
+&nbsp;&nbsp;&nbsp;&nbsp;row.names,&nbsp;col.names,&nbsp;as.is&nbsp;=&nbsp;!stringsAsFactors,&nbsp;na.strings&nbsp;=&nbsp;"NA",
+&nbsp;&nbsp;&nbsp;&nbsp;colClasses&nbsp;=&nbsp;NA,&nbsp;nrows&nbsp;=&nbsp;-1,&nbsp;skip&nbsp;=&nbsp;0,&nbsp;check.names&nbsp;=&nbsp;TRUE,
+&nbsp;&nbsp;&nbsp;&nbsp;fill&nbsp;=&nbsp;!blank.lines.skip,&nbsp;strip.white&nbsp;=&nbsp;FALSE,&nbsp;blank.lines.skip&nbsp;=&nbsp;TRUE,
+&nbsp;&nbsp;&nbsp;&nbsp;comment.char&nbsp;=&nbsp;"#",&nbsp;allowEscapes&nbsp;=&nbsp;FALSE,&nbsp;flush&nbsp;=&nbsp;FALSE,
+&nbsp;&nbsp;&nbsp;&nbsp;stringsAsFactors&nbsp;=&nbsp;default.stringsAsFactors(),&nbsp;encoding&nbsp;=&nbsp;"unknown")
+NULL
+
+</pre>
+ This argument list tells us that, if we pass unnamed arguments to 
+<tt>read.table</tt>, it will interpret the first as <tt>file</tt>, the next as 
+<tt>header</tt>, then <tt>sep</tt>, and so on.  Thus if we wanted to read the 
+file <tt>my.data</tt>, with <tt>header</tt> set to <tt>TRUE</tt> and <tt>sep</tt>
+set to <tt>','</tt>, any of the following calls would be equivalent:
+
+<pre>
+read.table('my.data',TRUE,',')
+read.table(sep=',',TRUE,file='my.data')
+read.table(file='my.data',sep=',',header=TRUE)
+read.table('my.data',sep=',',header=TRUE)
+
+</pre>
+ Notice that all of the arguments in the argument list for <tt>read.table</tt>
+have values after the name of the argument, except for the <tt>file</tt> argument.  This
+means that <tt>file</tt> is the only required argument to <tt>read.table</tt>; any of the 
+other arguments are optional, and if we don't specify them the default values that appear
+in the argument list will be used.
+Most R functions are written so the the 
+first few arguments will be the ones that will usually be used so that their
+values can be entered without providing names, with the other arguments being optional.
+Optional arguments can be passed to a function by position, but are much more commonly 
+passed using the <tt>name=value</tt> syntax, as in the last example of calling 
+<tt>read.table</tt>.
+
+<div class="p"><!----></div>
+Now let's take a look at the function <tt>read.csv</tt>.  You may recall that this 
+function simply calls <tt>read.table</tt> with a set of parameters that makes sense
+for reading comma separated files.  Here's <tt>read.csv</tt>'s function definition,
+produced by simply typing the function's name at the R prompt:
+
+<pre>
+function&nbsp;(file,&nbsp;header&nbsp;=&nbsp;TRUE,&nbsp;sep&nbsp;=&nbsp;",",&nbsp;quote&nbsp;=&nbsp;"\"",&nbsp;dec&nbsp;=&nbsp;".",
+&nbsp;&nbsp;&nbsp;&nbsp;fill&nbsp;=&nbsp;TRUE,&nbsp;comment.char&nbsp;=&nbsp;"",&nbsp;...)
+read.table(file&nbsp;=&nbsp;file,&nbsp;header&nbsp;=&nbsp;header,&nbsp;sep&nbsp;=&nbsp;sep,&nbsp;quote&nbsp;=&nbsp;quote,
+&nbsp;&nbsp;&nbsp;&nbsp;dec&nbsp;=&nbsp;dec,&nbsp;fill&nbsp;=&nbsp;fill,&nbsp;comment.char&nbsp;=&nbsp;comment.char,&nbsp;...)
+&lt;environment:&nbsp;namespace:utils&#62;
+
+</pre>
+Pay special attention to the three periods (<tt>...</tt>) in the argument list.  Notice 
+that they also appear in the call to <tt>read.table</tt> inside the function's body.
+The three dots mean all the arguments that were passed to the function that didn't
+match any of the previous arguments in the argument list.  So if you pass
+anything other than <tt>file</tt>, <tt>header</tt>, <tt>sep</tt>, <tt>quote</tt>,
+<tt>dec</tt>, or <tt>fill</tt> to <tt>read.csv</tt>, it will be part of the three dots;
+by putting the three dots at the end of the argument list in the call to 
+<tt>read.table</tt>, all those unmatched arguments are simply passed along to
+<tt>read.table</tt>.  So if you make a call to <tt>read.csv</tt> like this:
+
+<pre>
+read.csv(filename,stringsAsFactors=FALSE)
+
+</pre>
+ the <tt>stringsAsFactors=FALSE</tt> will get passed to <tt>read.table</tt>, even though
+it wasn't explicitly named in the argument list.  Without the three dots, R will not
+accept any arguments that aren't explicitly named in the argument list of the function
+definition.  If you want to intercept the extra arguments yourself, you can include
+the three dots at the end of the argument list when you define your function, and 
+create a list of those arguments inside the function body by refering to <tt>list(...)</tt>.
+
+<div class="p"><!----></div>
+Suppose you want to create a function that will call <tt>read.csv</tt> with a filename,
+but which will automatically set the <tt>stringsAsFactors=FALSE</tt> parameter.  For maximum 
+flexibility, we'd want to be able to pass other arguments (like <tt>na.strings=</tt>, 
+or <tt>quote=</tt>) to <tt>read.csv</tt>, so we'll include the three dots at the end of
+the argument list.  We could name the function <tt>read.csv</tt> and overwrite the built-in
+version, but that's not a good idea, if for no other reason than the confusion it would
+cause if someone else tried to understand your programs!  Suppose we call the function
+<tt>myread.csv</tt>.  We could write a function definition as follows:
+
+<pre>
+&#62;&nbsp;myread.csv&nbsp;=&nbsp;function(file,stringsAsFactors=FALSE,...){
++&nbsp;&nbsp;&nbsp;&nbsp;read.csv(file,stringsAsFactors=stringsAsFactors,...)
++&nbsp;}
+
+</pre>
+Now, we could simply use
+
+<pre>
+thedata&nbsp;=&nbsp;myread.csv(filename)
+
+</pre>
+ to read a comma-separated file with <tt>stringsAsFactors=FALSE</tt>.  You could still pass
+any of <tt>read.table</tt>'s arguments to the function (including <tt>stringsAsFactors=TRUE</tt> if
+you wanted), and, if you ask R to save your workspace when you quit, the function will be
+available to you next time you start R in the same directory.
+
+
+<br /><br /><hr /><small>File translated from
+T<sub><font size="-1">E</font></sub>X
+by <a href="http://hutchinson.belmont.ma.us/tth/">
+T<sub><font size="-1">T</font></sub>H</a>,
+version 3.67.<br />On  3 Feb 2010, 15:18.</small>
+</html>

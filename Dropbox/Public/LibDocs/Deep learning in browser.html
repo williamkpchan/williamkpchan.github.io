@@ -1,0 +1,180 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="..\maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, .apply, div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+h1, h2 {color: gold;}
+</style>
+</head><body>
+<center><h1>Deep learning in browser</h1></center>
+<div id="toc"></div>
+<br>
+<br>
+<br>
+
+<h2>Use your webcam and Tensorflow.js to detect objects in real time.</h2>
+<div>
+<p>
+<a href="https://js.tensorflow.org/" data-href="https://js.tensorflow.org/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">Tensorflow.js</a> is a new deep learning library that runs right in your browser. Being a machine learning and Javascript enthusiast, I immediately started working on an object detection library using Tensorflow.js after it was released.</p>
+<p>Here, I'll walk through how I got started, and break down the different points of 
+<a href="https://github.com/ModelDepot/tfjs-yolo-tiny" data-href="https://github.com/ModelDepot/tfjs-yolo-tiny" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">tfjs-yolo-tiny</a>. You can 
+<a href="https://modeldepot.github.io/tfjs-yolo-tiny-demo/" data-href="https://modeldepot.github.io/tfjs-yolo-tiny-demo/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">check out the live demo here</a>.</p>
+<p>We'll cover pulling the original Tiny YOLO Darknet model, converting it into Keras, converting that into Tensorflow.js, doing some predictions, gotchas while writing in Tensorflow.js, and using webcam/images easily for predictions.</p>
+<img src="https://cdn-images-1.medium.com/max/800/0*53DWTAosj8aLnbqe.">
+<h3>YOLO9000: Better, Faster, Stronger</h3>
+<p>Yes that's seriously 
+<a href="https://arxiv.org/abs/1612.08242" data-href="https://arxiv.org/abs/1612.08242" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">the original paper title</a>. We'll be using 
+<a href="https://pjreddie.com/darknet/yolo/" data-href="https://pjreddie.com/darknet/yolo/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">Tiny YOLO</a>, a fast object detection model that can run at 200 FPS. We'll use Tiny YOLO instead of the full YOLOv2. Why? First, YOLOv2 runs “only” at 40 fps on a powerful desktop, which most users don't have access to. The model file is also ~5x bigger than Tiny YOLO, which would take forever to load over the web. Lastly, YOLOv2 has a 
+<a href="https://github.com/pjreddie/darknet/blob/master/cfg/yolov2.cfg#L219" data-href="https://github.com/pjreddie/darknet/blob/master/cfg/yolov2.cfg#L219" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">reorg layer</a> that isn't supported as a native Tensorflow.js layer yet. We'll grab the network config (neural network structure) and weights (magic numbers) for Tiny YOLO in the next step.</p>
+<h3>YAD2K: Yet Another Darknet 2 Keras (Converter)</h3>
+<p>You might have noticed that YOLO is written in Darknet, and Darknet doesn't sound like Tensorflow. So our first stop is to convert our YOLO model into something more Tensorflow-y, in our case, 
+<a href="https://keras.io" data-href="https://keras.io" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">Keras</a>! Keras is a higher-level, deep learning framework. It's the 
+<a href="https://js.tensorflow.org/tutorials/import-keras.html" data-href="https://js.tensorflow.org/tutorials/import-keras.html" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">recommended format</a> for converting your weights into the Tensorflow.js format.</p>
+<p>We'll use 
+<a href="https://github.com/allanzelener/YAD2K" data-href="https://github.com/allanzelener/YAD2K" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">YAD2K</a> to convert the Darknet model to Keras. Go ahead and follow the 
+<a href="https://github.com/allanzelener/YAD2K#installation" data-href="https://github.com/allanzelener/YAD2K#installation" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">instructions here</a> to install YAD2K, I'll wait.</p>
+<p>Fine, you can also pretend you did it and use the 
+<a href="https://modeldepot.io/mikeshi/tiny-yolo-in-javascript" data-href="https://modeldepot.io/mikeshi/tiny-yolo-in-javascript" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">final weight files</a> I've published, but it won't be as fun!</p>
+<p>Now we'll have to fix a bug in YAD2K to load Tiny YOLO without error.</p>
+<p>Open up 
+<a href="https://github.com/allanzelener/YAD2K/blob/master/yad2k.py#L83" data-href="https://github.com/allanzelener/YAD2K/blob/master/yad2k.py#L83" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">yad2k.py</a> in your favorite text editor and on line 83, change 
+<code class="markup--code markup--p-code">buffer=weights_file.read(16)</code> to 
+<code class="markup--code markup--p-code">buffer=weights_file.read(20)</code>. Why? 
+<a href="https://github.com/allanzelener/YAD2K/issues/83#issuecomment-364649222" data-href="https://github.com/allanzelener/YAD2K/issues/83#issuecomment-364649222" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">No idea.</a></p>
+<p>Now run the following command in your terminal. It'll download the Tiny YOLO weights and config as well as output the converted model file to 
+<code class="markup--code markup--p-code">model_data/yolov2-tiny.h5</code></p>
+<pre>wget 
+<a href="https://pjreddie.com/media/files/yolov2-tiny.weights" data-href="https://pjreddie.com/media/files/yolov2-tiny.weights" class="markup--anchor markup--pre-anchor" rel="noopener" target="_blank">https://pjreddie.com/media/files/yolov2-tiny.weights</a>
+<br>wget 
+<a href="https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov2-tiny.cfg" data-href="https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov2-tiny.cfg" class="markup--anchor markup--pre-anchor" rel="noopener" target="_blank">https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov2-tiny.cfg</a></pre>
+<pre>./yad2k.py yolov2-tiny.cfg yolov2-tiny.weights model_data/yolov2-tiny.h5</pre>
+<p>Next we want to ensure that our new model actually works! Fun fact: I forgot to do this and I spent a whole day wondering why Tensorflow.js was b0rk.</p>
+<pre>./test_yolo.py model_data/yolov2-tiny.h5</pre>
+<p>The model should output some predictions. If not, feel free to bug me with a comment below!</p>
+<img src="https://cdn-images-1.medium.com/max/800/0*B9U3cpC81DyWaVzX.">
+<h3>Tensorflow.js Convertor: Our Last Weight Conversion</h3>
+<p>This step is simpler, I promise! See the official guide 
+<a href="https://js.tensorflow.org/tutorials/import-keras.html" data-href="https://js.tensorflow.org/tutorials/import-keras.html" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">here</a>. Again if this seems like all too much, I've already done all the hard work, so you can skip right ahead :)</p>
+<p>We'll want to install the official convertor tool. Run 
+<code class="markup--code markup--p-code">pip install tensorflowjs</code> in your terminal to install the convertor.</p>
+<p>And now to convert our model, again using the terminal!</p>
+<pre>tensorflowjs_converter --input_format keras \
+<br>    model_data/yolov2-tiny.h5 \
+<br>    tfjs_model_data</pre>
+<p>Now we finally have all our model files in 
+<code class="markup--code markup--p-code">tfjs_model_data</code>! Notice that the folder contains a 
+<code class="markup--code markup--p-code">model.json</code> as well as a bunch of other shard files. 
+<code class="markup--code markup--p-code">model.json</code> tells Tensorflow.js what is the structure of the neural net and which shard files correspond to what weights. The shard files contain weights for the model. Make sure that the shard files are located in the same directory of 
+<code class="markup--code markup--p-code">model.json</code>, or else your model will fail to load properly.</p>
+<h3>Tensorflow.js Time</h3>
+<p>Now, the fun part. (Every part is the fun part.) ML and JS code at the same time!</p>
+<p>We'll start off by importing some Tensorflow and loading the model.</p>
+<pre>import * as tf from ‘@tensorflow/tfjs';</pre>
+<pre>const model = await tf.loadModel(url);</pre>
+<p>Wait but what is `url`? You can either use the hosted model file 
+<a href="https://raw.githubusercontent.com/MikeShi42/yolo-tiny-tfjs/master/model2.json" data-href="https://raw.githubusercontent.com/MikeShi42/yolo-tiny-tfjs/master/model2.json" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">here</a> or supply the path to the files you converted. Learn more 
+<a href="https://js.tensorflow.org/api/0.9.0/#loadModel" data-href="https://js.tensorflow.org/api/0.9.0/#loadModel" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">here</a>!</p>
+<p>Fantastic, now we can do some real 
+<strong class="markup--strong markup--p-strong">deep learning</strong>:</p>
+<pre>function yolo (input) {
+<br>   return model.predict(input);
+<br>}</pre>
+<p>Huh. That seemed quite mundane. Oh wait. We forgot to translate the output into bounding boxes, class labels, and probabilities!</p>
+<img src="https://cdn-images-1.medium.com/max/800/0*NKSYO6xd0M_-cAdJ.">
+<a href="https://pixabay.com/en/matrix-technology-tech-data-3109378/" data-href="https://pixabay.com/en/matrix-technology-tech-data-3109378/" class="markup--anchor markup--figure-anchor" rel="noopener" target="_blank">Original Image</a></figcaption></figure>
+<h3>Turning Numbers into Boxes and Numbers</h3>
+<p>I'm not going to dive too deep into this, as post-processing YOLO can be a couple blog posts of their own. Instead, I'll highlight the challenges I faced when converting the 
+<a href="https://github.com/allanzelener/YAD2K/blob/master/yad2k/models/keras_yolo.py" data-href="https://github.com/allanzelener/YAD2K/blob/master/yad2k/models/keras_yolo.py" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">Python</a> version to 
+<a href="https://github.com/ModelDepot/tfjs-yolo-tiny/blob/master/src/postprocess.js" data-href="https://github.com/ModelDepot/tfjs-yolo-tiny/blob/master/src/postprocess.js" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">Javascript</a>.</p>
+<p>
+<strong class="markup--strong markup--p-strong">Certain tensor operations not available</strong></p>
+<p>Tensorflow.js is still young, and thus some things weren't available yet such as 
+<a href="https://www.tensorflow.org/api_docs/python/tf/boolean_mask" data-href="https://www.tensorflow.org/api_docs/python/tf/boolean_mask" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">boolean mask</a> or 
+<a href="https://www.tensorflow.org/api_docs/python/tf/image/non_max_suppression" data-href="https://www.tensorflow.org/api_docs/python/tf/image/non_max_suppression" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">NMS</a>. You might run into this issue too, but luckily you can work around it by using</p>
+<pre>const expected_shape = tensor.shape;
+<br>const data = await tensor.data(); // Async transfer from GPU to CPU
+<br>// Note: data is a flattened TypedArray of the original tensor
+<br>//... data manipulation in JS on CPU
+<br>tf.tensor1d(data).reshape(expected_shape); // Shape it back into where we were before</pre>
+<p>Note: Doing this can bottleneck your application, but 
+<a href="https://github.com/ModelDepot/tfjs-yolo-tiny/blob/master/src/postprocess.js#L24" data-href="https://github.com/ModelDepot/tfjs-yolo-tiny/blob/master/src/postprocess.js#L24" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">sometimes</a> it's 
+<a href="https://github.com/ModelDepot/tfjs-yolo-tiny/blob/master/src/index.js#L57-L59" data-href="https://github.com/ModelDepot/tfjs-yolo-tiny/blob/master/src/index.js#L57-L59" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">unavoidable</a>.</p>
+<p>
+<strong class="markup--strong markup--p-strong">You can't use -1 index like Python</strong></p>
+<p>In python you can use -1 as “last element”. Unfortunately in Tensorflow.js, if you try this on 
+<code class="markup--code markup--p-code">tf.slice</code>, it'll silently fail. Instead you must specify the size 
+<a href="https://github.com/ModelDepot/tfjs-yolo-tiny/blob/master/src/postprocess.js#L144" data-href="https://github.com/ModelDepot/tfjs-yolo-tiny/blob/master/src/postprocess.js#L144" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">explicitly</a>.</p>
+<p>
+<strong class="markup--strong markup--p-strong">You can't use 5d tensors</strong></p>
+<p>Beware that Tensorflow.js's WebGL backend can not support 5d tensors. Why use 5 dimensions if I can't even imagine them? Well in YOLO we reshape the output into 
+<code class="markup--code markup--p-code">[batch_size, xy, wh, box_confidence, box_class_pred]</code>. This is clearly 5d. Luckily to avoid such pain and suffering, I simply dropped the batch_size dimension. An alternative would be to not reshape into a 5d tensor. Something to be wary of.</p>
+<p>Otherwise, my experience was fluid. I only had to reimplement 
+<a href="https://github.com/ModelDepot/tfjs-yolo-tiny/blob/master/src/postprocess.js#L12" data-href="https://github.com/ModelDepot/tfjs-yolo-tiny/blob/master/src/postprocess.js#L12" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">two</a> 
+<a href="https://github.com/ModelDepot/tfjs-yolo-tiny/blob/master/src/postprocess.js#L79" data-href="https://github.com/ModelDepot/tfjs-yolo-tiny/blob/master/src/postprocess.js#L79" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">algorithms</a> in CPU (traditional JS) that Tensorflow normally has out of the box.</p>
+<h3>An NPM Install</h3>
+<p>Let's drop our 
+<strong class="markup--strong markup--p-strong">deep learning</strong> right into an application!</p>
+<p>Luckily a poor chap had already written the code so just run an NPM install in your terminal:</p>
+<pre>npm i tfjs-yolo-tiny</pre>
+<p>And now we'll wave our Javascript wand around a bit</p>
+<pre>import yolo, { downloadModel } from ‘tfjs-yolo-tiny';</pre>
+<pre>const model = await downloadModel();
+<br>const inputImage = webcam.capture();</pre>
+<pre>const boxes = await yolo(inputImage, model);</pre>
+<p>Whoa whoa, what is this 
+<code class="markup--code markup--p-code">webcam.capture()</code> you speak of?</p>
+<img src="https://cdn-images-1.medium.com/max/800/1*_WW3oZ2SWP1UfKrw9f1cdg.png">
+<h3>Maybe a bit more than an NPM install…</h3>
+<p>You might've noticed we haven't touched upon what exactly is being fed in our YOLO. And this is one of the 
+<em class="markup--em markup--p-em">coolest</em> parts of Tensorflow.js.</p>
+<p>We can take a video or image from the document (DOM) and turn it into a tensor!</p>
+<p>We can write something like this in JavaScript:</p>
+<pre>/* Pretend we had the following element in index.html. Always use alt tags for accessibility!
+<br>&lt;img id=”image” src=”/test_input.jpg” alt=”YOLO Model Test Image”&gt;
+<br>*/</pre>
+<pre>const image = document.getElementById(‘image');
+<br>const input = tf.fromPixels(image);</pre>
+<p>BAM! Input now has the image as a tensor! And to swap from image to webcam, you'd just have to point it at the right element. That's pretty ✨ magical to me.</p>
+<p>After this, we'd have to do some pre-processing. In this case, cropping it to be square, resizing to 416x416, and then dividing by 255 to get pixel values ranging from 0 to 1. Why? Because 
+<a href="https://github.com/pjreddie/darknet/blob/master/cfg/yolov2-tiny.cfg#L8-L9" data-href="https://github.com/pjreddie/darknet/blob/master/cfg/yolov2-tiny.cfg#L8-L9" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">the boss said so</a> (we trained YOLO that way).</p>
+<h3>Final Thoughts</h3>
+<p>We've walked through how to convert models to Tensorflow.js format. We can load a model and predict with it. We then explored some pain points of writing post-processing code in Tensorflow.js, but we prevailed. We also now know how to grab data via static image or webcam. Now we can convert most ML models from Python to Tensorflow.js and run them in your browser.</p>
+<p>Want to see it all in action? Check out 
+<a href="https://modeldepot.github.io/tfjs-yolo-tiny-demo/" data-href="https://modeldepot.github.io/tfjs-yolo-tiny-demo/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">the live demo</a>. Want to use it in your app without the fuss? Check out the 
+<a href="https://github.com/ModelDepot/tfjs-yolo-tiny" data-href="https://github.com/ModelDepot/tfjs-yolo-tiny" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">NPM package</a>.</p>
+<p>Feel free to join the conversation over at 
+<a href="https://modeldepot.io/mikeshi/tiny-yolo-in-javascript" data-href="https://modeldepot.io/mikeshi/tiny-yolo-in-javascript" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">ModelDepot</a> as well! Or even browse around for the next machine learning model for your project!</p></div></div></section>
+<br>
+<br>
+<br>
+<br>
+
+<script>
+  $(function() {
+    var toc = $('#toc');
+
+    function makeLi(text, href) {
+      return $('<a href="' + href + '" target="_self">' + text + '</a><br>');
+    }
+
+    $('h2, h3').each(function(i) {
+      var chapter = $(this), chapterNumber = i + 1;
+      toc.append(
+        makeLi(chapter.text(), '#chapter-' + chapterNumber)
+      );
+      chapter.attr('id', 'chapter-' + chapterNumber);
+    });
+
+  });
+</script>
+</body>
+</html>

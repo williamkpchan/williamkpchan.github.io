@@ -1,0 +1,168 @@
+<style type="text/css">
+body { margin: 10%; font-size: 24px; background-color: #000000; color: #109030;}
+a { text-decoration: none; color: #28B8B8;}
+a:visited { color: #389898;}
+A:hover { color: yellow;}
+A:focus { color: red;}
+.left {
+    position: absolute;
+    left: 100px;
+    color: GoldenRod;
+    border: 1px solid GoldenRod;
+    padding: 2px;
+    font-size: 60%;
+}
+.bord {
+    color: redpink;
+    border: 1px solid GoldenRod;
+    padding: 1px;
+    font-size: 90%;
+}
+.highlight { 
+    color: white;
+    background-color: #001020
+  }
+code { font-size: 18px; color: pink; background-color: #001500}
+pre { font-size: 20px; color: gray; background-color: #001010}
+
+</style>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('.left').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+
+
+</head>
+
+<body>
+
+<div id="toc"></div>
+
+<h1>Data Manipulation with dplyr</h1>
+
+<p><code>dplyr</code> is a package for data manipulation, written and maintained by Hadley Wickham. It provides some great, easy-to-use functions that are very handy when performing exploratory data analysis and manipulation. Here, I will provide a basic overview of some of the most useful functions contained in the package.</p>
+<p>For this article, I will be using the <code>airquality</code> dataset from the <code>datasets</code> package. The <code>airquality</code> dataset contains information about air quality measurements in New York from May 1973 &ndash; September 1973.</p>
+<p>The head of the dataset looks like this:</p>
+<pre>
+head(airquality)
+<em>  Ozone Solar.R Wind Temp Month Day
+1    41     190  7.4   67     5   1
+2    36     118  8.0   72     5   2
+3    12     149 12.6   74     5   3
+4    18     313 11.5   62     5   4
+5    NA      NA 14.3   56     5   5
+6    28      NA 14.9   66     5   6</em>
+</pre>
+<p>Before we dive into the functions, let&#8217;s load up the two packages:</p>
+<pre>
+library(datasets)
+library(dplyr)
+</pre>
+<p>Okay, now let&#8217;s get to the functions.</p>
+<p><strong>Filter</strong><br />
+The filter function will return all the rows that satisfy a following condition. For example below will return all the rows where Temp is larger than 70. </p>
+<pre>
+filter(airquality, Temp &gt; 70)
+<em>  Ozone Solar.R Wind Temp Month Day
+1    36     118  8.0   72     5   2
+2    12     149 12.6   74     5   3
+3     7      NA  6.9   74     5  11
+4    11     320 16.6   73     5  22
+5    45     252 14.9   81     5  29
+6   115     223  5.7   79     5  30
+...</em>
+</pre>
+<p>Another example of filter is to return all the rows where Temp is larger than 80 and Month is after May.</p>
+<pre>
+filter(airquality, Temp &gt; 80 &amp; Month &gt; 5)
+<em>  Ozone Solar.R Wind Temp Month Day
+1    NA     286  8.6   78     6   1
+2    NA     287  9.7   74     6   2
+3    NA     186  9.2   84     6   4
+4    NA     220  8.6   85     6   5
+5    NA     264 14.3   79     6   6
+...
+</em></pre>
+<p><strong>Mutate</strong><br />
+Mutate is used to add new variables to the data. For example lets adds a new column that displays the temperature in Celsius.</p>
+<pre>
+mutate(airquality, TempInC = (Temp - 32) * 5 / 9)
+<em>  Ozone Solar.R Wind Temp Month Day  TempInC
+1    41     190  7.4   67     5   1 19.44444
+2    36     118  8.0   72     5   2 22.22222
+3    12     149 12.6   74     5   3 23.33333
+4    18     313 11.5   62     5   4 16.66667
+5    NA      NA 14.3   56     5   5 13.33333
+...</em>
+</pre>
+<p><strong>Summarise</strong><br />
+The summarise function is used to summarise multiple values into a single value. It is very powerful when used in conjunction with the other functions in the <code>dplyr</code> package, as demonstrated below. <code>na.rm = TRUE</code> will remove all <code>NA</code> values while calculating the mean, so that it doesn&#8217;t produce spurious results.</p>
+<pre>
+summarise(airquality, mean(Temp, na.rm = TRUE))
+<em>  mean(Temp)
+1   77.88235</em>
+</pre>
+<p><strong>Group By</strong><br />
+The <code>group_by</code> function is used to group data by one or more variables. Will group the data together based on the Month, and then the summarise function is used to calculate the mean temperature in each month.</p>
+<pre>
+summarise(group_by(airquality, Month), mean(Temp, na.rm = TRUE))
+<em>  Month mean(Temp)
+1     5   65.54839
+2     6   79.10000
+3     7   83.90323
+4     8   83.96774
+5     9   76.90000</em>
+</pre>
+<p><strong>Sample</strong><br />
+The sample function is used to select random rows from a table. The first line of code randomly selects ten rows from the dataset, and the second line of code randomly selects 15 rows (10% of the original 153 rows) from the dataset.</p>
+<pre>
+sample_n(airquality, size = 10)
+sample_frac(airquality, size = 0.1)
+</pre>
+<p><strong>Count</strong><br />
+The count function tallies observations based on a group. It is slightly similar to the table function in the base package. For example:</p>
+<pre>
+count(airquality, Month)
+<em>  Month  n
+1     5 31
+2     6 30
+3     7 31
+4     8 31
+5     9 30</em>
+</pre>
+<p>This means that there are 31 rows with Month = 5, 30 rows with Month = 6, and so on.</p>
+<p><strong>Arrange</strong><br />
+The arrange function is used to arrange rows by variables. Currently, the airquality dataset is arranged based on Month, and then Day. We can use the arrange function to arrange the rows in the descending order of Month, and then in the ascending order of Day.</p>
+<pre>
+arrange(airquality, desc(Month), Day)
+<em>  Ozone Solar.R Wind Temp Month Day
+1    96     167  6.9   91     9   1
+2    78     197  5.1   92     9   2
+3    73     183  2.8   93     9   3
+4    91     189  4.6   93     9   4
+5    47      95  7.4   87     9   5
+6    32      92 15.5   84     9   6</em>
+</pre>
+<p><strong>Pipe</strong><br />
+The pipe operator in R, represented by <code>%&gt;%</code> can be used to chain code together. It is very useful when you are performing several operations on data, and don&#8217;t want to save the output at each intermediate step.</p>
+<p>For example, let&#8217;s say we want to remove all the data corresponding to Month = 5, group the data by month, and then find the mean of the temperature each month. The conventional way to write the code for this would be:</p>
+<pre>
+filteredData &lt;- filter(airquality, Month != 5)
+groupedData &lt;- group_by(filteredData, Month)
+summarise(groupedData, mean(Temp, na.rm = TRUE))
+</pre>
+<p>With piping, the above code can be rewritten as:</p>
+<pre>
+airquality %&gt;% 
+    filter(Month != 5) %&gt;% 
+    group_by(Month) %&gt;% 
+    summarise(mean(Temp, na.rm = TRUE))
+</pre>
+<p>This is a very basic example, and the usefulness may not be very apparent, but as the number of operations/functions perfomed on the data increase, the pipe operator becomes more and more useful!</p>
+</body>
+</html>

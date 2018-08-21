@@ -1,0 +1,176 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="./rchart/RGraph.common.core.js" ></script>
+<script src="./rchart/RGraph.line.js" ></script>
+<link rel="stylesheet" href="./rchart/website.css" type="text/css" media="screen" />
+<style>
+body {
+ margin: auto;
+ width: 80%;
+ font-size: 24px;
+ background-color: #000000;
+ color: #20C030;
+}
+a { text-decoration: none; 
+	color: #28B8B8; }
+a:visited {	color: #389898; }
+A:hover {	color: yellow; }
+A:focus {	color: red; }
+code { color: gray;  background-color: #001010}
+pre { color: gray;  background-color: #001010;  font-size: 16px; }
+button, input, select {color: gray; background-color: #001010;  font-size: 18px; }
+.redword { color: red; text-shadow: 1px 1px 2px black, -1px -1px 1px white;}
+.greyword { color: grey;}
+</style>
+
+<script>
+var alarmSound = new Audio('./mp3/stringVibrate.mp3');
+// toneBeep.mp3
+var theCode = 'HSI';
+var stkCode, stkName, stkTime, stkPrice, stkMaxprice, stkMinprice, stkVol, mytimer;
+var timerValue = 10;
+var stkChangeArr = [];
+var toFixedLen = 2;
+var stkCode, stkName, stkTime, stkPrice, stkMaxprice, stkMinprice, stkChange, stkVol;
+
+function setTimer() {
+	document.getElementById("msg").innerHTML = "<br><br>";
+	clearInterval(mytimer);
+	mytimer = setInterval(function(){ alarm(); }, timerValue* 1000);
+}
+
+function alarm() {
+	$.get("http://qt.gtimg.cn/r=2&q=r_hk" + theCode, function(data, status){process(data);})
+}
+function process(data) {
+	extractData(data);
+	reportStatus()
+}
+
+function extractData(data) {
+	theString = data
+	var arr = theString.split("=");
+	theString = arr[1];
+	var arr = theString.split("~");
+	stkCode = arr[2];
+	stkName = arr[1];
+	stkTime = arr[30];
+
+	stkPrice = Number(arr[3]).toFixed(toFixedLen);
+	stkMaxprice = Number(arr[33]).toFixed(toFixedLen);
+	stkMinprice = Number(arr[34]).toFixed(toFixedLen);
+	stkChange = Number(arr[31]).toFixed(toFixedLen);
+
+	stkVol = (Number(arr[37])/10000).toFixed(0);
+}
+
+function reportStatus() {
+	stkpriceDataArr.push(Number(stkPrice));
+	stkChangeArr.push(stkChange);
+	finalString = showTime() + " " + "<span class='greyword'>" + stkCode + "</span>" + "&emsp;" + stkName + "&emsp;" + stkTime + "&emsp;" + "<span class='redword'>"  + stkPrice + "</span>" + "&emsp;" + stkChange  + "&emsp;" + calstkChangechg() +  "&emsp;" + stkMaxprice + "&emsp;" + stkMinprice + "&emsp;" + stkVol + "<br>" ;
+	
+	$("#msg").prepend(finalString);
+
+
+	RGraph.clear(document.getElementById("cvs", 'white'));
+	theMax = Math.max(...stkpriceDataArr);
+	theMin = Math.min(...stkpriceDataArr);
+
+	drawchart();
+	alarmSound.play();
+}
+
+function chkKey() {
+  var testkey = getChar(event);
+//  if(testkey == 'c'){getKeyword();}
+}
+
+function getChar(event) {
+  if (event.which!=0 && event.charCode!=0) {
+    return String.fromCharCode(event.which)   // the rest
+  } else {
+    return null // special key
+  }
+}
+
+function showTime() {
+	var d = new Date();
+	var secs=d.getSeconds();
+	var mins=d.getMinutes();
+	var hr=d.getHours();
+	var timemsg = FormatNumberLength(hr) + ":" + FormatNumberLength(mins) + ":" + FormatNumberLength(secs)
+	return(timemsg)
+}
+
+function FormatNumberLength(num) {
+    var r = "" + num;
+    while (r.length < 2) {
+	r = "0" + r;
+    }
+    return r;
+}
+function calstkChangechg() {
+	if (stkpriceDataArr.length>1){
+		stkChangechgval = stkChangeArr.slice(-1) - stkChangeArr.slice(-2)[0];
+		return stkChangechgval.toFixed(toFixedLen);
+	} else {
+		return 0;
+	}
+}
+</script>
+
+</head>
+
+<body onkeypress="chkKey()">
+<h3>Time Recorder 10 sec</h3>
+
+<canvas id="cvs" width="1000" height="500">[No canvas support]</canvas>
+<div id="msg"></div>
+
+<script>
+	stkpriceDataArr = [];
+	function drawchart() {
+	    var line = new RGraph.Line({
+		id: 'cvs',
+		data: stkpriceDataArr,
+		options: {
+			title: '',
+			titleColor: 'grey',
+			titleSize: 25,
+//			titleVpos: 0.5,
+			spline: true,
+			textAccessible: true,
+			hmargin: 5,
+			gutterBottom: 35,
+//			adjustable: true,
+			linewidth: 0.5,
+			ylabels: true,
+			shadow: false,
+			colors: ['blue'],
+			tickmarks: 'triangle',
+			ticksize: 2,
+			textSize: 10,
+			ymax: theMax,
+			ymin: theMin,
+
+			backgroundGrid: true,
+			backgroundGridColor:  '#242',
+				backgroundGridVlines: false,
+				backgroundGridHlines: true,
+				backgroundGridBorder: true,
+//				backgroundGridAutofitNumhlines: 7,
+
+				axisColor: '#392',
+//			labels: ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15'],
+			textColor: 'grey',
+		}
+	    }).draw()
+	};
+alarm();
+setTimer();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,233 @@
+ <base target="_blank"> <head> <meta http-equiv="Content-Type" content="text/html; charset=utf-8" target=_blank> 
+<style type="text/css">
+body { margin: 10%; font-size: 24px; background-color: #000000; color: #109030;}
+a { font-size: 24px; text-decoration: none; color: #28B8B8;}
+A:hover {	color: yellow;}
+A:focus {	color: red;}
+code { color: pink; background-color: #001500}
+pre { color: gray; background-color: #001010}
+li { font-size: 24px; color: gray;}
+ol { color: gray;}
+.left { position: absolute; left: 100px; color: GoldenRod; border: 1px solid GoldenRod; padding: 2px; font-size: 60%;
+}
+.bord { color: redpink; border: 1px solid GoldenRod; padding: 1px; font-size: 90%;
+}
+.highlight {  color: white; background-color: #002030
+  } </STYLE> 
+</head> <body> 
+<h1>php + mysql 分布式事务
+</h1> [摘要：事件 (Transaction) 是拜访并大概更新数据库中种种数据项的一个顺序履行单位； 事件应当具有 4 个属性：本子性、同等性、断绝性、延续性 本子性（ atomicity ）。一个事件是一个弗成支解] 
+<br>
+				
+				
+<br>
+				
+	   <p>
+事务 (Transaction) 是访问并可能更新数据库中各种数据项的一个程序执行单元； </p> <p>
+事务应该具有 4 个属性：原子性、一致性、隔离性、持续性 </p> <p>
+原子性（ atomicity ）。一个事务是一个不可分割的工作单位，事务中包括的诸操作要么都做，要么都不做。 
+<br>  一致性（ consistency ）。事务必须是使数据库从一个一致性状态变到另一个一致性状态。一致性与原子性是密切相关的。 </p> <p>
+隔离性（ isolation ）。一个事务的执行不能被其他事务干扰。即一个事务内部的操作及使用的数据对并发的其他事务是隔离的，并发执行的各个事务之间不能互相干扰。 
+<br>  持久性（ durability ）。持续性也称永久性（ permanence ），指一个事务一旦提交，它对数据库中数据的改变就应该是永久性的。接下来的其他操作或故障不应该对其有任何影响。 </p>  
+<p>
+分布式事务：分布式事务的参与者、资源管理器、事务管理器等位于不用的节点上，这些不同的节点相互协作共同完成一个具有逻辑完整性的事务。  </p> <p>
+纠正自己对 mysql 的一个误解， mysql 从 5.0 开始支持 XA DataSource 。 Connector/J  版本要使用 5.0 版本， 5.0 以下的不支持。 </p> 
+
+XA
+协议由
+Tuxedo
+首先提出的，并交给
+X/Open
+组织，作为资源管理器（  数据库  ）与事务管理器的接口标准。目前，
+Oracle
+、
+Informix
+、
+DB2
+和
+Sybase
+等各  大数  据库厂家都提供对
+XA
+的支持。
+XA
+协议采用两阶段提交方式来管理分布式事务。
+XA
+接口提供资源管理器与事务管理器之间进行通信的  标准接口 
+。
+XA
+协议包括两套函数，以
+xa_
+开头的及以
+ax_
+开头的。 
+<br>
+<p>  
+　　以下的函数使事务管理器可以对资源管理器进行的操作：
+ 
+<br> 
+　　
+1
+）
+xa_open,xa_close
+：建立和关闭与资源管理器的连接。
+ 
+<br> 
+　　
+2
+）
+xa_start,xa_end
+：开始和结束一个本地事务。
+ 
+<br> 
+　　
+3
+）
+xa_prepare,xa_commit,xa_rollback
+：预提交、提交和回滚一个本地事务。
+ 
+<br> 
+　　
+4
+）
+xa_recover
+：回滚一个已进行预提交的事务。
+ 
+<br> 
+　　
+5
+）
+ax_
+开头的函数使资源管理器可以动态地在事务管理器中进行注册，并可以对
+XID(TRANSACTION IDS)
+进行操作。
+ 
+<br> 
+　　
+6
+）
+ax_reg,ax_unreg
+；允许一个资源管理器在一个
+TMS(TRANSACTION MANAGER SERVER)
+中动态注册或撤消注册。   </p> <p>      
+    </p>
+<p>
+MySQL XA 分为两类，内部 XA 与外部 XA; 内部 XA 用于同一实例下跨多个引擎的事务，由大家熟悉的 Binlog 作为协调者 ; 外部 XA 用于跨多 MySQL 实例的分
+ 
+布式事务，需要应用层介入作为协调者 ( 崩溃时的悬挂事务，全局提交还是回滚，需要由应用层决定，对应用层的实现要求较高 ); </p> <p>
+　 Binlog 作为内部 XA 的协调者，在 binlog 中出现的内部 xid ，在 crash recover 时，由 binlog 负责提交。 ( 这是因为， binlog 不进行 prepare ，
+ 
+只进行 commit ，因此在 binlog 中出现的内部 xid ，一定能够保证其在底层各存储引擎中已经完成 prepare) 。 </p>  
+<p>
+MySQL 数据库外部 XA 可以用在分布式数据库代理层，实现对 MySQL 数据库的分布式事务支持，例如开源的代理工具：网易的 DDB ，淘宝的 TDDL ， B2B 的 Cobar 等等。 </p>  
+<p>
+&nbsp; </p>
+<p>
+</p>
+<p>示例
+<br>
+<br>public function testAction(){
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $goods_id=1;
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $goods_name = "大西瓜";
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $num = 1;
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $rs_order = $this-&gt;test-&gt;createorder($goods_id,$goods_name,$num);
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $rs_goods = $this-&gt;test-&gt;deduction($goods_id,$num);
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; if($rs_order['status'] =="success" &amp;&amp; $rs_goods['status']=="success"){
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $this-&gt;test-&gt;commitdb($rs_order['XA']);
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $this-&gt;test-&gt;commitdb1($rs_goods['XA']);
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; }else{
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $this-&gt;test-&gt;rollbackdb($rs_order['XA']);
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $this-&gt;test-&gt;rollbackdb1($rs_goods['XA']);
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; }
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; 
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; print_r($rs_order);
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; echo "&lt;br /&gt;";
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; print_r($rs_goods);
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; die("dddd");
+<br>&nbsp;&nbsp;&nbsp; }
+<br>
+<br>&nbsp;&nbsp;&nbsp; public function createorder($goods_id,$goods_name,$num){
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $XA = uniqid("");
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $this-&gt;_db-&gt;query("XA START '$XA'");
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $_rs = true;
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; try {
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $da
+<wbr>ta = array();
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $da
+<wbr>ta['order_id'] = "V".date("YmdHis");
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $da
+<wbr>ta['goods_name'] = $goods_name;
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $da
+<wbr>ta['goods_num'] = $num;
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $this-&gt;_db-&gt;insert("temp_orders",$da
+<wbr>ta);
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $rs =&nbsp; $this-&gt;_db-&gt;lastInsertId();
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; if($rs){
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $_rs = true;
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; }else{
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $_rs = false;
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; }
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; } catch (Exception $e) {
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $_rs = false;
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; }
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $this-&gt;_db-&gt;query("XA END '$XA'");
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;if($_rs){
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $this-&gt;_db-&gt;query("XA PREPARE '$XA'");
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; return array("status"=&gt;"success","XA"=&gt;$XA);
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;}else{
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; return array("status"=&gt;"nosuccess","XA"=&gt;$XA);
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;}
+<br>&nbsp;&nbsp;&nbsp; }
+<br>
+<br>&nbsp;&nbsp;&nbsp; public function deduction($id){
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $XA = uniqid("");
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $this-&gt;db1-&gt;query("XA START '$XA'");
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $last_rs = true;
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; try {
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $sql = "select * from temp_goods where id = '$id' and goods_num&gt;0";
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $rs = $this-&gt;db1-&gt;fetchRow($sql);
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; if(!empty($rs)){
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $sql = "update temp_goods set goods_num = goods_num-1 where id = '$id'";
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $rd = $this-&gt;db1-&gt;query($sql);
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; if($rd){
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $last_rs = true;
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; }else{
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $last_rs = false;
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; }
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; }else{
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $last_rs = false;;
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; }
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; } catch (Exception $e) {
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;$last_rs = false;;
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; }
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;$this-&gt;db1-&gt;query("XA END '$XA'");
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;if($last_rs){
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; $this-&gt;db1-&gt;query("XA PREPARE '$XA'");
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; return array("status"=&gt;"success","XA"=&gt;$XA);
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;}else{
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; return array("status"=&gt;"nosuccess","XA"=&gt;$XA);
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;}
+<br>
+<br>&nbsp;&nbsp;&nbsp; }
+<br>&nbsp;&nbsp;&nbsp; //提交事务！
+<br>&nbsp;&nbsp;&nbsp; public function commitdb($xa){
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; return $this-&gt;_db-&gt;query("XA COMMIT '$xa'");
+<br>&nbsp;&nbsp;&nbsp; }
+<br>
+<br>&nbsp;&nbsp;&nbsp; //回滚事务
+<br>&nbsp;&nbsp;&nbsp; public function rollbackdb($xa){
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; return $this-&gt;_db-&gt;query("XA ROLLBACK '$xa'");
+<br>&nbsp;&nbsp;&nbsp; }
+<br>
+<br>&nbsp;&nbsp;&nbsp; //提交事务！
+<br>&nbsp;&nbsp;&nbsp; public function commitdb1($xa){
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; return $this-&gt;db1-&gt;query("XA COMMIT '$xa'");
+<br>&nbsp;&nbsp;&nbsp; }
+<br>
+<br>&nbsp;&nbsp;&nbsp; //回滚事务
+<br>&nbsp;&nbsp;&nbsp; public function rollbackdb1($xa){
+<br>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; return $this-&gt;db1-&gt;query("XA ROLLBACK '$xa'");
+<br>&nbsp;&nbsp;&nbsp; }
+<br>
+<br>
+</p>

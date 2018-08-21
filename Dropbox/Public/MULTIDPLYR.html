@@ -1,0 +1,516 @@
+
+<base target="_blank">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<style type="text/css">
+
+body {
+ margin: 10%;
+ background-color: #000000;
+ color: #109030;
+}
+a { text-decoration: none;
+  color: #28B8B8;}
+a:visited { color: #389898;}
+A:hover { color: yellow;}
+A:focus { color: red;}
+code { color: pink; background-color: #102010}
+pre { color: gray; background-color: #001010}
+#newtype { color: pink}
+#redpink { color: #cc0099}
+#redword { color: red}
+#yellowword { color: yellow}
+#greenword { color: lightgreen}
+#limeword { color: #00ff00}
+#orangeword { color: orange}
+#cyanword { color: cyan}
+#whiteword { color: white}
+#grayword { color: gray}
+#brownword { color: #ff8000}
+#yellowgreen { color: #bfff00}
+#palered { color: #ffcccc}
+#blueword { color: dodgerblue}
+#purpleword { color: darkorchid}
+#goldword { color: GoldenRod}
+#silverword { color: silver}
+#blackword { color: black}
+.left {
+    position: absolute;
+    left: 100px;
+    color: GoldenRod;
+    border: 1px solid GoldenRod;
+    padding: 2px;
+    font-size: 60%;
+}
+.aquacolor {
+    color: Aqua;
+}
+.bord {
+    color: redpink;
+    border: 1px solid GoldenRod;
+    padding: 1px;
+    font-size: 90%;
+}
+.bordsub {
+    color: #F07070;
+    margin: 3px 90px 3px 90px;
+    border: 1px solid darkcyan;
+    padding: 1px;
+    font-size: 90%;
+}
+.highlight { 
+    color: white;
+    background-color: #002030
+  }
+.redpink { color: .cc0099}
+.redword { color: red}
+.yellowword { color: yellow}
+.greenword { color: lightgreen}
+.limeword { color: .00ff00}
+.orangeword { color: orange}
+.cyanword { color: cyan}
+.whiteword { color: white}
+.grayword { color: gray}
+.brownword { color: #ff8000}
+.yellowgreen { color: #bfff00}
+.palered { color: #ffcccc}
+.blueword { color: dodgerblue}
+.purpleword { color: darkorchid}
+.goldword { color: GoldenRod}
+.silverword { color: silver}
+.blackword { color: black}
+
+</STYLE>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script>
+$(document).ready(function(){
+    $('.left').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+</head>
+<body>
+
+
+<h1>Speed Up Your Code: Parallel Processing with multidplyr</h1>
+
+<p><img src="http://www.mattdancho.com/assets/multidplyr.png"></p>
+<hr class="margin-bottom-40">
+	    	<p>There’s nothing more frustrating than waiting for long-running <em>R</em> scripts to iteratively run. I’ve recently come across a new-ish package for parallel processing that plays nicely with the tidyverse: <code class="highlighter-rouge">multidplyr</code>. The package has saved me countless hours when applied to long-running, iterative scripts. In this post, I’ll discuss the workflow to parallelize your code, and I’ll go through a real world example of collecting stock prices where it improves speed by over 5X for a process that normally takes 2 minutes or so. Once you grasp the workflow, the parallelization can be applied to almost any iterative scripts regardless of application.</p>
+
+<h1 id="table-of-contents">Table of Contents</h1>
+
+<ul>
+  <li><a href="#prerequisites">Prerequisites</a></li>
+  <li><a href="#why">Why Parallel Processing?</a></li>
+  <li><a href="#workflow">Workflow</a></li>
+  <li><a href="#example">Real World Example</a>
+    <ul>
+      <li><a href="#prep">Prep-Work</a></li>
+      <li><a href="#series">Processing in Series</a></li>
+      <li><a href="#parallel">Processing in Parallel</a>
+        <ul>
+          <li><a href="#get-cores">Step 0: Get Number of Cores (Optional)</a></li>
+          <li><a href="#add-groups">Step 1: Add Groups</a></li>
+          <li><a href="#create-clusters">Step 2: Create Clusters</a></li>
+          <li><a href="#partition">Step 3: Partition by Group</a></li>
+          <li><a href="#setup-clusters">Step 4: Setup Clusters</a></li>
+          <li><a href="#visualize-results">Step 5: Run Parallelized Code</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><a href="#conclusions">Conclusion</a></li>
+  <li><a href="#recap">Recap</a></li>
+  <li><a href="#further-reading">Further Reading</a></li>
+</ul>
+
+<h1 id="prerequisites-a-classanchor-idprerequisitesa">Prerequisites <a class="anchor" id="prerequisites"></a></h1>
+
+<p>The <code class="highlighter-rouge">multidplyr</code> package is not available on CRAN, but you can install it using <code class="highlighter-rouge">devtools</code>:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">install.packages</span><span class="p">(</span><span class="s2">"devtools"</span><span class="p">)</span><span class="w">
+</span><span class="n">devtools</span><span class="o">::</span><span class="n">install_github</span><span class="p">(</span><span class="s2">"hadley/multidplyr"</span><span class="p">)</span></code></pre></figure>
+
+<p>For those following along in <em>R</em>, you’ll need to load the following packages, which are available on CRAN:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">multidplyr</span><span class="p">)</span><span class="w"> </span><span class="c1"># parallel processing
+</span><span class="n">library</span><span class="p">(</span><span class="n">rvest</span><span class="p">)</span><span class="w">      </span><span class="c1"># web scraping
+</span><span class="n">library</span><span class="p">(</span><span class="n">quantmod</span><span class="p">)</span><span class="w">   </span><span class="c1"># get stock prices; useful stock analysis functions
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">  </span><span class="c1"># ggplot2, purrr, dplyr, tidyr, readr, tibble
+</span><span class="n">library</span><span class="p">(</span><span class="n">stringr</span><span class="p">)</span><span class="w">    </span><span class="c1"># working with strings
+</span><span class="n">library</span><span class="p">(</span><span class="n">lubridate</span><span class="p">)</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="n">working</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">dates</span><span class="w"> </span></code></pre></figure>
+
+<p>If you don’t have these installed, run <code class="highlighter-rouge">install.packages(pkg_names)</code> with the package names as a character vector (<code class="highlighter-rouge">pkg_names &lt;- c("rvest", "quantmod", ...)</code>).</p>
+
+<p>I also recommend the open-source <a href="https://www.rstudio.com/">RStudio</a> IDE, which makes <em>R Programming</em> easy and efficient.</p>
+
+<h1 id="why-parallel-processing-a-classanchor-idwhya">Why Parallel Processing? <a class="anchor" id="why"></a></h1>
+
+<p>Computer programming languages, including <em>R</em> and <em>python</em>, by default run scripts using only one processor (i.e. core). Under many circumstances this is fine since the computation speed is relatively fast. However, some scripts just take a long time to process, particularly during iterative programming (i.e. using loops to process a lot of data and/or very complex calculations).</p>
+
+<p>Most modern PC’s have multiple cores that are underutilized. Parallel processing takes advantage of this by splitting the work across the multiple cores for maximum processor utilization. The result is a dramatic improvement in processing time.</p>
+
+<p>While you may not realize it, most computations in <em>R</em> are loops that can be split using parallel processing. However, parallel processing takes more code and may not improve speeds, especially during fast computations because it takes time to transmit and recombine data. Therefore, parallel processing should only be used when speed is a significant issue.</p>
+
+<p>When processing time is long, parallel processing could result in a significant improvement. Let’s check out how to parallelie your <em>R</em> code using the <code class="highlighter-rouge">multidplyr</code> package.</p>
+
+<h1 id="workflow-a-classanchor-idworkflowa">Workflow <a class="anchor" id="workflow"></a></h1>
+
+<p>The <code class="highlighter-rouge">multidplyr</code> workflow can be broken down into six basic steps shown in <a href="#figure1"><em>Figure 1</em></a>. The six steps are implemented in <a href="#parallel">Processing in Parallel</a>.</p>
+
+<p><a class="anchor" id="figure1"></a></p>
+
+<p><img src="/assets/multidplyr.png" alt="multidplyr worfkflow" /></p>
+
+<p class="text-center date">Figure 1: multidplyr Workflow</p>
+
+<p>Essentially, you start with some data set that you need to do things to multiple times. Your situation generally falls into one of two types:</p>
+
+<ol>
+  <li>It could be a really large data set that you want to split up into several small data sets and perform the same thing on each.</li>
+  <li>It could be one data set that you want to perform multiple things on (e.g. apply many models).</li>
+</ol>
+
+<p>The good news is both situations follow the same basic workflow. The toughest part is getting your data in the format needed to process using the workflow. Don’t worry, we’ll go through a real world example next so you can see how this is accomplished.</p>
+
+<h1 id="real-world-example-a-classanchor-idexamplea">Real World Example <a class="anchor" id="example"></a></h1>
+
+<p>We’ll go through the <code class="highlighter-rouge">multidplyr</code> workflow using a real world example that I routinely use: collecting stock prices from the inter-web. Other uses include using modeling functions over grouped data sets, using many models on the same data set, and processing text (e.g. getting n-grams on large corpora). Basically anything with a loop.</p>
+
+<h2 id="prep-work-a-classanchor-idprepa">Prep-Work <a class="anchor" id="prep"></a></h2>
+
+<p>In preparation for collecting stock prices, we need two things:</p>
+
+<ol>
+  <li>A list of stocks</li>
+  <li>A function to get stock prices from a stock symbol</li>
+</ol>
+
+<p>The code below comes from my <a href="http://www.mattdancho.com/investments/2016/10/23/SP500_Analysis.html">S&amp;P500 Stock Analysis Post</a> and it is also used in my more advanced <a href="http://www.mattdancho.com/investments/2016/11/30/Russell2000_Analysis.html">Russell 2000 Analysis Post</a>.</p>
+
+<p>First, we use <code class="highlighter-rouge">rvest</code> to get the list of S&amp;P500 stocks, <code class="highlighter-rouge">sp500</code>.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">rvest</span><span class="p">)</span><span class="w">
+</span><span class="c1"># Web-scrape SP500 stock list from Wikipedia
+</span><span class="n">sp_500</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read_html</span><span class="p">(</span><span class="s2">"https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">html_node</span><span class="p">(</span><span class="s2">"table.wikitable"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">html_table</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">select</span><span class="p">(</span><span class="n">`Ticker symbol`</span><span class="p">,</span><span class="w"> </span><span class="n">Security</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">as_tibble</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">rename</span><span class="p">(</span><span class="n">symbol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">`Ticker symbol`</span><span class="p">,</span><span class="w">
+           </span><span class="n">company</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Security</span><span class="p">)</span><span class="w">
+</span><span class="c1"># Show results
+</span><span class="n">sp_500</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">## # A tibble: 505 × 2
+##    symbol             company
+##     &lt;chr&gt;               &lt;chr&gt;
+## 1     MMM          3M Company
+## 2     ABT Abbott Laboratories
+## 3    ABBV              AbbVie
+## 4     ACN       Accenture plc
+## 5    ATVI Activision Blizzard
+## 6     AYI   Acuity Brands Inc
+## 7    ADBE   Adobe Systems Inc
+## 8     AAP  Advance Auto Parts
+## 9     AES            AES Corp
+## 10    AET           Aetna Inc
+## # ... with 495 more rows</code></pre></figure>
+
+<p>Second, we create a function that leverages the <code class="highlighter-rouge">quantmod::getSymbols</code> to return the historical stock prices in tidy format. This function will be mapped to all of the 500+ stocks next.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">quantmod</span><span class="p">)</span><span class="w">
+</span><span class="c1"># Function to Get Stock Prices in Tidy Form
+</span><span class="n">get_stock_prices</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span><span class="w"> </span><span class="n">return_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"tibble"</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="c1"># Get stock prices; Handle errors
+</span><span class="w">    </span><span class="n">stock_prices</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tryCatch</span><span class="p">({</span><span class="w">
+        </span><span class="n">getSymbols</span><span class="p">(</span><span class="n">Symbols</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">symbol</span><span class="p">,</span><span class="w"> </span><span class="n">auto.assign</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">)</span><span class="w">
+    </span><span class="p">},</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nf">return</span><span class="p">(</span><span class="kc">NA</span><span class="p">)</span><span class="w"> </span><span class="c1"># Return NA on error
+</span><span class="w">    </span><span class="p">})</span><span class="w">
+    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">stock_prices</span><span class="p">[[</span><span class="m">1</span><span class="p">]]))</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="c1"># Rename
+</span><span class="w">        </span><span class="nf">names</span><span class="p">(</span><span class="n">stock_prices</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Open"</span><span class="p">,</span><span class="w"> </span><span class="s2">"High"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Low"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Close"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Volume"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Adjusted"</span><span class="p">)</span><span class="w">
+        </span><span class="c1"># Return in xts format if tibble is not specified
+</span><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">return_format</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"tibble"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+            </span><span class="n">stock_prices</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stock_prices</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+                </span><span class="n">as_tibble</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+                </span><span class="n">rownames_to_column</span><span class="p">(</span><span class="n">var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Date"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+                </span><span class="n">mutate</span><span class="p">(</span><span class="n">Date</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ymd</span><span class="p">(</span><span class="n">Date</span><span class="p">))</span><span class="w">
+        </span><span class="p">}</span><span class="w">
+        </span><span class="nf">return</span><span class="p">(</span><span class="n">stock_prices</span><span class="p">)</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span></code></pre></figure>
+
+<h2 id="processing-in-series-a-classanchor-idseriesa">Processing In Series <a class="anchor" id="series"></a></h2>
+
+<p>The next computation is the routine that we wish to parallelize, but first we’ll time the script running on one processor, looping in series. We are collecting ten years of historical daily stock prices for each of the 500+ stocks. To do this, the script below uses the <code class="highlighter-rouge">purrr::map()</code> function to map <code class="highlighter-rouge">get_stock_prices()</code> to each stock <code class="highlighter-rouge">symbol</code> in <code class="highlighter-rouge">sp_500</code>. The loop in our case is the iterative application of a function to each stock. This operation will be split by group in the next section. The <code class="highlighter-rouge">proc.time()</code> function is used to time the routine running without parallel processing.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Map get_stock_prices() to list of stock symbols
+</span><span class="n">from</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"2007-01-01"</span><span class="w">
+</span><span class="n">to</span><span class="w">   </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">today</span><span class="p">()</span><span class="w">
+
+</span><span class="n">start</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">proc.time</span><span class="p">()</span><span class="w"> </span><span class="c1"># Start clock
+</span><span class="n">sp_500_processed_in_series</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sp_500</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="w">
+        </span><span class="n">stock.prices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="n">.x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">symbol</span><span class="p">,</span><span class="w"> 
+                           </span><span class="o">~</span><span class="w"> </span><span class="n">get_stock_prices</span><span class="p">(</span><span class="n">symbol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">.x</span><span class="p">,</span><span class="w">
+                                              </span><span class="n">return_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"tibble"</span><span class="p">,</span><span class="w">
+                                              </span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">from</span><span class="p">,</span><span class="w">
+                                              </span><span class="n">to</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">to</span><span class="p">)</span><span class="w">
+                           </span><span class="p">)</span><span class="w">
+        </span><span class="p">)</span><span class="w">
+</span><span class="n">time_elapsed_series</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">proc.time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">End</span><span class="w"> </span><span class="n">clock</span></code></pre></figure>
+
+<p>The result, <code class="highlighter-rouge">sp_500_processed_in_series</code> is a <code class="highlighter-rouge">tibble</code> (tidy data frame) that is nested with two levels: the first has the stock <code class="highlighter-rouge">symbol</code>, <code class="highlighter-rouge">company</code>, and <code class="highlighter-rouge">stock.prices</code>. The variable, <code class="highlighter-rouge">stock.prices</code>, contains the historical stock prices for each stock.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">sp_500_processed_in_series</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">## # A tibble: 505 × 3
+##    symbol             company         stock.prices
+##     &lt;chr&gt;               &lt;chr&gt;               &lt;list&gt;
+## 1     MMM          3M Company &lt;tibble [2,506 × 7]&gt;
+## 2     ABT Abbott Laboratories &lt;tibble [2,506 × 7]&gt;
+## 3    ABBV              AbbVie   &lt;tibble [996 × 7]&gt;
+## 4     ACN       Accenture plc &lt;tibble [2,506 × 7]&gt;
+## 5    ATVI Activision Blizzard &lt;tibble [2,506 × 7]&gt;
+## 6     AYI   Acuity Brands Inc &lt;tibble [2,506 × 7]&gt;
+## 7    ADBE   Adobe Systems Inc &lt;tibble [2,506 × 7]&gt;
+## 8     AAP  Advance Auto Parts &lt;tibble [2,506 × 7]&gt;
+## 9     AES            AES Corp &lt;tibble [2,506 × 7]&gt;
+## 10    AET           Aetna Inc &lt;tibble [2,506 × 7]&gt;
+## # ... with 495 more rows</code></pre></figure>
+
+<p>Let’s verify we got the daily stock prices for every stock. We’ll use the <code class="highlighter-rouge">tidyr::unnest()</code> function to expand the <code class="highlighter-rouge">stock.prices</code> for the list of stocks. At 1,203,551 rows, the full list has been obtained.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">sp_500_processed_in_series</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">unnest</span><span class="p">()</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">## # A tibble: 1,203,551 × 9
+##    symbol    company       Date  Open  High   Low Close  Volume
+##     &lt;chr&gt;      &lt;chr&gt;     &lt;date&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;
+## 1     MMM 3M Company 2007-01-03 77.53 78.85 77.38 78.26 3781500
+## 2     MMM 3M Company 2007-01-04 78.40 78.41 77.45 77.95 2968400
+## 3     MMM 3M Company 2007-01-05 77.89 77.90 77.01 77.42 2765200
+## 4     MMM 3M Company 2007-01-08 77.42 78.04 76.97 77.59 2434500
+## 5     MMM 3M Company 2007-01-09 78.00 78.23 77.44 77.68 1896800
+## 6     MMM 3M Company 2007-01-10 77.31 77.96 77.04 77.85 1787500
+## 7     MMM 3M Company 2007-01-11 78.05 79.03 77.88 78.65 2372500
+## 8     MMM 3M Company 2007-01-12 78.41 79.50 78.22 79.36 2582200
+## 9     MMM 3M Company 2007-01-16 79.48 79.62 78.92 79.56 2526600
+## 10    MMM 3M Company 2007-01-17 79.33 79.51 78.75 78.91 2711300
+## # ... with 1,203,541 more rows, and 1 more variables: Adjusted &lt;dbl&gt;</code></pre></figure>
+
+<p>And, let’s see how long it took when processing in series. The processing time is the time elapsed in seconds. Converted to minutes this is approximately 1.68 minutes.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">time_elapsed_series</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    user  system elapsed 
+##   43.12    1.08  100.58</code></pre></figure>
+
+<h2 id="processing-in-parallel-a-classanchor-idparallela">Processing in Parallel <a class="anchor" id="parallel"></a></h2>
+
+<p>We just collected ten years of daily stock prices for over 500 stocks in about 1.68 minutes. Let’s parallelize the computation to get an improvement. We will follow the six steps shown in <a href="#figure1"><em>Figure 1</em></a>.</p>
+
+<h3 id="step-0-get-number-of-cores-optional-a-classanchor-idget-coresa">Step 0: Get Number of Cores (Optional) <a class="anchor" id="get-cores"></a></h3>
+
+<p>Prior to starting, you may want to determine how many cores your machine has. An easy way to do this is using <code class="highlighter-rouge">parallel::detectCores()</code>. This will be used to determine the number of groups to split the data into in the next set.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">parallel</span><span class="p">)</span><span class="w">
+</span><span class="n">cl</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">detectCores</span><span class="p">()</span><span class="w">
+</span><span class="n">cl</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">## [1] 8</code></pre></figure>
+
+<h3 id="step-1-add-groups-a-classanchor-idadd-groupsa">Step 1: Add Groups <a class="anchor" id="add-groups"></a></h3>
+
+<p>Let’s add groups to <code class="highlighter-rouge">sp_500</code>. The groups are needed to divide the data across your <code class="highlighter-rouge">cl</code> number cores. For me, this is 8 cores. We create a <code class="highlighter-rouge">group</code> vector, which is a sequential vector of <code class="highlighter-rouge">1:cl</code> (1 to 8) repeated the length of the number of rows in <code class="highlighter-rouge">sp_500</code>. We then add the <code class="highlighter-rouge">group</code> vector to the <code class="highlighter-rouge">sp_500</code> tibble using the <code class="highlighter-rouge">dplyr::bind_cols()</code> function.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">group</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">cl</span><span class="p">,</span><span class="w"> </span><span class="n">length.out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">sp_500</span><span class="p">))</span><span class="w">
+</span><span class="n">sp_500</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">bind_cols</span><span class="p">(</span><span class="n">tibble</span><span class="p">(</span><span class="n">group</span><span class="p">),</span><span class="w"> </span><span class="n">sp_500</span><span class="p">)</span><span class="w">
+</span><span class="n">sp_500</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">## # A tibble: 505 × 3
+##    group symbol             company
+##    &lt;int&gt;  &lt;chr&gt;               &lt;chr&gt;
+## 1      1    MMM          3M Company
+## 2      2    ABT Abbott Laboratories
+## 3      3   ABBV              AbbVie
+## 4      4    ACN       Accenture plc
+## 5      5   ATVI Activision Blizzard
+## 6      6    AYI   Acuity Brands Inc
+## 7      7   ADBE   Adobe Systems Inc
+## 8      8    AAP  Advance Auto Parts
+## 9      1    AES            AES Corp
+## 10     2    AET           Aetna Inc
+## # ... with 495 more rows</code></pre></figure>
+
+<h3 id="step-2-create-clusters-a-classanchor-idcreate-clustersa">Step 2: Create Clusters <a class="anchor" id="create-clusters"></a></h3>
+
+<p>Use the <code class="highlighter-rouge">create_cluster()</code> function from the <code class="highlighter-rouge">multidplyr</code> package. Think of a cluster as a work environment on a core. Therefore, the code below establishes a work environment on each of the 8 cores.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">cluster</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">create_cluster</span><span class="p">(</span><span class="n">cores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cl</span><span class="p">)</span><span class="w">
+</span><span class="n">cluster</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">## socket cluster with 8 nodes on host 'localhost'</code></pre></figure>
+
+<h3 id="step-3-partition-by-group-a-classanchor-idpartitiona">Step 3: Partition by Group <a class="anchor" id="partition"></a></h3>
+
+<p>Next is partitioning. Think of partitioning as sending a subset of the initial <code class="highlighter-rouge">tibble</code> to each of the clusters. The result is a partitioned data frame (<code class="highlighter-rouge">party_df</code>), which we explore next. Use the <code class="highlighter-rouge">partition()</code> function from the <code class="highlighter-rouge">multidplyr</code> package to split the <code class="highlighter-rouge">sp_500</code> list by group and send each group to a different cluster.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">by_group</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sp_500</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">partition</span><span class="p">(</span><span class="n">group</span><span class="p">,</span><span class="w"> </span><span class="n">cluster</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cluster</span><span class="p">)</span><span class="w">
+</span><span class="n">by_group</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">## Source: party_df [505 x 3]
+## Groups: group
+## Shards: 8 [63--64 rows]
+## 
+## # S3: party_df
+##    group symbol                           company
+##    &lt;int&gt;  &lt;chr&gt;                             &lt;chr&gt;
+## 1      6    AYI                 Acuity Brands Inc
+## 2      6    APD      Air Products &amp; Chemicals Inc
+## 3      6    ADS             Alliance Data Systems
+## 4      6    AEP           American Electric Power
+## 5      6   AMGN                         Amgen Inc
+## 6      6   AAPL                        Apple Inc.
+## 7      6    ADP         Automatic Data Processing
+## 8      6     BK The Bank of New York Mellon Corp.
+## 9      6   BIIB                  BIOGEN IDEC Inc.
+## 10     6   AVGO                          Broadcom
+## # ... with 495 more rows</code></pre></figure>
+
+<p>The result, <code class="highlighter-rouge">by_group</code>, looks similar to our original <code class="highlighter-rouge">tibble</code>, but it is a <code class="highlighter-rouge">party_df</code>, which is very different. The key is to notice that the there are 8 <code class="highlighter-rouge">Shards</code>. Each <code class="highlighter-rouge">Shard</code> has between 63 and 64 rows, which evenly splits our data among each shard. Now that our <code class="highlighter-rouge">tibble</code> has been partitioned into a <code class="highlighter-rouge">party_df</code>, we are ready to move onto setting up the clusters.</p>
+
+<h3 id="step-4-setup-clusters-a-classanchor-idsetup-clustersa">Step 4: Setup Clusters <a class="anchor" id="setup-clusters"></a></h3>
+
+<p>The clusters have a local, bare-bones <em>R work environment</em>, which doesn’t work for the vast majority of cases. Code typically depends on libraries, functions, expressions, variables, and/or data that are not available in base <em>R</em>. Fortunately, there is a way to add these items to the clusters. Let’s see how.</p>
+
+<p>For our computation, we are going to need to add several libraries along with the <code class="highlighter-rouge">get_stock_prices()</code> function to the clusters. We do this by using the <code class="highlighter-rouge">cluster_library()</code> and <code class="highlighter-rouge">cluster_assign_value()</code> functions, respectively.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">from</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"2007-01-01"</span><span class="w">
+</span><span class="n">to</span><span class="w">   </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">today</span><span class="p">()</span><span class="w">
+</span><span class="c1"># Utilize pipe (%&gt;%) to assign libraries, functions, and values to clusters
+</span><span class="n">by_group</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="c1"># Assign libraries
+</span><span class="w">    </span><span class="n">cluster_library</span><span class="p">(</span><span class="s2">"tidyverse"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">cluster_library</span><span class="p">(</span><span class="s2">"stringr"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">cluster_library</span><span class="p">(</span><span class="s2">"lubridate"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">cluster_library</span><span class="p">(</span><span class="s2">"quantmod"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="c1"># Assign values (use this to load functions or data to each core)
+</span><span class="w">    </span><span class="n">cluster_assign_value</span><span class="p">(</span><span class="s2">"get_stock_prices"</span><span class="p">,</span><span class="w"> </span><span class="n">get_stock_prices</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">cluster_assign_value</span><span class="p">(</span><span class="s2">"from"</span><span class="p">,</span><span class="w"> </span><span class="n">from</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">cluster_assign_value</span><span class="p">(</span><span class="s2">"to"</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="p">)</span></code></pre></figure>
+
+<p>We can verify that the libraries are loaded using the <code class="highlighter-rouge">cluster_eval()</code> function.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">cluster_eval</span><span class="p">(</span><span class="n">by_group</span><span class="p">,</span><span class="w"> </span><span class="n">search</span><span class="p">())[[</span><span class="m">1</span><span class="p">]]</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">results</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">first</span><span class="w"> </span><span class="n">cluster</span><span class="w"> </span><span class="n">shown</span><span class="w"> </span><span class="n">only</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##  [1] ".GlobalEnv"        "package:quantmod"  "package:TTR"      
+##  [4] "package:xts"       "package:zoo"       "package:lubridate"
+##  [7] "package:stringr"   "package:dplyr"     "package:purrr"    
+## [10] "package:readr"     "package:tidyr"     "package:tibble"   
+## [13] "package:ggplot2"   "package:tidyverse" "package:stats"    
+## [16] "package:graphics"  "package:grDevices" "package:utils"    
+## [19] "package:datasets"  "package:methods"   "Autoloads"        
+## [22] "package:base"</code></pre></figure>
+
+<p>We can also verify that the functions are loaded using the <code class="highlighter-rouge">cluster_get()</code> function.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">cluster_get</span><span class="p">(</span><span class="n">by_group</span><span class="p">,</span><span class="w"> </span><span class="s2">"get_stock_prices"</span><span class="p">)[[</span><span class="m">1</span><span class="p">]]</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">results</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">first</span><span class="w"> </span><span class="n">cluster</span><span class="w"> </span><span class="n">shown</span><span class="w"> </span><span class="n">only</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">## function(symbol, return_format = "tibble", ...) {
+##     # Get stock prices; Handle errors
+##     stock_prices &lt;- tryCatch({
+##         getSymbols(Symbols = symbol, auto.assign = FALSE, ...)
+##     }, error = function(e) {
+##         return(NA) # Return NA on error
+##     })
+##     if (!is.na(stock_prices[[1]])) {
+##         # Rename
+##         names(stock_prices) &lt;- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
+##         # Return in xts format if tibble is not specified
+##         if (return_format == "tibble") {
+##             stock_prices &lt;- stock_prices %&gt;%
+##                 as_tibble() %&gt;%
+##                 rownames_to_column(var = "Date") %&gt;%
+##                 mutate(Date = ymd(Date))
+##         }
+##         return(stock_prices)
+##     }
+## }</code></pre></figure>
+
+<h3 id="step-5-run-parallelized-code-a-classanchor-idvisualize-resultsa">Step 5: Run Parallelized Code <a class="anchor" id="visualize-results"></a></h3>
+
+<p>Now that we have our clusters and partitions set up and everything looks good, we can run the parallelized code. The code chunk is the same as the series code chunk with two exceptions:</p>
+
+<ol>
+  <li>Instead of starting with the <code class="highlighter-rouge">sp_500 tibble</code>, we start with the <code class="highlighter-rouge">by_group party_df</code></li>
+  <li>We combine the results at the end using the <code class="highlighter-rouge">collect()</code> function</li>
+</ol>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">start</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">proc.time</span><span class="p">()</span><span class="w"> </span><span class="c1"># Start clock
+</span><span class="n">sp_500_processed_in_parallel</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">by_group</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="c1"># Use by_group party_df
+</span><span class="w">    </span><span class="n">mutate</span><span class="p">(</span><span class="w">
+        </span><span class="n">stock.prices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="n">.x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">symbol</span><span class="p">,</span><span class="w"> 
+                           </span><span class="o">~</span><span class="w"> </span><span class="n">get_stock_prices</span><span class="p">(</span><span class="n">symbol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">.x</span><span class="p">,</span><span class="w">
+                                              </span><span class="n">return_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"tibble"</span><span class="p">,</span><span class="w">
+                                              </span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">from</span><span class="p">,</span><span class="w">
+                                              </span><span class="n">to</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">to</span><span class="p">)</span><span class="w">
+                           </span><span class="p">)</span><span class="w">
+        </span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">collect</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="c1"># Special collect() function to recombine partitions
+</span><span class="w">    </span><span class="n">as_tibble</span><span class="p">()</span><span class="w">   </span><span class="c1"># Convert to tibble
+</span><span class="n">time_elapsed_parallel</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">proc.time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">End</span><span class="w"> </span><span class="n">clock</span></code></pre></figure>
+
+<p>Let’s verify we got the list of stock prices. We’ll use the <code class="highlighter-rouge">tidyr::unnest()</code> function to expand the <code class="highlighter-rouge">stock.prices</code> for the list of stocks. This is the same list as <code class="highlighter-rouge">sp_500_processed_in_series</code>, but it’s sorted in order by which groups finished first. If we want to return the <code class="highlighter-rouge">tibble</code> in the same order of <code class="highlighter-rouge">sp_500</code>, we can easily pipe (<code class="highlighter-rouge">%&gt;%</code>) <code class="highlighter-rouge">arrange(company)</code> after <code class="highlighter-rouge">as_tibble()</code> in the code chunk above.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">sp_500_processed_in_parallel</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">unnest</span><span class="p">()</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">## Source: local data frame [1,204,056 x 10]
+## Groups: group [8]
+## 
+##    group symbol           company       Date  Open  High   Low Close
+##    &lt;int&gt;  &lt;chr&gt;             &lt;chr&gt;     &lt;date&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1      6    AYI Acuity Brands Inc 2007-01-03 52.20 53.27 51.52 51.92
+## 2      6    AYI Acuity Brands Inc 2007-01-04 53.00 53.39 49.69 52.32
+## 3      6    AYI Acuity Brands Inc 2007-01-05 51.74 51.85 50.95 51.09
+## 4      6    AYI Acuity Brands Inc 2007-01-08 51.15 52.64 50.70 52.01
+## 5      6    AYI Acuity Brands Inc 2007-01-09 51.94 52.59 51.66 52.52
+## 6      6    AYI Acuity Brands Inc 2007-01-10 52.13 53.61 52.01 53.48
+## 7      6    AYI Acuity Brands Inc 2007-01-11 53.60 55.47 53.52 55.08
+## 8      6    AYI Acuity Brands Inc 2007-01-12 54.84 55.68 54.61 55.65
+## 9      6    AYI Acuity Brands Inc 2007-01-16 55.65 56.56 55.40 55.61
+## 10     6    AYI Acuity Brands Inc 2007-01-17 55.56 56.32 55.20 55.90
+## # ... with 1,204,046 more rows, and 2 more variables: Volume &lt;dbl&gt;,
+## #   Adjusted &lt;dbl&gt;</code></pre></figure>
+
+<p>And, let’s see how long it took when processing in parallel.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">time_elapsed_parallel</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    user  system elapsed 
+##    0.17    0.28   18.66</code></pre></figure>
+
+<p><strong>The processing time is approximately 0.31 minutes, which is 5.4X faster!</strong> Note that it’s not a full 8X faster because of transmission time as data is sent to and from the nodes. With that said, the speed will approach 8X improvement as calculations become longer since the transmission time is fixed whereas the computation time is variable.</p>
+
+<h1 id="conclusion-a-classanchor-idconclusionsa">Conclusion <a class="anchor" id="conclusions"></a></h1>
+
+<p>Parallelizing code can drastically improve speed on multi-core machines. It makes the most sense in situations involving many iterative computations. On an 8 core machine, processing time significantly improves. It will not be quite 8X faster, but the longer the computation the closer the speed gets to the full 8X improvement. <strong>For a computation that takes two minutes under normal conditions, we improved the processing speed by over 5X through parallel processing!</strong></p>
+
+<h1 id="recap-a-classanchor-idrecapa">Recap <a class="anchor" id="recap"></a></h1>
+
+<p>The focus of this post was on the <code class="highlighter-rouge">multidplyr</code> package, a package designed to do parallel processing within the <code class="highlighter-rouge">tidyverse</code>. We worked through the five main steps in the <code class="highlighter-rouge">multidplyr</code> workflow on a real world example of collecting historical stock prices for a large set of stocks. The beauty is that the package and workflow can be applied to anything from collecting stocks to applying many models to computing n-grams on textual data and more!</p>
+
+<h1 id="further-reading-a-classanchor-idfurther-readinga">Further Reading <a class="anchor" id="further-reading"></a></h1>
+
+<ol>
+  <li><strong><a href="https://github.com/hadley/multidplyr"><code class="highlighter-rouge">multidplyr</code> on GitHub</a></strong>: The vignette explains the <code class="highlighter-rouge">multidplyr</code> workflow using the <code class="highlighter-rouge">flights</code> data set from the <code class="highlighter-rouge">nycflights13</code> package.</li>
+</ol>
+</body>
+</html>

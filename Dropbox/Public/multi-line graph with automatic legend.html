@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta content='text/html; charset=UTF-8' http-equiv='Content-Type'/>
+
+<style>
+body {
+ font-size: 20px;
+ margin: 8%;
+ background-color: #000000;
+ color: #109030;
+}
+a { text-decoration: none;
+	color: #28B8B8;}
+a:visited {	color: #389898;}
+A:hover {	color: yellow;}
+A:focus {	color: red;}
+code { color: pink; background-color: #101810}
+pre { color: gray; background-color: #001010}
+
+</style>
+
+<h2>d3.js multi-line graph with automatic (interactive) legend</h2>
+<div>
+<div></div>
+</div>
+<div>
+The following post is a portion of the D3 Tips and Tricks book which is free to download. To use this post in context, consider it with the others in the blog or just&nbsp;
+<a href="https://leanpub.com/D3-Tips-and-Tricks">download the the book as a pdf / epub or mobi</a>&nbsp;
+.
+
+<br />
+<div>
+<div>
+<div>
+----------------------------------------------------------
+</div>
+<div>
+<div>
+<h3>
+Multi-line graph with automatic legend and toggling show / hide lines.</h3>
+<h4 id="leanpub-auto-purpose-2">
+Purpose</h4>
+<div>
+Creating a multi-line graph is a pretty handy thing to be able to do and we worked through an example earlier in the book as an extension of our simple graph. In that example we used a csv file that had the data arranged with each lines values in a separate column.</div>
+<div>
+<div>
+<pre>date,close,open
+1-May-12,68.13,34.12
+30-Apr-12,63.98,45.56
+27-Apr-12,67.00,67.89
+26-Apr-12,89.70,78.54
+25-Apr-12,99.00,89.23
+24-Apr-12,130.28,99.23
+23-Apr-12,166.70,101.34
+</pre>
+</div>
+</div>
+<div>
+This is a common way to have data stored, but if you are retrieving information from a database, you may not have the luxury of having it laid out in columns. It may be presented in a more linear fashion where each lines values are stores on a unique row with the identifier for the line on the same row. For instance, the data above could just as easily be presented as follows;</div>
+<div>
+<div>
+<pre>price,date,value
+close,1-May-12,68.13
+close,30-Apr-12,63.98
+close,27-Apr-12,67.00
+close,26-Apr-12,89.70
+close,25-Apr-12,99.00
+close,24-Apr-12,130.28
+close,23-Apr-12,166.70
+open,1-May-12,34.12
+open,30-Apr-12,45.56
+open,27-Apr-12,67.89
+open,26-Apr-12,78.54
+open,25-Apr-12,89.23
+open,24-Apr-12,99.23
+open,23-Apr-12,101.34
+</pre>
+</div>
+</div>
+<div>
+In this case, we would need to &#8216;pivot&#8217; the data to produce the same multi-column representation as the original format. This is not always easy, but it can be achieved using the d3&nbsp;<code>nest</code>&nbsp;function which we will examine.</div>
+<div>
+As well as this we will want to automatically encode the lines to make them different colours and to add a legend with the line name and the colour of the appropriate line.</div>
+<div>
+Finally, because we will build a graph script that can cope with any number of lines (within reason), we will need to be able to show / hide the individual lines to try and clarify the graph if it gets too cluttered.</div>
+<div>
+All of these features have been covered individually in the book, so what we&#8217;re going to do is combine them in a way that presents us with an elegant multi-line graph that looks a bit like this;</div>
+<table align="center" cellpadding="0" cellspacing="0"><tbody>
+<tr><td><a href="http://2.bp.blogspot.com/-VIyIfn1cCEI/U7uajM6Q_CI/AAAAAAAAA5o/PU-M_0CxNFw/s1600/ani-graph.gif" imageanchor="1"><img border="0" src="http://2.bp.blogspot.com/-VIyIfn1cCEI/U7uajM6Q_CI/AAAAAAAAA5o/PU-M_0CxNFw/s1600/ani-graph.gif" /></a></td></tr>
+<tr><td>Multi-line graph with legend
+</td></tr>
+</tbody></table>
+<h4 id="leanpub-auto-the-code-7">
+The Code</h4>
+<div>
+The following is the code for the initial example which is a slight derivative of the original simple graph. A live version is available online at&nbsp;<a href="http://bl.ocks.org/d3noob/d8be922a10cb0b148cd5">bl.ocks.org</a>&nbsp;or&nbsp;<a href="https://gist.github.com/d3noob/d8be922a10cb0b148cd5">GitHub</a>. It is also available as the files &#8216;super-multi-lines.html&#8217; and &#8216;stocks.csv&#8217; as a download with the book D3 Tips and Tricks (in a zip file) when you&nbsp;<a href="https://leanpub.com/D3-Tips-and-Tricks">download the book from Leanpub</a>.</div>
+<div>
+<div>
+<pre><code>&lt;!DOCTYPE html&gt;</code>
+<code>&lt;meta</code> <code>charset=</code><code>"utf-8"</code><code>&gt;</code>
+<code>&lt;style&gt;</code> <code>/* set the CSS */</code>
+
+<code>body</code> <code>{</code> <code>font</code><code>:</code> <code>12px</code> <code>Arial</code><code>;}</code>
+
+<code>path</code> <code>{</code> 
+    <code>stroke</code><code>:</code> <code>steelblue</code><code>;</code>
+    <code>stroke</code><code>-</code><code>width</code><code>:</code> <code>2</code><code>;</code>
+    <code>fill</code><code>:</code> <code>none</code><code>;</code>
+<code>}</code>
+
+<code>.axis</code> <code>path</code><code>,</code>
+<code>.axis</code> <code>line</code> <code>{</code>
+    <code>fill</code><code>:</code> <code>none</code><code>;</code>
+    <code>stroke</code><code>:</code> <code>grey</code><code>;</code>
+    <code>stroke</code><code>-</code><code>width</code><code>:</code> <code>1</code><code>;</code>
+    <code>shape</code><code>-</code><code>rendering</code><code>:</code> <code>crispEdges</code><code>;</code>
+<code>}</code>
+
+<code>&lt;/style&gt;</code>
+<code>&lt;body&gt;</code>
+
+<code>&lt;!-- load the d3.js library --&gt;</code>    
+<code>&lt;script </code><code>src=</code><code>"http://d3js.org/d3.v3.min.js"</code><code>&gt;&lt;/script&gt;</code>
+
+<code>&lt;script&gt;</code>
+
+<code>// Set the dimensions of the canvas / graph</code>
+<code>var</code> <code>margin</code> <code>=</code> <code>{</code><code>top</code><code>:</code> <code>30</code><code>,</code> <code>right</code><code>:</code> <code>20</code><code>,</code> <code>bottom</code><code>:</code> <code>30</code><code>,</code> <code>left</code><code>:</code> <code>50</code><code>},</code>
+    <code>width</code> <code>=</code> <code>600</code> <code>-</code> <code>margin</code><code>.</code><code>left</code> <code>-</code> <code>margin</code><code>.</code><code>right</code><code>,</code>
+    <code>height</code> <code>=</code> <code>270</code> <code>-</code> <code>margin</code><code>.</code><code>top</code> <code>-</code> <code>margin</code><code>.</code><code>bottom</code><code>;</code>
+
+<code>// Parse the date / time</code>
+<code>var</code> <code>parseDate</code> <code>=</code> <code>d3</code><code>.</code><code>time</code><code>.</code><code>format</code><code>(</code><code>"%b %Y"</code><code>).</code><code>parse</code><code>;</code> 
+
+<code>// Set the ranges</code>
+<code>var</code> <code>x</code> <code>=</code> <code>d3</code><code>.</code><code>time</code><code>.</code><code>scale</code><code>().</code><code>range</code><code>([</code><code>0</code><code>,</code> <code>width</code><code>]);</code>
+<code>var</code> <code>y</code> <code>=</code> <code>d3</code><code>.</code><code>scale</code><code>.</code><code>linear</code><code>().</code><code>range</code><code>([</code><code>height</code><code>,</code> <code>0</code><code>]);</code>
+
+<code>// Define the axes</code>
+<code>var</code> <code>xAxis</code> <code>=</code> <code>d3</code><code>.</code><code>svg</code><code>.</code><code>axis</code><code>().</code><code>scale</code><code>(</code><code>x</code><code>)</code>
+    <code>.</code><code>orient</code><code>(</code><code>"bottom"</code><code>).</code><code>ticks</code><code>(</code><code>5</code><code>);</code>
+
+<code>var</code> <code>yAxis</code> <code>=</code> <code>d3</code><code>.</code><code>svg</code><code>.</code><code>axis</code><code>().</code><code>scale</code><code>(</code><code>y</code><code>)</code>
+    <code>.</code><code>orient</code><code>(</code><code>"left"</code><code>).</code><code>ticks</code><code>(</code><code>5</code><code>);</code>
+
+<code>// Define the line</code>
+<code>var</code> <code>priceline</code> <code>=</code> <code>d3</code><code>.</code><code>svg</code><code>.</code><code>line</code><code>()</code>
+    <code>.</code><code>x</code><code>(</code><code>function</code><code>(</code><code>d</code><code>)</code> <code>{</code> <code>return</code> <code>x</code><code>(</code><code>d</code><code>.</code><code>date</code><code>);</code> <code>})</code>
+    <code>.</code><code>y</code><code>(</code><code>function</code><code>(</code><code>d</code><code>)</code> <code>{</code> <code>return</code> <code>y</code><code>(</code><code>d</code><code>.</code><code>price</code><code>);</code> <code>});</code>
+    
+<code>// Adds the svg canvas</code>
+<code>var</code> <code>svg</code> <code>=</code> <code>d3</code><code>.</code><code>select</code><code>(</code><code>"body"</code><code>)</code>
+    <code>.</code><code>append</code><code>(</code><code>"svg"</code><code>)</code>
+        <code>.</code><code>attr</code><code>(</code><code>"width"</code><code>,</code> <code>width</code> <code>+</code> <code>margin</code><code>.</code><code>left</code> <code>+</code> <code>margin</code><code>.</code><code>right</code><code>)</code>
+        <code>.</code><code>attr</code><code>(</code><code>"height"</code><code>,</code> <code>height</code> <code>+</code> <code>margin</code><code>.</code><code>top</code> <code>+</code> <code>margin</code><code>.</code><code>bottom</code><code>)</code>
+    <code>.</code><code>append</code><code>(</code><code>"g"</code><code>)</code>
+        <code>.</code><code>attr</code><code>(</code><code>"transform"</code><code>,</code> 
+              <code>"translate("</code> <code>+</code> <code>margin</code><code>.</code><code>left</code> <code>+</code> <code>","</code> <code>+</code> <code>margin</code><code>.</code><code>top</code> <code>+</code> <code>")"</code><code>);</code>
+
+<code>// Get the data</code>
+<code>d3</code><code>.</code><code>csv</code><code>(</code><code>"stocks.csv"</code><code>,</code> <code>function</code><code>(</code><code>error</code><code>,</code> <code>data</code><code>)</code> <code>{</code>
+    <code>data</code><code>.</code><code>forEach</code><code>(</code><code>function</code><code>(</code><code>d</code><code>)</code> <code>{</code>
+  <code>d</code><code>.</code><code>date</code> <code>=</code> <code>parseDate</code><code>(</code><code>d</code><code>.</code><code>date</code><code>);</code>
+  <code>d</code><code>.</code><code>price</code> <code>=</code> <code>+</code><code>d</code><code>.</code><code>price</code><code>;</code>
+    <code>});</code>
+
+    <code>// Scale the range of the data</code>
+    <code>x</code><code>.</code><code>domain</code><code>(</code><code>d3</code><code>.</code><code>extent</code><code>(</code><code>data</code><code>,</code> <code>function</code><code>(</code><code>d</code><code>)</code> <code>{</code> <code>return</code> <code>d</code><code>.</code><code>date</code><code>;</code> <code>}));</code>
+    <code>y</code><code>.</code><code>domain</code><code>([</code><code>0</code><code>,</code> <code>d3</code><code>.</code><code>max</code><code>(</code><code>data</code><code>,</code> <code>function</code><code>(</code><code>d</code><code>)</code> <code>{</code> <code>return</code> <code>d</code><code>.</code><code>price</code><code>;</code> <code>})]);</code> 
+
+    <code>// Nest the entries by symbol</code>
+    <code>var</code> <code>dataNest</code> <code>=</code> <code>d3</code><code>.</code><code>nest</code><code>()</code>
+        <code>.</code><code>key</code><code>(</code><code>function</code><code>(</code><code>d</code><code>)</code> <code>{</code><code>return</code> <code>d</code><code>.</code><code>symbol</code><code>;})</code>
+        <code>.</code><code>entries</code><code>(</code><code>data</code><code>);</code>
+
+    <code>// Loop through each symbol / key</code>
+    <code>dataNest</code><code>.</code><code>forEach</code><code>(</code><code>function</code><code>(</code><code>d</code><code>)</code> <code>{</code>
+
+        <code>svg</code><code>.</code><code>append</code><code>(</code><code>"path"</code><code>)</code>
+            <code>.</code><code>attr</code><code>(</code><code>"class"</code><code>,</code> <code>"line"</code><code>)</code>
+            <code>.</code><code>attr</code><code>(</code><code>"d"</code><code>,</code> <code>priceline</code><code>(</code><code>d</code><code>.</code><code>values</code><code>));</code> 
+
+    <code>});</code>
+
+    <code>// Add the X Axis</code>
+    <code>svg</code><code>.</code><code>append</code><code>(</code><code>"g"</code><code>)</code>
+        <code>.</code><code>attr</code><code>(</code><code>"class"</code><code>,</code> <code>"x axis"</code><code>)</code>
+        <code>.</code><code>attr</code><code>(</code><code>"transform"</code><code>,</code> <code>"translate(0,"</code> <code>+</code> <code>height</code> <code>+</code> <code>")"</code><code>)</code>
+        <code>.</code><code>call</code><code>(</code><code>xAxis</code><code>);</code>
+
+    <code>// Add the Y Axis</code>
+    <code>svg</code><code>.</code><code>append</code><code>(</code><code>"g"</code><code>)</code>
+        <code>.</code><code>attr</code><code>(</code><code>"class"</code><code>,</code> <code>"y axis"</code><code>)</code>
+        <code>.</code><code>call</code><code>(</code><code>yAxis</code><code>);</code>
+
+<code>});</code>
+
+<code>&lt;/script&gt;</code>
+<code>&lt;/body&gt;</code>
+</pre>
+</div>
+</div>
+<h4 id="leanpub-auto-description-1">
+Description</h4>
+<h5 id="leanpub-auto-nesting-the-data">
+NESTING THE DATA</h5>
+<div>
+The example code above differs from the simple graph in two main ways.</div>
+<div>
+Firstly, the script loads the file&nbsp;<code>stocks.csv</code>&nbsp;which was used by Mike Bostock in his&nbsp;<a href="http://bl.ocks.org/mbostock/1157787">small multiples example</a>. This means that the variable names used are different (<code>price</code>&nbsp;for the value of the stocks,&nbsp;<code>symbol</code>&nbsp;for the name of the stock and good old&nbsp;<code>date</code>&nbsp;for the date) and we have to adjust the&nbsp;<code>parseDate</code>&nbsp;function to parse a modifed date value.</div>
+<div>
+Secondly we add the code blocks to take the&nbsp;<code>stocks.csv</code>&nbsp;information that we load as&nbsp;<code>data</code>&nbsp;and we apply the<code>d3.nest</code>&nbsp;function to it and draw each line.</div>
+<div>
+The following code nest&#8217;s the data</div>
+<div>
+<div>
+<pre>    <code>var</code> <code>dataNest</code> <code>=</code> <code>d3</code><code>.</code><code>nest</code><code>()</code>
+        <code>.</code><code>key</code><code>(</code><code>function</code><code>(</code><code>d</code><code>)</code> <code>{</code><code>return</code> <code>d</code><code>.</code><code>symbol</code><code>;})</code>
+        <code>.</code><code>entries</code><code>(</code><code>data</code><code>);</code>
+</pre>
+</div>
+</div>
+<div>
+We declare our new array&#8217;s name as&nbsp;<code>dataNest</code>&nbsp;and we initiate the&nbsp;<code>nest</code>&nbsp;function;</div>
+<div>
+<div>
+<pre> <code>var</code> <code>dataNest</code> <code>=</code> <code>d3</code><code>.</code><code>nest</code><code>()</code>
+</pre>
+</div>
+</div>
+<div>
+We assign the&nbsp;<code>key</code>&nbsp;for our new array as&nbsp;<code>symbol</code>. A &#8216;key&#8217; is like a way of saying &#8220;<em>This is the thing we will be grouping on</em>&#8221;. In other words our resultant array will have a single entry for each unique&nbsp;<code>symbol</code>&nbsp;or stock which will itself be an array of dates and values.</div>
+<div>
+<div>
+<pre>  <code>.</code><code>key</code><code>(</code><code>function</code><code>(</code><code>d</code><code>)</code> <code>{</code><code>return</code> <code>d</code><code>.</code><code>symbol</code><code>;})</code>
+</pre>
+</div>
+</div>
+<div>
+Then we tell the nest function which data array we will be using for our source of data.</div>
+<div>
+<div>
+<pre>  <code>}).</code><code>entries</code><code>(</code><code>data</code><code>);</code>
+</pre>
+</div>
+</div>
+<div>
+Then we use the nested data to loop through our stocks and draw the lines</div>
+<div>
+<div>
+<pre>    <code>dataNest</code><code>.</code><code>forEach</code><code>(</code><code>function</code><code>(</code><code>d</code><code>)</code> <code>{</code>
+
+        <code>svg</code><code>.</code><code>append</code><code>(</code><code>"path"</code><code>)</code>
+            <code>.</code><code>attr</code><code>(</code><code>"class"</code><code>,</code> <code>"line"</code><code>)</code>
+            <code>.</code><code>attr</code><code>(</code><code>"d"</code><code>,</code> <code>priceline</code><code>(</code><code>d</code><code>.</code><code>values</code><code>));</code> 
+
+    <code>});</code>  
+</pre>
+</div>
+</div>
+<div>
+The&nbsp;<code>forEach</code>&nbsp;function being applied to&nbsp;<code>dataNest</code>&nbsp;means that it will take each of the keys that we have just declared with the&nbsp;<code>d3.nest</code>&nbsp;(each stock) and use the values for each stock to append a line using its values.</div>
+<div>
+The end result looks like the following;</div>
+<table align="center" cellpadding="0" cellspacing="0"><tbody>
+<tr><td><a href="http://2.bp.blogspot.com/-McgYIYTR3ZU/U7uaeD33LmI/AAAAAAAAA5U/EQj1AFG4N3s/s1600/super-02.png" imageanchor="1"><img border="0" src="http://2.bp.blogspot.com/-McgYIYTR3ZU/U7uaeD33LmI/AAAAAAAAA5U/EQj1AFG4N3s/s1600/super-02.png" /></a></td></tr>
+<tr><td>A very plain multi-line graph
+</td></tr>
+</tbody></table>
+<div>
+You would be justified in thinking that this is more than a little confusing. Clearly while we have been successful in making each stock draw a corresponding line, unless we can tell them apart, the graph is pretty useless.</div>
+<h5 id="leanpub-auto-applying-the-colours">
+APPLYING THE COLOURS</h5>
+<div>
+Making sure that the colours that are applied to our lines (and ultimately our legend text) is unique from line to line is actually pretty easy.</div>
+<div>
+The code that we will implement for this change is available online at&nbsp;<a href="http://bl.ocks.org/d3noob/88d2a87b72ea894c285c">bl.ocks.org</a>&nbsp;or&nbsp;<a href="https://gist.github.com/d3noob/88d2a87b72ea894c285c">GitHub</a>. It is also available as the files &#8216;super-multi-colours.html&#8217; and &#8216;stocks.csv&#8217; as a download with the book D3 Tips and Tricks (in a zip file) when you&nbsp;<a href="https://leanpub.com/D3-Tips-and-Tricks">download the book from Leanpub</a>.</div>
+<div>
+The changes that we will make to our code are captured in the following code snippet.</div>
+<div>
+<div>
+<pre>    <code>var</code> <code>color</code> <code>=</code> <code>d3</code><code>.</code><code>scale</code><code>.</code><code>category10</code><code>();</code>
+
+    <code>// Loop through each symbol / key</code>
+    <code>dataNest</code><code>.</code><code>forEach</code><code>(</code><code>function</code><code>(</code><code>d</code><code>)</code> <code>{</code>
+
+        <code>svg</code><code>.</code><code>append</code><code>(</code><code>"path"</code><code>)</code>
+            <code>.</code><code>attr</code><code>(</code><code>"class"</code><code>,</code> <code>"line"</code><code>)</code>
+            <code>.</code><code>style</code><code>(</code><code>"stroke"</code><code>,</code> <code>function</code><code>()</code> <code>{</code>
+                <code>return</code> <code>d</code><code>.</code><code>color</code> <code>=</code> <code>color</code><code>(</code><code>d</code><code>.</code><code>key</code><code>);</code> <code>})</code>
+            <code>.</code><code>attr</code><code>(</code><code>"d"</code><code>,</code> <code>priceline</code><code>(</code><code>d</code><code>.</code><code>values</code><code>));</code>
+
+    <code>});</code>
+</pre>
+</div>
+</div>
+<div>
+Firstly we need to declare an&nbsp;<a href="https://github.com/mbostock/d3/wiki/Ordinal-Scales">ordinal scale</a>&nbsp;for our colours with&nbsp;<code>var color = d3.scale.category10();</code>. This is a set of categorical colours (10 of them in this case) that can be invoked which are a nice mix of difference from each other and pleasant on the eye.</div>
+<div>
+We then use the colour scale to assign a unique stroke (line colour) for each unique key (symbol) in our dataset.</div>
+<div>
+<div>
+<pre>    <code>.</code><code>style</code><code>(</code><code>"stroke"</code><code>,</code> <code>function</code><code>()</code> <code>{</code>
+        <code>return</code> <code>d</code><code>.</code><code>color</code> <code>=</code> <code>color</code><code>(</code><code>d</code><code>.</code><code>key</code><code>);</code> <code>})</code>
+</pre>
+</div>
+</div>
+<div>
+It seems easy when it&#8217;s implemented, but in all reality, it is the product of some very clever thinking behind the scenes when designing d3.js and even picking the colours that are used. The end result is a far more usable graph of the stock prices.</div>
+<table align="center" cellpadding="0" cellspacing="0"><tbody>
+<tr><td><a href="http://4.bp.blogspot.com/-xGRt1lXwO0k/U7uaeDnnHCI/AAAAAAAAA5Q/f5bxAjcTU6o/s1600/super-03.png" imageanchor="1"><img border="0" src="http://4.bp.blogspot.com/-xGRt1lXwO0k/U7uaeDnnHCI/AAAAAAAAA5Q/f5bxAjcTU6o/s1600/super-03.png" /></a></td></tr>
+<tr><td>Multi-line graph with unique colours
+</td></tr>
+</tbody></table>
+<div>
+Of course now we&#8217;re faced with the problem of not knowing which line represents which stock price. Time for a legend.</div>
+<h5 id="leanpub-auto-adding-the-legend">
+ADDING THE LEGEND</h5>
+<div>
+If we think about the process of adding a legend to our graph, what we&#8217;re trying to achieve is to take every unique data series we have (stock) and add a relevant label showing which colour relates to which stock. At the same time, we need to arrange the labels in such a way that they are presented in a manner that is not offensive to the eye. In the example I will go through I have chosen to arrange them neatly spaced along the bottom of the graph. so that the final result looks like the following;</div>
+<table align="center" cellpadding="0" cellspacing="0"><tbody>
+<tr><td><a href="http://4.bp.blogspot.com/-FvuyVjg4JpQ/U7uaeHGgjeI/AAAAAAAAA5g/g8-RP-IlyYc/s1600/super-01.png" imageanchor="1"><img border="0" src="http://4.bp.blogspot.com/-FvuyVjg4JpQ/U7uaeHGgjeI/AAAAAAAAA5g/g8-RP-IlyYc/s1600/super-01.png" /></a></td></tr>
+<tr><td>Multi-line graph with legend
+</td></tr>
+</tbody></table>
+<div>
+Bear in mind that the end result will align the legend completely automatically. If there are three stocks it will be equally spaced, if it is six stocks they will be equally spaced. The following is a reasonable mechanism to facilitate this, but if the labels for the data values are of radically different lengths, the final result will looks &#8216;odd&#8217; likewise, if there are a LOT of data values, the legend will start to get crowded.</div>
+<div>
+The code that we will implement for this change is available online at&nbsp;<a href="http://bl.ocks.org/d3noob/7cd5a74c4620db72f43f">bl.ocks.org</a>&nbsp;or&nbsp;<a href="https://gist.github.com/d3noob/7cd5a74c4620db72f43f">GitHub</a>. It is also available as the files &#8216;super-multi-legend.html&#8217; and &#8216;stocks.csv&#8217; as a download with the book D3 Tips and Tricks (in a zip file) when you&nbsp;<a href="https://leanpub.com/D3-Tips-and-Tricks">download the book from Leanpub</a>.</div>
+<div>
+There are three broad categories of changes that we will want to make to our current code;</div>
+<ol>
+<li>Declare a style for the legend font</li>
+<li>Change the area and margins for the graph to accommodate the additional text</li>
+<li>Add the text</li>
+</ol>
+<div>
+Declaring the style for the legend text is as easy as making an appropriate entry in the&nbsp;<code>&lt;style&gt;</code>&nbsp;section of the code. For this example I have chosen the following;</div>
+<div>
+<div>
+<pre><code>.</code><code>legend</code> <code>{</code>
+    <code>font</code><code>-</code><code>size</code><code>:</code> <code>16</code><code>px</code><code>;</code>
+    <code>font</code><code>-</code><code>weight</code><code>:</code> <code>bold</code><code>;</code>
+    <code>text</code><code>-</code><code>anchor</code><code>:</code> <code>middle</code><code>;</code>
+<code>}</code> 
+</pre>
+</div>
+</div>
+<div>
+To change the area and margins of the graph we can make the following small changes to the code.</div>
+<div>
+<div>
+<pre><code>var</code> <code>margin</code> <code>=</code> <code>{</code><code>top</code><code>:</code> <code>30</code><code>,</code> <code>right</code><code>:</code> <code>20</code><code>,</code> <code>bottom</code><code>:</code> <code>70</code><code>,</code> <code>left</code><code>:</code> <code>50</code><code>},</code> 
+    <code>width</code> <code>=</code> <code>600</code> <code>-</code> <code>margin</code><code>.</code><code>left</code> <code>-</code> <code>margin</code><code>.</code><code>right</code><code>,</code>
+    <code>height</code> <code>=</code> <code>300</code> <code>-</code> <code>margin</code><code>.</code><code>top</code> <code>-</code> <code>margin</code><code>.</code><code>bottom</code><code>;</code>  
+</pre>
+</div>
+</div>
+<div>
+The bottom margin is now 70 pixels high and the overall space for the area that the graph (including the margins) covers is increased to 300 pixels.</div>
+<div>
+To add the legend text is slightly more work, but only slightly more. The following code incorporates the changes and I have placed commented out asterisks to the end of the lines that have been added</div>
+<div>
+<div>
+<pre>    <code>legendSpace</code> <code>=</code> <code>width</code><code>/</code><code>dataNest</code><code>.</code><code>length</code><code>;</code> <code>// spacing for legend // ******</code>
+
+    <code>// Loop through each symbol / key</code>
+    <code>dataNest</code><code>.</code><code>forEach</code><code>(</code><code>function</code><code>(</code><code>d</code><code>,</code><code>i</code><code>)</code> <code>{</code>                           <code>// ******</code>
+
+        <code>svg</code><code>.</code><code>append</code><code>(</code><code>"path"</code><code>)</code>
+            <code>.</code><code>attr</code><code>(</code><code>"class"</code><code>,</code> <code>"line"</code><code>)</code>
+            <code>.</code><code>style</code><code>(</code><code>"stroke"</code><code>,</code> <code>function</code><code>()</code> <code>{</code> <code>// Add the colours dynamically</code>
+                <code>return</code> <code>d</code><code>.</code><code>color</code> <code>=</code> <code>color</code><code>(</code><code>d</code><code>.</code><code>key</code><code>);</code> <code>})</code>
+            <code>.</code><code>attr</code><code>(</code><code>"d"</code><code>,</code> <code>priceline</code><code>(</code><code>d</code><code>.</code><code>values</code><code>));</code>
+
+        <code>// Add the Legend</code>
+        <code>svg</code><code>.</code><code>append</code><code>(</code><code>"text"</code><code>)</code>                                    <code>// *******</code>
+            <code>.</code><code>attr</code><code>(</code><code>"x"</code><code>,</code> <code>(</code><code>legendSpace</code><code>/</code><code>2</code><code>)</code><code>+</code><code>i</code><code>*</code><code>legendSpace</code><code>)</code> <code>// spacing // ****</code>
+            <code>.</code><code>attr</code><code>(</code><code>"y"</code><code>,</code> <code>height</code> <code>+</code> <code>(</code><code>margin</code><code>.</code><code>bottom</code><code>/</code><code>2</code><code>)</code><code>+</code> <code>5</code><code>)</code>         <code>// *******</code>
+            <code>.</code><code>attr</code><code>(</code><code>"class"</code><code>,</code> <code>"legend"</code><code>)</code>    <code>// style the legend   // *******</code>
+            <code>.</code><code>style</code><code>(</code><code>"fill"</code><code>,</code> <code>function</code><code>()</code> <code>{</code> <code>// dynamic colours    // *******</code>
+                <code>return</code> <code>d</code><code>.</code><code>color</code> <code>=</code> <code>color</code><code>(</code><code>d</code><code>.</code><code>key</code><code>);</code> <code>})</code>             <code>// *******</code>
+            <code>.</code><code>text</code><code>(</code><code>d</code><code>.</code><code>key</code><code>);</code>                                     <code>// *******</code>
+
+    <code>});</code>
+</pre>
+</div>
+</div>
+<div>
+The first added line finds the spacing between each legend label by dividing the width of the graph area by the number of symbols (<code>key</code>&#8217;s or stocks).</div>
+<div>
+<div>
+<pre>    <code>legendSpace</code> <code>=</code> <code>width</code><code>/</code><code>dataNest</code><code>.</code><code>length</code><code>;</code>
+</pre>
+</div>
+</div>
+<div>
+Then there is a small and subtle change that might other wise go unnoticed, but is nonetheless significant. We add an&nbsp;<code>i</code>&nbsp;to the&nbsp;<code>forEach</code>&nbsp;function;</div>
+<div>
+<div>
+<pre>    <code>dataNest</code><code>.</code><code>forEach</code><code>(</code><code>function</code><code>(</code><code>d</code><code>,</code><code>i</code><code>)</code> <code>{</code>
+</pre>
+</div>
+</div>
+<div>
+This might not seem like much of a big deal, but declaring&nbsp;<code>i</code>&nbsp;allows us to access the index of the returned data. This means that each unique&nbsp;<code>key</code>&nbsp;(stock or symbol) has a unique number. In our example those numbers would be from 0 to 3 (MSFT = 0, AMZN = 1, IBM = 2 and AAPL = 3 (this is the order in which the stocks appear in our csv file)).</div>
+<div>
+Now we get to adding our text. Again, this is a fairly simple exercise which is following the route that we have taken several times already in the book but using some of our prepared values.</div>
+<div>
+<div>
+<pre>        <code>svg</code><code>.</code><code>append</code><code>(</code><code>"text"</code><code>)</code>
+            <code>.</code><code>attr</code><code>(</code><code>"x"</code><code>,</code> <code>(</code><code>legendSpace</code><code>/</code><code>2</code><code>)</code><code>+</code><code>i</code><code>*</code><code>legendSpace</code><code>)</code>
+            <code>.</code><code>attr</code><code>(</code><code>"y"</code><code>,</code> <code>height</code> <code>+</code> <code>(</code><code>margin</code><code>.</code><code>bottom</code><code>/</code><code>2</code><code>)</code><code>+</code> <code>5</code><code>)</code>
+            <code>.</code><code>attr</code><code>(</code><code>"class"</code><code>,</code> <code>"legend"</code><code>)</code>
+            <code>.</code><code>style</code><code>(</code><code>"fill"</code><code>,</code> <code>function</code><code>()</code> <code>{</code>
+                <code>return</code> <code>d</code><code>.</code><code>color</code> <code>=</code> <code>color</code><code>(</code><code>d</code><code>.</code><code>key</code><code>);</code> <code>})</code>
+            <code>.</code><code>text</code><code>(</code><code>d</code><code>.</code><code>key</code><code>);</code> 
+</pre>
+</div>
+</div>
+<div>
+The horizontal spacing for the labels is achieved by setting each label to the position set by the index associated with the label and the space available on the graph. To make it work out nicely we add half a<code>legendSpace</code>&nbsp;at the start (<code>legendSpace/2</code>) and then add the product of the index (<code>i</code>) and&nbsp;<code>legendSpace</code>(<code>i*legendSpace</code>).</div>
+<div>
+We position the legend vertically so that it is in the middle of the bottom margin (<code>height + (margin.bottom/2)+ 5</code>).</div>
+<div>
+And we apply the same colour function to the text as we did to the lines earlier;</div>
+<div>
+<div>
+<pre>            <code>.</code><code>style</code><code>(</code><code>"fill"</code><code>,</code> <code>function</code><code>()</code> <code>{</code>
+                <code>return</code> <code>d</code><code>.</code><code>color</code> <code>=</code> <code>color</code><code>(</code><code>d</code><code>.</code><code>key</code><code>);</code> <code>})</code>
+</pre>
+</div>
+</div>
+<div>
+The final result is a neat and tidy legend at the bottom of the graph;</div>
+<table align="center" cellpadding="0" cellspacing="0"><tbody>
+<tr><td><a href="http://4.bp.blogspot.com/-FvuyVjg4JpQ/U7uaeHGgjeI/AAAAAAAAA5g/g8-RP-IlyYc/s1600/super-01.png" imageanchor="1"><img border="0" src="http://4.bp.blogspot.com/-FvuyVjg4JpQ/U7uaeHGgjeI/AAAAAAAAA5g/g8-RP-IlyYc/s1600/super-01.png" /></a></td></tr>
+<tr><td>Multi-line graph with legend
+</td></tr>
+</tbody></table>
+<div>
+If you&#8217;re looking for an exercise to test your skills you could adapt the code to show the legend to the right of the graph. And if you wanted to go one better, you could arrange the order of the legend to reflect the final numeric value on the right of the graph (I.e in this case AAPL would be on the top and MSFT on the bottom).</div>
+<h5 id="leanpub-auto-making-it-interactive">
+MAKING IT INTERACTIVE</h5>
+<div>
+The last step we&#8217;ll take in this example is to provide ourselves with a bit of control over how the graph looks. Even with the multiple colours, the graph could still be said to be &#8216;busy&#8217;. To clean it up or at least to provide the ability to more clearly display the data that a user wants to see we will add code that will allow us to click on a legend label and this will toggle the corresponding graph line on or off.</div>
+<div>
+This is a progression from the example of how to show / hide an element by clicking on another element that was introduced in he &#8216;Assorted tips and tricks&#8217; chapter.</div>
+<div>
+The only changes to our code that need to be implemented are in the&nbsp;<code>forEach</code>&nbsp;section below. I have left some comments with asterisks in the code below to illustrate lines that are added.</div>
+<div>
+<div>
+<pre>    <code>dataNest</code><code>.</code><code>forEach</code><code>(</code><code>function</code><code>(</code><code>d</code><code>,</code><code>i</code><code>)</code> <code>{</code> 
+
+        <code>svg</code><code>.</code><code>append</code><code>(</code><code>"path"</code><code>)</code>
+            <code>.</code><code>attr</code><code>(</code><code>"class"</code><code>,</code> <code>"line"</code><code>)</code>
+            <code>.</code><code>style</code><code>(</code><code>"stroke"</code><code>,</code> <code>function</code><code>()</code> <code>{</code>
+                <code>return</code> <code>d</code><code>.</code><code>color</code> <code>=</code> <code>color</code><code>(</code><code>d</code><code>.</code><code>key</code><code>);</code> <code>})</code>
+            <code>.</code><code>attr</code><code>(</code><code>"id"</code><code>,</code> <code>'tag'</code><code>+</code><code>d</code><code>.</code><code>key</code><code>.</code><code>replace</code><code>(</code><code>/\s+/g</code><code>,</code> <code>''</code><code>))</code> <code>// assign ID **</code>
+            <code>.</code><code>attr</code><code>(</code><code>"d"</code><code>,</code> <code>priceline</code><code>(</code><code>d</code><code>.</code><code>values</code><code>));</code>
+
+        <code>// Add the Legend</code>
+        <code>svg</code><code>.</code><code>append</code><code>(</code><code>"text"</code><code>)</code>
+            <code>.</code><code>attr</code><code>(</code><code>"x"</code><code>,</code> <code>(</code><code>legendSpace</code><code>/</code><code>2</code><code>)</code><code>+</code><code>i</code><code>*</code><code>legendSpace</code><code>)</code>
+            <code>.</code><code>attr</code><code>(</code><code>"y"</code><code>,</code> <code>height</code> <code>+</code> <code>(</code><code>margin</code><code>.</code><code>bottom</code><code>/</code><code>2</code><code>)</code><code>+</code> <code>5</code><code>)</code>
+            <code>.</code><code>attr</code><code>(</code><code>"class"</code><code>,</code> <code>"legend"</code><code>)</code>
+            <code>.</code><code>style</code><code>(</code><code>"fill"</code><code>,</code> <code>function</code><code>()</code> <code>{</code>
+                <code>return</code> <code>d</code><code>.</code><code>color</code> <code>=</code> <code>color</code><code>(</code><code>d</code><code>.</code><code>key</code><code>);</code> <code>})</code>
+            <code>.</code><code>on</code><code>(</code><code>"click"</code><code>,</code> <code>function</code><code>(){</code>                     <code>// ************</code>
+                <code>// Determine if current line is visible </code>
+                <code>var</code> <code>active</code>   <code>=</code> <code>d</code><code>.</code><code>active</code> <code>?</code> <code>false</code> <code>:</code> <code>true</code><code>,</code>  <code>// ************ </code>
+                <code>newOpacity</code> <code>=</code> <code>active</code> <code>?</code> <code>0</code> <code>:</code> <code>1</code><code>;</code>             <code>// ************</code>
+                <code>// Hide or show the elements based on the ID</code>
+                <code>d3</code><code>.</code><code>select</code><code>(</code><code>"#tag"</code><code>+</code><code>d</code><code>.</code><code>key</code><code>.</code><code>replace</code><code>(</code><code>/\s+/g</code><code>,</code> <code>''</code><code>))</code> <code>// *********</code>
+                    <code>.</code><code>transition</code><code>().</code><code>duration</code><code>(</code><code>100</code><code>)</code>          <code>// ************</code>
+                    <code>.</code><code>style</code><code>(</code><code>"opacity"</code><code>,</code> <code>newOpacity</code><code>);</code>       <code>// ************</code>
+                <code>// Update whether or not the elements are active</code>
+                <code>d</code><code>.</code><code>active</code> <code>=</code> <code>active</code><code>;</code>                       <code>// ************</code>
+                <code>})</code>                                       <code>// ************</code>
+            <code>.</code><code>text</code><code>(</code><code>d</code><code>.</code><code>key</code><code>);</code> 
+
+    <code>});</code>
+</pre>
+</div>
+</div>
+<div>
+The full code for the complete working example is available online at&nbsp;<a href="http://bl.ocks.org/d3noob/e99a762017060ce81c76">bl.ocks.org</a>&nbsp;or&nbsp;<a href="https://gist.github.com/d3noob/e99a762017060ce81c76">GitHub</a>. It is also available as the files &#8216;super-multi.html&#8217; and &#8216;stocks.csv&#8217; as a download with the book D3 Tips and Tricks (in a zip file) when you&nbsp;<a href="https://leanpub.com/D3-Tips-and-Tricks">download the book from Leanpub</a>.</div>
+<div>
+The first piece of code that wee need to add assign an&nbsp;<code>id</code>&nbsp;to each legend text label.</div>
+<div>
+<div>
+<pre>        <code>.</code><code>attr</code><code>(</code><code>"id"</code><code>,</code> <code>'tag'</code><code>+</code><code>d</code><code>.</code><code>key</code><code>.</code><code>replace</code><code>(</code><code>/\s+/g</code><code>,</code> <code>''</code><code>))</code>
+</pre>
+</div>
+</div>
+<div>
+Being able to use our&nbsp;<code>key</code>&nbsp;value as the id means that each label will have a unique identifier. &#8220;<em>What&#8217;s with adding the&nbsp;<code>'tag'</code>&nbsp;piece of text to the&nbsp;<code>id</code>?</em>&#8221; I hear you ask. Good question. If our key starts with a number we could strike trouble (in fact I&#8217;m sure there are plenty of other ways we could strike trouble too, but this was one I came accross). As well as that we include a little regular expression goodness to strip any spaces out of the key with&nbsp;<code>.replace(/\s+/g, '')</code>.</div>
+<table><tbody>
+<tr><td><img alt="information"></td><td><div>
+The&nbsp;<code>.replace</code>&nbsp;calls the regular expression action on our&nbsp;<code>key</code>.&nbsp;<code>\s</code>&nbsp;is the regex for &#8220;whitespace&#8221;, and<code>g</code>&nbsp;is the &#8220;global&#8221; flag, meaning match ALL&nbsp;<code>\s</code>&nbsp;(whitespaces). The&nbsp;<code>+</code>&nbsp;allows for any&nbsp;<em>contiguous&nbsp;</em>string of space characters to being replaced with the empty string (<code>''</code>). This was a late addition to the example and kudos go to the participants in the&nbsp;<a href="http://stackoverflow.com/questions/5963182/how-to-remove-spaces-from-a-string-using-javascript">Stack Overflow question here</a>.</div>
+</td></tr>
+</tbody></table>
+<div>
+Then we use the&nbsp;<code>.on("click", function(){</code>&nbsp;call carry out some actions on the label if it is clicked on. We toggle the&nbsp;<code>.active</code>&nbsp;descriptor for our element with&nbsp;<code>var active = d.active ? false : true,</code>. Then we set the value of<code>newOpacity</code>&nbsp;to either&nbsp;<code>0</code>&nbsp;or&nbsp;<code>1</code>&nbsp;depending on whether&nbsp;<code>active</code>&nbsp;is false or true.</div>
+<div>
+From here we can select our lable using its uinque id and adjust it&#8217;s opacity to either&nbsp;<code>0</code>&nbsp;(transparent) or&nbsp;<code>1</code>(opaque);</div>
+<div>
+<div>
+<pre>        <code>d3</code><code>.</code><code>select</code><code>(</code><code>"#tag"</code><code>+</code><code>d</code><code>.</code><code>key</code><code>.</code><code>replace</code><code>(</code><code>/\s+/g</code><code>,</code> <code>''</code><code>))</code>
+            <code>.</code><code>transition</code><code>().</code><code>duration</code><code>(</code><code>100</code><code>)</code>
+            <code>.</code><code>style</code><code>(</code><code>"opacity"</code><code>,</code> <code>newOpacity</code><code>);</code>
+</pre>
+</div>
+</div>
+<div>
+Just because we can, we also add in a&nbsp;<code>transition</code>&nbsp;statement so that the change in transparency doesn't occur in a flash (100 milli seconds in fact (<code>.duration(100)</code>)).</div>
+<div>
+Lastly we update our&nbsp;<code>d.active</code>&nbsp;variable to whatever the active state is so that it can toggle correctly the next time it is clicked on.</div>
+<div>
+Head on over to the&nbsp;<a href="http://bl.ocks.org/d3noob/e99a762017060ce81c76">live example on bl.ocks.org</a>&nbsp;to see the toggling awesomeness that could be yours!</div>

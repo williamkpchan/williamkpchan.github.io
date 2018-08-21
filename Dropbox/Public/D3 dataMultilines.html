@@ -1,0 +1,231 @@
+<base target="_blank">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+<meta http-equiv="Expires" content="0" />
+<style type="text/css">
+
+body {
+ margin-left: 1%;
+ background-color: #000000;
+ color: red;
+ font-size: 18px;
+}
+a { text-decoration: none;
+	color: #28B8B8;}
+a:visited {	color: #389898;}
+A:hover {	color: yellow;}
+A:focus {	color: red;}
+code { color: pink; background-color: #302030}
+pre { color: gray; background-color: #001010}
+#newtype { color: pink}
+#redpink { color: #cc0099}
+#redword { color: red}
+#yellowword { color: yellow}
+#greenword { color: lightgreen}
+#limeword { color: #00ff00}
+#orangeword { color: orange}
+#cyanword { color: cyan}
+#whiteword { color: white}
+#grayword { color: gray}
+#brownword { color: #ff8000}
+#yellowgreen { color: #bfff00}
+#palered { color: #ffcccc}
+#blueword { color: dodgerblue}
+#purpleword { color: darkorchid}
+#goldword { color: GoldenRod}
+#silverword { color: silver}
+#blackword { color: black}
+.left {
+    margin: 2px;
+    color: GoldenRod;
+    border: 1px solid GoldenRod;
+    padding: 2px;
+    font-size: 60%;
+}
+.bord {
+    color: redpink;
+    margin: 3px;
+    border: 1px solid GoldenRod;
+    padding: 1px;
+    font-size: 90%;
+    border-radius: 2px;
+}
+.bordsub {
+    color: #F07070;
+    margin: 3px 90px 3px 90px;
+    border: 1px solid darkcyan;
+    padding: 1px;
+    font-size: 90%;
+}
+.highlight { 
+    color: pink;
+  }
+.imp { 
+    color: #E07070;
+  }
+.keys { 
+    color: red;
+  }
+.monitor { 
+    color: orange;
+  }
+.note { 
+    color: darkcyan;
+  }
+.redcl { 
+    color: red;
+  }
+.redrose { color: #cc0099}
+.redword { color: red}
+.yellowword { color: yellow}
+.greenword { color: lightgreen}
+.limeword { color: .00ff00}
+.orangeword { color: orange}
+.cyanword { color: cyan}
+.whiteword { color: white}
+.grayword { color: gray}
+.brownword { color: #ff8000}
+.yellowgreen { color: #bfff00}
+.palered { color: #ffcccc}
+.blueword { color: dodgerblue}
+.purpleword { color: darkorchid}
+.goldword { color: GoldenRod}
+.silverword { color: silver}
+.blackword { color: black}
+
+.axis--x path {display: none; fill: steelblue; stroke-width: 1px;}
+.axis--y path {display: none; fill: steelblue; stroke-width: 0px;}
+.line {fill: none; stroke: steelblue; stroke-width: 1px;}
+.axis text {fill: blue;}
+.grid line {
+  stroke: white;
+  stroke-opacity: 0.7;
+  shape-rendering: crispEdges;
+}
+
+.grid .tick {
+    stroke: lightgrey;
+    stroke-opacity: 0.7;
+    shape-rendering: crispEdges;
+}
+.grid path {stroke-width: 0;}
+
+</STYLE>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+
+</head>
+<body>
+
+<svg width="960" height="500"></svg>
+
+<script>
+
+var svg = d3.select("svg"),
+    margin = {top: 20, right: 80, bottom: 30, left: 50},
+    width = svg.attr("width") - margin.left - margin.right,
+    height = svg.attr("height") - margin.top - margin.bottom,
+    g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var parseTime = d3.timeParse("%Y%m%d");
+
+var x = d3.scaleTime().range([0, width]),
+    y = d3.scaleLinear().range([height, 0]),
+    z = d3.scaleOrdinal(d3.schemeCategory10);
+
+var line = d3.line()
+    .curve(d3.curveLinear)
+    .x(function(d) { return x(d.date); })
+    .y(function(d) { return y(d.temperature); });
+
+function make_x_axis() {		
+    return d3.svg.axis()
+        .scale(x)
+        .orient("bottom")
+        .ticks(5)
+}
+
+function make_y_axis() {		
+    return d3.svg.axis()
+        .scale(y)
+        .orient("left")
+        .ticks(5)
+}
+
+d3.tsv("D3 MultilinesData.tsv", type, function(error, data) {
+  if (error) throw error;
+
+  var cities = data.columns.slice(1).map(function(id) {
+    return {
+      id: id,
+      values: data.map(function(d) {
+        return {date: d.date, temperature: d[id]};
+      })
+    };
+  });
+
+  x.domain(d3.extent(data, function(d) { return d.date; }));
+
+  y.domain([
+    d3.min(cities, function(c) { return d3.min(c.values, function(d) { return d.temperature; }); }),
+    d3.max(cities, function(c) { return d3.max(c.values, function(d) { return d.temperature; }); })
+  ]);
+
+  z.domain(cities.map(function(c) { return c.id; }));
+
+  g.append("g")
+      .attr("class", "axis axis--x")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x));
+
+  g.append("g")
+      .attr("class", "axis axis--y")
+      .call(d3.axisLeft(y))
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", "0.71em")
+      .attr("fill", "white")
+      .text("Temperature, ºF");
+
+  var city = g.selectAll(".city")
+    .data(cities)
+    .enter().append("g")
+      .attr("class", "city");
+
+  svg.append("g")			
+        .attr("class", "grid")
+        .attr("transform", "translate(0," + height + ")")
+        .call(make_x_axis()
+            .tickSize(-height, 0, 0)
+            .tickFormat("")
+        )
+
+    svg.append("g")			
+        .attr("class", "grid")
+        .call(make_y_axis()
+            .tickSize(-width, 0, 0)
+            .tickFormat("")
+        ) 
+  city.append("path")
+      .attr("class", "line")
+      .attr("d", function(d) { return line(d.values); })
+      .style("stroke", function(d) { return z(d.id); });
+
+  city.append("text")
+      .datum(function(d) { return {id: d.id, value: d.values[d.values.length - 1]}; })
+      .attr("transform", function(d) { return "translate(" + x(d.value.date) + "," + y(d.value.temperature) + ")"; })
+      .attr("x", 3)
+      .attr("dy", "0.35em")
+      .attr("fill", "white")
+      .style("font", "10px sans-serif")
+      .text(function(d) { return d.id; });
+});
+
+function type(d, _, columns) {
+  d.date = parseTime(d.date);
+  for (var i = 1, n = columns.length, c; i < n; ++i) d[c = columns[i]] = +d[c];
+  return d;
+}
+
+</script>

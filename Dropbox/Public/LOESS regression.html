@@ -1,0 +1,209 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<style type="text/css">
+
+  a {text-decoration: none}
+  A:hover { color: yellow }
+  A:focus { color: red }
+ #newtype { color: pink}
+}
+
+</STYLE></head><body bgcolor="#102000" text="#50C070" leftmargin="10" topmargin="10" marginwidth="100" link="#08C8A8" vlink="#389898" alink="#28B8B8" target=_blank><FONT size=3>
+<div>
+<a href="https://fibosworld.wordpress.com/2012/10/17/another-one-on-aggregate-plyr-and-crosstables/" rel="prev">Basic ideas on aggregate, plyr and&nbsp;crosstables!</a>
+</div>
+
+<div>
+<a href="https://fibosworld.wordpress.com/2013/02/17/change-fonts-in-ggplot2-and-create-xkcd-style-graphs/" rel="next">Change fonts in ggplot2, and create xkcd style&nbsp;graphs 
+</a>
+</div>
+<h1>
+LOESS regression with 
+</h1>
+<p>
+The other day, I came a small problem: I was investigating a dataset, and the different variables clearly showed a non-linear behaviour.
+<br />
+
+Consequently, I could not apply the classical linear regression.
+<br />
+
+An approach to solve this kind of problem is LOESS regression, which stands for 
+<em>
+locally weighted scatterplot smoothing
+</em>
+. 
+</p><p>
+In the following, we will work through an artificial example to make the concept clear and show how to apply in R.
+</p><p>
+We first create a dataframe with two variables, a and y, which are non-linearily related. The plot shows this relationship.
+</p><p>
+
+<img src="https://fibosworld.files.wordpress.com/2012/11/create_data.png">
+
+</p><p>
+We perform two regressions, one linear and one loess.
+</p><pre>
+
+<code>
+## 
+## Call:
+## lm(formula = y ~ a)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+## -2.303 -0.635  0.294  0.792  1.635 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) 3.100335   0.136374    22.7   <2e-16 ***
+## a           0.007645   0.000305    25.1   <2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1 
+## 
+## Residual standard error: 0.973 on 98 degrees of freedom
+## Multiple R-squared: 0.865,   Adjusted R-squared: 0.864 
+## F-statistic:  630 on 1 and 98 DF,  p-value: <2e-16
+
+</code><code>
+## Call:
+## loess(formula = y ~ a)
+## 
+## Number of Observations: 100 
+## Equivalent Number of Parameters: 4.56 
+## Residual Standard Error: 0.587 
+## Trace of smoother matrix: 4.98 
+## 
+## Control settings:
+##   normalize:  TRUE 
+##   span       :  0.75 
+##   degree   :  2 
+##   family   :  gaussian
+##   surface  :  interpolate      cell = 0.2
+
+</code>
+
+</pre><p>
+
+<img src="https://fibosworld.files.wordpress.com/2012/11/linreg.png"></p><p>
+The scatterplot clearly shows the better fit from the loess regression.
+<br />
+
+The summary of the regression shows one difference between linear and loess: The loess regression does not give the parameters, since it is a local regression. The classical measure of goodness of fit is r2.
+<br />
+
+The linear model has a r2 of 
+<code>
+0.865
+</code>
+. For the LOESS we have to calculate the r2 and follow this proposal.
+</p><pre>
+
+<code>
+## [1] 0.9528
+
+</code>
+
+</pre><p>
+The r
+<sup>
+2
+</sup>
+ from the loess is 
+<code>
+0.953
+</code>
+ and thus very good and better than the r
+<sup>
+2
+</sup>
+ from the linear regression.
+<br />
+
+Also the investigation of the plot of residuals vs fitted/predicted values indicates a much better fit of the LOSS regression compared to the linear regression (the residuals plot of the linear regression shows the structure &#8211; which we clearly do not want); the QQ-plot shows some issues on the tails.
+<br /><img class="alignnone size-full wp-image-73" title="fit_loess" alt="" src="https://fibosworld.files.wordpress.com/2012/11/fit_loess.png"></p><p>
+But what to do now with it? Finally, we probably want to 
+<em>
+predict
+</em>
+ some values out of this exercise.
+<br />
+
+The 
+<em>
+predict
+</em>
+-function helps us with this exercise.
+</p><pre>
+
+<code>
+##     a linreg loess
+## 1  10  3.177 2.265
+## 2 400  6.158 7.133
+## 3 900  9.981 9.365
+
+</code>
+
+</pre><p>
+
+<img class="alignnone size-full wp-image-74" title="predict" alt="" src="https://fibosworld.files.wordpress.com/2012/11/predict.png"></p><p>
+Alright, this was a quick introduction on how to apply the LOESS regression.
+</p><p>
+And here is the full code:
+</p><div style="overflow:auto;"><div class="geshifilter"><pre class="r geshifilter-R" style="font-family:monospace;">
+## @knitr create_data
+y <- seq(from=1, to=10, length.out=100)
+a <- y^3 +y^2  + rnorm(100,mean=0, sd=30)
+data <- data.frame(a=a, y=y)
+plot(y=y, x=a)
+
+## @knitr linreg
+linreg <- lm(y~a)
+
+summary(linreg)
+loess <- loess(y~a)
+summary(loess)
+scatter.smooth(data)
+abline(linreg, col="blue")
+
+## @knitr loess_fit
+hat <- predict(loess)
+plot(y~a)
+lines(a[order(a)], hat[order(hat)], col="red")
+(r_sq_loess <- cor(y, hat)^2)
+
+## @knitr fit_loess
+par(mfrow=c(2,2))
+plot(linreg$fitted, linreg$residuals, main="classical linear regression")
+plot(loess$fitted, loess$residuals, main="LOESS")
+# normal probablility plot
+qqnorm(linreg$residuals, ylim=c(-2,2)) 
+qqline(linreg$residuals)
+qqnorm(loess$residuals, ylim=c(-2,2)) 
+qqline(loess$residuals)
+
+## @knitr predict
+
+predict <- data.frame(a=c(10,400,900))
+scatter.smooth(data)
+abline(linreg, col="blue")
+predict$linreg <- predict(linreg, predict)
+predict$loess <- predict(loess, predict)
+predictpoints(x=predict$a, y=predict(linreg, predict), col="blue", pch=18, cex=2)
+points(x=predict$a, y=predict(loess, predict), col="red", pch=18, cex=2)
+</pre>
+
+</div></div>
+
+<h4>
+Recent Posts
+</h4>
+
+<ul>
+
+R talks to Weka about Data&nbsp;Mining<br>
+Change fonts in ggplot2, and create xkcd style&nbsp;graphs<br>
+LOESS regression with&nbsp;R<br>
+Basic ideas on aggregate, plyr and&nbsp;crosstables!<br>
+ggplot2 &#8211; much easier with JGR and&nbsp;Deducer<br>
+

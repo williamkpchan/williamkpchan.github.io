@@ -1,0 +1,1455 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<style>
+body { margin: 10%; font-size: 22px; background-color: #000000; color: #10A0A0;}
+a { text-decoration: none; color: #60C8B8;} 
+a:visited {	color: #38D098;} 
+a:hover { color: yellow;} 
+a:focus { color: red;}
+code { color: #78E0E0; background-color: #001030}
+pre { color: gray; background-color: #001010}
+h1 {
+    position: absolute;
+    border-radius: 8px;
+    color: GoldenRod;
+    border: 1px solid GoldenRod;
+    padding: 3px;
+    font-size: 90%;
+}
+.bord {
+    color: white;
+    border: 1px solid GoldenRod;
+  	border-radius: 4px;
+    font-size: 200%;
+    padding: 1px;
+}
+</style>
+
+</head>
+<body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+
+<center><b class="bord">LearnJsData</b><br></center>
+<h1 id="about-this-guide">About this guide</h1><br><br>
+
+<p>This guide teaches the basics of manipulating data using JavaScript in the
+browser, or in node.js. Specifically, these tasks are geared around preparing
+data for further analysis and visualization.</p>
+<p>This guide will demonstrate some basic techniques and how to implement them
+using core JavaScript API, the <a href="http://d3js.org/">d3.js</a> library and <a href="http://lodash.com/">lodash</a>.</p>
+<p>It assumes you already have some basic knowledge of JavaScript.</p>
+<h2 id="tasks">Tasks</h2>
+<ul class='tasks'>
+
+ <li><a href="#getting_started">Getting Started</a></li>
+ <li><a href="#read_data">Reading in Data</a></li>
+ <li><a href="#combine_data">Combining Data</a></li>
+ <li><a href="#summarize_data">Summarizing Data</a></li>
+ <li><a href="#iterate_data">Iterating and Reducing</a></li>
+ <li><a href="#group_data">Nesting and Grouping Data</a></li>
+ <li><a href="#strings">Working with Strings</a></li>
+ <li><a href="#regexes">Regular Expressions</a></li>
+ <li><a href="#time">Working with Time</a></li>
+ <li><a href="#assumptions">Checking Data Assumptions</a></li>
+ <li><a href="#node">Using Node</a></li>
+</ul>
+
+<h2 id="translations">Translations</h2>
+<p>Access this guide in:</p>
+<ul>
+<li><a href="/en/">English</a></li>
+<li><a href="/es/">Español</a> - coming soon!</li>
+</ul>
+<h2 id="code">Code</h2>
+<p>Each document in this repo is executed when loaded into a browser. Check it out by opening the Developer Tools Console. You should see the output of the following code block:</p>
+<pre><code class="lang-javascript"><span class="hljs-built_in">console</span>.log(<span class="hljs-string">"This is the index!"</span>);
+</code></pre>
+<p>Check out the <a href="https://github.com/vlandham/js_data">full source on github</a>.</p>
+<h2 id="why-">Why?</h2>
+<p>Is data munging in JavaScript something you would actually want to do? <em>Maybe</em>.</p>
+<p>There are other languages out there that do a great job with data wrangling:</p>
+<ul>
+<li><a href="https://ramnathv.github.io/pycon2014-r/explore/README.html">R with dplyr</a></li>
+<li><a href="http://nbviewer.ipython.org/gist/fonnesbeck/5850413">python with pandas</a></li>
+<li><a href="">java (just kidding)</a></li>
+</ul>
+<p>These tools are great and you should use them. Often times, however, you are already familiar with a particular language (like JavaScript) and would like to get started with data, but want to take it one step at a time.</p>
+<p>Additionally, sometimes you are already in a particular environment (like JavaScript) and don&#39;t have the luxury of switching to one of these other options.</p>
+<p>In these cases, JavaScript could be considered a viable option for your data analysis. And if you find yourself in one of these situations, or just want to try out JavaScript for data analysis for fun, then <em>this guide is for you</em>!</p>
+<p>Check out some of the tasks, and see if JavaScript Data something you want to try yourself.</p>
+
+  </div>
+  <br/>
+
+<br><br>
+<a name="getting_started"></a><br><p></p>
+    <br>
+<h1 id="getting-started">Getting Started</h1><br><br>
+
+<h2 id="about-tasks">About Tasks</h2>
+<p>This guide is broken up into a number of tasks, which we can think of as little modules or <em>recipes</em>.</p>
+<p>Each task tries to encapsulate a concrete lesson around common data manipulation and analysis processes. Tasks attempt to be self-contained and stay focused on the, well, <em>task at hand</em>. </p>
+<p>This guide was built with for client side data processing (in the browser), but can easily be used in a server side (Node) application with a bit of tweaking. Check out the <a href="node.html">analyzing data with Node</a> section for the details. </p>
+<h2 id="why-d3-">Why D3?</h2>
+<p><a href="http://d3js.org/">D3.js</a> is largely known for its data visualization capabilities - and for good reason. It is quickly becoming the de facto standard for interactive visualization on the web.</p>
+<p>Its core feature of binding data to visual representations happens to require a lot of manipulation of said data. Thus, while this toolkit is focused around visualization, it is well suited for data munging as well!</p>
+<p>And, a typical output for data manipulation is at least some sort of visualization of that data, in which case you are all ready to go.</p>
+<h2 id="why-lodash-">Why lodash?</h2>
+<p><a href="https://lodash.com">Lodash</a> is fast, popular, and fills in some holes in D3&#39;s processing features. Plus, it&#39;s functional style and chaining capabilities make it work well alongside D3.</p>
+<h2 id="code-snippets">Code Snippets</h2>
+<p>There are a bunch of useful snippets in this guide. Here is an example:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> theMax = d3.max([<span class="hljs-number">1</span>,<span class="hljs-number">2</span>,<span class="hljs-number">20</span>,<span class="hljs-number">3</span>]);
+<span class="hljs-built_in">console</span>.log(theMax);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-number">20</span>
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p>We use a little arrow, <code>=&gt;</code>, to indicate output from a code snippet. This same output you can view by opening the <a href="https://developer.chrome.com/devtools/docs/console">console</a> of your favorite web browser.</p>
+<p>Snippets in this guide that are not pure JavaScript will be marked with the libraries used to make them work.</p>
+<h2 id="preparing-your-site-for-data-processing">Preparing Your Site for Data Processing</h2>
+<p>To get started using these tools for your data processing, you are going to want to include them in your html file along with a JavaScript file to perform the analysis. </p>
+<p>I typically download these scripts and include local copies in my page. To do this, you would want to have your HTML look something like this: </p>
+<pre><code class="lang-html"><span class="hljs-doctype">&lt;!doctype html&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-title">html</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-title">head</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-title">head</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-title">body</span>&gt;</span>
+
+<span class="hljs-tag">&lt;<span class="hljs-title">script</span> <span class="hljs-attribute">src</span>=<span class="hljs-value">'js/d3.js'</span>&gt;</span><span class="javascript"></span><span class="hljs-tag">&lt;/<span class="hljs-title">script</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-title">script</span> <span class="hljs-attribute">src</span>=<span class="hljs-value">'js/lodash.js'</span>&gt;</span><span class="javascript"></span><span class="hljs-tag">&lt;/<span class="hljs-title">script</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-title">script</span> <span class="hljs-attribute">src</span>=<span class="hljs-value">'js/analysis.js'</span>&gt;</span><span class="javascript"></span><span class="hljs-tag">&lt;/<span class="hljs-title">script</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-title">body</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-title">html</span>&gt;</span>
+</code></pre>
+<p><code>analysis.js</code> would be where your analysis code goes. I put them at the end of the <code>body</code> - just so that if there is other content on the page, it won&#39;t be delayed in loading. Typically, I name this file <code>index.html</code> - so that its loaded automatically as the root page.</p>
+<h2 id="running-a-local-server">Running a Local Server</h2>
+<p>D3&#39;s functions for <a href="read_data.html">reading data</a> require you be running the page from a server. You can do this on your own machine by running a local server out of the root directory of your site.</p>
+<p>There are many options for easy-to-spin-up web servers:</p>
+<ul>
+<li><a href="http://www.pythonforbeginners.com/modules-in-python/how-to-use-simplehttpserver/">SimpleHTTPServer</a> for Python</li>
+<br>to run python simplehttpserver: python -m SimpleHTTPServer 8000<br>
+or: python -m http.server 8080 <br>
+<li><a href="http://www.benjaminoakes.com/2013/09/13/ruby-simple-http-server-minimalist-rake/">httpd</a> for Ruby</li>
+<li><a href="https://github.com/nodeapps/http-server">http-server</a> for Node</li>
+</ul>
+<p>Lately, I have been using that last option - <code>http-server</code>. If you have Node and npm installed, you can grab the required package by installing it from the command line:</p>
+<pre><code class="lang-bash">npm install -g http-server
+</code></pre>
+<p>(The <code>-g</code> flag stands for <em>global</em> - which allows you to access <code>http-server</code> from any directory on your machine.</p>
+<p>Then <code>cd</code> to your analysis directory and start it up!</p>
+<pre><code class="lang-bash"><span class="hljs-built_in">cd</span> /path/to/dir
+http-server
+</code></pre>
+<p>In your web browser, open up <a href="http://0.0.0.0:8080">http://0.0.0.0:8080</a> and you should be ready to go!</p>
+<h2 id="next-task">Next Task</h2>
+<p><a href="#read_data">Reading in Data</a></p>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="http://howtonode.org/how-to-install-nodejs">Installing Node</a> - if you need some help getting <code>http-server</code> on your machine.</li>
+</ul>
+
+  </div>
+
+  <br/><br/><br><br>
+<a name="read_data"></a><br><p></p>
+    <br>
+<h1 id="reading-in-data">Reading in Data</h1><br><br>
+
+<p>The first step in any data processing is getting the data! Here is how to parse in and prepare common input formats using D3.js</p>
+<h2 id="parsing-csv-files">Parsing CSV Files</h2>
+<p><a href="https://github.com/mbostock/d3/wiki/Requests">D3 has a bunch</a> of filetypes it can support when loading data, and one of the most common is probably plain old CSV (comma separated values).</p>
+<p>Let&#39;s say you had a csv file with some city data in it:</p>
+<pre><code class="lang-bash">cities.csv:
+
+city,state,population,land area
+seattle,WA,<span class="hljs-number">652405</span>,<span class="hljs-number">83.9</span>
+new york,NY,<span class="hljs-number">8405837</span>,<span class="hljs-number">302.6</span>
+boston,MA,<span class="hljs-number">645966</span>,<span class="hljs-number">48.3</span>
+kansas city,MO,<span class="hljs-number">467007</span>,<span class="hljs-number">315.0</span>
+</code></pre>
+<p>Use <a href="https://github.com/mbostock/d3/wiki/CSV">d3.csv</a> to convert it into an array of objects</p>
+<pre><code class="lang-javascript">d3.csv(<span class="hljs-string">"/data/cities.csv"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(data)</span> </span>{
+  <span class="hljs-built_in">console</span>.log(data[<span class="hljs-number">0</span>]);
+});
+</code></pre>
+<pre><code>=&gt; {<span class="hljs-string">city:</span> <span class="hljs-string">"seattle"</span>, <span class="hljs-string">state:</span> <span class="hljs-string">"WA"</span>, <span class="hljs-string">population:</span> <span class="hljs-string">"652405"</span>, land <span class="hljs-string">area:</span> <span class="hljs-string">"83.9"</span>}
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p>You can see that the headers of the original CSV have been used as the property names for the data objects. Using <code>d3.csv</code> in this manner requires that your CSV file has a header row.</p>
+<p>If you look closely, you can also see that the values associated with these properties are all strings. This is probably <em>not what you want</em> in the case of numbers. When loading CSVs and other flat files, you have to do the type conversion.</p>
+<p>We will see more of this in other tasks, but a simple way to do this is to use the <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Arithmetic_Operators#Unary_plus">+</a> operator (unary plus). <code>forEach</code> can be used to iterate over the data array.</p>
+<pre><code class="lang-javascript">d3.csv(<span class="hljs-string">"/data/cities.csv"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(data)</span> </span>{
+  data.forEach(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{
+    d.population = +d.population;
+    d[<span class="hljs-string">"land area"</span>] = +d[<span class="hljs-string">"land area"</span>];
+  });
+  <span class="hljs-built_in">console</span>.log(data[<span class="hljs-number">0</span>]);
+});
+</code></pre>
+<pre><code>=&gt; {<span class="hljs-string">city:</span> <span class="hljs-string">"seattle"</span>, <span class="hljs-string">state:</span> <span class="hljs-string">"WA"</span>, <span class="hljs-string">population:</span> <span class="hljs-number">652405</span>, land <span class="hljs-string">area:</span> <span class="hljs-number">83.9</span>}
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Property_Accessors">Dot notation</a> is a useful way to access the properties of these data objects. However, if your headers have spaces in them, then you will need to use bracket notation as shown.</p>
+<p>This can also be done during the loading of the data, by <code>d3.csv</code> directly. This is done by providing an accessor function to <code>d3.csv</code>, who&#39;s return value will be the individual data objects in our data array.</p>
+<pre><code class="lang-javascript">d3.csv(<span class="hljs-string">"/data/cities.csv"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{
+  <span class="hljs-keyword">return</span> {
+    city : d.city,
+    state : d.state,
+    population : +d.population,
+    land_area : +d[<span class="hljs-string">"land area"</span>]
+  };
+}, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(data)</span> </span>{
+  <span class="hljs-built_in">console</span>.log(data[<span class="hljs-number">0</span>]);
+});
+</code></pre>
+<pre><code>=&gt; {<span class="hljs-string">city:</span> <span class="hljs-string">"seattle"</span>, <span class="hljs-string">state:</span> <span class="hljs-string">"WA"</span>, <span class="hljs-string">population:</span> <span class="hljs-number">652405</span>, <span class="hljs-string">land_area:</span> <span class="hljs-number">83.9</span>}
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p>In this form, you have complete control over the data objects and can rename properties (like <code>land_area</code>) and convert values (like <code>population</code>) willy-nilly.  On the other hand, you have to be quite explicit about which properties to return. This may or may not be what you are into.</p>
+<p>I typically allow D3 to load all the data, and then make modifications in a post-processing step, but it might be more effective for you to be more explicit with the modifications.</p>
+<h2 id="reading-tsv-files">Reading TSV Files</h2>
+<p>CSV is probably the most common flat file format, but in no way the only one.</p>
+<p>I often like to use TSV (tab separated files) - to get around the issues of numbers and strings often having commas in them.</p>
+<p>D3 can parse TSV&#39;s with <a href="https://github.com/mbostock/d3/wiki/CSV#tsv">d3.tsv</a>:</p>
+<pre><code>animals.<span class="hljs-keyword">ts</span><span class="hljs-variable">v:</span>
+
+name    <span class="hljs-built_in">type</span>    avg_weight
+tiger    mammal    <span class="hljs-number">260</span>
+hippo    mammal    <span class="hljs-number">3400</span>
+komodo dragon    reptile    <span class="hljs-number">150</span>
+</code></pre><p>Loading animals.tsv with <code>d3.tsv</code>:</p>
+<pre><code class="lang-javascript">d3.tsv(<span class="hljs-string">"/data/animals.tsv"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(data)</span> </span>{
+  <span class="hljs-built_in">console</span>.log(data[<span class="hljs-number">0</span>]);
+});
+</code></pre>
+<pre><code>=&gt; {<span class="hljs-string">name:</span> <span class="hljs-string">"tiger"</span>, <span class="hljs-string">type:</span> <span class="hljs-string">"mammal"</span>, <span class="hljs-string">avg_weight:</span> <span class="hljs-string">"260"</span>}
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<h2 id="reading-other-flat-files">Reading Other Flat Files</h2>
+<p>In fact, <code>d3.tsv</code> and <code>d3.csv</code> are only the tip of the iceberg. If you have a non-standard delimited file, you can create your own parser easily, using <a href="https://github.com/mbostock/d3/wiki/CSV#arbitrary-delimiters">d3.dsv</a></p>
+<p>Using <code>d3.dsv</code> takes one more step. You first create a new parser by passing in the type of delimiter and <a href="http://en.wikipedia.org/wiki/Internet_media_type">mimeType</a> to use.</p>
+<p>For example, if we had a file that looked like this:</p>
+<pre><code>animals_piped.<span class="hljs-method">txt:</span>
+
+name<span class="hljs-localvars">|type|avg_weight
+tiger|mammal|</span><span class="hljs-number">260</span>
+hippo<span class="hljs-localvars">|mammal|</span><span class="hljs-number">3400</span>
+komodo dragon<span class="hljs-localvars">|reptile|</span><span class="hljs-number">150</span>
+</code></pre><p>We could create a pipe separated values (PSV) parser using <code>d3.dsv</code>:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> psv = d3.dsv(<span class="hljs-string">"|"</span>, <span class="hljs-string">"text/plain"</span>);
+</code></pre>
+<p>And then use this to parse the strangely formated file.</p>
+<pre><code class="lang-javascript">psv(<span class="hljs-string">"/data/animals_piped.txt"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(data)</span> </span>{
+  <span class="hljs-built_in">console</span>.log(data[<span class="hljs-number">1</span>]);
+});
+</code></pre>
+<pre><code>=&gt; {<span class="hljs-string">name:</span> <span class="hljs-string">"hippo"</span>, <span class="hljs-string">type:</span> <span class="hljs-string">"mammal"</span>, <span class="hljs-string">avg_weight:</span> <span class="hljs-string">"3400"</span>}
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<h2 id="reading-json-files">Reading JSON Files</h2>
+<p>For nested data, or for passing around data where you don&#39;t want to mess with data typing, its hard to beat <a href="http://json.org/">JSON</a>.</p>
+<p>JSON has become the language of the internet for good reason. Its easy to understand, write, and parse. And with <a href="">d3.json</a> - you too can harness its power.</p>
+<pre><code>employees.<span class="hljs-string">json:</span>
+
+[
+ {<span class="hljs-string">"name"</span>:<span class="hljs-string">"Andy Hunt"</span>,
+  <span class="hljs-string">"title"</span>:<span class="hljs-string">"Big Boss"</span>,
+  <span class="hljs-string">"age"</span>: <span class="hljs-number">68</span>,
+  <span class="hljs-string">"bonus"</span>: <span class="hljs-literal">true</span>
+ },
+ {<span class="hljs-string">"name"</span>:<span class="hljs-string">"Charles Mack"</span>,
+  <span class="hljs-string">"title"</span>:<span class="hljs-string">"Jr Dev"</span>,
+  <span class="hljs-string">"age"</span>:<span class="hljs-number">24</span>,
+  <span class="hljs-string">"bonus"</span>: <span class="hljs-literal">false</span>
+ }
+]
+</code></pre><p>Loading employees.json with <code>d3.json</code>:</p>
+<pre><code class="lang-javascript">d3.json(<span class="hljs-string">"/data/employees.json"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(data)</span> </span>{
+  <span class="hljs-built_in">console</span>.log(data[<span class="hljs-number">0</span>]);
+});
+</code></pre>
+<pre><code>=&gt; {<span class="hljs-string">name:</span> <span class="hljs-string">"Andy Hunt"</span>, <span class="hljs-string">title:</span> <span class="hljs-string">"Big Boss"</span>, <span class="hljs-string">age:</span> <span class="hljs-number">68</span>, <span class="hljs-string">bonus:</span> <span class="hljs-literal">true</span>}
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p>We can see that, unlike our flat file parsing, numeric types stay numeric. Indeed, a JSON value can be a string, a number, a boolean value, an array, or another object. This allows nested data to be dealt with easily.</p>
+<h2 id="loading-multiple-files">Loading Multiple Files</h2>
+<p>D3&#39;s basic loading mechanism is fine for one file, but starts to get messy as we nest multiple callbacks.</p>
+<p>For loading multiple files, we can use <a href="https://github.com/mbostock/queue">Queue.js</a> (also written by Mike Bostock) to wait for multiple data sources to be loaded.</p>
+<pre><code class="lang-javascript">queue()
+  .defer(d3.csv, <span class="hljs-string">"/data/cities.csv"</span>)
+  .defer(d3.tsv, <span class="hljs-string">"/data/animals.tsv"</span>)
+  .await(analyze);
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">analyze</span><span class="hljs-params">(error, cities, animals)</span> </span>{
+  <span class="hljs-keyword">if</span>(error) { <span class="hljs-built_in">console</span>.log(error); }
+
+  <span class="hljs-built_in">console</span>.log(cities[<span class="hljs-number">0</span>]);
+  <span class="hljs-built_in">console</span>.log(animals[<span class="hljs-number">0</span>]);
+}
+</code></pre>
+<pre><code>=&gt; {<span class="hljs-string">city:</span> <span class="hljs-string">"seattle"</span>, <span class="hljs-string">state:</span> <span class="hljs-string">"WA"</span>, <span class="hljs-string">population:</span> <span class="hljs-string">"652405"</span>, land <span class="hljs-string">area:</span> <span class="hljs-string">"83.9"</span>}
+{<span class="hljs-string">name:</span> <span class="hljs-string">"tiger"</span>, <span class="hljs-string">type:</span> <span class="hljs-string">"mammal"</span>, <span class="hljs-string">avg_weight:</span> <span class="hljs-string">"260"</span>}
+</code></pre><div class="aside">This code is using queue.js and d3.js</div>
+
+<p>Note that we <code>defer</code> the loading of two types of files - using two different loading functions - so this is an easy way to mix and match file types.</p>
+<p>The callback function passed into <code>await</code> gets each dataset as a parameter, with the first parameter being populated if an error has occurred in loading the data.</p>
+<p>It can be useful to output the error, if it is defined, so you catch data loading problems quickly.</p>
+<p>To add another data file, simply add another defer and extend the input parameters for your callback!</p>
+<h2 id="next-task">Next Task</h2>
+<p><a href="#combine_data">Combining Data</a></p>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="https://github.com/mbostock/d3/wiki/Requests">D3 documentation</a></li>
+<li><a href="https://github.com/mbostock/d3/wiki/Requests#d3_xml">Loading XML with D3</a></li>
+<li><a href="http://bl.ocks.org/mbostock/1014829">Loading External SVG with D3</a> - SVG is just XML!</li>
+</ul>
+
+  </div>
+
+
+  <br/><br/><br><br>
+<a name="combine_data"></a><br><p></p>
+    <br>
+<h1 id="combining-data">Combining Data</h1><br><br>
+
+<p><em>Note: This task was very generously contributed by <a href="http://timogrossenbacher.ch/">Timo Grossenbacher</a> - Geographer and Data Specialist extraordinaire. Thanks very much Timo!</em></p>
+<p>Often, you have to combine two or more different data sets because they contain complementary information. Or, for example, the data come in chunks from the server and need to be reassembled on the client side.</p>
+<p>Combining or <em>merging</em> data may involve one of the following tasks:</p>
+<ul>
+<li>Combine data sets by one or more common attributes</li>
+<li>Add together rows from different data sets</li>
+<li>Combine attributes from different data sets</li>
+</ul>
+<h2 id="combine-data-sets-by-one-or-more-common-attributes">Combine data sets by one or more common attributes</h2>
+<p>Let&#39;s say we have a list of the following articles:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> articles = [{
+    <span class="hljs-string">"id"</span>: <span class="hljs-number">1</span>,
+    <span class="hljs-string">"name"</span>: <span class="hljs-string">"vacuum cleaner"</span>,
+    <span class="hljs-string">"weight"</span>: <span class="hljs-number">9.9</span>,
+    <span class="hljs-string">"price"</span>: <span class="hljs-number">89.9</span>,
+    <span class="hljs-string">"brand_id"</span>: <span class="hljs-number">2</span>
+}, {
+    <span class="hljs-string">"id"</span>: <span class="hljs-number">2</span>,
+    <span class="hljs-string">"name"</span>: <span class="hljs-string">"washing machine"</span>,
+    <span class="hljs-string">"weight"</span>: <span class="hljs-number">540</span>,
+    <span class="hljs-string">"price"</span>: <span class="hljs-number">230</span>,
+    <span class="hljs-string">"brand_id"</span>: <span class="hljs-number">1</span>
+}, {
+    <span class="hljs-string">"id"</span>: <span class="hljs-number">3</span>,
+    <span class="hljs-string">"name"</span>: <span class="hljs-string">"hair dryer"</span>,
+    <span class="hljs-string">"weight"</span>: <span class="hljs-number">1.2</span>,
+    <span class="hljs-string">"price"</span>: <span class="hljs-number">24.99</span>,
+    <span class="hljs-string">"brand_id"</span>: <span class="hljs-number">2</span>
+}, {
+    <span class="hljs-string">"id"</span>: <span class="hljs-number">4</span>,
+    <span class="hljs-string">"name"</span>: <span class="hljs-string">"super fast laptop"</span>,
+    <span class="hljs-string">"weight"</span>: <span class="hljs-number">400</span>,
+    <span class="hljs-string">"price"</span>: <span class="hljs-number">899.9</span>,
+    <span class="hljs-string">"brand_id"</span>: <span class="hljs-number">3</span>
+}];
+</code></pre>
+<p>And of the following brands:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> brands = [{
+    <span class="hljs-string">"id"</span>: <span class="hljs-number">1</span>,
+    <span class="hljs-string">"name"</span>: <span class="hljs-string">"SuperKitchen"</span>
+}, {
+    <span class="hljs-string">"id"</span>: <span class="hljs-number">2</span>,
+    <span class="hljs-string">"name"</span>: <span class="hljs-string">"HomeSweetHome"</span>
+}];
+</code></pre>
+<p>As you can see, in each article, <code>brand_id</code> points to a particular brand, whose details are saved in another data set - which can be considered a <em>lookup table</em> in this case. This is often how separate data schemes are stored in a server-side database. Also note that the last article in the list has a <code>brand_id</code> for which no brand is stored in <code>brands</code>.</p>
+<p>What we want to do now is to combine both datasets, so we can reference the brand&#39;s <code>name</code> directly from an article. There are several ways to achieve this.</p>
+<h3 id="using-native-array-functions">Using native <code>Array</code> functions</h3>
+<p>We can implement a simple join (<em>left outer join</em> in database terms) using native, i.e., already existing <code>Array</code> functions as follows. The method presented here modifies the <code>articles</code> array <em>in place</em> by adding a new key-value-pair for <code>brand</code>.</p>
+<pre><code class="lang-javascript">articles.forEach(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(article)</span> </span>{
+    <span class="hljs-keyword">var</span> result = brands.filter(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(brand)</span> </span>{
+        <span class="hljs-keyword">return</span> brand.id === article.brand_id;
+    });
+    <span class="hljs-keyword">delete</span> article.brand_id;
+    article.brand = (result[<span class="hljs-number">0</span>] !== <span class="hljs-literal">undefined</span>) ? result[<span class="hljs-number">0</span>].name : <span class="hljs-literal">null</span>;
+});
+<span class="hljs-built_in">console</span>.log(articles);
+</code></pre>
+<pre><code>=&gt; [{
+    <span class="hljs-string">"id"</span>: <span class="hljs-number">1</span>,
+    <span class="hljs-string">"name"</span>: <span class="hljs-string">"vacuum cleaner"</span>,
+    <span class="hljs-string">"weight"</span>: <span class="hljs-number">9.9</span>,
+    <span class="hljs-string">"price"</span>: <span class="hljs-number">89.9</span>,
+    <span class="hljs-string">"brand"</span>: <span class="hljs-string">"HomeSweetHome"</span>
+}, {
+    <span class="hljs-string">"id"</span>: <span class="hljs-number">2</span>,
+    <span class="hljs-string">"name"</span>: <span class="hljs-string">"washing machine"</span>,
+    <span class="hljs-string">"weight"</span>: <span class="hljs-number">540</span>,
+    <span class="hljs-string">"price"</span>: <span class="hljs-number">230</span>,
+    <span class="hljs-string">"brand"</span>: <span class="hljs-string">"SuperKitchen"</span>
+}, {
+    <span class="hljs-string">"id"</span>: <span class="hljs-number">3</span>,
+    <span class="hljs-string">"name"</span>: <span class="hljs-string">"hair dryer"</span>,
+    <span class="hljs-string">"weight"</span>: <span class="hljs-number">1.2</span>,
+    <span class="hljs-string">"price"</span>: <span class="hljs-number">24.99</span>,
+    <span class="hljs-string">"brand"</span>: <span class="hljs-string">"HomeSweetHome"</span>
+}, {
+    <span class="hljs-string">"id"</span>: <span class="hljs-number">4</span>,
+    <span class="hljs-string">"name"</span>: <span class="hljs-string">"super fast laptop"</span>,
+    <span class="hljs-string">"weight"</span>: <span class="hljs-number">400</span>,
+    <span class="hljs-string">"price"</span>: <span class="hljs-number">899.9</span>,
+    <span class="hljs-string">"brand"</span>: <span class="hljs-keyword">null</span>
+}];
+</code></pre><p>First, we loop over each <code>article</code>, where we take its <code>brand_id</code> to look up the corresponding <code>brand</code> using the native <code>filter</code> function. Note that this function returns an array and we expect it to have only one element. In case there is no corresponding <code>brand</code>, <code>result[0]</code> will be <code>undefined</code>, and in order to prevent an error (something like <code>result[0] is undefined</code>), we use the ternary operator.</p>
+<p>Also, as we no longer need <code>brand_id</code> after the lookup has been done, we can safely delete it.</p>
+<p>If we want to join by more than one attribute, we can modify the filter function to achieve this. Hypothetically, this might look something like:</p>
+<pre><code class="lang-js">innerArray.filter(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(innerArrayItem)</span> </span>{
+    <span class="hljs-keyword">return</span> innerArrayItem.idA === outerArrayItem.idA &amp;&amp;
+        innerArrayItem.idB === outerArrayItem.idB;
+});
+</code></pre>
+<h3 id="using-a-generic-and-more-efficient-approach">Using a generic and more efficient approach</h3>
+<p>A more generic, and also more performant version of a join is proposed below (abbreviated from <a href="http://stackoverflow.com/questions/17500312/is-there-some-way-i-can-join-the-contents-of-two-javascript-arrays-much-like-i/17500836#17500836">this StackOverflow answer</a>). Its output is equivalent to the one of the above method.</p>
+<pre><code class="lang-javascript"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">join</span><span class="hljs-params">(lookupTable, mainTable, lookupKey, mainKey, select)</span> </span>{
+    <span class="hljs-keyword">var</span> l = lookupTable.length,
+        m = mainTable.length,
+        lookupIndex = [],
+        output = [];
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt; l; i++) { <span class="hljs-comment">// loop through l items</span>
+        <span class="hljs-keyword">var</span> row = lookupTable[i];
+        lookupIndex[row[lookupKey]] = row; <span class="hljs-comment">// create an index for lookup table</span>
+    }
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> j = <span class="hljs-number">0</span>; j &lt; m; j++) { <span class="hljs-comment">// loop through m items</span>
+        <span class="hljs-keyword">var</span> y = mainTable[j];
+        <span class="hljs-keyword">var</span> x = lookupIndex[y[mainKey]]; <span class="hljs-comment">// get corresponding row from lookupTable</span>
+        output.push(select(y, x)); <span class="hljs-comment">// select only the columns you need</span>
+    }
+    <span class="hljs-keyword">return</span> output;
+};
+</code></pre>
+<p>Because above defined function creates an index for the <code>lookupTable</code> (in our case <code>brands</code>) in the first iteration, it runs considerably faster than the previously shown method. Also, via a callback, it allows us to directly define which keys (or &quot;attributes&quot;) we want to retain in the resulting, joined array (<code>output</code>). It is used like so:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> result = join(brands, articles, <span class="hljs-string">"id"</span>, <span class="hljs-string">"brand_id"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(article, brand)</span> </span>{
+    <span class="hljs-keyword">return</span> {
+        id: article.id,
+        name: article.name,
+        weight: article.weight,
+        price: article.price,
+        brand: (brand !== <span class="hljs-literal">undefined</span>) ? brand.name : <span class="hljs-literal">null</span>
+    };
+});
+<span class="hljs-built_in">console</span>.log(result);
+</code></pre>
+<pre><code>=&gt; [{
+    <span class="hljs-string">"id"</span>: <span class="hljs-number">1</span>,
+    <span class="hljs-string">"name"</span>: <span class="hljs-string">"vacuum cleaner"</span>,
+    <span class="hljs-string">"weight"</span>: <span class="hljs-number">9.9</span>,
+    <span class="hljs-string">"price"</span>: <span class="hljs-number">89.9</span>,
+    <span class="hljs-string">"brand"</span>: <span class="hljs-string">"HomeSweetHome"</span>
+}, {
+    <span class="hljs-string">"id"</span>: <span class="hljs-number">2</span>,
+    <span class="hljs-string">"name"</span>: <span class="hljs-string">"washing machine"</span>,
+    <span class="hljs-string">"weight"</span>: <span class="hljs-number">540</span>,
+    <span class="hljs-string">"price"</span>: <span class="hljs-number">230</span>,
+    <span class="hljs-string">"brand"</span>: <span class="hljs-string">"SuperKitchen"</span>
+}, {
+    <span class="hljs-string">"id"</span>: <span class="hljs-number">3</span>,
+    <span class="hljs-string">"name"</span>: <span class="hljs-string">"hair dryer"</span>,
+    <span class="hljs-string">"weight"</span>: <span class="hljs-number">1.2</span>,
+    <span class="hljs-string">"price"</span>: <span class="hljs-number">24.99</span>,
+    <span class="hljs-string">"brand"</span>: <span class="hljs-string">"HomeSweetHome"</span>
+}, {
+    <span class="hljs-string">"id"</span>: <span class="hljs-number">4</span>,
+    <span class="hljs-string">"name"</span>: <span class="hljs-string">"super fast laptop"</span>,
+    <span class="hljs-string">"weight"</span>: <span class="hljs-number">400</span>,
+    <span class="hljs-string">"price"</span>: <span class="hljs-number">899.9</span>,
+    <span class="hljs-string">"brand"</span>: <span class="hljs-keyword">null</span>
+}];
+</code></pre><p>Note that we don&#39;t modify <code>articles</code> <em>in place</em> but create a new array.</p>
+<h2 id="add-together-rows-from-different-data-sets">Add together rows from different data sets</h2>
+<p>Let&#39;s say we want to load a huge data set from the server, but because of network performance reasons, we load it in three chunks and reassemble it on the client side. Using Queue.js, as illustrated in <a href="read_data.html">reading in data</a>, we get the data and immediately combine it. For this, we can use D3&#39;s <code>merge</code> to combine the single arrays one after another. In database terms, this operation is called &quot;union&quot;.</p>
+<pre><code class="lang-javascript">queue()
+    .defer(d3.csv, <span class="hljs-string">"/data/big_data_1.csv"</span>)
+    .defer(d3.csv, <span class="hljs-string">"/data/big_data_2.csv"</span>)
+    .defer(d3.csv, <span class="hljs-string">"/data/big_data_3.csv"</span>)
+    .await(combine);
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">combine</span><span class="hljs-params">(error, big_data_1, big_data_2, big_data_3)</span> </span>{
+    <span class="hljs-keyword">if</span> (error) {
+        <span class="hljs-built_in">console</span>.log(error);
+    }
+    <span class="hljs-built_in">console</span>.log(d3.merge([big_data_1, big_data_2, big_data_3]));
+}
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [{<span class="hljs-string">"a"</span><span class="hljs-symbol">:</span> <span class="hljs-string">"1"</span>, <span class="hljs-string">"b"</span><span class="hljs-symbol">:</span> <span class="hljs-string">"2"</span>},{<span class="hljs-string">"a"</span><span class="hljs-symbol">:</span> <span class="hljs-string">"3"</span>, <span class="hljs-string">"b"</span><span class="hljs-symbol">:</span> <span class="hljs-string">"4"</span>},{<span class="hljs-string">"a"</span><span class="hljs-symbol">:</span> <span class="hljs-string">"5"</span>, <span class="hljs-string">"b"</span><span class="hljs-symbol">:</span> <span class="hljs-string">"6"</span>}]
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p>Note that the argument passed to <code>d3.merge</code> must be an array itself, which is why we use the square brackets.</p>
+<h2 id="combine-attributes-from-different-data-sets">Combine attributes from different data sets</h2>
+<p>In the last case, we have two or more data sets that contain attributes describing the same observations, or conceptual entities, and they need to be combined. This implies that all data sets have the same length. For example, <code>dataset_1</code> below contains two observations of attribute <code>type</code> and attribute <code>model</code>, while <code>dataset_2</code> contains the same two entities, but observed through attributes <code>price</code> and <code>weight</code>.</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> dataset_1 = [{
+    <span class="hljs-string">'type'</span>: <span class="hljs-string">'boat'</span>,
+    <span class="hljs-string">'model'</span>: <span class="hljs-string">'Ocean Queen 2000'</span>
+}, {
+    <span class="hljs-string">'type'</span>: <span class="hljs-string">'car'</span>,
+    <span class="hljs-string">'model'</span>: <span class="hljs-string">'Ferrari'</span>
+}];
+<span class="hljs-keyword">var</span> dataset_2 = [{
+    <span class="hljs-string">'price'</span>: <span class="hljs-number">23202020</span>,
+    <span class="hljs-string">'weight'</span>: <span class="hljs-number">5656.9</span>
+}, {
+    <span class="hljs-string">'price'</span>: <span class="hljs-number">59988</span>,
+    <span class="hljs-string">'weight'</span>: <span class="hljs-number">1.9</span>
+}];
+</code></pre>
+<p>So in both data sets we essentially have separate information about the same conceptual entities, thus it makes sense to &quot;merge&quot; them, for which we can use  lodash&#39;s <code>merge</code> function:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> result = _.merge(dataset_1, dataset_2);
+<span class="hljs-built_in">console</span>.log(result);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [{
+    <span class="hljs-string">'type'</span><span class="hljs-symbol">:</span> <span class="hljs-string">'boat'</span>,
+    <span class="hljs-string">'model'</span><span class="hljs-symbol">:</span> <span class="hljs-string">'Ocean Queen 2000'</span>,
+    <span class="hljs-string">'price'</span><span class="hljs-symbol">:</span> <span class="hljs-number">23202020</span>,
+    <span class="hljs-string">'weight'</span><span class="hljs-symbol">:</span> <span class="hljs-number">5656.9</span>
+}, {
+    <span class="hljs-string">'type'</span><span class="hljs-symbol">:</span> <span class="hljs-string">'car'</span>,
+    <span class="hljs-string">'model'</span><span class="hljs-symbol">:</span> <span class="hljs-string">'Ferrari'</span>,
+    <span class="hljs-string">'price'</span><span class="hljs-symbol">:</span> <span class="hljs-number">59988</span>,
+    <span class="hljs-string">'weight'</span><span class="hljs-symbol">:</span> <span class="hljs-number">1.9</span>
+}];
+</code></pre><div class="aside">This code is using lodash</div>
+
+<h2 id="next-task">Next Task</h2>
+<p><a href="#summarize_data">Summarizing Data</a></p>
+
+  </div>
+
+  <br/><br/><br><br>
+<a name="summarize_data"></a><br><p></p>
+    <br>
+<h1 id="summarizing-data">Summarizing Data</h1><br><br>
+
+<p>With the data <a href="read_data.html">loaded</a>, we want to take a quick look at what we have. D3 has a number of tools to use for quick data exploration.</p>
+<p>To start, let&#39;s pretend we have loaded up a csv file - and have a dataset that looks something like:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> data = [
+  {<span class="hljs-string">"city"</span>:<span class="hljs-string">"seattle"</span>, <span class="hljs-string">"state"</span>:<span class="hljs-string">"WA"</span>, <span class="hljs-string">"population"</span>:<span class="hljs-number">652405</span>, <span class="hljs-string">"land_area"</span>:<span class="hljs-number">83.9</span>},
+  {<span class="hljs-string">"city"</span>:<span class="hljs-string">"new york"</span>, <span class="hljs-string">"state"</span>:<span class="hljs-string">"NY"</span>, <span class="hljs-string">"population"</span>:<span class="hljs-number">8405837</span>, <span class="hljs-string">"land_area"</span>:<span class="hljs-number">302.6</span>},
+  {<span class="hljs-string">"city"</span>:<span class="hljs-string">"boston"</span>, <span class="hljs-string">"state"</span>:<span class="hljs-string">"MA"</span>, <span class="hljs-string">"population"</span>:<span class="hljs-number">645966</span>, <span class="hljs-string">"land_area"</span>:<span class="hljs-number">48.3</span>},
+  {<span class="hljs-string">"city"</span>:<span class="hljs-string">"kansas city"</span>, <span class="hljs-string">"state"</span>:<span class="hljs-string">"MO"</span>, <span class="hljs-string">"population"</span>:<span class="hljs-number">467007</span>, <span class="hljs-string">"land_area"</span>:<span class="hljs-number">315</span>}
+];
+</code></pre>
+<h2 id="min-max">Min &amp; Max</h2>
+<p>As it turns out, D3 comes to the rescue again, with <a href="https://github.com/mbostock/d3/wiki/Arrays#d3_min">d3.min</a> and <a href="https://github.com/mbostock/d3/wiki/Arrays#d3_max">d3.max</a>. Use the callback function to indicate which property (or computed value based on the properties) to access.</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> minLand = d3.min(data, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.land_area; });
+<span class="hljs-built_in">console</span>.log(minLand);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-number">48.3</span>
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> maxLand = d3.max(data, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.land_area; });
+<span class="hljs-built_in">console</span>.log(maxLand);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-number">315</span>
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p>If you want both of them at the same time, you can use <a href="https://github.com/mbostock/d3/wiki/Arrays#d3_extent">d3.extent</a></p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> landExtent = d3.extent(data, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.land_area; });
+<span class="hljs-built_in">console</span>.log(landExtent);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [<span class="hljs-number">48.3</span>, <span class="hljs-number">315</span>]
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p>This returns an array with the first element the minimum value and the second element the maximum.</p>
+<h2 id="summary-statistics">Summary Statistics</h2>
+<p>D3 provides a few basic tools to analyze your data, all using the same format as the min and max functions. Simply provide the property you would like to analyze, and you are good to go.</p>
+<p><a href="https://github.com/mbostock/d3/wiki/Arrays#d3_mean">d3.mean</a></p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> landAvg = d3.mean(data, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.land_area; });
+<span class="hljs-built_in">console</span>.log(landAvg);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-number">187.45</span>
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p><a href="https://github.com/mbostock/d3/wiki/Arrays#d3_median">d3.median</a></p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> landMed = d3.median(data, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.land_area; });
+<span class="hljs-built_in">console</span>.log(landMed);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-number">193.25</span>
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p><a href="https://github.com/mbostock/d3/wiki/Arrays#d3_deviation">d3.deviation</a> - for standard deviation</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> landSD = d3.deviation(data, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.land_area; });
+<span class="hljs-built_in">console</span>.log(landSD);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-number">140.96553952414519</span>
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<h2 id="next-task">Next Task</h2>
+<p><a href="#iterate_data">Iterating and Reducing</a></p>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="https://github.com/tmcw/simple-statistics">simple statistics</a> - more JavaScript based stats written in easier to comprehend code.</li>
+</ul>
+
+  </div>
+
+  <br/><br/><br><br>
+<a name="iterate_data"></a><br><p></p>
+    <br>
+<h1 id="iterating-over-and-reducing-data">Iterating Over and Reducing Data</h1><br><br>
+
+<p>Most of the functions we used to <a href="summarize_data.html">summarize</a> our data had to iterate over the entire dataset to generate their results - but the details were hidden behind the function. Now let&#39;s look at how we might perform this iteration ourselves for other metrics and manipulations!</p>
+<p>Again, we start with a basic data set already loaded:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> data = [
+  {<span class="hljs-string">"city"</span>:<span class="hljs-string">"seattle"</span>, <span class="hljs-string">"state"</span>:<span class="hljs-string">"WA"</span>, <span class="hljs-string">"population"</span>:<span class="hljs-number">652405</span>, <span class="hljs-string">"land_area"</span>:<span class="hljs-number">83.9</span>},
+  {<span class="hljs-string">"city"</span>:<span class="hljs-string">"new york"</span>, <span class="hljs-string">"state"</span>:<span class="hljs-string">"NY"</span>, <span class="hljs-string">"population"</span>:<span class="hljs-number">8405837</span>, <span class="hljs-string">"land_area"</span>:<span class="hljs-number">302.6</span>},
+  {<span class="hljs-string">"city"</span>:<span class="hljs-string">"boston"</span>, <span class="hljs-string">"state"</span>:<span class="hljs-string">"MA"</span>, <span class="hljs-string">"population"</span>:<span class="hljs-number">645966</span>, <span class="hljs-string">"land_area"</span>:<span class="hljs-number">48.3</span>},
+  {<span class="hljs-string">"city"</span>:<span class="hljs-string">"kansas city"</span>, <span class="hljs-string">"state"</span>:<span class="hljs-string">"MO"</span>, <span class="hljs-string">"population"</span>:<span class="hljs-number">467007</span>, <span class="hljs-string">"land_area"</span>:<span class="hljs-number">315</span>}
+];
+</code></pre>
+<h2 id="iterating">Iterating</h2>
+<p>First some basic iteration. We already saw this in the data loading task, but a common way to process each data object is by using <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/forEach">forEach</a></p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> count = <span class="hljs-number">0</span>;
+
+data.forEach(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{
+  count += <span class="hljs-number">1</span>;
+});
+
+<span class="hljs-built_in">console</span>.log(count);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-number">4</span>
+</code></pre><p><em>Of course, data also has the property <code>length</code> which would be the actual way to get the number of data elements in <code>data</code> - but this is just an example.</em></p>
+<pre><code class="lang-javascript"><span class="hljs-built_in">console</span>.log(data.length);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-number">4</span>
+</code></pre><h2 id="immutability">Immutability</h2>
+<p>Let me sidetrack this task just a bit to talk about</p>
+<p><code>forEach</code> provides for a basic way to loop through our data set. We can use this to modify the data in place, generate counts, or perform other manipulations that deal with each piece of data individually.</p>
+<p>This works, but can get clunky and confusing fast. Keeping straight what form the data is in at any given time can be confusing, as can side effects of modifying your data that you might not be aware of.</p>
+<p>To combat this confusion, it can be useful to think of the data as <em>immutable</em>. Immutable data cannot be modified once created. Immutability seems a bit counterintuitive for a task where we want to coerce our data into the form we want - but it comes together with the concept of <strong>transformations</strong>.</p>
+<p>The idea is simple: each immutable dataset can be <em>transformed</em> into another immutable dataset through the use of a transformation function that works on each component of the data.</p>
+<p>This process helps simplify the data flow, but if you have to make a copy of your data object each time, it can make code a bit brittle as you have to keep track of every attribute of your dataset.</p>
+<h2 id="cloning">Cloning</h2>
+<p>To help with this issue of brittle transformations, lodash provides the <a href="https://lodash.com/docs#clone">clone</a> function.</p>
+<p>This function takes an object and returns a copy of that object. That copy is now a separate data object that you can edit without effecting the original object.</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> dataObject = {<span class="hljs-string">"name"</span>:<span class="hljs-string">"Carl"</span>, <span class="hljs-string">"age"</span>:<span class="hljs-string">"48"</span>, <span class="hljs-string">"salary"</span>:<span class="hljs-string">"12300"</span>};
+<span class="hljs-keyword">var</span> copyOfData = _.clone(dataObject);
+copyOfData.age = +copyOfData.age;
+copyOfData.salary = +copyOfData.salary;
+<span class="hljs-built_in">console</span>.log(dataObject);
+</code></pre>
+<pre><code>=&gt; {<span class="hljs-string">name:</span> <span class="hljs-string">"Carl"</span>, <span class="hljs-string">age:</span> <span class="hljs-string">"48"</span>, <span class="hljs-string">salary:</span> <span class="hljs-string">"12300"</span>}
+</code></pre><div class="aside">This code is using lodash</div>
+
+<pre><code class="lang-javascript"><span class="hljs-built_in">console</span>.log(copyOfData);
+</code></pre>
+<pre><code>=&gt; {<span class="hljs-string">name:</span> <span class="hljs-string">"Carl"</span>, <span class="hljs-string">age:</span> <span class="hljs-number">48</span>, <span class="hljs-string">salary:</span> <span class="hljs-number">12300</span>}
+</code></pre><p>By default, the <code>clone</code> function will not copy over nested objects. Instead these nested objects are simply passed by referenced - meaning the original and the copy will still share them.</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> dataObject = {<span class="hljs-string">"name"</span>:<span class="hljs-string">"Saul"</span>, <span class="hljs-string">"stats"</span>:{<span class="hljs-string">"age"</span>:<span class="hljs-string">"55"</span>}};
+<span class="hljs-keyword">var</span> shallowCopy = _.clone(dataObject);
+shallowCopy.stats.age = +shallowCopy.stats.age;
+<span class="hljs-built_in">console</span>.log(dataObject);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> {<span class="hljs-string">"name"</span><span class="hljs-symbol">:<span class="hljs-string">"Saul"</span></span>,<span class="hljs-string">"stats"</span><span class="hljs-symbol">:</span>{<span class="hljs-string">"age"</span><span class="hljs-symbol">:</span><span class="hljs-number">55</span>}}
+</code></pre><div class="aside">This code is using lodash</div>
+
+<pre><code class="lang-javascript"><span class="hljs-built_in">console</span>.log(shallowCopy);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> {<span class="hljs-string">"name"</span><span class="hljs-symbol">:<span class="hljs-string">"Saul"</span></span>,<span class="hljs-string">"stats"</span><span class="hljs-symbol">:</span>{<span class="hljs-string">"age"</span><span class="hljs-symbol">:</span><span class="hljs-number">55</span>}}
+</code></pre><p>Note that because <code>stats</code> is a nested object the modification happened in both spots!</p>
+<p>To prevent this &quot;feature&quot;, we can pass <code>true</code> as the second parameter to <code>clone</code> to indicate that the copy should be deep and copy nested objects as well.</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> dataObject = {<span class="hljs-string">"name"</span>:<span class="hljs-string">"Saul"</span>, <span class="hljs-string">"stats"</span>:{<span class="hljs-string">"age"</span>:<span class="hljs-string">"55"</span>}};
+<span class="hljs-keyword">var</span> deepCopy = _.clone(dataObject, <span class="hljs-literal">true</span>);
+deepCopy.stats.age = +deepCopy.stats.age;
+<span class="hljs-built_in">console</span>.log(dataObject);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> {<span class="hljs-string">"name"</span><span class="hljs-symbol">:<span class="hljs-string">"Saul"</span></span>,<span class="hljs-string">"stats"</span><span class="hljs-symbol">:</span>{<span class="hljs-string">"age"</span><span class="hljs-symbol">:<span class="hljs-string">"55"</span></span>}}
+</code></pre><div class="aside">This code is using lodash</div>
+
+<pre><code class="lang-javascript"><span class="hljs-built_in">console</span>.log(deepCopy);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> {<span class="hljs-string">"name"</span><span class="hljs-symbol">:<span class="hljs-string">"Saul"</span></span>,<span class="hljs-string">"stats"</span><span class="hljs-symbol">:</span>{<span class="hljs-string">"age"</span><span class="hljs-symbol">:</span><span class="hljs-number">55</span>}}
+</code></pre><p>lodash also has a <a href="https://lodash.com/docs#cloneDeep">cloneDeep</a> that can be used to make the deep-ness more explicit.</p>
+<h2 id="mapping">Mapping</h2>
+<p>JavaScript&#39;s <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map">map</a> can be a very useful tool to implement this concept of a transformation on immutable data.</p>
+<p><code>map</code> takes an array and produces another array which is the result of the callback function being executed on each element in the array.</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> smallData = data.map(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d,i)</span> </span>{
+
+  <span class="hljs-keyword">return</span> {
+    name: d.city.toUpperCase(),
+    index: i + <span class="hljs-number">1</span>,
+    rounded_area: <span class="hljs-built_in">Math</span>.round(d.land_area)
+  };
+});
+<span class="hljs-built_in">console</span>.log(data[<span class="hljs-number">0</span>]);
+<span class="hljs-built_in">console</span>.log(smallData[<span class="hljs-number">0</span>]);
+</code></pre>
+<pre><code>=&gt; {<span class="hljs-string">city:</span> <span class="hljs-string">"seattle"</span>, <span class="hljs-string">state:</span> <span class="hljs-string">"WA"</span>, <span class="hljs-string">population:</span> <span class="hljs-number">652405</span>, <span class="hljs-string">land_area:</span> <span class="hljs-number">83.9</span>}
+  {<span class="hljs-string">name:</span> <span class="hljs-string">"SEATTLE"</span>, <span class="hljs-string">index:</span> <span class="hljs-number">1</span>, <span class="hljs-string">rounded_area:</span> <span class="hljs-number">84</span>}
+</code></pre><p>The callback function gets called for each element in the array, and also has access to the index of that element in the array. The result is an array of returned values from the callback.</p>
+<p>With plain JavaScript, the immutability of an array is just <em>in the mind of the developer</em>. While <code>map</code> does not modify the array, it is easy for your callback method to do so. That is why we return a new object in the callback. lodash&#39;s <a href="https://lodash.com/docs#clone">clone</a> would be another approach to getting a copy of each data element as a starting point for the transformation.</p>
+<h2 id="filtering">Filtering</h2>
+<p>Select a subset of the data using the built in <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter">filter</a> method. This creates a new array of data (again see transformation talk above) with only the values that the callback function returns <code>true</code> for.</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> large_land = data.filter(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.land_area &gt; <span class="hljs-number">200</span>; });
+<span class="hljs-built_in">console</span>.log(<span class="hljs-built_in">JSON</span>.stringify(large_land));
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [{<span class="hljs-string">"city"</span><span class="hljs-symbol">:<span class="hljs-string">"new york"</span></span>,<span class="hljs-string">"state"</span><span class="hljs-symbol">:<span class="hljs-string">"NY"</span></span>,<span class="hljs-string">"population"</span><span class="hljs-symbol">:</span><span class="hljs-number">8405837</span>,<span class="hljs-string">"land_area"</span><span class="hljs-symbol">:</span><span class="hljs-number">302.6</span>},
+  {<span class="hljs-string">"city"</span><span class="hljs-symbol">:<span class="hljs-string">"kansas city"</span></span>,<span class="hljs-string">"state"</span><span class="hljs-symbol">:<span class="hljs-string">"MO"</span></span>,<span class="hljs-string">"population"</span><span class="hljs-symbol">:</span><span class="hljs-number">467007</span>,<span class="hljs-string">"land_area"</span><span class="hljs-symbol">:</span><span class="hljs-number">315</span>}]
+</code></pre><h2 id="sorting">Sorting</h2>
+<p>Similar to filtering, sorting data based on attributes is something you&#39;ll want to do frequently.</p>
+<p>The built in <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort">sort</a> for arrays can do this. A caveat to this function is that, unlike filter, map, and other functions, this <em>modifies the array you are sorting in place</em>, instead of returning a new array with the objects sorted.</p>
+<p>To sort an array, you need a comparator function. This is a function that takes two pieces of data and indicates which one you want higher in the list. The comparator-function-way to do this is to return a negative value if the first value should go higher then the second value, and a positive value if the second value should go higher. If they are equal, and you don&#39;t care, then return a 0.</p>
+<p>Let&#39;s see it in action. Here is a way to sort by population in a descending order (larger populations come first).</p>
+<pre><code class="lang-javascript">data.sort(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(a,b)</span> </span>{
+  <span class="hljs-keyword">return</span> b.population - a.population;
+});
+<span class="hljs-built_in">console</span>.log(<span class="hljs-built_in">JSON</span>.stringify(data));
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [{<span class="hljs-string">"city"</span><span class="hljs-symbol">:<span class="hljs-string">"new york"</span></span>,<span class="hljs-string">"state"</span><span class="hljs-symbol">:<span class="hljs-string">"NY"</span></span>,<span class="hljs-string">"population"</span><span class="hljs-symbol">:</span><span class="hljs-number">8405837</span>,<span class="hljs-string">"land_area"</span><span class="hljs-symbol">:</span><span class="hljs-number">302.6</span>},
+   {<span class="hljs-string">"city"</span><span class="hljs-symbol">:<span class="hljs-string">"seattle"</span></span>,<span class="hljs-string">"state"</span><span class="hljs-symbol">:<span class="hljs-string">"WA"</span></span>,<span class="hljs-string">"population"</span><span class="hljs-symbol">:</span><span class="hljs-number">652405</span>,<span class="hljs-string">"land_area"</span><span class="hljs-symbol">:</span><span class="hljs-number">83.9</span>},
+   {<span class="hljs-string">"city"</span><span class="hljs-symbol">:<span class="hljs-string">"boston"</span></span>,<span class="hljs-string">"state"</span><span class="hljs-symbol">:<span class="hljs-string">"MA"</span></span>,<span class="hljs-string">"population"</span><span class="hljs-symbol">:</span><span class="hljs-number">645966</span>,<span class="hljs-string">"land_area"</span><span class="hljs-symbol">:</span><span class="hljs-number">48.3</span>},
+   {<span class="hljs-string">"city"</span><span class="hljs-symbol">:<span class="hljs-string">"kansas city"</span></span>,<span class="hljs-string">"state"</span><span class="hljs-symbol">:<span class="hljs-string">"MO"</span></span>,<span class="hljs-string">"population"</span><span class="hljs-symbol">:</span><span class="hljs-number">467007</span>,<span class="hljs-string">"land_area"</span><span class="hljs-symbol">:</span><span class="hljs-number">315</span>}]
+</code></pre><p>This <code>b - a</code> thing is a pretty common way to generate this kind of sort. But you could also do it more explicitly. Thinking through it, if b&#39;s population is larger then a&#39;s, then the value returned by <code>b.population - a.population</code> will be positive - so b will be sorted toward the top of the array. If the reverse is true, then the result will be negative, and a will be sorted first.</p>
+<p>Note again, that the sort happened <em>on the original data</em>, which I&#39;m not a big fan of.</p>
+<p>D3 also has a few helper functions to implement ascending and descending comparator functions - but (as far as I can tell) they only accept arrays of raw numbers instead of objects. So to use <a href="https://github.com/mbostock/d3/wiki/Arrays#d3_ascending">d3.ascending</a> or <a href="https://github.com/mbostock/d3/wiki/Arrays#d3_descending">d3.descending</a> you would have to do something like this:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> populations = data.map(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.population; });
+<span class="hljs-built_in">console</span>.log(populations);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [<span class="hljs-number">652405</span>, <span class="hljs-number">8405837</span>, <span class="hljs-number">645966</span>, <span class="hljs-number">467007</span>]
+</code></pre><pre><code class="lang-javascript">populations.sort(d3.descending);
+<span class="hljs-built_in">console</span>.log(populations);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [<span class="hljs-number">8405837</span>, <span class="hljs-number">652405</span>, <span class="hljs-number">645966</span>, <span class="hljs-number">467007</span>]
+</code></pre><p>I&#39;m usually looking to keep my data objects together, so I shy away from using these methods, but they might be great for what you are trying to do.</p>
+<p>A <strong>big gotcha</strong> with sorting that you should watch out for is that if you do not pass a comparator function, the default function sorts <em>alphabetically</em>. So, the array:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> nums = [<span class="hljs-number">3</span>,<span class="hljs-number">1</span>,<span class="hljs-number">10</span>,<span class="hljs-number">20</span>];
+</code></pre>
+<p>Would be sorted to:</p>
+<pre><code class="lang-javascript"><span class="hljs-built_in">console</span>.log(nums.sort());
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [<span class="hljs-number">1</span>, <span class="hljs-number">10</span>, <span class="hljs-number">20</span>, <span class="hljs-number">3</span>]
+</code></pre><p>This is never what you want for data sorting. For this reason, you should never use sort without a comparator function.</p>
+<h2 id="reducing">Reducing</h2>
+<p>These functions all take an array and reduce it down to a single number. But what if that number isn&#39;t the one you want? Well, you can take this reduction into your own hands with <code>reduce</code>!</p>
+<p>The syntax for <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce">reduce</a> is always hard for me to remember, so let&#39;s go over it with the classic example: summing up a value.</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> landSum = data.reduce(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(sum, d)</span> </span>{
+  <span class="hljs-keyword">return</span> sum + d.land_area;
+}, <span class="hljs-number">0</span>);
+<span class="hljs-built_in">console</span>.log(landSum);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-number">749.8</span>
+</code></pre><p>The first parameter to <code>reduce</code> is the callback function that will return the running &quot;total&quot; of the reduction. This function is passed in the previous value returned from the last time the callback was called. Here, that parameter - <code>sum</code> provides the running total as we move through the array. The second parameter to the callback <code>d</code> is the current value of the array we are working on.</p>
+<p><code>reduce</code> can take an initial value, which is the second parameter to the <code>reduce</code> call. For this example, we start the sum at 0. If there is no starting value provided, then for the first execution of the callback (when there is no previous value) the first parameter to the callback will be the value of the first element of the array, and the reduction starts with the second element.</p>
+<p>It always makes more sense to me to provide a starting value - unless you know what you are doing. You can also get the current index into the array (and the whole array itself) if that is useful to you.</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> weirdString = data.reduce(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(str, d, i)</span> </span>{
+  <span class="hljs-keyword">var</span> ending = (i % <span class="hljs-number">2</span> === <span class="hljs-number">0</span>) ? <span class="hljs-string">" is cool."</span> : <span class="hljs-string">" sucks."</span> ;
+  <span class="hljs-keyword">return</span> str + <span class="hljs-string">" "</span> + d.city + ending;
+}, <span class="hljs-string">""</span>);
+<span class="hljs-built_in">console</span>.log(weirdString);
+</code></pre>
+<pre><code>=&gt; seattle <span class="hljs-keyword">is</span> cool. <span class="hljs-keyword">new</span> york sucks. boston <span class="hljs-keyword">is</span> cool. kansas city sucks.
+</code></pre><p>_And summing over a variable is only used for example. You can always just use <a href="https://github.com/mbostock/d3/wiki/Arrays#d3_sum">d3.sum</a> for this instead._</p>
+<h2 id="chaining-functions">Chaining Functions</h2>
+<p>One of the great things about these more <em>functional</em> functions is that it is possible to chain them together into one big data wrangling pipeline!</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> bigCities = data.filter(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.population &gt; <span class="hljs-number">500000</span>; })
+  .sort(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(a,b)</span> </span>{ <span class="hljs-keyword">return</span> a.population - b.population; })
+  .map(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.city; });
+<span class="hljs-built_in">console</span>.log(bigCities);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [<span class="hljs-string">"boston"</span>, <span class="hljs-string">"seattle"</span>, <span class="hljs-string">"new york"</span>]
+</code></pre><p>Since we are using <code>sort</code> after <code>filter</code>, sort is working on the returned array from <code>filter</code>. The sort function at least is nice enough to also return the array, so chaining is still possible.</p>
+<h2 id="next-task">Next Task</h2>
+<p><a href="#group_data">Grouping Data</a></p>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="http://www.macwright.org/2015/01/03/reduce-juice.html">Making Juice with Reduce</a> - Tom MacWright&#39;s intro to the ill-used reduce</li>
+<li><a href="https://github.com/facebook/immutable-js">Immutable JS</a> - if you want to get serious about immutable data structures in JavaScript</li>
+<li><a href="http://fr.umio.us/why-ramda/">Ramda</a> - a more functional approach to data processing in JS</li>
+</ul>
+
+  </div>
+
+  <br/><br/><br><br>
+<a name="group_data"></a><br><p></p>
+    <br>
+<h1 id="grouping-data">Grouping Data</h1><br><br>
+
+<p>Grouping data is an important capability to have when doing data analysis. Often times, you will want to break apart the data by a categorical variable and look at statistics or details for each group.</p>
+<p>D3 includes the powerful <a href="https://github.com/mbostock/d3/wiki/Arrays#-nest">d3.nest</a> functionality to produce these groupings with a minimal amount of code.</p>
+<h2 id="nest-basics">Nest Basics</h2>
+<p>Fundamentally, <code>d3.nest</code> is about taking a flat data structure and turning it into a nested one. The user gets to decide how the nesting should occur, and how deep to nest. This is a bit different then many group_by concepts, where only a single level of nesting is allowed.</p>
+<p>Let&#39;s say we have the following CSV file of &quot;expenses&quot;:</p>
+<pre><code>name,amount,date
+jim,<span class="hljs-number">34.0</span>,<span class="hljs-number">11</span><span class="hljs-regexp">/12/</span><span class="hljs-number">2015</span>
+carl,<span class="hljs-number">120.11</span>,<span class="hljs-number">11</span><span class="hljs-regexp">/12/</span><span class="hljs-number">2015</span>
+jim,<span class="hljs-number">45.0</span>,<span class="hljs-number">12</span><span class="hljs-regexp">/01/</span><span class="hljs-number">2015</span>
+stacy,<span class="hljs-number">12.00</span>,<span class="hljs-number">01</span><span class="hljs-regexp">/04/</span><span class="hljs-number">2016</span>
+stacy,<span class="hljs-number">34.10</span>,<span class="hljs-number">01</span><span class="hljs-regexp">/04/</span><span class="hljs-number">2016</span>
+stacy,<span class="hljs-number">44.80</span>,<span class="hljs-number">01</span><span class="hljs-regexp">/05/</span><span class="hljs-number">2016</span>
+</code></pre><p>And that has been converted to a nice array of objects via our <a href="read_data.html">data reading powers</a> into something like this:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> expenses = [{<span class="hljs-string">"name"</span>:<span class="hljs-string">"jim"</span>,<span class="hljs-string">"amount"</span>:<span class="hljs-number">34</span>,<span class="hljs-string">"date"</span>:<span class="hljs-string">"11/12/2015"</span>},
+  {<span class="hljs-string">"name"</span>:<span class="hljs-string">"carl"</span>,<span class="hljs-string">"amount"</span>:<span class="hljs-number">120.11</span>,<span class="hljs-string">"date"</span>:<span class="hljs-string">"11/12/2015"</span>},
+  {<span class="hljs-string">"name"</span>:<span class="hljs-string">"jim"</span>,<span class="hljs-string">"amount"</span>:<span class="hljs-number">45</span>,<span class="hljs-string">"date"</span>:<span class="hljs-string">"12/01/2015"</span>},
+  {<span class="hljs-string">"name"</span>:<span class="hljs-string">"stacy"</span>,<span class="hljs-string">"amount"</span>:<span class="hljs-number">12.00</span>,<span class="hljs-string">"date"</span>:<span class="hljs-string">"01/04/2016"</span>},
+  {<span class="hljs-string">"name"</span>:<span class="hljs-string">"stacy"</span>,<span class="hljs-string">"amount"</span>:<span class="hljs-number">34.10</span>,<span class="hljs-string">"date"</span>:<span class="hljs-string">"01/04/2016"</span>},
+  {<span class="hljs-string">"name"</span>:<span class="hljs-string">"stacy"</span>,<span class="hljs-string">"amount"</span>:<span class="hljs-number">44.80</span>,<span class="hljs-string">"date"</span>:<span class="hljs-string">"01/05/2016"</span>}
+];
+</code></pre>
+<p>And now we want to slice up this data in different ways.</p>
+<p>First, let&#39;s use nest to group by <code>name</code>:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> expensesByName = d3.nest()
+  .key(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.name; })
+  .entries(expenses);
+</code></pre>
+<div class="aside">This code is using d3.js</div>
+
+<p>Which results in a nested data structure:</p>
+<pre><code class="lang-javascript">expensesByName = [
+  {<span class="hljs-string">"key"</span>:<span class="hljs-string">"jim"</span>,<span class="hljs-string">"values"</span>:[
+    {<span class="hljs-string">"name"</span>:<span class="hljs-string">"jim"</span>,<span class="hljs-string">"amount"</span>:<span class="hljs-number">34</span>,<span class="hljs-string">"date"</span>:<span class="hljs-string">"11/12/2015"</span>},
+    {<span class="hljs-string">"name"</span>:<span class="hljs-string">"jim"</span>,<span class="hljs-string">"amount"</span>:<span class="hljs-number">45</span>,<span class="hljs-string">"date"</span>:<span class="hljs-string">"12/01/2015"</span>}
+  ]},
+  {<span class="hljs-string">"key"</span>:<span class="hljs-string">"carl"</span>,<span class="hljs-string">"values"</span>:[
+    {<span class="hljs-string">"name"</span>:<span class="hljs-string">"carl"</span>,<span class="hljs-string">"amount"</span>:<span class="hljs-number">120.11</span>,<span class="hljs-string">"date"</span>:<span class="hljs-string">"11/12/2015"</span>}
+  ]},
+  {<span class="hljs-string">"key"</span>:<span class="hljs-string">"stacy"</span>,<span class="hljs-string">"values"</span>:[
+    {<span class="hljs-string">"name"</span>:<span class="hljs-string">"stacy"</span>,<span class="hljs-string">"amount"</span>:<span class="hljs-number">12.00</span>,<span class="hljs-string">"date"</span>:<span class="hljs-string">"01/04/2016"</span>},
+    {<span class="hljs-string">"name"</span>:<span class="hljs-string">"stacy"</span>,<span class="hljs-string">"amount"</span>:<span class="hljs-number">34.10</span>,<span class="hljs-string">"date"</span>:<span class="hljs-string">"01/04/2016"</span>},
+    {<span class="hljs-string">"name"</span>:<span class="hljs-string">"stacy"</span>,<span class="hljs-string">"amount"</span>:<span class="hljs-number">44.80</span>,<span class="hljs-string">"date"</span>:<span class="hljs-string">"01/05/2016"</span>}
+  ]}
+];
+</code></pre>
+<p><code>expensesByName</code> is an array of objects. Each object has a <code>key</code> property - which is what we used as the grouping value using the <code>key</code> function. Here, we used the values associated with the <code>name</code> property as the key.</p>
+<p>The <code>values</code> property of these entries is an array containing all the original data objects that had that key.</p>
+<h2 id="summarizing-groups">Summarizing Groups</h2>
+<p>The nested structure can be great for visualizing your data, but might be a little underwhelming for analytical applications. Never fear! <a href="https://github.com/mbostock/d3/wiki/Arrays#nest_rollup">d3.rollup</a> is here!</p>
+<p>With <code>rollup</code>, you provide a function that takes the array of values for each group and it produces a value based on that array. This provides for some very flexible <em>group by</em> functionality.</p>
+<p>Here is a simple one to get back the counts for each name:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> expensesCount = d3.nest()
+  .key(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.name; })
+  .rollup(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(v)</span> </span>{ <span class="hljs-keyword">return</span> v.length; })
+  .entries(expenses);
+<span class="hljs-built_in">console</span>.log(<span class="hljs-built_in">JSON</span>.stringify(expensesCount));
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [{<span class="hljs-string">"key"</span><span class="hljs-symbol">:<span class="hljs-string">"jim"</span></span>,<span class="hljs-string">"values"</span><span class="hljs-symbol">:</span><span class="hljs-number">2</span>},{<span class="hljs-string">"key"</span><span class="hljs-symbol">:<span class="hljs-string">"carl"</span></span>,<span class="hljs-string">"values"</span><span class="hljs-symbol">:</span><span class="hljs-number">1</span>},{<span class="hljs-string">"key"</span><span class="hljs-symbol">:<span class="hljs-string">"stacy"</span></span>,<span class="hljs-string">"values"</span><span class="hljs-symbol">:</span><span class="hljs-number">3</span>}]
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p>The individual records are gone (for better or worse) and in their place are the values returned by our rollup function. The naming stays the same (<em>key</em> and <em>values</em>) but the content is yours to specify. Note that the value passed into the <code>rollup</code> callback is the array of values for that key.</p>
+<p>Here is another example where we get the average amount per person:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> expensesAvgAmount = d3.nest()
+  .key(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.name; })
+  .rollup(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(v)</span> </span>{ <span class="hljs-keyword">return</span> d3.mean(v, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.amount; }); })
+  .entries(expenses);
+<span class="hljs-built_in">console</span>.log(<span class="hljs-built_in">JSON</span>.stringify(expensesAvgAmount));
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [{<span class="hljs-string">"key"</span><span class="hljs-symbol">:<span class="hljs-string">"jim"</span></span>,<span class="hljs-string">"values"</span><span class="hljs-symbol">:</span><span class="hljs-number">39.5</span>},{<span class="hljs-string">"key"</span><span class="hljs-symbol">:<span class="hljs-string">"carl"</span></span>,<span class="hljs-string">"values"</span><span class="hljs-symbol">:</span><span class="hljs-number">120.11</span>},{<span class="hljs-string">"key"</span><span class="hljs-symbol">:<span class="hljs-string">"stacy"</span></span>,<span class="hljs-string">"values"</span><span class="hljs-symbol">:</span><span class="hljs-number">30.3</span>}]
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p>Pretty cool right? Any roll-up function you can think of, you can make happen. And you don&#39;t need to stop at just one. <code>rollup</code> can return an object, so you can easily produce multiple metrics on your groups.</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> expenseMetrics = d3.nest()
+  .key(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.name; })
+  .rollup(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(v)</span> </span>{ <span class="hljs-keyword">return</span> {
+    count: v.length,
+    total: d3.sum(v, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.amount; }),
+    avg: d3.mean(v, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.amount; })
+  }; })
+  .entries(expenses);
+<span class="hljs-built_in">console</span>.log(<span class="hljs-built_in">JSON</span>.stringify(expenseMetrics));
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [{<span class="hljs-string">"key"</span><span class="hljs-symbol">:<span class="hljs-string">"jim"</span></span>,<span class="hljs-string">"values"</span><span class="hljs-symbol">:</span>{<span class="hljs-string">"count"</span><span class="hljs-symbol">:</span><span class="hljs-number">2</span>,<span class="hljs-string">"total"</span><span class="hljs-symbol">:</span><span class="hljs-number">79</span>,<span class="hljs-string">"avg"</span><span class="hljs-symbol">:</span><span class="hljs-number">39.5</span>}},
+ {<span class="hljs-string">"key"</span><span class="hljs-symbol">:<span class="hljs-string">"carl"</span></span>,<span class="hljs-string">"values"</span><span class="hljs-symbol">:</span>{<span class="hljs-string">"count"</span><span class="hljs-symbol">:</span><span class="hljs-number">1</span>,<span class="hljs-string">"total"</span><span class="hljs-symbol">:</span><span class="hljs-number">120.11</span>,<span class="hljs-string">"avg"</span><span class="hljs-symbol">:</span><span class="hljs-number">120.11</span>}},
+ {<span class="hljs-string">"key"</span><span class="hljs-symbol">:<span class="hljs-string">"stacy"</span></span>,<span class="hljs-string">"values"</span><span class="hljs-symbol">:</span>{<span class="hljs-string">"count"</span><span class="hljs-symbol">:</span><span class="hljs-number">3</span>,<span class="hljs-string">"total"</span><span class="hljs-symbol">:</span><span class="hljs-number">90.9</span>,<span class="hljs-string">"avg"</span><span class="hljs-symbol">:</span><span class="hljs-number">30.3</span>}}]
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<h2 id="map-output">Map Output</h2>
+<p>The array output can be useful for using <code>map</code> or <code>forEach</code> as discussed in the <a href="https://github.com/mbostock/d3/wiki/Arrays#nest_sortValues">iteration and summation task</a>. But you can also have <code>d3.nest</code> return an object (or <a href="">d3.map</a>) of the results, for direct access. Note the use of <a href="https://github.com/mbostock/d3/wiki/Arrays#nest_map">nest.map</a> below.</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> expensesTotal = d3.nest()
+  .key(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.name; })
+  .rollup(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(v)</span> </span>{ <span class="hljs-keyword">return</span> d3.sum(v, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.amount; }); })
+  .map(expenses);
+<span class="hljs-built_in">console</span>.log(<span class="hljs-built_in">JSON</span>.stringify(expensesTotal));
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> {<span class="hljs-string">"jim"</span><span class="hljs-symbol">:</span><span class="hljs-number">79</span>,<span class="hljs-string">"carl"</span><span class="hljs-symbol">:</span><span class="hljs-number">120.11</span>,<span class="hljs-string">"stacy"</span><span class="hljs-symbol">:</span><span class="hljs-number">90.9</span>}
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<h2 id="multi-level-nesting">Multi-Level Nesting</h2>
+<p>And you thought that single-level nesting was cool. Wait till you try multiple levels!</p>
+<p>By adding more keys, you can sub-divide your data even further. Here is expense sums by name and then by date:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> expensesTotalByDay = d3.nest()
+  .key(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.name; })
+  .key(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.date; })
+  .rollup(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(v)</span> </span>{ <span class="hljs-keyword">return</span> d3.sum(v, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.amount; }); })
+  .map(expenses);
+<span class="hljs-built_in">console</span>.log(<span class="hljs-built_in">JSON</span>.stringify(expensesTotalByDay));
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> {<span class="hljs-string">"jim"</span><span class="hljs-symbol">:</span>{<span class="hljs-string">"11/12/2015"</span><span class="hljs-symbol">:</span><span class="hljs-number">34</span>,<span class="hljs-string">"12/01/2015"</span><span class="hljs-symbol">:</span><span class="hljs-number">45</span>},
+ <span class="hljs-string">"carl"</span><span class="hljs-symbol">:</span>{<span class="hljs-string">"11/12/2015"</span><span class="hljs-symbol">:</span><span class="hljs-number">120.11</span>},
+ <span class="hljs-string">"stacy"</span><span class="hljs-symbol">:</span>{<span class="hljs-string">"01/04/2016"</span><span class="hljs-symbol">:</span><span class="hljs-number">46.1</span>,<span class="hljs-string">"01/05/2016"</span><span class="hljs-symbol">:</span><span class="hljs-number">44.8</span>}}
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p>Now the <code>rollup</code> callback is called for each of our smaller subgroups.</p>
+<p>The order of the <code>nest.key</code> calls determines the order of the grouping. If we reverse our keys, we get the totals by date and then by name:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> expensesTotalByDay = d3.nest()
+  .key(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.date; })
+  .key(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.name; })
+  .rollup(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(v)</span> </span>{ <span class="hljs-keyword">return</span> d3.sum(v, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.amount; }); })
+  .map(expenses);
+<span class="hljs-built_in">console</span>.log(<span class="hljs-built_in">JSON</span>.stringify(expensesTotalByDay));
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> {<span class="hljs-string">"11/12/2015"</span><span class="hljs-symbol">:</span>{<span class="hljs-string">"jim"</span><span class="hljs-symbol">:</span><span class="hljs-number">34</span>,<span class="hljs-string">"carl"</span><span class="hljs-symbol">:</span><span class="hljs-number">120.11</span>},
+ <span class="hljs-string">"12/01/2015"</span><span class="hljs-symbol">:</span>{<span class="hljs-string">"jim"</span><span class="hljs-symbol">:</span><span class="hljs-number">45</span>},
+ <span class="hljs-string">"01/04/2016"</span><span class="hljs-symbol">:</span>{<span class="hljs-string">"stacy"</span><span class="hljs-symbol">:</span><span class="hljs-number">46.1</span>},
+ <span class="hljs-string">"01/05/2016"</span><span class="hljs-symbol">:</span>{<span class="hljs-string">"stacy"</span><span class="hljs-symbol">:</span><span class="hljs-number">44.8</span>}}
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p>Here the values are the same, but the mapping might be more convenient, depending on the questions you are trying to answer.</p>
+<h2 id="derived-key-values">Derived Key Values</h2>
+<p>Remember, we are specifying our key value using a function. This gives us the power to group on derived or otherwise on-the-fly keys.</p>
+<p>For example, if we wanted to find out totals for all expenses for each year, we would just do some <a href="strings.html">basic string manipulation</a> on the date string:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> expensesByYear = d3.nest()
+  .key(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.date.split(<span class="hljs-string">"/"</span>)[<span class="hljs-number">2</span>]; })
+  .rollup(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(v)</span> </span>{ <span class="hljs-keyword">return</span> d3.sum(v, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.amount; }); })
+  .map(expenses);
+<span class="hljs-built_in">console</span>.log(<span class="hljs-built_in">JSON</span>.stringify(expensesByYear));
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> {<span class="hljs-string">"2015"</span><span class="hljs-symbol">:</span><span class="hljs-number">199.11</span>,<span class="hljs-string">"2016"</span><span class="hljs-symbol">:</span><span class="hljs-number">90.9</span>}
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p>All this flexibility provides for a powerful toolkit for exploring your data.</p>
+<h2 id="next-task">Next Task</h2>
+<p><a href="#strings">Working with Strings</a></p>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="http://bl.ocks.org/shancarter/raw/4748131/">Mister Nester</a> - a <code>d3.nest</code> power tool!</li>
+<li><a href="http://bl.ocks.org/phoebebright/raw/3176159/">Phoebe Bright Nest Tutorial</a> - lots more nest examples</li>
+</ul>
+
+  </div>
+
+  <br/><br/><br><br>
+<a name="strings"></a><br><p></p>
+    <br>
+<h1 id="working-with-strings">Working with Strings</h1><br><br>
+
+<p>String cleaning is something you end up doing quite a lot. Hopefully this task will help make the process less painful. There are a near infinite transformations you might want to do with strings, so we won&#39;t get to everything, but this will serve as a starting point for common manipulations that will come up again and again.</p>
+<p>We will start with generic JavaScript string functions and add in a bit of <a href="https://lodash.com/">lodash</a> magic to make things easier.</p>
+<h2 id="string-basics">String Basics</h2>
+<p>Similar to arrays, the characters in strings are accessible via indexing</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> aChar = <span class="hljs-string">"Hello There!"</span>[<span class="hljs-number">6</span>];
+<span class="hljs-built_in">console</span>.log(aChar);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-constant">T</span>
+</code></pre><p>Also, just like arrays, you have access to the powerful <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/slice">slice</a> method, which is used to extract sub-sections based on indexes.</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> aSlice = <span class="hljs-string">"Hello There!"</span>.slice(<span class="hljs-number">6</span>,<span class="hljs-number">11</span>);
+<span class="hljs-built_in">console</span>.log(aSlice);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-constant">There</span>
+</code></pre><p>The sliced string goes up to - but not including - the last index.</p>
+<p>And, of course, string concatenation is done in JavaScript using the <code>+</code> operator. Use parenthesis if you want to do actual arithmetic inside your concatenation.</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> orderNum = <span class="hljs-number">8</span>;
+<span class="hljs-built_in">console</span>.log(<span class="hljs-string">"You are number "</span> + (orderNum + <span class="hljs-number">1</span>) + <span class="hljs-string">" in line."</span>);
+</code></pre>
+<pre><code>=&gt; You are number <span class="hljs-number">9</span> <span class="hljs-keyword">in</span> line.
+</code></pre><p>Check <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">the documentation</a> for all the other basic tools.</p>
+<h2 id="stripping-whitespace">Stripping Whitespace</h2>
+<p>Often, you are going to have some surrounding whitespace that you don&#39;t want corrupting the rest of your data. Reading CSV files gives a good example of this, as spaces are typically also used in conjunction with the commas to separate columns.</p>
+<p>A data file like this:</p>
+<pre><code>cities_spaced.<span class="hljs-keyword">cs</span><span class="hljs-variable">v:</span>
+
+city  ,state ,population,land area
+  seattle  ,WA , <span class="hljs-number">652405</span> ,<span class="hljs-number">83.9</span>
+<span class="hljs-keyword">new</span> york,NY,<span class="hljs-number">8405837</span>,  <span class="hljs-number">302.6</span>
+</code></pre><p>When <a href="read_data.html">read in</a> can produce quite the messy dataset:</p>
+<pre><code class="lang-javascript">d3.csv(<span class="hljs-string">"data/cities_spaced.csv"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(data)</span> </span>{
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-built_in">JSON</span>.stringify(data));
+});
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [{<span class="hljs-string">"city  "</span><span class="hljs-symbol">:<span class="hljs-string">"  seattle  "</span></span>,<span class="hljs-string">"state "</span><span class="hljs-symbol">:<span class="hljs-string">"WA "</span></span>,<span class="hljs-string">"population"</span><span class="hljs-symbol">:<span class="hljs-string">" 652405 "</span></span>,<span class="hljs-string">"land area"</span><span class="hljs-symbol">:<span class="hljs-string">"83.9"</span></span>},
+{<span class="hljs-string">"city  "</span><span class="hljs-symbol">:<span class="hljs-string">"new york"</span></span>,<span class="hljs-string">"state "</span><span class="hljs-symbol">:<span class="hljs-string">"NY"</span></span>,<span class="hljs-string">"population"</span><span class="hljs-symbol">:<span class="hljs-string">"8405837"</span></span>,<span class="hljs-string">"land area"</span><span class="hljs-symbol">:<span class="hljs-string">"  302.6"</span></span>}]
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p>Note the spaces in the property names as well as the values. In cases like this, it might be best to <a href="iterate_data.html">map</a> the data back to a clean version. Lodash&#39;s <a href="https://lodash.com/docs#trim">trim</a> can help. It removes that unsightly whitespace from the front and back of your strings.</p>
+<p>Here is a version of the data loading function that removes whitespace. It uses</p>
+<pre><code class="lang-javascript">d3.csv(<span class="hljs-string">"data/cities_spaced.csv"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(data)</span> </span>{
+  <span class="hljs-keyword">var</span> clean = data.map(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{
+    <span class="hljs-keyword">var</span> cleanD = {};
+    d3.keys(d).forEach(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(k)</span> </span>{
+      cleanD[_.trim(k)] = _.trim(d[k]);
+    });
+    <span class="hljs-keyword">return</span> cleanD;
+  });
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-built_in">JSON</span>.stringify(clean));
+});
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [{<span class="hljs-string">"city"</span><span class="hljs-symbol">:<span class="hljs-string">"seattle"</span></span>,<span class="hljs-string">"state"</span><span class="hljs-symbol">:<span class="hljs-string">"WA"</span></span>,<span class="hljs-string">"population"</span><span class="hljs-symbol">:<span class="hljs-string">"652405"</span></span>,<span class="hljs-string">"land area"</span><span class="hljs-symbol">:<span class="hljs-string">"83.9"</span></span>},
+{<span class="hljs-string">"city"</span><span class="hljs-symbol">:<span class="hljs-string">"new york"</span></span>,<span class="hljs-string">"state"</span><span class="hljs-symbol">:<span class="hljs-string">"NY"</span></span>,<span class="hljs-string">"population"</span><span class="hljs-symbol">:<span class="hljs-string">"8405837"</span></span>,<span class="hljs-string">"land area"</span><span class="hljs-symbol">:<span class="hljs-string">"302.6"</span></span>}]
+</code></pre><div class="aside">This code is using d3.js and lodash</div>
+
+<p>The strings are now clear of those pesky spaces.</p>
+<h2 id="find-and-replace">Find and Replace</h2>
+<p>Extracting data from strings can sometimes mean extracting pieces of strings. Finding out if a string contains a keyword or sub-string of interest is a first step in quantifying the content of a body of text.</p>
+<p><a href="">indexOf</a> can be used to perform this searching. You pass it a sub-string, and it&#39;ll tell you the location in string you are calling it where that sub-string starts. <code>-1</code> is returned if the sub-string can&#39;t be found. You can use this to build a little string finder, by comparing the return value to <code>-1</code>.</p>
+<pre><code class="lang-javascript"><span class="hljs-built_in">console</span>.log(<span class="hljs-string">"A man, a plan, a canal"</span>.indexOf(<span class="hljs-string">"man"</span>) !== -<span class="hljs-number">1</span>);
+</code></pre>
+<pre><code>=&gt; <span class="hljs-keyword">true</span>
+</code></pre><pre><code class="lang-javascript"><span class="hljs-built_in">console</span>.log(<span class="hljs-string">"A man, a plan, a canal"</span>.indexOf(<span class="hljs-string">"panama"</span>) !== -<span class="hljs-number">1</span>);
+</code></pre>
+<pre><code>=&gt; <span class="hljs-keyword">false</span>
+</code></pre><p>Replace is the butter to find&#39;s bread. We will see more replacing when we get to regular expressions, but replacing sections of a string can be done with the <a href="">replace</a> method.</p>
+<pre><code class="lang-javascript"><span class="hljs-built_in">console</span>.log(<span class="hljs-string">"A man, a plan, a canal"</span>.replace(<span class="hljs-string">"canal"</span>, <span class="hljs-string">""</span>));
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-string">"A man, a plan, a"</span>
+</code></pre><h2 id="templating">Templating</h2>
+<p>When you need to create a more complicated string, such as an html snippet, it may
+become too tedious to just combine strings by concatenating them with your variables. Consider
+the following example:</p>
+<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-title">div</span> <span class="hljs-attribute">class</span>=<span class="hljs-value">"person"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">span</span> <span class="hljs-attribute">class</span>=<span class="hljs-value">"name"</span>&gt;</span>Birdman<span class="hljs-tag">&lt;/<span class="hljs-title">span</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-title">span</span> <span class="hljs-attribute">class</span>=<span class="hljs-value">"occupation"</span>&gt;</span>Imaginary Super Hero<span class="hljs-tag">&lt;/<span class="hljs-title">span</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-title">div</span>&gt;</span>
+</code></pre>
+<p>If we wanted to build it using string concatenation, it might look like this:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> person = { name : <span class="hljs-string">"Birdman"</span>, occupation: <span class="hljs-string">"Imaginary Super Hero"</span> };
+<span class="hljs-keyword">var</span> html_snippet = <span class="hljs-string">"&lt;div class=\"person\"&gt;"</span> +
+  <span class="hljs-string">"&lt;span class=\"name\"&gt;"</span> + person.name + <span class="hljs-string">"&lt;/span&gt;"</span> +
+  <span class="hljs-string">"&lt;span class=\"occupation\"&gt;"</span> + person.occupation + <span class="hljs-string">"&lt;/span&gt;"</span> +
+<span class="hljs-string">"&lt;/div&gt;"</span>;
+<span class="hljs-built_in">console</span>.log(html_snippet);
+</code></pre>
+<pre><code>=&gt; '<span class="hljs-tag">&lt;<span class="hljs-title">div</span> <span class="hljs-attribute">class</span>=<span class="hljs-value">"person"</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-title">span</span> <span class="hljs-attribute">class</span>=<span class="hljs-value">"name"</span>&gt;</span>Birdman<span class="hljs-tag">&lt;/<span class="hljs-title">span</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-title">span</span> <span class="hljs-attribute">class</span>=<span class="hljs-value">"occupation"</span>&gt;</span>Imaginary Super Hero<span class="hljs-tag">&lt;/<span class="hljs-title">span</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-title">div</span>&gt;</span>'
+</code></pre><p>That&#39;s a lot of string escaping! You can imagine this gets pretty hard to manage
+after a while.</p>
+<p>In order to simplify this process, you can use lodash templates to define a &quot;template&quot;
+that you can reuse with different data. Using our example above, we might define it
+like so:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> templateString = <span class="hljs-string">"&lt;div class='person'&gt;"</span> +
+  <span class="hljs-string">"  &lt;span class='name'&gt;&lt;%= name %&gt;&lt;/span&gt;"</span> +
+  <span class="hljs-string">"  &lt;span class='occupation'&gt;&lt;%= occupation %&gt;&lt;/span&gt;"</span> +
+  <span class="hljs-string">"&lt;/div&gt;"</span>;
+<span class="hljs-keyword">var</span> templateFunction = _.template(templateString);
+</code></pre>
+<p>Now you can use this template function with lots of data to generate the
+same snippet of html:</p>
+<pre><code class="lang-javascript"><span class="hljs-built_in">console</span>.log(templateFunction(person));
+</code></pre>
+<pre><code>=&gt; '<span class="hljs-tag">&lt;<span class="hljs-title">div</span> <span class="hljs-attribute">class</span>=<span class="hljs-value">"person"</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-title">span</span> <span class="hljs-attribute">class</span>=<span class="hljs-value">"name"</span>&gt;</span>Birdman<span class="hljs-tag">&lt;/<span class="hljs-title">span</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-title">span</span> <span class="hljs-attribute">class</span>=<span class="hljs-value">"occupation"</span>&gt;</span>Imaginary Super Hero<span class="hljs-tag">&lt;/<span class="hljs-title">span</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-title">div</span>&gt;</span>'
+</code></pre><div class="aside">This code is using lodash</div>
+
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> anotherPerson = { name : <span class="hljs-string">"James. James Bond"</span>, occupation: <span class="hljs-string">"Spy"</span> };
+<span class="hljs-built_in">console</span>.log(templateFunction(anotherPerson));
+</code></pre>
+<pre><code>=&gt; '<span class="hljs-tag">&lt;<span class="hljs-title">div</span> <span class="hljs-attribute">class</span>=<span class="hljs-value">"person"</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-title">span</span> <span class="hljs-attribute">class</span>=<span class="hljs-value">"name"</span>&gt;</span>James. James Bond<span class="hljs-tag">&lt;/<span class="hljs-title">span</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-title">span</span> <span class="hljs-attribute">class</span>=<span class="hljs-value">"occupation"</span>&gt;</span>Spy<span class="hljs-tag">&lt;/<span class="hljs-title">span</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-title">div</span>&gt;</span>'
+</code></pre><h2 id="next-task">Next Task</h2>
+<p><a href="#regexes">Regular Expressions</a></p>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="http://www.quirksmode.org/js/strings.html">Working With Strings</a> - a great guide to more string basics</li>
+<li><a href="https://github.com/epeli/underscore.string">underscore.string</a> - for all the other string functions you might want</li>
+<li><a href="http://underscorejs.org/#template">underscore.template</a> - for a deeper dive into underscore&#39;s template function</li>
+</ul>
+
+  </div>
+
+  <br/><br/><br><br>
+<a name="regexes"></a><br><p></p>
+    <br>
+<h1 id="regular-expressions">Regular Expressions</h1><br><br>
+
+<p>Regular expressions are used to match certain patterns of strings within other strings.</p>
+<p>They can be a useful tool for extracting <em>patterns</em> rather than exact strings, for example:
+telephone numbers (sequences of numbers of a specific length,) street numbers or email
+addresses.</p>
+<h2 id="finding-strings">Finding Strings</h2>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> str = <span class="hljs-string">"how much wood would a woodchuck chuck if a woodchuck could chuck wood"</span>;
+<span class="hljs-keyword">var</span> regex = <span class="hljs-regexp">/wood/</span>;
+</code></pre>
+<p>If we want to know whether the string &quot;wood&quot; appears in our larger string <code>str</code> we
+could do the following</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">if</span> (regex.test(str)) {
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"we found 'wood' in the string!"</span>);
+}
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-string">"we found 'wood' in the string!"</span>
+</code></pre><p>To see the actual matches we found in the string, we can use the <code>match</code> method
+to find all matches available:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> matches = str.match(regex);
+<span class="hljs-built_in">console</span>.log(matches);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [<span class="hljs-string">"wood"</span>]
+</code></pre><p>Note that this only returned one match, even though the word &quot;wood&quot; appears several
+times in our original string. In order to find all individual instances of wood, we need
+to add the global flag, which we can do by adding a <code>g</code> to the end of our expression:</p>
+<pre><code class="lang-javascript">regex = <span class="hljs-regexp">/wood/g</span>;
+<span class="hljs-built_in">console</span>.log(str.match(regex));
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [<span class="hljs-string">"wood"</span>, <span class="hljs-string">"wood"</span>, <span class="hljs-string">"wood"</span>, <span class="hljs-string">"wood"</span>]
+</code></pre><p>Now, note that two of those matches actually belonged to the word &quot;woodchuck&quot;, which
+was not a part of our results. If we wanted to extend our regular expression to match both
+we could do so in a few ways:</p>
+<pre><code class="lang-javascript">regex = <span class="hljs-regexp">/wood.*?\b/g</span>;
+<span class="hljs-built_in">console</span>.log(str.match(regex));
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [<span class="hljs-string">"wood"</span>, <span class="hljs-string">"woodchuck"</span>, <span class="hljs-string">"woodchuck"</span>, <span class="hljs-string">"wood"</span>]
+</code></pre><p>In this regular expression we are matching everything that starts with the string &quot;wood&quot;
+followed by 0 or more characters (<code>.*?</code>) until a word break (<code>\b</code>) occures.
+Alternatively, we could also just search for both words:</p>
+<pre><code class="lang-javascript">regex = <span class="hljs-regexp">/woodchuck|wood/g</span>;
+<span class="hljs-built_in">console</span>.log(str.match(regex));
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [<span class="hljs-string">"wood"</span>, <span class="hljs-string">"woodchuck"</span>, <span class="hljs-string">"woodchuck"</span>, <span class="hljs-string">"wood"</span>]
+</code></pre><p>Note the order in which we did the last search. We used the word &quot;woodchuch&quot; before
+the word &quot;wood&quot;. If we were to run our expression like so: <code>/wood|woodchuck/g</code>, we would
+end up with <code>[&quot;wood&quot;, &quot;wood&quot;, &quot;wood&quot;, &quot;wood&quot;]</code> again because that search would be
+&quot;greedy&quot;.</p>
+<h2 id="replacing-with-regular-expressions">Replacing with regular expressions</h2>
+<p>If we wanted to replace the word &quot;wood&quot; in our original string, with the word
+&quot;nun&quot;, we could do it like so:</p>
+<pre><code class="lang-javascript">regex = <span class="hljs-regexp">/wood/g</span>;
+<span class="hljs-keyword">var</span> newstr = str.replace(regex, <span class="hljs-string">"nun"</span>);
+<span class="hljs-built_in">console</span>.log(newstr);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-string">"how much nun would a nunchuck chuck if a nunchuck could chuck nun"</span>
+</code></pre><p>Probablay not what you&#39;d be going for, but you get our drift.</p>
+<h2 id="finding-numbers">Finding Numbers</h2>
+<p>Extracting numbers from strings is a common task when looking for things like
+dollar amounts or any other numerical measurements that might be scattered about
+in the text.
+For example, if we wanted to extract the total amount of money spent
+on groceries from this message:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> message = <span class="hljs-string">"I bought a loaf of bread for $3.99, some milk for $2.49 and"</span> +
+  <span class="hljs-string">"a box of chocolate cookies for $6.95"</span>;
+</code></pre>
+<p>we could define a regular expression that looks for dollar amounts by defining a
+pattern like so.</p>
+<pre><code class="lang-javascript">regex = <span class="hljs-regexp">/\$([0-9\.]+)\b/g</span>;
+</code></pre>
+<p>this pattern looks for:</p>
+<ul>
+<li>A dollar sign (<code>\$</code>) to indicate the beginning of a price</li>
+<li>A set of repeating characters that can be a number (<code>0-9</code>) or the period character <code>.</code>. These can appear repeatedly (<code>+</code>). Note that we&#39;re not being particularly careful in making sure we only have one period in our string, for example.</li>
+<li>A word break that would indicate the end of the price string (<code>\b</code>).</li>
+</ul>
+<p>If we wanted to find all the matches, we could use our string <code>match</code> function like so:</p>
+<pre><code class="lang-javascript">matches = message.match(regex);
+<span class="hljs-built_in">console</span>.log(matches);
+</code></pre>
+<pre><code>=&gt; [<span class="hljs-string">"<span class="hljs-variable">$3</span>.99"</span>, <span class="hljs-string">"<span class="hljs-variable">$2</span>.49"</span>, <span class="hljs-string">"<span class="hljs-variable">$6</span>.95"</span>]
+</code></pre><p>This is great! We have all our dollar amounts. While this gets us 90% there, we
+can&#39;t really add them with those <code>$</code> signs. To remove them, we can use our trusty
+<code>reduce</code> function like so:</p>
+<pre><code class="lang-javascript">matches.reduce(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(sum, value)</span> </span>{
+  <span class="hljs-keyword">return</span> sum + <span class="hljs-built_in">Number</span>(value.slice(<span class="hljs-number">1</span>));
+}, <span class="hljs-number">0</span>);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-number">13.43</span>
+</code></pre><h2 id="useful-special-characters">Useful special characters</h2>
+<p>We&#39;ve used a few special characters so far, like <code>\b</code> to indicate a word break. There
+are a few others that might be useful to you:</p>
+<ul>
+<li><code>\d</code> - any number character.  Equivalent to [0-9].</li>
+<li><code>\D</code> - any non number character. Equivalent to [^0-9].</li>
+<li><code>\s</code> - any single space character. This includes a single space, tab, line feed or
+form feed.</li>
+</ul>
+<p>You can see a full list of all special characters here:
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions">MDN - Regular Expressions</a></p>
+<h2 id="next-task">Next Task</h2>
+<p><a href="#time">Working With Time</a></p>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions">MDN - Regular Expressions</a> - for more information about regular expressions</li>
+</ul>
+
+  </div>
+
+
+  <br/><br/><br><br>
+<a name="time"></a><br><p></p>
+    <br>
+<h1 id="working-with-time">Working with Time</h1><br><br>
+
+<p>Time is one of those tricky programming things that seems like it should be easy, but usually turns out not to be. We will use D3&#39;s built in <a href="https://github.com/mbostock/d3/wiki/Time-Formatting">time formating</a> and <a href="https://github.com/mbostock/d3/wiki/Time-Intervals">interval</a> functions. We will also take a look at the powerful <a href="http://momentjs.com/">Moment.js</a> library, for when you just need more time power.</p>
+<h2 id="string-to-date">String to Date</h2>
+<p>The first task when dealing with dates is usually getting a <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date">Date object</a> out of a string. Most of the time, your data will have dates or times in an (mostly) arbitrary format, and you need to force that mess into an actual date.</p>
+<p>D3 has <a href="https://github.com/mbostock/d3/wiki/Time-Formatting#format">d3.time.format</a> which provides a way to do this parsing. It was a little confusing for me the first time I tried it. You use this function to create a string parser, and then use the parser to actually convert the string.</p>
+<p>In our <a href="group_data.html">nesting example</a>, we saw data that had dates as strings:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> expense = {<span class="hljs-string">"name"</span>:<span class="hljs-string">"jim"</span>,<span class="hljs-string">"amount"</span>:<span class="hljs-number">34</span>,<span class="hljs-string">"date"</span>:<span class="hljs-string">"11/12/2015"</span>};
+</code></pre>
+<p>To convert this date string to a Date object, we would need a parser that looks like:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> parser = d3.time.format(<span class="hljs-string">"%m/%d/%Y"</span>);
+</code></pre>
+<div class="aside">This code is using d3.js</div>
+
+
+<p>The input string to <code>d3.time.format</code> indicates what the date string should look like. You have a <a href="https://github.com/mbostock/d3/wiki/Time-Formatting#format">lot of options</a> for the special, percent-sign-prefixed variables. You can see in the string I&#39;m using month, day, and four-digit year. The slashes in the format string are not special variables - but just what we expect to find separating the fields in the date string.</p>
+<p>Next we use the parser to parse our string.</p>
+<pre><code class="lang-javascript">expense.date = parser.parse(expense.date);
+<span class="hljs-built_in">console</span>.log(expense);
+</code></pre>
+<pre><code>=&gt; {<span class="hljs-string">name:</span> <span class="hljs-string">"jim"</span>, <span class="hljs-string">amount:</span> <span class="hljs-number">34</span>, <span class="hljs-string">date:</span> Thu Nov <span class="hljs-number">12</span> <span class="hljs-number">2015</span> <span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span> GMT-<span class="hljs-number">0500</span> (EST)}
+</code></pre><p>Cool! Now our date is actually a Date object.</p>
+<p>Here are a few more time parsers to show the capabilities of D3&#39;s parsing.</p>
+<p>Just the date:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> date = d3.time.format(<span class="hljs-string">"%A, %B %-d, %Y"</span>).parse(<span class="hljs-string">"Wednesday, November 12, 2014"</span>);
+<span class="hljs-built_in">console</span>.log(date);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-constant">Wed</span> <span class="hljs-constant">Nov</span> <span class="hljs-number">12</span> <span class="hljs-number">2014</span> <span class="hljs-number">00</span><span class="hljs-symbol">:</span><span class="hljs-number">00</span><span class="hljs-symbol">:</span><span class="hljs-number">00</span> <span class="hljs-constant">GMT</span>-<span class="hljs-number">0500</span> (<span class="hljs-constant">EST</span>)
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p>The little dash in front of the <code>d</code> is to remove the 0-padding)</p>
+<pre><code class="lang-javascript">date = d3.time.format(<span class="hljs-string">"%m/%y"</span>).parse(<span class="hljs-string">"12/14"</span>);
+<span class="hljs-built_in">console</span>.log(date);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-constant">Mon</span> <span class="hljs-constant">Dec</span> <span class="hljs-number">01</span> <span class="hljs-number">2014</span> <span class="hljs-number">00</span><span class="hljs-symbol">:</span><span class="hljs-number">00</span><span class="hljs-symbol">:</span><span class="hljs-number">00</span> <span class="hljs-constant">GMT</span>-<span class="hljs-number">0500</span> (<span class="hljs-constant">EST</span>)
+</code></pre><p>You can see it defaults to the first day of the month.</p>
+<p>Just the time:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> time = d3.time.format(<span class="hljs-string">"%I:%M%p"</span>).parse(<span class="hljs-string">"12:34pm"</span>);
+<span class="hljs-built_in">console</span>.log(time);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-constant">Mon</span> <span class="hljs-constant">Jan</span> <span class="hljs-number">01</span> <span class="hljs-number">1900</span> <span class="hljs-number">12</span><span class="hljs-symbol">:</span><span class="hljs-number">34</span><span class="hljs-symbol">:</span><span class="hljs-number">00</span> <span class="hljs-constant">GMT</span>-<span class="hljs-number">0500</span> (<span class="hljs-constant">EST</span>)
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p>Gives you a somewhat strange default date.</p>
+<p>Date and time:</p>
+<pre><code class="lang-javascript">time = d3.time.format(<span class="hljs-string">"%m/%d/%Y %H:%M:%S"</span>).parse(<span class="hljs-string">"01/02/2014 08:22:05"</span>);
+<span class="hljs-built_in">console</span>.log(time);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-constant">Thu</span> <span class="hljs-constant">Jan</span> <span class="hljs-number">02</span> <span class="hljs-number">2014</span> 08<span class="hljs-symbol">:</span><span class="hljs-number">22</span><span class="hljs-symbol">:</span><span class="hljs-number">05</span> <span class="hljs-constant">GMT</span>-<span class="hljs-number">0500</span> (<span class="hljs-constant">EST</span>)
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p>This could also be done using some built in short-hands:</p>
+<pre><code class="lang-javascript">time = d3.time.format(<span class="hljs-string">"%x %X"</span>).parse(<span class="hljs-string">"01/02/2014 08:22:05"</span>);
+<span class="hljs-built_in">console</span>.log(time);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-constant">Thu</span> <span class="hljs-constant">Jan</span> <span class="hljs-number">02</span> <span class="hljs-number">2014</span> 08<span class="hljs-symbol">:</span><span class="hljs-number">22</span><span class="hljs-symbol">:</span><span class="hljs-number">05</span> <span class="hljs-constant">GMT</span>-<span class="hljs-number">0500</span> (<span class="hljs-constant">EST</span>)
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p>You can see that <code>d3.time.format</code> gives you a lot of flexibility about what your time string will look like.</p>
+<h2 id="modifying-time">Modifying Time</h2>
+<p>In many cases, you might want to modify a date object. Perhaps you only want to display the hour from a date, or maybe you want to figure out what a week from now would be.</p>
+<p>The <a href="https://github.com/mbostock/d3/wiki/Time-Intervals">d3.time.interval</a> set of functions provides a starting point for these kinds of manipulations.</p>
+<p>Intervals allow for modifying dates around specific time slices like minutes, hours, days, months, or years. We are given a number of functions to work with each interval, depending on what we might want to do.</p>
+<p>So, to get the nearest hour from a date, we can use <a href="https://github.com/mbostock/d3/wiki/Time-Intervals#interval_round">d3.time.hour.round</a></p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> hourParser = d3.time.format(<span class="hljs-string">"%I:%M%p"</span>);
+<span class="hljs-keyword">var</span> time = hourParser.parse(<span class="hljs-string">"10:34pm"</span>);
+<span class="hljs-keyword">var</span> hour = d3.time.hour.round(time);
+<span class="hljs-built_in">console</span>.log(hour);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-constant">Mon</span> <span class="hljs-constant">Jan</span> <span class="hljs-number">01</span> <span class="hljs-number">1900</span> <span class="hljs-number">23</span><span class="hljs-symbol">:</span><span class="hljs-number">00</span><span class="hljs-symbol">:</span><span class="hljs-number">00</span> <span class="hljs-constant">GMT</span>-<span class="hljs-number">0500</span>
+</code></pre><div class="aside">This code is using d3.js</div>
+
+<p>It returns a date object that just contains the nearest hour (11:00pm). We can display this by using the <code>d3.time.format</code> parser to format the date object into a string (these formaters can work both ways).</p>
+<pre><code class="lang-javascript"><span class="hljs-built_in">console</span>.log(hourParser(hour));
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> <span class="hljs-number">11</span><span class="hljs-symbol">:</span><span class="hljs-number">00</span>PM
+</code></pre><h2 id="moment-js">Moment.js</h2>
+<p><a href="http://momentjs.com/">Moment.js</a> is another JavaScript library that could be better suited to your needs, if you happen to be doing a lot of time manipulations. Its syntax and capabilities seem a bit more intuitive for certain <a href="http://momentjs.com/docs/#/manipulating/">time manipulations</a>.</p>
+<p>Check it out if you need more time control power!</p>
+<h2 id="next-task">Next Task</h2>
+<p><a href="#assumptions">Checking Data Assumptions</a></p>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="http://momentjs.com/">moment.js</a></li>
+</ul>
+
+  </div>
+
+  <br/><br/><br><br>
+<a name="assumptions"></a><br><p></p>
+    <br>
+<h1 id="checking-data-assumptions">Checking Data Assumptions</h1><br><br>
+
+<p>Data processing is tricky business, full of pitfalls and gotchas. Hopefully the tasks in this guide help with getting started in this process. But you, I, and the entire world will make mistakes. It&#39;s natural.</p>
+<p>But mistakes in data processing, like all other kinds of mistakes, can be painful. They can result in hours of bug hunting, days of reprocessing, and months of crying. Since we know mistakes happen and will continue to happen, what can we do to take away some of the pain?</p>
+<p>In a word, <em>padding</em>. We need some padding to protect us from the bumps and bruises of data processing. And I would suggest that this padding come in the form of simple tests that check the assumptions you have about the shape and contents of your data.</p>
+<p>Unless there is an extreme performance need, these tests should run in the data processing pipeline. Optimally, they would be easy to turn on and off so that you can disable them if you need to if your code is deployed.</p>
+<h2 id="assertions">Assertions</h2>
+<p>These tests can be created with <a href="http://en.wikipedia.org/wiki/Assertion_%28software_development%29">assertions</a> - functions that check the truthiness of a statement in code. Typically, they raise an error when an expected truth is not actually true.</p>
+<p>JavaScript doesn&#39;t have a built assertions, but we can rectify this deficiency with a simple function.</p>
+<pre><code class="lang-javascript"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">assert</span><span class="hljs-params">(isTrue, message)</span> </span>{
+  <span class="hljs-keyword">if</span>(!isTrue) {
+    <span class="hljs-built_in">console</span>.log(message);
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;
+  }
+  <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>;
+}
+</code></pre>
+<p>This will output a given message if the input is not true. Typically assertions <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/throw">throw</a> errors, but we can just log it for explaining purposes.</p>
+<h2 id="data-content-assumptions">Data Content Assumptions</h2>
+<p>Now let&#39;s use our <code>assert</code> function to check some assumptions about the details of our data.</p>
+<p>We can use lodash&#39;s suite of <a href="https://lodash.com/docs#isBoolean">type checking functions</a> to take care of performing the checks, passing the result of the check to <code>assert</code> to produce our errors.</p>
+<p>Let&#39;s say our data importing process has made some mistakes:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> data = [{<span class="hljs-string">"name"</span>:<span class="hljs-string">"Dan"</span>,
+             <span class="hljs-string">"age"</span>:<span class="hljs-number">23</span>,
+             <span class="hljs-string">"superhuman"</span>:<span class="hljs-literal">false</span>},
+            {<span class="hljs-string">"name"</span>:<span class="hljs-string">"Sleepwalker"</span>,
+              <span class="hljs-string">"age"</span>:<span class="hljs-literal">NaN</span>,
+              <span class="hljs-string">"superhuman"</span>:<span class="hljs-string">"TRUE"</span>}
+];
+</code></pre>
+<p>Our first entry looks ok, where our second entry has some problems. The age parsing for the immortal <a href="http://en.wikipedia.org/wiki/Sleepwalker_%28comics%29">Sleepwalker</a> has left him with no age. Also, bad input data has left us with a string in <code>superhuman</code>, where we expect a boolean.</p>
+<p>A simple assumption checking function that could be run on this data could look something like this:</p>
+<pre><code class="lang-javascript"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">checkDataContent</span><span class="hljs-params">(data)</span> </span>{
+  data.forEach(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{
+    <span class="hljs-keyword">var</span> dString = <span class="hljs-built_in">JSON</span>.stringify(d);
+    assert(_.isString(d.name), dString + <span class="hljs-string">" has a bad name - should be a string"</span>);
+    assert(_.isNumber(d.age), dString + <span class="hljs-string">" has a bad age - should be a number"</span>);
+    assert(!_.isNaN(d.age), dString + <span class="hljs-string">" has a bad age - should not be NaN"</span>);
+    assert(_.isBoolean(d.superhuman), dString + <span class="hljs-string">" has a bad superhuman - should be boolean"</span>);
+  });
+}
+
+checkDataContent(data);
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> {<span class="hljs-string">"name"</span><span class="hljs-symbol">:<span class="hljs-string">"Sleepwalker"</span></span>,<span class="hljs-string">"age"</span><span class="hljs-symbol">:null</span>,<span class="hljs-string">"superhuman"</span><span class="hljs-symbol">:<span class="hljs-string">"TRUE"</span></span>} has a bad age - should not be <span class="hljs-constant">NaN</span>
+{<span class="hljs-string">"name"</span><span class="hljs-symbol">:<span class="hljs-string">"Sleepwalker"</span></span>,<span class="hljs-string">"age"</span><span class="hljs-symbol">:null</span>,<span class="hljs-string">"superhuman"</span><span class="hljs-symbol">:<span class="hljs-string">"TRUE"</span></span>} has a bad superhuman - should be boolean
+</code></pre><div class="aside">This code is using lodash</div>
+
+
+<p>Again, the focus here is on detection of data problems. You want something quick and simple that will serve as an early warning sign.</p>
+<p>Unfortunately, the JavaScript primitive <code>NaN</code> is indeed a number, and so additional checks need to be made. As more data comes in, this function will need to be updated to add more checks. This might get a bit tedious, but a little bit of checking can go a long way towards maintaining sanity.</p>
+<h2 id="data-shape-assumptions">Data Shape Assumptions</h2>
+<p>Just as you can test your assumptions about the content of your data elements, it can be a good idea to test your assumptions about the <em>shape</em> of your data. Here, shape just refers to the size and structure of your data. Rows and columns.</p>
+<p>Something simple to perform this check could look like this:</p>
+<pre><code class="lang-javascript"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">checkDataShape</span><span class="hljs-params">(data)</span> </span>{
+  assert(data.length &gt; <span class="hljs-number">0</span>, <span class="hljs-string">"data is empty"</span>);
+  assert(data.length &gt; <span class="hljs-number">4</span>, <span class="hljs-string">"data is too small"</span>);
+  <span class="hljs-keyword">var</span> keys = d3.keys(data[<span class="hljs-number">0</span>]);
+  assert(keys.length === <span class="hljs-number">4</span>, <span class="hljs-string">"wrong number of columns"</span>);
+}
+
+checkDataShape(data);
+</code></pre>
+<pre><code>=&gt; <span class="hljs-typedef"><span class="hljs-keyword">data</span> is too small</span>
+<span class="hljs-title">wrong</span> number <span class="hljs-keyword">of</span> columns
+</code></pre><p>The two assumption functions could easily be combined into one, but it&#39;s important to look at both aspects of your data.</p>
+<h2 id="more-assertions">More Assertions</h2>
+<p>If this is an approach that appeals to you, and your data might get really complicated (or really messy)
+you may want to explore using more complicated assertion code.</p>
+<p>One useful library to explore is <a href="http://chaijs.com/api/assert/">Chai</a> which comes with a great
+collection of assertion helpers. These can help you check for more complicated things like whether
+two objects are equal or whether an object has or doesn&#39;t have a property.</p>
+<p>For example:</p>
+<pre><code class="lang-javascript">assert.deepEqual({ tea: <span class="hljs-string">'green'</span> }, { tea: <span class="hljs-string">'green'</span> });
+</code></pre>
+<pre><code>=&gt; <span class="hljs-keyword">true</span>
+</code></pre><div class="aside">This code is using chai&#39;s assert library</div>
+
+<h2 id="next-task">Next Task</h2>
+<p><a href="#node">Using Node</a></p>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="http://www.pgbovine.net/parsing-raw-data.htm">Parsing raw data</a> - a great guide that motivated this section</li>
+<li><a href="http://chaijs.com/api/assert/">Chai</a> - Chai&#39;s assert library</li>
+<li><a href="http://arasatasaygin.github.io/is.js/">is.js</a> - provides a great set of checking functions to complement lodash&#39;s set.</li>
+<li><a href="https://github.com/validate-io">validate.io</a> - provides a similar set of checking functions, but all as separate projects - so you can include only the checks you want to use.</li>
+</ul>
+
+  </div>
+
+  <br/><br/><br><br>
+<a name="node"></a><br><p></p>
+    <br>
+<h1 id="analyzing-data-with-node">Analyzing Data with Node</h1><br><br>
+
+<p>As mentioned in the <a href="#getting_started">introduction</a>, this guide is mostly geared for client-side data analysis, but with a few augmentations, the same tools can be readily used server-side with <a href="https://nodejs.org/">Node</a>.</p>
+<p>If the data is too large, this might in fact be your only option if you want to use JavaScript for your data analysis. Trying to deal with large data in the browser might result in your users having to wait for a long time. No user will wait for 5 minutes with a frozen browser, no matter how cool the analysis might be.</p>
+<h2 id="setting-up-a-node-project">Setting up a Node Project</h2>
+<p>To get started with Node, ensure both node and <a href="https://www.npmjs.com/">npm</a>, the Node package manager, are installed and available via the command line:</p>
+<pre><code class="lang-bash"><span class="hljs-built_in">which</span> node
+<span class="hljs-comment"># /usr/local/bin/node</span>
+<span class="hljs-built_in">which</span> npm
+<span class="hljs-comment"># /usr/local/bin/npm</span>
+</code></pre>
+<p>Your paths may be different then mine, but as long as <code>which</code> returns something, you should be good to go.</p>
+<p>If node isn&#39;t installed on your machine, you can <a href="https://github.com/joyent/node/wiki/installing-node.js-via-package-manager#osx">install it easily via a package manager</a>.</p>
+<p>Create a new directory for your data analysis project. In this example, we have a directory with a sub-directory called <code>data</code> which contains our <code>animals.tsv</code> file inside.</p>
+<pre><code class="lang-bash">animals_analysis
+|
+ - data
+   |
+    - animals.tsv
+</code></pre>
+<h2 id="installing-node-modules">Installing Node Modules</h2>
+<p>Next, we want to install our JavaScript tools, D3 and lodash. With Node, we can automate the process by using <code>npm</code>. Inside your data analysis directory run the following:</p>
+<pre><code class="lang-bash">npm install d3
+npm install lodash
+</code></pre>
+<p>You can see that npm creates a new sub-directory called <code>node_modules</code> by default, where your packages are installed. Everything is kept local, so you don&#39;t have to worry about problems with missing or out-of-date packages. Your analysis tools for each project are ready to go.</p>
+<p>A <code>package.json</code> file can be useful for saving this kind of meta information about your project: dependencies, name, description, etc. Check out this <a href="http://browsenpm.org/package.json">interactive example</a> or <a href="https://docs.npmjs.com/files/package.json">npm&#39;s documentation</a> for more information.</p>
+<h2 id="requiring-modules">Requiring Modules</h2>
+<p>Now we create a separate JavaScript file to do our analysis in:</p>
+<pre><code class="lang-bash">touch analyze.js
+</code></pre>
+<p>Inside this file, we first <a href="http://openmymind.net/2012/2/3/Node-Require-and-Exports/">require</a> our external dependencies.</p>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> fs = <span class="hljs-built_in">require</span>(<span class="hljs-string">"fs"</span>);
+<span class="hljs-keyword">var</span> d3 = <span class="hljs-built_in">require</span>(<span class="hljs-string">"d3"</span>);
+<span class="hljs-keyword">var</span> _ = <span class="hljs-built_in">require</span>(<span class="hljs-string">"lodash"</span>);
+</code></pre>
+<p>We are requiring our locally installed <code>d3</code> and <code>lodash</code> packages. Note how we assign them to variables, which are used to access their functions later in the code.</p>
+<p>We also require the <a href="https://nodejs.org/api/fs.html">file system</a> module. As we will see in a second, we need this to load our data - which is really the key difference between client-side and server-side use of these tools</p>
+<h2 id="loading-data-in-node">Loading Data in Node</h2>
+<p>D3&#39;s data loading functionality is based on <a href="https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest">XMLHttpRequest</a>, which is great, but Node does not have <code>XMLHttpRequest</code>. There are packages around this mismatch, but a more elegant solution is to just use Node&#39;s built in file system functionality to load the data, and then D3 to parse it.</p>
+<pre><code class="lang-js">fs.readFile(<span class="hljs-string">"data/animals.tsv"</span>, <span class="hljs-string">"utf8"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(error, data)</span> </span>{
+  data = d3.tsv.parse(data);
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-built_in">JSON</span>.stringify(data));
+});
+</code></pre>
+<p><a href="https://nodejs.org/api/fs.html#fs_fs_readfile_filename_options_callback">fs.readFile</a> is asynchronous and takes a callback function when it is finished loading the data.</p>
+<p>Like our Queue example in <a href="read_data.html">client-side reading</a>, the parameters of this function start with <code>error</code>, which will be <code>null</code> unless there is an error.</p>
+<p>The data returned by <code>readFile</code> is the raw string contents of the file.</p>
+<p>We can use <a href="https://github.com/mbostock/d3/wiki/CSV#parse">d3.tsv.parse</a> which takes a string and and converts it into an array of data objects - just like what we are used to on the client side!</p>
+<p>From this point on, we can use d3 and lodash functionality to analyze our data.</p>
+<p>A full, but very simple script might look like this:</p>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> fs = <span class="hljs-built_in">require</span>(<span class="hljs-string">"fs"</span>);
+<span class="hljs-keyword">var</span> d3 = <span class="hljs-built_in">require</span>(<span class="hljs-string">"d3"</span>);
+<span class="hljs-keyword">var</span> _  = <span class="hljs-built_in">require</span>(<span class="hljs-string">"lodash"</span>);
+
+fs.readFile(<span class="hljs-string">"data/animals.tsv"</span>, <span class="hljs-string">"utf8"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(error, data)</span> </span>{
+  data = d3.tsv.parse(data);
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-built_in">JSON</span>.stringify(data));
+
+  <span class="hljs-keyword">var</span> maxWeight = d3.max(data, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.avg_weight; });
+  <span class="hljs-built_in">console</span>.log(maxWeight);
+});
+</code></pre>
+<h2 id="running-the-analysis">Running the Analysis</h2>
+<p>Since this is not in a browser, we need to execute this script, much like you would with a script written in Ruby or Python.</p>
+<p>From the command line, we can simply run it with <code>node</code> to see the results.</p>
+<pre><code class="lang-bash">node analyze.js
+</code></pre>
+<pre><code><span class="hljs-status">=&gt;</span> [{<span class="hljs-string">"name"</span><span class="hljs-symbol">:<span class="hljs-string">"tiger"</span></span>,<span class="hljs-string">"type"</span><span class="hljs-symbol">:<span class="hljs-string">"mammal"</span></span>,<span class="hljs-string">"avg_weight"</span><span class="hljs-symbol">:<span class="hljs-string">"260"</span></span>},{<span class="hljs-string">"name"</span><span class="hljs-symbol">:<span class="hljs-string">"hippo"</span></span>,<span class="hljs-string">"type"</span><span class="hljs-symbol">:<span class="hljs-string">"mammal"</span></span>,<span class="hljs-string">"avg_weight"</span><span class="hljs-symbol">:<span class="hljs-string">"3400"</span></span>},{<span class="hljs-string">"name"</span><span class="hljs-symbol">:<span class="hljs-string">"komodo dragon"</span></span>,<span class="hljs-string">"type"</span><span class="hljs-symbol">:<span class="hljs-string">"reptile"</span></span>,<span class="hljs-string">"avg_weight"</span><span class="hljs-symbol">:<span class="hljs-string">"150"</span></span>}]
+<span class="hljs-number">3400</span>
+</code></pre><h2 id="writing-data">Writing Data</h2>
+<p>Maybe the original data set is too big, but we can use Node to perform an initial pre-processing or filtering step and output the result to a new file to work with later.</p>
+<p>Node has <a href="https://nodejs.org/api/fs.html#fs_fs_writefile_filename_data_options_callback">fs.writeFile</a> that can perform this easily.</p>
+<p>Inside the read callback, we can call this to write the data out.</p>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> bigAnimals = data.filter(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.avg_weight &gt; <span class="hljs-number">300</span>; });
+bigAnimalsString = <span class="hljs-built_in">JSON</span>.stringify(bigAnimals);
+
+fs.writeFile(<span class="hljs-string">"big_animals.json"</span>, bigAnimalsString, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(err)</span> </span>{
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"file written"</span>);
+});
+</code></pre>
+<p>Running this should leave us with a <code>big_animals.json</code> file in our analysis folder.</p>
+<p>This is fine if JSON is what you want, but often times you want to output TSV or CSV files for further analysis. D3 to the rescue again!</p>
+<p>D3 includes <a href="https://github.com/mbostock/d3/wiki/CSV#format">d3.csv.format</a> (and the equivalent for TSV and other file formats) which converts our array of data objects into a string - perfect for writing to a file.</p>
+<p>Let&#39;s use it to make a CSV of our big animals.</p>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> bigAnimals = data.filter(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(d)</span> </span>{ <span class="hljs-keyword">return</span> d.avg_weight &gt; <span class="hljs-number">300</span>; });
+bigAnimalsString = d3.csv.format(bigAnimals);
+
+fs.writeFile(<span class="hljs-string">"big_animals.csv"</span>, bigAnimalsString, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(err)</span> </span>{
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"file written"</span>);
+});
+</code></pre>
+<p>Run this with the same <code>node analysis.js</code> and now you should have a lovely little <code>big_animals.csv</code> file in your directory. It even takes care of the headers for you:</p>
+<pre><code>name,<span class="hljs-class"><span class="hljs-keyword">type</span>,<span class="hljs-title">avg_weight</span></span>
+hippo,mammal,<span class="hljs-number">3400</span>
+</code></pre><p>Now even <a href="https://medium.com/@wtrsld/big-data-made-me-do-it-5bfc3f46871c">BIG data</a> is no match for us - using the power of JavaScript!</p>
+
+  </div>
+  <br/><br/>
+</body></html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8">
+
+<style>
+
+a:hover,a:active{color:red}
+table.w3-table-all{margin:20px 0}
+.top {
+ position:relative;
+ background-color:black;
+ height:68px;
+ padding-top:20px;
+ line-height:50px;
+ overflow:hidden;
+ z-index:2;
+}
+body {
+ background-color: #000000;
+ color: #48A848;
+ margin-left: 14%;
+ margin-right: 14%;
+ font-size: 24px;
+}
+a { text-decoration: none;
+	color: #58D858;}
+a:visited { color: #88C898;}
+A:hover {	color: yellow;}
+A:focus {	color: red;}
+code { color: gray; background-color: #002010}
+pre { color: gray; background-color: #001010; font-size: 80%;
+}
+h1, h2, h3, h4, h5, .goldword {
+	color: gold;
+}
+table{
+ font-size: 20px;
+}
+.left {
+    position: absolute;
+    left: 100px;
+    color: GoldenRod;
+    border: 1px solid GoldenRod;
+    padding: 2px;
+    font-size: 60%;
+}
+.bord {
+    color: redpink;
+    border: 1px solid GoldenRod;
+    padding: 1px;
+    font-size: 90%;
+}
+.highlight { 
+    color: white;
+    background-color: #002030
+  }
+hr {width: 50%;}
+#toc, #tang, #san, #pill {
+	margin-left: 20%;
+	margin-right: 20%;
+	color: gold;
+	padding: 1%;
+	text-align: left;
+	box-shadow: 5px 5px 15px silver;
+	border-radius: 5px;
+	border: 1px solid DarkSlateGray;
+    font-size: 90%;
+}
+.mywords{
+    color: Crimson;
+}
+.orangeword{
+    color: orange;
+}
+.remarks {
+	font-size: 22px;
+	color: MediumSeaGreen;
+}
+</STYLE>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+
+
+</head><body>
+
+<center><h1>Handling large data sets in R</h1></center>
+<div id="toc"><ul></ul></div>
+<br>
+
+
+<div>
+<h4>Background:</h4>
+<p><br> Recently, along with the co-author, I made a presentation on options to handle large data sets using R at <code>NYC DataScience Academy</code>. <br></p>
+<p>You can watch the presentation <a href="https://www.youtube.com/watch?v=59HEplUji_I&amp;feature=youtu.be">here</a> <br></p>
+<p>This blog presents an overview of the presentation covering the available options to process large data sets in R efficiently.</p>
+<p><br></p>
+</div>
+<div id="the-problem-with-large-data-sets-in-r" class="section level4">
+<h4>The Problem with large data sets in R:</h4>
+<p><br></p>
+<ul>
+<li><p>R reads entire data set into RAM all at once. Other programs can read file sections on demand.</p></li>
+<li><p>R Objects live in memory entirely.</p></li>
+<li><p>Does not have int64 datatype<br /> Not possible to index objects with huge numbers of rows &amp; columns even in 64 bit systems (2 Billion vector index limit) . Hits file size limit around 2-4 GB.</p></li>
+</ul>
+<p><br></p>
+</div>
+<div id="how-big-is-a-large-data-set" class="section level4">
+<h4>How big is a large data set:</h4>
+<p><br></p>
+<p>We can categorize large data sets in R across two broad categories:</p>
+<ul>
+<li><p><code>Medium sized</code> files that can be loaded in R ( within memory limit but processing is cumbersome (typically in the 1-2 GB range )</p></li>
+<li><p>Large files that cannot be loaded in R due to R / OS limitations as discussed above . we can further split this group into 2 sub groups</p>
+<ul>
+<li><code>Large files</code> - (typically 2 - 10 GB) that can still be processed locally using some work around solutions.</li>
+<li><code>Very Large files</code> - ( &gt; 10 GB) that needs distributed large scale computing.</li>
+</ul></li>
+</ul>
+<p>We will go through the solution approach for each of these situations in the following sections.</p>
+<p><br></p>
+</div>
+<div id="medium-sized-datasets-2-gb" class="section level4">
+<h4>Medium sized datasets (&lt; 2 GB)</h4>
+<p><br></p>
+<p><strong>Try to reduce the size of the file before loading it into R</strong></p>
+<p><br></p>
+<ul>
+<li><p>If you are loading xls files , you can select specific columns that is required for analysis instead of selecting the entire data set.</p></li>
+<li><p>You can not select specific columns if you are loading csv or text file - you might want to pre-process the data in command line using <code>cut</code> or <code>awk</code> commands and filter data required for analysis.</p></li>
+</ul>
+<p><br></p>
+<p><strong>Pre-allocate number of rows and pre-define column classes</strong></p>
+<p><br> Read optimization example :</p>
+<ol style="list-style-type: decimal">
+<li><p>read in a few records of the input file , identify the classes of the input file and assign that column class to the input file while reading the entire data set</p></li>
+<li><p>calculate approximate row count of the data set based on the size of the file , number of fields in the column ( or using <code>wc</code> in command line ) and define <code>nrow=</code> parameter</p></li>
+<li><p>define comment.char parameter</p></li>
+</ol>
+<pre class="r"><code>bigfile.sample &lt;- read.csv(&quot;data/SAT_Results2014.csv&quot;,  
+                           stringsAsFactors=FALSE, header=T, nrows=20)  
+
+bigfile.colclass &lt;- sapply(bigfile.sample,class)
+
+bigfile.raw &lt;- tbl_df(read.csv(&quot;data/SAT_Results2014.csv&quot;, 
+                    stringsAsFactors=FALSE, header=T,nrow=10000, 
+                    colClasses=attendance.colclass, comment.char=&quot;&quot;))  </code></pre>
+<p><br> These simple changes will significantly improve the loading operation in R.</p>
+<p><br></p>
+<p>Alternately, use <strong>fread</strong> option from package data.table</p>
+<p><br></p>
+<p>Following table shows optimization steps while reading the file and relative performance improvement achieved.</p>
+<pre class="r"><code>url &lt;- &quot;./311_Service_2014.csv&quot;
+#File size (MB) : 844
+#1,844,515 rows 52 columns
+
+
+#Standard Read.csv ####
+==========================================================================
+system.time(DF1 &lt;- read.csv(url,stringsAsFactors=FALSE))
+#user  system elapsed 
+#243.38    5.49  249.73
+
+
+#Optimized Read.csv ####
+==========================================================================
+system.time(length(readLines(url)))
+#Number of lines : 1844516
+#user  system elapsed 
+#106.56    2.47  109.63 
+
+classes &lt;- c(&quot;numeric&quot;,rep(&quot;character&quot;,48),rep(&quot;numeric&quot;,2), &quot;character&quot;)
+
+system.time(DF2 &lt;- read.csv(url, header = TRUE, sep = &quot;,&quot;,  stringsAsFactors = FALSE, nrow = 1844516, colClasses = classes))
+#user  system elapsed 
+#173.73    3.43  182.73 
+
+#fread ####
+==========================================================================
+library(data.table)
+
+system.time(DT1 &lt;- fread(url))
+#user  system elapsed 
+#80.10    1.09   81.30 
+
+
+#Summary ####
+==========================================================================
+##    user  system elapsed  Method
+##   243.38   5.49   249.73  read.csv (first time)
+##   173.73   3.43   182.73  Optimized read.csv
+##    80.10    1.09   81.30  fread</code></pre>
+<p><br></p>
+<p><strong>Use pipe operators</strong> to overwrite files with intermediate results and minimize data set duplication through process steps, if is an appropriate solution to your processing requirements.</p>
+<p><br></p>
+<p><strong>Parallel Processing</strong></p>
+<p><br></p>
+<p>Parallelism approach runs several computations at the same time and takes advantage of multiple cores or CPUs on a single system or across systems. Following R packages are used for parallel processing in R.</p>
+<p><code>Explicit Parallelism</code> (user controlled)</p>
+<p>example: <br> -rmpi(Message Processing Interface) <br> -snow(Simple Network of Workstations) <br></p>
+<p><br></p>
+<p><code>Implicit parallelism</code> (system abstraction) <br> example: <br> -doMC/foreach <br></p>
+<p>Given below is an example of multi-core registration using doMC</p>
+<p><br></p>
+<pre class="r"><code># enable parallel processing for computationally intensive operations.
+
+library(doMC)
+registerDoMC(cores = 4)</code></pre>
+<p><br></p>
+<div id="medium-sized-datasets-2---10-gb" class="section level5">
+<h5>Medium sized datasets (2 - 10 GB)</h5>
+<p><br></p>
+<p>For medium sized data sets which are <code>too-big for in-memory</code> processing but <code>too-small-for-distributed-computing</code> files, following R Packages come in handy.</p>
+<p><strong>bigmemory</strong></p>
+<p>bigmemory is part of the “big” family which consists of several packages that perform analysis on large data sets. bigmemory uses several matrix objects but we will only focus on big.matrix.</p>
+<p>big.matrix is a R object that uses a pointer to a C++ data structure. The location of the pointer to the C++ matrix can be saved to the disk or RAM and shared with other users in different sessions.</p>
+<p>By loading the pointer object, users can access the data set without reading the entire set into R.</p>
+<p>The following sample code will give a better understanding of how to use bigmemory:</p>
+<p><em>example</em></p>
+<pre class="r"><code># User / Session 1
+
+library(bigmemory)
+library(biganalytics)
+library(bigtabulate)
+
+#Create big.matrix 
+
+setwd(&quot;/Users/sundar/dev&quot;)
+
+school.matrix &lt;- read.big.matrix(
+    &quot;./numeric_matrix_SAT__College_Board__2010_School_Level_Results.csv&quot;, 
+    type =&quot;integer&quot;, header = TRUE, backingfile = &quot;school.bin&quot;, 
+    descriptorfile =&quot;school.desc&quot;, extraCols =NULL) 
+
+# Get the location of the pointer to school.matrix. 
+desc &lt;- describe(school.matrix)
+
+str(school.matrix)</code></pre>
+<pre><code>## Formal class 'big.matrix' [package &quot;bigmemory&quot;] with 1 slot
+##   ..@ address:&lt;externalptr&gt;</code></pre>
+<pre class="r"><code># process big matrix in active session. 
+
+colsums.session1 &lt;- sum(as.numeric(school.matrix[,3])) 
+colsums.session1</code></pre>
+<pre><code>## [1] 67147</code></pre>
+<pre class="r"><code># save the location to disk to share the object .
+dput(desc , file=&quot;/tmp/A.desc&quot;)</code></pre>
+<pre class="r"><code># Session 2
+setwd(&quot;/Users/sundar/dev&quot;)
+
+library (bigmemory)
+library (biganalytics)
+
+# Read the pointer from disk .
+shared.desc &lt;- dget(&quot;/tmp/A.desc&quot;)
+
+# Attach to the pointer in RAM.
+shared.bigobject &lt;- attach.big.matrix(shared.desc)
+
+# Check our results .
+colsums.session2 &lt;- sum(shared.bigobject[,3]) 
+colsums.session2</code></pre>
+<pre><code>## [1] 67147</code></pre>
+<p>As one can see, bigmemory is a powerful option to read and process big files and share the object as pointer to the matrix object across sessions, which can be treated as a normal R data object.</p>
+<p>However, there is a limitation with bigmemory, C++ matrices allow only one type of data. Therefore the data set has to be only one class of data.</p>
+<p>That leads us to the next package to handle large data sets in R</p>
+<p><br></p>
+<p><strong>ff</strong><br /><br></p>
+<p>ff is another package dealing with large data sets similar to bigmemory. It uses a pointer as well but to a flat binary file stored in the disk, and it can be shared across different sessions. <br> One advantage ff has over bigmemory is that it supports multiple data class types in the data set unlike bigmemory.</p>
+<p><em>example</em> <br></p>
+<pre class="r"><code>library(ff)
+                                 
+# creating the file
+school.ff &lt;- read.csv.ffdf(file=&quot;/Users/sundar/dev/mixed_matrix_SAT__College_Board__2010_School_Level_Results.csv&quot;)
+
+#creates a ffdf object 
+class(school.ff)</code></pre>
+<pre><code>## [1] &quot;ffdf&quot;</code></pre>
+<pre class="r"><code># ffdf is a virtual dataframe
+str(school.ff)</code></pre>
+<pre><code>## List of 3
+##  $ virtual: 'data.frame':    5 obs. of  7 variables:
+##  .. $ VirtualVmode     : chr  &quot;integer&quot; &quot;integer&quot; &quot;integer&quot; &quot;integer&quot; ...
+##  .. $ AsIs             : logi  FALSE FALSE FALSE FALSE FALSE
+##  .. $ VirtualIsMatrix  : logi  FALSE FALSE FALSE FALSE FALSE
+##  .. $ PhysicalIsMatrix : logi  FALSE FALSE FALSE FALSE FALSE
+##  .. $ PhysicalElementNo: int  1 2 3 4 5
+##  .. $ PhysicalFirstCol : int  1 1 1 1 1
+##  .. $ PhysicalLastCol  : int  1 1 1 1 1
+##  .. - attr(*, &quot;Dim&quot;)= int  157 5
+##  .. - attr(*, &quot;Dimorder&quot;)= int  1 2
+##  $ physical: List of 5
+##  .. $ characters           : list()
+##  ..  ..- attr(*, &quot;physical&quot;)=Class 'ff_pointer' &lt;externalptr&gt; 
+##  ..  .. ..- attr(*, &quot;vmode&quot;)= chr &quot;integer&quot;
+##  ..  .. ..- attr(*, &quot;maxlength&quot;)= int 157
+##  ..  .. ..- attr(*, &quot;pattern&quot;)= chr &quot;ffdf&quot;
+##  ..  .. ..- attr(*, &quot;filename&quot;)= chr &quot;/private/var/folders/c2/8484fxfn3x30bhw7_3skdc6r0000gp/T/RtmptObzLr/ffdf6dd045531d5b.ff&quot;
+##  ..  .. ..- attr(*, &quot;pagesize&quot;)= int 65536
+##  ..  .. ..- attr(*, &quot;finalizer&quot;)= chr &quot;close&quot;
+##  ..  .. ..- attr(*, &quot;finonexit&quot;)= logi TRUE
+##  ..  .. ..- attr(*, &quot;readonly&quot;)= logi FALSE
+##  ..  .. ..- attr(*, &quot;caching&quot;)= chr &quot;mmnoflush&quot;
+##  ..  ..- attr(*, &quot;virtual&quot;)= list()
+##  ..  .. ..- attr(*, &quot;Length&quot;)= int 157
+##  ..  .. ..- attr(*, &quot;Symmetric&quot;)= logi FALSE
+##  ..  .. ..- attr(*, &quot;Levels&quot;)= chr &quot;aabc&quot;
+##  ..  .. ..- attr(*, &quot;ramclass&quot;)= chr &quot;factor&quot;
+##  .. .. - attr(*, &quot;class&quot;) =  chr [1:2] &quot;ff_vector&quot; &quot;ff&quot;
+##  .. $ Number.of.Test.Takers: list()
+##  ..  ..- attr(*, &quot;physical&quot;)=Class 'ff_pointer' &lt;externalptr&gt; 
+##  ..  .. ..- attr(*, &quot;vmode&quot;)= chr &quot;integer&quot;
+##  ..  .. ..- attr(*, &quot;maxlength&quot;)= int 157
+##  ..  .. ..- attr(*, &quot;pattern&quot;)= chr &quot;ffdf&quot;
+##  ..  .. ..- attr(*, &quot;filename&quot;)= chr &quot;/private/var/folders/c2/8484fxfn3x30bhw7_3skdc6r0000gp/T/RtmptObzLr/ffdf6dd053ac64eb.ff&quot;
+##  ..  .. ..- attr(*, &quot;pagesize&quot;)= int 65536
+##  ..  .. ..- attr(*, &quot;finalizer&quot;)= chr &quot;close&quot;
+##  ..  .. ..- attr(*, &quot;finonexit&quot;)= logi TRUE
+##  ..  .. ..- attr(*, &quot;readonly&quot;)= logi FALSE
+##  ..  .. ..- attr(*, &quot;caching&quot;)= chr &quot;mmnoflush&quot;
+##  ..  ..- attr(*, &quot;virtual&quot;)= list()
+##  ..  .. ..- attr(*, &quot;Length&quot;)= int 157
+##  ..  .. ..- attr(*, &quot;Symmetric&quot;)= logi FALSE
+##  .. .. - attr(*, &quot;class&quot;) =  chr [1:2] &quot;ff_vector&quot; &quot;ff&quot;
+##  .. $ Critical.Reading.Mean: list()
+##  ..  ..- attr(*, &quot;physical&quot;)=Class 'ff_pointer' &lt;externalptr&gt; 
+##  ..  .. ..- attr(*, &quot;vmode&quot;)= chr &quot;integer&quot;
+##  ..  .. ..- attr(*, &quot;maxlength&quot;)= int 157
+##  ..  .. ..- attr(*, &quot;pattern&quot;)= chr &quot;ffdf&quot;
+##  ..  .. ..- attr(*, &quot;filename&quot;)= chr &quot;/private/var/folders/c2/8484fxfn3x30bhw7_3skdc6r0000gp/T/RtmptObzLr/ffdf6dd05b15ab37.ff&quot;
+##  ..  .. ..- attr(*, &quot;pagesize&quot;)= int 65536
+##  ..  .. ..- attr(*, &quot;finalizer&quot;)= chr &quot;close&quot;
+##  ..  .. ..- attr(*, &quot;finonexit&quot;)= logi TRUE
+##  ..  .. ..- attr(*, &quot;readonly&quot;)= logi FALSE
+##  ..  .. ..- attr(*, &quot;caching&quot;)= chr &quot;mmnoflush&quot;
+##  ..  ..- attr(*, &quot;virtual&quot;)= list()
+##  ..  .. ..- attr(*, &quot;Length&quot;)= int 157
+##  ..  .. ..- attr(*, &quot;Symmetric&quot;)= logi FALSE
+##  .. .. - attr(*, &quot;class&quot;) =  chr [1:2] &quot;ff_vector&quot; &quot;ff&quot;
+##  .. $ Mathematics.Mean     : list()
+##  ..  ..- attr(*, &quot;physical&quot;)=Class 'ff_pointer' &lt;externalptr&gt; 
+##  ..  .. ..- attr(*, &quot;vmode&quot;)= chr &quot;integer&quot;
+##  ..  .. ..- attr(*, &quot;maxlength&quot;)= int 157
+##  ..  .. ..- attr(*, &quot;pattern&quot;)= chr &quot;ffdf&quot;
+##  ..  .. ..- attr(*, &quot;filename&quot;)= chr &quot;/private/var/folders/c2/8484fxfn3x30bhw7_3skdc6r0000gp/T/RtmptObzLr/ffdf6dd06b9bd698.ff&quot;
+##  ..  .. ..- attr(*, &quot;pagesize&quot;)= int 65536
+##  ..  .. ..- attr(*, &quot;finalizer&quot;)= chr &quot;close&quot;
+##  ..  .. ..- attr(*, &quot;finonexit&quot;)= logi TRUE
+##  ..  .. ..- attr(*, &quot;readonly&quot;)= logi FALSE
+##  ..  .. ..- attr(*, &quot;caching&quot;)= chr &quot;mmnoflush&quot;
+##  ..  ..- attr(*, &quot;virtual&quot;)= list()
+##  ..  .. ..- attr(*, &quot;Length&quot;)= int 157
+##  ..  .. ..- attr(*, &quot;Symmetric&quot;)= logi FALSE
+##  .. .. - attr(*, &quot;class&quot;) =  chr [1:2] &quot;ff_vector&quot; &quot;ff&quot;
+##  .. $ Writing.Mean         : list()
+##  ..  ..- attr(*, &quot;physical&quot;)=Class 'ff_pointer' &lt;externalptr&gt; 
+##  ..  .. ..- attr(*, &quot;vmode&quot;)= chr &quot;integer&quot;
+##  ..  .. ..- attr(*, &quot;maxlength&quot;)= int 157
+##  ..  .. ..- attr(*, &quot;pattern&quot;)= chr &quot;ffdf&quot;
+##  ..  .. ..- attr(*, &quot;filename&quot;)= chr &quot;/private/var/folders/c2/8484fxfn3x30bhw7_3skdc6r0000gp/T/RtmptObzLr/ffdf6dd04425cc59.ff&quot;
+##  ..  .. ..- attr(*, &quot;pagesize&quot;)= int 65536
+##  ..  .. ..- attr(*, &quot;finalizer&quot;)= chr &quot;close&quot;
+##  ..  .. ..- attr(*, &quot;finonexit&quot;)= logi TRUE
+##  ..  .. ..- attr(*, &quot;readonly&quot;)= logi FALSE
+##  ..  .. ..- attr(*, &quot;caching&quot;)= chr &quot;mmnoflush&quot;
+##  ..  ..- attr(*, &quot;virtual&quot;)= list()
+##  ..  .. ..- attr(*, &quot;Length&quot;)= int 157
+##  ..  .. ..- attr(*, &quot;Symmetric&quot;)= logi FALSE
+##  .. .. - attr(*, &quot;class&quot;) =  chr [1:2] &quot;ff_vector&quot; &quot;ff&quot;
+##  $ row.names:  NULL
+## - attributes: List of 2
+##  .. $ names: chr [1:3] &quot;virtual&quot; &quot;physical&quot; &quot;row.names&quot;
+##  .. $ class: chr &quot;ffdf&quot;</code></pre>
+<pre class="r"><code># ffdf object can be treated as any other R object
+sum(school.ff[,3])</code></pre>
+<pre><code>## [1] 66029</code></pre>
+<p><br></p>
+</div>
+</div>
+<div id="very-large-datasets" class="section level4">
+<h4>Very Large datasets</h4>
+<p><br></p>
+<p>There are two options to process very large data sets ( &gt; 10GB) in R.</p>
+<ol style="list-style-type: decimal">
+<li><p>Use integrated environment packages like <a href="https://www.datadr.org/">Rhipe</a> to leverage Hadoop MapReduce framework.</p></li>
+<li><p>Use <a href="https://github.com/RevolutionAnalytics/RHadoop/wiki">RHadoop</a> directly on hadoop distributed system.</p></li>
+</ol>
+<p>Storing large files in databases and connecting through <code>DBI/ODBC</code> calls from R is also an option worth considering.</p>
+<p><br></p>
+</div>
+<div id="conclusion" class="section level4">
+<h4>Conclusion:</h4>
+<p><br> As you would have realized by now, R does provide many options to handle data files , whatever size they come in - small, medium or large.</p>
+<p>Go ahead and analyse that data set in full, the one that you have been holding off till now due to system memory size limitations. <br> <br></p>
+</div>
+<script>
+  $(function() {
+    var toc = $('#toc>ul');
+
+    function makeLi(text, href) {
+      return $('<li><a href="' + href + '" target="_self">' + text + '</a></li>');
+    }
+
+    $('h4').each(function(i) {
+      var chapter = $(this), chapterNumber = i + 1;
+      toc.append(
+        makeLi(chapter.text(), '#chapter-' + chapterNumber)
+      );
+      chapter.attr('id', 'chapter-' + chapterNumber);
+    });
+
+  });
+</script>
+</body>
+</html>

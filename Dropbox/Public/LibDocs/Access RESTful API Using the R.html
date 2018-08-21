@@ -1,0 +1,441 @@
+
+<base href="https://www.programmableweb.com">
+<head>
+<meta http-equiv="Content-Type" content="text/html;  charset=utf-8">
+
+<style type="text/css">
+body {
+ margin-top: 5%; 
+ margin-bottom: 5%; 
+ margin-right: 10%; 
+ margin-left: 10%; 
+ background-color: #000000; 
+ color: #109080; 
+ font-size: 24px; 
+}
+a { text-decoration: none; 
+	color: #28B8B8; }
+a:visited {	color: #389898; }
+A:hover {	color: yellow; }
+A:focus {	color: red; }
+code { color: #28B8B8;  background-color: #002030}
+pre { color: gray;  background-color: #001010;  font-size: 16px; }
+div {display: inline-block;  width: 48%;  padding: 2px;  border-radius: 4px;  
+border: 1px solid gray;  margin: 3px;  vertical-align:middle; }
+
+</STYLE>
+</head>
+<body>
+
+
+<h1>
+
+<span data-str-title>
+How to Access Any RESTful API Using the R Language
+</span>
+
+</h1>
+
+<p>
+R is an excellent language for data analytics, but it's uncommon to use it for serious development. This means that popular APIs don't offer software development kits (SDKs) or how-to guides for analysts working in R the way they do for other more popular languages like Python or Objective-C (for Apple's iOS). This is a how-to guide for connecting to an API to receive stock prices as a data frame when the API doesn't have a specific package for R. For those of you not familiar with R, a data frame is like a spreadsheet, with data arranged in rows in columns. You can then use these same techniques to pull data into R from other APIs.
+</p>
+
+
+<img alt="R is missing from Google's list of API SDKs" src="/sites/default/files/access-restful-api-using-r-figure-01.png" style="margin-bottom: 6px;" width="790" height="469" />
+<br>
+Figure 1. R is missing from 
+<a href="https://developers.google.com/api-client-library/" target="_blank">
+Google's list of API SDKs
+</a>
+, a common problem for R users working 
+<nobr>
+outside of Google Analytics.
+</nobr>
+
+
+<h2 dir="ltr">
+Getting Started With APIs in R
+</h2>
+<p>
+If you're working with an API that has pre-built SDKs for R, accessing data with R is simple. For example, to make your job easier, the Google Analytics API has well-documented packages, such as 
+<a href="https://cran.r-project.org/web/packages/RGA/RGA.pdf" target="_blank">
+RGA
+</a>
+ or 
+<a href="https://cran.r-project.org/web/packages/RGoogleAnalytics/RGoogleAnalytics.pdf" target="_blank">
+RGoogleAnalytics
+</a>
+. If you're working with an API that doesn't have R packages (such as Stripe or Intercom), you'll need to know how to access the API on your own. An API can automate your data collection, so it's well worth the effort.
+</p>
+<p>
+This tutorial assumes you have a basic working knowledge of R and are comfortable 
+<a href="https://support.rstudio.com/hc/en-us/articles/200484448-Editing-and-Executing-Code">
+scripting with RStudio
+</a>
+ or working with 
+<a href="https://support.rstudio.com/hc/en-us/articles/200404846-Working-in-the-Console">
+the Rstudio console
+</a>
+. These examples will work on Mac or PC as long as you have an internet connection and an up to date version of R installed on your computer (3.2 or newer).
+</p>
+<p>
+Here are the basic steps:
+</p>
+<ul style="list-style-type:disc;">
+<li dir="ltr">
+Install the "
+<a href="https://cran.r-project.org/web/packages/httr/httr.pdf" target="_blank">
+httr
+</a>
+" and "
+<a href="https://cran.r-project.org/web/packages/jsonlite/jsonlite.pdf" target="_blank">
+jsonlite
+</a>
+" packages
+</li>
+<li dir="ltr">
+Make a "GET" request to the API to pull raw data into your environment
+</li>
+<li dir="ltr">
+"Parse" that data from its raw form through JavaScript Object Notification (JSON) into a usable format
+</li>
+<li dir="ltr">
+Write a loop to "page" through that data and retrieve the full data set
+</li>
+<li dir="ltr">
+Apply the same methodology to other APIs
+</li>
+</ul>
+<p>
+A good way to follow along with this how-to guide is to copy each line of code into a script in RStudio. This will enable you to run each line of code individually so you can see it working and then to run them all at once at the end. You can also enter them line by line from the R console.
+</p>
+<h2 dir="ltr">
+Install the "httr" and "jsonlite" Packages
+</h2>
+<p>
+Start your script off by installing the httr package:
+</p>
+<pre>
+
+<code>
+install.packages("httr")
+
+#Require the package so you can use it
+require("httr")
+</code>
+
+</pre>
+
+<p>
+This package makes requesting data from just about any API easier by formatting your GET requests with the proper headers and authentications. Next, install jsonlite in your script:
+</p>
+<pre>
+
+<code>
+install.packages("jsonlite")
+
+#Require the package so you can use it
+require("jsonlite")
+</code>
+
+</pre>
+
+<p>
+When the data comes back from many APIs, it will be in JSON format. If you're like most R users, you'll want to convert the JSON from its native nested form to a flat form like a data frame so it's easier to work with. The jsonlite package makes this easy.
+</p>
+<p>
+These two simple packages make it possible for R to work with many APIs even if a prebuilt R SDK doesn't exist for those APIs.
+</p>
+
+
+<img alt="Installing the httr package to make GET requests and the jsonlite package to parse the JSON responses" src="/sites/default/files/access-restful-api-using-r-figure-02.png" style="margin-bottom: 6px;" width="754" height="609" />
+<br>
+
+<br />
+<p style="font-size:12px;font-weight:bold;">
+Figure 2. Installing the httr package to make GET requests and the jsonlite package to parse the JSON responses
+</p>
+
+<h3>
+Making a "GET" request in R
+</h3>
+<p>
+Pulling data from a RESTful API often requires an API password, an API username, or both, as well as a properly formatted URL and header. The URL (which is technically known as the address of the API's "endpoint") tells the API what data you're looking for and the username/password is for APIs that have what's called "basic authentication" (not all do, but the example assumes this to be true). The headers are often used to negotiate other parameters that enable the application to communicate with the API successfully. For example, they may describe the formatting of the data payload.
+</p>
+
+<p>
+As an example, you'll make a request for stock prices to the 
+<a href="https://intrinio.com/" target="_blank">
+Intrinio
+</a>
+ API. You can get your Intrinio API 
+<a href="http://intrinio.com/login" target="_blank">
+password and username here
+</a>
+. Note that with Intrinio, the username and password that you supply to the API are not the same as the username and password that you used to login to Intrinio.com. They can be found under the Access Keys heading of the 
+<a href="https://intrinio.com/account" target="_blank">
+account area
+</a>
+ on the Intrinio website.
+</p>
+
+
+<img alt="The username and password that you supply to the API are not the same as the username and password that you used to login to Intrinio.com. They can be found under the Access Keys heading of the account area on the Intrinio website." height="411" src="/sites/default/files/access-restful-api-using-r-02a-Access%20Keys.png" width="790" />
+<br>
+
+
+<p>
+
+To initialize the variables for username and password, enter the following lines into your RStudio script or the R console:
+</p>
+<pre>
+<code>
+username &lt;- "Paste_API_Username_Here"
+password &lt;- "Paste_API_Password_Here"
+</code>
+
+</pre>
+
+<p>
+
+Next, initialize variables for the API call you'd like to make. Once you've pasted this example all together, you'll be able to retrieve stock prices for Apple:
+</p>
+<pre>
+<code>
+base &lt;- "https://api.intrinio.com/"
+endpoint &lt;- "prices"
+stock &lt;- "AAPL"
+
+call1 &lt;- paste(base,endpoint,"?","ticker","=", stock, sep="")
+</code>
+
+</pre>
+
+
+
+<img alt=" You will need to enter your own username and password. Print call1 to see the full API call." height="474" src="/sites/default/files/access-restful-api-using-r-figure-03.png" style="margin-bottom: 6px;" width="583" />
+<br>
+
+<br />
+<p style="font-size:12px;font-weight:bold;">
+Figure 3. You will need to enter your own username and password. Print call1 to see the full API call.
+</p>
+
+<p>
+
+Now that you have your username and password, as well as the API URL that specifies what data you'd like to see, you're ready to pass those objects to the GET function of httr:
+</p>
+<pre>
+<code>
+
+get_prices &lt;- GET(call1, authenticate(username,password, type = "basic"))
+
+Deserializing The API's Response
+</code>
+
+</pre>
+
+<p>
+
+When an API responds to a request, the act of formatting the data for transmission in the response is called "serialization." When the response is received on the other end, the application that made the original request must deserialize the payload. In this example, the response to the sample API call is a list. The list has many different items with most of it being administrative information from the API, not the data you want. Make sure you understand this information because you'll need some of it later. But to get the data you want, you'll want to use another httr function to start the process of deserialization:
+</p>
+<p>
+get_prices_text &lt;- content(get_prices, "text")
+<br />
+
+The, enter the following to display the contents of the newly loaded variable:
+</p>
+<pre>
+<code>
+ces_text
+</code>
+
+</pre>
+
+
+
+<img alt="Figure 4. A status of 200 means the API call was successful. The content function with a ''text'' parameter converts the raw data to JSON." height="614" src="/sites/default/files/access-restful-api-using-r-figure-04.png" style="margin-bottom: 6px;" width="700" />
+<br>
+
+<br />
+<p style="font-size:12px;font-weight:bold;">
+Figure 4. A status of 200 means the API call was successful. The content function with a "text" parameter 
+<nobr>
+converts the raw data to JSON.
+</nobr>
+
+</p>
+
+<p>
+
+This converts the raw data from your API call into JSON format. Then you can parse the JSON using the jsonlite package (which you installed earlier):
+</p>
+<pre>
+<code>
+get_prices_json &lt;- fromJSON(get_prices_text, flatten = TRUE)
+</code>
+
+</pre>
+
+<p>
+
+Finally, you can then convert the parsed JSON to a data frame for analysis:
+</p>
+<pre>
+<code>
+get_prices_df &lt;- as.data.frame(get_prices_json)
+</code>
+
+</pre>
+
+<p>
+
+And then to display it like a spreadsheet:
+</p>
+<pre>
+<code>
+View(get_prices_df)
+</code>
+
+</pre>
+
+
+
+<img alt="Figure 5. Converting the JSON to a data frame reveals the data in a great format for analyses in R." height="541" src="/sites/default/files/access-restful-api-using-r-figure-05.png" style="margin-bottom: 6px;" width="640" />
+<br>
+
+<br />
+<p style="font-size:12px;font-weight:bold;">
+Figure 5. Converting the JSON to a data frame reveals the data in a great format for analyses in R.
+</p>
+
+<h2 dir="ltr">
+How to Page Through a Data Set with R
+</h2>
+<p>
+For APIs without paging limits, once you have the response to a GET request parsed in R, you're done. Many APIs, however, put a limit on the number of results you can get with a single API call. In the example above, the paging limit is 100, so you only pulled in the first 100 days of historical stock prices. Each API sets its own limits and each API has a different "pager" that lets you create loops to get the rest of the pages.
+</p>
+
+<span data-str-content>
+
+
+
+
+
+
+
+<p>
+Continued from page 2. 
+</p>
+<p>
+For this API request, one of the pieces of information you received in the original GET request was the number of pages. So, let's initialize the 
+<span style="font-family:'Lucida Console', monospace;">
+pages
+</span>
+ variable with that value:
+</p>
+<pre>
+<code>
+pages &lt;- get_prices_json$total_pages
+</code>
+
+</pre>
+
+<p>
+
+That code selects the "total_pages" item from the list of data returned by the aforementioned API call. The following code is a for loop that gets each page of data:
+</p>
+<pre>
+<code>
+for(i in 2:pages){
+ 
+ #Making an API call that has page_number= at the end. This will increment by 1 in each loop until you have all pages
+ call_2 &lt;- paste(base,endpoint,"?","ticker","=", stock,"&amp;","page_number=", i, sep="")
+ 
+ #Making the API call
+ get_prices_2 &lt;- GET(call_2, authenticate(username,password, type = "basic"))
+ 
+ #Parsing it to JSON
+ get_prices_text_2 &lt;- content(get_prices_2, "text")
+ 
+ #Converting it from JSON to a list you can use. This actually gives you a list, one item of which is the data, with the rest is information about the API call
+ get_prices_json_2 &lt;- fromJSON(get_prices_text_2, flatten = TRUE)
+ 
+ #This grabs just the data you want and makes it a data frame
+ get_prices_df_2 &lt;- as.data.frame(get_prices_json_2)
+ 
+ #Now you add the data to the existing data frame and repeat
+ get_prices_df &lt;- rbind(get_prices_df, get_prices_df_2)
+ 
+}
+</code>
+
+</pre>
+
+
+
+<img alt="Figure 6. In this example, there are 93 pages of data, so you'll make 93 API calls to get each page." height="538" src="/sites/default/files/access-restful-api-using-r-figure-06.png" style="margin-bottom: 6px;" width="790" />
+<br>
+
+<br />
+<p style="font-size:12px;font-weight:bold;">
+Figure 6. In this example, there are 93 pages of data, so you'll make 93 API calls to get each page.
+</p>
+
+<p>
+
+The loop starts with the second page of data by adding 
+<span style="font-family:'Lucida Console', monospace;">
+page_number=2
+</span>
+ to the end of the code, and appends the second page to the first page using 
+<span style="font-family:'Lucida Console', monospace;">
+rbind
+</span>
+. Then it repeats until all of the pages have been returned. This leaves you with a nice neat data frame with all of the data you requested that R can then analyze.
+</p>
+
+
+<img alt="Figure 7. Notice that the data frame has grown from 100 rows to more than 9,000 as each page of data has been added." height="590" src="/sites/default/files/access-restful-api-using-r-figure-07.png" style="margin-bottom: 6px;" width="648" />
+<br>
+
+<br />
+<p style="font-size:12px;font-weight:bold;">
+Figure 7. Notice that the data frame has grown from 100 rows to more than 9,000 as each 
+<nobr>
+page of data has been added.
+</nobr>
+
+</p>
+
+<h2 dir="ltr">
+Applying the same methodology to other APIs
+</h2>
+<p>
+The basic process for accessing many RESTful APIs is the same: Use the httr and jsonlite packages to make a GET request, parse the results, and page through all of the data. This requires converting the raw data from the GET request to JSON and then into a parsed data frame. The only difference in methodology across APIs is that some APIs have a different approach to paging.
+</p>
+<p>
+
+<a href="https://developers.intercom.com/v2.0/reference#iterating-over-all-users" target="_blank">
+Intercom's API
+</a>
+, for example, has a scroll parameter. Your first API call will return this as a character that you can add to subsequent calls to get more data. The Stripe API returns a "has_more" parameter that works in conjunction with a "starting_after" parameter in your API call. Instead of a for loop, you can write a while loop:
+</p>
+<pre>
+<code>
+while(get_request[2] == "TRUE"){
+</code>
+
+</pre>
+
+<p>
+
+That will repeat your API call, "starting_after" the last call you made until 
+<span style="font-family:'Lucida Console', monospace;">
+has_more
+</span>
+ is false. As long as you can adapt the paging methodology of the API you'd like to use, you can use these techniques to access just about any API in R.
+</p>
+
+</body>
+</html>

@@ -1,0 +1,91 @@
+
+<base target="_blank">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+
+<style type="text/css">
+a {	text-decoration: none;}
+A:hover {	color: yellow;}
+A:focus {	color: red;}
+#newtype { color: pink}
+#redpink { color: #cc0099}
+#redword { color: red}
+#yellowword { color: yellow}
+#greenword { color: green}
+#limeword { color: #00ff00}
+#orangeword { color: orange}
+#cyanword { color: cyan}
+#whiteword { color: white}
+#grayword { color: gray}
+#brownword { color: #ff8000}
+#yellowgreen { color: #bfff00}
+#palered { color: #ffcccc}
+#goldword { color: GoldenRod}
+.left {
+    position: absolute;
+    left: 100px;
+    color: GoldenRod;
+    border: 1px solid GoldenRod;
+    padding: 2px;
+    font-size: 60%;
+}
+.bord {
+    color: redpink;
+    border: 1px solid GoldenRod;
+    padding: 1px;
+    font-size: 90%;
+}
+.highlight { 
+    color: white;
+    background-color: #002030
+  }
+</STYLE>
+
+</head>
+<body bgcolor="#000000" text="#109030" leftmargin="10" topmargin="10" marginwidth="100" link="#08C8A8" vlink="#389898" alink="#28B8B8">
+<FONT size=3>
+
+<h1>Say it in R with &quot;by&quot;, &quot;apply&quot; and friends</h1>
+
+<pre><code><br />f <- function(x) x^2<br />sapply(1:10, f)<br />[1]   1   4   9  16  25  36  49  64  81 100<br /></code><br /></pre>
+<p>Here is an example where we calculate the means of the various measurements of the species of the famous <a href="http://en.wikipedia.org/wiki/Iris_flower_data_set" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'http://en.wikipedia.org/wiki/Iris_flower_data_set', 'iris data set']);" ref="nofollow" target="_blank">iris data set</a> using <code>by</code>.</p>
+<h2>by</h2>
+<pre><code><br />do.call("rbind", as.list(<br />  by(iris, list(Species=iris$Species), function(x){<br />    y <- subset(x, select= -Species)<br />    apply(y, 2, mean)<br />  }<br />)))<br /><br />           Sepal.Length Sepal.Width Petal.Length Petal.Width<br />setosa            5.006       3.428        1.462       0.246<br />versicolor        5.936       2.770        4.260       1.326<br />virginica         6.588       2.974        5.552       2.026<br /></code><br /></pre>
+<p>Now let&#8217;s find alternative ways of expressing ourselves, using other words/functions of the R language, such as <code>aggregate, apply, sapply, tapply, data.table, ddply, sqldf</code>, and <code>summaryBy</code>.</p>
+<h2>aggregate</h2>
+<p>The <code>aggregate</code> function splits the data into subsets and computes summary statistics for each of them. The output of <code>aggregate</code> is a <code>data.frame</code>, including a column for species.<br /><code>
+<pre>iris.x <- subset(iris, select= -Species)<br />iris.s <- subset(iris, select= Species)<br />aggregate(iris.x, iris.s, mean)<br /><br />     Species Sepal.Length Sepal.Width Petal.Length Petal.Width<br />1     setosa        5.006       3.428        1.462       0.246<br />2 versicolor        5.936       2.770        4.260       1.326<br />3  virginica        6.588       2.974        5.552       2.026<br /></pre>
+<p></code><br />
+<h2>apply and tapply</h2>
+<p>The combination of <code>tapply</code> and <code>apply</code> achieves a similar result, but this time the output is a <code>matrix</code> and hence we loose the column with the species. The species are now the row names. <code>
+<pre>apply(iris.x, 2, function(x) tapply(x, iris.s, mean))<br /><br />           Sepal.Length Sepal.Width Petal.Length Petal.Width<br />setosa            5.006       3.428        1.462       0.246<br />versicolor        5.936       2.770        4.260       1.326<br />virginica         6.588       2.974        5.552       2.026<br /></pre>
+<p></code><br />
+<h2>split and apply</h2>
+<p>Here we split the data first into subsets for each specie and calculate then the mean for each column in the subset. The output is a <code>matrix</code> again, but transposed.<code>
+<pre>sapply(split(iris.x, iris.s), function(x) apply(x, 2, mean))<br /><br />             setosa versicolor virginica<br />Sepal.Length  5.006      5.936     6.588<br />Sepal.Width   3.428      2.770     2.974<br />Petal.Length  1.462      4.260     5.552<br />Petal.Width   0.246      1.326     2.026<br /></pre>
+<p></code><br />
+<h2>ddply</h2>
+<p>Hadley Wickham&#8217;s <a href="http://cran.r-project.org/web/packages/plyr/index.html" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'http://cran.r-project.org/web/packages/plyr/index.html', 'plyr']);" ref="nofollow" target="_blank"><code>plyr</code></a> package provides tools for splitting, applying and combining data. The function <code>ddply</code> is similar to the by function, but it returns a <code>data.frame</code> instead of a <code>by</code> list and maintains the column for the species.  <code>
+<pre>library(plyr)<br />ddply(iris, "Species", function(x){<br />    y <- subset(x, select= -Species)<br />    apply(y, 2, mean)<br />  })<br /><br />     Species Sepal.Length Sepal.Width Petal.Length Petal.Width<br />1     setosa        5.006       3.428        1.462       0.246<br />2 versicolor        5.936       2.770        4.260       1.326<br />3  virginica        6.588       2.974        5.552       2.026<br /></pre>
+<p></code><br />
+<h2>doBy</h2>
+<p>The <code>summaryBy</code> function of the <a href="http://lamages.blogspot.com/2012/01/cran.r-project.org/web/packages/doBy/" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'http://lamages.blogspot.com/2012/01/cran.r-project.org/web/packages/doBy/', 'doBy']);" ref="nofollow" target="_blank"><code>doBy</code></a> package by Søren Højsgaard and Ulrich Halekoh has a very intuitive interface, using formulas.<code>
+<pre>library(doBy)<br />summaryBy(Sepal.Length + Sepal.Width + Petal.Length + Petal.Width ~ Species, data=iris, FUN=mean)<br /><br />     Species Sepal.Length.mean Sepal.Width.mean Petal.Length.mean Petal.Width.mean<br />1     setosa             5.006            3.428             1.462            0.246<br />2 versicolor             5.936            2.770             4.260            1.326<br />3  virginica             6.588            2.974             5.552            2.026<br /></pre>
+<p></code><br />
+<h2>sqldf</h2>
+<p>If you are fluent in <a href="http://en.wikipedia.org/wiki/SQL" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'http://en.wikipedia.org/wiki/SQL', 'SQL']);" ref="nofollow" target="_blank">SQL</a>, then the <a href="http://code.google.com/p/sqldf/" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'http://code.google.com/p/sqldf/', 'sqldf']);" ref="nofollow" target="_blank">sqldf</a> library by Gabor Grothendieck might be the one for you.<code>
+<pre>library(sqldf)<br />sqldf("select Species, avg(Sepal_Length), avg(Sepal_Width), <br />    avg(Petal_Length), avg(Petal_Width) from iris <br />    group by Species")<br /><br />     Species avg(Sepal_Length) avg(Sepal_Width) avg(Petal_Length) avg(Petal_Width)<br />1     setosa             5.006            3.428             1.462            0.246<br />2 versicolor             5.936            2.770             4.260            1.326<br />3  virginica             6.588            2.974             5.552            2.026<br /></pre>
+<p></code><br />
+<h2>data.table</h2>
+<p>The <a href="http://datatable.r-forge.r-project.org/" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'http://datatable.r-forge.r-project.org/', 'data.table']);" ref="nofollow" target="_blank"><code>data.table</code></a> package by  M Dowle, T Short and S Lianoglou is the underground rock star to me. It provides an elegant and fast way to complete our task. The statement reads in plain English from right to left: take columns 1 to 4, split them by the factor in column &#8220;Species&#8221; and calculate on the <b>s</b>ub <b>d</b>ata (<code>.SD</code>) the means. <code>
+<pre>library(data.table)<br />iris.dt <- data.table(iris)<br />iris.dt[,lapply(.SD,mean),by="Species",.SDcols=1:4]<br /><br />        Species Sepal.Length Sepal.Width Petal.Length Petal.Width<br />[1,]     setosa        5.006       3.428        1.462       0.246<br />[2,] versicolor        5.936       2.770        4.260       1.326<br />[3,]  virginica        6.588       2.974        5.552       2.026<br /></pre>
+<p></code><br />
+<h2>apply</h2>
+<p>I should mention that R provides the <code>iris</code> data set also in an array form. The third dimension of the <code>iris3</code> array holds the specie information. Therefore we can use the <code>apply</code> function again, we go down the third and then the second dimension to calculate the means.<code>
+<pre>apply(iris3, c(3,2), mean)<br /><br />           Sepal L. Sepal W. Petal L. Petal W.<br />Setosa        5.006    3.428    1.462    0.246<br />Versicolor    5.936    2.770    4.260    1.326<br />Virginica     6.588    2.974    5.552    2.026<br /></pre>
+<p></code><br />
+<h2>Conclusion</h2>
+<p>Many roads lead to Rome, and there are endless ways of explaining how to get there. I only showed a few I know off, and I am curious to hear yours. </p>
+<p>As a matter of <i>courtesy</i> I should mention the <a href="http://cran.r-project.org/web/packages/unknownR/index.html" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'http://cran.r-project.org/web/packages/unknownR/index.html', 'unkownR']);" ref="nofollow" target="_blank">unkownR</a> package by Matthew Dowle. It helps you to discover what you don&#8217;t know that you don&#8217;t know in R. Thus, it can help to build your R vocabulary.</p>
+<p>Of course there is a key difference between R and English. R tells me right away when I make a mistake. Human readers are far more forgivable, but please do point out to me where I made mistakes. I am still hopeful that I can improve, but I need your help.</p>

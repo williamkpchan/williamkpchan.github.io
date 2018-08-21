@@ -1,0 +1,582 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="..\maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, .apply, div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{font-size: x-large;width:80%;margin-left: 10%}
+h1, h2 {color: gold;}
+</style>
+</head><body>
+<center><h1>Data Science for Startups: Deep Learning</h1>
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+
+
+
+https://towardsdatascience.com/data-science-for-startups-deep-learning-40d4d8af8009
+
+<p>
+	<em class="markup--em markup--p-em">Part ten of my ongoing series about building a data science discipline at a startup, and the first article ported from 
+</em>
+<a href="https://towardsdatascience.com/data-science-for-startups-r-python-2ca2cd149c5c" data-href="https://towardsdatascience.com/data-science-for-startups-r-python-2ca2cd149c5c" class="markup--anchor markup--p-anchor" target="_blank">
+	<em class="markup--em markup--p-em">R to Python
+</em>
+</a>
+<em class="markup--em markup--p-em">. You can find links to all of the posts in the 
+</em>
+<a href="https://towardsdatascience.com/data-science-for-startups-introduction-80d022a18aec" data-href="https://towardsdatascience.com/data-science-for-startups-introduction-80d022a18aec" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
+	<em class="markup--em markup--p-em">introduction
+</em>
+</a>
+<em class="markup--em markup--p-em">, and a book based on the R series on 
+</em>
+<a href="https://www.amazon.com/dp/1983057975" data-href="https://www.amazon.com/dp/1983057975" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
+	<em class="markup--em markup--p-em">Amazon
+</em>
+</a>
+<em class="markup--em markup--p-em">.
+</em>
+</p>
+<p>This blog post is a brief introduction to using the Keras deep learning framework to solve classic (shallow) machine learning problems. It presents a case study from my experience at Windfall Data, where I worked on a model to predict housing prices for hundreds of millions of properties in the US.
+</p>
+<p>I recently started reading “
+	<a href="https://www.manning.com/books/deep-learning-with-r" data-href="https://www.manning.com/books/deep-learning-with-r" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">Deep Learning with R
+</a>”, and I’ve been really impressed with the support that R has for digging into deep learning. However, now that I’m porting my blog series to Python, I’ll be using the Keras library directly, rather than the R wrapper. Luckily, there’s also a 
+<a href="https://www.amazon.com/Deep-Learning-Python-Francois-Chollet/dp/1617294438" data-href="https://www.amazon.com/Deep-Learning-Python-Francois-Chollet/dp/1617294438" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">Python version
+</a> of the book.
+</p>
+<div>
+	<a href="https://www.amazon.com/Deep-Learning-Python-Francois-Chollet/dp/1617294438" data-href="https://www.amazon.com/Deep-Learning-Python-Francois-Chollet/dp/1617294438" class="markup--anchor markup--mixtapeEmbed-anchor" title="https://www.amazon.com/Deep-Learning-Python-Francois-Chollet/dp/1617294438">
+	<strong class="markup--strong markup--mixtapeEmbed-strong">Deep Learning with Python
+</strong>
+<br>
+<em class="markup--em markup--mixtapeEmbed-em">Summary Deep Learning with Python introduces the field of deep learning using the Python language and the powerful…
+</em>www.amazon.com
+</a>
+<a href="https://www.amazon.com/Deep-Learning-Python-Francois-Chollet/dp/1617294438" class="js-mixtapeImage mixtapeImage u-ignoreBlock" data-media-id="b92ba927ffbc9098fd922bc7f7866391" data-thumbnail-img-id="0*2LF1Lmqe0hR-iltC" style="background-image: url(https://cdn-images-1.medium.com/fit/c/160/160/0*2LF1Lmqe0hR-iltC);">
+</a>
+</div>
+<p>One of the use cases presented in the book is predicting prices for homes in Boston, which is an interesting problem because homes can have such wide variations in values. This is a machine learning problem that is probably best suited for classical approaches, such as XGBoost, because the data set is structured rather than perceptual data. However, it’s also a data set where deep learning provides a really useful capability, which is the ease of writing new loss functions that may improve the performance of predictive models. The goal of this post is to show how deep learning can potentially be used to improve shallow learning problems by using custom loss functions.
+</p>
+<p>One of the problems that I’ve encountered a few times when working with financial data is that often you need to build predictive models where the output can have a wide range of values, across different orders of magnitude. For example, this can happen when predicting housing prices, where some homes are valued at $100k and others are valued at $10M. If you throw standard machine learning approaches at these problems, such as linear regression or random forests, often the model will overfit the samples with the highest values in order to reduce metrics such as mean absolute error. However, what you may actually want is to treat the samples with similar weighting, and to use an error metric such as relative error that reduces the importance of fitting the samples with the largest values.
+</p>
+<pre>
+	<strong class="markup--strong markup--pre-strong"># Standard approach to linear regression
+	<br>
+</strong>fit &lt;- lm(y ~ x1 + x2 + x3 + ... + x9, data=df)
+</pre>
+<pre>
+	<strong class="markup--strong markup--pre-strong"># Linear regression with a log-log transformation 
+	<br>
+</strong>fit &lt;- nls( log10(y) ~ log(x1*b1 + x2*b2 + ... + x9*b9), 
+<br>   data = df, start = list(b1=1, b2=1, ... , b9 = 1))
+</pre>
+<p>I actually did this explicitly in R, using packages such as nonlinear least squares (
+	<em class="markup--em markup--p-em">nls
+</em>). Python has a 
+<a href="https://pypi.org/project/nls/" data-href="https://pypi.org/project/nls/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">NLS library
+</a> as well, but I didn’t explore this option while working on the housing problem. The code sample above shows how to build a linear regression model using the built-in optimizer, which will overweight samples with large label values, and the 
+<em class="markup--em markup--p-em">nls
+</em> approach which shows how to perform a log transformation on both the predicted values and labels, which will give the samples relatively equal weight. The problem with the second approach is that you have to explicitly state how to use the features in the model, creating a feature engineering problem. An additional problem with this approach is that it cannot be applied directly to other algorithms, such as random forests, without writing your own likelihood function and optimizer. This is a for a specific scenario where you want to have the error term outside of the log transform, not a scenario where you can simply apply a log transformation to the label and all input variables.
+</p>
+<p>Deep learning provides an elegant solution to handling these types of problems, where instead of writing a custom likelihood function and optimizer, you can explore different built-in and custom loss functions that can be used with the different optimizers provided. This post will show how to write custom loss functions in Python when using Keras, and show how using different approaches can be beneficial for different types of data sets. I’ll first present a classification example using Keras, and then show how to use custom loss functions for regression.
+</p>
+<p>The image below is a preview of what I’ll cover in this post. It shows the training history of four different Keras models trained on the Boston housing prices data set. Each of the models use different loss functions, but are evaluated on the same performance metric, mean absolute error. For the original data set, the custom loss functions do not improve the performance of the model, but on a modified data set, the results are more promising.
+</p>
+</div>
+<div class="section-inner sectionLayout--outsetColumn">
+	<figure>
+	<div class="aspectRatioPlaceholder is-locked" style="max-width: 1000px; max-height: 921px;">
+	<div class="aspectRatioPlaceholder-fill" style="padding-bottom: 92.10000000000001%;">
+</div>
+<div class="progressiveMedia js-progressiveMedia graf-image" data-image-id="1*WkzoSwysIXBUE0DiLAcEXA.png" data-width="1082" data-height="997" data-action="zoom" data-action-value="1*WkzoSwysIXBUE0DiLAcEXA.png">
+	<img src="https://cdn-images-1.medium.com/freeze/max/30/1*WkzoSwysIXBUE0DiLAcEXA.png?q=20" crossorigin="anonymous" class="progressiveMedia-thumbnail js-progressiveMedia-thumbnail">
+<canvas class="progressiveMedia-canvas js-progressiveMedia-canvas">
+</canvas>
+<img class="progressiveMedia-image js-progressiveMedia-image" data-src="https://cdn-images-1.medium.com/max/1000/1*WkzoSwysIXBUE0DiLAcEXA.png">
+<noscript class="js-progressiveMedia-inner">
+	<img class="progressiveMedia-noscript js-progressiveMedia-inner" src="https://cdn-images-1.medium.com/max/1000/1*WkzoSwysIXBUE0DiLAcEXA.png">
+</noscript>
+</div>
+</div>
+<figcaption class="imageCaption">Performance of the 4 loss functions on the original housing prices data set. All models used MAE for the performance metric.
+</figcaption>
+</figure>
+</div>
+<div class="section-inner sectionLayout--insetColumn">
+	<h4>Installation
+</h4>
+<p>The first step in getting started with Deep Learning is setting up an environment. I covered setting up Jupyter on an AWS EC2 instance in my 
+	<a href="https://towardsdatascience.com/data-science-for-startups-r-python-2ca2cd149c5c" data-href="https://towardsdatascience.com/data-science-for-startups-r-python-2ca2cd149c5c" class="markup--anchor markup--p-anchor" target="_blank">past post
+</a>. We’ll install two additional libraries for Python: tensorflow and keras. Also, it’s useful to spins up a larger machine, such as t2.xlarge, when working on deep learning problems. Here’s the steps I used to set up a Deep Learning environment on EC2. However, this configuration does not support GPU acceleration.
+</p>
+<pre>
+	<strong class="markup--strong markup--pre-strong"># Jupyter setup 
+	<br>
+</strong>sudo yum install -y python36
+<br>curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+<br>sudo python36 get-pip.py
+<br>pip3 install --user jupyter
+</pre>
+<pre>
+	<strong class="markup--strong markup--pre-strong"># Deep Learning set up 
+	<br>
+</strong>pip3 install --user tensorflow
+<br>pip3 install --user keras
+<br>pip3 install --user  matplotlib
+<br>pip3 install --user  pandas
+</pre>
+<pre>
+	<strong class="markup--strong markup--pre-strong"># Launch Jupyter
+	<br>
+</strong>jupyter notebook --ip 
+<em class="markup--em markup--pre-em">Your_AWS_Prive_IP
+</em>
+</pre>
+<p>Once you have connected to Jupyter, you can test your installation by running the following commands:
+</p>
+<pre>import keras
+	<br>keras.__version__
+</pre>
+<p>The output should print that the TensorFlow backend is being used.
+</p>
+<h4>Classification with Keras
+</h4>
+<p>To get started with deep learning, we’ll build a binary classifier that predicts which users are most likely to purchase a specific game, given past purchases. We’ll use the data set that I presented in my post on 
+	<a href="https://towardsdatascience.com/prototyping-a-recommendation-system-8e4dd4a50675" data-href="https://towardsdatascience.com/prototyping-a-recommendation-system-8e4dd4a50675" class="markup--anchor markup--p-anchor" target="_blank">recommender systems
+</a>. The rows in the data set contains a label indicating if the player purchased the game, and a list of other games with values of 0 or 1 indicating purchases of other titles. The goal is predicting which users will purchase the game. The complete notebook for the code presented in this section is available 
+<a href="https://github.com/bgweber/StartupDataScience/blob/master/DeepLearning/Keras_Binary_Classifier.ipynb" data-href="https://github.com/bgweber/StartupDataScience/blob/master/DeepLearning/Keras_Binary_Classifier.ipynb" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">here
+</a>.
+</p>
+<p>The general process for building models with Keras is:
+</p>
+<ol class="postList">
+	<li>Set up the structure of the model
+</li>
+<li>Compile the model
+</li>
+<li>Fit the model
+</li>
+<li>Evaluate the model
+</li>
+</ol>
+<p>I’ll discuss each of these steps in more detail below. First, we need to include the necessary libraries for keras and plotting:
+</p>
+<pre>import pandas as pd
+	<br>import matplotlib.pyplot as plt
+<br>import tensorflow as tf
+<br>import keras
+<br>from keras import models, layers
+<br>keras.__version__
+</pre>
+<p>Next, we download the data set and create training and test data sets. I’ve held out 5000 samples that we’ll use as a holdout data set. For the training data set, I split the data frame into input variables (
+	<em class="markup--em markup--p-em">x
+</em>) and labels (
+<em class="markup--em markup--p-em">y
+</em>).
+</p>
+<pre>df = pd.read_csv(
+	<br>&quot;
+<a href="https://github.com/bgweber/Twitch/raw/master/Recommendations/games-expand.csv" data-href="https://github.com/bgweber/Twitch/raw/master/Recommendations/games-expand.csv" class="markup--anchor markup--pre-anchor" rel="nofollow noopener" target="_blank">https://github.com/bgweber/Twitch/raw/master/Recommendations/games-expand.csv
+</a>&quot;)
+</pre>
+<pre>train = df[5000:]
+	<br>test = df[:5000]
+</pre>
+<pre>x = train.drop([&#39;label&#39;], axis=1)
+	<br>y = train[&#39;label&#39;]
+</pre>
+<p>Now we can create a model to fit the data. The model below uses three layers of fully-connected neurons with 
+	<em class="markup--em markup--p-em">relu
+</em> activation functions. The input structure is specified in the first layer, which needs to match the width of the input data. The output is specified as a signal neuron with a sigmoid activation, since we are preforming binary classification.
+</p>
+<pre>model = models.Sequential()
+	<br>model.add(layers.Dense(64, activation=&#39;relu&#39;, input_shape=(10,)))
+<br>model.add(layers.Dropout(0.1))
+<br>model.add(layers.Dense(64, activation=&#39;relu&#39;))
+<br>model.add(layers.Dropout(0.1))
+<br>model.add(layers.Dense(64, activation=&#39;relu&#39;))
+<br>model.add(layers.Dense(1, activation=&#39;sigmoid&#39;))
+</pre>
+<p>Next, we specify how to optimize the model. We’ll use 
+	<em class="markup--em markup--p-em">rmsprop
+</em> for the optimizer and 
+<em class="markup--em markup--p-em">binary_crossentropy
+</em> for the loss function. Instead of using accuracy for the metric, we’ll use ROC AUC since the data set has a large class imbalance. In order to use this metric, we can use the 
+<em class="markup--em markup--p-em">auc
+</em> function provided by tensorflow.
+</p>
+<pre>def auc(y_true, y_pred):
+	<br>    auc = tf.metrics.auc(y_true, y_pred)[1]
+<br>    keras.backend.get_session().run(
+<br>        tf.local_variables_initializer())
+<br>    return auc
+<br>    
+<br>model.compile(optimizer=&#39;rmsprop&#39;,
+<br>              loss=&#39;binary_crossentropy&#39;,metrics=[auc]
+</pre>
+<p>The last step is to train the model. The code below shows how to fit the model using the training data set, 100 training epochs with a batch size of 100, and a cross validation split of 20%.
+</p>
+<pre>history = model.fit(x,
+	<br>                    y,
+<br>                    epochs=100,
+<br>                    batch_size=100,
+<br>                    validation_split = .2,
+<br>                    verbose=0)
+</pre>
+<p>The progress of the model will be display during training if 
+	<em class="markup--em markup--p-em">verbose
+</em> is set to 1 or 2. To plot the results, we can use matplotlib to display the loss values of the training and test data sets:
+</p>
+<pre>loss = history.history[&#39;loss&#39;]
+	<br>val_loss = history.history[&#39;val_loss&#39;]
+<br>epochs = range(1, len(loss) + 1)
+</pre>
+<pre>plt.figure(figsize=(10,6)) 
+	<br>plt.plot(epochs, loss, &#39;bo&#39;, label=&#39;Training loss&#39;)
+<br>plt.plot(epochs, val_loss, &#39;b&#39;, label=&#39;Validation loss&#39;)
+<br>plt.legend()
+<br>plt.show()
+</pre>
+<p>The resulting plot is shown below. While the loss value for the training data set continued to decrease with more epochs, the loss on the test data set flattened out after about 10 epochs.
+</p>
+<figure>
+	<div class="aspectRatioPlaceholder is-locked" style="max-width: 616px; max-height: 387px;">
+	<div class="aspectRatioPlaceholder-fill" style="padding-bottom: 62.8%;">
+</div>
+<div class="progressiveMedia js-progressiveMedia graf-image" data-image-id="1*nkmcBsgZl33troJEH7P5sQ.png" data-width="616" data-height="387">
+	<img src="https://cdn-images-1.medium.com/freeze/max/30/1*nkmcBsgZl33troJEH7P5sQ.png?q=20" crossorigin="anonymous" class="progressiveMedia-thumbnail js-progressiveMedia-thumbnail">
+<canvas class="progressiveMedia-canvas js-progressiveMedia-canvas">
+</canvas>
+<img class="progressiveMedia-image js-progressiveMedia-image" data-src="https://cdn-images-1.medium.com/max/800/1*nkmcBsgZl33troJEH7P5sQ.png">
+<noscript class="js-progressiveMedia-inner">
+	<img class="progressiveMedia-noscript js-progressiveMedia-inner" src="https://cdn-images-1.medium.com/max/800/1*nkmcBsgZl33troJEH7P5sQ.png">
+</noscript>
+</div>
+</div>
+<figcaption class="imageCaption">Plotting the loss values for the binary classifier.
+</figcaption>
+</figure>
+<p>We can also plot the value of the AUC metric after each epoch, as shown below. Unlike the loss value, the AUC metric of the model on the test data set continued to improve with additional training.
+</p>
+<figure>
+	<div class="aspectRatioPlaceholder is-locked" style="max-width: 629px; max-height: 387px;">
+	<div class="aspectRatioPlaceholder-fill" style="padding-bottom: 61.5%;">
+</div>
+<div class="progressiveMedia js-progressiveMedia graf-image" data-image-id="1*U0anejTQCdNtmVGlmx-UhA.png" data-width="629" data-height="387">
+	<img src="https://cdn-images-1.medium.com/freeze/max/30/1*U0anejTQCdNtmVGlmx-UhA.png?q=20" crossorigin="anonymous" class="progressiveMedia-thumbnail js-progressiveMedia-thumbnail">
+<canvas class="progressiveMedia-canvas js-progressiveMedia-canvas">
+</canvas>
+<img class="progressiveMedia-image js-progressiveMedia-image" data-src="https://cdn-images-1.medium.com/max/800/1*U0anejTQCdNtmVGlmx-UhA.png">
+<noscript class="js-progressiveMedia-inner">
+	<img class="progressiveMedia-noscript js-progressiveMedia-inner" src="https://cdn-images-1.medium.com/max/800/1*U0anejTQCdNtmVGlmx-UhA.png">
+</noscript>
+</div>
+</div>
+<figcaption class="imageCaption">Plotting the AUC metric for the binary classifier.
+</figcaption>
+</figure>
+<p>A final step is evaluating the performance of the model on the holdout data set. The loss value and AUC metric can be calculated for the holdout data using the code shown below, which results in an AUC of ~0.82.
+</p>
+<pre>x_test = test.drop([&#39;label&#39;], axis=1)
+	<br>y_test = test[&#39;label&#39;]
+</pre>
+<pre>results = model.evaluate(x_test, y_test, verbose = 0)
+	<br>results
+</pre>
+<p>This section discussed building a simple classifier using a deep learning model with the Keras framework. Generally, deep learning won’t perform as well as XGBoost on shallow learning problems like this, but it’s still a useful approach to explore. In the next section, I discuss how custom loss functions can be used to improve model training.
+</p>
+<h4>Custom Loss Functions
+</h4>
+<p>One of the great features of deep learning is that it can be applied to both deep problems with perceptual data, such as audio and video, and shallow problems with structured data. For shallow learning (c
+	<em class="markup--em markup--p-em">lassic ML
+</em>) problems, you can often see improvements over shallow approaches, such as XGBoost, by using a custom loss function that provides a useful singal.
+</p>
+<p>However, not all shallow problems can benefit from deep learning. I’ve found custom loss functions to be useful when building regression models that need to create predictions for data with different orders of magnitude. For example, predicting housing prices in an area where the values can range significantly. To show how this works in practice, we’ll use the Boston housing data set provided by Keras:
+</p>
+<div>
+	<a href="https://keras.io/datasets/#boston-housing-price-regression-dataset" data-href="https://keras.io/datasets/#boston-housing-price-regression-dataset" class="markup--anchor markup--mixtapeEmbed-anchor" title="https://keras.io/datasets/#boston-housing-price-regression-dataset">
+	<strong class="markup--strong markup--mixtapeEmbed-strong">Datasets — Keras Documentation
+</strong>
+<br>
+<em class="markup--em markup--mixtapeEmbed-em">Dataset of 25,000 movies reviews from IMDB, labeled by sentiment (positive/negative). Reviews have been preprocessed…
+</em>keras.io
+</a>
+<a href="https://keras.io/datasets/#boston-housing-price-regression-dataset" class="js-mixtapeImage mixtapeImage u-ignoreBlock" data-media-id="51126b91055732576057bd0f95ee5516" data-thumbnail-img-id="0*PeWW_0uZEP4zYZYt." style="background-image: url(https://cdn-images-1.medium.com/fit/c/160/160/0*PeWW_0uZEP4zYZYt.);">
+</a>
+</div>
+<p>This data set includes housing prices for a suburb in Boston during the 1970s. Each record has 13 attributes that describe properties of the home, and there are 404 records in the training data set and 102 records in the test data set. In R, the dataset can be loaded as follows: 
+	<code class="markup--code markup--p-code">boston_housing.load_data()
+</code>. The labels in the data set represent the prices of the homes, in thousands of dollars. The prices range from $5k to $50k, and the distribution of prices is shown in the histograming on the left. The original data set has values with similar orders of magnitude, so custom loss functions may not be useful for fitting this data. The histogram on the right shows a transformation of the labels which may benefit from using a custom loss.
+</p>
+<figure>
+	<div class="aspectRatioPlaceholder is-locked" style="max-width: 700px; max-height: 236px;">
+	<div class="aspectRatioPlaceholder-fill" style="padding-bottom: 33.800000000000004%;">
+</div>
+<div class="progressiveMedia js-progressiveMedia graf-image" data-image-id="1*v7rjQZCS8_XCqO0EG4DyUg.png" data-width="785" data-height="265" data-action="zoom" data-action-value="1*v7rjQZCS8_XCqO0EG4DyUg.png">
+	<img src="https://cdn-images-1.medium.com/freeze/max/30/1*v7rjQZCS8_XCqO0EG4DyUg.png?q=20" crossorigin="anonymous" class="progressiveMedia-thumbnail js-progressiveMedia-thumbnail">
+<canvas class="progressiveMedia-canvas js-progressiveMedia-canvas">
+</canvas>
+<img class="progressiveMedia-image js-progressiveMedia-image" data-src="https://cdn-images-1.medium.com/max/800/1*v7rjQZCS8_XCqO0EG4DyUg.png">
+<noscript class="js-progressiveMedia-inner">
+	<img class="progressiveMedia-noscript js-progressiveMedia-inner" src="https://cdn-images-1.medium.com/max/800/1*v7rjQZCS8_XCqO0EG4DyUg.png">
+</noscript>
+</div>
+</div>
+<figcaption class="imageCaption">The Boston data set with original prices and the transformed prices.
+</figcaption>
+</figure>
+<p>To transform the data, I converted the labels back into absolute prices, squared the result, and then divided by a large factor. This results in a data set where the difference between the highest and lowest prices is 100x instead of 10x. We now have a prediction problem that can benefit from the use of a custom loss function. The Python code to generate these plots is shown below.
+</p>
+<pre>
+	<strong class="markup--strong markup--pre-strong"># Original Prices
+	<br>
+</strong>plt.hist(y_train) 
+<br>plt.title(&quot;Original Prices&quot;) 
+<br>plt.show()
+</pre>
+<pre>
+	<strong class="markup--strong markup--pre-strong"># Transformed Prices
+	<br>
+</strong>plt.hist((y_train*1000)**2/2500000) 
+<br>plt.title(&quot;Transformed Prices&quot;) 
+<br>plt.show()
+</pre>
+<h3>Loss Functions in Keras
+</h3>
+<p>Keras includes a number of useful loss function that be used to train deep learning models. Approaches such as 
+	<code class="markup--code markup--p-code">mean_absolute_error()
+</code> work well for data sets where values are somewhat equal orders of magnitude. There’s also functions such as 
+<code class="markup--code markup--p-code">mean_squared_logarithmic_error()
+</code> which may be a better fit for the transformed housing data. Here are some of the loss functions provided by Keras:
+</p>
+<pre>mean_absolute_error()
+	<br>mean_absolute_percentage_error()
+<br>mean_squared_error()
+<br>mean_squared_logarithmic_error()
+</pre>
+<p>To really understand how these work we’ll need to jump into the Python 
+	<a href="https://github.com/keras-team/keras/blob/master/keras/losses.py" data-href="https://github.com/keras-team/keras/blob/master/keras/losses.py" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">losses code
+</a>. The first loss function we’ll explore is the 
+<a href="https://github.com/keras-team/keras/blob/master/keras/losses.py#L13" data-href="https://github.com/keras-team/keras/blob/master/keras/losses.py#L13" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">mean squared error
+</a>, defined below. This function computes the difference between predicted and actual values, squares the result (which makes all of the values positive), and then calculates the mean value. Note that the function uses 
+<a href="https://www.tensorflow.org/api_docs/python/tf/keras/backend/" data-href="https://www.tensorflow.org/api_docs/python/tf/keras/backend/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">backend operations
+</a> that operate on tensor objects rather than Python primitives.
+</p>
+<pre>def mean_squared_error(y_true, y_pred):    
+	<br>    return K.mean(K.square(y_pred - y_true), axis=-1)
+</pre>
+<p>The next built-in loss function we’ll explore calculates the error based on the difference between the natural log of the predicted and target values. It is defined 
+	<a href="https://github.com/keras-team/keras/blob/master/keras/losses.py#L28" data-href="https://github.com/keras-team/keras/blob/master/keras/losses.py#L28" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">here
+</a> and shown below. The function uses the 
+<em class="markup--em markup--p-em">clip
+</em> operation to make sure that negative values are not passed to the log function, and adding 1 to the clip result makes sure that all log transformed inputs will have non-negative results. This function is similar to the one we will define.
+</p>
+<pre>def mean_squared_logarithmic_error(y_true, y_pred):    
+	<br>    first_log = K.log(K.clip(y_pred, K.epsilon(), None) + 1.)
+<br>    second_log = K.log(K.clip(y_true, K.epsilon(), None) + 1.)    
+<br>    return K.mean(K.square(first_log - second_log), axis=-1)
+</pre>
+<p>The two custom loss functions we’ll explore are defined in the Python code segment below. The first function, mean log absolute error (
+	<em class="markup--em markup--p-em">MLAE
+</em>), computes the difference between the log transform of the predicted and actual values, and then averages the result. Unlike the built-in function above, this approach does not square the errors. One other difference from the log function above is that this function is applying an explicit scaling factor to the data, to transform the housing prices back to their original values (5,000 to 50,0000) rather than (5, 50). This is useful, because it reduces the impact of adding +1 to the predicted and actual values.
+</p>
+<pre>from keras import backend as K
+</pre>
+<pre>
+	<strong class="markup--strong markup--pre-strong"># Mean Log Absolute Error
+	<br>
+</strong>def MLAE(y_true, y_pred):    
+<br>    first_log = K.log(K.clip(y_pred*1000, K.epsilon(), None) + 1.)
+<br>    second_log = K.log(K.clip(y_true*1000, K.epsilon(), None) + 1.) 
+<br>    return K.mean(K.abs(first_log - second_log), axis=-1)
+</pre>
+<pre>
+	<strong class="markup--strong markup--pre-strong"># Mean Squared Log Absolute Error
+</strong>
+<br>def MSLAE(y_true, y_pred):    
+<br>    first_log = K.log(K.clip(y_pred*1000, K.epsilon(), None) + 1.)
+<br>    second_log = K.log(K.clip(y_true*1000, K.epsilon(), None) + 1.)
+<br>    return K.mean(K.square(first_log - second_log), axis=-1)
+</pre>
+<p>Like the Keras functions, the custom loss functions need to operate on tensor objects rather than Python primitives. In order to perform these operations, you need to get a reference to the backend using the from statement. In my system configuration, this returns a reference to tensorflow.
+</p>
+<p>The second function computes the square of the log error, and is similar to the built in function. The main difference is that I’m scaling the values, which is specific to the housing data set.
+</p>
+<h4>Evaluating Loss Functions
+</h4>
+<p>We now have four different loss functions that we want to evaluate the performance of on the original and transformed housing data sets. This section will walk through loading the data, compiling a model, fitting the model, and evaluating performance. The complete code listing for this section is available on 
+	<a href="https://github.com/bgweber/StartupDataScience/blob/master/DeepLearning/Custom_Loss_Functions.ipynb" data-href="https://github.com/bgweber/StartupDataScience/blob/master/DeepLearning/Custom_Loss_Functions.ipynb" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">github
+</a>.
+</p>
+<p>After following the installation steps in the prior section, we’ll load the data set and apply our transformation to skew housing prices. The last two operations can be commented out to use the original housing prices.
+</p>
+<pre>
+	<strong class="markup--strong markup--pre-strong"># load the data set
+	<br>
+</strong>from keras.datasets import boston_housing 
+<br>(x_train, y_train), (x_test, y_test) = boston_housing.load_data()
+</pre>
+<pre>
+	<strong class="markup--strong markup--pre-strong"># transform the training and test labels
+	<br>
+</strong>y_train = (y_train*1000)**2/2500000
+<br>y_test = (y_test*1000)**2/2500000
+</pre>
+<p>Next, we’ll create a Keras model for predicting housing prices. I’ve used the network structure from the 
+	<a href="https://github.com/jjallaire/deep-learning-with-r-notebooks/blob/master/notebooks/3.6-predicting-house-prices.Rmd" data-href="https://github.com/jjallaire/deep-learning-with-r-notebooks/blob/master/notebooks/3.6-predicting-house-prices.Rmd" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">sample problem
+</a> in “Deep Learning with R”. The network includes two layers of fully-connected relu activated neurons, and an output layer with no transformation.
+</p>
+<pre>
+	<strong class="markup--strong markup--pre-strong"># The model as specified in &quot;Deep Learning with R&quot;
+	<br>
+</strong>model = models.Sequential()
+<br>model.add(layers.Dense(64, activation=&#39;relu&#39;, 
+<br>          input_shape=(x_train.shape[1],)))
+<br>model.add(layers.Dense(64, activation=&#39;relu&#39;))
+<br>model.add(layers.Dense(1))
+</pre>
+<p>To compile the model, we’ll need to specify an optimizer, loss function, and a metric. We’ll use the same metric and optimizer for all of the different loss functions. The code below defines a list of loss functions, and for the first iteration the model uses mean squared error.
+</p>
+<pre>
+	<strong class="markup--strong markup--pre-strong"># Compile the model, and select one of the loss functions
+	<br>
+</strong>losses = [&#39;mean_squared_error&#39;, &#39;mean_squared_logarithmic_error&#39;,
+<br>           MLAE, MSLAE]
+</pre>
+<pre>model.compile(optimizer=&#39;rmsprop&#39;,
+	<br>              loss=losses[0],
+<br>              metrics=[&#39;mae&#39;])
+</pre>
+<p>The last step is to fit the model and then evaluate the performance. I used 100 epochs with a batch size of 5, and a 20% validation split. After training the model on the training data set, the performance of the model is evaluated using the mean absolute error on the test data set.
+</p>
+<pre>
+	<strong class="markup--strong markup--pre-strong"># Train the model with validation
+	<br>
+</strong>history = model.fit(x_train,
+<br>                    y_train,
+<br>                    epochs=100,
+<br>                    batch_size=5,
+<br>                    validation_split = .2,
+<br>                    verbose=0)
+</pre>
+<pre>
+	<strong class="markup--strong markup--pre-strong"># Calculate the mean absolute error
+	<br>
+</strong>results = model.evaluate(x_test, y_test, verbose = 0)
+<br>results
+</pre>
+<p>After training the model, we can plot the results using matplotlib. The plot below shows the loss values for the training and testing data sets.
+</p>
+<pre>loss = history.history[&#39;loss&#39;]
+	<br>val_loss = history.history[&#39;val_loss&#39;]
+<br>epochs = range(1, len(loss) + 1)
+</pre>
+<pre>plt.figure(figsize=(10,6)) 
+	<br>plt.plot(epochs, loss, &#39;bo&#39;, label=&#39;Training loss&#39;)
+<br>plt.plot(epochs, val_loss, &#39;b&#39;, label=&#39;Validation loss&#39;)
+<br>plt.legend()
+<br>plt.show()
+</pre>
+<figure>
+	<div class="aspectRatioPlaceholder is-locked" style="max-width: 622px; max-height: 388px;">
+	<div class="aspectRatioPlaceholder-fill" style="padding-bottom: 62.4%;">
+</div>
+<div class="progressiveMedia js-progressiveMedia graf-image" data-image-id="1*ZRCPoLB9qK3hT7WxS6Vd-A.png" data-width="622" data-height="388">
+	<img src="https://cdn-images-1.medium.com/freeze/max/30/1*ZRCPoLB9qK3hT7WxS6Vd-A.png?q=20" crossorigin="anonymous" class="progressiveMedia-thumbnail js-progressiveMedia-thumbnail">
+<canvas class="progressiveMedia-canvas js-progressiveMedia-canvas">
+</canvas>
+<img class="progressiveMedia-image js-progressiveMedia-image" data-src="https://cdn-images-1.medium.com/max/800/1*ZRCPoLB9qK3hT7WxS6Vd-A.png">
+<noscript class="js-progressiveMedia-inner">
+	<img class="progressiveMedia-noscript js-progressiveMedia-inner" src="https://cdn-images-1.medium.com/max/800/1*ZRCPoLB9qK3hT7WxS6Vd-A.png">
+</noscript>
+</div>
+</div>
+<figcaption class="imageCaption">Loss values for the training and validation data sets.
+</figcaption>
+</figure>
+<p>I trained four different models with the different loss functions, and applied this approach to both the original housing prices and the transformed housing prices. The results for all of these different combinations are shown below.
+</p>
+<figure>
+	<div class="aspectRatioPlaceholder is-locked" style="max-width: 473px; max-height: 111px;">
+	<div class="aspectRatioPlaceholder-fill" style="padding-bottom: 23.5%;">
+</div>
+<div class="progressiveMedia js-progressiveMedia graf-image" data-image-id="1*je9sTUj1jTAVvszOoHk66w.png" data-width="473" data-height="111">
+	<img src="https://cdn-images-1.medium.com/freeze/max/30/1*je9sTUj1jTAVvszOoHk66w.png?q=20" crossorigin="anonymous" class="progressiveMedia-thumbnail js-progressiveMedia-thumbnail">
+<canvas class="progressiveMedia-canvas js-progressiveMedia-canvas">
+</canvas>
+<img class="progressiveMedia-image js-progressiveMedia-image" data-src="https://cdn-images-1.medium.com/max/800/1*je9sTUj1jTAVvszOoHk66w.png">
+<noscript class="js-progressiveMedia-inner">
+	<img class="progressiveMedia-noscript js-progressiveMedia-inner" src="https://cdn-images-1.medium.com/max/800/1*je9sTUj1jTAVvszOoHk66w.png">
+</noscript>
+</div>
+</div>
+<figcaption class="imageCaption">Performance of the Loss Function of the Housing Price Data Sets
+</figcaption>
+</figure>
+<p>On the original data set, applying a log transformation in the loss function actually increased the error of the model. This isn’t really surprising given that the data is somewhat normally distributed and within a single order of magnitude. For the transformed data set, the squared log error approach outperformed the mean squared error loss function. This indicates that custom loss functions may be worth exploring if your data set doesn’t work well with the built-in loss functions.
+</p>
+<p>The model training histories for the four different loss functions on the transformed data set are shown below. Each model used the same error metric (MAE), but a different loss function. One surprising result was that the validation error was much higher for all of the loss functions that applied a log transformation.
+</p>
+</div>
+<div class="section-inner sectionLayout--outsetColumn">
+	<figure>
+	<div class="aspectRatioPlaceholder is-locked" style="max-width: 1000px; max-height: 925px;">
+	<div class="aspectRatioPlaceholder-fill" style="padding-bottom: 92.5%;">
+</div>
+<div class="progressiveMedia js-progressiveMedia graf-image" data-image-id="1*sG6P3roWIAj0bjpXVIL_YQ.png" data-width="1087" data-height="1006" data-action="zoom" data-action-value="1*sG6P3roWIAj0bjpXVIL_YQ.png">
+	<img src="https://cdn-images-1.medium.com/freeze/max/30/1*sG6P3roWIAj0bjpXVIL_YQ.png?q=20" crossorigin="anonymous" class="progressiveMedia-thumbnail js-progressiveMedia-thumbnail">
+<canvas class="progressiveMedia-canvas js-progressiveMedia-canvas">
+</canvas>
+<img class="progressiveMedia-image js-progressiveMedia-image" data-src="https://cdn-images-1.medium.com/max/1000/1*sG6P3roWIAj0bjpXVIL_YQ.png">
+<noscript class="js-progressiveMedia-inner">
+	<img class="progressiveMedia-noscript js-progressiveMedia-inner" src="https://cdn-images-1.medium.com/max/1000/1*sG6P3roWIAj0bjpXVIL_YQ.png">
+</noscript>
+</div>
+</div>
+<figcaption class="imageCaption">Performance of the 4 loss functions on the transformed housing prices data set. All models used MAE for the performance metric.
+</figcaption>
+</figure>
+</div>
+<div class="section-inner sectionLayout--insetColumn">
+	<p>Deep learning can be a useful tool for shallow learning problems, because you can define custom loss functions that may substantially improve the performance of your model. This won’t work for all problems, but may be useful if you have a prediction problem that doesn’t map well to the standard loss functions.
+</p>
+</div>
+</div>
+</section>
+<br>
+<br>
+<br>
+<br>
+
+<script>
+  $(function() {
+    var toc = $('#toc');
+
+    function makeLi(text, href) {
+      return $('<a href="' + href + '" target="_self">' + text + '</a><br>');
+    }
+
+    $('h2').each(function(i) {
+      var chapter = $(this), chapterNumber = i + 1;
+      toc.append(
+        makeLi(chapter.text(), '#chapter-' + chapterNumber)
+      );
+      chapter.attr('id', 'chapter-' + chapterNumber);
+    });
+
+  });
+</script>
+</body>
+</html>

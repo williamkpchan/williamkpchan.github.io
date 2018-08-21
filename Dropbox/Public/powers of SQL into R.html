@@ -1,0 +1,142 @@
+
+<base target="_blank">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+
+<style type="text/css">
+a {	text-decoration: none;}
+A:hover {	color: yellow;}
+A:focus {	color: red;}
+#newtype { color: pink}
+#redpink { color: #cc0099}
+#redword { color: red}
+#yellowword { color: yellow}
+#greenword { color: green}
+#orangeword { color: orange}
+#whiteword { color: white}
+#grayword { color: gray}
+#brownword { color: #ff8000}
+#yellowgreen { color: #bfff00}
+#palered { color: #ffcccc}
+#goldword { color: GoldenRod}
+
+.highlight { 
+    color: gray;
+    background-color: #002030
+  }
+</STYLE>
+
+</head>
+<body bgcolor="#000000" text="#109030" leftmargin="10" topmargin="10" marginwidth="100" link="#08C8A8" vlink="#389898" alink="#28B8B8">
+<FONT size=3>
+
+<h1 class="post_title">Bringing the powers of SQL into R</h1>
+
+<p>One of the big flaw of R is that data loaded into it are stored in the memory (on the RAM) and not on the disk. As you are working in an analysis with large (big) data the processing time of simple and more complex functions can become very long or even crash your computer. SQL enters here, it is a powerful language designed to work with (large) database and to perform simple operation (like subsetting, sorting &#8230;) on them. It is particularly useful to explore very large dataset and format the data for further analysis. There are many programs for doing database management using SQL. I decided to start looking at MySQL since it has an R package and is rather easy to set up (one could also use PostgreSQL &#8230;). In this post I will show you step by step how to create a database in MySQL, to upload data from R into it, then to do some queries to look at the power of SQL. Before I start note that the <code>data.table</code> package was developed to perform fast operation on big data (have a look <a href="http://datascienceplus.com/efficient-aggregation-using-data-table/" target="_blank">here</a>).</p>
+<h2>Create a database</h2>
+<p>First you need to download MySQL from this <a rel="nofollow" href="http://dev.mysql.com/downloads/mysql/" target="_blank">website</a> or from synaptic for the ubuntu users. Then you need to open a shell window (type cmd for windows users, terminal for Linux), type this:</p>
+<pre>
+&gt; mysql -p -u root
+</pre>
+<p>This will ask you for the password of the root user if it worked you will see some text and <code>mysql&gt;</code> appearing. Then if you don’t want to bother with different users and their rights you can directly create a database using:</p>
+<pre>
+mysql&gt; CREATE DATABASE intro_to_sql;
+</pre>
+<p>That&#8217;s it you created a database named <code>intro_to_sql</code>. At this point it is very important to remember that every time you are in the shell with mysql you need to use semi-colon (;) at the end of your statement, otherwise it doesn’t work. You can look at all the databases in your system using:</p>
+<pre>
+mysql&gt; show databases;
+<em>
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| intro_to_sql       |
+| mysql              |
+| performance_schema |
++--------------------+
+4 rows in set (0.00 sec)
+</em></pre>
+<p>Then we create a user having all rights on the <code>intro_to_sql</code> database:</p>
+<pre>
+mysql&gt; GRANT ALL ON data.* TO 'user1'@'localhost' IDENTIFIED BY '12345';
+</pre>
+<p>Once a database and a user have been created we don’t need the shell interface everything else can be done from R.</p>
+<h2>Uploading datasets from R</h2>
+<p>We could directly create tables in the database from the shell interface but let’s see how to transfer data from R into the database:</p>
+<pre>
+library(RMySQL)
+#connect to the database
+con&lt;-dbConnect(MySQL(),user=&#039;user1&#039;,password=&#039;12345&#039;,dbname=&#039;intro_to_sql&#039;)
+
+#load some data
+library(ggplot2)
+data(diamonds)
+
+#have a look at them
+summary(diamonds)
+<em>
+     carat               cut        color        clarity          depth           table           price             x                y         
+ Min.   :0.2000   Fair     : 1610   D: 6775   SI1    :13065   Min.   :43.00   Min.   :43.00   Min.   :  326   Min.   : 0.000   Min.   : 0.000  
+ 1st Qu.:0.4000   Good     : 4906   E: 9797   VS2    :12258   1st Qu.:61.00   1st Qu.:56.00   1st Qu.:  950   1st Qu.: 4.710   1st Qu.: 4.720  
+ Median :0.7000   Very Good:12082   F: 9542   SI2    : 9194   Median :61.80   Median :57.00   Median : 2401   Median : 5.700   Median : 5.710  
+ Mean   :0.7979   Premium  :13791   G:11292   VS1    : 8171   Mean   :61.75   Mean   :57.46   Mean   : 3933   Mean   : 5.731   Mean   : 5.735  
+ 3rd Qu.:1.0400   Ideal    :21551   H: 8304   VVS2   : 5066   3rd Qu.:62.50   3rd Qu.:59.00   3rd Qu.: 5324   3rd Qu.: 6.540   3rd Qu.: 6.540  
+ Max.   :5.0100                     I: 5422   VVS1   : 3655   Max.   :79.00   Max.   :95.00   Max.   :18823   Max.   :10.740   Max.   :58.900  
+                                    J: 2808   (Other): 2531                                                                                    
+       z         
+ Min.   : 0.000  
+ 1st Qu.: 2.910  
+ Median : 3.530  
+ Mean   : 3.539  
+ 3rd Qu.: 4.040  
+ Max.   :31.800  
+</em>
+
+#write the table into the database
+dbWriteTable(con,"diamonds",diamonds_data)
+
+#remove the dataset from R
+rm(diamonds)
+</pre>
+<p>We now have one table named <code>diamonds_data</code> in our database.</p>
+<h2>Performing queries from R</h2>
+<p>Now that our <code>intro_to_sql</code> database has one table we can start playing with some SQL queries from R:</p>
+<pre>
+#count the number of diamonds that are more than 2000$ expensive
+dbGetQuery(con,"select count(*) from diamonds_data where price&gt;2000")
+<em>
+  count(*)
+1    29733
+</em>
+#make a new data frame with diamonds of color ‘D’ and a depth less than 60%
+subs&lt;-dbGetQuery(con,&quot;select * from diamonds_data where color=&#039;D&#039; AND depth&lt;60&quot;)
+unique(subs$color)
+<em>
+[1] "D"
+</em>
+#make a new data frame only with the column x,y,z and order them by ascending x
+subs&lt;-dbGetQuery(con,&quot;select x,y,z from diamonds_data order by x&quot;)
+head(subs)
+<em>
+ x    y z
+1 0 6.62 0
+2 0 0.00 0
+3 0 0.00 0
+4 0 0.00 0
+5 0 0.00 0
+6 0 0.00 0
+</em>
+#from this dataset let’s create a new variable which is the mean of x,y,z
+subs$Mean&lt;-apply(sub,1,mean)
+
+#write the results in a new table
+dbWriteTable(con,&quot;XYZMean&quot;,subs)
+
+#check that it has been created
+dbListTables(con)
+<em>
+[1] "XYZMean"       "diamonds_data"
+</em></pre>
+<p>As you can see it is fairly easy to work with RMySQL, there are many advantages in working with this tool: (i) all the powers of SQL are at your command from within R, so it is easy to include this in your workflow (i.e. using the script window from RStudio &#8230;), (ii) no need to load big chunk of unprocessed data into R, use SQL to process efficiently the data (I did not talk about how to directly load a table into a MySQL database,<a rel="nofollow" href="http://stackoverflow.com/questions/11077801/import-csv-to-mysql-table" target="_blank"> have a look here</a>).</p>
+<p>There are many helpful ressources online about this topic here are a few that I found interesting: A <a rel="nofollow" href="http://bugs.mysql.com/file.php?id=15687" target="_blank">working guide</a> to MySQL. Two <a rel="nofollow" href="http://code.google.com/p/sqldf/" target="_blank">nice </a>  <a rel="nofollow" href="https://scottishsnow.wordpress.com/2014/08/14/writing-to-a-database-r-and-sqlite/" target="_blank">introductions</a> into another SQL-platform supported in R (SQLite). A <a rel="nofollow" href="http://www.cerebralmastication.com/2009/11/loading-big-data-into-r/" target="_blank">blog post</a> about the issue of big data in R.</p>

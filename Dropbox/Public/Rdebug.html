@@ -1,0 +1,247 @@
+
+<html>
+
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<title>Debugging in R using debug(), browser() and trace()</title>
+<style>
+body {
+ margin: 10%;
+ font-size: 24px;
+ background-color: #000000;
+ color: #109030;
+}
+a { text-decoration: none;
+    color: #28B8B8;}
+a:visited { color: #389898;}
+A:hover {   color: yellow;}
+A:focus {   color: red;}
+code { color: gray; background-color: #001500}
+pre { color: gray; background-color: #001010}
+a.newtype { color: pink}
+#redrose { color: #cc0099}
+.left {
+    position: absolute;
+    border-radius: 4px;
+    left: 100px;
+    color: GoldenRod;
+    border: 1px solid GoldenRod;
+    padding: 3px;
+    font-size: 60%;
+}
+.ulleft {
+    left: 150px;
+    padding: 3px;
+    font-size: 90%;
+}
+.aquacolor {
+    color: Aqua;
+}
+.bordsub {
+    color: #F07070;
+    margin: 3px 90px 3px 90px;
+    border: 1px solid darkcyan;
+    padding: 1px;
+    border-radius: 3px;
+    font-size: 90%;
+}
+.bord {
+    color: redrose;
+    border: 1px solid GoldenRod;
+    padding: 1px;
+    font-size: 90%;
+}
+.redbord {
+    color: white;
+    border: 1px solid red;
+    padding: 3px;
+    font-size: 60%;
+    border-radius: 6px;
+}
+.whitebord {
+    color: red;
+    border: 1px solid white;
+    padding: 3px;
+    font-size: 60%;
+    border-radius: 6px;
+}
+.brownbord {
+    color: gold;
+    border: 1px solid brown;
+    padding: 2px;
+    font-size: 60%;
+    border-radius: 3px;
+}
+.goldbord {
+    color: white;
+    border: 1px solid gold;
+    padding: 2px;
+    font-size: 60%;
+    border-radius: 3px;
+}
+
+.redrose { color: #cc0099}
+.redword { color: red}
+.yellowword { color: yellow}
+.greenword { color: lightgreen}
+.limeword { color: .00ff00}
+.orangeword { color: orange}
+.cyanword { color: cyan}
+.whiteword { color: white}
+</style>
+
+</head>
+
+
+<body>
+
+
+<h2>Debugging in R using <code>debug()</code>, <code>browser()</code> and <code>trace()</code> </h2>
+
+
+<a href="#dbgintro">Overview</a><br>
+<a href="#dbginitial">Marking a function for debugging</a><br>
+<a href="#dbgcommands">Commands while debugging</a><br>
+<a href="#dbgundebug">Unmarking a function</a><br>
+<a href="#dbgcond">Conditional breakpoints using <code>browser()</code></a><br>
+
+<hr>
+
+<a name="dbgintro"><h2>Overview</h2></a>
+
+<p>The <code>browser()</code> function in R's base package allows you to single step through the execution of an R function.
+You can view and change objects during execution.  There is support for <a href="#dbgcond">setting conditional breakpoints</a>. </p>
+
+<p>The <code>debug()</code> function marks a function for debugging, so that <code>browser()</code>
+will be called on entry.  Use <a href="http://stat.ethz.ch/R-manual/R-patched/library/base/html/debug.html"><code>?debug</code></a>
+in R to see the man page for <code>debug()</code>. 
+
+<p>The <code>trace()</code> function modifies a function to allow debug code to be temporarily inserted.  
+Use <a href="http://stat.ethz.ch/R-manual/R-patched/library/base/html/trace.html"><code>?trace</code></a>
+in R to see the man page for <code>trace()</code>. 
+
+<p>The <a href="http://stat.ethz.ch/R-manual/R-patched/library/utils/html/findLineNum.html"><code>findLineNum()</code></a> 
+and <code>setBreakpoint()</code> functions in the utils package work with line number
+references to compute locations for calls to <code>trace()</code>.
+
+
+<p>Further details are given in the <a href="http://cran.r-project.org/doc/manuals/R-lang.pdf">R
+Language manual</a> in the Debugging chapter, and in Roger Peng's
+<a href="http://www.biostat.jhsph.edu/~rpeng/docs/R-debug-tools.pdf">"An Introduction to the Interactive Debugging Tools in R"</a>.</p>
+
+<hr>
+
+<a name="dbginitial"><h2>Marking a function for debugging</h2></a>
+
+<p><code>debug()</code> works by marking functions for debugging.  When R starts to evaluate such a function,
+the evaluator automatically breaks to the debugger. </p>
+
+<p>Use <code>debug(fun)</code> to mark a function for debugging.  This marks the body of the function, so
+if you make any changes to it (e.g. using <code>fix(fun)</code>, or by <code>source()</code>'ing it
+from a file), the mark goes away.  On the other hand, if you copy the function to another object, the new
+object is marked for debugging as well.</p>
+
+<p>Alternatively, <code>trace(fun, ...)</code> can set a variety of different debugging options within the function.
+The default <code>trace(fun)</code> will print a line each time <code>fun()</code> is called.  For behaviour
+similar to <code>debug(fun)</code>, use <code>trace(fun, tracer=browser)</code>.  See 
+<a href="http://stat.ethz.ch/R-manual/R-patched/library/base/html/trace.html"><code>?trace</code></a> for other
+options.</p>
+
+<p>The <a href="http://stat.ethz.ch/R-manual/R-patched/library/utils/html/findLineNum.html"><code>setBreakpoint()</code></a> 
+function provides a front end to <code>trace()</code> for the case where the function
+contains source reference information.  (By default <code>source()</code> inserts this information, but
+packages are normally built without it.)  For example, if <code>fun()</code> was sourced from the
+file <code>fun.R</code>, a breakpoint can be set in the code from line 20 of that file using 
+<code>setBreakpoint("fun.R#20")</code>.  The default tracer is <code>browser()</code>, but other
+tracers can be set.</p>
+
+<hr>
+
+<a name="dbgcommands"><h2>Commands while debugging</h2></a>
+
+When the debugger is invoked, you are left in a <code>browser()</code>.  Expressions typed at the prompt
+are evaluated in the local environment.  The following commands are available.
+<dl>
+<dt><em>&lt;RET&gt;</em></dt>
+<dd>Go to the next statement if the function is being debugged. Continue execution
+if the browser was invoked.</dd>
+<dt><em>c</em> or <em>cont</em></dt>
+<dd>Continue execution without single stepping.</dd>
+<dt><em>n</em></dt>
+<dd>Execute the next statement in the function. This works from the browser as
+well.</dd>
+<dt><em>where</em></dt>
+<dd>Show the call stack.</dd>
+<dt><em>Q</em></dd>
+<dd>Halt execution and jump to the top-level immediately.</dd>
+</dl>
+To view the value of a variable whose name matches one of these commands, use the <code>print()</code> function,
+e.g. <code>print(n)</code>.
+
+<p>Here is a sample session, based on the one in the R Language manual.</p>
+<pre>
+> debug(mean.default)
+> mean(1:10)
+debugging in: mean.default(1:10)
+debug: {
+    if (na.rm)
+        x <- x[!is.na(x)]
+    trim <- trim[1]
+    n <- length(c(x, recursive = TRUE))
+    if (trim > 0) {
+        if (trim >= 0.5)
+            return(median(x, na.rm = FALSE))
+        lo <- floor(n * trim) + 1
+        hi <- n + 1 - lo
+        x <- sort(x, partial = unique(c(lo, hi)))[lo:hi]
+        n <- hi - lo + 1
+    }
+    sum(x)/n
+}
+Browse[1]> where
+where 1: mean.default(1:10)
+where 2: mean(1:10)
+
+Browse[1]>
+debug: if (na.rm) x <- x[!is.na(x)]
+Browse[1]>
+debug: trim <- trim[1]
+Browse[1]> trim
+[1] 0
+Browse[1]>
+debug: n <- length(c(x, recursive = TRUE))
+Browse[1]> c
+exiting from: mean.default(1:10)
+[1] 5.5
+</pre>
+
+<hr>
+
+<a name="dbgundebug"><h2>Unmarking a function</h2></a>
+
+<p>Call <code>undebug(fun)</code> to remove the debugging flag from a function.  Most changes to the body of a function
+will also remove this flag, for instance using <code>fix(fun)</code> or calling <code>source()</code> to recreate the
+function.</p>
+
+<p>Call <code>untrace(fun)</code> to remove the tracing code from a function.  </p>
+<hr>
+
+<a name="dbgcond"><h2>Conditional breakpoints using <code>browser()</code></h2></a>
+
+<p><code>debug()</code> has no commands to set conditional breakpoints, but <code>trace()</code>
+can include conditional expressions in the <code>tracer</code> argument.  For example,
+<code>trace(fun, quote(if (x > 10) browser()))</code> will stop if <code>x</code> (presumably
+an argument to <code>fun()</code>) is bigger than 10.</p>
+
+<p>Explicit calls to <code>browser()</code> in a 
+function will invoke the browser, causing execution of a function to pause.  These can be wrapped in conditional
+code when the function is written.  This is almost the same as if the function had been
+flagged using <code>debug(fun)</code>; the difference is that the <em>&lt;RET&gt;</em> key acts like a <em>c</em>
+to continue execution, not like an <em>n</em> to execute a single line.</p>
+<hr>
+
+
+<p>Last modified: Sat 20 Mar 2010, by Duncan Murdoch</p>
+</body>
+</html>

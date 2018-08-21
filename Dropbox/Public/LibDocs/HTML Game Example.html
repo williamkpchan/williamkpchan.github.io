@@ -1,0 +1,270 @@
+
+<base target="_blank">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<style type="text/css">
+
+a:hover,a:active{color:red}
+.top {
+ position:relative;
+ background-color:black;
+ height:68px;
+ padding-top:20px;
+ line-height:50px;
+ overflow:hidden;
+ z-index:2;
+}
+body {
+ background-color: #000000;
+ color: MediumSeaGreen;
+ margin: auto;
+ width:80%;
+ font-size: 24px;
+}
+a { text-decoration: none;
+	color: #58D858;}
+a:visited { color: #88C898;}
+A:hover {	color: yellow;}
+A:focus {	color: red;}
+
+code { color: pink; background-color: #302030}
+pre { color: gray; background-color: #001010}
+h1, h2, h3, h4, h5, .goldword {
+	color: gold;
+}
+
+hr {width: 50%;}
+li{
+	list-style-type: decimal;
+}
+#toc, #tang, #san, #pill {
+	margin-left: 25%;
+	margin-right: 25%;
+	color: gold;
+	padding: 1%;
+	text-align: left;
+	box-shadow: 5px 5px 15px silver;
+	border-radius: 5px;
+	border: 1px solid DarkSlateGray;
+    font-size: 90%;
+}
+.mywords{
+    color: Crimson;
+}
+.orangeword{
+    color: orange;
+}
+.remarks {
+	font-size: 22px;
+	color: MediumSeaGreen;
+}
+table { width: 100%; font-size: 80%; border-spacing: 2px; border: 1px solid DarkSlateGray; border-collapse: collapse;
+}
+div, th, td {padding: 5px; border: 1px dotted DarkSlateGray;}
+tr>td:first-child {
+    color: lightgreen;
+    width: 5vw;
+}
+
+</STYLE>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, .topic').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+
+</head>
+<body>
+
+
+<center><h2>HTML Game Example</h2></center>
+
+
+
+<p>Learn how to make games, using nothing but HTML and JavaScript.</p>
+<p>Push the buttons to move the red square:</p>
+
+<div id="myfilter" style="position:absolute;background-color:gray;opacity:0;width:322px;height:182px;display:none"></div>
+<div id="myrestartbutton" style="position:absolute;padding-top:75px;padding-left:120px;display:none;"><button onclick="restartGame()">Restart</button></div>
+<div id="canvascontainer"></div>
+<br>
+<div style="text-align:center;width:320px;">
+  <button ontouchstart="moveup()" onmousedown="moveup()" onmouseup="clearmove()">UP</button><br><br>
+  <button ontouchstart="moveleft()" onmousedown="moveleft()" onmouseup="clearmove()">LEFT</button>
+  <button ontouchstart="moveright()" onmousedown="moveright()" onmouseup="clearmove()">RIGHT</button><br><br>
+  <button ontouchstart="movedown()" onmousedown="movedown()" onmouseup="clearmove()">DOWN</button>
+</div>
+<br>
+
+<script>
+
+var myGameArea;
+var myGamePiece;
+var myObstacles = [];
+var myscore;
+
+function restartGame() {
+document.getElementById("myfilter").style.display = "none";
+document.getElementById("myrestartbutton").style.display = "none";
+myGameArea.stop();
+myGameArea.clear();
+myGameArea = {};
+myGamePiece = {};
+myObstacles = [];
+myscore = {};
+document.getElementById("canvascontainer").innerHTML = "";
+startGame()
+}
+
+function startGame() {
+    myGameArea = new gamearea();
+    myGamePiece = new component(30, 30, "red", 10, 75);
+    myscore = new component("15px", "Consolas", "black", 220, 25, "text");
+    myGameArea.start();
+}
+
+function gamearea() {
+    this.canvas = document.createElement("canvas");
+    this.canvas.width = 320;
+    this.canvas.height = 180;    
+    document.getElementById("canvascontainer").appendChild(this.canvas);
+    this.context = this.canvas.getContext("2d");
+    this.pause = false;
+    this.frameNo = 0;
+    this.start = function() {
+        this.interval = setInterval(updateGameArea, 20);
+    }
+    this.stop = function() {
+        clearInterval(this.interval);
+        this.pause = true;
+    }
+    this.clear = function(){
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+}
+
+function component(width, height, color, x, y, type) {
+
+    this.type = type;
+    if (type == "text") {
+        this.text = color;
+    }
+    this.score = 0;    this.width = width;
+    this.height = height;
+    this.speedX = 0;
+    this.speedY = 0;    
+    this.x = x;
+    this.y = y;    
+    this.update = function() {
+        ctx = myGameArea.context;
+        if (this.type == "text") {
+            ctx.font = this.width + " " + this.height;
+            ctx.fillStyle = color;
+            ctx.fillText(this.text, this.x, this.y);
+        } else {
+            ctx.fillStyle = color;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
+    }
+    this.crashWith = function(otherobj) {
+        var myleft = this.x;
+        var myright = this.x + (this.width);
+        var mytop = this.y;
+        var mybottom = this.y + (this.height);
+        var otherleft = otherobj.x;
+        var otherright = otherobj.x + (otherobj.width);
+        var othertop = otherobj.y;
+        var otherbottom = otherobj.y + (otherobj.height);
+        var crash = true;
+        if ((mybottom < othertop) || (mytop > otherbottom) || (myright < otherleft) || (myleft > otherright)) {
+            crash = false;
+        }
+        return crash;
+    }
+}
+
+function updateGameArea() {
+    var x, y, min, max, height, gap;
+    for (i = 0; i < myObstacles.length; i += 1) {
+        if (myGamePiece.crashWith(myObstacles[i])) {
+            myGameArea.stop();
+            document.getElementById("myfilter").style.display = "block";
+            document.getElementById("myrestartbutton").style.display = "block";
+            return;
+        } 
+    }
+    if (myGameArea.pause == false) {
+        myGameArea.clear();
+        myGameArea.frameNo += 1;
+        myscore.score +=1;        
+        if (myGameArea.frameNo == 1 || everyinterval(150)) {
+            x = myGameArea.canvas.width;
+            y = myGameArea.canvas.height - 100;
+            min = 20;
+            max = 100;
+            height = Math.floor(Math.random()*(max-min+1)+min);
+            min = 50;
+            max = 100;
+            gap = Math.floor(Math.random()*(max-min+1)+min);
+            myObstacles.push(new component(10, height, "green", x, 0));
+            myObstacles.push(new component(10, x - height - gap, "green", x, height + gap));
+        }
+        for (i = 0; i < myObstacles.length; i += 1) {
+            myObstacles[i].x += -1;
+            myObstacles[i].update();
+        }
+        myscore.text="SCORE: " + myscore.score;        
+        myscore.update();
+        myGamePiece.x += myGamePiece.speedX;
+        myGamePiece.y += myGamePiece.speedY;    
+        myGamePiece.update();
+    }
+}
+
+function everyinterval(n) {
+    if ((myGameArea.frameNo / n) % 1 == 0) {return true;}
+    return false;
+}
+
+function moveup(e) {
+    myGamePiece.speedY = -1; 
+}
+
+function movedown() {
+    myGamePiece.speedY = 1; 
+}
+
+function moveleft() {
+    myGamePiece.speedX = -1; 
+}
+
+function moveright() {
+    myGamePiece.speedX = 1; 
+}
+
+function clearmove(e) {
+    myGamePiece.speedX = 0; 
+    myGamePiece.speedY = 0; 
+}
+startGame();
+
+</script>
+
+
+<h2>Try it Yourself Examples</h2>
+<p>With our online editor, you can edit the code, and click on a button to view the result.</p>
+<div class="w3-example">
+<h3>Example</h3
+>
+<div class="w3-code notranslate jsHigh">
+ function startGame() {<br>&nbsp;&nbsp;&nbsp; myGamePiece = new component(30, 30, &quot;red&quot;, 10, 120);<br>&nbsp;&nbsp;&nbsp; myGamePiece.gravity = 0.05;<br>&nbsp;&nbsp;&nbsp; myScore = new component(&quot;30px&quot;, &quot;Consolas&quot;, &quot;black&quot;, 280, 40, &quot;text&quot;);<br>&nbsp;&nbsp;&nbsp; myGameArea.start();<br>}<br><br>var myGameArea = {<br>&nbsp;&nbsp;&nbsp; canvas : document.createElement(&quot;canvas&quot;),<br>&nbsp;&nbsp;&nbsp; start : function() {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this.canvas.width = 480;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this.canvas.height = 270;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this.context = this.canvas.getContext(&quot;2d&quot;);<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; document.body.insertBefore(this.canvas, document.body.childNodes[0]);<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this.frameNo = 0;<br>&nbsp;&nbsp;&nbsp; },<br>&nbsp;&nbsp;&nbsp; clear : function() {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);<br>&nbsp;&nbsp;&nbsp; }<br>}</div>
+ <a target="_blank" href="https://www.w3schools.com/graphics/tryit.asp?filename=trygame_default_gravity" class="w3-btn w3-margin-bottom">Try it Yourself &raquo;</a>
+</div>
+<br>

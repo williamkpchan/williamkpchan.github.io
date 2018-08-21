@@ -1,0 +1,211 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="..\maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@0.12.0"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, .apply, div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{font-size: x-large;width:80%;margin-left: 10%}
+h1, h2 {color: gold;}
+</style>
+</head><body>
+<center><h1>Core Concepts in TensorFlow.js</h1>
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+
+<p><strong>TensorFlow.js</strong> is an open source WebGL-accelerated JavaScript library for machine intelligence. It brings highly performant machine learning building blocks to your fingertips, allowing you to train neural networks in a browser or run pre-trained models in inference mode. See <a href="https://js.tensorflow.org/index.html#getting-started">Getting Started</a> for a guide on installing/configuring TensorFlow.js.</p>
+<p>TensorFlow.js provides low-level building blocks for machine learning as well as a high-level, Keras-inspired API for constructing neural networks. Let's take a look at some of the core components of the library.</p>
+<h2>Tensors</h2>
+<p>The central unit of data in TensorFlow.js is the tensor: <span class="orangeword">a set of numerical values shaped into an array of one or more dimensions</span>. A <a href="https://js.tensorflow.org/api/latest/index.html#class:Tensor"><code>Tensor</code></a> instance has a <code>shape</code> attribute that defines the array shape (i.e., how many values are in each dimension of the array).</p>
+<p>The primary <code>Tensor</code> constructor is the <a href="https://js.tensorflow.org/api/latest/index.html#tensor"><code>tf.tensor</code></a> function:</p>
+<pre><code class="-js"><span class="-comment">// 2x3 Tensor</span>
+<span class="-keyword">const</span> shape = [<span class="-number">2</span>, <span class="-number">3</span>]; <span class="-comment">// 2 rows, 3 columns</span>
+<span class="-keyword">const</span> a = tf.tensor([<span class="-number">1.0</span>, <span class="-number">2.0</span>, <span class="-number">3.0</span>, <span class="-number">10.0</span>, <span class="-number">20.0</span>, <span class="-number">30.0</span>], shape);
+a.print(); <span class="-comment">// print Tensor values</span>
+<span class="-comment">// Output: [[1 , 2 , 3 ],</span>
+<span class="-comment">//          [10, 20, 30]]</span>
+
+<span class="-comment">// The shape can also be inferred:</span>
+<span class="-keyword">const</span> b = tf.tensor([[<span class="-number">1.0</span>, <span class="-number">2.0</span>, <span class="-number">3.0</span>], [<span class="-number">10.0</span>, <span class="-number">20.0</span>, <span class="-number">30.0</span>]]);
+b.print();
+<span class="-comment">// Output: [[1 , 2 , 3 ],</span>
+<span class="-comment">//          [10, 20, 30]]</span></code></pre>
+<p>However, for constructing low-rank tensors, we recommend using the following
+functions to enhance code readability: <a href="https://js.tensorflow.org/api/latest/index.html#scalar"><code>tf.scalar</code></a>, <a href="https://js.tensorflow.org/api/latest/index.html#tensor1d"><code>tf.tensor1d</code></a>, <a href="https://js.tensorflow.org/api/latest/index.html#tensor2d"><code>tf.tensor2d</code></a>, <a href="https://js.tensorflow.org/api/latest/index.html#tensor3d"><code>tf.tensor3d</code></a> and <a href="https://js.tensorflow.org/api/latest/index.html#tensor4d"><code>tf.tensor4d</code></a>.</p>
+<p>The following example creates an identical tensor to the one above using <code>tf.tensor2d</code>:</p>
+<pre><code class="-js"><span class="-keyword">const</span> c = tf.tensor2d([[<span class="-number">1.0</span>, <span class="-number">2.0</span>, <span class="-number">3.0</span>], [<span class="-number">10.0</span>, <span class="-number">20.0</span>, <span class="-number">30.0</span>]]);
+c.print();
+<span class="-comment">// Output: [[1 , 2 , 3 ],</span>
+<span class="-comment">//          [10, 20, 30]]</span></code></pre>
+<p>TensorFlow.js also provides convenience functions for creating tensors with all values
+set to 0 (<a href="https://js.tensorflow.org/api/latest/index.html#zeros"><code>tf.zeros</code></a>) or all values set to 1 (<a href="https://js.tensorflow.org/api/latest/index.html#ones"><code>tf.ones</code></a>):</p>
+<pre><code class="-js"><span class="-comment">// 3x5 Tensor with all values set to 0</span>
+<span class="-keyword">const</span> zeros = tf.zeros([<span class="-number">3</span>, <span class="-number">5</span>]);
+<span class="-comment">// Output: [[0, 0, 0, 0, 0],</span>
+<span class="-comment">//          [0, 0, 0, 0, 0],</span>
+<span class="-comment">//          [0, 0, 0, 0, 0]]</span></code></pre>
+<p>In TensorFlow.js, tensors are immutable; once created, you cannot change their values. Instead you perform operations on them that generate new tensors.</p>
+<h2>Variables</h2>
+<p><a href="https://js.tensorflow.org/api/latest/index.html#class:Variable"><code>Variable</code>s</a> are initialized with a tensor of values. Unlike <code>Tensor</code>s, however, their values are mutable. You can assign a new tensor to an existing variable using the <code>assign</code> method:</p>
+<pre><code class="-js"><span class="-keyword">const</span> initialValues = tf.zeros([<span class="-number">5</span>]);
+<span class="-keyword">const</span> biases = tf.variable(initialValues); <span class="-comment">// initialize biases</span>
+biases.print(); <span class="-comment">// output: [0, 0, 0, 0, 0]</span>
+
+<span class="-keyword">const</span> updatedValues = tf.tensor1d([<span class="-number">0</span>, <span class="-number">1</span>, <span class="-number">0</span>, <span class="-number">1</span>, <span class="-number">0</span>]);
+biases.assign(updatedValues); <span class="-comment">// update values of biases</span>
+biases.print(); <span class="-comment">// output: [0, 1, 0, 1, 0]</span></code></pre>
+<p>Variables are primarily used to store and then update values during model training.</p>
+<h2>Operations (Ops)</h2>
+<p>While tensors allow you to store data, operations (ops) allow you to manipulate that data. TensorFlow.js provides a wide variety of ops suitable for linear algebra and machine learning that can be performed on tensors. Because tensors are immutable, these ops do not change their values; instead, ops return new tensors.</p>
+<p>Available ops include unary ops such as <a href="https://js.tensorflow.org/api/latest/index.html#square"><code>square</code></a>:</p>
+<pre><code class="-js"><span class="-keyword">const</span> d = tf.tensor2d([[<span class="-number">1.0</span>, <span class="-number">2.0</span>], [<span class="-number">3.0</span>, <span class="-number">4.0</span>]]);
+<span class="-keyword">const</span> d_squared = d.square();
+d_squared.print();
+<span class="-comment">// Output: [[1, 4 ],</span>
+<span class="-comment">//          [9, 16]]</span></code></pre>
+<p>And binary ops such as <a href="https://js.tensorflow.org/api/latest/index.html#add"><code>add</code></a>, <a href="https://js.tensorflow.org/api/latest/index.html#sub"><code>sub</code></a>, and <a href="https://js.tensorflow.org/api/latest/index.html#mul"><code>mul</code></a>:</p>
+<pre><code class="-js"><span class="-keyword">const</span> e = tf.tensor2d([[<span class="-number">1.0</span>, <span class="-number">2.0</span>], [<span class="-number">3.0</span>, <span class="-number">4.0</span>]]);
+<span class="-keyword">const</span> f = tf.tensor2d([[<span class="-number">5.0</span>, <span class="-number">6.0</span>], [<span class="-number">7.0</span>, <span class="-number">8.0</span>]]);
+
+<span class="-keyword">const</span> e_plus_f = e.add(f);
+e_plus_f.print();
+<span class="-comment">// Output: [[6 , 8 ],</span>
+<span class="-comment">//          [10, 12]]</span></code></pre>
+<p>TensorFlow.js has a chainable API; you can call ops
+on the result of ops:</p>
+<pre><code class="-js"><span class="-keyword">const</span> sq_sum = e.add(f).square();
+sq_sum.print();
+<span class="-comment">// Output: [[36 , 64 ],</span>
+<span class="-comment">//          [100, 144]]</span>
+
+<span class="-comment">// All operations are also exposed as functions in the main namespace,</span>
+<span class="-comment">// so you could also do the following:</span>
+<span class="-keyword">const</span> sq_sum = tf.square(tf.add(e, f));</code></pre>
+<h2>Models and Layers</h2>
+<p>Conceptually, <span class="orangeword">a model is a function that given some input will produce some desired output.</span></p>
+<p>In TensorFlow.js there are <em>two ways</em> to create models. You can <em>use ops directly</em> to represent the work the model does. For example:</p>
+<pre><code class="-js"><span class="-comment">// Define function</span>
+<span class="-function"><span class="-keyword">function</span> <span class="-title">predict</span>(<span class="-params">input</span>) </span>&#123;
+  <span class="-comment">// y = a * x ^ 2 + b * x + c</span>
+  <span class="-comment">// More on tf.tidy in the next section</span>
+  <span class="-keyword">return</span> tf.tidy(<span class="-function"><span class="-params">()</span> =&gt;</span> &#123;
+    <span class="-keyword">const</span> x = tf.scalar(input);
+
+    <span class="-keyword">const</span> ax2 = a.mul(x.square());
+    <span class="-keyword">const</span> bx = b.mul(x);
+    <span class="-keyword">const</span> y = ax2.add(bx).add(c);
+
+    <span class="-keyword">return</span> y;
+  &#125;);
+&#125;
+
+<span class="-comment">// Define constants: y = 2x^2 + 4x + 8</span>
+<span class="-keyword">const</span> a = tf.scalar(<span class="-number">2</span>);
+<span class="-keyword">const</span> b = tf.scalar(<span class="-number">4</span>);
+<span class="-keyword">const</span> c = tf.scalar(<span class="-number">8</span>);
+
+<span class="-comment">// Predict output for input of 2</span>
+<span class="-keyword">const</span> result = predict(<span class="-number">2</span>);
+result.print() <span class="-comment">// Output: 24</span></code></pre>
+<p>You can also use the high-level API <a href="https://js.tensorflow.org/api/latest/index.html#model"><code>tf.model</code></a> to construct a model out of <em>layers</em>, which are a popular abstraction in deep learning. 
+<p>The TensorFlow <a href="https://www.tensorflow.org/api_docs/python/tf/layers"><code>layers</code> module</a> provides a high-level API that makes
+it easy to construct a neural network. It provides methods that facilitate the
+creation of dense (fully connected) layers and convolutional layers, adding
+activation functions, and applying dropout regularization. 
+<br>
+The following code constructs a <a href="https://js.tensorflow.org/api/latest/index.html#sequential"><code>tf.sequential</code></a> model:</p>
+<pre><code class="-js"><span class="-keyword">const</span> model = tf.sequential();
+model.add(
+  tf.layers.simpleRNN(&#123;
+    <span class="-attr">units</span>: <span class="-number">20</span>,
+    <span class="-attr">recurrentInitializer</span>: <span class="-string">'GlorotNormal'</span>,
+    <span class="-attr">inputShape</span>: [<span class="-number">80</span>, <span class="-number">4</span>]
+  &#125;)
+);
+
+<span class="-keyword">const</span> optimizer = tf.train.sgd(LEARNING_RATE);
+model.compile(&#123;optimizer, <span class="-attr">loss</span>: <span class="-string">'categoricalCrossentropy'</span>&#125;);
+model.fit(&#123;<span class="-attr">x</span>: data, <span class="-attr">y</span>: labels&#125;);</code></pre>
+<p>There are many different types of layers available in TensorFlow.js. A few examples include <a href="https://js.tensorflow.org/api/latest/index.html#layers.simpleRNN"><code>tf.layers.simpleRNN</code></a>, <a href="https://js.tensorflow.org/api/latest/index.html#layers.gru"><code>tf.layers.gru</code></a>, and <a href="https://js.tensorflow.org/api/latest/index.html#layers.lstm"><code>tf.layers.lstm</code></a>.</p>
+<h2>Memory Management: dispose and tf.tidy</h2>
+<p>Because TensorFlow.js uses the GPU to accelerate math operations, it's necessary to manage GPU memory when working with tensors and variables.</p>
+<p>TensorFlow.js provide two functions to help with this: <code>dispose</code> and <a href="https://js.tensorflow.org/api/latest/index.html#tidy"><code>tf.tidy</code></a>.</p>
+<h3>dispose</h3>
+<p>You can call <code>dispose</code> on a tensor or variable to purge it and free up its GPU memory:</p>
+<pre><code class="-js"><span class="-keyword">const</span> x = tf.tensor2d([[<span class="-number">0.0</span>, <span class="-number">2.0</span>], [<span class="-number">4.0</span>, <span class="-number">6.0</span>]]);
+<span class="-keyword">const</span> x_squared = x.square();
+
+x.dispose();
+x_squared.dispose();</code></pre>
+<h3>tf.tidy</h3>
+<p>Using <code>dispose</code> can be cumbersome when doing a lot of tensor operations. TensorFlow.js provides another function, <code>tf.tidy</code>, that plays a similar role to regular scopes in JavaScript, but for GPU-backed tensors.</p>
+<p><code>tf.tidy</code> executes a function and purges any intermediate tensors created, freeing up their GPU memory. It does not purge the return value of the inner function.</p>
+<pre><code class="-js"><span class="-comment">// tf.tidy takes a function to tidy up after</span>
+<span class="-keyword">const</span> average = tf.tidy(<span class="-function"><span class="-params">()</span> =&gt;</span> &#123;
+  <span class="-comment">// tf.tidy will clean up all the GPU memory used by tensors inside</span>
+  <span class="-comment">// this function, other than the tensor that is returned.</span>
+  <span class="-comment">//</span>
+  <span class="-comment">// Even in a short sequence of operations like the one below, a number</span>
+  <span class="-comment">// of intermediate tensors get created. So it is a good practice to</span>
+  <span class="-comment">// put your math ops in a tidy!</span>
+  <span class="-keyword">const</span> y = tf.tensor1d([<span class="-number">1.0</span>, <span class="-number">2.0</span>, <span class="-number">3.0</span>, <span class="-number">4.0</span>]);
+  <span class="-keyword">const</span> z = tf.ones([<span class="-number">4</span>]);
+
+  <span class="-keyword">return</span> y.sub(z).square().mean();
+&#125;);
+
+average.print() <span class="-comment">// Output: 3.5</span></code></pre>
+<p>Using <code>tf.tidy</code> will help prevent memory leaks in your application. It can also be used to more carefully control when memory is reclaimed.</p>
+<h4>Two important notes</h4>
+<ul>
+<li>
+<p>The function passed to <code>tf.tidy</code> should be synchronous and also not return a Promise. We suggest keeping code that updates the UI or makes remote requests outside of <code>tf.tidy</code>.</p>
+</li>
+<li>
+<p><code>tf.tidy</code> <em>will not</em> clean up variables. Variables typically last through the entire lifecycle of a machine learning model, so TensorFlow.js doesn't clean them up even if they are created in a <code>tidy</code>; however, you can call <code>dispose</code> on them manually.</p>
+</li>
+</ul>
+<h1>Additional Resources</h1>
+<p>See the <a href="https://js.tensorflow.org/api/latest/index.html">TensorFlow.js API reference</a> for comprehensive documentation of the library.</p>
+<p>For a more in-depth look at machine learning fundamentals, see the following resources:</p>
+<ul>
+<li><a href="https://developers.google.com/machine-learning/crash-course" target="_blank" rel="noopener">Machine Learning Crash Course</a> (Note: this course's exercises use TensorFlow's <a href="https://www.tensorflow.org/api_docs/python/" target="_blank" rel="noopener">Python API</a>. However, the core machine learning concepts it teaches can be applied in equivalent fashion using TensorFlow.js.)</li>
+<li><a href="https://developers.google.com/machine-learning/glossary" target="_blank" rel="noopener">Machine Learning Glossary</a></li>
+</ul>
+
+</div>
+<br>
+<br>
+<br>
+<br>
+
+<script>
+  $(function() {
+    var toc = $('#toc');
+
+    function makeLi(text, href) {
+      return $('<a href="' + href + '" target="_self">' + text + '</a><br>');
+    }
+
+    $('h2,h3').each(function(i) {
+      var chapter = $(this), chapterNumber = i + 1;
+      toc.append(
+        makeLi(chapter.text(), '#chapter-' + chapterNumber)
+      );
+      chapter.attr('id', 'chapter-' + chapterNumber);
+    });
+
+  });
+</script>
+</body>
+</html>

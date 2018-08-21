@@ -1,0 +1,622 @@
+https://www.stat.berkeley.edu/classes/s133/Readexample.html
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head/><meta name="GENERATOR" content="TtH 3.67">
+<base target=_blank>
+<style>
+body { margin: 10%;
+font-size: 24px; background-color: #000000; color: #109030;}a { text-decoration: none; color: #28B8B8;}a:visited { color: #389898;}A:hover { color: yellow;}A:focus { color: red;}code { color: pink; background-color: #001500}pre { color: gray; background-color: #001010}</style>
+<body>
+
+   
+<title>Examples of Reading Web Pages with R</title>
+
+ 
+<title> Examples of Reading Web Pages with R</title>
+    
+<h1 align="center">Examples of Reading Web Pages with R </h1>
+
+<div class="p"><!----></div>
+As an example of how to extract information from a web page, consider
+the task of extracting the spring baseball schedule for the Cal Bears
+from <a href="http://calbears.cstv.com/sports/m-basebl/sched/cal-m-basebl-sched.html">http://calbears.cstv.com/sports/m-basebl/sched/cal-m-basebl-sched.html</a> .
+
+<div class="p"><!----></div>
+ <h2><a name="tth_sEc1">
+1</a>&nbsp;&nbsp;Reading a web page into R</h2>
+Read the contents of the page into a vector of character strings with the
+<tt>readLines</tt> function:
+
+<pre>
+&#62;&nbsp;thepage&nbsp;=&nbsp;readLines('http://calbears.cstv.com/sports/m-basebl/sched/cal-m-basebl-sched.html')
+
+</pre>
+<em>Note: &nbsp;</em>When you're reading a web page, make a local copy for testing;
+as a courtesy to the owner of the web site whose pages you're using, don't 
+overload their server by constantly rereading the page.  
+To make a copy from inside of R, look at the <tt>download.file</tt> function.
+You could also save
+a copy of the result of using <tt>readLines</tt>, and practice on that until
+you've got everything working correctly.
+
+<div class="p"><!----></div>
+Now we have to focus in on what we're trying to extract.  The first step
+is finding where it is.  If you look at the web page, you'll see that the
+title "Opponent / Event" is right above the data we want.  We can locate this line
+using the <tt>grep</tt> function:
+
+<pre>
+&#62;&nbsp;grep('Opponent&nbsp;/&nbsp;Event',thepage)
+[1]&nbsp;357&nbsp;
+
+</pre>
+
+<div class="p"><!----></div>
+If we look at the lines following this marker, we'll notice that the first
+date on the schedule can be found in line 400, with the other information
+following after:
+
+<pre>
+&#62;&nbsp;thepage[400:407]
+[1]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;tr&nbsp;id=\"990963\"&nbsp;title=\"2009,1,21,16,00,00\"&nbsp;valign=\"TOP\"&nbsp;bgcolor=\"#d1d1d1\"&nbsp;class=\"event-listing\"&#62;"
+[2]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+[3]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;td&nbsp;class=\"row-text\"&#62;02/21/09&lt;/td&#62;"
+[4]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+[5]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;td&nbsp;class=\"row-text\"&#62;vs.&nbsp;UC&nbsp;Riverside&lt;/td&#62;"
+[6]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+[7]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;td&nbsp;class=\"row-text\"&#62;Berkeley,&nbsp;Calif.&lt;/td&#62;"
+[8]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+</pre>
+Based on the previous step, the data that we want is always preceded by
+the HTML tag "<tt>&lt;td class="row-text&#187;</tt>", and followed by 
+"<tt>&lt;/td&#62;</tt>".  Let's grab all the lines that have that pattern:
+
+<pre>
+&#62;&nbsp;mypattern&nbsp;=&nbsp;'&lt;td&nbsp;class="row-text"&#62;([^&lt;]*)&lt;/td&#62;'
+&#62;&nbsp;datalines&nbsp;=&nbsp;grep(mypattern,thepage[400:length(thepage)],value=TRUE)
+
+</pre>
+ I used <tt>value=TRUE</tt>, so I wouldn't have to worry about the 
+indexing when I restricted myself to the lines from 400 on.  Also notice that
+I've already tagged the part that I want, in preparation to the final call to
+<tt>gsub</tt>.
+
+<div class="p"><!----></div>
+Now that I've got the lines where my data is, I can use <tt>grexpr</tt>,
+then <tt>getexpr</tt> (from the previous lecture), and <tt>gsub</tt> to 
+extract the information without the HTML tags:
+
+<pre>
+&#62;&nbsp;getexpr&nbsp;=&nbsp;function(s,g)substring(s,g,g+attr(g,'match.length')-1)
+&#62;&nbsp;gg&nbsp;=&nbsp;gregexpr(mypattern,datalines)
+&#62;&nbsp;matches&nbsp;=&nbsp;mapply(getexpr,datalines,gg)
+&#62;&nbsp;result&nbsp;=&nbsp;gsub(mypattern,'\\1',matches)
+&#62;&nbsp;names(result)&nbsp;=&nbsp;NULL
+&#62;&nbsp;result[1:10]
+&nbsp;[1]&nbsp;"02/21/09"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"vs.&nbsp;UC&nbsp;Riverside"&nbsp;"Berkeley,&nbsp;Calif."&nbsp;"1:00&nbsp;p.m.&nbsp;PT"&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[5]&nbsp;"02/22/09"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"vs.&nbsp;Vanderbilt"&nbsp;&nbsp;&nbsp;"Berkeley,&nbsp;Calif."&nbsp;"1:00&nbsp;p.m.&nbsp;PT"&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[9]&nbsp;"02/23/09"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"vs.&nbsp;Vanderbilt"&nbsp;&nbsp;
+
+</pre>
+It seems pretty clear that we've extracted just what we wanted - to make
+it more usable, we'll convert it to a data frame and provide some titles.
+Since it's hard to describe how to convert a vector to a data frame, we'll
+use a matrix as an intermediate step.  Since there are four pieces of 
+information (columns) for each game (row), a matrix is a natural choice:
+
+<pre>
+&#62;&nbsp;schedule&nbsp;=&nbsp;as.data.frame(matrix(result,ncol=4,byrow=TRUE))&nbsp;
+&#62;&nbsp;names(schedule)&nbsp;=&nbsp;c('Date','Opponent','Location','Result')&nbsp;
+&#62;&nbsp;head(schedule)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Date&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Opponent&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Location&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Result
+1&nbsp;02/21/09&nbsp;&nbsp;&nbsp;&nbsp;vs.&nbsp;UC&nbsp;Riverside&nbsp;&nbsp;&nbsp;&nbsp;Berkeley,&nbsp;Calif.&nbsp;1:00&nbsp;p.m.&nbsp;PT
+2&nbsp;02/22/09&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vs.&nbsp;Vanderbilt&nbsp;&nbsp;&nbsp;&nbsp;Berkeley,&nbsp;Calif.&nbsp;1:00&nbsp;p.m.&nbsp;PT
+3&nbsp;02/23/09&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vs.&nbsp;Vanderbilt&nbsp;&nbsp;&nbsp;&nbsp;Berkeley,&nbsp;Calif.&nbsp;1:00&nbsp;p.m.&nbsp;PT
+4&nbsp;02/25/09&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;at&nbsp;Santa&nbsp;Clara&nbsp;Santa&nbsp;Clara,&nbsp;Calif.&nbsp;6:00&nbsp;p.m.&nbsp;PT
+5&nbsp;02/27/09&nbsp;at&nbsp;Long&nbsp;Beach&nbsp;State&nbsp;&nbsp;Long&nbsp;Beach,&nbsp;Calif.&nbsp;6:30&nbsp;p.m.&nbsp;PT
+6&nbsp;02/28/09&nbsp;at&nbsp;Long&nbsp;Beach&nbsp;State&nbsp;&nbsp;Long&nbsp;Beach,&nbsp;Calif.&nbsp;2:00&nbsp;p.m.&nbsp;PT
+
+</pre>
+
+<div class="p"><!----></div>
+ <h2><a name="tth_sEc2">
+2</a>&nbsp;&nbsp;Another Example</h2>
+At <a href="http://www.imdb.com/chart">http://www.imdb.com/chart</a> is a 
+box-office summary of the ten top movies, along with their gross profits
+for the current weekend, and their total gross profits.  We would like
+to make a data frame with that information.  As always, the first part of
+the solution is to read the page into R, and use an anchor to find the 
+part of the data that we want.  In this case, the table has column
+headings, including one for "Rank".
+
+<pre>
+&#62;&nbsp;x&nbsp;=&nbsp;readLines('http://www.imdb.com/chart/')
+&#62;&nbsp;grep('Rank',x)
+[1]&nbsp;1141&nbsp;1393&nbsp;1651
+
+</pre>
+ Starting with line 1141 we can look at the data to see where 
+the information is.  A little experimentation shows that the useful
+data starts on line 1157:
+
+<pre>
+&#62;&nbsp;x[1157:1165]
+[1]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;td&nbsp;class=\"chart_even_row\"&#62;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+[2]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;a&nbsp;href=\"/title/tt0989757/\"&#62;Dear&nbsp;John&lt;/a&#62;&nbsp;(2010/I)"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+[3]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/td&#62;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+[4]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;td&nbsp;class=\"chart_even_row\"&nbsp;style=\"text-align:&nbsp;right;&nbsp;padding-right:&nbsp;20px\"&#62;"
+[5]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$30.5M"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+[6]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/td&#62;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+[7]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;td&nbsp;class=\"chart_even_row\"&nbsp;style=\"text-align:&nbsp;right\"&#62;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+[8]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$30.5M"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+[9]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/td&#62;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+</pre>
+There are two types of lines that contain useful data: the ones with the title, and 
+the ones that begin with some blanks followed by a dollar sign.  Here's a regular
+expression that will pull out both those lines:
+
+<pre>
+&#62;&nbsp;goodlines&nbsp;=&nbsp;'&lt;a&nbsp;href="/title[^&#62;]*&#62;(.*)&lt;/a&#62;.*$|^&nbsp;*\\$'
+&#62;&nbsp;try&nbsp;=&nbsp;grep(goodlines,x,value=TRUE)
+
+</pre>
+Looking at the beginning of <tt>try</tt>, it seems like we got what we want:
+
+<pre>
+&#62;&nbsp;try[1:10]
+&nbsp;[1]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;a&nbsp;href=\"/title/tt1001508/\"&#62;He's&nbsp;Just&nbsp;Not&nbsp;That&nbsp;Into&nbsp;You&lt;/a&#62;&nbsp;(2009)"
+&nbsp;[2]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$27.8M"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[3]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$27.8M"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[4]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;a&nbsp;href=\"/title/tt0936501/\"&#62;Taken&lt;/a&#62;&nbsp;(2008/I)"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[5]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$20.5M"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[6]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$53.6M"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[7]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;a&nbsp;href=\"/title/tt0327597/\"&#62;Coraline&lt;/a&#62;&nbsp;(2009)"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[8]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$16.8M"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[9]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$16.8M"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+[10]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;a&nbsp;href=\"/title/tt0838232/\"&#62;The&nbsp;Pink&nbsp;Panther&nbsp;2&lt;/a&#62;&nbsp;(2009)"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+</pre>
+ Sometimes the trickiest part of getting the data off a webpage is figuring
+out exactly the part you need.  In this case, there is a lot of extraneous information
+after the table we want.  By examining the output, we can see that we only want the 
+first 30 entries.  We also need to remove the extra information from the title 
+line.  We can use the <tt>sub</tt> function with a modified version of our regular 
+expression:
+
+<pre>
+&#62;&nbsp;try&nbsp;=&nbsp;try[1:30]
+&#62;&nbsp;try&nbsp;=&nbsp;sub('&lt;a&nbsp;href="/title[^&#62;]*&#62;(.*)&lt;/a&#62;.*$','\\1',try)
+&#62;&nbsp;head(try)
+[1]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;He's&nbsp;Just&nbsp;Not&nbsp;That&nbsp;Into&nbsp;You"
+[2]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$27.8M"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+[3]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$27.8M"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+[4]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Taken"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+[5]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$20.5M"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+[6]&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$53.6M"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+</pre>
+ Once the spaces at the beginning of each line are 
+removed, we can rearrange the data into a 3-column data frame:
+
+<pre>
+&#62;&nbsp;try&nbsp;=&nbsp;sub('^&nbsp;*','',try)
+&#62;&nbsp;movies&nbsp;=&nbsp;data.frame(matrix(try,ncol=3,byrow=TRUE))
+&#62;&nbsp;names(movies)&nbsp;=&nbsp;c('Name','Wkend&nbsp;Gross','Total&nbsp;Gross')
+&#62;&nbsp;head(movies)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Name&nbsp;Wkend&nbsp;Gross&nbsp;Total&nbsp;Gross
+1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Dear&nbsp;John&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$30.5M&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$30.5M
+2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Avatar&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$22.9M&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$629M
+3&nbsp;From&nbsp;Paris&nbsp;with&nbsp;Love&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$8.16M&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$8.16M
+4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Edge&nbsp;of&nbsp;Darkness&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$6.86M&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$28.9M
+5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tooth&nbsp;Fairy&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$6.63M&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$34.5M
+6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;When&nbsp;in&nbsp;Rome&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$5.55M&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$20.9M
+
+</pre>
+
+<div class="p"><!----></div>
+ <h2><a name="tth_sEc3">
+3</a>&nbsp;&nbsp;Dynamic Web Pages</h2>
+While reading data from static web pages as in the previous examples can be
+very useful (especially if you're extracting data from many pages), the 
+real power of techniques like this has to do with dynamic pages, which accept
+queries from users and return results based on those queries.  For example,
+an enormous amount of information about genes and proteins can be found at 
+the National Center of Biotechnology Information website 
+(<a href="http://www.ncbi.nlm.nih.gov/">http://www.ncbi.nlm.nih.gov/</a>), much
+of it available through query forms.  If you're only performing a few queries,
+it's no  problem using the web page, but for many queries, it's beneficial
+to automate the process.
+
+<div class="p"><!----></div>
+Here is a simple example that illustrate the concept of accessing dynamic
+information from web pages.  The page
+<a href="http://finance.yahoo.com">http://finance.yahoo.com</a> provides information about
+stocks; if you enter a stock symbol on the page, (for example
+<tt>aapl</tt> for Apple Computer), you will be directed to a page whose 
+URL (as it appears in the browser address bar) is 
+
+<pre>
+http://finance.yahoo.com/q?s=aapl&amp;x=0&amp;y=0
+
+</pre>
+ The way that stock symbols are mapped to this URL is pretty
+obvious.  We'll write an R function that will extract the current price
+of whatever stock we're interested in.
+
+<div class="p"><!----></div>
+The first step in working with a page like this is to download
+a local copy to play with, and to read the page into a vector of character
+strings:
+
+<pre>
+&#62;&nbsp;download.file('http://finance.yahoo.com/q?s=aapl&amp;x=0&amp;y=0','quote.html')
+trying&nbsp;URL&nbsp;'http://finance.yahoo.com/q?s=aapl&amp;x=0&amp;y=0'
+Content&nbsp;type&nbsp;'text/html;&nbsp;charset=utf-8'&nbsp;length&nbsp;unknown
+opened&nbsp;URL
+..........&nbsp;..........&nbsp;..........&nbsp;.........
+downloaded&nbsp;39Kb
+&#62;&nbsp;x&nbsp;=&nbsp;readLines('quote.html')
+
+</pre>
+To get a feel for what we're looking for, notice that the words "Last Trade:"
+appear before the current quote.  Let's look at the line containing 
+this string:
+
+<pre>
+&#62;&nbsp;grep('Last&nbsp;Trade:',x)
+25
+&#62;&nbsp;nchar(x[25])
+[1]&nbsp;873
+
+</pre>
+ Since there are over 800 characters in the line, we don't want 
+to view it directly.  Let's use <tt>gregexpr</tt> to narrow down the search:
+
+<pre>
+&#62;&nbsp;gregexpr('Last&nbsp;Trade:',x[25])
+[[1]]
+[1]&nbsp;411
+attr(,"match.length")
+[1]&nbsp;11
+
+</pre>
+ This shows that the string "Last Trade:" starts at character 411.
+We can use <tt>substr</tt> to see the relevant part of the line:
+
+<pre>
+substring(x[25],411,500)
+[1]&nbsp;"Last&nbsp;Trade:&lt;/th&#62;&lt;td&nbsp;class=\"yfnc_tabledata1\"&#62;&lt;big&#62;&lt;b&#62;&lt;span&nbsp;id=\"yfs_l10_aapl\"&#62;196.19&lt;/span&#62;&lt;"
+
+</pre>
+There's plenty of context - we want the part surrounded by <tt>&lt;big&#62;&lt;b&#62;&lt;span ...</tt>
+and <tt>&lt;/span&#62;</tt>.  One easy way to grab that part is to use a tagged
+regular expression with <tt>gsub</tt>:
+
+<pre>
+&#62;&nbsp;gsub('^.*&lt;big&#62;&lt;b&#62;&lt;span&nbsp;[^&#62;]*&#62;([^&lt;]*)&lt;/span&#62;.*$','\\1',x[25])
+[1]&nbsp;"196.19"
+
+</pre>
+
+<div class="p"><!----></div>
+ This suggests the following function:
+
+<pre>
+&#62;&nbsp;getquote&nbsp;=&nbsp;function(sym){
++&nbsp;&nbsp;&nbsp;&nbsp;baseurl&nbsp;=&nbsp;'http://finance.yahoo.com/q?s='
++&nbsp;&nbsp;&nbsp;&nbsp;myurl&nbsp;=&nbsp;paste(baseurl,sym,'&amp;x=0&amp;y=0',sep='')
++&nbsp;&nbsp;&nbsp;&nbsp;x&nbsp;=&nbsp;readLines(myurl)
++&nbsp;&nbsp;&nbsp;&nbsp;q&nbsp;=&nbsp;gsub('^.*&lt;big&#62;&lt;b&#62;&lt;span&nbsp;[^&#62;]*&#62;([^&lt;]*)&lt;/span&#62;.*$','\\1',grep('Last&nbsp;Trade:',x,value=TRUE))
++&nbsp;&nbsp;&nbsp;&nbsp;as.numeric(q)
++}&nbsp;
+
+</pre>
+ As always, functions like this should be tested:
+
+<pre>
+&#62;&nbsp;getquote('aapl')
+[1]&nbsp;196.19
+&#62;&nbsp;getquote('ibm')
+[1]&nbsp;123.21
+&#62;&nbsp;getquote('nok')
+[1]&nbsp;13.35
+
+</pre>
+
+<div class="p"><!----></div>
+These functions provide only a single quote;  a little exploration of the 
+yahoo finance website shows that we can get CSV files with historical
+data by using a URL of the form:
+
+<div class="p"><!----></div>
+
+<pre>
+http://ichart.finance.yahoo.com/table.csv?s=xxx
+
+</pre>
+ where <tt>xxx</tt> is the symbol of interest.  
+Since it's a comma-separated file, We can use <tt>read.csv</tt> to read the chart.
+
+<pre>
+gethistory&nbsp;=&nbsp;function(symbol)
+&nbsp;&nbsp;&nbsp;read.csv(paste('http://ichart.finance.yahoo.com/table.csv?s=',symbol,sep=''))
+
+</pre>
+ Here's a simple test:
+
+<pre>
+&#62;&nbsp;aapl&nbsp;=&nbsp;gethistory('aapl')
+&#62;&nbsp;head(aapl)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Date&nbsp;&nbsp;Open&nbsp;&nbsp;High&nbsp;&nbsp;&nbsp;Low&nbsp;Close&nbsp;&nbsp;&nbsp;Volume&nbsp;Adj.Close
+1&nbsp;2009-02-20&nbsp;89.40&nbsp;92.40&nbsp;89.00&nbsp;91.20&nbsp;26780200&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;91.20
+2&nbsp;2009-02-19&nbsp;93.37&nbsp;94.25&nbsp;90.11&nbsp;90.64&nbsp;32945600&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;90.64
+3&nbsp;2009-02-18&nbsp;95.05&nbsp;95.85&nbsp;92.72&nbsp;94.37&nbsp;24417500&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;94.37
+4&nbsp;2009-02-17&nbsp;96.87&nbsp;97.04&nbsp;94.28&nbsp;94.53&nbsp;24209300&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;94.53
+5&nbsp;2009-02-13&nbsp;98.99&nbsp;99.94&nbsp;98.12&nbsp;99.16&nbsp;21749200&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;99.16
+6&nbsp;2009-02-12&nbsp;95.83&nbsp;99.75&nbsp;95.83&nbsp;99.27&nbsp;29185300&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;99.27
+
+</pre>
+ Unfortunately, if we try to use the <tt>Date</tt>
+column in plots, it will not work properly, since R has
+stored it as a factor.  The format of the date is the default
+for the <tt>as.Date</tt> function, so we can modify our 
+function as follows:
+
+<pre>
+gethistory&nbsp;=&nbsp;function(symbol){
+&nbsp;&nbsp;&nbsp;data&nbsp;=&nbsp;read.csv(paste('http://ichart.finance.yahoo.com/table.csv?s=',symbol,sep=''))
+&nbsp;&nbsp;&nbsp;data$Date&nbsp;=&nbsp;as.Date(data$Date)
+&nbsp;&nbsp;&nbsp;data
+}
+
+</pre>
+Now, we can produce plots with no problems:
+
+<pre>
+&#62;&nbsp;aapl&nbsp;=&nbsp;gethistory('aapl')
+&#62;&nbsp;plot(aapl$Date,aapl$Close,main='Closing&nbsp;price&nbsp;for&nbsp;AAPL',type='l')
+
+</pre>
+
+<div class="p"><!----></div>
+The plot is shown below:
+
+<div class="p"><!----></div>
+
+<img src="https://www.stat.berkeley.edu/classes/s133/aapl.png">
+
+<div class="p"><!----></div>
+This suggest a function for plotting any of the variables in the CSV file:
+
+<pre>
+plothistory&nbsp;=&nbsp;function(symbol,what){
+&nbsp;&nbsp;&nbsp;match.arg(what,c('Open','High','Low','Close','Volume','Adj.Close'))
+&nbsp;&nbsp;&nbsp;data&nbsp;=&nbsp;gethistory(symbol)
+&nbsp;&nbsp;&nbsp;plot(data$Date,data[,what],main=paste(what,'price&nbsp;for&nbsp;',symbol),type='l')
+&nbsp;&nbsp;&nbsp;invisible(data)
+}
+
+</pre>
+  This function introduces several features of functions that we
+haven't seen yet.
+
+<ul>
+<li>The <tt>match.arg</tt> function lets us specify a list of acceptable values
+for a parameter being passed to a function, so that an error will occur
+if you use a non-existent variable:
+
+<pre>
+&#62;&nbsp;plothistory('aapl','Last')
+Error&nbsp;in&nbsp;match.arg("what",&nbsp;c("Open",&nbsp;"High",&nbsp;"Low",&nbsp;"Close",&nbsp;"Volume",&nbsp;&nbsp;:&nbsp;
+&nbsp;&nbsp;'arg'&nbsp;should&nbsp;be&nbsp;one&nbsp;of&nbsp;“Open”,&nbsp;“High”,&nbsp;“Low”,&nbsp;“Close”,&nbsp;“Volume”,&nbsp;“Adj.Close”
+
+</pre>
+<div class="p"><!----></div>
+</li>
+
+<li>
+The <tt>invisible</tt> function prevents the returned value (<tt>data</tt> in
+this case) from being printed when the output of the function is not 
+assigned, but also allows us to assign the output to a variable if we want
+to use it latter:
+
+<pre>
+&#62;&nbsp;plothistory('aapl','Close')
+
+</pre>
+ will produce a plot without displaying the data to the screen, but
+
+<pre>
+&#62;&nbsp;aapl.close&nbsp;=&nbsp;plothistory('aapl','Close')
+
+</pre>
+will produce the plot, <em>and</em> store the data in <tt>aapl.close</tt>.
+<div class="p"><!----></div>
+</li>
+</ul>
+
+<div class="p"><!----></div>
+ <h2><a name="tth_sEc4">
+4</a>&nbsp;&nbsp;Another Example</h2>
+When using google, it's sometimes inconvenient to have to click through
+all the pages.  Let's write a function that will return the web links
+from a google search.   If you type a search time into google, for example
+a search for 'introduction to r", you'll notice that the address bar of 
+your browser looks something like this:
+
+<pre>
+http://www.google.com/search?q=introduction+to+r&amp;ie=utf-8&amp;oe=utf-8&amp;aq=t&amp;rls=com.ubuntu:en-US:unofficial&amp;client=firefox-a
+
+</pre>
+ For our purposes, we only need the "<tt>q=</tt>" part of the 
+search.  For our current example, that would be the URL
+
+<pre>
+http://www.google.com/search?q=introduction+to+r
+
+</pre>
+ Note that, since blanks aren't allowed in URLs, plus signs are 
+used in place of spaces.  If we were to click on the "Next" link at the 
+bottom of the page, the URL changes to something like
+
+<pre>
+http://www.google.com/search?hl=en&amp;safe=active&amp;client=firefox-a&amp;rls=com.ubuntu:en-US:unofficial&amp;hs=xHq&amp;q=introduction+to+r&amp;start=10&amp;sa=N
+
+</pre>
+ For our purposes, we only need to add the <tt>&amp;start=</tt> argument
+to the web page.  Since google displays 10 results per page, the second page
+will have <tt>start=10</tt>, the next page will have <tt>start=20</tt>, and 
+so on.  Let's read in the first page of this search into R:
+
+<pre>
+z&nbsp;=&nbsp;readLines('http://www.google.com/search?q=introduction+to+r')
+Warning&nbsp;message:
+In&nbsp;readLines("http://www.google.com/search?q=introduction+to+r")&nbsp;:
+&nbsp;&nbsp;incomplete&nbsp;final&nbsp;line&nbsp;found&nbsp;on&nbsp;'http://www.google.com/search?q=introduction+to+r'
+
+</pre>
+ As always, you can safely ignore the message about the incomplete
+final line.
+
+<div class="p"><!----></div>
+Since we're interested in the web links, we only want lines with 
+"<tt>href=</tt>" in them.  Let's check how many lines we've got,
+how long they are, and which ones contain the href string:
+
+<pre>
+&#62;&nbsp;length(z)
+[1]&nbsp;9
+&#62;&nbsp;nchar(z)
+Error&nbsp;in&nbsp;nchar(z)&nbsp;:&nbsp;invalid&nbsp;multibyte&nbsp;string&nbsp;3
+
+</pre>
+  The error message looks pretty bad - fortunately it's very easy
+to fix.  Basically, the error means that, for the computer's current setup,
+there's a character that isn't recognized.  We can force R to recognize
+every character by issuing the following command:
+
+<pre>
+&#62;&nbsp;Sys.setlocale('LC_ALL','C')
+[1]&nbsp;"LC_CTYPE=C;LC_NUMERIC=C;LC_TIME=C;LC_COLLATE=C;LC_MONETARY=C;LC_MESSAGES=en_US.UTF-8;LC_PAPER=en_US.UTF-8;LC_NAME=C;LC_ADDRESS=C;LC_TELEPHONE=C;LC_MEASUREMENT=en_US.UTF-8;LC_IDENTIFICATION=C"
+
+</pre>
+The "UTF-8" means that all characters will now be recognized.
+
+<pre>
+&#62;&nbsp;nchar(z)
+[1]&nbsp;&nbsp;&nbsp;561&nbsp;&nbsp;&nbsp;125&nbsp;25086&nbsp;&nbsp;&nbsp;351&nbsp;&nbsp;&nbsp;131&nbsp;&nbsp;&nbsp;520&nbsp;&nbsp;&nbsp;449&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5&nbsp;&nbsp;&nbsp;&nbsp;17
+&#62;&nbsp;grep('href&nbsp;*=',z)
+[1]&nbsp;3
+
+</pre>
+It's pretty clear that all of the links are on the third line.
+
+<div class="p"><!----></div>
+Now we can construct a tagged regular expression to grab all the 
+links.
+
+<pre>
+&#62;&nbsp;hrefpat&nbsp;=&nbsp;'href&nbsp;*=&nbsp;*"([^"]*)"'
+&#62;&nbsp;getexpr&nbsp;=&nbsp;function(s,g)substring(s,g,g+attr(g,'match.length')-1)
+&#62;&nbsp;gg&nbsp;=&nbsp;gregexpr(hrefpat,z[[3]])
+&#62;&nbsp;res&nbsp;=&nbsp;mapply(getexpr,z[[3]],gg)
+&#62;&nbsp;res&nbsp;=&nbsp;sub(hrefpat,'\\1',res)
+&#62;&nbsp;res[1:10]
+&nbsp;[1]&nbsp;"http://images.google.com/images?q=introduction+to+r&amp;um=1&amp;ie=UTF-8&amp;sa=N&amp;hl=en&amp;tab=wi"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[2]&nbsp;"http://video.google.com/videosearch?q=introduction+to+r&amp;um=1&amp;ie=UTF-8&amp;sa=N&amp;hl=en&amp;tab=wv"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[3]&nbsp;"http://maps.google.com/maps?q=introduction+to+r&amp;um=1&amp;ie=UTF-8&amp;sa=N&amp;hl=en&amp;tab=wl"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[4]&nbsp;"http://news.google.com/news?q=introduction+to+r&amp;um=1&amp;ie=UTF-8&amp;sa=N&amp;hl=en&amp;tab=wn"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[5]&nbsp;"http://www.google.com/products?q=introduction+to+r&amp;um=1&amp;ie=UTF-8&amp;sa=N&amp;hl=en&amp;tab=wf"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[6]&nbsp;"http://mail.google.com/mail/?hl=en&amp;tab=wm"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[7]&nbsp;"http://www.google.com/intl/en/options/"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[8]&nbsp;"/preferences?hl=en"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[9]&nbsp;"https://www.google.com/accounts/Login?hl=en&amp;continue=http://www.google.com/search%3Fq%3Dintroduction%2Bto%2Br"
+[10]&nbsp;"http://www.google.com/webhp?hl=en"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+</pre>
+We don't want the internal (google) links - we want external links which
+will begin with "<tt>http://</tt>".  Let's extract all the external links,
+and then eliminate the ones that just go back to google:
+
+<pre>
+&#62;&nbsp;refs&nbsp;=&nbsp;res[grep('^https?:',res)]
+&#62;&nbsp;refs&nbsp;=&nbsp;refs[-grep('google.com/',refs)]
+&#62;&nbsp;refs[1:3]
+&nbsp;[1]&nbsp;"http://cran.r-project.org/doc/manuals/R-intro.pdf"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[2]&nbsp;"http://74.125.155.132/search?q=cache:d4-KmcWVA-oJ:cran.r-project.org/doc/manuals/R-intro.pdf+introduction+to+r&amp;cd=1&amp;hl=en&amp;ct=clnk&amp;gl=us&amp;ie=UTF-8"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;[3]&nbsp;"http://74.125.155.132/search?q=cache:d4-KmcWVA-oJ:cran.r-project.org/doc/manuals/R-intro.pdf+introduction+to+r&amp;amp;cd=1&amp;amp;hl=en&amp;amp;ct=clnk&amp;amp;gl=us&amp;amp;ie=UTF-8"
+
+</pre>
+ If you're familiar with google, you may recognize these as the links to
+google's cached results.  We can easily eliminate them:
+
+<pre>
+&#62;&nbsp;refs&nbsp;=&nbsp;refs[-grep('cache:',refs)]
+&#62;&nbsp;length(refs)
+[1]&nbsp;10
+
+</pre>
+ We can test these same steps with some of the other pages from this
+query:
+
+<pre>
+&#62;&nbsp;z&nbsp;=&nbsp;readLines('http://www.google.com/search?q=introduction+to+r&amp;start=10')
+Warning&nbsp;message:
+In&nbsp;readLines("http://www.google.com/search?q=introduction+to+r&amp;start=10")&nbsp;:
+&nbsp;&nbsp;incomplete&nbsp;final&nbsp;line&nbsp;found&nbsp;on&nbsp;'http://www.google.com/search?q=introduction+to+r&amp;start=10'
+&#62;&nbsp;hrefpat&nbsp;=&nbsp;'href&nbsp;*=&nbsp;*"([^"]*)"'
+&#62;&nbsp;getexpr&nbsp;=&nbsp;function(s,g)substring(s,g,g+attr(g,'match.length')-1)
+&#62;&nbsp;gg&nbsp;=&nbsp;gregexpr(hrefpat,z[[3]])
+&#62;&nbsp;res&nbsp;=&nbsp;mapply(getexpr,z[[3]],gg)
+&#62;&nbsp;res&nbsp;=&nbsp;sub(hrefpat,'\\1',res)
+&#62;&nbsp;refs&nbsp;=&nbsp;res[grep('^https?:',res)]
+&#62;&nbsp;refs&nbsp;=&nbsp;refs[-grep('google.com/',refs)]
+&#62;&nbsp;refs&nbsp;=&nbsp;refs[-grep('cache:',refs)]
+&#62;&nbsp;length(refs)
+[1]&nbsp;10
+
+</pre>
+ Once again, it found all ten links.  This obviously suggests a
+function:
+
+<pre>
+googlerefs&nbsp;=&nbsp;function(term,pg=0){
+&nbsp;&nbsp;getexpr&nbsp;=&nbsp;function(s,g)substring(s,g,g+attr(g,'match.length')-1)
+&nbsp;&nbsp;qurl&nbsp;=&nbsp;paste('http://www.google.com/search?q=',term,sep='')
+&nbsp;&nbsp;if(pg&nbsp;&#62;&nbsp;0)qurl&nbsp;=&nbsp;paste(qurl,'&amp;start=',pg&nbsp;*&nbsp;10,sep='')
+&nbsp;&nbsp;qurl&nbsp;=&nbsp;gsub('&nbsp;','+',qurl)
+&nbsp;&nbsp;z&nbsp;=&nbsp;readLines(qurl)
+&nbsp;&nbsp;hrefpat&nbsp;=&nbsp;'href&nbsp;*=&nbsp;*"([^"]*)"'
+&nbsp;&nbsp;wh&nbsp;=&nbsp;grep(hrefpat,z)
+&nbsp;&nbsp;gg&nbsp;=&nbsp;gregexpr(hrefpat,z[[wh]])
+&nbsp;&nbsp;res&nbsp;=&nbsp;mapply(getexpr,z[[wh]],gg)
+&nbsp;&nbsp;res&nbsp;=&nbsp;sub(hrefpat,'\\1',res)
+&nbsp;&nbsp;refs&nbsp;=&nbsp;res[grep('^https?:',res)]
+&nbsp;&nbsp;refs&nbsp;=&nbsp;refs[-grep('google.com/|cache:',refs)]
+&nbsp;&nbsp;names(refs)&nbsp;=&nbsp;NULL
+&nbsp;&nbsp;refs[!is.na(refs)]
+}
+
+</pre>
+ Now suppose that we want to retreive the links for the first
+ten pages of query results:
+
+<pre>
+&#62;&nbsp;links&nbsp;=&nbsp;sapply(0:9,function(pg)googlerefs('introduction&nbsp;to&nbsp;r',pg))
+&#62;&nbsp;links&nbsp;=&nbsp;unlist(links)
+&#62;&nbsp;head(links)
+[1]&nbsp;"http://cran.r-project.org/doc/manuals/R-intro.pdf"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+[2]&nbsp;"http://cran.r-project.org/manuals.html"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+[3]&nbsp;"http://www.biostat.wisc.edu/~kbroman/Rintro/"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+[4]&nbsp;"http://faculty.washington.edu/tlumley/Rcourse/"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+[5]&nbsp;"http://www.stat.cmu.edu/~larry/all-of-statistics/=R/Rintro.pdf"
+[6]&nbsp;"http://www.stat.berkeley.edu/~spector/R.pdf"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+</pre>
+
+
+
+</html>
