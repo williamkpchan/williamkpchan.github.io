@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src='https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@0.11.7'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.min.js'></script>
+
+<body>
+<div style="width:50%;">
+<canvas id="myChart" width="400" height="400"> </canvas>
+</div>
+<button onclick="train()">Train the model 1 step</button>
+<div id="report"></div>
+
+<script>
+// stkpriceDataArr.slice(530,537)
+
+const trainY = [27788.96, 27780.54, 27782.08, 27785.02, 27795, 27784.11, 27794.75, 27793.53, 27786.98, 27792.02, 27782.45, 27790.02, 27796.52, 27792.32, 27796.92, 27790.74, 27785.32, 27795.04, 27794.17, 27790.11, 27793.01, 27792.94, 27798.64, 27794.21, 27791.77, 27797.73, 27798.73, 27797.46, 27800.74, 27802.53, 27797.48, 27795.03, 27795.49, 27793.26, 27794.61, 27802.23, 27806.42];
+const trainX = [];
+for(x=0; x<(trainY.length); x++){trainX[x] = x+1;}
+
+const m = tf.variable(tf.scalar(Math.random()));
+const b = tf.variable(tf.scalar(Math.random()));
+function predict(x) {return tf.tidy(function() {return m.mul(x).add(b);});}
+function loss(prediction, labels) {return prediction.sub(labels).square().mean();}
+
+function train() {
+  const learningRate = 0.01;
+  const optimizer = tf.train.sgd(learningRate);
+
+  optimizer.minimize(function() {
+    const predsYs = predict(tf.tensor1d(trainX));
+
+    console.log(predsYs);
+    stepLoss = loss(predsYs, tf.tensor1d(trainY));
+    console.log(stepLoss.dataSync()[0]);
+	themsg = "the error is " + stepLoss.dataSync()[0] +"&emsp;"+ " m = " + m.dataSync()[0] +"&emsp;"+ " b = " + b.dataSync()[0] +"&emsp;" + " the endpoint is x: "+ trainX[trainX.length-1] + "&emsp;"+"y: " +(trainY[trainX.length-1] * m.dataSync()[0] + b.dataSync()[0]) + "<br>"
+	$("#report").prepend(themsg);
+
+    return stepLoss;
+  });
+  plot();
+}
+const predictionsBefore = predict(tf.tensor1d(trainX));
+
+async function plot() {
+  let plotData = [];
+
+  for (let i = 0; i < trainY.length; i++) {
+    plotData.push({ x: trainX[i], y: trainY[i] });
+  }
+  var ctx = document.getElementById("myChart").getContext("2d");
+
+  var scatterChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      datasets: [
+        {label: "Training Data",showLine: false,data: plotData,fill: false},
+        {label: "Y = " + m.dataSync()[0] + "X + " + b.dataSync()[0],
+          data: [{x: 0,y: b.dataSync()[0]},
+            	  {x: Math.max.apply(null, trainX),y: Math.max.apply(null, trainX) * m.dataSync()[0] + b.dataSync()[0]}
+
+
+          ],
+
+          // Changes this dataset to become a line
+          type: "line",borderColor: "red",fill: false
+        }
+      ]
+    },
+    options: {
+      scales: {
+		yAxes: [{ticks: {max: 5}}],
+		xAxes: [{type: "linear", position: "bottom"}]
+      }
+    }
+
+  });
+}
+plot();
+</script>
