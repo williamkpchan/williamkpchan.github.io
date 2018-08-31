@@ -9,123 +9,74 @@
 
 <link rel="stylesheet" href="./rchart/website.css" type="text/css" media="screen" />
 <style>
-body { margin: auto; width: 80%; font-size: 24px; background-color: #000000; color: #20C030;}
+body { margin: auto; width: 90%; font-size: 24px; background-color: #000000; color: #20C030;}
 button, input, select {color: gray; background-color: #001010;  font-size: 18px; }
 </style>
 
 <script>
-var alarmSound = new Audio('./mp3/stringVibrate.mp3');
+let alarmSound = new Audio('./mp3/stringVibrate.mp3');
 // toneBeep.mp3
-var theCode = 'HSI';
-var stkCode, stkName, stkTime, stkPrice, stkMaxprice, stkMinprice, stkVol, mytimer;
-var timerValue = 10;
-var stkChangeArr = [];
-var toFixedLen = 2;
-var stkCode, stkName, stkTime, stkPrice, stkMaxprice, stkMinprice, stkChange, stkVol;
-var theString ="";
+let theCode = 'HSI';
+let stkCode, stkName, stkTime, stkPrice, stkMaxprice, stkMinprice, stkVol, stkChange, mytimer;
+let timerValue = 10;
+let stkChangeArr = [];
+let toFixedLen = 2;
+let theString ="";
 
+let theurlHead = 'http://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk'
+let theurlTail = ',day,,,320,qfq'
+let theurl = theurlHead + theCode + theurlTail
+//let rawJSON = {};
+let thestkdata = [];
 
-var theCode = 'HSI';
-var theurlHead = 'http://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk'
-var theurlTail = ',day,,,320,qfq'
-var theurl = theurlHead + theCode + theurlTail
-var rawJSON = {};
-var thestkdata = [];
+let dateLst = [];
+let openLst = [];
+let highLst = [];
+let lowLst = [];
+let closeLst = [];
+var theMax = 0, theMin = 0;
 
-function getStkOHLC() {RGraph.AJAX.getJSON(theurl, function (json){rawJSON = json});}
-
-function extractOHLC() {
-	var keys = Object.keys(rawJSON); // read the structure keys ["code", "msg", "data"]
-	var insideDatakey = Object.keys(rawJSON)[2] //
-
-	// myobj[Object.keys(myobj)[0]] this is the extract method
-
-	thedata = rawJSON[Object.keys(rawJSON)[2]]
-	var thestkkey = Object.keys(thedata)[0] // this is the stk key name
-
-	tempdata = thedata[Object.keys(thedata)[0]];
-	thestkdata = tempdata[Object.keys(tempdata)[0]]; // real data here
-
-	/*thestkdata[320][0]  // date
-	thestkdata[320][1]  // open
-	thestkdata[320][3]  // high
-	thestkdata[320][4]  // low
-	thestkdata[320][2]  // close */
+function startToRoll() {
+	getStkOHLC();
 }
 
-function dispTime() {
-	document.getElementById("dateAndTime").innerHTML = showTime();
-}
+function getStkOHLC() {
+	RGraph.AJAX.getJSON(theurl, function (rawJSON){
+		keys = Object.keys(rawJSON); // read the structure keys ["code", "msg", "data"]
+		insideDatakey = Object.keys(rawJSON)[2] //
 
-function checkTime() {
-	var d = new Date(); // current time
-	var hours = d.getHours();
-	var mins = d.getMinutes();
-	var day = d.getDay();
-	return day >= 1
-		&& day <= 5
-		&& (
-			(hours >= 9  || hours === 9 && mins >= 30) && (hours < 12)
-			|| (hours >= 13) && (hours < 16)
-			);
-}
+		// myobj[Object.keys(myobj)[0]] this is the extract method
 
-function setTimer() {
-	document.getElementById("msg").innerHTML = "<br><br>";
-	clearInterval(mytimer);
-	mytimer = setInterval(function(){ alarm(); }, timerValue* 1000);
+		thedata = rawJSON[Object.keys(rawJSON)[2]]
+		// var thestkkey = Object.keys(thedata)[0] // this is the stk key name
 
-}
+		tempdata = thedata[Object.keys(thedata)[0]];
+		thestkdata = tempdata[Object.keys(tempdata)[0]]; // real data here
 
-function alarm() {
-	dispTime();
-	if(checkTime()){
-		$.get("http://qt.gtimg.cn/r=2&q=r_hk" + theCode, function(data, status){process(data);})
-
-//    setTimeout(window.onload, 2000); // 2000 millisec, this is to replace setInterval
-	}
-}
-function process(data) {
-	extractData(data);
-	reportStatus()
-}
-
-function extractData(data) {
-	theString = data;
-	var arr = theString.split("=");
-	theString = arr[1];
-	var arr = theString.split("~");
-	stkCode = arr[2];
-	stkName = arr[1];
-	stkTime = arr[30];
-
-	stkPrice = Number(arr[3]).toFixed(toFixedLen);
-	stkMaxprice = Number(arr[33]).toFixed(toFixedLen);
-	stkMinprice = Number(arr[34]).toFixed(toFixedLen);
-	stkChange = Number(arr[31]).toFixed(toFixedLen);
-
-	stkVol = (Number(arr[37])/10000).toFixed(0);
-}
-
-function reportStatus() {
-	stkpriceDataArr.push(Number(stkPrice));
-	stkChangeArr.push(stkChange);
-	finalString = showTime() + " " + "<span class='greyword'>" + stkCode + "</span>" + "&emsp;" + stkName + "&emsp;" + stkTime + "&emsp;" + "<span class='redword'>"  + stkPrice + "</span>" + "&emsp;" + stkChange  + "&emsp;" + calstkChangechg() +  "&emsp;" + stkMaxprice + "&emsp;" + stkMinprice + "&emsp;" + stkVol + "<br>" ;
-	
-	$("#msg").prepend(finalString);
-
-	RGraph.reset(document.getElementById('cvs'));
-
-//	RGraph.clear(document.getElementById("cvs", 'white'));
-	theMax = Math.max(...stkpriceDataArr);
-	theMin = Math.min(...stkpriceDataArr);
-
-	drawchart();
-	alarmSound.play();
+		/* data is arranged in days array
+		thestkdata[320][0]  // date
+		thestkdata[320][1]  // open
+		thestkdata[320][3]  // high
+		thestkdata[320][4]  // low
+		thestkdata[320][2]  // close */
+		period = 60;
+		starti = thestkdata.length - period;
+		for (let i = starti; i < thestkdata.length; i++) {
+			dateLst.push(thestkdata[i][0]);
+			openLst.push(Number(thestkdata[i][1]));
+			highLst.push(Number(thestkdata[i][3]));
+			lowLst.push(Number(thestkdata[i][4]));
+			closeLst.push(Number(thestkdata[i][2]));
+		}
+		thestkdata =[highLst, lowLst, closeLst];
+		theMax = Math.max(Math.max(...thestkdata[0]),Math.max(...thestkdata[1]),Math.max(...thestkdata[2]));
+		theMin = Math.min(Math.min(...thestkdata[0]),Math.min(...thestkdata[1]),Math.min(...thestkdata[2]));
+		drawchart();
+	});
 }
 
 function chkKey() {
-  var testkey = getChar(event);
+  let testkey = getChar(event);
 //  if(testkey == 'c'){getKeyword();}
 }
 
@@ -138,80 +89,69 @@ function getChar(event) {
 }
 
 function showTime() {
-	var d = new Date();
-	var secs=d.getSeconds();
-	var mins=d.getMinutes();
-	var hr=d.getHours();
-	var timemsg = FormatNumberLength(hr) + ":" + FormatNumberLength(mins) + ":" + FormatNumberLength(secs)
+	let d = new Date();
+	let secs=d.getSeconds();
+	let mins=d.getMinutes();
+	let hr=d.getHours();
+	let timemsg = FormatNumberLength(hr) + ":" + FormatNumberLength(mins) + ":" + FormatNumberLength(secs)
 	return(timemsg)
 }
 
 function FormatNumberLength(num) {
-    var r = "" + num;
+    let r = "" + num;
     while (r.length < 2) {
 	r = "0" + r;
     }
     return r;
 }
-function calstkChangechg() {
-	if (stkpriceDataArr.length>1){
-		stkChangechgval = stkChangeArr.slice(-1) - stkChangeArr.slice(-2)[0];
-		return stkChangechgval.toFixed(toFixedLen);
-	} else {
-		return 0;
-	}
-}
+
 </script>
 
 </head>
 
 <body onkeypress="chkKey()">
-<h3>Time Recorder 10 sec &emsp; <span id="dateAndTime""><script>dispTime();</script></span></h3>
+<h3>extract daily data</h3>
 
-<canvas id="cvs" width="1000" height="500">[No canvas support]</canvas>
+<canvas id="cvs" width="1300" height="700">[No canvas support]</canvas>
 <div id="msg"></div>
 
 <script>
-	stkpriceDataArr = [];
-	function drawchart() {
-	    var line = new RGraph.Line({
-		id: 'cvs',
-		data: stkpriceDataArr,
+function drawchart() {
+	line = new RGraph.Line({
+		id:'cvs',
+		data:thestkdata,
+
 		options: {
-			title: '',
+			title: keys,
 			titleColor: 'grey',
 			titleSize: 25,
-//			titleVpos: 0.5,
-			spline: true,
-			textAccessible: true,
-			hmargin: 5,
-			gutterBottom: 35,
-//			adjustable: true,
-			linewidth: 0.5,
-			ylabels: true,
-			shadow: false,
-			colors: ['blue'],
+			colors: ['red','darkgreen','yellow'],
+			backgroundGrid: true,
+			axisColor: '#864',
+			textColor: '#ccc',
 			tickmarks: 'triangle',
-			ticksize: 2,
-			textSize: 10,
+			ticksize: 1,
+			linewidth:1,
+
 			ymax: theMax,
 			ymin: theMin,
 
+// labels control the number of grids
+			labels: dateLst,
+			spline: true,
 			backgroundGrid: true,
-			backgroundGridColor:  '#242',
-				backgroundGridVlines: false,
-				backgroundGridHlines: true,
-				backgroundGridBorder: true,
-//				backgroundGridAutofitNumhlines: 7,
+			backgroundGridColor: '#002010',
+			backgroundGridVlines: false,
 
-				axisColor: '#392',
-//			labels: ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15'],
-			textColor: 'grey',
+			shadow: false,
+			gutterLeft: 50,
+			gutterRight: 50,
+			gutterTop: 50,
+			gutterBottom: 50
 		}
-	    }).draw()
-	};
-alarm();
-setTimer();
+	}).trace();
+};
+startToRoll();
 </script>
 
 </body>
