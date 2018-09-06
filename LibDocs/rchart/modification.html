@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+<meta charset="UTF-8">
+<title>modification training model in one file</title>
+
+<style>
+body{background-color:#006060; font-size:large; margin-left:5%; margin-top:3%;}
+#myChart{color:white;}
+</style>
+</head>
+
+<body>
+<div><canvas id="cvs" width="1000" height="500"></canvas></div>
+
+<button onclick="train()">Train the model 1 step</button>
+<div id="msg"></div>
+
+<script src='https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@0.11.7'></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="../rchart/RGraph.common.core.js" ></script>
+<script src="../rchart/RGraph.common.csv.js" ></script>
+<script src="../rchart/RGraph.line.js" ></script>
+<script type='text/javascript' src='../../mainscript.js'></script>
+
+<script>
+
+// this set of data must use scatter chart
+//const trainX = [3.3,4.4,5.5,6.71,6.93,4.168,9.779,6.182,7.59,2.167,7.042,10.791,5.313,7.997,5.654,9.27,3.1];
+//const trainY = [1.7,2.76,2.09,3.19,1.694,1.573,3.366,2.596,2.53,1.221,2.827,3.465,1.65,2.904,2.42,2.94,1.3];
+
+// this set of data must use sequantial chart
+//const trainY = [2, 2, 3, 5, 6, 7, 9, 12, 11, 13, 14, 15, 16, 18, 17, 18];
+//const trainX = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+const trainY = [18, 17, 18, 16, 15, 14, 13, 11, 12, 9, 7, 6, 5, 3, 2, 2];
+const trainX = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+
+//const trainY = [31012.922, 31188.932, 31332.42, 31521.129, 31435.262, 31134.029, 31242.861, 31023.73, 30777.959, 30519.289, 30012.039, 29944.301, 29882.27, 29436.838, 29403.359, 29034.23, 28988.828, 28567.289, 28962.291, 28616.998, 28642.34, 28320.898, 28554.211, 28821.539, 28981.93, 28365.721, 28614.531, 28715.359, 28699.209, 28460.871, 28386.381, 28329.98, 28294.738, 28391.58, 28718, 28964.791, 29083.398, 28816.691, 28839.238, 28682.311, 28772.801, 28218.279, 27786.15, 28074.531, 28266.682, 28473.479, 28728.17, 28665.9, 28085.172, 27946.551, 27727.27, 27405.252, 27450.842, 27609.799, 27771.299, 27954.521, 28051.65, 27830.908, 28289.059, 28579.641];
+//const trainX = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60];
+theMax = Math.max(...trainY) + Math.max(...trainY)*0.1;
+theMin = Math.min(...trainY) - Math.min(...trainY)*0.1;
+
+const m = tf.variable(tf.scalar(Math.random()));
+const b = tf.variable(tf.scalar(Math.random()));
+
+function predict(x) {return tf.tidy(function() {return m.mul(x).add(b);});}
+function loss(prediction, labels) {const error = prediction.sub(labels).square().mean(); return error;}
+
+function train() {
+	const learningRate = 0.0001;
+	const optimizer = tf.train.sgd(learningRate);
+	optimizer.minimize(function() {
+		const predsYs = predict(tf.tensor1d(trainX));
+		console.log("Predicted values are: ",predsYs.dataSync());
+		stepLoss = loss(predsYs, tf.tensor1d(trainY));
+		console.log("error is ", stepLoss.dataSync()[0]);
+		return stepLoss;
+	});
+	drawchart();
+	startPt = trainX[0] * m.dataSync()[0] + b.dataSync()[0];
+	endPt = trainX[trainX.length-1] * m.dataSync()[0] + b.dataSync()[0];
+	theMax = Math.max(theMax, startPt, endPt);
+	theMin = Math.min(theMin, startPt, endPt);
+	themsg = "b is " + b.dataSync()[0]  + "&emsp;" + "m is " + m.dataSync()[0] + "&emsp;" + trainX[0] +  "&emsp;" + startPt+ "&emsp;" + trainX[trainX.length-1] + "&emsp;" + endPt + "<br>"  ;
+	$("#msg").prepend(themsg);
+
+	drawStLine(startPt, endPt)
+}
+const predictionsBefore = predict(tf.tensor1d(trainX));
+
+function drawchart() {
+//	RGraph.clear(document.getElementById("cvs", 'white'));
+	var line = new RGraph.Line({
+
+		id: 'cvs',
+		data: trainY,
+		options: {
+			title: 'Test Chart',
+			titleColor: 'grey',
+			titleSize: 25,
+			titleVpos: 0.1,
+			spline: true,
+			textAccessible: true,
+			hmargin: 0,
+			gutterBottom: 35,
+			gutterLeft: 0,
+			ylabels: true,
+			numticks: null,
+			numlabels: 15,
+			noyaxis: false,
+			linewidth: 0.5,
+			shadow: false,
+			colors: ['blue'],
+			tickmarks: 'triangle',
+			ticksize: 2,
+			textSize: 10,
+			ymax: theMax,
+			ymin: theMin,
+
+			backgroundGrid: true,
+			backgroundGridColor: '#242',
+			backgroundGridVlines: false,
+			backgroundGridHlines: true,
+			backgroundGridBorder: true,
+			axisColor: '#392',
+			textColor: 'grey',
+		}
+	}).draw()
+};
+
+function drawStLine(startPt, endPt) {
+    var stLine = new RGraph.Line({
+		id: 'cvs',
+		data: [startPt, endPt],
+		options: {
+			spline: false,
+			hmargin: 0,
+			gutterBottom: 35,
+			gutterLeft: 0,
+			ylabels: true,
+			numticks: null,
+			numlabels: 15,
+			noyaxis: false,
+			linewidth: 1,
+			colors: ['red'],
+			tickmarks: 'triangle',
+			ticksize: 3,
+			textSize: 10,
+			ymax: theMax,
+			ymin: theMin,
+
+			backgroundGrid: true,
+			backgroundGridColor: '#242',
+			backgroundGridVlines: false,
+			backgroundGridHlines: true,
+			backgroundGridBorder: true,
+			axisColor: '#392',
+			textColor: 'grey',
+		}
+	}).draw()
+};
+drawchart()
+
+</script>
+
+
+
+</body>
+
+</html>

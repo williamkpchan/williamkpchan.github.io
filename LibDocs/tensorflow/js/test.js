@@ -11,6 +11,8 @@ const b = tf.variable(tf.scalar(Math.random()));
 function predict(x) { return tf.tidy(function() { return m.mul(x).add(b); });}
 function loss(prediction, labels) { return prediction.sub(labels).square().mean();}
 
+stkpriceDataArr = trainY;
+
 function train() {
   const learningRate = 0.001;
   const optimizer = tf.train.sgd(learningRate);
