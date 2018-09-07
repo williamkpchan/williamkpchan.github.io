@@ -5,7 +5,7 @@
 <title>modification training model in one file</title>
 
 <style>
-body{background-color:#006060; font-size:large; margin-left:5%; margin-top:3%;}
+body{background-color:black; font-size:large; margin-left:5%; margin-top:3%; color: grey;}
 #myChart{color:white;}
 </style>
 </head>
@@ -39,7 +39,7 @@ const trainX = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 //const trainX = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60];
 theMax = Math.max(...trainY) + Math.max(...trainY)*0.1;
 theMin = Math.min(...trainY) - Math.min(...trainY)*0.1;
-
+tempdata=[];
 const m = tf.variable(tf.scalar(Math.random()));
 const b = tf.variable(tf.scalar(Math.random()));
 
@@ -47,24 +47,25 @@ function predict(x) {return tf.tidy(function() {return m.mul(x).add(b);});}
 function loss(prediction, labels) {const error = prediction.sub(labels).square().mean(); return error;}
 
 function train() {
-	const learningRate = 0.0001;
+	const learningRate = 0.001;
 	const optimizer = tf.train.sgd(learningRate);
 	optimizer.minimize(function() {
 		const predsYs = predict(tf.tensor1d(trainX));
 		console.log("Predicted values are: ",predsYs.dataSync());
+		tempdata = predsYs.dataSync();
 		stepLoss = loss(predsYs, tf.tensor1d(trainY));
 		console.log("error is ", stepLoss.dataSync()[0]);
 		return stepLoss;
 	});
 	drawchart();
-	startPt = trainX[0] * m.dataSync()[0] + b.dataSync()[0];
-	endPt = trainX[trainX.length-1] * m.dataSync()[0] + b.dataSync()[0];
-	theMax = Math.max(theMax, startPt, endPt);
-	theMin = Math.min(theMin, startPt, endPt);
-	themsg = "b is " + b.dataSync()[0]  + "&emsp;" + "m is " + m.dataSync()[0] + "&emsp;" + trainX[0] +  "&emsp;" + startPt+ "&emsp;" + trainX[trainX.length-1] + "&emsp;" + endPt + "<br>"  ;
+//	startPt = trainX[0] * m.dataSync()[0] + b.dataSync()[0];
+//	endPt = trainX[trainX.length-1] * m.dataSync()[0] + b.dataSync()[0];
+	theMax = Math.max(theMax, tempdata);
+	theMin = Math.min(theMin, tempdata);
+	themsg = "b is " + b.dataSync()[0]  + "&emsp;" + "m is " + m.dataSync()[0] + "&emsp;" + "<br>"  ;
 	$("#msg").prepend(themsg);
 
-	drawStLine(startPt, endPt)
+	drawStLine()
 }
 const predictionsBefore = predict(tf.tensor1d(trainX));
 
@@ -102,16 +103,16 @@ function drawchart() {
 			backgroundGridVlines: false,
 			backgroundGridHlines: true,
 			backgroundGridBorder: true,
-			axisColor: '#392',
+			axisColor: '#a92',
 			textColor: 'grey',
 		}
 	}).draw()
 };
 
-function drawStLine(startPt, endPt) {
+function drawStLine() {
     var stLine = new RGraph.Line({
 		id: 'cvs',
-		data: [startPt, endPt],
+		data: tempdata,
 		options: {
 			spline: false,
 			hmargin: 0,

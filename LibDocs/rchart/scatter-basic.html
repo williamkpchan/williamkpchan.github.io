@@ -5,8 +5,9 @@
 <meta name="description" content="A basic Scatter chart" />
 <meta name="robots" content="noindex" />
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-<script src="RGraph.scatter.js" ></script>
+<script src='https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@0.11.7'></script>
 <script src="RGraph.common.core.js" ></script>
+<script src="RGraph.scatter.js" ></script>
 <script src="RGraph.line.js" ></script>
 
 <style>
@@ -30,14 +31,15 @@ body{background-color:black; font-size:large; margin-left:5%; margin-top:3%; col
 //	theYMin = Math.min(...trainY) - Math.min(...trainY)*0.1;
 
 var trainY = [], trainX = [];
-var count =200, a=-0.8, b=-0.2, c=0.9, d=0.5, maxRange = 3;
+var count =20, t=0, u=0, v=-5, w=100, maxRange = 10;
 for (var j = 0; j < count; j++) {
 	x = Math.random() * maxRange * (Math.random() < 0.5 ? -1 : 1);
 	trainX[j] = x;
-	trainY[j] = x*x + makeNoise(x*x, 55);
-//	trainY[j] = (a * x*x*x + b * x*x + c * x + d + makeNoise(x*x, 105)).toFixed(2);
+	trainY[j] = v * x + w + makeNoise(5, 1);
+//	trainY[j] = (t * x*x*x + u * x*x + v * x + w + makeNoise(x*x, 3)).toFixed(2);
 }
 
+var tempdata = [];
 var data = [], i = -1;
 while ( trainX[++i] ) { 
 	data.push( [ trainX[i], trainY[i] ] );
@@ -51,8 +53,8 @@ color = 'red';
 themsg = "theYMin &emsp;" + theYMin 
 	+ "&emsp; theYMax &emsp;" + theYMax 
 	+ "&emsp; theXMin &emsp;" + theXMin 
-	+ "&emsp; theXMax &emsp;" + theXMax +  "<br>"
-	+"&emsp;" + trainX + "<br>";
+	+ "&emsp; theXMax &emsp;" + theXMax +  "<br>";
+//	+"&emsp;" + trainX + "<br>";
 $("#msg").prepend(themsg);
 
 data.forEach(function (v, k, arr){arr[k].push(color);})
@@ -60,19 +62,24 @@ data.forEach(function (v, k, arr){arr[k].push(color);})
 		id: 'cvs',
 		data: data,
 		options: {
+			backgroundColor:  ['#000802'],
 			line: false, lineColors: ['brown'],
 			ymax: theYMax, ymin: theYMin, xmax: theXMax, xmin: theXMin,
-//			labels: trainX,
+			labels: [0],
+			ylabels: true,
+			axisColor: '#a92',
+			textColor: 'grey',
+
 			noyaxis: false, backgroundGridBorder: false, backgroundGridVlines: false,
-			backgroundGridHlines: false,
+			backgroundGridHlines: true,
 			tickmarks: 'cross', ticksize: 4
 		}
 	}).draw();
 
-function drawStLine(startPt, endPt) {
+function drawStLine() {
     var stLine = new RGraph.Line({
 		id: 'cvs',
-		data: [startPt, endPt],
+		data: tempdata,
 		options: {
 			spline: false,
 			hmargin: 0,
@@ -113,7 +120,44 @@ function makeNoise(num, pct) {
 	return Math.floor(Math.random() * num * pct /100) + Math.random()* maxRange *1.5;
 }
 
-drawStLine(theYMin,theYMax);
+const a = tf.variable(tf.scalar(Math.random()));
+const b = tf.variable(tf.scalar(Math.random()));
+const c = tf.variable(tf.scalar(Math.random()));
+const d = tf.variable(tf.scalar(Math.random()));
+
+function predict(x) {
+//	return tf.tidy(() => {return a.mul(x.pow(tf.scalar(3))).add(b.mul(x.square())).add(c.mul(x)).add(d);});
+	return tf.tidy(() => {return c.mul(x).add(d);});
+}
+
+function loss(predictions, labels) {
+	theloss = predictions.sub(labels).square().mean();
+	console.log("the error " + theloss.dataSync());
+	return theloss;
+}
+
+function train(xs, ys, numIterations) {
+	xs = tf.tensor1d(xs);
+	ys = tf.tensor1d(ys);
+
+	const learningRate = maxRange * 0.00002;
+	const optimizer = tf.train.sgd(learningRate);
+	let lossValue = 0
+
+	for (let iter = 0; iter < numIterations; iter++) {
+		optimizer.minimize(() => {
+			const predsYs = predict(xs);
+			tempdata = predsYs.dataSync()
+			drawStLine();
+			return loss(predsYs, ys);
+		});
+//	console.log("a " + a.dataSync() + "\nb "+ b.dataSync() + "\nc " + c.dataSync() + "\nd " + d.dataSync());
+	console.log(c.dataSync() + "\nd " + d.dataSync());
+	}
+}
+
+train(trainX, trainY, 90)
+//	drawStLine();
 
 </script>
 </body>
