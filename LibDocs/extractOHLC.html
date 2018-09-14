@@ -14,9 +14,7 @@ button, input, select {color: gray; background-color: #001010;  font-size: 18px;
 </style>
 
 <script>
-let alarmSound = new Audio('./mp3/stringVibrate.mp3');
-// toneBeep.mp3
-let theCode = 'HSI';
+let alarmSound = new Audio('./mp3/stringVibrate.mp3'); 
 let stkCode, stkName, stkTime, stkPrice, stkMaxprice, stkMinprice, stkVol, stkChange, mytimer;
 let timerValue = 10;
 let stkChangeArr = [];
@@ -25,41 +23,42 @@ let theString ="";
 
 let theurlHead = 'http://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk'
 let theurlTail = ',day,,,320,qfq'
-let theurl = theurlHead + theCode + theurlTail
+var theStartCode = "HSI"
 //let rawJSON = {};
 let thestkdata = [];
-
+let thedrawdata = [];
+let period = 100;
 let dateLst = [];
 let openLst = [];
 let highLst = [];
 let lowLst = [];
 let closeLst = [];
-var theMax = 0, theMin = 0;
+let theMax = 0, theMin = 0;
+let intv1 = 3
+let intv2 = 5
 
-function startToRoll() {
-	getStkOHLC();
-}
-
-function getStkOHLC() {
+function startToRoll(theCode) {
+	theStartCode = theCode
+	var theurl = theurlHead + theStartCode + theurlTail
 	RGraph.AJAX.getJSON(theurl, function (rawJSON){
-		keys = Object.keys(rawJSON); // read the structure keys ["code", "msg", "data"]
-		insideDatakey = Object.keys(rawJSON)[2] //
+		var keys = Object.keys(rawJSON); // read the structure keys ["code", "msg", "data"]
+		var insideDatakey = Object.keys(rawJSON)[2] //
 
 		// myobj[Object.keys(myobj)[0]] this is the extract method
 
-		thedata = rawJSON[Object.keys(rawJSON)[2]]
+		var thedata = rawJSON[Object.keys(rawJSON)[2]]
 		// var thestkkey = Object.keys(thedata)[0] // this is the stk key name
 
-		tempdata = thedata[Object.keys(thedata)[0]];
-		thestkdata = tempdata[Object.keys(tempdata)[0]]; // real data here
+		var tempdata = thedata[Object.keys(thedata)[0]];
+		thestkdata = tempdata[Object.keys(tempdata)[0]]; // real data here, this is global data
 
 		/* data is arranged in days array
-		thestkdata[320][0]  // date
-		thestkdata[320][1]  // open
-		thestkdata[320][3]  // high
-		thestkdata[320][4]  // low
-		thestkdata[320][2]  // close */
-		period = 60;
+		tempdata[320][0]  // date
+		tempdata[320][1]  // open
+		tempdata[320][3]  // high
+		tempdata[320][4]  // low
+		tempdata[320][2]  // close */
+
 		starti = thestkdata.length - period;
 		for (let i = starti; i < thestkdata.length; i++) {
 			dateLst.push(thestkdata[i][0]);
@@ -68,24 +67,43 @@ function getStkOHLC() {
 			lowLst.push(Number(thestkdata[i][4]));
 			closeLst.push(Number(thestkdata[i][2]));
 		}
-		thestkdata =[highLst, lowLst, closeLst];
-		theMax = Math.max(Math.max(...thestkdata[0]),Math.max(...thestkdata[1]),Math.max(...thestkdata[2]));
-		theMin = Math.min(Math.min(...thestkdata[0]),Math.min(...thestkdata[1]),Math.min(...thestkdata[2]));
-		drawchart();
+
+		thedrawdata =[highLst, lowLst, closeLst];
+		theMax = Math.max(Math.max(...thedrawdata[0]),Math.max(...thedrawdata[1]),Math.max(...thedrawdata[2]));
+		theMin = Math.min(Math.min(...thedrawdata[0]),Math.min(...thedrawdata[1]),Math.min(...thedrawdata[2]));
+		thedrawdata.push(makeMovAve(thedrawdata[2], intv1));
+		thedrawdata.push(makeMovAve(thedrawdata[2], intv2));
+		thedrawdata.push(makeMovAve(thedrawdata[2], 10));
+		drawchart(thedrawdata, ['red','darkgreen','yellow', 'grey', 'darkblue', 'white']);
 	});
+}
+function makeMovAve(bigArray, intv) {
+	return bigArray.slice(0, intv-1).concat(calcMovAve(bigArray, intv));
+}
+function calcAve(aveArray) {
+	add = (a, b) =>  a + b;
+	return aveArray.reduce(add) / aveArray.length;
+}
+
+function calcMovAve(bigArray, intv) {
+	var ma = [];
+	for (var i =0 ; i < (bigArray.length-intv+1); i++) {ma[i] = calcAve(bigArray.slice(i, i+intv));}
+	return ma;
 }
 
 function chkKey() {
-  let testkey = getChar(event);
-//  if(testkey == 'c'){getKeyword();}
+  var testkey = getChar(event);
+  if(testkey == 'c'){newChart();}
 }
 
 function getChar(event) {
-  if (event.which!=0 && event.charCode!=0) {
-    return String.fromCharCode(event.which)   // the rest
-  } else {
-    return null // special key
-  }
+  if (event.which!=0 && event.charCode!=0) {return String.fromCharCode(event.which)} else {
+    return null}
+}
+
+function newChart() {
+    var thecode = prompt("Code Number:", "");
+    if (thecode != null && thecode != "") {startToRoll(thecode);}
 }
 
 function showTime() {
@@ -93,15 +111,13 @@ function showTime() {
 	let secs=d.getSeconds();
 	let mins=d.getMinutes();
 	let hr=d.getHours();
-	let timemsg = FormatNumberLength(hr) + ":" + FormatNumberLength(mins) + ":" + FormatNumberLength(secs)
+	let timemsg=FormatNumberLength(hr) +":" + FormatNumberLength(mins) + ":"+ FormatNumberLength(secs)
 	return(timemsg)
 }
 
 function FormatNumberLength(num) {
     let r = "" + num;
-    while (r.length < 2) {
-	r = "0" + r;
-    }
+    while (r.length < 2) { r = "0" + r;}
     return r;
 }
 
@@ -110,48 +126,32 @@ function FormatNumberLength(num) {
 </head>
 
 <body onkeypress="chkKey()">
+
 <h3>extract daily data</h3>
 
-<canvas id="cvs" width="1300" height="700">[No canvas support]</canvas>
+<canvas id="cvs" width="1400" height="700">[No canvas support]</canvas>
 <div id="msg"></div>
 
 <script>
-function drawchart() {
+function drawchart(thedrawdata, thecolors) {
 	line = new RGraph.Line({
-		id:'cvs',
-		data:thestkdata,
-
+		id:'cvs', data:thedrawdata,
 		options: {
-			title: keys,
-			titleColor: 'grey',
+			title: theStartCode,
+			titleColor: 'grey', 
 			titleSize: 25,
-			colors: ['red','darkgreen','yellow'],
-			backgroundGrid: true,
-			axisColor: '#864',
-			textColor: '#ccc',
-			tickmarks: 'triangle',
-			ticksize: 1,
-			linewidth:1,
-
-			ymax: theMax,
-			ymin: theMin,
-
-// labels control the number of grids
+			colors: thecolors,
+			backgroundGrid: true, axisColor: '#864', textColor: '#ccc',
+			tickmarks: 'triangle', ticksize: 1, linewidth:1,
+			ymax: theMax, ymin: theMin,
 			labels: dateLst,
-			spline: true,
-			backgroundGrid: true,
-			backgroundGridColor: '#002010',
-			backgroundGridVlines: false,
-
-			shadow: false,
-			gutterLeft: 50,
-			gutterRight: 50,
-			gutterTop: 50,
-			gutterBottom: 50
+			spline: true, shadow: false,
+			backgroundGrid: true, backgroundGridColor: '#002010', backgroundGridVlines: false,
+			gutterLeft: 0, gutterRight: 0, gutterTop: 50, gutterBottom: 50
 		}
 	}).trace();
 };
-startToRoll();
+startToRoll("HSI");
 </script>
 
 </body>

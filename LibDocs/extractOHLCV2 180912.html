@@ -1,0 +1,252 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="./rchart/RGraph.common.core.js" ></script>
+<script src="./rchart/RGraph.common.csv.js" ></script>
+<script src="./rchart/RGraph.line.js" ></script>
+<script type='text/javascript' src='../mainscript.js'></script>
+
+<link rel="stylesheet" href="./rchart/website.css" type="text/css" media="screen" />
+<style>
+body { margin: auto; width: 90%; font-size: 18px; background-color: #000000; color: #20C030;}
+button, input, select {color: gray; background-color: #001010;  font-size: 18px; }
+</style>
+
+<script>
+let alarmSound = new Audio('./mp3/stringVibrate.mp3'); 
+let stkCode, stkName, stkTime, stkPrice, stkMaxprice, stkMinprice, stkVol, stkChange, mytimer;
+let timerValue = 10;
+let stkChangeArr = [];
+let toFixedLen = 3;
+let theString ="";
+
+let theurlHead = 'http://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk'
+let theurlTail = ',day,,,320,qfq'
+var theStartCode = "HSI"
+var thestkkey = "";
+//let rawJSON = {};
+let thestkdata = [];
+let thedrawdata = [];
+let period = 90;
+let dateLst = [];
+let openLst = [];
+let highLst = [];
+let lowLst = [];
+let closeLst = [];
+let theMax = 0, theMin = 0;
+let intv1 = 4
+let intv2 = 7
+let intv3 = 10
+var stkPointer = 0
+
+function startToRoll(theCode) {
+	theStartCode = theCode;
+	thestkdata = [];
+	thedrawdata = [];
+	dateLst = [];
+	openLst = [];
+	highLst = [];
+	lowLst = [];
+	closeLst = [];
+	var theurl = theurlHead + theStartCode + theurlTail
+	RGraph.AJAX.getJSON(theurl, function (rawJSON){
+		var keys = Object.keys(rawJSON); // read the structure keys ["code", "msg", "data"]
+		var insideDatakey = Object.keys(rawJSON)[2] //
+		// myobj[Object.keys(myobj)[0]] this is the extract method
+
+		var thedata = rawJSON[Object.keys(rawJSON)[2]]
+		thestkkey = Object.keys(thedata)[0] // this is the stk key name
+		var tempdata = thedata[Object.keys(thedata)[0]];
+		thestkdata = tempdata[Object.keys(tempdata)[0]]; // real data here, this is global data
+
+		theNameObj = tempdata[Object.keys(tempdata)[1]];
+		theNameObjName  = theNameObj[Object.keys(theNameObj)[0]];
+		stkName = theNameObjName[1]
+
+		/* data is arranged in days array
+		tempdata[320][0]  // date
+		tempdata[320][1]  // open
+		tempdata[320][3]  // high
+		tempdata[320][4]  // low
+		tempdata[320][2]  // close */
+
+		starti = thestkdata.length - period;
+		for (let i = starti; i < thestkdata.length; i++) {
+			dateLst.push(thestkdata[i][0]);
+			openLst.push(Number(thestkdata[i][1]));
+			highLst.push(Number(thestkdata[i][3]));
+			lowLst.push(Number(thestkdata[i][4]));
+			closeLst.push(Number(thestkdata[i][2]));
+		}
+
+		thedrawdata =[highLst, lowLst, closeLst];
+		theMax = Math.max(Math.max(...thedrawdata[0]),Math.max(...thedrawdata[1]),Math.max(...thedrawdata[2]));
+		theMin = Math.min(Math.min(...thedrawdata[0]),Math.min(...thedrawdata[1]),Math.min(...thedrawdata[2]));
+		thedrawdata.push(makeMovAve(thedrawdata[2], intv1));
+		thedrawdata.push(makeMovAve(thedrawdata[2], intv2));
+		thedrawdata.push(makeMovAve(thedrawdata[2], intv3));
+		drawchart(thedrawdata, ['red','green','yellow', 'cyan', 'blue', 'white']);
+		showStatus();
+	});
+}
+function makeMovAve(bigArray, intv) {
+	return bigArray.slice(0, intv-1).concat(calcMovAve(bigArray, intv));
+}
+function calcAve(aveArray) {
+	add = (a, b) =>  a + b;
+	return aveArray.reduce(add) / aveArray.length;
+}
+
+function calcMovAve(bigArray, intv) {
+	var ma = [];
+	for (var i =0 ; i < (bigArray.length-intv+1); i++) {ma[i] = calcAve(bigArray.slice(i, i+intv));}
+	return ma;
+}
+
+function chkKey() {
+	var testkey = getChar(event);
+	if(testkey == 'c'){askCode();}
+	if(testkey == 'v'){sCt(theStartCode);}
+	if(testkey == 'f'){jpforward();}
+	if(testkey == 'b'){jpback();}
+	if(testkey == 'r'){jprandom();}
+}
+
+function getChar(event) {
+	if (event.which!=0 && event.charCode!=0) {return String.fromCharCode(event.which)} else {
+		return null}
+}
+
+function newChart() {
+		var thecode = prompt("Code Number:", "");
+		if (thecode != null && thecode != "") {startToRoll(thecode);}
+}
+
+function showTime() {
+	let d = new Date();
+	let secs=d.getSeconds();
+	let mins=d.getMinutes();
+	let hr=d.getHours();
+	let timemsg=FormatNumberLength(hr) +":" + FormatNumberLength(mins) + ":"+ FormatNumberLength(secs)
+	return(timemsg)
+}
+
+function FormatNumberLength(num) {
+		let r = "" + num;
+		while (r.length < 2) { r = "0" + r;}
+		return r;
+}
+
+</script>
+
+</head>
+
+<body onkeypress="chkKey()">
+<center>
+<h3><span onclick=askCode()>Daily Chart</span> <b onclick=sCt(theStartCode)>&clubs;</b> </h3>
+
+<canvas id="cvs" width="1150" height="650">[No canvas support]</canvas>
+<div id="msg"></div>
+
+<script>
+function drawchart(thedrawdata, thecolors) {
+	RGraph.reset(document.getElementById('cvs'));
+	line = new RGraph.Line({
+		id:'cvs', data:thedrawdata,
+		options: {
+			title: theStartCode + " " + stkName,
+			titleColor: 'grey', 
+			titleSize: 18,
+			colors: thecolors,
+			backgroundGrid: true, axisColor: '#864', textColor: '#ccc',
+			tickmarks: 'triangle', ticksize: 1, linewidth: 1,
+			ymax: theMax, ymin: theMin,
+//			labels: dateLst,
+			spline: true, shadow: false,
+			backgroundGridColor: '#002010', backgroundGridVlines: false,
+			gutterLeft: 20, gutterRight: 0, gutterTop: 50, gutterBottom: 50
+		}
+	}).trace();
+};
+
+function askCode() {
+	var thecode = prompt("Code Number (5 digits):", "");
+	if (thecode != null && thecode != "") {
+		startToRoll(thecode);
+		}
+}
+var stkList = [ '00001', '00002', '00003', '00004', '00005', '00006', '00008', '00010', '00011', '00012', '00014', '00016', '00017', '00019', '00020', '00023', '00024', '00027', '00031', '00034', '00035', '00045', '00052', '00054', '00059', '00061', '00066', '00069', '00081', '00083', '00087', '00101', '00107', '00119', '00123', '00128', '00135', '00136', '00139', '00142', '00144', '00148', '00151', '00152', '00165', '00168', '00171', '00173', '00175', '00177', '00178', '00179', '00189', '00200', '00215', '00220', '00241', '00242', '00257', '00267', '00268', '00270', '00272', '00279', '00285', '00288', '00291', '00293', '00303', '00308', '00312', '00315', '00316', '00317', '00322', '00323', '00327', '00330', '00331', '00338', '00341', '00342', '00345', '00347', '00354', '00357', '00358', '00363', '00371', '00384', '00386', '00388', '00390', '00392', '00400', '00405', '00410', '00425', '00435', '00440', '00451', '00460', '00467', '00486', '00489', '00493', '00494', '00506', '00511', '00512', '00520', '00522', '00525', '00546', '00548', '00551', '00552', '00570', '00575', '00576', '00581', '00582', '00586', '00590', '00598', '00604', '00606', '00607', '00612', '00631', '00639', '00656', '00658', '00659', '00665', '00669', '00670', '00683', '00688', '00694', '00696', '00698', '00699', '00700', '00708', '00709', '00716', '00728', '00729', '00743', '00751', '00753', '00754', '00762', '00763', '00772', '00777', '00787', '00799', '00806', '00813', '00815', '00816', '00817', '00818', '00819', '00821', '00823', '00825', '00826', '00836', '00839', '00853', '00855', '00857', '00860', '00867', '00868', '00874', '00880', '00881', '00883', '00884', '00887', '00895', '00906', '00914', '00916', '00921', '00934', '00939', '00941', '00950', '00951', '00956', '00958', '00960', '00966', '00968', '00980', '00981', '00991', '00992', '00998', '00999', '01003', '01004', '01030', '01031', '01038', '01041', '01044', '01051', '01055', '01060', '01065', '01066', '01070', '01071', '01072', '01083', '01086', '01088', '01089', '01093', '01099', '01106', '01109', '01111', '01112', '01113', '01114', '01115', '01128', '01131', '01138', '01157', '01169', '01171', '01177', '01186', '01193', '01199', '01208', '01211', '01212', '01233', '01234', '01238', '01243', '01257', '01265', '01266', '01269', '01288', '01297', '01299', '01302', '01310', '01313', '01316', '01317', '01330', '01333', '01336', '01337', '01339', '01347', '01357', '01359', '01361', '01363', '01368', '01378', '01381', '01382', '01383', '01398', '01415', '01448', '01458', '01475', '01478', '01508', '01513', '01515', '01528', '01530', '01548', '01558', '01569', '01573', '01579', '01585', '01587', '01592', '01598', '01600', '01613', '01618', '01622', '01628', '01632', '01638', '01647', '01651', '01658', '01666', '01668', '01681', '01717', '01720', '01727', '01728', '01752', '01766', '01776', '01777', '01778', '01788', '01789', '01800', '01806', '01810', '01811', '01812', '01813', '01815', '01816', '01818', '01828', '01829', '01833', '01862', '01882', '01883', '01888', '01889', '01898', '01899', '01908', '01910', '01913', '01916', '01918', '01919', '01928', '01929', '01958', '01963', '01966', '01970', '01972', '01988', '01997', '01999', '02001', '02003', '02005', '02006', '02007', '02009', '02018', '02020', '02022', '02038', '02039', '02098', '02099', '02119', '02128', '02186', '02188', '02196', '02202', '02208', '02233', '02238', '02268', '02269', '02282', '02313', '02314', '02318', '02319', '02328', '02329', '02331', '02333', '02338', '02343', '02357', '02362', '02380', '02382', '02386', '02388', '02389', '02588', '02600', '02601', '02607', '02611', '02628', '02638', '02666', '02669', '02678', '02688', '02689', '02727', '02768', '02777', '02779', '02799', '02800', '02822', '02823', '02828', '02858', '02866', '02868', '02869', '02877', '02883', '02888', '02899', '03301', '03306', '03308', '03311', '03319', '03320', '03323', '03328', '03329', '03333', '03337', '03339', '03360', '03377', '03380', '03383', '03396', '03606', '03618', '03633', '03669', '03686', '03698', '03738', '03799', '03800', '03808', '03818', '03836', '03839', '03883', '03888', '03898', '03899', '03900', '03908', '03918', '03933', '03958', '03968', '03969', '03983', '03988', '03993', '03998', '06030', '06060', '06068', '06088', '06098', '06099', '06158', '06169', '06198', '06808', '06818', '06823', '06837', '06869', '06881', '06886', '06889', '07228', '07300', '07312', '07321', '07328', '07341', '07388', ]
+
+function jpforward() {
+	if (stkPointer < stkList.length-1) {
+		stkPointer = stkPointer + 1;
+		startToRoll(stkList[stkPointer]);
+	} else {
+		stkPointer = 0;
+		startToRoll(stkList[stkPointer]);
+	}
+}
+
+function jpback() {
+	if (stkPointer > 0) {
+		stkPointer = stkPointer - 1;
+		startToRoll(stkList[stkPointer]);
+	} else {
+		stkPointer = stkList.length-1;
+		startToRoll(stkList[stkPointer]);
+	}
+}
+function jprandom() {
+	var newPoint = Math.floor(Math.random() * (stkList.length-1))
+	startToRoll(stkList[newPoint]);
+	stkPointer = newPoint;
+}
+
+function sCt(stkcode) {
+  if(stkcode == "HSI"){stkcode = "110000"}
+  imgHead = "<img src='http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=9&indpara1=20&indpara2=2&indpara3=0&indpara4=0&indpara5=0&subChart1=3&ref1para1=5&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&subChart3=12&ref3para1=0&ref3para2=0&ref3para3=0&scheme=3&com=100&chartwidth=1050&chartheight=690&stockid=";
+  imgHead2 = "<img src='http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=3&indpara1=3&indpara2=6&indpara3=12&indpara4=24&indpara5=48&subChart1=3&ref1para1=12&ref1para2=26&ref1para3=9&subChart2=2&ref2para1=14&ref2para2=0&ref2para3=0&scheme=3&com=100&chartwidth=1050&chartheight=600&stockid=";
+
+
+  imgPCode= "&period=";
+  imgTail="&type=1&logoStyle=1'><br>";
+
+  // 5000, 5007, 5012, 1, 2, 3, 4, 6, 7, 9, 10, 12, 14, 16, 17, 18
+  intv = [4, 3, 2, 1, 5012, 5007, 5000, 7, 11, 12];
+  var imgWindow = window.open("");
+  newshead = "http://www.aastocks.com/tc/stocks/analysis/stock-aafn/"
+  newstail = "/0/all/1"
+  newsStr = newshead + stkcode + newstail
+  imgAdr = "<style>body { background-color: black; color: green} a { text-decoration: none; color: #28B8B8;}</style><body><center>" +"<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>" 
+
+  for( var imgPeriod = 0; imgPeriod < intv.length; imgPeriod++){
+    imgAdr = imgAdr + imgHead + stkcode + imgPCode + intv[imgPeriod] + imgTail + imgHead2 + stkcode + imgPCode + intv[imgPeriod] + imgTail;
+  };
+  imgWindow.document.write(imgAdr);
+}
+
+function showStatus() {
+	lastPtr = thedrawdata[0].length-1
+	theStr = 
+	"H " + thedrawdata[0][lastPtr] + "&emsp;" +
+	"L " + thedrawdata[1][lastPtr] + "&emsp;" +
+	"C " + thedrawdata[2][lastPtr] + "&emsp;" +
+	"ma1 " + thedrawdata[3][lastPtr].toFixed(toFixedLen) + "&emsp;" + 
+	"ma2 " + thedrawdata[4][lastPtr].toFixed(toFixedLen) + "&emsp;" + 
+	"ma3 " + thedrawdata[5][lastPtr].toFixed(toFixedLen) + "<br>";
+ 
+	finalString = showTime() + "&emsp;" + theStr
+	$("#msg").html("");
+	$("#msg").html(finalString);
+}
+
+//for(let i = 0; i<5; i++){
+//	RGraph.reset(document.getElementById('cvs'));
+//	setTimeout(startToRoll(stkList[i]),25000);
+//}
+startToRoll("HSI")
+</script>
+</center>
+</body>
+</html>

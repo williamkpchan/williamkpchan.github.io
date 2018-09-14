@@ -1,0 +1,238 @@
+
+<!DOCTYPE html >
+<html>
+<head>
+<title>RGraph demo: A basic Scatter chart</title>
+<meta name="description" content="A basic Scatter chart" />
+<meta name="robots" content="noindex" />
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src='https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@0.11.7'></script>
+<script src="RGraph.common.core.js" ></script>
+<script src="RGraph.scatter.js" ></script>
+<script src="RGraph.line.js" ></script>
+
+<style>
+body{background-color:black; font-size:large; margin-left:5%; margin-top:3%; color:green;}
+#myChart{color:white;}
+</style>
+
+</head>
+<body>
+<h1>Scatter Chart Test</h1>
+<canvas id="cvs" width="600" height="600">[No canvas support]</canvas>
+<div id="msg"></div>
+<script>
+/* original dataset
+	const trainY = [18, 17, 18, 16, 15, 14, 13, 11, 12, 9, 7, 6, 5, 3, 2, 2];
+	const trainX = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+*/
+
+/* HSI dataset
+	const trainY = [31012.922, 31188.932, 31332.42, 31521.129, 31435.262, 31134.029, 31242.861, 31023.73, 30777.959, 30519.289, 30012.039, 29944.301, 29882.27, 29436.838, 29403.359, 29034.23, 28988.828, 28567.289, 28962.291, 28616.998, 28642.34, 28320.898, 28554.211, 28821.539, 28981.93, 28365.721, 28614.531, 28715.359, 28699.209, 28460.871, 28386.381, 28329.98, 28294.738, 28391.58, 28718, 28964.791, 29083.398, 28816.691, 28839.238, 28682.311, 28772.801, 28218.279, 27786.15, 28074.531, 28266.682, 28473.479, 28728.17, 28665.9, 28085.172, 27946.551, 27727.27, 27405.252, 27450.842, 27609.799, 27771.299, 27954.521, 28051.65, 27830.908, 28289.059, 28579.641];
+	const trainX = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60];
+	theYMax = Math.max(...trainY) + Math.max(...trainY)*0.1;
+	theYMin = Math.min(...trainY) - Math.min(...trainY)*0.1;
+*/
+
+var trainY = [], trainX = [];
+r = 5;
+maxAngle=720;
+steps = 300;
+stepAngle = maxAngle / steps;
+deg= Math.PI/180;
+
+/* plot circle
+  for(i=0; i <steps; i ++){
+  var angle = i * stepAngle * deg;
+  var x = r * Math.cos(angle);
+  var y = r * Math.sin(angle);
+  trainX[i] = x + makeNoise(25, 5) * (Math.random() < 0.5 ? -1 : 1);
+  trainY[i] = y + makeNoise(25, 5) * (Math.random() < 0.5 ? -1 : 1);
+}
+*/
+
+/* plot circle with random points
+  for(i=0; i <steps; i ++){
+  var angle = maxAngle * Math.random() * deg;
+  var x = r * Math.cos(angle);
+  var y = r * Math.sin(angle);
+  trainX[i] = x + makeNoise(20, 5) * (Math.random() < 0.5 ? -1 : 1);;
+  trainY[i] = y + makeNoise(22, 5) * (Math.random() < 0.5 ? -1 : 1);;
+}
+*/
+
+// plot sine wave
+for(i=0; i <steps; i ++){
+  var angle = (maxAngle * Math.random() * deg).toFixed(2);
+  var x = angle;
+  var y = r * Math.sin(angle).toFixed(2);
+  trainX[i] = x + makeNoise(10, 5) * (Math.random() < 0.5 ? -1 : 1);;
+  trainY[i] = y + makeNoise(12, 5) * (Math.random() < 0.5 ? -1 : 1);;
+}
+
+/* generate linear algebra equation
+var count =20, t=0, u=0, v=-5, w=100, maxRange = 10;
+for (var j = 0; j < count; j++) {
+	x = Math.random() * maxRange * (Math.random() < 0.5 ? -1 : 1);
+	trainX[j] = x;
+	trainY[j] = v * x + w + makeNoise(5, 1);
+	trainY[j] = (t * x*x*x + u * x*x + v * x + w + makeNoise(x*x, 3)).toFixed(2);
+}
+*/
+
+// convert vector to array
+var tempdata = [];
+var data = [], i = -1;
+while ( trainX[++i] ) { 
+	data.push( [ trainX[i], trainY[i] ] );
+}
+
+theYMax = Math.max(...trainY);
+theYMin = Math.min(...trainY);
+theXMax = Math.max(...trainX);
+theXMin = Math.min(...trainX);
+color = 'red';
+themsg = "theYMin &emsp;" + theYMin 
+	+ "&emsp; theYMax &emsp;" + theYMax 
+	+ "&emsp; theXMin &emsp;" + theXMin 
+	+ "&emsp; theXMax &emsp;" + theXMax +  "<br>";
+//	+"&emsp;" + trainX + "<br>";
+$("#msg").prepend(themsg);
+
+// draw the graph
+data.forEach(function (v, k, arr){arr[k].push(color);})
+	new RGraph.Scatter({
+		id: 'cvs',
+		data: data,
+		options: {
+			backgroundColor:  ['#000802'],
+			line: false, lineColors: ['brown'],
+			ymax: theYMax, ymin: theYMin, xmax: theXMax, xmin: theXMin,
+			labels: [0],
+			ylabels: true,
+			axisColor: '#a92',
+			textColor: 'grey',
+			noyaxis: false, backgroundGridBorder: false, backgroundGridVlines: false,
+			backgroundGridHlines: true,
+			tickmarks: 'cross', ticksize: 4
+		}
+	}).draw();
+
+function drawStLine() {
+    var stLine = new RGraph.Line({
+		id: 'cvs',
+		data: tempdata,
+		options: {
+			spline: false, hmargin: 0,
+//			ylabels: true,
+			numticks: null,
+//			numlabels: 15,
+			noyaxis: false,
+			linewidth: 1, colors: ['blue'],
+			tickmarks: 'triangle', ticksize: 3, textSize: 10,
+			ymax: theYMax, ymin: theYMin, xmax: theXMax,
+			backgroundGrid: true, backgroundGridColor: '#242',
+			backgroundGridVlines: false, backgroundGridHlines: true, backgroundGridBorder: true,
+			axisColor: '#392', textColor: 'grey',
+		}
+	}).draw()
+};
+
+function dBtw2Pts(x1, y1, x2, y2) {
+	//  Pythagoras Theorem
+	var x = (x2-x1);
+	var y = (y2-y1);
+	return Math.sqrt(x*x + y*y);
+}
+
+function polar2Cart(R, theta) {
+	x = R * Math.cos(theta);
+	y = R * Math.sin(theta);
+	return [x,y]
+}
+
+function makeNoise(num, pct) {
+//	return Math.floor(Math.random() * num * pct /100) + Math.random()* maxRange *1.5;
+	return Math.floor(Math.random() * num * pct /100);
+}
+
+/* this is the clumsy way
+const a = tf.variable(tf.scalar(Math.random()));
+const b = tf.variable(tf.scalar(Math.random()));
+const c = tf.variable(tf.scalar(Math.random()));
+const d = tf.variable(tf.scalar(Math.random()));
+*/
+
+// Fit a quadratic function by learning the coefficients a, b, c.
+const a = tf.scalar(Math.random()).variable();
+const b = tf.scalar(Math.random()).variable();
+const c = tf.scalar(Math.random()).variable();
+
+// a set of data
+// const xs = tf.tensor1d([0, 1, 2, 3]);
+// const ys = tf.tensor1d([1.1, 5.9, 16.8, 33.9]);
+
+const xs = tf.tensor1d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60]);
+const ys = tf.tensor1d([31012.922, 31188.932, 31332.42, 31521.129, 31435.262, 31134.029, 31242.861, 31023.73, 30777.959, 30519.289, 30012.039, 29944.301, 29882.27, 29436.838, 29403.359, 29034.23, 28988.828, 28567.289, 28962.291, 28616.998, 28642.34, 28320.898, 28554.211, 28821.539, 28981.93, 28365.721, 28614.531, 28715.359, 28699.209, 28460.871, 28386.381, 28329.98, 28294.738, 28391.58, 28718, 28964.791, 29083.398, 28816.691, 28839.238, 28682.311, 28772.801, 28218.279, 27786.15, 28074.531, 28266.682, 28473.479, 28728.17, 28665.9, 28085.172, 27946.551, 27727.27, 27405.252, 27450.842, 27609.799, 27771.299, 27954.521, 28051.65, 27830.908, 28289.059, 28579.641]);
+
+/* y = a * x^2 + b * x + c.
+const f = x => a.mul(x.square()).add(b.mul(x)).add(c);
+*/
+const f = x => a.mul(x).add(b);
+const theloss = (pred, label) => pred.sub(label).square().mean();
+
+const learningRate = 0.0008;
+const optimizer = tf.train.sgd(learningRate);
+
+// Train the model.
+for (let i = 0; i < 1000; i++) {
+   optimizer.minimize(() => theloss(f(xs), ys));
+}
+
+// Make predictions.
+console.log(
+     `a: ${a.dataSync()}, b: ${b.dataSync()}, c: ${c.dataSync()}`);
+const preds = f(xs).dataSync();
+preds.forEach((pred, i) => {
+   console.log(`x: ${i}, pred: ${pred}`);
+});
+
+
+// clumsy method
+function predict(x) {
+//	return tf.tidy(() => {return a.mul(x.pow(tf.scalar(3))).add(b.mul(x.square())).add(c.mul(x)).add(d);});
+	return tf.tidy(() => {return c.mul(x).add(d);});
+}
+
+function loss(predictions, labels) {
+	theloss = predictions.sub(labels).square().mean();
+	console.log("the error " + theloss.dataSync());
+	return theloss;
+}
+
+function train(xs, ys, numIterations) {
+	xs = tf.tensor1d(xs);
+	ys = tf.tensor1d(ys);
+
+	const learningRate = maxRange * 0.00002;
+	const optimizer = tf.train.sgd(learningRate);
+	let lossValue = 0
+
+	for (let iter = 0; iter < numIterations; iter++) {
+		optimizer.minimize(() => {
+			const predsYs = predict(xs);
+			tempdata = predsYs.dataSync()
+			drawStLine();
+			return loss(predsYs, ys);
+		});
+//	console.log("a " + a.dataSync() + "\nb "+ b.dataSync() + "\nc " + c.dataSync() + "\nd " + d.dataSync());
+	console.log(c.dataSync() + "\nd " + d.dataSync());
+	}
+}
+
+//	train(trainX, trainY, 90)
+//	drawStLine();
+
+</script>
+</body>
+</html>

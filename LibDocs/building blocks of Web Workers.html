@@ -1,0 +1,782 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="..\maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, .apply, div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{font-size: large;width:80%;margin-left: 10%}
+h1, h2 {color: gold;}
+</style>
+</head><body>
+<center><h1>building blocks of Web Workers + 5 cases when you should use them
+</h1>
+
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+
+<p>
+This is post # 7 of the series dedicated to exploring JavaScript and its building components. In the process of identifying and describing the core elements, we also share some rules of thumb we use when building 
+<a href="https://www.sessionstack.com/?utm_source=medium&amp;utm_medium=source&amp;utm_content=javascript-series-web-workers-intro" data-href="https://www.sessionstack.com/?utm_source=medium&amp;utm_medium=source&amp;utm_content=javascript-series-web-workers-intro" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
+SessionStack</a>
+, a lightweight JavaScript application that has to be robust and highly-performant to help users see and reproduce their web app defects real-time.
+</p>
+
+<p>
+If you missed the previous chapters, you can find them here:
+</p>
+
+<ul class="postList">
+
+<li>
+A
+<a href="https://blog.sessionstack.com/how-does-javascript-actually-work-part-1-b0bacc073cf?source=collection_home---2------1----------------" data-href="https://blog.sessionstack.com/how-does-javascript-actually-work-part-1-b0bacc073cf?source=collection_home---2------1----------------" class="markup--anchor markup--li-anchor" target="_blank">
+n overview of the engine, the runtime, and the call stack</a>
+</li>
+
+<li>
+<a href="https://blog.sessionstack.com/how-javascript-works-inside-the-v8-engine-5-tips-on-how-to-write-optimized-code-ac089e62b12e?source=collection_home---2------2----------------" data-href="https://blog.sessionstack.com/how-javascript-works-inside-the-v8-engine-5-tips-on-how-to-write-optimized-code-ac089e62b12e?source=collection_home---2------2----------------" class="markup--anchor markup--li-anchor" target="_blank">
+Inside Google’s V8 engine + 5 tips on how to write optimized code</a>
+</li>
+
+<li>
+<a href="https://blog.sessionstack.com/how-javascript-works-memory-management-how-to-handle-4-common-memory-leaks-3f28b94cfbec?source=collection_home---2------0----------------" data-href="https://blog.sessionstack.com/how-javascript-works-memory-management-how-to-handle-4-common-memory-leaks-3f28b94cfbec?source=collection_home---2------0----------------" class="markup--anchor markup--li-anchor" target="_blank">
+Memory management + how to handle 4 common memory leaks</a>
+</li>
+
+<li>
+<a href="https://blog.sessionstack.com/how-javascript-works-event-loop-and-the-rise-of-async-programming-5-ways-to-better-coding-with-2f077c4438b5" data-href="https://blog.sessionstack.com/how-javascript-works-event-loop-and-the-rise-of-async-programming-5-ways-to-better-coding-with-2f077c4438b5" class="markup--anchor markup--li-anchor" target="_blank">
+The event loop and the rise of Async programming + 5 ways to better coding with async/await</a>
+</li>
+
+<li>
+<a href="https://blog.sessionstack.com/how-javascript-works-deep-dive-into-websockets-and-http-2-with-sse-how-to-pick-the-right-path-584e6b8e3bf7?source=collection_home---4------0----------------" data-href="https://blog.sessionstack.com/how-javascript-works-deep-dive-into-websockets-and-http-2-with-sse-how-to-pick-the-right-path-584e6b8e3bf7?source=collection_home---4------0----------------" class="markup--anchor markup--li-anchor" target="_blank">
+Deep dive into WebSockets and HTTP/2 with SSE + how to pick the right path</a>
+</li>
+
+<li>
+<a href="https://blog.sessionstack.com/how-javascript-works-a-comparison-with-webassembly-why-in-certain-cases-its-better-to-use-it-d80945172d79" data-href="https://blog.sessionstack.com/how-javascript-works-a-comparison-with-webassembly-why-in-certain-cases-its-better-to-use-it-d80945172d79" class="markup--anchor markup--li-anchor" target="_blank">
+How JavaScript works: A comparison with WebAssembly + why in certain cases it’s better to use it over JavaScript</a>
+</li>
+
+</ul>
+
+<p>
+This time we’ll be taking apart Web Workers: we’ll offer an overview, discuss the different types of workers, how their building components come to play together, and what advantages and limitations they offer in different scenarios. Finally, we’ll provide 5 use cases in which Web Workers will be the right choice.
+</p>
+
+<p>
+You should already be familiar with the fact that JavaScript runs on a single thread as we have 
+<a href="https://blog.sessionstack.com/how-does-javascript-actually-work-part-1-b0bacc073cf" data-href="https://blog.sessionstack.com/how-does-javascript-actually-work-part-1-b0bacc073cf" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
+discussed it previously</a>
+ in great detail. JavaScript, however, gives developers the opportunity to write asynchronous code too.
+</p>
+
+<h4>
+Limitations of Async programming
+</h4>
+
+<p>
+We have discussed 
+<a href="https://blog.sessionstack.com/how-javascript-works-event-loop-and-the-rise-of-async-programming-5-ways-to-better-coding-with-2f077c4438b5?source=---------2----------------" data-href="https://blog.sessionstack.com/how-javascript-works-event-loop-and-the-rise-of-async-programming-5-ways-to-better-coding-with-2f077c4438b5?source=---------2----------------" class="markup--anchor markup--p-anchor" target="_blank">
+async programming</a>
+ previously and when it should be used.
+</p>
+
+<p>
+Async programming enables your app UI to be responsive, by “scheduling” parts of the code to be executed a bit later in the event loop, thus allowing the UI rendering to be performed first.
+</p>
+
+<p>
+A good use case for async programming is making AJAX requests. Since requests can take a lot of time, they can be made asynchronously, and while the client is waiting for a response, other code can be executed.
+</p>
+
+<p>
+This, however, poses a problem — requests are handled by the WEB API of the browser, but how can other code be made asynchronous? For example, what if the code that is inside the success callback is very CPU intensive:
+</p>
+
+
+<p>
+If the 
+<code class="markup--code markup--p-code">
+performCPUIntensiveCalculation
+</code>
+ is not an HTTP request but a blocking code (e.g. a huge 
+<code class="markup--code markup--p-code">
+for
+</code>
+ loop), there is no way to free up the event loop and unblock the UI of the browser — it will freeze and be unresponsive to the user.
+</p>
+
+<p>
+This means that asynchronous functions solve only a small part of the single-thread limitations of the JavaScript language.
+</p>
+
+<p>
+In some cases, you can achieve good results in unblocking the UI from longer-running computations by using 
+<code class="markup--code markup--p-code">
+setTimeout.
+</code>
+ For example, by batching a complex computation in separate 
+<code class="markup--code markup--p-code">
+setTimeout
+</code>
+ calls, you can put them on separate “locations” in the event loop and this way buy time for the UI rendering/responsiveness to be performed.
+</p>
+
+<p>
+Let’s take a look at a simple function that calculates the average of a numeric array:
+</p>
+
+
+<p>
+This is how you can rewrite the code above and “emulate” asynchronicity:
+</p>
+
+
+<p>
+This will make use of the 
+<code class="markup--code markup--p-code">
+setTimeout
+</code>
+ function which will add each step of the calculation further down the event loop. Between each calculation, there will be enough time for other calculations to take place, necessary to unfreeze the browser.
+</p>
+
+<h4>
+Web Workers will save the day
+</h4>
+
+<p>
+
+<a href="https://www.w3schools.com/html/html5_intro.asp" data-href="https://www.w3schools.com/html/html5_intro.asp" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
+HTML5</a>
+ has brought us lots of great things out of the box, including:
+</p>
+
+<ul class="postList">
+
+<li>
+SSE (which we have described and compared to WebSockets in a 
+<a href="https://blog.sessionstack.com/how-javascript-works-deep-dive-into-websockets-and-http-2-with-sse-how-to-pick-the-right-path-584e6b8e3bf7" data-href="https://blog.sessionstack.com/how-javascript-works-deep-dive-into-websockets-and-http-2-with-sse-how-to-pick-the-right-path-584e6b8e3bf7" class="markup--anchor markup--li-anchor" target="_blank">
+previous post</a>
+)</li>
+
+<li>
+Geolocation</li>
+
+<li>
+Application cache</li>
+
+<li>
+Local Storage</li>
+
+<li>
+Drag and Drop</li>
+
+<li>
+<strong class="markup--strong markup--li-strong">
+Web Workers
+</strong>
+</li>
+
+</ul>
+
+<p>
+Web Workers are in-browser 
+<strong class="markup--strong markup--p-strong">
+threads 
+</strong>
+that can be used to execute JavaScript code without blocking the event loop.
+</p>
+
+<p>
+This is truly amazing. The whole paradigm of JavaScript is based on the idea of single-threaded environment but here come Web Workers which remove (partially) this limitation.
+</p>
+
+<p>
+Web Workers allow developers to put long-running and computationally intensive tasks on the background without blocking the UI, making your app even more responsive. What’s more, no tricks with the 
+<code class="markup--code markup--p-code">
+setTimeout
+</code>
+ are needed in order to hack your way around the event loop.
+</p>
+
+<p>
+Here is a simple 
+<a href="http://afshinm.github.io/50k/" data-href="http://afshinm.github.io/50k/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
+demo</a>
+ that shows the difference between sorting an array with and without Web Workers.
+</p>
+
+<h4>
+
+<strong class="markup--strong markup--h4-strong">
+Overview of Web Workers
+</strong>
+
+</h4>
+
+<p>
+Web Workers allow you to do things like firing up long-running scripts to handle computationally intensive tasks, but without blocking the UI. In fact, it all takes place in parallel . Web Workers are truly multi-threaded.
+</p>
+
+<p>
+You might say — “Wasn’t JavaScript a single-threaded language?”.
+</p>
+
+<p>
+This should be your ‘aha!’ moment when you realize that JavaScript is a language, which doesn’t define a threading model. Web Workers are not part of JavaScript, they’re a browser feature which can be accessed through JavaScript. Most browsers have historically been single-threaded (this has, of course, changed), and most JavaScript implementations happen in the browser. Web Workers are not implemented in Node.JS — it has a concept of “cluster” or “child_process” which is a bit different.
+</p>
+
+<p>
+It’s worth noting that the 
+<a href="http://www.whatwg.org/specs/web-workers/current-work/" data-href="http://www.whatwg.org/specs/web-workers/current-work/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
+specification</a>
+ mentions three types of Web Workers:
+</p>
+
+<ul class="postList">
+
+<li>
+<a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers" data-href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers" class="markup--anchor markup--li-anchor" rel="noopener" target="_blank">
+Dedicated Workers</a>
+</li>
+
+<li>
+<a href="https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker" data-href="https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker" class="markup--anchor markup--li-anchor" rel="noopener" target="_blank">
+Shared Workers</a>
+</li>
+
+<li>
+<a href="https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorker_API" data-href="https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorker_API" class="markup--anchor markup--li-anchor" rel="noopener" target="_blank">
+Service workers</a>
+</li>
+
+</ul>
+
+<h4>
+Dedicated Workers
+</h4>
+
+<p>
+Dedicated Web Workers are instantiated by the main process and can only communicate with it.
+</p>
+
+<img src="https://cdn-images-1.medium.com/max/1600/1*ya4zMDfbNUflXhzKz9EBIw.png">
+
+<figcaption class="imageCaption">
+Dedicated Workers browser support
+</figcaption>
+
+</figure>
+
+<h4>
+Shared Workers
+</h4>
+
+<p>
+Shared workers can be reached by all processes running on the same origin (different browser tabs, iframes or other shared workers).
+</p>
+
+<img src="https://cdn-images-1.medium.com/max/1600/1*lzOIevUBVy5eWyf2kHf--w.png">
+
+<figcaption class="imageCaption">
+Shared Workers browser support
+</figcaption>
+
+</figure>
+
+<h4>
+Service Workers
+</h4>
+
+<p>
+A Service Worker is an event-driven worker registered against an origin and a path. It can control the web page/site it is associated with, intercepting and modifying the navigation and resource requests, and caching resources in a very granular fashion to give you great control over how your app behaves in certain situations (e.g. when the network is not available.)
+</p>
+
+<img src="https://cdn-images-1.medium.com/max/1600/1*6o2TRDmrJlS97vh1wEjLYw.png">
+
+<figcaption class="imageCaption">
+Service Workers browser support
+</figcaption>
+
+</figure>
+
+<p>
+In this post, we’ll focus on Dedicated Workers and refer to them as “Web Workers” or “Workers”.
+</p>
+
+<h4>
+How Web Workers work
+</h4>
+
+<p>
+Web Workers are implemented as 
+<code class="markup--code markup--p-code">
+.js
+</code>
+ files which are included via asynchronous HTTP requests in your page. These requests are completely hidden from you by the 
+<a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API" data-href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
+Web Worker API</a>
+.
+</p>
+
+<p>
+Workers utilize thread-like message passing to achieve parallelism. They’re perfect for keeping your UI up-to-date, performant, and responsive for users.
+</p>
+
+<p>
+Web Workers run in an isolated thread in the browser. As a result, the code that they execute needs to be contained in a 
+<strong class="markup--strong markup--p-strong">
+separate file
+</strong>
+. That’s very important to remember.
+</p>
+
+<p>
+Let’s see how a basic worker is created:
+</p>
+
+<p>
+If the “task.js” file exists and is accessible, the browser will spawn a new thread which downloads the file asynchronously. Right after the download is completed, it will be executed and the worker will begin.
+<br>
+In case the provided path to the file returns a 404, the worker will fail silently.
+</p>
+
+<p>
+In order to start the created worker, you need to invoke the 
+<code class="markup--code markup--p-code">
+postMessage
+</code>
+ method:
+</p>
+
+<h4>
+Web Worker communication
+</h4>
+
+<p>
+In order to communicate between a Web Worker and the page that created it, you need to use the 
+<code class="markup--code markup--p-code">
+postMessage
+</code>
+ method or a 
+<a href="https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel" data-href="https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
+Broadcast Channel</a>
+.
+</p>
+
+<h4>
+The postMessage method
+</h4>
+
+<p>
+Newer browsers support a 
+<code class="markup--code markup--p-code">
+JSON
+</code>
+ object as a first parameter to the method while older browsers support just a 
+<code class="markup--code markup--p-code">
+string
+</code>
+.
+</p>
+
+<p>
+Let’s see an example of how the page that creates a worker can communicate back and forth with it, by passing a JSON object as a more “complicated” example. Passing a string is quite the same.
+</p>
+
+<p>
+Let’s take a look at the following HTML page (or part of it to be more precise):
+</p>
+
+<p>
+And this is how our worker script will look like:
+</p>
+
+<p>
+When the button is clicked, 
+<code class="markup--code markup--p-code">
+postMessage
+</code>
+ will be called from the main page. The 
+<code class="markup--code markup--p-code">
+worker.postMessage
+</code>
+ line passes the 
+<code class="markup--code markup--p-code">
+JSON
+</code>
+ object to the worker, adding 
+<code class="markup--code markup--p-code">
+cmd
+</code>
+ and 
+<code class="markup--code markup--p-code">
+data
+</code>
+ keys with their respective values. The worker will handle that message through the defined 
+<code class="markup--code markup--p-code">
+message
+</code>
+ handler.
+</p>
+
+<p>
+When the message arrives, the actual computing is being performed in the worker, without blocking the event loop. The worker is checking the passed event 
+<code class="markup--code markup--p-code">
+e
+</code>
+ and executes just like a standard JavaScript function. When it’s done, the result is passed back to the main page.
+</p>
+
+<p>
+In the context of a worker, both the 
+<code class="markup--code markup--p-code">
+self
+</code>
+ and 
+<code class="markup--code markup--p-code">
+this
+</code>
+ reference the global scope for the worker.
+</p>
+
+<blockquote>
+There are two ways to stop a worker: by calling 
+<code class="markup--code markup--blockquote-code">
+worker.terminate()
+</code>
+ from the main page or by calling 
+<code class="markup--code markup--blockquote-code">
+self.close()
+</code>
+ inside of the worker itself.
+</blockquote>
+
+<h4>
+Broadcast Channel
+</h4>
+
+<p>
+The 
+<a href="https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel" data-href="https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
+Broadcast Channel</a>
+ is a more general API for communication. It lets us broadcast messages to all contexts sharing the same origin. All browser tabs, iframes, or workers served from the same origin can emit and receive messages:
+</p>
+
+
+<p>
+And visually, you can see what Broadcast Channels look like to make it more clear:
+</p>
+
+<img src="https://cdn-images-1.medium.com/max/1600/1*NVT6WbNrH_mQL64--b-l1Q.png">
+
+<p>
+Broadcast Channel has more limited browser support though:
+</p>
+
+<img src="https://cdn-images-1.medium.com/max/1600/1*81mCsOzyJj-HfQ1lP_033w.png">
+<h4>
+The size of messages
+</h4>
+
+<p>
+There are 2 ways to send messages to Web Workers:
+</p>
+
+<ul class="postList">
+
+<li>
+<strong class="markup--strong markup--li-strong">
+Copying the message:
+</strong>
+ the message is serialized, copied, sent over, and then de-serialized at the other end. The page and worker do not share the same instance, so the end result is that a duplicate is created on each pass. Most browsers implement this feature by automatically JSON encoding/decoding the value at either end. As expected, these data operations add significant overhead to the message transmission. The bigger the message, the longer it takes to be sent.</li>
+
+<li>
+<strong class="markup--strong markup--li-strong">
+Transferring the message: 
+</strong>
+this means that the original sender can no longer use it once sent. Transferring data is almost instantaneous. The limitation is that only 
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer" data-href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer" class="markup--anchor markup--li-anchor" rel="noopener" target="_blank">
+ArrayBuffer</a>
+ is transferable.</li>
+
+</ul>
+
+<h4>
+Features available to Web Workers
+</h4>
+
+<p>
+Web Workers have access 
+<strong class="markup--strong markup--p-strong">
+only to a subset 
+</strong>
+of JavaScript features due to their multi-threaded nature. Here’s the list of features:
+</p>
+
+<ul class="postList">
+
+<li>
+The 
+<code class="markup--code markup--li-code">
+navigator
+</code>
+ object</li>
+
+<li>
+The 
+<code class="markup--code markup--li-code">
+location
+</code>
+ object (read-only)</li>
+
+<li>
+<code class="markup--code markup--li-code">
+XMLHttpRequest
+</code>
+</li>
+
+<li>
+<code class="markup--code markup--li-code">
+setTimeout()/clearTimeout()
+</code>
+ and 
+<code class="markup--code markup--li-code">
+setInterval()/clearInterval()
+</code>
+</li>
+
+<li>
+The 
+<a href="https://www.html5rocks.com/tutorials/appcache/beginner/" data-href="https://www.html5rocks.com/tutorials/appcache/beginner/" class="markup--anchor markup--li-anchor" rel="noopener" target="_blank">
+Application Cache</a>
+</li>
+
+<li>
+Importing external scripts using 
+<code class="markup--code markup--li-code">
+importScripts()
+</code>
+</li>
+
+<li>
+<a href="https://www.html5rocks.com/en/tutorials/workers/basics/#toc-enviornment-subworkers" data-href="https://www.html5rocks.com/en/tutorials/workers/basics/#toc-enviornment-subworkers" class="markup--anchor markup--li-anchor" rel="noopener" target="_blank">
+Creating other web workers</a>
+</li>
+
+</ul>
+
+<h4>
+Web Worker limitations
+</h4>
+
+<p>
+Sadly, Web Workers don’t have access to some very crucial JavaScript features:
+</p>
+
+<ul class="postList">
+
+<li>
+The DOM (it’s not thread-safe)</li>
+
+<li>
+The 
+<code class="markup--code markup--li-code">
+window
+</code>
+ object</li>
+
+<li>
+The 
+<code class="markup--code markup--li-code">
+document
+</code>
+ object</li>
+
+<li>
+The 
+<code class="markup--code markup--li-code">
+parent
+</code>
+ object</li>
+
+</ul>
+
+<p>
+This means that a Web Worker can’t manipulate the DOM (and thus the UI). It can be tricky at times, but once you learn how to properly use Web Workers, you’ll start using them as separate “computing machines” while all the UI changes will take place in your page code. The Workers will do all the heavy lifting for you and once the jobs are done, you’ll pass the results to the page which makes the necessary changes to the UI.
+</p>
+
+<h4>
+Handling errors
+</h4>
+
+<p>
+As with any JavaScript code, you’ll want to handle any errors that are thrown in your Web Workers. If an error occurs while a worker is executing, the 
+<code class="markup--code markup--p-code">
+ErrorEvent
+</code>
+ is fired. The interface contains three useful properties for figuring out what went wrong:
+</p>
+
+<ul class="postList">
+
+<li>
+<strong class="markup--strong markup--li-strong">
+filename
+</strong>
+ - the name of the worker script that caused the error</li>
+
+<li>
+<strong class="markup--strong markup--li-strong">
+lineno
+</strong>
+ - the line number where the error occurred</li>
+
+<li>
+<strong class="markup--strong markup--li-strong">
+message
+</strong>
+ - a description of the error</li>
+
+</ul>
+
+<p>
+This is an example:
+</p>
+
+<p>
+Here, you can see that we created a worker and started listening for the 
+<code class="markup--code markup--p-code">
+error
+</code>
+ event.
+</p>
+
+<p>
+Inside the worker (in 
+<code class="markup--code markup--p-code">
+workerWithError.js
+</code>
+) we create an intentional exception by multiplying 
+<code class="markup--code markup--p-code">
+x
+</code>
+ by 2 while 
+<code class="markup--code markup--p-code">
+x
+</code>
+ is not defined in that scope. The exception is propagated to the initial script and 
+<code class="markup--code markup--p-code">
+onError
+</code>
+ is being invoked with information about the error.
+</p>
+
+<h4>
+Good use cases for Web Workers
+</h4>
+
+<p>
+So far we’ve listed the strengths and limitations of Web Workers. Let’s see now what are the strongest use-cases for them:
+</p>
+
+<ul class="postList">
+
+<li>
+<strong class="markup--strong markup--li-strong">
+Ray tracing
+</strong>
+: ray tracing is a 
+<a href="https://en.wikipedia.org/wiki/Rendering_%28computer_graphics%29" data-href="https://en.wikipedia.org/wiki/Rendering_(computer_graphics)" class="markup--anchor markup--li-anchor" title="Rendering (computer graphics)" rel="noopener" target="_blank">
+rendering</a>
+ technique for generating an image by tracing the path of 
+<a href="https://en.wikipedia.org/wiki/Light" data-href="https://en.wikipedia.org/wiki/Light" class="markup--anchor markup--li-anchor" title="Light" rel="noopener" target="_blank">
+light</a>
+ as pixels. Ray tracing uses very CPU-intensive mathematical computations in order to simulate the path of light. The idea is to simulate some effects like reflection, refraction, materials, etc. All this computational logic can be added to a Web Worker to avoid blocking the UI thread. Even better — you can easily split the image rendering between several workers (and respectively between several CPUs). Here is a simple demo of ray tracing using Web Workers — 
+<a href="https://nerget.com/rayjs-mt/rayjs.html" data-href="https://nerget.com/rayjs-mt/rayjs.html" class="markup--anchor markup--li-anchor" rel="nofollow noopener" target="_blank">
+https://nerget.com/rayjs-mt/rayjs.html</a>
+.</li>
+
+<li>
+<strong class="markup--strong markup--li-strong">
+Encryption: 
+</strong>
+end-to-end encryption is getting more and more popular due to the increasing rigorousness of regulations on personal and sensitive data. Encryption can be a something quite time-consuming, especially if there’s a lot of data that has to be frequently encrypted (before sending it to the server, for example). This is a very good scenario in which a Web Worker can be used since it doesn’t require any access to the DOM or anything fancy — it’s pure algorithms doing their job. Once in the worker, it is seamless to the end user and doesn’t impact thеir experience.</li>
+
+<li>
+<strong class="markup--strong markup--li-strong">
+Prefetching data: 
+</strong>
+in order to optimize your website or web application and improve data loading time, you can leverage Web Workers to load and store some data in advance so that you can use it later when needed. Web Workers are amazing in this case because they won’t impact your app’s UI, unlike when this is done without workers.</li>
+
+<li>
+<strong class="markup--strong markup--li-strong">
+Progressive Web Apps: 
+</strong>
+they have to load quickly even when the network connection is shaky. This means that data has to be stored locally in the browser. This is where 
+<a href="https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API" data-href="https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API" class="markup--anchor markup--li-anchor" rel="noopener" target="_blank">
+IndexDB</a>
+ or similar APIs comes into play. Basically, a client-side storage is needed. In order to be used without blocking the UI thread, the work has to be done in Web Workers. Well, in the case of IndexDB, there is an asynchronous API that allows you to do this even without workers, but there was a synchronous API before (it might be introduced again) which should only be used inside workers.</li>
+
+<li>
+<strong class="markup--strong markup--li-strong">
+Spell checking: 
+</strong>
+a basic spell checker works in the following way — the program reads a dictionary file with a list of correctly spelled words. The dictionary is being parsed as a search tree to make the actual text search-efficient. When a word is provided to the checker, the program checks whether it exists in the pre-built search tree. If the word is not found in the tree, the user can be provided with alternate spellings, by substituting alternate characters and test if it’s a valid word — if it’s the word that the user wanted to write. All this processing can easily be offloaded to a Web Worker so that the user can just type words and sentences without any blocking of the UI, while the worker performs all the searching and providing of suggestions.</li>
+
+</ul>
+
+<p>
+Performance and reliability are very critical for us at 
+<a href="https://www.sessionstack.com/?utm_source=medium&amp;utm_medium=source&amp;utm_content=javascript-series-web-workers-outro" data-href="https://www.sessionstack.com/?utm_source=medium&amp;utm_medium=source&amp;utm_content=javascript-series-web-workers-outro" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
+SessionStack</a>
+. The reason why they’re so important is that once SessionStack is integrated into your web app, it starts recording everything from DOM changes and user interaction to network requests, unhandled exceptions and debug messages. All this data is transmitted to our servers in 
+<strong class="markup--strong markup--p-strong">
+real-time
+</strong>
+ which allows you to replay issues from your web apps as videos and see everything that happened to your users. This all takes place with minimum latency and no performance overhead for your app.
+</p>
+
+<p>
+This is why we’re offloading (wherever it makes sense) logic from both our monitoring library and our player to Web Workers that are handling very CPU-intensive tasks like hashing to validate data integrity, rendering, etc.
+</p>
+
+<p>
+Web technologies constantly change and develop so We go the extra mile to ensure SessionStack is very lightweight and has zero performance impact on our users’ apps.
+</p>
+<br>
+<br>
+<br>
+<br>
+
+<script>
+  $(function() {
+    var toc = $('#toc');
+
+    function makeLi(text, href) {
+      return $('<a href="' + href + '" target="_self">' + text + '</a><br>');
+    }
+
+    $('h2,h3,h4').each(function(i) {
+      var chapter = $(this), chapterNumber = i + 1;
+      toc.append(
+        makeLi(chapter.text(), '#chapter-' + chapterNumber)
+      );
+      chapter.attr('id', 'chapter-' + chapterNumber);
+    });
+
+  });
+</script>
+</body>
+</html>
