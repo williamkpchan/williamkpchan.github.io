@@ -21,12 +21,12 @@ let stkChangeArr = [];
 let toFixedLen = 3;
 let theString ="";
 
-let theurlHead = 'http://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk'
-let theurlTail = ',day,,,320,qfq'
+let theurlHead = 'http://web.ifzq.gtimg.cn/appstock/app/day/query?code=hk'
+// let theurlTail = ',day,,,320,qfq'
 var theCode = "HSI"
 var theStartCode = "HSI"
 var thestkkey = "";
-//let rawJSON = {};
+let rawJSON1 = {};
 let thestkdata = [];
 let thedrawdata = [];
 let period = 150;
@@ -41,67 +41,58 @@ let intv2 = 10
 let intv3 = 20
 let intv4 = 40
 let intv5 = 80
+let intv6 = 160
+let intv7 = 320
 var stkPointer = 0
-
-function startToRoll(theCode) {
-	theStartCode = theCode;
+var showWidth = 300
+function startToRoll(aCode) {
+	theStartCode = aCode;
 	thestkdata = [];
 	thedrawdata = [];
-	dateLst = [];
-	openLst = [];
-	highLst = [];
-	lowLst = [];
 	closeLst = [];
-	var theurl = theurlHead + theStartCode + theurlTail
+	var theurl = theurlHead + theStartCode
 	RGraph.AJAX.getJSON(theurl, function (rawJSON){
-		var keys = Object.keys(rawJSON); // read the structure keys ["code", "msg", "data"]
+		keys = Object.keys(rawJSON); // read the structure keys ["code", "msg", "data"]
 		var insideDatakey = Object.keys(rawJSON)[2] //
 		// myobj[Object.keys(myobj)[0]] this is the extract method
 
 		var thedata = rawJSON[Object.keys(rawJSON)[2]]
 		thestkkey = Object.keys(thedata)[0] // this is the stk key name
-		var tempdata = thedata[Object.keys(thedata)[0]];
-		thestkdata = tempdata[Object.keys(tempdata)[0]]; // real data here, this is global data
+		var tempdata = thedata[Object.keys(thedata)[0]]; // {data: Array(5), qt: {…}, vcm: ""} five sets of data here
+		// old data at the back, new data at 0 location
+		allData = tempdata.data[4].data.concat(tempdata.data[3].data).concat(tempdata.data[2].data).concat(tempdata.data[1].data).concat(tempdata.data[0].data)
+		//(1599) ["0930 26834.15 375023", "0931 26858.43 469321"
+		allData = allData.slice(allData.length-intv6-showWidth);
+
+		allData.forEach(str => { closeLst.push(Number(str.split(' ')[1])); });
 
 		theNameObj = tempdata[Object.keys(tempdata)[1]];
 		theNameObjName  = theNameObj[Object.keys(theNameObj)[0]];
 		stkName = theNameObjName[1]
 
-		/* data is arranged in days array
-		tempdata[320][0]  // date
-		tempdata[320][1]  // open
-		tempdata[320][3]  // high
-		tempdata[320][4]  // low
-		tempdata[320][2]  // close */
+		thedrawdata =[closeLst];
+		// calculate different ma lines and stuff inside thedrawdata.
+		thedrawdata.push(makeMovAve(thedrawdata[0], intv1));
+		thedrawdata.push(makeMovAve(thedrawdata[0], intv2));
+		thedrawdata.push(makeMovAve(thedrawdata[0], intv3));
+		thedrawdata.push(makeMovAve(thedrawdata[0], intv4));
+		thedrawdata.push(makeMovAve(thedrawdata[0], intv5));
+		thedrawdata.push(makeMovAve(thedrawdata[0], intv6));
+		// chop and keep the display data only
+		thedrawdata[0] = thedrawdata[0].slice(intv6)
+		thedrawdata[1] = thedrawdata[1].slice(intv6)
+		thedrawdata[2] = thedrawdata[2].slice(intv6)
+		thedrawdata[3] = thedrawdata[3].slice(intv6)
+		thedrawdata[4] = thedrawdata[4].slice(intv6)
+		thedrawdata[5] = thedrawdata[5].slice(intv6)
+		thedrawdata[6] = thedrawdata[6].slice(intv6)
+		theMax = Math.max(Math.max(...thedrawdata[0]),Math.max(...thedrawdata[1]),Math.max(...thedrawdata[2]),Math.max(...thedrawdata[3]),Math.max(...thedrawdata[4]),Math.max(...thedrawdata[5]),Math.max(...thedrawdata[6]));
+		theMin = Math.min(Math.min(...thedrawdata[0]),Math.min(...thedrawdata[1]),Math.min(...thedrawdata[2]),Math.min(...thedrawdata[3]),Math.min(...thedrawdata[4]),Math.min(...thedrawdata[5]),Math.min(...thedrawdata[6]));
 
-		starti = thestkdata.length - period;
-		for (let i = starti; i < thestkdata.length; i++) {
-			dateLst.push(thestkdata[i][0]);
-			openLst.push(Number(thestkdata[i][1]));
-			highLst.push(Number(thestkdata[i][3]));
-			lowLst.push(Number(thestkdata[i][4]));
-			closeLst.push(Number(thestkdata[i][2]));
-		}
-
-		thedrawdata =[highLst, lowLst, closeLst];
-		thedrawdata.push(makeMovAve(thedrawdata[2], intv1));
-		thedrawdata.push(makeMovAve(thedrawdata[2], intv2));
-		thedrawdata.push(makeMovAve(thedrawdata[2], intv3));
-		thedrawdata.push(makeMovAve(thedrawdata[2], intv4));
-		thedrawdata.push(makeMovAve(thedrawdata[2], intv5));
-		thedrawdata[0] = thedrawdata[0].slice(intv5)
-		thedrawdata[1] = thedrawdata[1].slice(intv5)
-		thedrawdata[2] = thedrawdata[2].slice(intv5)
-		thedrawdata[3] = thedrawdata[3].slice(intv5)
-		thedrawdata[4] = thedrawdata[4].slice(intv5)
-		thedrawdata[5] = thedrawdata[5].slice(intv5)
-		thedrawdata[6] = thedrawdata[6].slice(intv5)
-		thedrawdata[7] = thedrawdata[7].slice(intv5)
-		theMax = Math.max(Math.max(...thedrawdata[0]),Math.max(...thedrawdata[1]),Math.max(...thedrawdata[2]),Math.max(...thedrawdata[3]),Math.max(...thedrawdata[4]),Math.max(...thedrawdata[5]),Math.max(...thedrawdata[6]),Math.max(...thedrawdata[7]));
-		theMin = Math.min(Math.min(...thedrawdata[0]),Math.min(...thedrawdata[1]),Math.min(...thedrawdata[2]),Math.min(...thedrawdata[3]),Math.min(...thedrawdata[4]),Math.min(...thedrawdata[5]),Math.min(...thedrawdata[6]),Math.min(...thedrawdata[7]));
-
-		drawchart(thedrawdata, ['grey','green','yellow', 'cyan', 'blue', 'white', 'orange', 'brown', 'red']);
+		drawchart(thedrawdata, ['silver','green','yellow', 'cyan', 'blue', 'orange', 'red', "violet"]);
 		showStatus();
+		// detectX();
+		// detectTrend();
 	});
 }
 function makeMovAve(bigArray, intv) {
@@ -114,7 +105,10 @@ function calcAve(aveArray) {
 
 function calcMovAve(bigArray, intv) {
 	var ma = [];
-	for (var i =0 ; i < (bigArray.length-intv+1); i++) {ma[i] = calcWAve(bigArray.slice(i, i+intv));} // points to indicator
+	for (var i =0 ; i < (bigArray.length-intv+1); i++) {
+//		ma[i] = calcAve(bigArray.slice(i, i+intv));
+		ma[i] = calcWAve(bigArray.slice(i, i+intv));
+	}
 	return ma;
 }
 function calcWAve(aveArray) {
@@ -125,6 +119,69 @@ function calcWAve(aveArray) {
 	return (sum / ((1 + aveArray.length)*aveArray.length/2))
 }
 
+function detectX(){
+	curS = thedrawdata[0][thedrawdata[0].length-1] // current data
+	prevS = thedrawdata[0][thedrawdata[0].length-2]
+	curL = thedrawdata[1][thedrawdata[0].length-1] // the 5 day trend
+	prevL = thedrawdata[1][thedrawdata[0].length-2]
+	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("Up Cross ma5" ,"redword")}
+	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("Down Cross ma5", "greenword")}
+
+	curL = thedrawdata[2][thedrawdata[0].length-1] // the 5 day trend
+	prevL = thedrawdata[2][thedrawdata[0].length-2]
+	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("Up Cross ma10" ,"redword")}
+	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("Down Cross ma10", "greenword")}
+
+//	last3maVal
+//	last10maVal
+//	current3maVal
+//	current10maVal
+//	if((last3maVal < last10maVal) and (current3maVal > current10maVal)){markUpX()}
+//	if((last3maVal > last10maVal) and (current3maVal < current10maVal)){markDnX()}
+
+//	vol changes
+//	
+
+}
+//	alarm function:
+
+function detectTrend(){
+	curValue = thedrawdata[2][thedrawdata[0].length-1] // the 10 day trend
+	prevValue = thedrawdata[2][thedrawdata[0].length-2]
+	if (curValue > prevValue){reportIt("ma10 UpTrend" ,"redword")}
+	if (curValue < prevValue){reportIt("ma10 DownTrend", "greenword")}
+}
+
+function reportIt(alarmMsg, color){
+//	record
+//	set color, on msg div, with time and date, up cross (down cross) trigger value is: , present value
+	alarmMsg = '<span class="' + color + '">' + alarmMsg + ' </span>'
+	$("#msg").append(alarmMsg);
+	AlarmSound.play();
+	navigator.vibrate([500]);
+}
+
+//	comparison:
+//	up cross
+function checkUpX(prevL, prevS, curL, curS){
+	if ((prevL==prevS) || (curS == curL )){return "critical"}
+
+	if ((prevL>prevS) && (curS > curL )){return "UpY"
+	} else {return "UpN"}
+}
+//	down cross
+function checkDnX(prevL, prevS, curL, curS){
+	if ((prevL==prevS) || (curS == curL )){
+		return "critical"
+	}
+
+	if ((prevL<prevS) && (curS < curL )){
+		return "DnY"
+	} else {
+		return "DnN"
+	}
+}
+
 function chkKey() {
 	var testkey = getChar(event);
 	if(testkey == 'c'){askCode();}
@@ -132,6 +189,7 @@ function chkKey() {
 	if(testkey == 'f'){jpforward();}
 	if(testkey == 'b'){jpback();}
 	if(testkey == 'r'){jprandom();}
+	if(testkey == 'w'){askWidth();}
 }
 
 function getChar(event) {
@@ -181,8 +239,10 @@ function drawchart(thedrawdata, thecolors) {
 			titleSize: 16,
 			colors: thecolors,
 			backgroundGrid: true, axisColor: '#864', textColor: '#ccc',
-//			tickmarks: 'circle', 
-			tickmarksDotLinewidth: 0,ticksize: 1, linewidth: 1,
+//			tickmarks: '', 
+//			xaxis: false, xaxisTickmarks : false, xaxisTickmarksLength: 0,
+			tickmarksDotLinewidth: 0,ticksize: 1, 
+			linewidth: 1,
 			ymax: theMax, ymin: theMin,
 //			labels: dateLst,
 			spline: true, shadow: false,
@@ -198,8 +258,16 @@ function askCode() {
 		if (thecode != "HSI") { thecode = FormatNumberLength5(thecode);}
 		theCode = thecode
 		startToRoll(thecode);
-		}
+	}
 }
+function askWidth() {
+	var theWidth = prompt("Chart Width:", "");
+	if (theWidth != null && theWidth != "") {
+		showWidth = parseInt(theWidth);
+		startToRoll(theCode);
+	}
+}
+
 function FormatNumberLength5(num) {
     var r = "" + num;
     while (r.length < 5) {
@@ -261,13 +329,13 @@ function sCt(stkcode) {
 function showStatus() {
 	lastPtr = thedrawdata[0].length-1
 	theStr = 
-	"H " + thedrawdata[0][lastPtr] + "&emsp;" +
-	"L " + thedrawdata[1][lastPtr] + "&emsp;" +
-	"C " + thedrawdata[2][lastPtr] + "&emsp;" +
-	"ma1 " + thedrawdata[3][lastPtr].toFixed(toFixedLen) + "&emsp;" + 
-	"ma2 " + thedrawdata[4][lastPtr].toFixed(toFixedLen) + "&emsp;" + 
-	"ma3 " + thedrawdata[5][lastPtr].toFixed(toFixedLen) + "&emsp;" + 
-//	"ma4 " + thedrawdata[6][lastPtr].toFixed(toFixedLen) + 
+	"C " + thedrawdata[0][lastPtr] + "&emsp;" +
+	"ma1 " + thedrawdata[1][lastPtr].toFixed(toFixedLen) + "&emsp;" + 
+	"ma2 " + thedrawdata[2][lastPtr].toFixed(toFixedLen) + "&emsp;" + 
+	"ma3 " + thedrawdata[3][lastPtr].toFixed(toFixedLen) + "&emsp;" + 
+	"ma4 " + thedrawdata[4][lastPtr].toFixed(toFixedLen) + "&emsp;" + 
+	"ma5 " + thedrawdata[5][lastPtr].toFixed(toFixedLen) + "&emsp;" + 
+	"ma6 " + thedrawdata[6][lastPtr].toFixed(toFixedLen) + 
 	"<br>";
  
 	finalString = showTime() + "&emsp;" + theStr
@@ -279,7 +347,7 @@ function showStatus() {
 //	RGraph.reset(document.getElementById('cvs'));
 //	setTimeout(startToRoll(stkList[i]),25000);
 //}
-startToRoll("HSI")
+startToRoll(theCode)
 </script>
 </center>
 </body>

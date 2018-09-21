@@ -24,7 +24,7 @@ function chkKey() {
   if(testkey == 'j'){window.location = '#Javascript';}
   if(testkey == 'J'){window.location = '#_jiaoyu';}
   if(testkey == 'l'){window.location = '#dushu';}
-  if(testkey == 'm'){window.location = '#medic';}
+  if(testkey == 'm'){window.open("medical.html");}
   if(testkey == 'M'){window.open("https://www.google.com.hk/maps/");}
   if(testkey == 'n'){window.location = '#xinwen';}
   if(testkey == 'N'){window.location = '#Notes';}
