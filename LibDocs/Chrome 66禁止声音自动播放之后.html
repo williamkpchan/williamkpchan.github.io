@@ -1,0 +1,445 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="..\maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, .apply, div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{font-size: large;width:80%;margin-left: 10%}
+h1, h2 {color: gold;}
+img{width: 80%;}
+</style>
+</head><body>
+<center><h1>Chrome 66禁止声音自动播放之后</h1>
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+
+
+<p>
+声音无法自动播放这个在IOS/Android上面一直是个惯例，桌面版的Safari在2017年的11版本也宣布禁掉带有声音的多媒体自动播放功能，紧接着在2018年4月份发布的Chrome 66也正式关掉了声音自动播放，也就是说
+<code>
+&lt;audio autopaly&gt;&lt;/audio&gt;
+</code>
+ 
+<code>
+&lt;video autoplay&gt;&lt;/video&gt;
+</code>
+在桌面版浏览器也将失效。
+</p>
+
+<p>
+最开始移动端浏览器是完全禁止音视频自动播放的，考虑到了手机的带宽以及对电池的消耗。但是后来又改了，因为浏览器厂商发现网页开发人员可能会使用GIF动态图代替视频实现自动播放，正如
+<a href="https://link.juejin.im?target=https%3A%2F%2Fwebkit.org%2Fblog%2F6784%2Fnew-video-policies-for-ios%2F" target="_blank" rel="nofollow noopener noreferrer">
+IOS文档
+</a>
+所说，使用GIF的带宽流量是Video(h264)格式的12倍，而播放性能消耗是2倍，所以这样对用户反而是不利的。又或者是使用Canvas进行hack，如
+<a href="https://link.juejin.im?target=https%3A%2F%2Fdevelopers.google.com%2Fweb%2Fupdates%2F2016%2F07%2Fautoplay" target="_blank" rel="nofollow noopener noreferrer">
+Android Chrome文档
+</a>
+提到。因此浏览器厂商放开了对多媒体自动播放的限制，只要具备以下条件就能自动播放：
+</p>
+
+<p>
+（1）没音频轨道，或者设置了muted属性
+</p>
+
+<p>
+（2）在视图里面是可见的，要插入到DOM里面并且不是display: none或者visibility: hidden的，没有滑出可视区域。
+</p>
+
+<p>
+换句话说，只要你不开声音扰民，且对用户可见，就让你自动播放，不需要你去使用GIF的方法进行hack.
+</p>
+
+<p>
+桌面版的浏览器在近期也使用了这个策略
+</p>
+
+<p>
+<a href="https://link.juejin.im?target=https%3A%2F%2Fdevelopers.google.com%2Fweb%2Fupdates%2F2017%2F09%2Fautoplay-policy-changes" target="_blank" rel="nofollow noopener noreferrer">
+Chrome文档的说明
+</a>
+</p>
+
+
+<p>
+这个策略无疑对视频网站的冲击最大，如在Safari打开tudou的提示：
+</p>
+
+<p>
+
+<img src="https://user-gold-cdn.xitu.io/2018/5/13/1635520d2d0a0c10?imageView2/0/w/1280/h/960/ignore-error/1">
+
+</p>
+
+<p>
+添加了一个设置向导。Chrome的禁止更加人性化，它有一个
+<a href="https://link.juejin.im?target=https%3A%2F%2Fdevelopers.google.com%2Fweb%2Fupdates%2F2017%2F09%2Fautoplay-policy-changes%23mei" target="_blank" rel="nofollow noopener noreferrer">
+MEI的策略
+</a>
+，这个策略大概是说只要用户在当前网页主动播放过超过7s的音视频（视频窗口不能小于200 x 140），就允许自动播放。
+</p>
+
+<p>
+
+<br>
+
+</p>
+
+<p>
+对于网页开发人员来说，应当如何有效地规避这个风险呢？
+</p>
+
+<p>
+Chrome的文档给了一个最佳实践：先把音视频加一个muted的属性就可以自动播放，然后再显示一个声音被关掉的按钮，提示用户点一下打开声音。对于视频来说，确实可以这样处理，而对于音频来说，很多人是监听页面点击事件，只要点一次了就开始播放声音，一般就是播放个背景音乐。但是如果对于有多个声音资源的页面来说如何自动播放多个声音呢？
+</p>
+
+<p>
+首先，如果用户还没进行交互就调用播放声音的API，Chrome会这么提示：
+</p>
+
+<p>
+DOMException: play() failed because the user didn't interact with the document first.
+</p>
+
+<p>
+Safari会这么提示：
+</p>
+
+<p>
+NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.
+</p>
+
+<p>
+Chrome报错提示最为友善，意思是说，用户还没有交互，不能调play。用户的交互包括哪些呢？包括用户触发的touchend, click, doubleclick或者是 keydown事件，在这些事件里面就能调play.
+</p>
+
+<p>
+所以上面提到很多人是监听整个页面的点击事件进行播放，不管点的哪里，只要点了就行，包括触摸下滑。这种方法只适用于一个声音资源，不适用多个声音，多个声音应该怎么破呢？这里并不是说要和浏览器对着干，“逆天而行”，我们的目的还是为了提升用户体验，因为有些场景如果能自动播放确实比较好，如一些答题的场景，需要听声音进行答题，如果用户在答题的过程中能依次自动播放相应题目的声音，确实比较方便。同时也是讨论声音播放的技术实现。
+</p>
+
+<p>
+原生播放视频应该就只能使用video标签，而原生播放音频除了使用audio标签之外，还有另外一个API叫AudioContext，它是能够用来控制声音播放并带了很多丰富的操控接口。
+<b>
+调audio.play必须在点击事件里面响应，而使用AudioContext的区别在于只要用户点过页面任何一个地方之后就都能播放了
+</b>
+。所以可以用AudioContext取代audio标签播放声音。
+</p>
+
+<p>
+我们先用audio.play检测页面是否支持自动播放，以便决定我们播放的时机。
+</p>
+
+<h3 data-id="heading-0">
+1. 页面自动播放检测
+</h3>
+
+<p>
+方法很简单，就是创建一个audio元素，给它赋一个src，append到dom里面，然后调用它的play，看是否会抛异常，如果捕获到异常则说明不支持，如下代码所示：
+</p>
+
+<pre code-lang="javascript" class="hljs javascript">
+<code class="hljs javascript copyable" lang="javascript"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">testAutoPlay</span> (<span class="hljs-params"></span>) </span>{
+    <span class="hljs-comment">// 返回一个promise以告诉调用者检测结果</span>
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-params">resolve</span> =&gt;</span> {
+        <span class="hljs-keyword">let</span> audio = <span class="hljs-built_in">document</span>.createElement(<span class="hljs-string">'audio'</span>);
+        <span class="hljs-comment">// require一个本地文件，会变成base64格式</span>
+        audio.src = <span class="hljs-built_in">require</span>(<span class="hljs-string">'@/assets/empty-audio.mp3'</span>);
+        <span class="hljs-built_in">document</span>.body.appendChild(audio);
+        <span class="hljs-keyword">let</span> autoplay = <span class="hljs-literal">true</span>;
+        <span class="hljs-comment">// play返回的是一个promise</span>
+        audio.play().then(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
+            <span class="hljs-comment">// 支持自动播放</span>
+            autoplay = <span class="hljs-literal">true</span>;
+        }).catch(<span class="hljs-function"><span class="hljs-params">err</span> =&gt;</span> {
+            <span class="hljs-comment">// 不支持自动播放</span>
+            autoplay = <span class="hljs-literal">false</span>;
+        }).finally(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
+            audio.remove();
+            <span class="hljs-comment">// 告诉调用者结果</span>
+            resolve(autoplay);
+        });
+    });
+}<span class="copy-code-btn">复制代码</span></code>
+</pre>
+
+<p>
+这里使用一个空的音频文件，它是一个时间长度为0s的mp3文件，大小只有4kb，并且通过webpack打包成本地的base64格式，所以不用在canplay事件之后才调用play，直接写成同步代码，如果src是一个远程的url，那么就得监听canplay事件，然后在里面play.
+</p>
+
+<p>
+在告诉调用者结果时，使用Promise resolve的方式，因为play的结果是异步的，并且库函数不推荐使用await.
+</p>
+
+<h3 data-id="heading-1">
+2. 监听页面交互点击
+</h3>
+
+<p>
+如果当前页面能够自动播放，那么可以毫无顾忌地让声音自动播放了，否则就得等到用户开始和这个页面交互了即有点击操作了之后才能自动播放，如下代码所示：
+</p>
+
+<pre code-lang="javascript" class="hljs javascript"><code class="hljs javascript copyable" lang="javascript"><span class="hljs-keyword">let</span> audioInfo = {
+    <span class="hljs-attr">autoplay</span>: <span class="hljs-literal">false</span>,
+    testAutoPlay () {
+        <span class="hljs-comment">// 代码同，略... </span>
+    },
+    <span class="hljs-comment">// 监听页面的点击事件，一旦点过了就能autoplay了</span>
+    setAutoPlayWhenClick () {
+        <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">setAutoPlay</span> (<span class="hljs-params"></span>) </span>{
+            <span class="hljs-comment">// 设置自动播放为true</span>
+            audioInfo.autoplay = <span class="hljs-literal">true</span>;
+            <span class="hljs-built_in">document</span>.removeEventListener(<span class="hljs-string">'click'</span>, setAutoPlay);
+            <span class="hljs-built_in">document</span>.removeEventListener(<span class="hljs-string">'touchend'</span>, setAutoPlay);
+        }
+        <span class="hljs-built_in">document</span>.addEventListener(<span class="hljs-string">'click'</span>, setCallback);
+        <span class="hljs-built_in">document</span>.addEventListener(<span class="hljs-string">'touchend'</span>, setCallback);
+    },
+    init () {
+        <span class="hljs-comment">// 检测是否能自动播放</span>
+        audioInfo.testAutoPlay().then(<span class="hljs-function"><span class="hljs-params">autoplay</span> =&gt;</span> {
+            <span class="hljs-keyword">if</span> (!audioInfo.autoplay) {
+                audioInfo.autoplay = autoplay;
+            }
+        });
+        <span class="hljs-comment">// 用户点击交互之后，设置成能自动播放</span>
+        audioInfo.setAutoPlayWhenClick();
+    }
+};
+audioInfo.init();
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> audioInfo;<span class="copy-code-btn">复制代码</span></code>
+</pre>
+
+<p>
+上面代码主要监听document的click事件，在click事件里面把autoplay值置为true。换句话说，只要用户点过了，我们就能随时调AudioContext的播放API了，即使不是在点击事件响应函数里面，虽然无法在异步回调里面调用audio.play，但是AudioContext可以做到。
+</p>
+
+<p>
+代码最后通过调用audioInfo.init，把能够自动播放的信息存储在了audioInfo.autoplay这个变量里面。当需要播放声音的时候，例如切到了下一题，需要自动播放当前题的几个音频资源，就取这个变量判断是否能自动播放，如果能就播，不能就等用户点声音图标自己去播，并且如果他点过了一次之后就都能自动播放了。
+</p>
+
+<p>
+那么怎么用AudioContext播放声音呢？
+</p>
+
+<h3 data-id="heading-2">
+3. AudioContext播放声音
+</h3>
+
+<p>
+先请求音频文件，放到ArrayBuffer里面，然后用AudioContext的API进行decode解码，解码完了再让它去play，就行了。
+</p>
+
+<p>
+我们先写一个请求音频文件的ajax：
+</p>
+
+<pre code-lang="javascript" class="hljs javascript">
+<code class="hljs javascript copyable" lang="javascript"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">request</span> (<span class="hljs-params">url</span>) </span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span> (<span class="hljs-function"><span class="hljs-params">resolve</span> =&gt;</span> {
+        <span class="hljs-keyword">let</span> xhr = <span class="hljs-keyword">new</span> XMLHttpRequest();
+        xhr.open(<span class="hljs-string">'GET'</span>, url);
+        <span class="hljs-comment">// 这里需要设置xhr response的格式为arraybuffer</span>
+        <span class="hljs-comment">// 否则默认是二进制的文本格式</span>
+        xhr.responseType = <span class="hljs-string">'arraybuffer'</span>;
+        xhr.onreadystatechange = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+            <span class="hljs-comment">// 请求完成，并且成功</span>
+            <span class="hljs-keyword">if</span> (xhr.readyState === <span class="hljs-number">4</span> &amp;&amp; xhr.status === <span class="hljs-number">200</span>) {
+                resolve(xhr.response);
+            }
+        };
+        xhr.send();
+    });
+}<span class="copy-code-btn">复制代码</span></code>
+</pre>
+
+<p>
+这里需要注意的是要把xhr响应类型改成arraybuffer，因为decode需要使用这种存储格式，这样设置之后，xhr.response就是一个ArrayBuffer格式了。
+</p>
+
+<p>
+接着实例化一个AudioContext，让它去解码然后play，如下代码所示：
+</p>
+
+<pre code-lang="javascript" class="hljs javascript">
+
+<code class="hljs javascript copyable" lang="javascript"><span class="hljs-comment">// Safari是使用webkit前缀</span>
+<span class="hljs-keyword">let</span> context = <span class="hljs-keyword">new</span> (<span class="hljs-built_in">window</span>.AudioContext || <span class="hljs-built_in">window</span>.webkitAudioContext)();
+<span class="hljs-comment">// 请求音频数据</span>
+<span class="hljs-keyword">let</span> audioMedia = <span class="hljs-keyword">await</span> request(url);
+<span class="hljs-comment">// 进行decode和play</span>
+context.decodeAudioData(audioMedia, decode =&gt; play(context, decode));<span class="copy-code-btn">复制代码</span></code>
+</pre>
+
+<p>
+play的函数实现如下：
+</p>
+
+<pre code-lang="javascript" class="hljs javascript">
+<code class="hljs javascript copyable" lang="javascript"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">play</span> (<span class="hljs-params">context, decodeBuffer</span>) </span>{
+    <span class="hljs-keyword">let</span> source = context.createBufferSource();
+    source.buffer = decodeBuffer;
+    source.connect(context.destination);
+    <span class="hljs-comment">// 从0s开始播放</span>
+    source.start(<span class="hljs-number">0</span>);
+}<span class="copy-code-btn">复制代码</span></code>
+</pre>
+
+<p>
+这样就实现了AudioContext播放音频的基本功能。
+</p>
+
+<p>
+如果当前页面是不能autoplay，那么在 new AudioContext的时候，Chrome控制台会报一个警告：
+</p>
+
+<p>
+
+<img src="https://user-gold-cdn.xitu.io/2018/5/13/1635520d2cf08695?imageView2/0/w/1280/h/960/ignore-error/1">
+
+</p>
+
+<p>
+这个的意思是说，用户还没有和页面交互你就初始化了一个AudioContext，我是不会让你play的，你需要在用户点击了之后resume恢复这个context才能够进行play.
+</p>
+
+<p>
+假设我们不管这个警告，直接调用play没有报错，但是没有声音。所以这个时候就要用到上一步audioInfo.autoplay的信息，如果这个为true，那么可以play，否则不能play，需要让用户自己点声音图标进行播放。所以，把代码重新组织一下：
+</p>
+
+<pre code-lang="javascript" class="hljs javascript">
+<code class="hljs javascript copyable" lang="javascript"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">play</span> (<span class="hljs-params">context, decodeBuffer</span>) </span>{
+    <span class="hljs-comment">// 调用resume恢复播放</span>
+    context.resume();
+    <span class="hljs-keyword">let</span> source = context.createBufferSource();
+    source.buffer = decodeBuffer;
+    source.connect(context.destination);
+    source.start(<span class="hljs-number">0</span>);
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">playAudio</span> (<span class="hljs-params">context, url</span>) </span>{
+    <span class="hljs-keyword">let</span> audioMedia = <span class="hljs-keyword">await</span> request(url);
+    context.decodeAudioData(audioMedia, decode =&gt; play(context, decode));
+}
+
+<span class="hljs-keyword">let</span> context = <span class="hljs-keyword">new</span> (<span class="hljs-built_in">window</span>.AudioContext || <span class="hljs-built_in">window</span>.webkitAudioContext)();
+<span class="hljs-comment">// 如果能够自动播放</span>
+<span class="hljs-keyword">if</span> (audioInfo.autoplay) {
+    playAudio(url);
+}
+<span class="hljs-comment">// 支持用户点击声音图标自行播放</span>
+$(<span class="hljs-string">'.audio-icon'</span>).on(<span class="hljs-string">'click'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+    playAudio($(<span class="hljs-keyword">this</span>).data(<span class="hljs-string">'url'</span>));
+});<span class="copy-code-btn">复制代码</span></code>
+</pre>
+
+<p>
+调了resume之后，如果之前有被禁止播放的音频就会开始播放，如果没有则直接恢复context的自动播放功能。这样就达到基本目的，如果支持自动播放就在代码里面直接play，不支持就等点击。只要点了一次，不管点的哪里接下来的都能够自动播放了。就能实现类似于每隔3s自动播下一题的音频的目的：
+</p>
+
+<pre code-lang="javascript" class="hljs javascript">
+<code class="hljs javascript copyable" lang="javascript"><span class="hljs-comment">// 每隔3秒自动播放一个声音</span>
+playAudio(<span class="hljs-string">'question-1.mp3'</span>);
+setTimeout(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> playAudio(context, <span class="hljs-string">'question-2.mp3'</span>), <span class="hljs-number">3000</span>);
+setTimeout(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> playAudio(context, <span class="hljs-string">'question-3.mp3'</span>), <span class="hljs-number">3000</span>);<span class="copy-code-btn">复制代码</span></code>
+</pre>
+
+<p>
+这里还有一个问题，怎么知道每个声音播完了，然后再隔个3s播放下一个声音呢？可以通过两个参数，一个是解码后的decodeBuffer有当前音频的时长duration属性，而通过context.currentTime可以知道当前播放时间精度，然后就可以弄一个计时器，每隔100ms比较一下context.currentTime是否大于docode.duration，如果是的话说明播完了。soundjs这个库就是这么实现的，我们可以利用这个库以方便对声音的操作。
+</p>
+
+<p>
+这样就实现了利用AudioContext自动播放多个音频的目的，限制是用户首次打开页面是不能自动播放的，但是一旦用户点过页面的任何一个地方就可以了。
+</p>
+
+<p>
+AudioContext还有其它的一些操作。
+</p>
+
+<h3 data-id="heading-3">
+4. AudioContext控制声音属性
+</h3>
+
+<p>
+例如这个
+<a href="https://link.juejin.im?target=https%3A%2F%2Fcss-tricks.com%2Fintroduction-web-audio-api%2F" target="_blank" rel="nofollow noopener noreferrer">
+CSS Tricks
+</a>
+列了几个例子，其中一个是利用AudioContext的振荡器oscillator写了一个电子木琴：
+</p>
+
+<p>
+
+<img src="https://user-gold-cdn.xitu.io/2018/5/13/1635520d2da8371a?imageView2/0/w/1280/h/960/ignore-error/1">
+
+</p>
+
+<p>
+这个例子没有用到任何一个音频资源，都是直接合成的，感受如这个Demo：
+<a href="https://link.juejin.im?target=https%3A%2F%2Fcodepen.io%2Fyincheng%2Fpen%2FJvZPYJ" target="_blank" rel="nofollow noopener noreferrer">
+Play the Xylophone (Web Audio API)
+</a>
+.
+</p>
+
+<p>
+还有这种混响均衡器的例子：
+</p>
+
+<p>
+
+<img src="https://user-gold-cdn.xitu.io/2018/5/13/1635520d2d8ad5b9?imageView2/0/w/1280/h/960/ignore-error/1">
+
+</p>
+
+<p>
+见这个codepen：
+<a href="https://link.juejin.im?target=https%3A%2F%2Fcodepen.io%2Fyincheng%2Fpen%2FZoRzBO" target="_blank" rel="nofollow noopener noreferrer">
+Web Audio API: parametric equalizer
+</a>
+.
+</p>
+
+<p>
+
+<br>
+
+</p>
+
+<p>
+最后，一直以来都是只有移动端的浏览器禁掉了音视频的自动播放，现在桌面版的浏览器也开始下手了。浏览器这样做的目的在于，不想让用户打开一个页面就各种广告或者其它乱七八糟的声音在播，营造一个纯静的环境。但是浏览器也不是一刀切，至少允许音视频静音的播放。所以对于视频来说，可以静音自动播放，然后加个声音被关掉的图标让用户点击打开，再加添加设置向导之类的方法引导用户设置允许当前网站自动播放。而对于声音可以用AudioContext的API，只要页面被点过一次AudioContext就被激活了，就能直接在代码里面控制播放了。
+</p>
+<br>
+<br>
+<br>
+<br>
+
+<script>
+  $(function() {
+    var toc = $('#toc');
+
+    function makeLi(text, href) {
+      return $('<a href="' + href + '" target="_self">' + text + '</a><br>');
+    }
+
+    $('h2,h3').each(function(i) {
+      var chapter = $(this), chapterNumber = i + 1;
+      toc.append(
+        makeLi(chapter.text(), '#chapter-' + chapterNumber)
+      );
+      chapter.attr('id', 'chapter-' + chapterNumber);
+    });
+
+  });
+</script>
+</body>
+</html>

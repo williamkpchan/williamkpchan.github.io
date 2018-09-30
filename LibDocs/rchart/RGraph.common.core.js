@@ -1,14 +1,3 @@
-// version: 2018-08-14
-    /**
-    * o--------------------------------------------------------------------------------o
-    * | This file is part of the RGraph package - you can learn more at:               |
-    * |                                                                                |
-    * |                          http://www.rgraph.net                                 |
-    * |                                                                                |
-    * | RGraph is licensed under the Open Source MIT license. That means that it's     |
-    * | totally free to use and there are no restrictions on what you can do with it!  |
-    * o--------------------------------------------------------------------------------o
-    */
 
     RGraph = window.RGraph || {isRGraph: true};
 
@@ -18,9 +7,6 @@
     var RG  = RGraph,
         ua  = navigator.userAgent,
         ma  = Math;
-
-
-
 
     /**
     * Initialise the various objects
