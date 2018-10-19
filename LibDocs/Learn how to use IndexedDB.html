@@ -1,0 +1,459 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="..\maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, .apply, div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{font-size: x-large;width:80%;margin-left: 10%}
+h1, h2 {color: gold;}
+strong{color:gold;}
+</style>
+</head><body>
+<center><h1>Learn how to use IndexedDB</h1>
+<div id="toc"></div></center>
+<br>
+<br>
+<p dir="ltr">IndexedDB is an API for storing data in user’s browser.<br>
+One can also use cookies and local storage but they don’t provide database like usability the way IndexedDB do. <br>
+The data stored in IndexedDB is persistence. <br>
+ It provides rich query abilities and is available both in online and offline mode. <br>
+It can be used to store large amount of data.</p>
+<p><span id="more-3960"></span></p>
+
+<p dir="ltr"><strong>Note: IndexedDB is currently a Candidate Recommendation and is only available in modern desktop web browsers.</strong></p>
+<p>IndexedDB stores data in form of objects along with an index key. <br>
+    Everything that happens in IndexedDB happens through transactions. <br>
+The objects are grouped into object stores. <br>
+The IndexedDB contains object stores and these object stores contain objects along with a unique keyPath.</p>
+<p><strong>IndexedDB vs LocalStorage</strong></p>
+<p>Although both were developed to provide client side data storage but both have different approaches and should be chosen according to the needs. <br>
+    localStorage stores data in key-value pair but unlike IndexedDB, they are not stored in form of objects. <br>
+Instead, it stores only string key-value pairs. <br>
+A simple trick to store objects in localstorage is to use <span class="redword">JSON.stringify()</span>, similarly to store it back to object form after reading you will need to do <span class="redword">JSON.parse()</span>. <br>
+But it will not be a good solution when storing large number of complex objects. <br>
+Moreover, localstorage was designed for smaller data and provides synchronous API.</p>
+<p>IndexedDB is great for handling large amount of data and comes with asynchronous API. <br>
+    It uses indexes to store data and transactions to perform operations. <br>
+It even supports simple data types. <br>
+IndexedDB may seem better than localstorage,but its API is complex to use and currently only latest desktop browsers are supported. <br>
+</p>
+<p>For basic storage you may continue to use local storage but if you are going to store large amount of data, IndexedDB will be a better suited option as it will also allow you to perform complex search queries.</p>
+<p><strong>IndexedDB vs Web SQL</strong></p>
+<p>WebSQL was also a web storage API to store data at client side. <br>
+    Unlike IndexedDB which is a NoSQL database, WebSQL used SQL queries to store data. <br>
+W3C no longer maintains this specification. <br>
+According to <a href="http://www.w3.org/TR/webdatabase/">http://www.w3.org/TR/webdatabase/</a>
+</p>
+<blockquote><p>Beware. <br>
+This specification is no longer in active maintenance and the Web Applications Working Group does not intend to maintain it further.</p></blockquote>
+<p>Since, its no longer maintained, you should not use it in your project.</p>
+<p><strong>IndexedDB vs Cookies</strong></p>
+<p>Cookies may sound tasty but they are not. <br>
+    Cookies are sent and received with every http request resulting in additional traffic. <br>
+For e.g. <br>
+if you have 10KB of cookies and made 10 request, then total 100KB of data will be transferred. <br>
+Also, cookies are only strings and hence need to be parsed. <br>
+Also, the space of storing  cookies is limited and many users block their cookies. <br>
+Hence cookies can be only good for storing very small non-crucial data.</p>
+<p><strong>How to use IndexedDB</strong></p>
+<p>To understand IndexedDB, I have created a basic web app that stores the roll numbers and names of students in IndexedDB. <br>
+It provides basic add, remove, access and update option.</p>
+<p> <a href="https://github.com/SuyashMShepHertz/indexedDB_sample">https://github.com/SuyashMShepHertz/indexedDB_sample</a></p>
+<p><strong>Opening a Database</strong></p>
+<p>Firstly you need to make sure, that your browser supports IndexedDB. <br>
+As mentioned earlier, it is still a candidate recommendation and hence not supported in all browsers.</p>
+<pre lang="java" line="1">
+                window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+                
+                if(!window.indexedDB)
+                {
+                    console.log("Your Browser does not support IndexedDB");
+                }
+</pre>
+<p>Once, we know IndexedDB is supported, we have to open a database. <br>
+You can not simply open a database, rather IndexedDB requires you to create a request to open a database.</p>
+<pre lang="java" line="1">
+               var request = window.indexedDB.open("testDB", 2);
+</pre>
+<p dir="ltr">here first parameter is the name of database and second parameter is version of database. <br>
+    The version allows you to represent your DB’s current schema i.e the object stores stored in it and their structures. <br>
+If you upgrade your database you will only need to create/delete few object stores rather than creating/deleting all the object stores.</p>
+<p>When you will increase the version of your database, onupgradeneeded event will be triggered. <br>
+Along with onupgradeneeded, there are success, error and blocked events.</p>
+<pre lang="java" line="1">
+                   var db;
+                    request.onerror = function(event){
+                        console.log("Error opening DB", event);
+                    }
+                    request.onupgradeneeded   = function(event){
+                        console.log("Upgrading");
+                        db = event.target.result;
+                        var objectStore = db.createObjectStore("students", { keyPath : "rollNo" });
+                    };
+                    request.onsuccess  = function(event){
+                        console.log("Success opening DB");
+                        db = event.target.result;
+                    }
+</pre>
+<p dir="ltr">onupgradeneeded event will be called whenever the webpage is hit for the first time on user’s web browser or if there is an upgrade in version of database. <br>
+    Hence, you will have to create your object stores only in onupgradeneeded event. <br>
+If there is no upgrade in version and the page has been opened previously, you will get onsuccess event. <br>
+onerror event occurs if there is some error. <br>
+onblocked event occurs if previous connection was never closed.</p>
+<p>In above code snippet, we are creating a Object Store named “students” with index key “roll no”.</p>
+<p><strong>Adding Object to ObjectStore</strong></p>
+<p>To add data in our DB, we first need to create a transaction with read write permission on our object store. <br>
+    To perform any action on object store we need to create a transaction. <br>
+Following it, access our object store and add the data to it.</p>
+<pre lang="java" line="1">
+                    var transaction = db.transaction(["students"],"readwrite");
+                    transaction.oncomplete = function(event) {
+                        console.log("Success");
+                    };
+                    
+                    transaction.onerror = function(event) {
+                        console.log("Error");
+                    };  
+                    var objectStore = transaction.objectStore("students");
+                    
+                    objectStore.add({rollNo: rollNo, name: name});
+</pre>
+<p dir="ltr"><strong>Removing Object from ObjectStore</strong></p>
+<p dir="ltr">Deletion is similar to addition, you need to create transaction and call delete function with the key of the object to be removed.</p>
+<pre lang="java" line="1">
+                    db.transaction(["students"],"readwrite").objectStore("students").delete(rollNo);
+</pre>
+<p dir="ltr">I have mixed up statements to make it more easier but they perform the same.</p>
+<p><strong>Accessing an object with the key</strong></p>
+<p dir="ltr">Use the get() function passing the key of the object to be retrieved.</p>
+<pre lang="java" line="1">
+                    var request = db.transaction(["students"],"readwrite").objectStore("students").get(rollNo);
+                    request.onsuccess = function(event){
+                        console.log("Name : "+request.result.name);    
+                    };
+</pre>
+<p dir="ltr"><strong>Updating an Object</strong></p>
+<p dir="ltr">To update an object, first get that object and then after making changes put back it to object store.</p>
+<pre lang="java" line="1">
+                    var transaction = db.transaction(["students"],"readwrite");
+                    var objectStore = transaction.objectStore("students");
+                    var request = objectStore.get(rollNo);
+                    request.onsuccess = function(event){
+                        console.log("Updating : "+request.result.name + " to " + name);
+                        request.result.name = name;
+                        objectStore.put(request.result);
+                    };
+</pre>
+<p dir="ltr">The full source code of above sample web page is <a href="https://github.com/SuyashMShepHertz/indexedDB_sample/blob/master/index.html" title="sample app" target="_blank">here</a>. <br>
+    If you have any questions or need any further assistance, please feel free to write us at <a href="mailto:support@shephertz.com">support@shephertz.com</a>.</p>
+<br>
+<br>
+<p>Please check out the demo before we start the tutorial.</p>
+<p><a href="http://www.onlywebpro.com/demo/jquery/indexeddb.html" target="_blank" class="demo_btn">View Demo</a></p>
+<h3>Get Started</h3>
+<p>Since we know that the IndexedDB API is still evolve, so we need to include the following prefixes of implementation. Besides, for best practice, we should always provide fallback content for unsupported browsers.</p>
+<pre class="brush: jscript; title: ; notranslate" title="">
+//prefixes of implementation that we want to test
+window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+
+//prefixes of window.IDB objects
+window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction;
+window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange
+
+if (!window.indexedDB) {
+    window.alert(&quot;Your browser doesn't support a stable version of IndexedDB.&quot;)
+}
+</pre>
+<h3>Opening an IndexedDB Database</h3>
+<p>Before we create the database, the very first thing to do is to prepare some data for the database. Let say we have some customer information as shown below:</p>
+<pre class="brush: jscript; title: ; notranslate" title="">
+const customerData = [
+  { id: &quot;00-01&quot;, name: &quot;Bill&quot;, age: 35, email: &quot;bill@company.com&quot; },
+  { id: &quot;00-02&quot;, name: &quot;Donna&quot;, age: 32, email: &quot;donna@home.org&quot; }
+];
+
+</pre>
+<p>2 data enetries, each entry consists of the information of ID, name, age and email of the customer.</p>
+<p>Before we can insert the data into the database, we need to open our database using the <strong>open()</strong> method as shown below:</p>
+<pre class="brush: jscript; title: ; notranslate" title="">
+var db;
+var request = window.indexedDB.open(&quot;newDatabase&quot;, 1);
+
+request.onerror = function(event) {
+  console.log(&quot;error: &quot;);
+};
+
+request.onsuccess = function(event) {
+  db = request.result;
+  console.log(&quot;success: &quot;+ db);
+};
+
+request.onupgradeneeded = function(event) {
+
+}
+</pre>
+<p>As you can see we have opened a database with the name &#8220;<strong>newDatabase</strong>&#8221; and the version of the database.  All IndexedDB databases are stored in the same origin with the web application / website. Example, if myblog.com might has a database named &#8220;newDatabase&#8221; and mybusiness.com also might has a totally distinct database named &#8220;newDatabase&#8221;.</p>
+<p>The open() method has accepts <strong>2 parameters</strong>, the first is the name ofthe database. It will checks whether the database named &#8220;newDatabase&#8221; is already exist or not, if it is exist, then it will open the database, else it will create a new one. The second paramter of open() method is the version of the database, which allows you to update the schema of the database.</p>
+<h4>Onsuccess handler</h4>
+<p>If everything succeeds, then a success event &#8220;<strong>onsuccess</strong>&#8221; is fired with request as its target and we have save the request&#8217;s result for later use by assigning it to <strong>db </strong>variable.</p>
+<h4>Onerror handler</h4>
+<p>If the process of opening database fail, then an error event &#8220;<strong>onerror</strong>&#8221; is fired.</p>
+<h4>Onupgradeneeded handler</h4>
+<p>If you want to update the database, or to create, delete or modify the database, then you have to implement the onupgradeneeded handler or which will be called as part of a <strong>versionchange </strong>transaction that allows you to make any changes on the database. Please bear in mind that, the &#8220;<strong>onupgradeneeded</strong>&#8221; handler is the only place for you to alter the structure of database.</p>
+<h3>Structuring the Database</h3>
+<p>Again, IndexedDB is <strong>NOT </strong>same as a Relational Database. IndexedDB uses object stores to store data rather than tables. Whenever a value is stored in an object store, it is associated with a key. The interesting of IndexedDB is it allows us to create indices on any object store. An index lets us to access the values stored in object store using the value of a property of the stored object. This may sound confusing now, but you may know it better after go through the entire lesson.</p>
+<p>The following code illustrates how we create the object store and insert the pre-prepared data into it:</p>
+<pre class="brush: jscript; title: ; notranslate" title="">
+request.onupgradeneeded = function(event) {
+  var db = event.target.result;
+  var objectStore = db.createObjectStore(&quot;customers&quot;, {keyPath: &quot;id&quot;});
+  for (var i in customerData) {
+    objectStore.add(customerData[i]); 
+  }
+}
+</pre>
+<p>We create an object store using <strong>createObjectStore()</strong> method. This method accepts 2 parameters: &ndash; name of the store and a parameter object. In this case, we have named the object store as &#8220;customers&#8221; and defined a keyPath that is the property that makes an individual object in the store unique. In this example, we have use the &#8220;id&#8221; as keyPath, which is unique value in the object store, and you must make sure that the &#8220;id&#8221; property must be present in every objects in the object store.</p>
+<p>Once the object store is created, we can start adding the data into it using <strong>for </strong>loop.</p>
+<h3>Manually Adding Data</h3>
+<p>You may probably want to manually add extra data into the database, then here is how you should write the function:</p>
+<pre class="brush: jscript; title: ; notranslate" title="">
+function add() {
+  var request = db.transaction([&quot;customers&quot;], &quot;readwrite&quot;)
+                .objectStore(&quot;customers&quot;)
+                .add({ id: &quot;00-03&quot;, name: &quot;Kenny&quot;, age: 19, email: &quot;kenny@planet.org&quot; });
+        
+  request.onsuccess = function(event) {
+      alert(&quot;Kenny has been added to your database.&quot;);
+  };
+  
+  request.onerror = function(event) {
+    alert(&quot;Unable to add data\r\nKenny is aready exist in your database! &quot;);  
+  }
+  
+}
+</pre>
+<p>We have just manually added a new data named with &#8220;Kenny&#8221; to the object store &#8220;customer&#8221; using <strong>add()</strong> method.</p>
+<p>Before we can do anything (read, write, modify) to our database, we have to start use a <strong>transaction</strong>. The transaction() method is used to specify which object stores you want the transaction to span. The transaction() mthod accepts 3 parameters (second and third are optional): &ndash; First is the list of object store you want to deal with, second is whether you want to read only or read and write to the object, third is the versionchange.</p>
+<p>The transaction method let you have the object store that you specified and insert, modify or delete the data that you need. In this case, we insert the data using <strong>add()</strong> method.</p>
+<h3>Retrieving Data</h3>
+<p>Let&#8217;s retrieve the data from the database. We can retrieve the data using <strong>get()</strong> method.</p>
+<pre class="brush: jscript; title: ; notranslate" title="">
+function read() {
+  var transaction = db.transaction([&quot;customers&quot;]);
+  var objectStore = transaction.objectStore(&quot;customers&quot;);
+  var request = objectStore.get(&quot;00-03&quot;);
+  request.onerror = function(event) {
+    alert(&quot;Unable to retrieve daa from database!&quot;);
+  };
+  request.onsuccess = function(event) {
+    // Do something with the request.result!
+    if(request.result) {
+      alert(&quot;Name: &quot; + request.result.name + &quot;, Age: &quot; + request.result.age + &quot;, Email: &quot; + request.result.email);
+    } else {
+    alert(&quot;Kenny couldn't be found in your database!&quot;);  
+    }
+  };
+}
+</pre>
+<p>We use <strong>get()</strong> method to retrieve the data we need from object store. Since we already set the id of object as keyPath earlier, so the get() method will look up the object that has the same id value. This will return us the object named &#8220;Kenny&#8221;which is the object that we manually added in the previous function.</p>
+<h4>Retrieving All Data</h4>
+<p>If you want get all data instead of one from object store, then you may need to use a <strong>cursor</strong>. Here is another function that using cursor to retrieve all data from object store: </p>
+<pre class="brush: jscript; title: ; notranslate" title="">
+function readAll() {
+  var objectStore = db.transaction(&quot;customers&quot;).objectStore(&quot;customers&quot;);
+ 
+  objectStore.openCursor().onsuccess = function(event) {
+    var cursor = event.target.result;
+    if (cursor) {
+    alert(&quot;Name for id &quot; + cursor.key + &quot; is &quot; + cursor.value.name + &quot;, Age: &quot; + cursor.value.age + &quot;, Email: &quot; + cursor.value.email);
+    cursor.continue();
+    }
+    else {
+    alert(&quot;No more entries!&quot;);
+    }
+  };  
+}
+</pre>
+<p>As you can see, we implement the <strong>openCursor()</strong> method to accomplish the goal. The openCursor() is used to iterate over multiple records in a database. It can accepts several parameters, such as limit the range items, the direction that we want to iterate and etc. In this case, we leave it no parameters.</p>
+<p>The cursor object itself is the result of the request. We have implement the <strong>continue()</strong> function to continues with the next iteration in the loop. When the loop reached end, then we will get the alert with content &#8220;No more entries!&#8221;.</p>
+<h3>Removing Data</h3>
+<p>Removing data from object store is very similar to other functions that we have just learnt. Here is how the code looks like:</p>
+<pre class="brush: jscript; title: ; notranslate" title="">
+function remove() {
+
+  var request = db.transaction([&quot;customers&quot;], &quot;readwrite&quot;)
+                .objectStore(&quot;customers&quot;)
+                .delete(&quot;00-03&quot;);
+  request.onsuccess = function(event) {
+    alert(&quot;Kenny's entry has been removed from your database.&quot;);
+  };
+}
+</pre>
+<p>If you want to remove data from object store, then you may need to use <strong>delete()</strong> method. You have to pass the keyPath of the object that you want to remove as paramter to the delete() method. In this case, we remove the object with named &#8220;Kenny&#8221; which we added via add function just now.</p>
+<h3>The HTML</h3>
+<p>We have just wrote all the functions, and now is the time to display the data using the onclick event that binded to HTML button.</p>
+<pre class="brush: xml; title: ; notranslate" title="">
+&lt;!DOCTYPE html&gt;
+&lt;head&gt;
+&lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=utf-8&quot; /&gt;
+&lt;title&gt;IndexedDb Demo | onlyWebPro.com&lt;/title&gt;
+&lt;/head&gt;
+
+&lt;body&gt;
+&lt;button onclick=&quot;read()&quot;&gt;Read single data from indexedDb&lt;/button&gt;
+&lt;button onclick=&quot;readAll()&quot;&gt;Read all data from indexedDb&lt;/button&gt;
+&lt;button onclick=&quot;add()&quot;&gt;Add data to indexedDb&lt;/button&gt;
+&lt;button onclick=&quot;remove()&quot;&gt;Delete data from indexedDb&lt;/button&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre>
+<p>We have prepared 4 HTML buttons. Each of the button is used to trigger the Javascript function that we wrote earlier in this article. Save your document and view it in supported browser. Have fun! 🙂</p>
+<h3>The Final Code</h3>
+<pre class="brush: jscript; title: ; notranslate" title="">
+&lt;!DOCTYPE html&gt;
+&lt;head&gt;
+&lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=utf-8&quot; /&gt;
+&lt;title&gt;IndexedDb Demo | onlyWebPro.com&lt;/title&gt;
+&lt;script type=&quot;text/javascript&quot;&gt;
+//prefixes of implementation that we want to test
+window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+
+//prefixes of window.IDB objects
+window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction;
+window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange
+
+if (!window.indexedDB) {
+    window.alert(&quot;Your browser doesn't support a stable version of IndexedDB.&quot;)
+}
+
+const customerData = [
+  { id: &quot;00-01&quot;, name: &quot;Bill&quot;, age: 35, email: &quot;bill@company.com&quot; },
+  { id: &quot;00-02&quot;, name: &quot;Donna&quot;, age: 32, email: &quot;donna@home.org&quot; }
+];
+
+
+var db;
+var request = window.indexedDB.open(&quot;newDatabase&quot;, 1);
+
+request.onerror = function(event) {
+  console.log(&quot;error: &quot;);
+};
+
+request.onsuccess = function(event) {
+  db = request.result;
+  console.log(&quot;success: &quot;+ db);
+};
+
+request.onupgradeneeded = function(event) {
+  var db = event.target.result;
+  var objectStore = db.createObjectStore(&quot;customers&quot;, {keyPath: &quot;id&quot;});
+  for (var i in customerData) {
+    objectStore.add(customerData[i]); 
+  }
+}
+
+function read() {
+  var transaction = db.transaction([&quot;customers&quot;]);
+  var objectStore = transaction.objectStore(&quot;customers&quot;);
+  var request = objectStore.get(&quot;00-03&quot;);
+  request.onerror = function(event) {
+    alert(&quot;Unable to retrieve daa from database!&quot;);
+  };
+  request.onsuccess = function(event) {
+    // Do something with the request.result!
+    if(request.result) {
+      alert(&quot;Name: &quot; + request.result.name + &quot;, Age: &quot; + request.result.age + &quot;, Email: &quot; + request.result.email);
+    } else {
+    alert(&quot;Kenny couldn't be found in your database!&quot;);  
+    }
+  };
+}
+
+function readAll() {
+  var objectStore = db.transaction(&quot;customers&quot;).objectStore(&quot;customers&quot;);
+ 
+  objectStore.openCursor().onsuccess = function(event) {
+    var cursor = event.target.result;
+    if (cursor) {
+    alert(&quot;Name for id &quot; + cursor.key + &quot; is &quot; + cursor.value.name + &quot;, Age: &quot; + cursor.value.age + &quot;, Email: &quot; + cursor.value.email);
+    cursor.continue();
+    }
+    else {
+    alert(&quot;No more entries!&quot;);
+    }
+  };  
+}
+
+function add() {
+  var request = db.transaction([&quot;customers&quot;], &quot;readwrite&quot;)
+                .objectStore(&quot;customers&quot;)
+                .add({ id: &quot;00-03&quot;, name: &quot;Kenny&quot;, age: 19, email: &quot;kenny@planet.org&quot; });
+        
+  request.onsuccess = function(event) {
+      alert(&quot;Kenny has been added to your database.&quot;);
+  };
+  
+  request.onerror = function(event) {
+    alert(&quot;Unable to add data\r\nKenny is aready exist in your database! &quot;);  
+  }
+  
+}
+
+function remove() {
+
+  var request = db.transaction([&quot;customers&quot;], &quot;readwrite&quot;)
+                .objectStore(&quot;customers&quot;)
+                .delete(&quot;00-03&quot;);
+  request.onsuccess = function(event) {
+    alert(&quot;Kenny's entry has been removed from your database.&quot;);
+  };
+}
+
+&lt;/script&gt;
+&lt;/head&gt;
+
+&lt;body&gt;
+&lt;button onclick=&quot;read()&quot;&gt;Read single data from indexedDb&lt;/button&gt;
+&lt;button onclick=&quot;readAll()&quot;&gt;Read all data from indexedDb&lt;/button&gt;
+&lt;button onclick=&quot;add()&quot;&gt;Add data to indexedDb&lt;/button&gt;
+&lt;button onclick=&quot;remove()&quot;&gt;Delete data from indexedDb&lt;/button&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre>
+<p><a href="http://www.onlywebpro.com/demo/jquery/indexeddb.html" target="_blank" class="demo_btn">View Demo</a></p>
+<h3>Conclusion</h3>
+<p>The HTML5 IndexedDB API is very useful and powerful. You can leverage it to create rich, online and offline HTML5 application. In addition, with IndexedDB API, you can cache data to make traditional web applications especially mobile web applications load faster and more responsive without need to retrieve data from the web server each time. </p>
+
+
+<br>
+<br>
+<a href="https://blog.teamtreehouse.com/create-your-own-to-do-app-with-html5-and-indexeddb">Create Your Own To-Do App with HTML5 and IndexedDB</a>
+<br>
+<script>
+  $(function() {
+    var toc = $('#toc');
+
+    function makeLi(text, href) {
+      return $('<a href="' + href + '" target="_self">' + text + '</a><br>');
+    }
+
+    $('h2, h3').each(function(i) {
+      var chapter = $(this), chapterNumber = i + 1;
+      toc.append(
+        makeLi(chapter.text(), '#chapter-' + chapterNumber)
+      );
+      chapter.attr('id', 'chapter-' + chapterNumber);
+    });
+
+  });
+</script>
+</body>
+</html>
