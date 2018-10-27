@@ -1,0 +1,406 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="..\maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, .apply, div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{font-size: x-large;width:80%;margin-left: 10%}
+h1, h2 {color: gold;}
+</style>
+</head><body>
+<center><h1>Create To-Do App with HTML5 and IndexedDB</h1>
+<a href="https://blog.teamtreehouse.com/create-your-own-to-do-app-with-html5-and-indexeddb">Create To-Do App with IndexedDB</a>
+<br><br>
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+
+<p><strong>Note:</strong> You can download all of the code used in this tutorial <a href="https://s3.amazonaws.com/west-treehouse/todo-list-indexeddb.zip">here</a>.</p>
+
+<h2 id="building-the-application-view">Building the Application View</h2>
+<p>Before you start writing the JavaScript code that will power your application you first need to set up a new page to display the todo items.</p>
+<p>Create a new file called <code>index.html</code> that contains the following HTML code.</p>
+
+<p><strong>Note:</strong> You will need to serve this HTML file from a local development server in order to have access to IndexedDB. If you don&#8217;t already have a local development server installed you might want to try <a href="http://www.apachefriends.org/en/xampp.html">XAMPP</a>.</p>
+
+<pre>&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;title&gt;Todo List App&lt;/title&gt;
+
+  &lt;link rel="stylesheet" href="style.css"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;div id="page-wrapper"&gt;
+    &lt;!-- Form for new Todo Items --&gt;
+    &lt;form id="new-todo-form" method="POST" action="#"&gt;
+      &lt;input type="text" name="new-todo" id="new-todo" placeholder="Enter a todo item..." required&gt;
+    &lt;/form&gt;
+
+    &lt;!-- Todo Item List --&gt;
+    &lt;ul id="todo-items"&gt;&lt;/ul&gt;
+  &lt;/div&gt;
+
+  &lt;script src="db.js"&gt;&lt;/script&gt;
+  &lt;script src="app.js"&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre>
+<p>Now that you have your HTML file setup lets create a simple stylesheet for your app. Create a new file called <code>style.css</code> and add to it the following CSS code. This file should be created in the same folder as your <code>index.html</code> file.</p>
+<pre>* { -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box; }
+
+body, html {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  font-family: Helvetica, Arial, sans-serif;
+  color: #545454;
+  background: #F7F7F7;
+}
+
+#page-wrapper {
+  width: 550px;
+  margin: 2.5em auto;
+  background: #FFF;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  border-radius: 3px;
+}
+
+#new-todo-form {
+  padding: 0.5em;
+  background: #0088CC;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+}
+
+#new-todo {
+  width: 100%;
+  padding: 0.5em;
+  font-size: 1em;
+  border-radius: 3px;
+  border: 0;
+}
+
+#todo-items {
+  list-style: none;
+  padding: 0.5em 1em;
+  margin: 0;
+}
+
+#todo-items li {
+  font-size: 0.9em;
+  padding: 0.5em;
+  background: #FFF;
+  border-bottom: 1px solid #EEE;
+  margin: 0.5em 0;
+}
+
+input[type="checkbox"] {
+  margin-right: 10px;
+}
+</pre>
+<p>Now that you have the barebones of your app setup lets move on to writing some code that will handle saving, retrieving and deleting todo items from the database.</p>
+<h2 id="creating-the-database-module">Creating The Database Module</h2>
+<p>In order to make your code more maintainable and reusable you are going to create a JavaScript <em>module</em> that will contain all of the code that handles interactions with the database. A <em>module</em> is an encapsulated piece of code that has a specific responsibility.</p>
+<p>Create a new file in your project folder called <code>db.js</code> and add to it the following code.</p>
+<pre>var todoDB = (function() {
+  var tDB = {};
+  var datastore = null;
+
+  // TODO: Add methods for interacting with the database here.
+
+  // Export the tDB object.
+  return tDB;
+}());
+</pre>
+<p>Here you have created the beginnings of your JavaScript module. The first and last lines create a new module called <code>todoDB</code>. You then create an empty JavaScript object called <code>tDB</code>. This will be used to store all of the methods in the module that you want to be accessible from outside the scope of the module. It is possible to create variables and methods that are only accessible within a module. You then create a <code>datastore</code> variable that will be used to store a reference to the database. Notice that this variable has not been created as part of the <code>tDB</code> object. This means that the variable will not be accessible outside of the module scope.</p>
+
+<p><strong>Note:</strong> For more information on JavaScript modules and scopes check out this great article by Ben Cherry. <a href="http://www.adequatelygood.com/JavaScript-Module-Pattern-In-Depth.html">http://www.adequatelygood.com/JavaScript-Module-Pattern-In-Depth.html</a></p>
+
+<p>Now that you have your module setup it&#8217;s time to start writing the code that will interact with the IndexedDB database.</p>
+<p>Add the following method below your declaration of the <code>datastore</code> variable.</p>
+<pre>/**
+ * Open a connection to the datastore.
+ */
+tDB.open = function(callback) {
+  // Database version.
+  var version = 1;
+
+  // Open a connection to the datastore.
+  var request = indexedDB.open('todos', version);
+
+  // Handle datastore upgrades.
+  request.onupgradeneeded = function(e) {
+    var db = e.target.result;
+
+    e.target.transaction.onerror = tDB.onerror;
+
+    // Delete the old datastore.
+    if (db.objectStoreNames.contains('todo')) {
+      db.deleteObjectStore('todo');
+    }
+
+    // Create a new datastore.
+    var store = db.createObjectStore('todo', {
+      keyPath: 'timestamp'
+    });
+  };
+
+  // Handle successful datastore access.
+  request.onsuccess = function(e) {
+    // Get a reference to the DB.
+    datastore = e.target.result;
+
+    // Execute the callback.
+    callback();
+  };
+
+  // Handle errors when opening the datastore.
+  request.onerror = tDB.onerror;
+};
+</pre>
+
+<p><strong>Note:</strong> This method takes an argument named <code>callback</code>. Database transactions are <a href="https://en.wikipedia.org/wiki/Asynchronous_I/O">asynchronous</a> meaning that the browser will not wait for the database request to finish before moving on to the next bit of code it needs to execute. This means that we need to specify a <em>callback</em> function that will be executed once the request has finished in order to make use of the data.</p>
+
+<p>The <code>open</code> method is responsible for opening a new connection to the database. You start by declaring a variable (<code>version</code>) that stores the database version. This is needed in order to keep track of database upgrades. You might want to upgrade the database if you needed to add new object stores (think of these like database tables) or change the key for an object store.</p>
+<p>You then open a connection to the database using the <code>indexedDB.open</code> method. The first parameter specifies the object store that you want to access and the second paramter specifies the database version. If the object store does not exist or the version has changed the <code>onupgradeneeded</code> event will be triggered, we will look at this next.</p>
+<p>The next step in your code is to create an event listener for the <code>onupgradeneeded</code> event we just looked at. Here you first get a reference to the database from the event data (<code>e.target.result</code>) and store this in a variable called <code>db</code>. You then check to see if the object store exists and if it does you delete it. After that you create a new object store using the <code>createObjectStore</code> method, passing in the name of the object store (<code>todo</code>) and a JavaScript object that contains some settings. In this settings object you have specified that the key that your todo items should be stored under will be a property called <code>timestamp</code>. We will come back to this later.</p>
+<p>The <code>onsuccess</code> event listener will get a reference to the database from the event data (<code>e.target.result</code>) and use this to set the <code>datastore</code> variable. It then executes the <code>callback</code> function. You will see the importance of this callback function later in this tutorial.</p>
+<p>Next you are going to create a method that will be responsible for fetching all the todo items from the database. Copy the following code below your <code>tDB.open</code> method.</p>
+<pre>/**
+ * Fetch all of the todo items in the datastore.
+ */
+tDB.fetchTodos = function(callback) {
+  var db = datastore;
+  var transaction = db.transaction(['todo'], 'readwrite');
+  var objStore = transaction.objectStore('todo');
+
+  var keyRange = IDBKeyRange.lowerBound(0);
+  var cursorRequest = objStore.openCursor(keyRange);
+
+  var todos = [];
+
+  transaction.oncomplete = function(e) {
+    // Execute the callback function.
+    callback(todos);
+  };
+
+  cursorRequest.onsuccess = function(e) {
+    var result = e.target.result;
+
+    if (!!result == false) {
+      return;
+    }
+
+    todos.push(result.value);
+
+    result.continue();
+  };
+
+  cursorRequest.onerror = tDB.onerror;
+};
+</pre>
+<p>At the beginning of the <code>fecthTodos</code> method you first create a new variable <code>db</code> and set this to the <code>datastore</code> variable you initialized earlier.</p>
+<p>You then create a new <a href="https://developer.mozilla.org/en-US/docs/Web/API/IDBTransaction?redirectlocale=en-US&amp;redirectslug=Web%2FAPI%2FIDBTransation">IDBTransaction</a> using this <code>db</code> variable and assign this to a variable called <code>transaction</code>. This transaction will handle the interaction with the database.</p>
+<p>Using the <code>objectStore</code> method on the transaction you get a reference to the <code>todo</code> object store and save this reference in a new variable called <code>objStore</code>.</p>
+<p>Next you create a <code>IDBKeyRange</code> object that specifies the range of items in the object store that you want to retrieve. In your case you want to get all of the items so you set the lower bound of the range to 0. This will select all keys from 0 up.</p>
+<p>Now that you have a key range you can create a cursor that will be used to cycle through each of the todo items in the database. This is assigned to a new variable called <code>cursorRequest</code>.</p>
+<p>You then create an empty array (<code>todos</code>) that will be used to store the todo items once they have been fetched from the database.</p>
+<p>The <code>transaction.oncomplete</code> event handler is used to execute the callback function once all of the todo items have been fetched. The <code>todos</code> array will be passed into this callback as a parameter.</p>
+<p>The <code>cursorRequest.onsuccess</code> event handler is triggered for each item that is returned from the database. Here you first check to see if the result contains a todo item and then if it does you add that item to the <code>todos</code> array. The <code>result.continue()</code> method is then called which will move the cursor on to the next item in the database.</p>
+<p>Finally, you declare an error handler that should be used if the cursor encounters a problem.</p>
+<p>Now it&#8217;s time to write a method that will handle adding new todo items to the database. Copy the following code into your <code>todoDB</code> module.</p>
+<pre>/**
+ * Create a new todo item.
+ */
+tDB.createTodo = function(text, callback) {
+  // Get a reference to the db.
+  var db = datastore;
+
+  // Initiate a new transaction.
+  var transaction = db.transaction(['todo'], 'readwrite');
+
+  // Get the datastore.
+  var objStore = transaction.objectStore('todo');
+
+  // Create a timestamp for the todo item.
+  var timestamp = new Date().getTime();
+
+  // Create an object for the todo item.
+  var todo = {
+    'text': text,
+    'timestamp': timestamp
+  };
+
+  // Create the datastore request.
+  var request = objStore.put(todo);
+
+  // Handle a successful datastore put.
+  request.onsuccess = function(e) {
+    // Execute the callback function.
+    callback(todo);
+  };
+
+  // Handle errors.
+  request.onerror = tDB.onerror;
+};
+</pre>
+<p>In this method you do the same setup for creating a database transaction as you did before. You then generate a timestamp. This will be used as the key for the todo item.</p>
+<p>Next you create an object (<code>todo</code>) with two properties, <code>text</code> and <code>timestamp</code>. The text property is set using the text parameter passed into the method and the timestamp is set using the <code>timestamp</code> variable you just created.</p>
+<p>To save the todo item you call the <code>put</code> method on the object store, passing in the <code>todo</code> object.</p>
+<p>Finally you setup event handlers for <code>onsuccess</code> and <code>onerror</code>. If the todo item is successfully saved you execute the callback function, passing in the new todo item as a parameter.</p>
+<p>The final method that is needed for the database module is a way of deleting todo items. Copy the following code into your module.</p>
+<pre>/**
+ * Delete a todo item.
+ */
+tDB.deleteTodo = function(id, callback) {
+  var db = datastore;
+  var transaction = db.transaction(['todo'], 'readwrite');
+  var objStore = transaction.objectStore('todo');
+
+  var request = objStore.delete(id);
+
+  request.onsuccess = function(e) {
+    callback();
+  }
+
+  request.onerror = function(e) {
+    console.log(e);
+  }
+};
+</pre>
+<p>This method takes an <code>id</code> for the item that is to be deleted and a callback function that will be executed if the request is successful.</p>
+<p>After doing the standard setup to get a reference to the object store you use the object store&#8217;s <code>delete</code> method to remove the todo item from the database.</p>
+<p>You setup an <code>onsuccess</code> event listener that will execute the callback function and an <code>onerror</code> handler that will log any errors to the console.</p>
+<p>That&#8217;s the database module done! Next you are going to write the app code that will handle displaying todos on the screen and taking input for new todo items.</p>
+<h2 id="creating-the-app-code">Creating the App Code</h2>
+<p>Create a new file called <code>app.js</code> and save this in the same folder as your <code>index.html</code> file. This new file will contain all of the code that handles interactions with the app UI.</p>
+<p>Add the following code to your <code>app.js</code> file. Any code that you put between the curly braces here will be executed when the page loads.</p>
+<pre>window.onload = function() {
+  // TODO: App Code goes here.
+};
+</pre>
+<p>Now open a connection to the database by calling the <code>todoDB.open</code> method that you created earlier. You have access to <code>todoDB</code> here because the <code>db.js</code> file is loaded before <code>app.js</code>.</p>
+<p>Pass in <code>refreshTodos</code> as the callback. You will write the <code>refreshTodos</code> method shortly.</p>
+<pre>// Display the todo items.
+todoDB.open(refreshTodos);
+</pre>
+<p>Now get references to the new todo item form and text input field.</p>
+<pre>// Get references to the form elements.
+var newTodoForm = document.getElementById('new-todo-form');
+var newTodoInput = document.getElementById('new-todo');
+</pre>
+<p>Your next task is to setup an event listener for when the form is submitted.</p>
+<pre>// Handle new todo item form submissions.
+newTodoForm.onsubmit = function() {
+  // Get the todo text.
+  var text = newTodoInput.value;
+
+  // Check to make sure the text is not blank (or just spaces).
+  if (text.replace(/ /g,'') != '') {
+    // Create the todo item.
+    todoDB.createTodo(text, function(todo) {
+      refreshTodos();
+    });
+  }
+
+  // Reset the input field.
+  newTodoInput.value = '';
+
+  // Don't send the form.
+  return false;
+};
+</pre>
+<p>Here you first get the text for the new todo item by accessing the <code>value</code> property on the text input. To prevent blank todo items from being added to the database you do a quick check to see if the text you gathered is more than just whitespace. You then issue a command to <code>todoDB.createTodo</code> passing in the text for the new todo item as well as a callback function that will execute <code>refreshTodos</code> to update the UI when the new item has been saved.</p>
+<p>Finally you clear the text input and return <code>false</code> so that the form does not cause a new HTTP request.</p>
+<p>Now lets write that <code>refreshTodos</code> method. This will fetch all of the todo items from the database and display them in the todos list. Copy the following code into <code>app.js</code>.</p>
+<pre>// Update the list of todo items.
+function refreshTodos() {  
+  todoDB.fetchTodos(function(todos) {
+    var todoList = document.getElementById('todo-items');
+    todoList.innerHTML = '';
+
+    for(var i = 0; i &lt; todos.length; i++) {
+      // Read the todo items backwards (most recent first).
+      var todo = todos[(todos.length - 1 - i)];
+
+      var li = document.createElement('li');
+      li.id = 'todo-' + todo.timestamp;
+      var checkbox = document.createElement('input');
+      checkbox.type = "checkbox";
+      checkbox.className = "todo-checkbox";
+      checkbox.setAttribute("data-id", todo.timestamp);
+
+      li.appendChild(checkbox);
+
+      var span = document.createElement('span');
+      span.innerHTML = todo.text;
+
+      li.appendChild(span);
+
+      todoList.appendChild(li);
+
+      // Setup an event listener for the checkbox.
+      checkbox.addEventListener('click', function(e) {
+        var id = parseInt(e.target.getAttribute('data-id'));
+
+        todoDB.deleteTodo(id, refreshTodos);
+      });
+    }
+
+  });
+}
+</pre>
+<p>Here you execute the <code>todoDB.fetchTodos</code> method with a callback which gets passed an array of todo items.</p>
+<p>Inside this callback you first get a reference to the todo items list and then make sure that this element has no HTML content.</p>
+<p>You then loop through each of the todo items in reverse order so that the most recent todo items are displayed at the top of the list. For each todo item you create a new <code>&lt;li&gt;</code> element that contains a checkbox for marking the todo as complete and a <code>&lt;span&gt;</code> element that contains the todo item text. The checkbox has a special attribute called <code>data-id</code> that contains the timestamp for the todo item. After creating each <code>&lt;li&gt;</code> you append it to the <code>todoList</code>.</p>
+<p>Finally you setup an event listener on each checkbox that will be triggered when the user clicks to complete an item. Inside this event listener you first get the todo items id from the <code>data-id</code> attribute on the checkbox. You then execute the <code>todoDB.deleteTodo</code> method, passing in the todo item id and specifying <code>refreshTodos</code> as the callback function.</p>
+<p>You&#8217;re done! If you load up the <code>index.html</code> file in your web browser you should now be able to add todo items to the list and also mark them as complete.</p>
+<h2 id="final-thoughts">Final Thoughts</h2>
+<img src="https://3wga6448744j404mpt11pbx4-wpengine.netdna-ssl.com/wp-content/uploads/2013/06/todo-app-screenshot1.png"><br>
+The Finished Todo List App<br>
+<p>IndexedDB allows developers to create a whole new level of client-side applications. In this post you have learned the basics of how to add and remove data from an IndexedDB database. If you&#8217;re feeling adventurous you might want to try building on your app to allow editing of todo items, or maybe you want to keep completed todo items but have them marked as &#8216;done&#8217; instead of just deleting them.</p>
+<p>How do you plan to use IndexedDB in your projects? Let us know in the comments below.</p>
+<h2 id="useful-links">Useful Links</h2>
+<ul>
+<li><a href="http://caniuse.com/indexeddb">Can I use IndexedDB</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/IndexedDB">MDN IndexedDB Documentation</a></li>
+<li><a href="http://www.w3.org/TR/IndexedDB/">Indexed Database API (W3C Spec)</a></li>
+</ul>
+<br>
+<br>
+<br>
+<br>
+
+<script>
+  $(function() {
+    var toc = $('#toc');
+
+    function makeLi(text, href) {
+      return $('<a href="' + href + '" target="_self">' + text + '</a><br>');
+    }
+
+    $('h2').each(function(i) {
+      var chapter = $(this), chapterNumber = i + 1;
+      toc.append(
+        makeLi(chapter.text(), '#chapter-' + chapterNumber)
+      );
+      chapter.attr('id', 'chapter-' + chapterNumber);
+    });
+
+  });
+</script>
+</body>
+</html>
