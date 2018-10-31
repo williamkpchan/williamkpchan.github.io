@@ -1,0 +1,257 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="..\maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, .apply, div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{font-size: x-large;width:80%;margin-left: 10%}
+h1, h2 {color: gold;}
+</style>
+</head><body>
+<center><h1>Passing arguments to R script from command lines</h1>
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+
+<p>Note: The program just loads a text file containing data, filters out non numeric variables and writes a text file with remaining numeric variables only.</p>
+<h2><strong>R</strong> style</h2>
+<p>The most natural way to pass arguments from the command line is to use the function <code>commandArgs</code>. This function scans the arguments which have been supplied when the current <strong>R</strong> session was invoked. So creating a script named <code>sillyScript.R</code> which starts with</p>
+<div class="wp_codebox">
+<table>
+<tr id="p169615">
+<td class="code" id="p1696code15">
+<pre class="rsplus" style="font-family:monospace;"><span style="color: #228B22;">#!/usr/bin/env Rscript</span><span style="color: #0000FF; font-weight: bold;">args</span> <span style="color: #080;">=</span> <span style="color: #0000FF; font-weight: bold;">commandArgs</span><span style="color: #080;">(</span>trailingOnly<span style="color: #080;">=</span>TRUE<span style="color: #080;">)</span></pre>
+</td>
+</tr>
+</table>
+</div>
+<p>and running the following command line</p>
+<div class="wp_codebox">
+<table>
+<tr id="p169616">
+<td class="code" id="p1696code16">
+<pre class="bash" style="font-family:monospace;">Rscript <span style="color: #660033;">--vanilla</span> sillyScript.R iris.txt out.txt</pre>
+</td>
+</tr>
+</table>
+</div>
+<p>will create a string vector <code>args</code> which contains the entries <code>iris.txt</code> and <code>out.txt</code>. Missing and default arguments can be handled this way:</p>
+<div class="wp_codebox">
+<table>
+<tr id="p169617">
+<td class="code" id="p1696code17">
+<pre class="rsplus" style="font-family:monospace;"><span style="color: #228B22;"># test if there is at least one argument: if not, return an error</span>
+<span style="color: #0000FF; font-weight: bold;">if</span> <span style="color: #080;">(</span><span style="color: #0000FF; font-weight: bold;">length</span><span style="color: #080;">(</span><span style="color: #0000FF; font-weight: bold;">args</span><span style="color: #080;">)</span><span style="color: #080;">==</span><span style="color: #ff0000;">0</span><span style="color: #080;">)</span> <span style="color: #080;">{</span>
+  <span style="color: #0000FF; font-weight: bold;">stop</span><span style="color: #080;">(</span><span style="color: #ff0000;">"At least one argument must be supplied (input file).<span style="color: #000099; font-weight: bold;">n</span>"</span>, call.<span style="color: #080;">=</span>FALSE<span style="color: #080;">)</span><span style="color: #080;">}</span> <span style="color: #0000FF; font-weight: bold;">else</span> <span style="color: #0000FF; font-weight: bold;">if</span> <span style="color: #080;">(</span><span style="color: #0000FF; font-weight: bold;">length</span><span style="color: #080;">(</span><span style="color: #0000FF; font-weight: bold;">args</span><span style="color: #080;">)</span><span style="color: #080;">==</span><span style="color: #ff0000;">1</span><span style="color: #080;">)</span> <span style="color: #080;">{</span>
+  <span style="color: #228B22;"># default output file</span>
+  <span style="color: #0000FF; font-weight: bold;">args</span><span style="color: #080;">[</span><span style="color: #ff0000;">2</span><span style="color: #080;">]</span> <span style="color: #080;">=</span> <span style="color: #ff0000;">"out.txt"</span><span style="color: #080;">}</span></pre>
+</td>
+</tr>
+</table>
+</div>
+<p>The simple use case described in the introduction thus gives</p>
+<div class="wp_codebox">
+<table>
+<tr id="p169618">
+<td class="code" id="p1696code18">
+<pre class="rsplus" style="font-family:monospace;"><span style="color: #228B22;">## program...</span><span style="color: #0000FF; font-weight: bold;">df</span> <span style="color: #080;">=</span> <span style="color: #0000FF; font-weight: bold;">read.<span style="">table</span></span><span style="color: #080;">(</span><span style="color: #0000FF; font-weight: bold;">args</span><span style="color: #080;">[</span><span style="color: #ff0000;">1</span><span style="color: #080;">]</span>, header<span style="color: #080;">=</span>TRUE<span style="color: #080;">)</span>
+num_vars <span style="color: #080;">=</span> <span style="color: #0000FF; font-weight: bold;">which</span><span style="color: #080;">(</span><span style="color: #0000FF; font-weight: bold;">sapply</span><span style="color: #080;">(</span><span style="color: #0000FF; font-weight: bold;">df</span>, <span style="color: #0000FF; font-weight: bold;">class</span><span style="color: #080;">)</span><span style="color: #080;">==</span><span style="color: #ff0000;">"numeric"</span><span style="color: #080;">)</span>
+df_out <span style="color: #080;">=</span> <span style="color: #0000FF; font-weight: bold;">df</span><span style="color: #080;">[</span> ,num_vars<span style="color: #080;">]</span><span style="color: #0000FF; font-weight: bold;">write.<span style="">table</span></span><span style="color: #080;">(</span>df_out, <span style="color: #0000FF; font-weight: bold;">file</span><span style="color: #080;">=</span><span style="color: #0000FF; font-weight: bold;">args</span><span style="color: #080;">[</span><span style="color: #ff0000;">2</span><span style="color: #080;">]</span>, <span style="color: #0000FF; font-weight: bold;">row.<span style="">names</span></span><span style="color: #080;">=</span>FALSE<span style="color: #080;">)</span></pre>
+</td>
+</tr>
+</table>
+</div>
+<p>Finally, the command lines</p>
+<div class="wp_codebox">
+<table>
+<tr id="p169619">
+<td class="code" id="p1696code19">
+<pre class="bash" style="font-family:monospace;">Rscript <span style="color: #660033;">--vanilla</span> sillyScript.R iris.txt out.txt</pre>
+</td>
+</tr>
+</table>
+</div>
+<p>or</p>
+<div class="wp_codebox">
+<table>
+<tr id="p169620">
+<td class="code" id="p1696code20">
+<pre class="bash" style="font-family:monospace;">Rscript <span style="color: #660033;">--vanilla</span> sillyScript.R iris.txt</pre>
+</td>
+</tr>
+</table>
+</div>
+<p>will both load the file <code>iris.txt</code>, filter out the non numeric variables and write the resulting data in <code>out.txt</code>. Whereas running</p>
+<div class="wp_codebox">
+<table>
+<tr id="p169621">
+<td class="code" id="p1696code21">
+<pre class="bash" style="font-family:monospace;">Rscript <span style="color: #660033;">--vanilla</span> sillyScript.R</pre>
+</td>
+</tr>
+</table>
+</div>
+<pre>Error: At least one argument must be supplied (input file).
+Execution halted
+</pre>
+<h2><strong>python</strong> style</h2>
+<p>One package allows to obtain the same result in a python-like style: the package <a href="https://cran.r-project.org/web/packages/optparse/" rel="nofollow" target="_blank">
+optparse</a>. The package can be used to perform a similar task. Basically, the package contains the functions</p>
+<ul>
+<li><code>make_option</code> to declare options, their flags, types, default values and help messages;</li>
+<li><code>OptionParser</code> to read the arguments passed to the <strong>R</strong> script and <code>parse_args</code> to parse them according to what has been declared thanks to <code>make_option</code>.</li>
+</ul>
+<p>The functions are used as follows:</p>
+<div class="wp_codebox">
+<table>
+<tr id="p169622">
+<td class="code" id="p1696code22">
+<pre class="rsplus" style="font-family:monospace;"><span style="color: #228B22;">#!/usr/bin/env Rscript</span>
+<span style="color: #0000FF; font-weight: bold;">library</span><span style="color: #080;">(</span><span style="color: #ff0000;">"optparse"</span><span style="color: #080;">)</span>
+ 
+option_list <span style="color: #080;">=</span> <span style="color: #0000FF; font-weight: bold;">list</span><span style="color: #080;">(</span>
+  make_option<span style="color: #080;">(</span><span style="color: #0000FF; font-weight: bold;">c</span><span style="color: #080;">(</span><span style="color: #ff0000;">"-f"</span>, <span style="color: #ff0000;">"--file"</span><span style="color: #080;">)</span>, type<span style="color: #080;">=</span><span style="color: #ff0000;">"character"</span>, default<span style="color: #080;">=</span>NULL, 
+              <span style="color: #0000FF; font-weight: bold;">help</span><span style="color: #080;">=</span><span style="color: #ff0000;">"dataset file name"</span>, metavar<span style="color: #080;">=</span><span style="color: #ff0000;">"character"</span><span style="color: #080;">)</span>,
+	make_option<span style="color: #080;">(</span><span style="color: #0000FF; font-weight: bold;">c</span><span style="color: #080;">(</span><span style="color: #ff0000;">"-o"</span>, <span style="color: #ff0000;">"--out"</span><span style="color: #080;">)</span>, type<span style="color: #080;">=</span><span style="color: #ff0000;">"character"</span>, default<span style="color: #080;">=</span><span style="color: #ff0000;">"out.txt"</span>, 
+              <span style="color: #0000FF; font-weight: bold;">help</span><span style="color: #080;">=</span><span style="color: #ff0000;">"output file name [default= %default]"</span>, metavar<span style="color: #080;">=</span><span style="color: #ff0000;">"character"</span><span style="color: #080;">)</span><span style="color: #080;">)</span><span style="color: #080;">;</span> 
+ 
+opt_parser <span style="color: #080;">=</span> OptionParser<span style="color: #080;">(</span>option_list<span style="color: #080;">=</span>option_list<span style="color: #080;">)</span><span style="color: #080;">;</span>
+opt <span style="color: #080;">=</span> parse_args<span style="color: #080;">(</span>opt_parser<span style="color: #080;">)</span><span style="color: #080;">;</span></pre>
+</td>
+</tr>
+</table>
+</div>
+<p>which produces a list <code>opt</code> that contains all the arguments sorted by order of appearance in <code>option_list</code> and which can be called by their names as declared in this object: <code>opt$file</code> and <code>opt$out</code>. Then, managing null arguments is performed as follows:</p>
+<div class="wp_codebox">
+<table>
+<tr id="p169623">
+<td class="code" id="p1696code23">
+<pre class="rsplus" style="font-family:monospace;"><span style="color: #0000FF; font-weight: bold;">if</span> <span style="color: #080;">(</span><span style="color: #0000FF; font-weight: bold;">is.<span style="">null</span></span><span style="color: #080;">(</span>opt$file<span style="color: #080;">)</span><span style="color: #080;">)</span><span style="color: #080;">{</span>
+  print_help<span style="color: #080;">(</span>opt_parser<span style="color: #080;">)</span>
+  <span style="color: #0000FF; font-weight: bold;">stop</span><span style="color: #080;">(</span><span style="color: #ff0000;">"At least one argument must be supplied (input file).<span style="color: #000099; font-weight: bold;">n</span>"</span>, call.<span style="color: #080;">=</span>FALSE<span style="color: #080;">)</span><span style="color: #080;">}</span></pre>
+</td>
+</tr>
+</table>
+</div>
+<p>in which the function <code>print_help</code> print the help page of the option list as declared in the object <code>option_list</code>.</p>
+<p>The remaining of the function is almost unchanged:</p>
+<div class="wp_codebox">
+<table>
+<tr id="p169624">
+<td class="code" id="p1696code24">
+<pre class="rsplus" style="font-family:monospace;"><span style="color: #228B22;">## program...</span><span style="color: #0000FF; font-weight: bold;">df</span> <span style="color: #080;">=</span> <span style="color: #0000FF; font-weight: bold;">read.<span style="">table</span></span><span style="color: #080;">(</span>opt$file, header<span style="color: #080;">=</span>TRUE<span style="color: #080;">)</span>
+num_vars <span style="color: #080;">=</span> <span style="color: #0000FF; font-weight: bold;">which</span><span style="color: #080;">(</span><span style="color: #0000FF; font-weight: bold;">sapply</span><span style="color: #080;">(</span><span style="color: #0000FF; font-weight: bold;">df</span>, <span style="color: #0000FF; font-weight: bold;">class</span><span style="color: #080;">)</span><span style="color: #080;">==</span><span style="color: #ff0000;">"numeric"</span><span style="color: #080;">)</span>
+df_out <span style="color: #080;">=</span> <span style="color: #0000FF; font-weight: bold;">df</span><span style="color: #080;">[</span> ,num_vars<span style="color: #080;">]</span><span style="color: #0000FF; font-weight: bold;">write.<span style="">table</span></span><span style="color: #080;">(</span>df_out, <span style="color: #0000FF; font-weight: bold;">file</span><span style="color: #080;">=</span>opt$out, <span style="color: #0000FF; font-weight: bold;">row.<span style="">names</span></span><span style="color: #080;">=</span>FALSE<span style="color: #080;">)</span></pre>
+</td>
+</tr>
+</table>
+</div>
+<p>If the entire script is saved in a file called <code>yasrs.R</code>,</p>
+<div class="wp_codebox">
+<table>
+<tr id="p169625">
+<td class="code" id="p1696code25">
+<pre class="bash" style="font-family:monospace;">Rscript <span style="color: #660033;">--vanilla</span> yasrs.R</pre>
+</td>
+</tr>
+</table>
+</div>
+<p>will give</p>
+<pre>Usage: testScript.R [options]
+
+
+Options:
+  -f CHARACTER, --file=CHARACTER
+		dataset file name
+
+	-o CHARACTER, --out=CHARACTER
+		output file name [default= out.txt]
+
+	-h, --help
+		Show this help message and exit
+
+
+Error: At least one argument must be supplied (input file).
+Execution halted
+</pre>
+<p>and</p>
+<div class="wp_codebox">
+<table>
+<tr id="p169626">
+<td class="code" id="p1696code26">
+<pre class="bash" style="font-family:monospace;">Rscript <span style="color: #660033;">--vanilla</span> yasrs.R <span style="color: #660033;">--help</span></pre>
+</td>
+</tr>
+</table>
+</div>
+<p>will print the help</p>
+<pre>Usage: testScript.R [options]
+
+
+Options:
+  -f CHARACTER, --file=CHARACTER
+		dataset file name
+
+	-o CHARACTER, --out=CHARACTER
+		output file name [default= out.txt]
+
+	-h, --help
+		Show this help message and exit
+</pre>
+<p>and finally</p>
+<div class="wp_codebox">
+<table>
+<tr id="p169627">
+<td class="code" id="p1696code27">
+<pre class="bash" style="font-family:monospace;">Rscript <span style="color: #660033;">--vanilla</span> yasrs.R <span style="color: #660033;">-f</span> iris.txt</pre>
+</td>
+</tr>
+</table>
+</div>
+<p>or</p>
+<div class="wp_codebox">
+<table>
+<tr id="p169628">
+<td class="code" id="p1696code28">
+<pre class="bash" style="font-family:monospace;">Rscript <span style="color: #660033;">--vanilla</span> yasrs.R <span style="color: #660033;">-f</span> iris.txt <span style="color: #660033;">-o</span> out.txt</pre>
+</td>
+</tr>
+</table>
+</div>
+<p>will both create the file <code>out.txt</code> as described in the introduction of this post.</p>
+<p>My dearest <span style="color: #ff00ff;"><strong>Céline</strong></span>, I hope that this post is explicit enough so that you can make your choice. Now you know that everything can be done with <strong>R</strong>, even <a href="http://sumsar.net/files/academia/map_of_romantic_kissing.html" rel="nofollow" target="_blank">
+this kind of map</a>.</p>
+<br>
+<br>
+<br>
+<br>
+
+<script>
+  $(function() {
+    var toc = $('#toc');
+
+    function makeLi(text, href) {
+      return $('<a href="' + href + '" target="_self">' + text + '</a><br>');
+    }
+
+    $('h2').each(function(i) {
+      var chapter = $(this), chapterNumber = i + 1;
+      toc.append(
+        makeLi(chapter.text(), '#chapter-' + chapterNumber)
+      );
+      chapter.attr('id', 'chapter-' + chapterNumber);
+    });
+
+  });
+</script>
+</body>
+</html>
