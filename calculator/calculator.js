@@ -131,6 +131,7 @@ function chkKey() {
 	if(testkey == '7'){dispInput('7');}
 	if(testkey == '8'){dispInput('8');}
 	if(testkey == '9'){dispInput('9');}
+	if(testkey == '.'){dispInput('.');}
 	if(testkey == '+'){dispOp('+');}
 	if(testkey == '-'){dispOp('-');}
 	if(testkey == '*'){dispOp('*');}
