@@ -1,0 +1,960 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="..\maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, .apply, div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{font-size: x-large;width:80%;margin-left: 10%}
+h1, h2 {color: gold;}
+.s1, .nf{color: red;}
+</style>
+</head><body>
+<center><strong class="goldword">Advanced tips and tricks with data.table</strong>
+<br>
+<a href="http://brooksandrew.github.io/simpleblog/articles/advanced-data-table/">Advanced tips and tricks with data.table</a>
+<br>
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+
+<h2>TOC</h2>
+        <ul id="markdown-toc">
+  <li><a href="#1-data-structures--assignment" id="markdown-toc-1-data-structures--assignment">1. DATA STRUCTURES &amp; ASSIGNMENT</a>    <ul>
+      <li><a href="#columns-of-lists" id="markdown-toc-columns-of-lists">Columns of lists</a>        <ul>
+          <li><a href="#accessing-elements-from-a-column-of-lists" id="markdown-toc-accessing-elements-from-a-column-of-lists">Accessing elements from a column of lists</a></li>
+        </ul>
+      </li>
+      <li><a href="#suppressing-intermediate-output-with-" id="markdown-toc-suppressing-intermediate-output-with-">Suppressing intermediate output with {}</a></li>
+      <li><a href="#fast-looping-with-set" id="markdown-toc-fast-looping-with-set">Fast looping with <code class="highlighter-rouge">set</code></a></li>
+      <li><a href="#using-shift-for-to-leadlag-vectors-and-lists" id="markdown-toc-using-shift-for-to-leadlag-vectors-and-lists">Using <code class="highlighter-rouge">shift</code> for to lead/lag vectors and lists</a></li>
+      <li><a href="#create-multiple-columns-with--in-one-statement" id="markdown-toc-create-multiple-columns-with--in-one-statement">Create multiple columns with <code class="highlighter-rouge">:=</code> in one statement</a></li>
+      <li><a href="#assign-a-column-with--named-with-a-character-object" id="markdown-toc-assign-a-column-with--named-with-a-character-object">Assign a column with <code class="highlighter-rouge">:=</code> named with a character object</a></li>
+    </ul>
+  </li>
+  <li><a href="#2-by" id="markdown-toc-2-by">2. <code class="highlighter-rouge">BY</code></a>    <ul>
+      <li><a href="#calculate-a-function-over-a-group-using-by-excluding-each-entity-in-a-second-category" id="markdown-toc-calculate-a-function-over-a-group-using-by-excluding-each-entity-in-a-second-category">Calculate a function over a group (using <code class="highlighter-rouge">by</code>) excluding each entity in a second category.</a>        <ul>
+          <li><a href="#method-1-in-line" id="markdown-toc-method-1-in-line">METHOD 1: in-line</a></li>
+          <li><a href="#method-2-using--and-sd" id="markdown-toc-method-2-using--and-sd">METHOD 2: using <code class="highlighter-rouge">{}</code> and <code class="highlighter-rouge">.SD</code></a></li>
+          <li><a href="#method-3-super-fast-mean-calculation" id="markdown-toc-method-3-super-fast-mean-calculation">METHOD 3: Super Fast Mean calculation</a></li>
+          <li><a href="#speed-check" id="markdown-toc-speed-check">Speed check</a></li>
+        </ul>
+      </li>
+      <li><a href="#keyby-to-key-resulting-aggregate-table" id="markdown-toc-keyby-to-key-resulting-aggregate-table"><code class="highlighter-rouge">keyby</code> to key resulting aggregate table</a></li>
+      <li><a href="#using-1-n-setkey-and-by-for-within-group-subsetting" id="markdown-toc-using-1-n-setkey-and-by-for-within-group-subsetting">Using <code class="highlighter-rouge">[1]</code>, <code class="highlighter-rouge">[.N]</code>, <code class="highlighter-rouge">setkey</code> and <code class="highlighter-rouge">by</code> for within group subsetting</a></li>
+    </ul>
+  </li>
+  <li><a href="#3-functions" id="markdown-toc-3-functions">3. FUNCTIONS</a>    <ul>
+      <li><a href="#passing-datatable-column-names-as-function-arguments" id="markdown-toc-passing-datatable-column-names-as-function-arguments">Passing <code class="highlighter-rouge">data.table</code> column names as function arguments</a>        <ul>
+          <li><a href="#method-2-quotes-and-get" id="markdown-toc-method-2-quotes-and-get">Method 2: quotes and <code class="highlighter-rouge">get</code></a></li>
+        </ul>
+      </li>
+      <li><a href="#beware-of-scoping-within-datatable" id="markdown-toc-beware-of-scoping-within-datatable">Beware of scoping within data.table</a>        <ul>
+          <li><a href="#dataframe-way" id="markdown-toc-dataframe-way"><code class="highlighter-rouge">data.frame</code> way</a></li>
+          <li><a href="#datatable-way" id="markdown-toc-datatable-way"><code class="highlighter-rouge">data.table</code> way</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><a href="#4-printing" id="markdown-toc-4-printing">4. PRINTING</a>    <ul>
+      <li><a href="#print-datatable-with-" id="markdown-toc-print-datatable-with-">Print data.table with <code class="highlighter-rouge">[]</code></a></li>
+      <li><a href="#hide-output-from--with-knitr" id="markdown-toc-hide-output-from--with-knitr">Hide output from <code class="highlighter-rouge">:=</code> with knitr</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="tips-and-tricks-learned-along-the-way">Tips and tricks learned along the way</h4>
+
+<p>This is mostly a running list of <code class="highlighter-rouge">data.table</code> tricks that took me a while to figure out either by digging into the <a href="https://cran.r-project.org/web/packages/data.table/data.table.pdf">official documentation</a>, adapting StackOverflow posts, or more often than not, experimenting for hours.  I’d like to persist these discoveries somewhere with more memory than my head (hello internet) so I can reuse them after my mental memory forgets them.  A less organized and concise addition to DataCamp’s sweet <a href="https://s3.amazonaws.com/assets.datacamp.com/img/blog/data+table+cheat+sheet.pdf">cheat sheet for the basics</a>.</p>
+
+<p>Most, if not all of these techniques were developed for real data science projects and provided some value to my data engineering.  I’ve generalized everything to the <code class="highlighter-rouge">mtcars</code> dataset which might not make this value immediately clear in this slightly contrived context.  This list is not intended to be comprehensive as DataCamp’s data.table cheatsheet is.  OK, enough disclaimers!</p>
+
+<p>Some more advanced functionality from <code class="highlighter-rouge">data.table</code> creator Matt Dowle <a href="http://user2014.stat.ucla.edu/files/tutorial_Matt.pdf">here</a>.</p>
+
+<h1></h1>
+<h1 id="1-data-structures--assignment">1. DATA STRUCTURES &amp; ASSIGNMENT</h1>
+<hr />
+
+<h2 id="columns-of-lists">Columns of lists</h2>
+
+<h5 id="summary-table-long-and-narrow">summary table (long and narrow)</h5>
+<p>This could be useful, but is easily achievable using traditional methods.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)[,</span><span class="w"> </span><span class="n">.</span><span class="p">(</span><span class="n">cyl</span><span class="p">,</span><span class="w"> </span><span class="n">gear</span><span class="p">)]</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">unique</span><span class="p">(</span><span class="n">gear</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    cyl V1
+## 1:   6  4
+## 2:   6  3
+## 3:   6  5
+## 4:   4  4
+## 5:   4  3
+## 6:   4  5
+## 7:   8  3
+## 8:   8  5</code></pre></figure>
+
+<h5 id="summary-table-short-and-narrow">summary table (short and narrow)</h5>
+<p>Add all categories of <code class="highlighter-rouge">gear</code> for each <code class="highlighter-rouge">cyl</code> to original data.table as a list.</p>
+
+<p>This is more nifty.  It’s so simple, I find myself using this trick to quickly explore data ad hoc at the command line.
+Can also be useful for more serious data engineering.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)[,</span><span class="n">.</span><span class="p">(</span><span class="n">gear</span><span class="p">,</span><span class="w"> </span><span class="n">cyl</span><span class="p">)]</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">gearsL</span><span class="o">:=</span><span class="nf">list</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="n">unique</span><span class="p">(</span><span class="n">gear</span><span class="p">))),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span><span class="w"> </span><span class="c1"># original, ugly</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">gearsL</span><span class="o">:=</span><span class="n">.</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="n">unique</span><span class="p">(</span><span class="n">gear</span><span class="p">))),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span><span class="w"> </span><span class="c1"># improved, pretty</span><span class="w">
+</span><span class="n">head</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    gear cyl gearsL
+## 1:    4   6  4,3,5
+## 2:    4   6  4,3,5
+## 3:    4   4  4,3,5
+## 4:    3   6  4,3,5
+## 5:    3   8    3,5
+## 6:    3   6  4,3,5</code></pre></figure>
+
+<p><strong>Update 10/29/2015:</strong> Per <a href="http://stackoverflow.com/questions/33113013/use-of-list-in-data-tables-j-argument">these comments</a> 
+on StackOverlow referencing my post, <code class="highlighter-rouge">t[,gearsL:=list(list(unique(gear))), by=cyl]</code> can be more elegantly written as <code class="highlighter-rouge">t[,gearsL:=.(list(unique(gear))), by=cyl]</code>.  Thanks for pointing out my unnecessarily verbose and unusual syntax!  I think I wrote the first thing that worked when I posted this, not realizing the normal <code class="highlighter-rouge">.(</code> syntax was equivalent to the outer list.</p>
+
+<h3 id="accessing-elements-from-a-column-of-lists">Accessing elements from a column of lists</h3>
+
+<p>Extract second element of each list in <code class="highlighter-rouge">gearL1</code> and create row <code class="highlighter-rouge">gearL1</code>.
+This isn’t that groundbreaking, but explores how to access elements of columns which are constructed of lists of lists.  <code class="highlighter-rouge">lapply</code> is your friend.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="p">[,</span><span class="n">gearL1</span><span class="o">:=</span><span class="n">lapply</span><span class="p">(</span><span class="n">gearsL</span><span class="p">,</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="m">2</span><span class="p">])]</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">gearS1</span><span class="o">:=</span><span class="n">sapply</span><span class="p">(</span><span class="n">gearsL</span><span class="p">,</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="m">2</span><span class="p">])]</span><span class="w"> 
+
+</span><span class="n">head</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    gear cyl gearsL gearL1 gearS1
+## 1:    4   6  4,3,5      3      3
+## 2:    4   6  4,3,5      3      3
+## 3:    4   4  4,3,5      3      3
+## 4:    3   6  4,3,5      3      3
+## 5:    3   8    3,5      5      5
+## 6:    3   6  4,3,5      3      3</code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">str</span><span class="p">(</span><span class="n">head</span><span class="p">(</span><span class="n">dt</span><span class="p">[,</span><span class="n">gearL1</span><span class="p">]))</span><span class="w"> </span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">## List of 6
+##  $ : num 3
+##  $ : num 3
+##  $ : num 3
+##  $ : num 3
+##  $ : num 5
+##  $ : num 3</code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">str</span><span class="p">(</span><span class="n">head</span><span class="p">(</span><span class="n">dt</span><span class="p">[,</span><span class="n">gearS1</span><span class="p">]))</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##  num [1:6] 3 3 3 3 5 3</code></pre></figure>
+
+<p><strong>Update 9/24/2015:</strong> Per Matt Dowle’s comments, a slightly more syntactically succinct way of doing this:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="p">[,</span><span class="n">gearL1</span><span class="o">:=</span><span class="n">lapply</span><span class="p">(</span><span class="n">gearsL</span><span class="p">,</span><span class="w"> </span><span class="n">`[`</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">)]</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">gearS1</span><span class="o">:=</span><span class="n">sapply</span><span class="p">(</span><span class="n">gearsL</span><span class="p">,</span><span class="w"> </span><span class="n">`[`</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">)]</span></code></pre></figure>
+
+<p>Calculate all the <code class="highlighter-rouge">gear</code>s for all cars of each <code class="highlighter-rouge">cyl</code> (excluding the current current row).
+This can be useful for comparing observations to the mean of groups, where the group mean is not biased by the observation of interest.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="p">[,</span><span class="n">other_gear</span><span class="o">:=</span><span class="n">mapply</span><span class="p">(</span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="n">setdiff</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">),</span><span class="w"> </span><span class="n">x</span><span class="o">=</span><span class="n">gearsL</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">=</span><span class="n">gear</span><span class="p">)]</span><span class="w">
+</span><span class="n">head</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    gear cyl gearsL gearL1 gearS1 other_gear
+## 1:    4   6  4,3,5      3      3        3,5
+## 2:    4   6  4,3,5      3      3        3,5
+## 3:    4   4  4,3,5      3      3        3,5
+## 4:    3   6  4,3,5      3      3        4,5
+## 5:    3   8    3,5      5      5          5
+## 6:    3   6  4,3,5      3      3        4,5</code></pre></figure>
+
+<p><strong>Update 9/24/2015:</strong> Per Matt Dowle’s comments, this achieves the same as above.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="p">[,</span><span class="n">other_gear</span><span class="o">:=</span><span class="n">mapply</span><span class="p">(</span><span class="n">setdiff</span><span class="p">,</span><span class="w"> </span><span class="n">gearsL</span><span class="p">,</span><span class="w"> </span><span class="n">gear</span><span class="p">)]</span></code></pre></figure>
+
+<h2 id="suppressing-intermediate-output-with-">Suppressing intermediate output with {}</h2>
+
+<p>This is actually a base R trick that I didn’t discover until working with data.table.  See <code class="highlighter-rouge">?`{`</code> for some documentation and examples.
+I’ve only used it within the J slot of data.table, it might be more generalizable.  I find it pretty useful for generating columns
+on the fly when I need to perform some multi-step vectorized operation.  It can clean up code by allowing you to reference the same temporary variable
+by a concise name rather than rewriting the code to re-compute it.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)</span></code></pre></figure>
+
+<p>Defaults to just returning the last object defined in the braces unnamed.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="p">[,{</span><span class="n">tmp1</span><span class="o">=</span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">);</span><span class="w"> </span><span class="n">tmp2</span><span class="o">=</span><span class="n">mean</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">mpg</span><span class="o">-</span><span class="n">tmp1</span><span class="p">));</span><span class="w"> </span><span class="n">tmp3</span><span class="o">=</span><span class="nf">round</span><span class="p">(</span><span class="n">tmp2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">)},</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    cyl   V1
+## 1:   6 1.19
+## 2:   4 3.83
+## 3:   8 1.79</code></pre></figure>
+
+<p>We can be more explicit by passing a named list of what we want to keep.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="p">[,{</span><span class="n">tmp1</span><span class="o">=</span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">);</span><span class="w"> </span><span class="n">tmp2</span><span class="o">=</span><span class="n">mean</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">mpg</span><span class="o">-</span><span class="n">tmp1</span><span class="p">));</span><span class="w"> </span><span class="n">tmp3</span><span class="o">=</span><span class="nf">round</span><span class="p">(</span><span class="n">tmp2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">);</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">tmp2</span><span class="o">=</span><span class="n">tmp2</span><span class="p">,</span><span class="w"> </span><span class="n">tmp3</span><span class="o">=</span><span class="n">tmp3</span><span class="p">)},</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    cyl     tmp2 tmp3
+## 1:   6 1.191837 1.19
+## 2:   4 3.833058 3.83
+## 3:   8 1.785714 1.79</code></pre></figure>
+
+<p>Can also write it like this without semicolons.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="p">[,{</span><span class="n">tmp1</span><span class="o">=</span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">)</span><span class="w">
+     </span><span class="n">tmp2</span><span class="o">=</span><span class="n">mean</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">mpg</span><span class="o">-</span><span class="n">tmp1</span><span class="p">))</span><span class="w">
+     </span><span class="n">tmp3</span><span class="o">=</span><span class="nf">round</span><span class="p">(</span><span class="n">tmp2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w">
+     </span><span class="nf">list</span><span class="p">(</span><span class="n">tmp2</span><span class="o">=</span><span class="n">tmp2</span><span class="p">,</span><span class="w"> </span><span class="n">tmp3</span><span class="o">=</span><span class="n">tmp3</span><span class="p">)},</span><span class="w">
+   </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    cyl     tmp2 tmp3
+## 1:   6 1.191837 1.19
+## 2:   4 3.833058 3.83
+## 3:   8 1.785714 1.79</code></pre></figure>
+
+<p>This is trickier with <code class="highlighter-rouge">:=</code> assignments… I don’t think <code class="highlighter-rouge">:=</code> is intended to work when wrapped in <code class="highlighter-rouge">{</code>.  Assigning multiple columns with <code class="highlighter-rouge">:=</code> at once
+does not allow you to use the first columns you create to use building the ones after it, as we did with <code class="highlighter-rouge">=</code> inside the <code class="highlighter-rouge">{</code> above.  Chaining and then dropping unwanted variables is a messy workaround… still exploring this one.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)[,</span><span class="n">.</span><span class="p">(</span><span class="n">cyl</span><span class="p">,</span><span class="w"> </span><span class="n">mpg</span><span class="p">)]</span><span class="w">
+
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">tmp1</span><span class="o">:=</span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">][,</span><span class="n">tmp2</span><span class="o">:=</span><span class="n">mean</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">mpg</span><span class="o">-</span><span class="n">tmp1</span><span class="p">)),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">][,</span><span class="n">tmp1</span><span class="o">:=</span><span class="kc">NULL</span><span class="p">]</span><span class="w">
+</span><span class="n">head</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    cyl  mpg     tmp2
+## 1:   6 21.0 1.191837
+## 2:   6 21.0 1.191837
+## 3:   4 22.8 3.833058
+## 4:   6 21.4 1.191837
+## 5:   8 18.7 1.785714
+## 6:   6 18.1 1.191837</code></pre></figure>
+
+<h2 id="fast-looping-with-set">Fast looping with <code class="highlighter-rouge">set</code></h2>
+
+<p>I still haven’t worked much with the loop + <code class="highlighter-rouge">set</code> framework.  I’ve been able to achieve pretty much everything with <code class="highlighter-rouge">:=</code> which is more flexible and powerful.
+However, if you must loop, <code class="highlighter-rouge">set</code> is orders of magnitude faster than native R assignments within loops.  Here’s a snippet from data.table news a while back:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>New function set(DT,i,j,value) allows fast assignment to elements
+of DT. Similar to := but avoids the overhead of [.data.table, so is
+much faster inside a loop. Less flexible than :=, but as flexible
+as matrix sub-assignment. Similar in spirit to setnames(), setcolorder(),
+setkey() and setattr(); i.e., assigns by reference with no copy at all.
+
+M = matrix(1,nrow=100000,ncol=100)
+DF = as.data.frame(M)
+DT = as.data.table(M)
+system.time(for (i in 1:1000) DF[i,1L] &lt;- i)   # 591.000s
+system.time(for (i in 1:1000) DT[i,V1:=i])     #   1.158s
+system.time(for (i in 1:1000) M[i,1L] &lt;- i)    #   0.016s
+system.time(for (i in 1:1000) set(DT,i,1L,i))  #   0.027s
+</code></pre></div></div>
+
+<p>data.table creators do favor <code class="highlighter-rouge">set</code> for <a href="http://stackoverflow.com/questions/16846380/how-to-apply-same-function-to-every-specified-column-in-a-data-table">some things</a>, like this task which can also be done w/ <code class="highlighter-rouge">lapply</code> and <code class="highlighter-rouge">.SD</code>.  I was actually directed to this solution after I posed <a href="http://stackoverflow.com/questions/31326691/apply-function-across-subset-of-columns-in-data-table-with-sdcols">this question</a> on StackOverflow.  I was also pleased to learn that the 
+functionality I was looking for – applying a function to a subset of columns with <code class="highlighter-rouge">.SDcols</code> while preserving the untouched columns – was added as a feature request.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)[,</span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">with</span><span class="o">=</span><span class="nb">F</span><span class="p">]</span><span class="w">
+</span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1L</span><span class="p">,</span><span class="m">2L</span><span class="p">,</span><span class="m">4L</span><span class="p">))</span><span class="w"> </span><span class="n">set</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="o">=</span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="o">=-</span><span class="n">dt</span><span class="p">[[</span><span class="n">j</span><span class="p">]])</span><span class="w"> </span><span class="c1"># integers using 'L' passed for efficiency</span><span class="w">
+</span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">3L</span><span class="p">,</span><span class="m">5L</span><span class="p">))</span><span class="w"> </span><span class="n">set</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="o">=</span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="o">=</span><span class="n">paste0</span><span class="p">(</span><span class="n">dt</span><span class="p">[[</span><span class="n">j</span><span class="p">]],</span><span class="s1">'!!'</span><span class="p">))</span><span class="w">
+</span><span class="n">head</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##      mpg cyl  disp   hp   drat
+## 1: -21.0  -6 160!! -110  3.9!!
+## 2: -21.0  -6 160!! -110  3.9!!
+## 3: -22.8  -4 108!!  -93 3.85!!
+## 4: -21.4  -6 258!! -110 3.08!!
+## 5: -18.7  -8 360!! -175 3.15!!
+## 6: -18.1  -6 225!! -105 2.76!!</code></pre></figure>
+
+<h2 id="using-shift-for-to-leadlag-vectors-and-lists">Using <code class="highlighter-rouge">shift</code> for to lead/lag vectors and lists</h2>
+
+<p>Note this feature is only available in version 1.9.5 (currently on Github, not CRAN)
+Base R surprisingly does not have great tools for dealing with leads/lags of vectors that most social science
+statistical software (Stata, SAS, even FAME which I used in my formative data years) come equipped with out of the box.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)[,</span><span class="n">.</span><span class="p">(</span><span class="n">mpg</span><span class="p">,</span><span class="w"> </span><span class="n">cyl</span><span class="p">)]</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">mpg_lag1</span><span class="o">:=</span><span class="n">shift</span><span class="p">(</span><span class="n">mpg</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">)]</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">mpg_forward1</span><span class="o">:=</span><span class="n">shift</span><span class="p">(</span><span class="n">mpg</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="o">=</span><span class="s1">'lead'</span><span class="p">)]</span><span class="w">
+</span><span class="n">head</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##     mpg cyl mpg_lag1 mpg_forward1
+## 1: 21.0   6       NA         21.0
+## 2: 21.0   6     21.0         22.8
+## 3: 22.8   4     21.0         21.4
+## 4: 21.4   6     22.8         18.7
+## 5: 18.7   8     21.4         18.1
+## 6: 18.1   6     18.7         14.3</code></pre></figure>
+
+<h4 id="shift-with-by"><code class="highlighter-rouge">shift</code> with <code class="highlighter-rouge">by</code></h4>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># creating some data</span><span class="w">
+</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">30</span><span class="w">
+</span><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="w">
+  </span><span class="n">date</span><span class="o">=</span><span class="nf">rep</span><span class="p">(</span><span class="n">seq</span><span class="p">(</span><span class="n">as.Date</span><span class="p">(</span><span class="s1">'2010-01-01'</span><span class="p">),</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="s1">'2015-01-01'</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="s1">'year'</span><span class="p">),</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="m">6</span><span class="p">),</span><span class="w"> 
+  </span><span class="n">ind</span><span class="o">=</span><span class="n">rpois</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="p">),</span><span class="w">
+  </span><span class="n">entity</span><span class="o">=</span><span class="n">sort</span><span class="p">(</span><span class="nf">rep</span><span class="p">(</span><span class="nb">letters</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">],</span><span class="w"> </span><span class="n">n</span><span class="o">/</span><span class="m">5</span><span class="p">))</span><span class="w">
+  </span><span class="p">)</span><span class="w">
+
+</span><span class="n">setkey</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="w"> </span><span class="n">entity</span><span class="p">,</span><span class="w"> </span><span class="n">date</span><span class="p">)</span><span class="w"> </span><span class="c1"># important for ordering</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">indpct_fast</span><span class="o">:=</span><span class="p">(</span><span class="n">ind</span><span class="o">/</span><span class="n">shift</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="m">-1</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">entity</span><span class="p">]</span><span class="w">
+
+</span><span class="n">lagpad</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="nf">rep</span><span class="p">(</span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">),</span><span class="w"> </span><span class="n">x</span><span class="p">)[</span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">x</span><span class="p">)]</span><span class="w"> 
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">indpct_slow</span><span class="o">:=</span><span class="p">(</span><span class="n">ind</span><span class="o">/</span><span class="n">lagpad</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="m">-1</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">entity</span><span class="p">]</span><span class="w">
+
+</span><span class="n">head</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##  1: 2010-01-01   3      a          NA          NA
+##  2: 2011-01-01   2      a  -0.3333333  -0.3333333
+##  3: 2012-01-01   5      a   1.5000000   1.5000000
+##  4: 2013-01-01   4      a  -0.2000000  -0.2000000
+##  5: 2014-01-01   1      a  -0.7500000  -0.7500000
+##  6: 2015-01-01   5      a   4.0000000   4.0000000
+##  7: 2010-01-01   2      b          NA          NA
+##  8: 2011-01-01   6      b   2.0000000   2.0000000
+##  9: 2012-01-01   8      b   0.3333333   0.3333333
+## 10: 2013-01-01   9      b   0.1250000   0.1250000</code></pre></figure>
+
+<h2 id="create-multiple-columns-with--in-one-statement">Create multiple columns with <code class="highlighter-rouge">:=</code> in one statement</h2>
+
+<p>This is useful, but note that that the columns operated on must be atomic vectors or lists.  That is they must exist before running computation.<br />
+Building columns referencing other columns in this set need to be done individually or chained.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)[,</span><span class="n">.</span><span class="p">(</span><span class="n">mpg</span><span class="p">,</span><span class="w"> </span><span class="n">cyl</span><span class="p">)]</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">`:=`</span><span class="p">(</span><span class="n">avg</span><span class="o">=</span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">),</span><span class="w"> </span><span class="n">med</span><span class="o">=</span><span class="n">median</span><span class="p">(</span><span class="n">mpg</span><span class="p">),</span><span class="w"> </span><span class="n">min</span><span class="o">=</span><span class="nf">min</span><span class="p">(</span><span class="n">mpg</span><span class="p">)),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span><span class="w">
+</span><span class="n">head</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##     mpg cyl      avg  med  min
+## 1: 21.0   6 19.74286 19.7 17.8
+## 2: 21.0   6 19.74286 19.7 17.8
+## 3: 22.8   4 26.66364 26.0 21.4
+## 4: 21.4   6 19.74286 19.7 17.8
+## 5: 18.7   8 15.10000 15.2 10.4
+## 6: 18.1   6 19.74286 19.7 17.8</code></pre></figure>
+
+<h2 id="assign-a-column-with--named-with-a-character-object">Assign a column with <code class="highlighter-rouge">:=</code> named with a character object</h2>
+
+<p>This is the advised way to assign a new column whose name you already have determined and saved as a character.  Simply surround the character object in parentheses.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)[,</span><span class="w"> </span><span class="n">.</span><span class="p">(</span><span class="n">cyl</span><span class="p">,</span><span class="w"> </span><span class="n">mpg</span><span class="p">)]</span><span class="w">
+
+</span><span class="n">thing2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s1">'mpgx2'</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,(</span><span class="n">thing2</span><span class="p">)</span><span class="o">:=</span><span class="n">mpg</span><span class="o">*</span><span class="m">2</span><span class="p">]</span><span class="w">
+
+</span><span class="n">head</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    cyl  mpg mpgx2
+## 1:   6 21.0  42.0
+## 2:   6 21.0  42.0
+## 3:   4 22.8  45.6
+## 4:   6 21.4  42.8
+## 5:   8 18.7  37.4
+## 6:   6 18.1  36.2</code></pre></figure>
+
+<p>This is old (now deprecated) way which still works for now.  Not advised.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">thing3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s1">'mpgx3'</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">thing3</span><span class="o">:=</span><span class="n">mpg</span><span class="o">*</span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="n">with</span><span class="o">=</span><span class="nb">F</span><span class="p">]</span><span class="w">
+
+</span><span class="n">head</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    cyl  mpg mpgx2 mpgx3
+## 1:   6 21.0  42.0  63.0
+## 2:   6 21.0  42.0  63.0
+## 3:   4 22.8  45.6  68.4
+## 4:   6 21.4  42.8  64.2
+## 5:   8 18.7  37.4  56.1
+## 6:   6 18.1  36.2  54.3</code></pre></figure>
+
+<h1></h1>
+<h1 id="2-by">2. <code class="highlighter-rouge">BY</code></h1>
+<hr />
+
+<h2 id="calculate-a-function-over-a-group-using-by-excluding-each-entity-in-a-second-category">Calculate a function over a group (using <code class="highlighter-rouge">by</code>) excluding each entity in a second category.</h2>
+
+<p>This title probably doesn’t immediately make much sense.  Let me explain what I’m going to calculate and why with an example.
+We want to compare the <code class="highlighter-rouge">mpg</code> of each car to the average <code class="highlighter-rouge">mpg</code> of cars in the same class (the same # of cylinders).  However, we don’t want 
+to bias the group mean by including the car we want to compare to the average in that average.</p>
+
+<p>This assumption doesn’t appear useful in this example, but assume that <code class="highlighter-rouge">gear</code>+<code class="highlighter-rouge">cyl</code> uniquely identify the cars.  In the real project where I faced this 
+problem, I was calculating an indicator related to an appraiser relative to the average of all other appraisers in their zip3. (<code class="highlighter-rouge">cyl</code> was really zipcode
+and <code class="highlighter-rouge">gear</code> was the appraiser’s ID).</p>
+
+<h3 id="method-1-in-line">METHOD 1: in-line</h3>
+
+<h5 id="0a-biased-mean-simple-mean-by-cyl">0.a Biased mean: simple mean by <code class="highlighter-rouge">cyl</code></h5>
+<p>However we want to know for each row, what is the mean among all the other cars with the same # of <code class="highlighter-rouge">cyl</code>s, excluding that car.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)[,</span><span class="n">.</span><span class="p">(</span><span class="n">cyl</span><span class="p">,</span><span class="w"> </span><span class="n">gear</span><span class="p">,</span><span class="w"> </span><span class="n">mpg</span><span class="p">)]</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="w"> </span><span class="n">mpg_biased_mean</span><span class="o">:=</span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span><span class="w"> 
+</span><span class="n">head</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    cyl gear  mpg mpg_biased_mean
+## 1:   6    4 21.0        19.74286
+## 2:   6    4 21.0        19.74286
+## 3:   4    4 22.8        26.66364
+## 4:   6    3 21.4        19.74286
+## 5:   8    3 18.7        15.10000
+## 6:   6    3 18.1        19.74286</code></pre></figure>
+
+<h5 id="1a-grp-without-setting-key">1.a <code class="highlighter-rouge">.GRP</code> without setting key</h5>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="p">[,</span><span class="w"> </span><span class="n">dt</span><span class="p">[</span><span class="o">!</span><span class="n">gear</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">dt</span><span class="o">$</span><span class="n">gear</span><span class="p">)[</span><span class="n">.GRP</span><span class="p">],</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">],</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">gear</span><span class="p">]</span><span class="w"> </span><span class="c1">#unbiased mean</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    gear cyl       V1
+## 1:    4   6 19.73333
+## 2:    4   8 15.10000
+## 3:    4   4 25.96667
+## 4:    3   6 19.74000
+## 5:    3   4 27.18000
+## 6:    3   8 15.40000
+## 7:    5   6 19.75000
+## 8:    5   4 26.32222
+## 9:    5   8 15.05000</code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># check</span><span class="w">
+</span><span class="n">dt</span><span class="p">[</span><span class="n">gear</span><span class="o">!=</span><span class="m">4</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">cyl</span><span class="o">==</span><span class="m">6</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">)]</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">## [1] 19.73333</code></pre></figure>
+
+<p><strong>Update 9/24/2015:</strong> Per Matt Dowle’s comments, this also works with slightly less code. For my simple example, there was also a marginal speed gain.  Time savings relative to the <code class="highlighter-rouge">.GRP</code> method will likely increase with the complexity of the problem.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="p">[,</span><span class="w"> </span><span class="n">dt</span><span class="p">[</span><span class="o">!</span><span class="n">gear</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">.BY</span><span class="p">[[</span><span class="m">1</span><span class="p">]],</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">],</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">gear</span><span class="p">]</span><span class="w"> </span><span class="c1">#unbiased mean</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    gear cyl       V1
+## 1:    4   6 19.73333
+## 2:    4   8 15.10000
+## 3:    4   4 25.96667
+## 4:    3   6 19.74000
+## 5:    3   4 27.18000
+## 6:    3   8 15.40000
+## 7:    5   6 19.75000
+## 8:    5   4 26.32222
+## 9:    5   8 15.05000</code></pre></figure>
+
+<h5 id="1b-same-as-1a-but-a-little-faster">1.b Same as 1.a, but a little faster</h5>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">uid</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">dt</span><span class="o">$</span><span class="n">gear</span><span class="p">)</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="w"> </span><span class="n">dt</span><span class="p">[</span><span class="o">!</span><span class="n">gear</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="p">(</span><span class="n">uid</span><span class="p">[</span><span class="n">.GRP</span><span class="p">]),</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">gear</span><span class="p">][</span><span class="n">order</span><span class="p">(</span><span class="n">cyl</span><span class="p">,</span><span class="w"> </span><span class="n">gear</span><span class="p">)]</span><span class="w"> </span><span class="c1">#unbiased mean</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    gear cyl       V1
+## 1:    3   4 27.18000
+## 2:    4   4 25.96667
+## 3:    5   4 26.32222
+## 4:    3   6 19.74000
+## 5:    4   6 19.73333
+## 6:    5   6 19.75000
+## 7:    3   8 15.40000
+## 8:    4   8 15.10000
+## 9:    5   8 15.05000</code></pre></figure>
+
+<h5 id="why-does-this-work">Why does this work?</h5>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># 1.a pulling it apart with .GRP</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="w"> </span><span class="n">.GRP</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    cyl GRP
+## 1:   6   1
+## 2:   4   2
+## 3:   8   3</code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="p">[,</span><span class="w"> </span><span class="n">.</span><span class="p">(</span><span class="n">.GRP</span><span class="p">,</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">dt</span><span class="o">$</span><span class="n">gear</span><span class="p">)[</span><span class="n">.GRP</span><span class="p">]),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    cyl GRP V2
+## 1:   6   1  4
+## 2:   4   2  3
+## 3:   8   3  5</code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="p">[,</span><span class="n">dt</span><span class="p">[,</span><span class="w"> </span><span class="n">.</span><span class="p">(</span><span class="n">.GRP</span><span class="p">,</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">dt</span><span class="o">$</span><span class="n">gear</span><span class="p">)[</span><span class="n">.GRP</span><span class="p">]),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">],</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">gear</span><span class="p">]</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    gear cyl GRP V2
+## 1:    4   6   1  4
+## 2:    4   4   2  3
+## 3:    4   8   3  5
+## 4:    3   6   1  4
+## 5:    3   4   2  3
+## 6:    3   8   3  5
+## 7:    5   6   1  4
+## 8:    5   4   2  3
+## 9:    5   8   3  5</code></pre></figure>
+
+<h5 id="1b-setting-key">1.b Setting key</h5>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">setkey</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="w"> </span><span class="n">gear</span><span class="p">)</span><span class="w">
+</span><span class="n">uid</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">dt</span><span class="o">$</span><span class="n">gear</span><span class="p">)</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="w"> </span><span class="n">dt</span><span class="p">[</span><span class="o">!</span><span class="n">.</span><span class="p">(</span><span class="n">uid</span><span class="p">[</span><span class="n">.GRP</span><span class="p">]),</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">gear</span><span class="p">]</span><span class="w"> </span><span class="c1">#unbiased mean</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    gear cyl       V1
+## 1:    3   6 19.74000
+## 2:    3   4 27.18000
+## 3:    3   8 15.40000
+## 4:    4   6 19.73333
+## 5:    4   8 15.10000
+## 6:    4   4 25.96667
+## 7:    5   6 19.75000
+## 8:    5   8 15.05000
+## 9:    5   4 26.32222</code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">mean</span><span class="p">(</span><span class="n">dt</span><span class="p">[</span><span class="n">cyl</span><span class="o">==</span><span class="m">4</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">gear</span><span class="o">!=</span><span class="m">3</span><span class="p">,</span><span class="n">mpg</span><span class="p">])</span><span class="w"> </span><span class="c1"># testing</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">## [1] 27.18</code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">mean</span><span class="p">(</span><span class="n">dt</span><span class="p">[</span><span class="n">cyl</span><span class="o">==</span><span class="m">6</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">gear</span><span class="o">!=</span><span class="m">3</span><span class="p">,</span><span class="n">mpg</span><span class="p">])</span><span class="w"> </span><span class="c1"># testing</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">## [1] 19.74</code></pre></figure>
+
+<h3 id="method-2-using--and-sd">METHOD 2: using <code class="highlighter-rouge">{}</code> and <code class="highlighter-rouge">.SD</code></h3>
+<p><code class="highlighter-rouge">{}</code> is used for to suppress intermediate operations.</p>
+
+<h5 id="building-up">Building up</h5>
+<p>No surprises here.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="p">[,</span><span class="w">  </span><span class="n">.SD</span><span class="p">[,</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">)],</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">gear</span><span class="p">]</span><span class="w"> </span><span class="c1"># same as `dt[, mean(mpg), by=gear]`</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    gear       V1
+## 1:    3 16.10667
+## 2:    4 24.53333
+## 3:    5 21.38000</code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="p">[,</span><span class="w">  </span><span class="n">.SD</span><span class="p">[,</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">],</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">gear</span><span class="p">]</span><span class="w"> </span><span class="c1"># same as `dt[, mean(mpg), by=.(cyl, by=gear)]`</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    gear cyl     V1
+## 1:    3   6 19.750
+## 2:    3   8 15.050
+## 3:    3   4 21.500
+## 4:    4   6 19.750
+## 5:    4   4 26.925
+## 6:    5   4 28.200
+## 7:    5   8 15.400
+## 8:    5   6 19.700</code></pre></figure>
+
+<h5 id="nested-datatables-and-by-statements">Nested data.tables and <code class="highlighter-rouge">by</code> statements</h5>
+<p>This chunk shows what happens with two <code class="highlighter-rouge">by</code> statements nested within two different data.tables.  Explanatory purposes only - not necessary for our task.
+<code class="highlighter-rouge">n</code> counts the # of cars in that <code class="highlighter-rouge">cyl</code>.  <code class="highlighter-rouge">N</code> counts the number of cars by <code class="highlighter-rouge">cyl</code> and <code class="highlighter-rouge">gear</code>.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="p">[,{</span><span class="w">
+  </span><span class="n">vbar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">mpg</span><span class="p">)</span><span class="w">
+  </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">.N</span><span class="w">
+  </span><span class="n">.SD</span><span class="p">[,</span><span class="n">.</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">.N</span><span class="p">,</span><span class="w"> </span><span class="n">sum_in_gear_cyl</span><span class="o">=</span><span class="nf">sum</span><span class="p">(</span><span class="n">mpg</span><span class="p">),</span><span class="w"> </span><span class="n">sum_in_cyl</span><span class="o">=</span><span class="n">vbar</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">gear</span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    cyl gear  n  N sum_in_gear_cyl sum_in_cyl
+## 1:   6    3  7  2            39.5      138.2
+## 2:   6    4  7  4            79.0      138.2
+## 3:   6    5  7  1            19.7      138.2
+## 4:   8    3 14 12           180.6      211.4
+## 5:   8    5 14  2            30.8      211.4
+## 6:   4    3 11  1            21.5      293.3
+## 7:   4    4 11  8           215.4      293.3
+## 8:   4    5 11  2            56.4      293.3</code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="p">[,</span><span class="nf">sum</span><span class="p">(</span><span class="n">mpg</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span><span class="w"> </span><span class="c1"># test</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    cyl    V1
+## 1:   6 138.2
+## 2:   8 211.4
+## 3:   4 293.3</code></pre></figure>
+
+<h5 id="calculating-unbiased-mean">Calculating “unbiased mean”</h5>
+<p>This is in a summary table.  This would need to be merged back onto <code class="highlighter-rouge">dt</code> if that is desired.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="p">[,{</span><span class="w">
+  </span><span class="n">vbar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">)</span><span class="w">
+  </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">.N</span><span class="w">
+  </span><span class="n">.SD</span><span class="p">[,(</span><span class="n">n</span><span class="o">*</span><span class="n">vbar</span><span class="o">-</span><span class="nf">sum</span><span class="p">(</span><span class="n">mpg</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="n">.N</span><span class="p">),</span><span class="n">by</span><span class="o">=</span><span class="n">gear</span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    cyl gear       V1
+## 1:   6    3 19.74000
+## 2:   6    4 19.73333
+## 3:   6    5 19.75000
+## 4:   8    3 15.40000
+## 5:   8    5 15.05000
+## 6:   4    3 27.18000
+## 7:   4    4 25.96667
+## 8:   4    5 26.32222</code></pre></figure>
+
+<h3 id="method-3-super-fast-mean-calculation">METHOD 3: Super Fast Mean calculation</h3>
+
+<h5 id="non-function-direct-way">Non-function direct way</h5>
+<p>Using a vectorized approach to calculate the unbiased mean for each combination of <code class="highlighter-rouge">gear</code> and <code class="highlighter-rouge">cyl</code>.  Mechanically,
+it calculates the “biased average” for all cars by <code class="highlighter-rouge">cyl</code>.  Then subtract off the share of cars with the combination of <code class="highlighter-rouge">gear</code> and <code class="highlighter-rouge">cyl</code> 
+that we want to exclude from the average and add that share.  Then extrapolate out this pared down mean.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)[,</span><span class="n">.</span><span class="p">(</span><span class="n">mpg</span><span class="p">,</span><span class="n">cyl</span><span class="p">,</span><span class="n">gear</span><span class="p">)]</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">`:=`</span><span class="p">(</span><span class="n">avg_mpg_cyl</span><span class="o">=</span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">),</span><span class="w"> </span><span class="n">Ncyl</span><span class="o">=</span><span class="n">.N</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">`:=`</span><span class="p">(</span><span class="n">Ncylgear</span><span class="o">=</span><span class="n">.N</span><span class="p">,</span><span class="w"> </span><span class="n">avg_mpg_cyl_gear</span><span class="o">=</span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">)),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">.</span><span class="p">(</span><span class="n">cyl</span><span class="p">,</span><span class="w"> </span><span class="n">gear</span><span class="p">)]</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">unbmean</span><span class="o">:=</span><span class="p">(</span><span class="n">avg_mpg_cyl</span><span class="o">*</span><span class="n">Ncyl</span><span class="o">-</span><span class="p">(</span><span class="n">Ncylgear</span><span class="o">*</span><span class="n">avg_mpg_cyl_gear</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="n">Ncyl</span><span class="o">-</span><span class="n">Ncylgear</span><span class="p">)]</span><span class="w">
+</span><span class="n">setkey</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="w"> </span><span class="n">cyl</span><span class="p">,</span><span class="w"> </span><span class="n">gear</span><span class="p">)</span><span class="w">  
+</span><span class="n">head</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##     mpg cyl gear avg_mpg_cyl Ncyl Ncylgear avg_mpg_cyl_gear  unbmean
+## 1: 21.5   4    3    26.66364   11        1           21.500 27.18000
+## 2: 22.8   4    4    26.66364   11        8           26.925 25.96667
+## 3: 24.4   4    4    26.66364   11        8           26.925 25.96667
+## 4: 22.8   4    4    26.66364   11        8           26.925 25.96667
+## 5: 32.4   4    4    26.66364   11        8           26.925 25.96667
+## 6: 30.4   4    4    26.66364   11        8           26.925 25.96667</code></pre></figure>
+
+<h5 id="wrapping-up-code-below-into-a-function">Wrapping up code below into a function</h5>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">leaveOneOutMean</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="w"> </span><span class="n">ind</span><span class="p">,</span><span class="w"> </span><span class="n">bybig</span><span class="p">,</span><span class="w"> </span><span class="n">bysmall</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">dtmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">copy</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span><span class="w"> </span><span class="c1"># copy so as not to alter original dt object w intermediate assignments</span><span class="w">
+  </span><span class="n">dtmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dtmp</span><span class="p">[</span><span class="nf">is.na</span><span class="p">(</span><span class="n">get</span><span class="p">(</span><span class="n">ind</span><span class="p">))</span><span class="o">==</span><span class="nb">F</span><span class="p">,]</span><span class="w">
+  </span><span class="n">dtmp</span><span class="p">[,</span><span class="n">`:=`</span><span class="p">(</span><span class="n">avg_ind_big</span><span class="o">=</span><span class="n">mean</span><span class="p">(</span><span class="n">get</span><span class="p">(</span><span class="n">ind</span><span class="p">)),</span><span class="w"> </span><span class="n">Nbig</span><span class="o">=</span><span class="n">.N</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">.</span><span class="p">(</span><span class="n">get</span><span class="p">(</span><span class="n">bybig</span><span class="p">))]</span><span class="w">
+  </span><span class="n">dtmp</span><span class="p">[,</span><span class="n">`:=`</span><span class="p">(</span><span class="n">Nbigsmall</span><span class="o">=</span><span class="n">.N</span><span class="p">,</span><span class="w"> </span><span class="n">avg_ind_big_small</span><span class="o">=</span><span class="n">mean</span><span class="p">(</span><span class="n">get</span><span class="p">(</span><span class="n">ind</span><span class="p">))),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">.</span><span class="p">(</span><span class="n">get</span><span class="p">(</span><span class="n">bybig</span><span class="p">),</span><span class="w"> </span><span class="n">get</span><span class="p">(</span><span class="n">bysmall</span><span class="p">))]</span><span class="w">
+  </span><span class="n">dtmp</span><span class="p">[,</span><span class="n">unbmean</span><span class="o">:=</span><span class="p">(</span><span class="n">avg_ind_big</span><span class="o">*</span><span class="n">Nbig</span><span class="o">-</span><span class="p">(</span><span class="n">Nbigsmall</span><span class="o">*</span><span class="n">avg_ind_big_small</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="n">Nbig</span><span class="o">-</span><span class="n">Nbigsmall</span><span class="p">)]</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">dtmp</span><span class="p">[,</span><span class="n">unbmean</span><span class="p">])</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)[,</span><span class="n">.</span><span class="p">(</span><span class="n">mpg</span><span class="p">,</span><span class="n">cyl</span><span class="p">,</span><span class="n">gear</span><span class="p">)]</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">unbiased_mean</span><span class="o">:=</span><span class="n">leaveOneOutMean</span><span class="p">(</span><span class="n">.SD</span><span class="p">,</span><span class="w"> </span><span class="n">ind</span><span class="o">=</span><span class="s1">'mpg'</span><span class="p">,</span><span class="w"> </span><span class="n">bybig</span><span class="o">=</span><span class="s1">'cyl'</span><span class="p">,</span><span class="w"> </span><span class="n">bysmall</span><span class="o">=</span><span class="s1">'gear'</span><span class="p">)]</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">biased_mean</span><span class="o">:=</span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span><span class="w">
+</span><span class="n">head</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##     mpg cyl gear unbiased_mean biased_mean
+## 1: 21.0   6    4      19.73333    19.74286
+## 2: 21.0   6    4      19.73333    19.74286
+## 3: 22.8   4    4      25.96667    26.66364
+## 4: 21.4   6    3      19.74000    19.74286
+## 5: 18.7   8    3      15.40000    15.10000
+## 6: 18.1   6    3      19.74000    19.74286</code></pre></figure>
+
+<h3 id="speed-check">Speed check</h3>
+
+<p>Method 3 is roughly 100x faster than the other two.  Great for this narrow task with the vectorization built in, 
+but less generalizable; The other two methods allow any function to be passed.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)</span><span class="w">
+</span><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dt</span><span class="p">[</span><span class="n">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">.N</span><span class="p">,</span><span class="w"> </span><span class="m">100000</span><span class="p">,</span><span class="w"> </span><span class="n">replace</span><span class="o">=</span><span class="nb">T</span><span class="p">),</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="c1"># increase # of rows in mtcars</span><span class="w">
+</span><span class="n">dt</span><span class="o">$</span><span class="n">gear</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">300</span><span class="p">,</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">dt</span><span class="p">),</span><span class="w"> </span><span class="n">replace</span><span class="o">=</span><span class="nb">T</span><span class="p">)</span><span class="w"> </span><span class="c1"># adding in more cateogries</span></code></pre></figure>
+
+<h5 id="method-3">Method 3:</h5>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">system.time</span><span class="p">(</span><span class="n">dt</span><span class="p">[,</span><span class="n">unbiased_mean_vectorized</span><span class="o">:=</span><span class="n">leaveOneOutMean</span><span class="p">(</span><span class="n">.SD</span><span class="p">,</span><span class="w"> </span><span class="n">ind</span><span class="o">=</span><span class="s1">'mpg'</span><span class="p">,</span><span class="w"> </span><span class="n">bybig</span><span class="o">=</span><span class="s1">'cyl'</span><span class="p">,</span><span class="w"> </span><span class="n">bysmall</span><span class="o">=</span><span class="s1">'gear'</span><span class="p">)])</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    user  system elapsed 
+##   0.033   0.003   0.035</code></pre></figure>
+
+<h5 id="method-2">Method 2:</h5>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">system.time</span><span class="p">(</span><span class="n">tmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dt</span><span class="p">[,</span><span class="n">dt</span><span class="p">[</span><span class="o">!</span><span class="n">gear</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">dt</span><span class="o">$</span><span class="n">gear</span><span class="p">)[</span><span class="n">.GRP</span><span class="p">],</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">],</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">gear</span><span class="p">]</span><span class="w"> </span><span class="p">)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    user  system elapsed 
+##   3.709   0.359   4.069</code></pre></figure>
+
+<h5 id="method-1">Method 1:</h5>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">uid</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">dt</span><span class="o">$</span><span class="n">gear</span><span class="p">)</span><span class="w">
+</span><span class="n">system.time</span><span class="p">(</span><span class="n">dt</span><span class="p">[,</span><span class="w"> </span><span class="n">dt</span><span class="p">[</span><span class="o">!</span><span class="n">gear</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="p">(</span><span class="n">uid</span><span class="p">[</span><span class="n">.GRP</span><span class="p">]),</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">mpg</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">gear</span><span class="p">][</span><span class="n">order</span><span class="p">(</span><span class="n">cyl</span><span class="p">,</span><span class="w"> </span><span class="n">gear</span><span class="p">)])</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    user  system elapsed 
+##   3.345   0.331   3.677</code></pre></figure>
+
+<h2 id="keyby-to-key-resulting-aggregate-table"><code class="highlighter-rouge">keyby</code> to key resulting aggregate table</h2>
+
+<h5 id="without-keyby">Without <code class="highlighter-rouge">keyby</code></h5>
+<p>Categories are not sorted</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">## devtools::install_github('brooksandrew/Rsenal')</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="s1">'Rsenal'</span><span class="p">)</span><span class="w"> </span><span class="c1"># grabbing depthbin function</span><span class="w">
+</span><span class="n">tmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dt</span><span class="p">[,</span><span class="w"> </span><span class="n">.</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="n">.N</span><span class="p">,</span><span class="w"> </span><span class="n">sum</span><span class="o">=</span><span class="nf">sum</span><span class="p">(</span><span class="n">vs</span><span class="p">),</span><span class="w"> </span><span class="n">mean</span><span class="o">=</span><span class="n">mean</span><span class="p">(</span><span class="n">vs</span><span class="p">)</span><span class="o">/</span><span class="n">.N</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">depthbin</span><span class="p">(</span><span class="n">mpg</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">labelOrder</span><span class="o">=</span><span class="nb">T</span><span class="p">)]</span><span class="w">
+</span><span class="n">tmp</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##           depthbin     N   sum         mean
+## 1: (15.2,17.8] 2/5 15372  3131 1.325020e-05
+## 2:   (17.8,21] 3/5 21839  6204 1.300787e-05
+## 3: [10.4,15.2] 1/5 25255     0 0.000000e+00
+## 4:   (21,24.4] 4/5 18817 18817 5.314343e-05
+## 5: (24.4,33.9] 5/5 18717 15581 4.447571e-05</code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">tmp</span><span class="p">[,</span><span class="n">barplot</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span><span class="w"> </span><span class="n">names</span><span class="o">=</span><span class="n">depthbin</span><span class="p">,</span><span class="w"> </span><span class="n">las</span><span class="o">=</span><span class="m">2</span><span class="p">)]</span></code></pre></figure>
+
+<p><img src="/assets/svg/2015_08_31_datatable/mean_barchart_1.svg" alt="plot of chunk barplot 1" /></p>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##      [,1]
+## [1,]  0.7
+## [2,]  1.9
+## [3,]  3.1
+## [4,]  4.3
+## [5,]  5.5</code></pre></figure>
+
+<h5 id="with-keyby">With <code class="highlighter-rouge">keyby</code></h5>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">## devtools::install_github('brooksandrew/Rsenal')</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="s1">'Rsenal'</span><span class="p">)</span><span class="w">
+</span><span class="n">tmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dt</span><span class="p">[,</span><span class="w"> </span><span class="n">.</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="n">.N</span><span class="p">,</span><span class="w"> </span><span class="n">sum</span><span class="o">=</span><span class="nf">sum</span><span class="p">(</span><span class="n">vs</span><span class="p">),</span><span class="w"> </span><span class="n">mean</span><span class="o">=</span><span class="n">mean</span><span class="p">(</span><span class="n">vs</span><span class="p">)</span><span class="o">/</span><span class="n">.N</span><span class="p">),</span><span class="w"> </span><span class="n">keyby</span><span class="o">=</span><span class="n">depthbin</span><span class="p">(</span><span class="n">mpg</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">labelOrder</span><span class="o">=</span><span class="nb">T</span><span class="p">)]</span><span class="w">
+</span><span class="n">tmp</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##           depthbin     N   sum         mean
+## 1: [10.4,15.2] 1/5 25255     0 0.000000e+00
+## 2: (15.2,17.8] 2/5 15372  3131 1.325020e-05
+## 3:   (17.8,21] 3/5 21839  6204 1.300787e-05
+## 4:   (21,24.4] 4/5 18817 18817 5.314343e-05
+## 5: (24.4,33.9] 5/5 18717 15581 4.447571e-05</code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">tmp</span><span class="p">[,</span><span class="n">barplot</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span><span class="w"> </span><span class="n">names</span><span class="o">=</span><span class="n">depthbin</span><span class="p">,</span><span class="w"> </span><span class="n">las</span><span class="o">=</span><span class="m">2</span><span class="p">)]</span></code></pre></figure>
+
+<p><img src="/assets/svg/2015_08_31_datatable/mean_barchart_2.svg" alt="plot of chunk barplot 2" /></p>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##      [,1]
+## [1,]  0.7
+## [2,]  1.9
+## [3,]  3.1
+## [4,]  4.3
+## [5,]  5.5</code></pre></figure>
+
+<h2 id="using-1-n-setkey-and-by-for-within-group-subsetting">Using <code class="highlighter-rouge">[1]</code>, <code class="highlighter-rouge">[.N]</code>, <code class="highlighter-rouge">setkey</code> and <code class="highlighter-rouge">by</code> for within group subsetting</h2>
+
+<h4 id="take-highest-value-of-column-a-when-column-b-is-highest-by-group">take highest value of column A when column B is highest by group</h4>
+
+<p>Max of <code class="highlighter-rouge">qsec</code> for each category of <code class="highlighter-rouge">cyl</code>
+(this is easy)</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)[,</span><span class="w"> </span><span class="n">.</span><span class="p">(</span><span class="n">cyl</span><span class="p">,</span><span class="w"> </span><span class="n">mpg</span><span class="p">,</span><span class="w"> </span><span class="n">qsec</span><span class="p">)]</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">qsec</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    cyl    V1
+## 1:   6 20.22
+## 2:   4 22.90
+## 3:   8 18.00</code></pre></figure>
+
+<h5 id="value-of-qsec-when-mpg-is-the-highest-per-category-of-cyl">value of <code class="highlighter-rouge">qsec </code>when <code class="highlighter-rouge">mpg</code> is the highest per category of <code class="highlighter-rouge">cyl</code></h5>
+<p>(this is trickier)</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">setkey</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="w"> </span><span class="n">mpg</span><span class="p">)</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">qsec</span><span class="p">[</span><span class="n">.N</span><span class="p">],</span><span class="w">  </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    cyl    V1
+## 1:   8 17.05
+## 2:   6 19.44
+## 3:   4 19.90</code></pre></figure>
+
+<h5 id="value-of-qsec-when-mpg-is-the-lowest-per-category-of-cyl">value of <code class="highlighter-rouge">qsec</code> when <code class="highlighter-rouge">mpg</code> is the lowest per category of <code class="highlighter-rouge">cyl</code></h5>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="p">[,</span><span class="n">qsec</span><span class="p">[</span><span class="m">1</span><span class="p">],</span><span class="w">  </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    cyl    V1
+## 1:   8 17.98
+## 2:   6 18.90
+## 3:   4 18.60</code></pre></figure>
+
+<h5 id="value-of-qsec-when-mpg-is-the-median-per-category-of-cyl">value of <code class="highlighter-rouge">qsec</code> when <code class="highlighter-rouge">mpg</code> is the median per category of <code class="highlighter-rouge">cyl</code></h5>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="p">[,</span><span class="n">qsec</span><span class="p">[</span><span class="nf">round</span><span class="p">(</span><span class="n">.N</span><span class="o">/</span><span class="m">2</span><span class="p">)],</span><span class="w">  </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    cyl   V1
+## 1:   8 18.0
+## 2:   6 15.5
+## 3:   4 16.7</code></pre></figure>
+
+<h5 id="subset-rows-within-by-statement">subset rows within by statement</h5>
+<p><code class="highlighter-rouge">V1</code> is the standard deviation of <code class="highlighter-rouge">mpg</code> by <code class="highlighter-rouge">cyl</code>.  <code class="highlighter-rouge">V2</code> is the standard deviation of <code class="highlighter-rouge">mpg</code> for just the first half of <code class="highlighter-rouge">mpg</code>.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)</span><span class="w">
+</span><span class="n">setkey</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="n">mpg</span><span class="p">)</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="w"> </span><span class="n">.</span><span class="p">(</span><span class="n">sd</span><span class="p">(</span><span class="n">mpg</span><span class="p">),</span><span class="w"> </span><span class="n">sd</span><span class="p">(</span><span class="n">mpg</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="nf">round</span><span class="p">(</span><span class="n">.N</span><span class="o">/</span><span class="m">2</span><span class="p">)])),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="n">cyl</span><span class="p">]</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##    cyl       V1        V2
+## 1:   8 2.560048 2.0926174
+## 2:   6 1.453567 0.8981462
+## 3:   4 4.509828 1.7728508</code></pre></figure>
+
+<h1></h1>
+<h1 id="3-functions">3. FUNCTIONS</h1>
+<hr />
+
+<h2 id="passing-datatable-column-names-as-function-arguments">Passing <code class="highlighter-rouge">data.table</code> column names as function arguments</h2>
+
+<h4 id="method-1-no-quotes-and-deparse--substitute">Method 1: No quotes, and <code class="highlighter-rouge">deparse</code> + <code class="highlighter-rouge">substitute</code></h4>
+
+<p>This way seems more data.table-ish because it maintains the practice of not using quotes on variable names in most cases.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)[,</span><span class="n">.</span><span class="p">(</span><span class="n">cyl</span><span class="p">,</span><span class="w"> </span><span class="n">mpg</span><span class="p">)]</span><span class="w">
+</span><span class="n">myfunc</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">v</span><span class="m">2</span><span class="o">=</span><span class="n">deparse</span><span class="p">(</span><span class="nf">substitute</span><span class="p">(</span><span class="n">v</span><span class="p">))</span><span class="w">
+  </span><span class="n">dt</span><span class="p">[,</span><span class="n">v</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">with</span><span class="o">=</span><span class="nb">F</span><span class="p">][[</span><span class="m">1</span><span class="p">]]</span><span class="w"> </span><span class="c1"># [[1]] returns a vector instead of a data.table</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">myfunc</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="w"> </span><span class="n">mpg</span><span class="p">)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##  [1] 21.0 21.0 22.8 21.4 18.7 18.1 14.3 24.4 22.8 19.2 17.8 16.4 17.3 15.2
+## [15] 10.4 10.4 14.7 32.4 30.4 33.9 21.5 15.5 15.2 13.3 19.2 27.3 26.0 30.4
+## [29] 15.8 19.7 15.0 21.4</code></pre></figure>
+
+<h3 id="method-2-quotes-and-get">Method 2: quotes and <code class="highlighter-rouge">get</code></h3>
+
+<p>However I tend to pass through column names as characters (quoted) and use <code class="highlighter-rouge">get</code> each time I reference that column.  That can be annoying if you have a long function
+repeatedly reference column names, but I often need to write such few lines of code with data.table, it hasn’t struck me as terribly unslick, yet.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)</span><span class="w">
+</span><span class="n">myfunc</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="n">dt</span><span class="p">[,</span><span class="n">get</span><span class="p">(</span><span class="n">v</span><span class="p">)]</span><span class="w">
+
+</span><span class="n">myfunc</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="w"> </span><span class="s1">'mpg'</span><span class="p">)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##  [1] 21.0 21.0 22.8 21.4 18.7 18.1 14.3 24.4 22.8 19.2 17.8 16.4 17.3 15.2
+## [15] 10.4 10.4 14.7 32.4 30.4 33.9 21.5 15.5 15.2 13.3 19.2 27.3 26.0 30.4
+## [29] 15.8 19.7 15.0 21.4</code></pre></figure>
+
+<h2 id="beware-of-scoping-within-datatable">Beware of scoping within data.table</h2>
+
+<h3 id="dataframe-way"><code class="highlighter-rouge">data.frame</code> way</h3>
+<p>When you add something to a <code class="highlighter-rouge">data.frame</code> within a function that exists in the global environment, it does not affect that object in the 
+global environment unless you return and reassign it as such, or you use the <code class="highlighter-rouge">&lt;&lt;-</code> operator.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mtcars</span><span class="p">[,</span><span class="nf">c</span><span class="p">(</span><span class="s1">'cyl'</span><span class="p">,</span><span class="w"> </span><span class="s1">'mpg'</span><span class="p">)]</span><span class="w">
+</span><span class="n">add_column_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">df</span><span class="o">$</span><span class="n">addcol1</span><span class="o">&lt;-</span><span class="w"> </span><span class="s1">'here in func!'</span><span class="w">
+  </span><span class="n">df</span><span class="o">$</span><span class="n">addcol2</span><span class="w"> </span><span class="o">&lt;&lt;-</span><span class="w"> </span><span class="s1">'in glob env!'</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span></code></pre></figure>
+
+<p>When we call the function, we see <code class="highlighter-rouge">addcol1</code> in the output.  But not <code class="highlighter-rouge">addcol2</code>.  That’s because it’s been added to the <code class="highlighter-rouge">df</code> in the global environment one level up.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">head</span><span class="p">(</span><span class="n">add_column_df</span><span class="p">(</span><span class="n">df</span><span class="p">))</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##                   cyl  mpg       addcol1
+## Mazda RX4           6 21.0 here in func!
+## Mazda RX4 Wag       6 21.0 here in func!
+## Datsun 710          4 22.8 here in func!
+## Hornet 4 Drive      6 21.4 here in func!
+## Hornet Sportabout   8 18.7 here in func!
+## Valiant             6 18.1 here in func!</code></pre></figure>
+
+<p>Here is <code class="highlighter-rouge">addcol2</code>, but not <code class="highlighter-rouge">addcol</code>.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">head</span><span class="p">(</span><span class="n">df</span><span class="p">)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##                   cyl  mpg      addcol2
+## Mazda RX4           6 21.0 in glob env!
+## Mazda RX4 Wag       6 21.0 in glob env!
+## Datsun 710          4 22.8 in glob env!
+## Hornet 4 Drive      6 21.4 in glob env!
+## Hornet Sportabout   8 18.7 in glob env!
+## Valiant             6 18.1 in glob env!</code></pre></figure>
+
+<h3 id="datatable-way"><code class="highlighter-rouge">data.table</code> way</h3>
+
+<p>Unlike data.frame, the <code class="highlighter-rouge">:=</code> operator adds a column to both the object living in the global environment and used in the function.  I think this is because
+these objects are actually the same object.  data.table shaves computation time by not making copies unless explicitly directed to.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)</span><span class="w">
+</span><span class="n">add_column_dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">dat</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">dat</span><span class="p">[,</span><span class="n">addcol</span><span class="o">:=</span><span class="s1">'sticking_to_dt!'</span><span class="p">]</span><span class="w"> </span><span class="c1"># hits dt in glob env</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">dat</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span><span class="n">head</span><span class="p">(</span><span class="n">add_column_dt</span><span class="p">(</span><span class="n">dt</span><span class="p">))</span><span class="w"> </span><span class="c1"># addcol here</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##     mpg cyl disp  hp drat    wt  qsec vs am gear carb          addcol
+## 1: 21.0   6  160 110 3.90 2.620 16.46  0  1    4    4 sticking_to_dt!
+## 2: 21.0   6  160 110 3.90 2.875 17.02  0  1    4    4 sticking_to_dt!
+## 3: 22.8   4  108  93 3.85 2.320 18.61  1  1    4    1 sticking_to_dt!
+## 4: 21.4   6  258 110 3.08 3.215 19.44  1  0    3    1 sticking_to_dt!
+## 5: 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2 sticking_to_dt!
+## 6: 18.1   6  225 105 2.76 3.460 20.22  1  0    3    1 sticking_to_dt!</code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">head</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span><span class="w"> </span><span class="c1"># addcol also here</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##     mpg cyl disp  hp drat    wt  qsec vs am gear carb          addcol
+## 1: 21.0   6  160 110 3.90 2.620 16.46  0  1    4    4 sticking_to_dt!
+## 2: 21.0   6  160 110 3.90 2.875 17.02  0  1    4    4 sticking_to_dt!
+## 3: 22.8   4  108  93 3.85 2.320 18.61  1  1    4    1 sticking_to_dt!
+## 4: 21.4   6  258 110 3.08 3.215 19.44  1  0    3    1 sticking_to_dt!
+## 5: 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2 sticking_to_dt!
+## 6: 18.1   6  225 105 2.76 3.460 20.22  1  0    3    1 sticking_to_dt!</code></pre></figure>
+
+<p>So something like this renaming the local version using <code class="highlighter-rouge">copy</code> bypasses this behavior, but is likely somewhat less efficient (and elegant).  I suspect there’s a cleaner and/or faster way to do this: keep some variables 
+local to the function while persisting and returning other columns.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)</span><span class="w">
+</span><span class="n">add_column_dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">dat</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">datloc</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">copy</span><span class="p">(</span><span class="n">dat</span><span class="p">)</span><span class="w">
+  </span><span class="n">datloc</span><span class="p">[,</span><span class="n">addcol</span><span class="o">:=</span><span class="s1">'not sticking_to_dt!'</span><span class="p">]</span><span class="w"> </span><span class="c1"># hits dt in glob env</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">datloc</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span><span class="n">head</span><span class="p">(</span><span class="n">add_column_dt</span><span class="p">(</span><span class="n">dt</span><span class="p">))</span><span class="w"> </span><span class="c1"># addcol here</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##     mpg cyl disp  hp drat    wt  qsec vs am gear carb              addcol
+## 1: 21.0   6  160 110 3.90 2.620 16.46  0  1    4    4 not sticking_to_dt!
+## 2: 21.0   6  160 110 3.90 2.875 17.02  0  1    4    4 not sticking_to_dt!
+## 3: 22.8   4  108  93 3.85 2.320 18.61  1  1    4    1 not sticking_to_dt!
+## 4: 21.4   6  258 110 3.08 3.215 19.44  1  0    3    1 not sticking_to_dt!
+## 5: 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2 not sticking_to_dt!
+## 6: 18.1   6  225 105 2.76 3.460 20.22  1  0    3    1 not sticking_to_dt!</code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">head</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span><span class="w"> </span><span class="c1"># addcol not here</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##     mpg cyl disp  hp drat    wt  qsec vs am gear carb
+## 1: 21.0   6  160 110 3.90 2.620 16.46  0  1    4    4
+## 2: 21.0   6  160 110 3.90 2.875 17.02  0  1    4    4
+## 3: 22.8   4  108  93 3.85 2.320 18.61  1  1    4    1
+## 4: 21.4   6  258 110 3.08 3.215 19.44  1  0    3    1
+## 5: 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2
+## 6: 18.1   6  225 105 2.76 3.460 20.22  1  0    3    1</code></pre></figure>
+
+<h1></h1>
+<h1 id="4-printing">4. PRINTING</h1>
+<hr />
+
+<h2 id="print-datatable-with-">Print data.table with <code class="highlighter-rouge">[]</code></h2>
+
+<p>Nothing groundbreaking here, but a small miscellaneous piece of functionality.
+In <code class="highlighter-rouge">data.frame</code> world, wrapping an expression in <code class="highlighter-rouge">()</code> prints the output to the console.  This also works with data.table, but there is another way.
+In <code class="highlighter-rouge">data.table</code> this is achieved by appending <code class="highlighter-rouge">[]</code> to the end of the expression.  I find this useful because when I’m exploring at the console, I 
+don’t usually decide to print the output until I’m almost done and I’m already at the end of the expression I’ve written.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># data.frame way of printing after an assignment</span><span class="w">
+</span><span class="n">df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">head</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)</span><span class="w"> </span><span class="c1"># doesn't print</span><span class="w">
+</span><span class="p">(</span><span class="n">df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">head</span><span class="p">(</span><span class="n">mtcars</span><span class="p">))</span><span class="w"> </span><span class="c1"># does print</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##                    mpg cyl disp  hp drat    wt  qsec vs am gear carb
+## Mazda RX4         21.0   6  160 110 3.90 2.620 16.46  0  1    4    4
+## Mazda RX4 Wag     21.0   6  160 110 3.90 2.875 17.02  0  1    4    4
+## Datsun 710        22.8   4  108  93 3.85 2.320 18.61  1  1    4    1
+## Hornet 4 Drive    21.4   6  258 110 3.08 3.215 19.44  1  0    3    1
+## Hornet Sportabout 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2
+## Valiant           18.1   6  225 105 2.76 3.460 20.22  1  0    3    1</code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># data.table way of printing after an assignment</span><span class="w">
+</span><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">head</span><span class="p">(</span><span class="n">mtcars</span><span class="p">))</span><span class="w"> </span><span class="c1"># doesn't print</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">hp2wt</span><span class="o">:=</span><span class="n">hp</span><span class="o">/</span><span class="n">wt</span><span class="p">][]</span><span class="w"> </span><span class="c1"># does print</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">##     mpg cyl disp  hp drat    wt  qsec vs am gear carb    hp2wt
+## 1: 21.0   6  160 110 3.90 2.620 16.46  0  1    4    4 41.98473
+## 2: 21.0   6  160 110 3.90 2.875 17.02  0  1    4    4 38.26087
+## 3: 22.8   4  108  93 3.85 2.320 18.61  1  1    4    1 40.08621
+## 4: 21.4   6  258 110 3.08 3.215 19.44  1  0    3    1 34.21462
+## 5: 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2 50.87209
+## 6: 18.1   6  225 105 2.76 3.460 20.22  1  0    3    1 30.34682</code></pre></figure>
+
+<h2 id="hide-output-from--with-knitr">Hide output from <code class="highlighter-rouge">:=</code> with knitr</h2>
+
+<p>It used to be that assignments using the <code class="highlighter-rouge">:=</code> operator printed the object to console when knitting documents with <code class="highlighter-rouge">knitr</code> and <code class="highlighter-rouge">rmarkdown</code>.  This is actually fixed in data.table v1.9.5.  However at the time of my writing, this currently not available on CRAN… only Github.  For 1.9.4 users, <a href="http://stackoverflow.com/questions/15267018/knitr-gets-tricked-by-data-table-assignment">this StackOverflow post</a> has some hacky solutions.  This least impedance approach I found was simply wrapping
+the expression in <code class="highlighter-rouge">invisible</code>.  Other solutions alter the way you use data.table which I didn’t like.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">mtcars</span><span class="p">)</span><span class="w">
+</span><span class="n">dt</span><span class="p">[,</span><span class="n">mpg2qsec</span><span class="o">:=</span><span class="n">mpg</span><span class="o">/</span><span class="n">qsec</span><span class="p">]</span><span class="w"> </span><span class="c1"># will print with knitr</span><span class="w">
+</span><span class="nf">invisible</span><span class="p">(</span><span class="n">dt</span><span class="p">[,</span><span class="n">mpg2qsec</span><span class="o">:=</span><span class="n">mpg</span><span class="o">/</span><span class="n">qsec</span><span class="p">])</span><span class="w"> </span><span class="c1"># won't print with knitr</span></code></pre></figure>
+
+<br>
+<br>
+<br>
+<br>
+
+<script>
+	$(function() {
+		var toc = $('#toc');
+		$('h1,h2').each(function(i) {
+			var topic = $(this), topicNumber = i + 1;
+			toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
+			topic.attr('id', 'topic-' + topicNumber);
+		});
+	});
+</script>
+</body>
+</html>
+
+
