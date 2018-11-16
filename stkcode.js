@@ -24,3 +24,22 @@ function sCt(stkcode) {
   };
   imgWindow.document.write(imgAdr);
 }
+
+function chkKey() {
+  var testkey = getChar(event);
+  if(testkey == 'c'){showChart();}
+}
+
+function getChar(event) {
+  if (event.which!=0 && event.charCode!=0) {
+    return String.fromCharCode(event.which)   // the rest
+  } else {return null // special key}
+}
+
+
+function openHtml(){console.log( "keypress: " + $(this).value );};
+
+function showChart() {
+    var thecode = prompt("Code Number:", "");
+    if (thecode != null && thecode != "") {sCt(thecode);}
+}
