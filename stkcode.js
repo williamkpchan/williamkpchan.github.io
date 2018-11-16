@@ -1,4 +1,3 @@
-
 function sCt(stkcode) {
   imgHead = "<img src='http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=3&indpara1=3&indpara2=5&indpara3=10&indpara4=15&indpara5=20&subChart1=3&ref1para1=5&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&subChart3=12&ref3para1=0&ref3para2=0&ref3para3=0&scheme=3&com=100&chartwidth=1050&chartheight=690&stockid=";
   imgPCode= "&period=";
@@ -17,7 +16,7 @@ function sCt(stkcode) {
   QuoteAdr = "<a href='" + quoteStr + "' target = _blank>" + stkcode + "</a>" ;
 
   styleStr = '<style>body { background-color: black; color: green} a { text-decoration: none; color: #28B8B8;}</style>';
-  imgAdr = styleStr + "\nNews: " + newsAdr + " . quote: " + QuoteAdr+ "<br>" ;
+  imgAdr = styleStr + "\n<center>News: " + newsAdr + " . quote: " + QuoteAdr+ "<br>" ;
 
   for( var imgPeriod = 0; imgPeriod < intv.length; imgPeriod++){
   imgAdr = imgAdr + imgHead + stkcode + imgPCode + intv[imgPeriod] + imgTail;
@@ -25,21 +24,3 @@ function sCt(stkcode) {
   imgWindow.document.write(imgAdr);
 }
 
-function chkKey() {
-  var testkey = getChar(event);
-  if(testkey == 'c'){showChart();}
-}
-
-function getChar(event) {
-  if (event.which!=0 && event.charCode!=0) {
-    return String.fromCharCode(event.which)   // the rest
-  } else {return null // special key}
-}
-
-
-function openHtml(){console.log( "keypress: " + $(this).value );};
-
-function showChart() {
-    var thecode = prompt("Code Number:", "");
-    if (thecode != null && thecode != "") {sCt(thecode);}
-}
