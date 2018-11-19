@@ -35,7 +35,8 @@ function chkKey() {
   if(testkey == 'q'){window.location = '#sclj';}
   if(testkey == 'r'){window.location = '#Rlang';}
   if(testkey == 's'){window.open("stkListVH.html");}
-  if(testkey == 'S'){window.location = '#sclj';}
+  if(testkey == 'S'){showMMA();}
+
   if(testkey == 't'){window.open("http://my.weather.gov.hk/myindex_uc.htm");}
   if(testkey == 'T'){window.open("https://translate.google.com/#en/zh-CN");}
   if(testkey == 'u'){window.open("https://www.urbandictionary.com/");}
@@ -117,4 +118,16 @@ function FormatNumberLength(num) {
         r = "0" + r;
     }
     return r;
+}
+
+function oMMA(thecode) {
+	if(typeof(Storage) !== "undefined") {
+		localStorage.stkCode = thecode;
+		window.open("LibDocs/minMACharts.html");
+	}
+}
+
+function showMMA() {
+  var thecode = prompt("showMMA Code Number:", "");
+  if (thecode != null && thecode != "") {oMMA(thecode);}
 }
