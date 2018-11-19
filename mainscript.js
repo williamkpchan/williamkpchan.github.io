@@ -40,7 +40,7 @@ function chkKey() {
   if(testkey == 't'){window.open("http://my.weather.gov.hk/myindex_uc.htm");}
   if(testkey == 'T'){window.open("https://translate.google.com/#en/zh-CN");}
   if(testkey == 'u'){window.open("https://www.urbandictionary.com/");}
-  if(testkey == 'v'){window.open("http://localhost:8080/StkImgViewer.html");}
+  if(testkey == 'v'){window.open("https://williamkpchan.github.io/LibDocs/StkImgViewer.html");}
   if(testkey == 'w'){window.location = '#ruanjian';}
   if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
   if(testkey == 'x'){window.open("https://wx.qq.com/");}
@@ -123,7 +123,7 @@ function FormatNumberLength(num) {
 function oMMA(thecode) {
 	if(typeof(Storage) !== "undefined") {
 		localStorage.stkCode = thecode;
-		window.open("LibDocs/minMACharts.html");
+		window.open("https://williamkpchan.github.io/LibDocs/minMACharts.html");
 	}
 }
 
