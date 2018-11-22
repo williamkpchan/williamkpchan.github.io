@@ -123,7 +123,7 @@ function FormatNumberLength(num) {
 function oMMA(thecode) {
 	if(typeof(Storage) !== "undefined") {
 		localStorage.stkCode = thecode;
-		window.open("https://williamkpchan.github.io/LibDocs/minMACharts.html");
+		window.open("LibDocs/minMACharts.html");
 	}
 }
 
