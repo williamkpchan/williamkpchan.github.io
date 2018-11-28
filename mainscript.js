@@ -76,8 +76,15 @@ function sCt(stkcode) {
   // 5000, 5007, 5012, 1, 2, 3, 4, 6, 7, 9, 10, 12, 14, 16, 17, 18
   intv = [4, 3, 2, 1, 5012, 5007, 5000, 7, 11, 12];
   var imgWindow = window.open("");
-  newshead = "http://www.aastocks.com/tc/stocks/analysis/stock-aafn/"
-  newstail = "/0/all/1"
+  
+//change
+//http://www.aastocks.com/tc/stocks/analysis/stock-aafn/2208/0/all/1
+//to
+//newshead = "http://www.aastocks.com/tc/ltp/rtquote.aspx?symbol="
+//newstail = ".HK"
+
+  newshead = "http://www.aastocks.com/tc/ltp/rtquote.aspx?symbol="
+  newstail = ".HK"
   newsStr = newshead + stkcode + newstail
   imgAdr = "<style>body { background-color: black; color: green} a { text-decoration: none; color: #28B8B8;}</style><body><center>" +"<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>" 
 

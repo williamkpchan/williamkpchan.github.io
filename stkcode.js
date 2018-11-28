@@ -5,8 +5,9 @@ function sCt(stkcode) {
 
   intv = [4, 3, 2, 1, 5012, 5007, 5000, 7, 11, 12];
   var imgWindow = window.open("");
-  newshead = "http://www.aastocks.com/tc/stocks/analysis/stock-aafn/";
-  newstail = "/0/all/1";
+
+newshead = "http://www.aastocks.com/tc/ltp/rtquote.aspx?symbol="
+newstail = ".HK"
   newsStr = newshead + stkcode + newstail;
 
   quotehead = "http://www.aastocks.com/tc/stocks/quote/detail-quote.aspx?symbol=";
