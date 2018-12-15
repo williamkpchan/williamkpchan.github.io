@@ -1,105 +1,220 @@
-
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="..\maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, .apply, div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
 <style>
-body {
- margin: auto;
- width: 56%;
- font-size: 24px;
- background-color: #000000;
- color: #20C030;
-}
+h1, h2,b {color: gold;}
+body { margin: auto; width: 80%; font-size: 24px; background-color: #000000;}
 img { width: 700px; margin-top: 2%; margin-bottom: 5%;}
-h2, b{color:gold;}
 </style>
-
+</head><body>
+<center><h1>Pdftools</h1>
+<div id="toc"></div></center>
+<br>
 <br>
 
-<h2>Pdftools</h2>
-https://ropensci.org/blog/2016/03/01/pdftools-and-jeroen (blog)<br>
 <br>
-PDF utilities<br>
-Extracting text, fonts, attachments and metadata from a pdf file.<br>
+
+<a href="https://ropensci.org/blog/2016/03/01/pdftools-and-jeroen">pdftools-and-jeroen</a>
 <br>
-Usage<br>
-    pdf_info(pdf, opw = "", upw = "")<br>
-    pdf_text(pdf, opw = "", upw = "")<br>
-    pdf_fonts(pdf, opw = "", upw = "")<br>
-    pdf_attachments(pdf, opw = "", upw = "")<br>
-    pdf_toc(pdf, opw = "", upw = "")<br>
+
+<h2 style="text-align: center;">Introducing pdftools - A fast and portable PDF extractor</h2>
+<p>Scientific articles are typically locked away in PDF format, a format designed primarily for printing but not so great for searching or indexing. The new <a href="https://cran.r-project.org/package=pdftools">pdftools</a> package allows for extracting text and metadata from pdf files in R. From the extracted plain-text one could find articles discussing a particular drug or species name, without having to rely on publishers providing metadata, or pay-walled search engines.</p>
+
+<p>The pdftools slightly overlaps with the <a href="https://cran.r-project.org/web/packages/Rpoppler/index.html">Rpoppler</a> package by Kurt Hornik. The main motivation behind developing pdftools was that Rpoppler depends on glib, which does not work well on Mac and Windows. The pdftools package uses the poppler c++ interface together with Rcpp, which results in a lighter and more portable implementation.</p>
+
+<h2 id="installing-pdftools">Installing pdftools</h2>
+
+<p><a href="https://cran.rstudio.com/web/packages/pdftools/"><span class="label label-warning">cran</span></a> <a href="https://github.com/ropensci/pdftools"><span class="label label-info">github</span></a></p>
+
+<pre><code class="language-r">install.packages(&quot;pdftools&quot;)
+</code></pre>
+
+<h2 id="getting-started">Getting started</h2>
+
+<p>The <code>?pdftools</code> manual page shows a brief overview of the main utilities. The most important function is <code>pdf_text</code> which returns a character vector of length equal to the number of pages in the pdf. Each string in the vector contains a plain text version of the text on that page.</p>
+
+<pre><code class="language-r">library(pdftools)
+download.file(&quot;http://arxiv.org/pdf/1403.2805.pdf&quot;, &quot;1403.2805.pdf&quot;, mode = &quot;wb&quot;)
+txt &lt;- pdf_text(&quot;1403.2805.pdf&quot;)
+
+# first page text
+cat(txt[1])
+
+# second page text
+cat(txt[2])
+</code></pre>
+
+<p>In addition, the package has some utilities to extract other data from the PDF file. The <code>pdf_toc</code> function shows the table of contents, i.e. the section headers which pdf readers usually display in a menu on the left. It looks pretty in JSON:</p>
+
+<pre><code class="language-r"># Table of contents
+toc &lt;- pdf_toc(&quot;1403.2805.pdf&quot;)
+
+# Show as JSON
+jsonlite::toJSON(toc, auto_unbox = TRUE, pretty = TRUE)
+</code></pre>
+
+<p>Other functions provide information about fonts, attachments and metadata such as the author, creation date or tags.</p>
+
+<pre><code class="language-r"># Author, version, etc
+info &lt;- pdf_info(&quot;1403.2805.pdf&quot;)
+
+# Table with fonts
+fonts &lt;- pdf_fonts(&quot;1403.2805.pdf&quot;)
+</code></pre>
+
+<h2 id="bonus-feature-rendering-pdf">Bonus feature: rendering pdf</h2>
+
+<p>A bonus feature on most platforms is rendering of PDF files to bitmap arrays. The poppler library provides all functionality to implement a complete PDF reader, including graphical display of the content. In R we can use pdf_render_page to render a page of the PDF into a bitmap, which can be stored as e.g. png or jpeg.</p>
+
+<pre><code class="language-r"># renders pdf to bitmap array
+bitmap &lt;- pdf_render_page(&quot;1403.2805.pdf&quot;, page = 1)
+
+# save bitmap image
+png::writePNG(bitmap, &quot;page.png&quot;)
+jpeg::writeJPEG(bitmap, &quot;page.jpeg&quot;)
+webp::write_webp(bitmap, &quot;page.webp&quot;)
+</code></pre>
+
+<p>This feature now works on all platforms.</p>
+
+<h2 id="limitations">Limitations</h2>
+
+<p>Data scientists are often interested in data from tables. Unfortunately the pdf format is pretty dumb and does not have notion of a table (unlike for example HTML). Tabular data in a pdf file is nothing more than strategically positioned lines and text, which makes it difficult to extract the raw data.</p>
+
+<pre><code class="language-r">txt &lt;- pdf_text(&quot;http://arxiv.org/pdf/1406.4806.pdf&quot;)
+
+# some tables
+cat(txt[18])
+cat(txt[19])
+</code></pre>
+
+<p>Pdftools usually does a decent job in retaining the positioning of table elements when converting from pdf to text. But the output is still very dependent on the formatting of the original pdf table, which makes it very difficult to write a generic table extractor. But with a little creativity you might be able to parse the table data from the text output of a given paper.</p>
+
+<pre>
+<h2>PDF utilities</h2>
+Extracting text, fonts, attachments and metadata from a pdf file.
+
+Usage
+    pdf_info(pdf, opw = "", upw = "")
+    pdf_text(pdf, opw = "", upw = "")
+    pdf_fonts(pdf, opw = "", upw = "")
+    pdf_attachments(pdf, opw = "", upw = "")
+    pdf_toc(pdf, opw = "", upw = "")
+
+Arguments
+    pdf                  file path or raw vector with pdf data
+    opw                  string with owner password to open pdf
+    upw                  string with user password to open pdf
+
+Examples
+    # Just a random pdf file
+    pdf_file <- file.path(R.home("doc"), "NEWS.pdf")
+    info <- pdf_info(pdf_file)
+    text <- pdf_text(pdf_file)
+    fonts <- pdf_fonts(pdf_file)
+    files <- pdf_attachments(pdf_file)
+
+pdf_render_page                                                                                         3
+  pdf_render_page              Render / Convert PDF
+
+Description
+    High quality conversion of pdf page(s) to png, jpeg or tiff format, or render into a raw bitmap array
+    for further processing in R. This functionality is only available if libpoppler was compiled with
+    cairo support.
+
+Usage
+    pdf_render_page(pdf, page = 1, dpi = 72, numeric = FALSE, opw = "", upw = "")
+    pdf_convert(pdf, format = "png", pages = NULL, filenames = NULL, dpi = 72, opw = "", upw = "", verbose = TRUE)
+    poppler_config()
+
+Arguments
+    pdf                file path or raw vector with pdf data
+    page               which page to render
+    dpi                resolution (dots per inch) to render
+    numeric            convert raw output to (0-1) real values
+    opw                owner password
+    upw                user password
+    format             string with output format such as "png" or "jpeg". Must be equal to one of
+                       poppler_config()$supported_image_formats.
+    pages              vector with one-based page numbers to render. NULL means all pages.
+    filenames          vector of equal length to pages with output filenames. May also be a format
+                       string which is expanded using pages and format respectively.
+    verbose            print some progress info to stdout
+
+Examples
+    # Rendering should be supported on all platforms now
+    if(poppler_config()$can_render){
+    # convert few pages to png
+    file.copy(file.path(Sys.getenv("R_DOC_DIR"), "NEWS.pdf"), "news.pdf")
+
+  pdf_convert("news.pdf", pages = 1:3)
+  # render into raw bitmap
+  bitmap <- pdf_render_page("news.pdf")
+  # save to bitmap formats
+  png::writePNG(bitmap, "page.png")
+  jpeg::writeJPEG(bitmap, "page.jpeg")
+  webp::write_webp(bitmap, "page.webp")
+  # Higher quality
+  bitmap <- pdf_render_page("news.pdf", page = 1, dpi = 300)
+  png::writePNG(bitmap, "page.png")
+  # slightly more efficient
+  bitmap_raw <- pdf_render_page("news.pdf", numeric = FALSE)
+  webp::write_webp(bitmap_raw, "page.webp")
+  }
+
+Index
+pdf_attachments (pdf_info), 2
+pdf_convert (pdf_render_page), 3
+pdf_fonts (pdf_info), 2
+pdf_info, 2, 3
+pdf_render_page, 2, 3
+pdf_text, 2
+pdf_text (pdf_info), 2
+pdf_toc (pdf_info), 2
+pdftools (pdf_info), 2
+poppler_config (pdf_render_page), 3
+render (pdf_render_page), 3
+suppressMessages, 2
+</pre>
 <br>
-Arguments<br>
-    pdf                  file path or raw vector with pdf data<br>
-    opw                  string with owner password to open pdf<br>
-    upw                  string with user password to open pdf<br>
 <br>
-Examples<br>
-    # Just a random pdf file<br>
-    pdf_file <- file.path(R.home("doc"), "NEWS.pdf")<br>
-    info <- pdf_info(pdf_file)<br>
-    text <- pdf_text(pdf_file)<br>
-    fonts <- pdf_fonts(pdf_file)<br>
-    files <- pdf_attachments(pdf_file)<br>
 <br>
-pdf_render_page                                                                                         3<br>
-  pdf_render_page              Render / Convert PDF<br>
 <br>
-Description<br>
-    High quality conversion of pdf page(s) to png, jpeg or tiff format, or render into a raw bitmap array<br>
-    for further processing in R. This functionality is only available if libpoppler was compiled with<br>
-    cairo support.<br>
-<br>
-Usage<br>
-    pdf_render_page(pdf, page = 1, dpi = 72, numeric = FALSE, opw = "", upw = "")<br>
-    pdf_convert(pdf, format = "png", pages = NULL, filenames = NULL, dpi = 72, opw = "", upw = "", verbose = TRUE)<br>
-    poppler_config()<br>
-<br>
-Arguments<br>
-    pdf                file path or raw vector with pdf data<br>
-    page               which page to render<br>
-    dpi                resolution (dots per inch) to render<br>
-    numeric            convert raw output to (0-1) real values<br>
-    opw                owner password<br>
-    upw                user password<br>
-    format             string with output format such as "png" or "jpeg". Must be equal to one of<br>
-                       poppler_config()$supported_image_formats.<br>
-    pages              vector with one-based page numbers to render. NULL means all pages.<br>
-    filenames          vector of equal length to pages with output filenames. May also be a format<br>
-                       string which is expanded using pages and format respectively.<br>
-    verbose            print some progress info to stdout<br>
-<br>
-Examples<br>
-    # Rendering should be supported on all platforms now<br>
-    if(poppler_config()$can_render){<br>
-    # convert few pages to png<br>
-    file.copy(file.path(Sys.getenv("R_DOC_DIR"), "NEWS.pdf"), "news.pdf")<br>
-<br>
-  pdf_convert("news.pdf", pages = 1:3)<br>
-  # render into raw bitmap<br>
-  bitmap <- pdf_render_page("news.pdf")<br>
-  # save to bitmap formats<br>
-  png::writePNG(bitmap, "page.png")<br>
-  jpeg::writeJPEG(bitmap, "page.jpeg")<br>
-  webp::write_webp(bitmap, "page.webp")<br>
-  # Higher quality<br>
-  bitmap <- pdf_render_page("news.pdf", page = 1, dpi = 300)<br>
-  png::writePNG(bitmap, "page.png")<br>
-  # slightly more efficient<br>
-  bitmap_raw <- pdf_render_page("news.pdf", numeric = FALSE)<br>
-  webp::write_webp(bitmap_raw, "page.webp")<br>
-  }<br>
-<br>
-Index<br>
-pdf_attachments (pdf_info), 2<br>
-pdf_convert (pdf_render_page), 3<br>
-pdf_fonts (pdf_info), 2<br>
-pdf_info, 2, 3<br>
-pdf_render_page, 2, 3<br>
-pdf_text, 2<br>
-pdf_text (pdf_info), 2<br>
-pdf_toc (pdf_info), 2<br>
-pdftools (pdf_info), 2<br>
-poppler_config (pdf_render_page), 3<br>
-render (pdf_render_page), 3<br>
-suppressMessages, 2<br>
+
+<script>
+	var toc = $('#toc');
+	$('h2').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>
+
+<script>
+	$('div').each(function(k) {
+		var chapterTopic = $(this);
+		chapterTopic.children("h2").after('<br><br><div class="topicIndex"></div>');
+		var subToc = chapterTopic.children("h2").siblings(".topicIndex");
+
+		chapterTopicNumber = k + 1
+
+		chapterTopic.find("strong").each(function(j) {
+			var section = $(this), sectionNumber = j + 1;
+			var sectionName = section.text();
+			subToc.append('<a href="#subtopic-' + chapterTopicNumber + "-" +sectionNumber+'" target="_self">'+sectionName+'</a><br>');
+			section.attr('id', 'subtopic-' + chapterTopicNumber + "-" + sectionNumber);
+		});
+	});
+</script>
+</body>
+</html>

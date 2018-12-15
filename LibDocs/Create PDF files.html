@@ -1,0 +1,178 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="..\maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, .apply, div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{font-size: large;width:80%;margin-left: 10%; color:grey;}
+h1, h2 {color: gold;}
+img{width:800px;}
+</style>
+</head><body>
+<center><h1>Create PDF files from templates with Python and Google Scripts</h1>
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+
+<h2>Create PDF files from Python</h2>
+
+<p>Often, it's useful to create PDF files from your Python scripts. You have a few options for this. The usual ones are:</p>
+<ol>
+<li>Use a PDF library like <a href="https://pypi.org/project/reportlab/" target="_blank" rel="nofollow noopener">reportlab</a> to generate PDF files directly (e.g. https://www.blog.pythonlibrary.org/2010/03/08/a-simple-step-by-step-reportlab-tutorial/)</li>
+<li>Use an HTML templating library like <a href="http://jinja.pocoo.org/docs/2.10/" target="_blank" rel="nofollow noopener">Jinja2</a> and convert from HTML to PDF (e.g. see http://pbpython.com/pdf-reports.html)</li>
+<li>Use a third-party API like https://pdfgeneratorapi.com/.</li>
+</ol>
+<p>For Option 1, generating PDFs directly from inside Python can make formatting very difficult. You have to draw anything you need element by element, using code, and even once you've got a template looking the way you want it, it's difficult to maintain.</p>
+<p>Option 2 can often work better, but you still have to build the Jinja HTML boilerplate, and sometimes the HTML to PDF conversion doesn't come out quite as you expected.</p>
+<p>Option 3 requires you to build the template first using an online service's web interface. Although you get a drag-and-drop interface, it's quite clunky and difficult to make your template look as you want. Usually, you also have to pay to use the service.</p>
+<p>While one of the options above may work for you, if you don't like any of them, you can also hack together a document generation API based on Google Drive. You'll get a free API, and you'll be able to <span class="goldword">use Google Docs as your templating tool</span>, which is quite powerful and has many pre-existing templates for things like invoices, letters, and CVs.</p>
+<p>I started off with an invoice template that I found online. It looks like this:</p>
+<p><img src="https://i.imgur.com/bN4xM6R.png"></p>
+<p>In this tutorial, we'll walk through creating an API that generates these invoices and lets you programmatically insert the invoice number from an external Python script. In reality, you'd need to do the same for a lot of the other fields, but we'll start with a simple example for demonstration reasons.</p>
+<p>We'll be writing a few lines of Google App Script code, and a few lines of Python code.</p>
+<h2 id="creating-a-template-document"><a class="header-anchor" href="#creating-a-template-document" aria-hidden="true"><i class="fa fa-link" aria-hidden="true"></i></a> Creating a template document</h2>
+<p>Use one of the built in Google Document templates, search online for one that matches your needs, or build your own over at docs.google.com. (You'll need a Google Account).</p>
+<p>Add placeholders where you need dynamic information. In the example below, I've added <strong>INVOICE NO</strong> <code>{invoice_id}</code> in place of the &quot;456&quot; id that I had on the original document. There is nothing special about this syntax -- we'll be using a basic search and replace function later to swap this out for the real information, so use something that's unlikely to actually appear in the final document.</p>
+<p>Take a note of your document id, which is the highlighted part in the URL bar.</p>
+<p><img src="https://i.imgur.com/YYuU0Hh.png"></p>
+<h2 id="setting-up-a-custom-google-script"><a class="header-anchor" href="#setting-up-a-custom-google-script" aria-hidden="true"><i class="fa fa-link" aria-hidden="true"></i></a> Setting up a custom Google Script</h2>
+<p>Go to Google Drive, press &quot;New&quot; in the top left corner. Under &quot;More&quot;, select &quot;Google Apps Script&quot; if it is available or &quot;Connect more apps&quot; if you don't see it.</p>
+<p><img src="https://i.imgur.com/vgV0imn.png"></p>
+<p>Search for &quot;apps script&quot; and choose to connect it. You might see some warning messages asking if you trust yourself. Say that you do.</p>
+<p><img src="https://i.imgur.com/KevHTEh.png"></p>
+<p>Once you can create a new App Script, you'll see a default blank script that looks as follows.</p>
+<p><img src="https://i.imgur.com/m6edKGl.png"></p>
+<p>Delete the code that you see there, and replace it with a <code>createDocument</code> function that looks as follows.</p>
+<pre><code class="language-javascript">function createDocument(invoice_id) {
+  var TEMPLATE_ID = '1Ybq8r_SiWu4Z4-_Z6S0IW1L8FJywfpjPAATPCvvkKk8';  
+  var documentId = DriveApp.getFileById(TEMPLATE_ID).makeCopy().getId();
+  
+  drivedoc = DriveApp.getFileById(documentId);
+  drivedoc.setName(&quot;Invoice &quot; + invoice_id);
+  
+  doc = DocumentApp.openById(documentId);
+  
+  var body = doc.getBody();
+  
+  body.replaceText('{invoice_id}', invoice_id);
+  drivedoc.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.EDIT);
+
+  return &quot;https://docs.google.com/document/d/&quot; + documentId + &quot;/export?format=pdf&quot;;
+}
+</code></pre>
+<p>On line 2, switch out the <code>TEMPLATE_ID</code> with the document ID that you copied from the URL bar on your templated Google Doc.</p>
+<p>This code finds the templated doc, creates a copy of it and sets the file name to &quot;Invoice &quot; plus whatever <code>invoice_id</code> we pass in. It then opens the new file through the DocumentApp (instead of the Drive App, so that we can actually get the contents of the file and edit them). It searches the doc for the placeholder we added (<code>{invoice_id}</code>) and replaces it with the actual <code>invoice_id</code> that the function takes as input. It then sets the document to be publicly accessible and returns a URL that will go directly to a PDF export for that document.</p>
+<p>Below this function, add another one called <code>doGet</code>. While the previous function can be named anything, <code>doGet</code> is a special function in Google Apps Scripts, so you'll need to name it exactly <code>doGet</code>. This function will handle incoming web requests after we've deployed our app.</p>
+<p>The code for the <code>doGet</code> function is as follows. Paste this below the previous <code>createDocument()</code> function.</p>
+<pre><code class="language-javascript">function doGet(e) {
+  var invoice_id = e.parameter.invoice_id;
+  var url = createDocument(invoice_id);
+  return ContentService.createTextOutput(url);
+}
+</code></pre>
+<p>This takes in the invoice_id as a URL parameter, passes this along to our <code>createDocument</code> function that we just wrote, and returns the URL of the created document as plain text.</p>
+<h2 id="publishing-our-api"><a class="header-anchor" href="#publishing-our-api" aria-hidden="true"><i class="fa fa-link" aria-hidden="true"></i></a> Publishing our API</h2>
+<p>From the &quot;Publish&quot; menu, select &quot;Deploy as web app&quot;</p>
+<p><img src="https://i.imgur.com/c97yOeN.png"></p>
+<p>You'll be asked to name the project. Give it a name like &quot;PDF API&quot; or anything else you want.</p>
+<p><img src="https://i.imgur.com/RJFGBuF.png"></p>
+<p>You'll see a new menu to set the options for deploying your web app.</p>
+<p><img src="https://i.imgur.com/MxZZChx.png"></p>
+<p>Add a message like &quot;initial deploy&quot; under where it says &quot;New&quot; and choose &quot;Anyone, even anonymous&quot; from the access settings. Leave the Execution settings as &quot;Me&quot;.</p>
+<p><strong>Warning</strong>: <em>If you share the link in a public place, people may abuse the service and spam it with automatic requests. Google may lock your account for abuse if this happens, so keep the link safe.</em></p>
+<p>Hit the Deploy button and make a note of the URL that you see on the next pop up.</p>
+<p><img src="https://i.imgur.com/5AVnq7j.png"></p>
+<p>Add &quot;?invoice_id=1&quot; to the end of the URL and visit it in your browser. It should look something like</p>
+<p>https://script.google.com/macros/s/AKfycbxDiKpTGqMijZmU8-0cPj06DBFjDOPYZJ9IFvhcO111GCh8jqxC/exec?invoice_id=1</p>
+<p>If everything went well, you should see a Google Docs link displayed.</p>
+<p><img src="https://i.imgur.com/Nyz3diz.png"></p>
+<p>If you visit the URL, a PDF of the invoice with the placeholder switched out with <code>1</code> should be downloaded.</p>
+<h2 id="updating-the-application"><a class="header-anchor" href="#updating-the-application" aria-hidden="true"><i class="fa fa-link" aria-hidden="true"></i></a> Updating the application</h2>
+<p>If you see an error instead, or don't get a response, you probably made a mistake in the code. You can change it and update the deployment in the same way as you initially deployed it. The update screen is only slightly different from the deploy screen.</p>
+<p><img src="https://i.imgur.com/30xEV6Y.png"></p>
+<p><strong>The only tricky thing is that you <em>have</em> to select &quot;New&quot; as the version for every change you make. If you make changes to the code and Update a previous version, the changes won't take effect, which is not obvious from the UI. (You can see it took me a few tries to get this right.)</strong>.</p>
+<h2 id="creating-our-invoices-from-python"><a class="header-anchor" href="#creating-our-invoices-from-python" aria-hidden="true"><i class="fa fa-link" aria-hidden="true"></i></a> Creating our invoices from Python</h2>
+<p>We can now create invoices and save them locally from a Python script. The following code shows how to generate three invoices in a <code>for</code> loop.</p>
+<pre><code class="language-python">import requests
+
+url = &quot;https://script.google.com/macros/s/AKfycbyYL5jhEstkuzZAmZjo0dUIyAmzUc1XL5B-01fHRHx8h63cieXc/exec?invoice_id={}&quot;
+
+invoice_ids = [&quot;123&quot;, &quot;456&quot;, &quot;789&quot;]
+
+for invoice_id in invoice_ids:
+    print(&quot;processing &quot;, invoice_id)
+    response = requests.get(url.format(invoice_id))
+    print(&quot;file generated&quot;)
+    response = requests.get(response.content)
+    print(&quot;file downloaded&quot;)
+    with open(&quot;invoice{}.pdf&quot;.format(invoice_id), &quot;wb&quot;) as f:
+        f.write(response.content)
+</code></pre>
+<p>Note that the creation and download process is quite slow, so it'll take a few seconds for each invoice you create.</p>
+<p>You've probably noticed that this is quite a &quot;hacky&quot; solution to generate PDF files from inside Python. The &quot;replace&quot; functionality is quite limited compared to a proper templating language, and passing data through a get request also has limitations. If you pass through anything more complicated than an invoice ID, you'll to URL encode the data first. You can do this in Python using the <code>urllib.parse</code> module. An example modification of the Python script to deal with more complicated data is as follows.</p>
+<pre><code class="language-python">import requests
+import urllib.parse
+
+url = &quot;https://script.google.com/macros/s/AKfycbyYL5jhEstkuzZAmZjo0dUIyAmzUc1XL5B-01fHRHx8h63cieXc/exec?&quot;
+
+invoice_ids = [&quot;A longer ID with special characters $% ! --*?+&quot;]
+
+for invoice_id in invoice_ids:
+    print(&quot;processing &quot;, invoice_id)
+    payload = {&quot;invoice_id&quot;: invoice_id}
+    u = url + urllib.parse.urlencode(payload)
+    response = requests.get(u)
+    print(&quot;file generated&quot;)
+    response = requests.get(response.content)
+    print(response.content)
+    print(&quot;file downloaded&quot;)
+    with open(&quot;invoice{}.pdf&quot;.format(invoice_id), &quot;wb&quot;) as f:
+        f.write(response.content)
+</code></pre>
+<p>But there are still limitations of what kind of data and how much you can pass just using URLs, so you would need to modify the script to use POST requests instead if you were sending a lot of dynamic data.</p>
+<p>It's also quite slow compared to some of the other methods we discussed at the beginning, and Google has <a href="https://developers.google.com/apps-script/guides/services/quotas" target="_blank" rel="nofollow noopener">some limitations</a> on how many files you can create automatically in this way.</p>
+<p>That said, being able to generate templates using Google Docs can be quick and powerful, so you'll need to assess the tradeoffs for yourself.</p>
+<p>Also note that this is quite a contrived example, where we could have run the Python script from within the Google Ecosystem, and avoided needing to set up a public facing API that could potentially be abused if other people discovered the URL. However, you might have an existing Python application, not hosted on Google, that you need to connect with auto generated PDF files, and this method still allows you set up a self-contained &quot;microservice&quot; within the Google ecosystem that allows for easy PDF generation.</p>
+<h2 id="conclusion"><a class="header-anchor" href="#conclusion" aria-hidden="true"><i class="fa fa-link" aria-hidden="true"></i></a> Conclusion</h2>
+<p>If you had any problems with the set up, spot any errors, or know of a better way to generate PDF files in Python, please leave a comment below or ping me <a href="https://twitter.com/sixhobbits" target="_blank" rel="nofollow noopener">on Twitter</a>. You might also enjoy my <a href="dwyer.co.za/writing.html" target="_blank" rel="nofollow noopener">other tutorials</a>.</p>
+<br>
+<br>
+<br>
+<br>
+
+<script>
+	var toc = $('#toc');
+	$('h2').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>
+
+<script>
+	$('div').each(function(k) {
+		var chapterTopic = $(this);
+		chapterTopic.children("h2").after('<br><br><div class="topicIndex"></div>');
+		var subToc = chapterTopic.children("h2").siblings(".topicIndex");
+
+		chapterTopicNumber = k + 1
+
+		chapterTopic.find("strong").each(function(j) {
+			var section = $(this), sectionNumber = j + 1;
+			var sectionName = section.text();
+			subToc.append('<a href="#subtopic-' + chapterTopicNumber + "-" +sectionNumber+'" target="_self">'+sectionName+'</a><br>');
+			section.attr('id', 'subtopic-' + chapterTopicNumber + "-" + sectionNumber);
+		});
+	});
+</script>
+</body>
+</html>
