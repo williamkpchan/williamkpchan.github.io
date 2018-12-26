@@ -1,0 +1,186 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{width:80%;margin-left: 10%}
+strong, h1, h2 {color: gold;}
+</style>
+</head><body>
+<center><h1>JavaScript Client-side web scraping</h1>
+<div id="toc"></div></center>
+<a href="https://medium.com/data-scraper-tips-tricks/scraping-data-with-javascript-in-3-minutes-8a7cf8275b31">scraping-data-with-javascript</a>
+<br>
+<a href="https://medium.freecodecamp.org/client-side-web-scraping-with-javascript-using-jquery-and-regex-5b57a271cb86">client-side-web-scraping-with-javascript</a>
+<br>
+<p>
+When I was building my first open-source project, codeBadges, I thought it would be easy to get user profile data from all the main code learning websites.</p>
+<p>
+I was familiar with API calls and get requests. I thought I could just use jQuery to fetch the data from the various API's and use it.</p>
+<pre>
+var name = &#39;codemzy&#39;;
+$.get(&#39;https://api.github.com/users/&#39; + name, function(response) {
+var followers = response.followers;
+});</pre>
+<p>
+Well, that was easy. But it turns out that not every website has a public API that you can just grab the data you want from.</p>
+
+
+<p>
+But just because there is no public API doesn't mean you need to give up! You can use web scraping to grab the data, with only <strong class="markup--strong markup--p-strong">
+a little extra work</strong>
+.</p>
+<p>
+For an example, I will grab my user information from my public freeCodeCamp profile. But you can use these steps on any public HTML page.</p>
+<p>
+The first step in scraping the data is to grab the full page html using a jQuery <code class="markup--code markup--p-code">
+.get</code>
+ request.</p>
+<pre>
+var name = &quot;codemzy&quot;;
+$.get("https://www.freecodecamp.com/" + name, function(response) {
+  console.log(response);
+});</pre>
+<p>
+Awesome, the whole page source code just logged to the console.</p>
+<p>
+Note: If you get an error at this stage along the lines of <code class="markup--code markup--p-code">
+No ‘Access-Control-Allow-Origin' header is present on the requested resource</code>
+<em class="markup--em markup--p-em">
+ </em>
+don't fret. Scroll down to the <strong class="markup--strong markup--p-strong">
+Don't Let CORS Stop You</strong>
+ section of this post.</p>
+<p>
+That was easy. Using JavaScript and jQuery, the above code requests a page from <a href="http://www.freecodecamp.org" data-href="http://www.freecodecamp.org" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
+www.freecodecamp.org</a>
+, like a browser would. And freeCodeCamp responds with the page. Instead of a browser running the code to display the page, we get the HTML code.</p>
+<p>
+And that's what web scraping is, extracting data from websites.</p>
+<p>
+Ok, the response is not exactly as neat as the data we get back from an API.</p>
+
+
+<p>
+But… we have the data, in there somewhere.</p>
+<p>
+Once we have the source code the information we need is in there, we just have to grab the data we need!</p>
+<p>
+We can search through the response to find the elements we need.</p>
+<p>
+Let's say we want to know how many challenges the user has completed, from the user profile response we got back.</p>
+<p>
+At the time of writing, a camper's completed challenges completed are organized in tables on the user profile. So to get the total number of challenges completed, we can count the number of rows.</p>
+<p>
+One way is to wrap the whole response in a jQuery object, so that we can use jQuery methods like <code class="markup--code markup--p-code">
+.find()</code>
+ to get the data.</p>
+<pre>
+// number of challenges completed<br>
+var challenges = $(response).find(&#39;tbody tr&#39;).length;</pre>
+<p>
+This works fine — we get the right result. But its is <strong class="markup--strong markup--p-strong">
+not a good way</strong>
+ to get the result we are after. Turning the response into a jQuery object actually loads the whole page, including all the external scripts, fonts and stylesheets from that page…Uh oh!</p>
+<p>
+We need a few bits of data. We really don't need the page the load, and certainly not all the external resources that come with it.</p>
+<p>
+We could strip out the script tags and then run the rest of the response through jQuery. To do this, we could use Regex to look for script patterns in the text and remove them.</p>
+<p>
+Or better still, why not use Regex to find what we are looking for in the first place?</p>
+<pre>
+// number of challenges completed<br>
+var challenges = response.replace(/&lt;thead&gt;[\s|\S]*?&lt;<strong class="markup--strong markup--pre-strong">
+\/</strong>
+thead&gt;/g).match(/&lt;tr&gt;/g).length;</pre>
+<p>
+And it works! By using the Regex code above, we strip out the table head rows (that did not contain any challenges), and then match all table rows to count the number of challenges completed.</p>
+<p>
+It's even easier if the data you want is just there in the response in plain text. At the time of writing the user points were in the html like <code class="markup--code markup--p-code">
+&lt;h1 class=”flat-top text-primary”&gt;[ 1498 ]&lt;/h1&gt;</code>
+ just waiting to be scraped.</p>
+<pre>
+var points = response.match(/&lt;h1 class=&quot;flat-top text-primary&quot;&gt;<strong class="markup--strong markup--pre-strong">
+\[</strong>
+ ([\d]*?) <strong class="markup--strong markup--pre-strong">
+\]</strong>
+&lt;<strong class="markup--strong markup--pre-strong">
+\/</strong>
+h1&gt;/)[1];</pre>
+<p>
+In the above Regex pattern we match the h1 element we are looking for including the <code class="markup--code markup--p-code">
+[ ]</code>
+ that surrounds the points, and group any number inside with <code class="markup--code markup--p-code">
+([\d]*?).</code>
+ We get an array back, the first <code class="markup--code markup--p-code">
+[0]</code>
+ element is the entire match and the second <code class="markup--code markup--p-code">
+[1]</code>
+ is our group match (our points).</p>
+<p>
+Regex is useful for matching all sorts of patterns in strings, and it is great for searching through our response to get the data we need.</p>
+<p>
+You can use the same 3 step process to scrape profile data from a variety of websites:</p>
+<ol class="postList">
+<li>
+Use client-side JavaScript</li>
+<li>
+Use jQuery to scrape the data</li>
+<li>
+Use Regex to filter the data for the relevant information</li>
+</ol>
+<p>
+Until I hit a problem, CORS.</p>
+
+<h3>
+Don't Let CORS Stop You!</h3>
+<p>
+CORS or Cross-Origin Resource Sharing, can be a real problem with client-side web scraping.</p>
+<p>
+For security reasons, browsers restrict cross-origin HTTP requests initiated from within scripts. And because we are using client-side Javascript on the front end for web scraping, CORS errors can occur.</p>
+<p>
+
+<p>
+Staying firmly within our front end script, we can use cross-domain tools such as <a href="http://anyorigin.com/" data-href="http://anyorigin.com/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
+Any Origin</a>
+, <a href="http://www.whateverorigin.org/" data-href="http://www.whateverorigin.org/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
+Whatever Origin</a>
+, <a href="http://multiverso.me/AllOrigins/" data-href="http://multiverso.me/AllOrigins/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
+All Origins</a>
+, <a href="https://crossorigin.me/" data-href="https://crossorigin.me/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
+crossorigin</a>
+ and probably a lot more. I have found that you often need to test a few of these to find the one that will work on the site you are trying to scrape.</p>
+<p>
+Example, we can send our request via a cross-domain tool to bypass the CORS issue.</p>
+
+<pre>
+$.getJSON('http://www.whateverorigin.org/get?url=' + encodeURIComponent('http://google.com') + '&callback=?', function(data){
+	console.log(data.contents);
+});
+</pre>
+
+<br>
+<br>
+<br>
+<br>
+
+<script>
+	var toc = $('#toc');
+	$('h3').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>
+
+</body>
+</html>

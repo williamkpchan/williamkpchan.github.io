@@ -16,7 +16,7 @@ function chkKey() {
   if(testkey == 'C'){window.open("calculator/calculator.html");}
   if(testkey == 'd'){window.open("LibDocs/clock.html");}
   if(testkey == 'e'){window.location = '#ertong';}
-  if(testkey == 'f'){window.open("ForexChart.htm");}
+  if(testkey == 'f'){window.open("http://williamkpchan.github.io/ForexChart.htm");}
   if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
   if(testkey == 'g'){window.location = '#_youxi';}
   if(testkey == 'h'){window.open("LibDocs/News Points.html");}
@@ -24,7 +24,7 @@ function chkKey() {
   if(testkey == 'j'){window.location = '#Javascript';}
   if(testkey == 'J'){window.location = '#_jiaoyu';}
   if(testkey == 'l'){window.location = '#dushu';}
-  if(testkey == 'm'){window.open("medical.html");}
+  if(testkey == 'm'){window.open("http://williamkpchan.github.io/medical.html");}
   if(testkey == 'M'){window.open("https://www.google.com.hk/maps/");}
   if(testkey == 'n'){window.location = '#xinwen';}
   if(testkey == 'N'){window.location = '#Notes';}
@@ -34,7 +34,7 @@ function chkKey() {
   if(testkey == 'p'){window.location = '#Programming';}
   if(testkey == 'q'){window.location = '#sclj';}
   if(testkey == 'r'){window.location = '#Rlang';}
-  if(testkey == 's'){window.open("stkListVH.html");}
+  if(testkey == 's'){window.open("http://williamkpchan.github.io/stkListVH.html");}
   if(testkey == 'S'){showMMA();}
 
   if(testkey == 't'){window.open("http://my.weather.gov.hk/myindex_uc.htm");}
@@ -44,11 +44,11 @@ function chkKey() {
   if(testkey == 'w'){window.location = '#ruanjian';}
   if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
   if(testkey == 'x'){window.open("https://wx.qq.com/");}
-  if(testkey == 'X'){window.open("LibDocs/Random Charts.html");}
+  if(testkey == 'X'){window.open("http://williamkpchan.github.io/LibDocs/Random Charts.html");}
 
   if(testkey == 'y'){window.open("http://www.youtube.com");}
   if(testkey == 'Y'){window.location = '#yinyue';}
-  if(testkey == 'z'){window.open("LibDocs/shortPeriodMain.html");}
+  if(testkey == 'z'){window.open("http://williamkpchan.github.io/LibDocs/shortPeriodMain.html");}
 
 }
 
