@@ -46,7 +46,7 @@ function chkKey() {
   if(testkey == 'x'){window.open("https://wx.qq.com/");}
   if(testkey == 'X'){window.open("http://williamkpchan.github.io/LibDocs/Random Charts.html");}
 
-  if(testkey == 'y'){window.open("http://www.youtube.com");}
+  if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
   if(testkey == 'Y'){window.location = '#yinyue';}
   if(testkey == 'z'){window.open("http://williamkpchan.github.io/LibDocs/shortPeriodMain.html");}
 
