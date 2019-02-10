@@ -1408,7 +1408,17 @@ url <- 'testvibrate.html'
 webpage <- readLines(url, warn=FALSE)
 x <- read_xml(webpage)
 xml_name(x)
+===========
 
+This cannot work in office
+library(rvest)
+Sys.setlocale(category = 'LC_ALL', 'Chinese')
+webpage <- read_html("http://www.iciba.com/haunt")
+ullist = webpage %>% html_nodes("ul")
+content = ullist[2] %>% html_text()
+content = gsub("n.| |\n|adj.|adv.|prep.|vt.|vi.|&","",content)
+content = gsub("，|；"," ",content) %>%  strsplit(split = " ") %>% unlist() %>% sort() %>% unique()
+paste0("past","\t",capture.output(cat(content)))
 
 </pre>
 <br>
@@ -1770,6 +1780,76 @@ You can visit my website at
 <a href="R and D3.html">R and D3</a>
 <a href="https://www.opencpu.org/posts/js-release-0-1/">tools for working with JavaScript in R</a>
 <a href="http://www.di.fc.ul.pt/~jpn/r/langs/javascript.html">R Connecting with Javascript</a>
+
+<h2>tryCatch</h2>
+<a href="https://codeday.me/bug/20170502/13495.html">如何在R中写trycatch</a>
+<a href="https://stackoverflow.com/questions/12193779/how-to-write-trycatch-in-r">write trycatch in R</a>
+<a href="http://mazamascience.com/WorkingWithData/?p=912">error Handing with tryCatch()</a>
+
+e.g.
+readUrl = function(url) {
+    out = tryCatch(
+        {
+            message("This is the 'try' part")
+            readLines(con=url, warn=FALSE) 
+        },
+        error=function(cond) {
+            message(paste("URL does not seem to exist:", url))
+            message("Here's the original error message:")
+            message(cond)
+            # Choose a return value in case of error
+            return(NA)
+        },
+        warning=function(cond) {
+            message(paste("URL caused a warning:", url))
+            message("Here's the original warning message:")
+            message(cond)
+            # Choose a return value in case of warning
+            return(NULL)
+        },
+        finally={
+        # Here goes everything that should be executed at the end,
+        # regardless of success or error.
+        # If you want more than one expression to be executed, then you 
+        # need to wrap them in curly brackets ({...}); otherwise you could
+        # just have written 'finally={expression}' 
+            message(paste("Processed URL:", url))
+            message("Some other message at the end")
+        }
+    )    
+    return(out)
+}
+
+e.g.
+x <- tryCatch( readLines("wx.qq.com/"), warning=function(w){ return(paste( "Warning:", conditionMessage(w)));}, 
+error = function(e) { return(paste( "this is Error:", conditionMessage(e)));}, 
+finally={print("This is try-catch test. check the output.")});
+
+e.g.
+for (i in urls) {
+    tmp <- tryCatch(readLines(url(i), warn=F), error = function (e) NULL)
+    if (is.null(tmp)) {
+        next() # skip to the next url.
+    }
+}
+
+<h2>Download Image</h2>
+<a href="https://stackoverflow.com/questions/29110903/how-to-download-and-display-an-image-from-an-url-in-r">Download Image</a>
+<br>
+If I try your code it looks like the image is downloaded. However, when opened with windows image viewer it also says it is corrupt. The reason for this is that you don't have specified the mode in the download.file statement.
+
+Try this:
+
+download.file(y,'y.jpg', mode = 'wb')
+
+download.file('http://78.media.tumblr.com/83a81c41926c1da585916a5c092b4789/tumblr_or0y0vdjOP1rttk8po1_1280.jpg','y.jpg', mode = 'wb')
+
+To view the image in R, have a look at
+
+jj <- readJPEG("y.jpg",native=TRUE)
+plot(0:1,0:1,type="n",ann=FALSE,axes=FALSE)
+rasterImage(jj,0,0,1,1)
+
 
 </pre>
 <br><br><br><br>
