@@ -14,7 +14,7 @@ $(document).ready(function () {
 	var isBreakDue;
 	var isPaused;
 	var hasStarted;
-	var alarmSound = new Audio('https://freesound.org/data/previews/347/347544_5662401-lq.mp3');
+	var alarmSound = new Audio('https://freesound.org/data/previews/459/459145_6142149-lq.mp3');
 
 
 	function makeTime(minutes, seconds) {
@@ -125,8 +125,8 @@ $(document).ready(function () {
 
 	function initialise() {
 		clearTimeout(timer);
-		configureSessionTime = 10;
-		configureBreakTime = 5;
+		configureSessionTime = 4;
+		configureBreakTime = 1;
 		isBreakDue = true;
 		isPaused = true;
 		hasStarted = false;
