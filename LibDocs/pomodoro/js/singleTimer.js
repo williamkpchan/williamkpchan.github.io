@@ -141,5 +141,34 @@ $(document).ready(function () {
             startCountDown(configureSessionTime, 0, 0);
         });
     }
+
+    function chkKey() {
+        var testkey = getChar(event);
+        if(testkey == '+'){
+            console.log(testkey)
+            if (configureSessionTime < 99)
+            configureSessionTime++;
+            sessionCount.text(configureSessionTime);
+            if (!hasStarted)
+            displayTime(configureSessionTime, 0);
+        };
+    
+        if(testkey == '-'){
+        if (configureSessionTime > 1)
+            configureSessionTime--;
+            sessionCount.text(configureSessionTime);
+            if (!hasStarted)
+            displayTime(configureSessionTime, 0);
+        }
+    }
+
     initialise();
 });
+
+function getChar(event) {
+  if (event.which!=0 && event.charCode!=0) {
+    return String.fromCharCode(event.which)   // the rest
+  } else {
+    return null // special key
+  }
+}

@@ -11,7 +11,7 @@ $(document).ready(function(){
 	thisImgPCode= "&period=7";
 	thisImgTail="&type=1&logoStyle=1' ";
 
-var theList = ['110000','000001.sh','111000.HK','111100.HK'];
+theList = ['110000','000001.sh','111000.HK','111100.HK'];
 	$( "#codelist" ).append("Total: " + theList.length + "<br>");
 	theList.forEach(function(value) {
 		$( "#codelist" ).append('<span onclick=sCt("' +value + '")>' + value + '</span>&emsp;');
