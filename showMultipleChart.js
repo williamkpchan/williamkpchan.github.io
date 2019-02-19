@@ -6,12 +6,13 @@ $(document).ready(function(){
     });
 });
 
+theList = ['110000','000001.sh','110041.HK','03908','111000.HK','111100.HK'];
+
 $(document).ready(function(){
 	thisImgHead = "<img src='http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=3&indpara1=3&indpara2=5&indpara3=10&indpara4=15&indpara5=20&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&subChart3=12&ref3para1=0&ref3para2=0&ref3para3=0&scheme=3&com=100&chartwidth=680&chartheight=400&stockid=";
 	thisImgPCode= "&period=7";
 	thisImgTail="&type=1&logoStyle=1' ";
 
-theList = ['110000','000001.sh','111000.HK','111100.HK'];
 	$( "#codelist" ).append("Total: " + theList.length + "<br>");
 	theList.forEach(function(value) {
 		$( "#codelist" ).append('<span onclick=sCt("' +value + '")>' + value + '</span>&emsp;');
