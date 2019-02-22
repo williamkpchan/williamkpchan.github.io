@@ -1,0 +1,253 @@
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{width:80%;margin-left: 10%}
+strong, h1, h2 {color: gold;}
+</style>
+</head><body>
+<center><h1>javascript iterables, iterators, and generators</h1>
+<a href="https://medium.com/dubizzletechblog/introduction-to-javascript-iterables-iterators-and-generators-a26be413dfd9">javascript iterables</a>
+<br>
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+
+
+
+<h3>
+Iterators and Iterables:</h3><p>
+ES6 (aka ES2015) has introduced two new concepts in javascript: <strong>
+<em>
+iterables</em></strong>, and <strong>
+<em>
+iterators</em></strong>.<br>This is a brief on what iterables, iterators, and generators are and how to make use of them.</p>
+<h4>
+What are iterables?</h4><p>
+In general, it is a data structure that allows its data to be consumed. It does so by implementing a method whose key is <strong>
+<em>
+Symbol.iterator</em></strong> which returns an iterator.</p>
+<h4>
+Why do we need iterables?</h4><p>
+Pre-ES6 in Javascript if you have some data source, depending on how you structure your data, you need to consume it in a different (sometimes hacky!) way. <br>Iterating and consuming the data of an Array is different from a key/value object and as ES6 is adding new data sources like <strong>
+<em>
+Map</em></strong> and <strong>
+<em>
+Set</em></strong>, so it doesn’t make sense and is not practical to implement different ways of consuming all those different data sources.<br>So the language must have an interface that all the data sources can implement, so all the consumers have the same way to consume data.</p>
+
+<img class="progressiveMedia-noscript js-progressiveMedia-inner" src="https://cdn-images-1.medium.com/max/800/1*aw0ODP5vE6ajNe2A3xH8ig.png">
+<a href="http://exploringjs.com/es6/ch_iteration.html" data-href="http://exploringjs.com/es6/ch_iteration.html" class="markup--anchor markup--figure-anchor" rel="noopener nofollow" target="_blank">
+here</a>, not exactly but inspired from it
+<h4>
+How to implement an iterable?</h4><p>
+To call any object <strong>
+<em>
+iterable</em></strong>, it needs to implement the <strong>
+<em>
+iterable</em></strong> interface, which as 
+<a href="http://www.ecma-international.org/ecma-262/6.0/index.html#sec-iterable-interface" data-href="http://www.ecma-international.org/ecma-262/6.0/index.html#sec-iterable-interface" class="markup--anchor markup--p-anchor" rel="nofollow noopener" target="_blank">
+per ecmascript specification</a>:</p>
+<img src="https://cdn-images-1.medium.com/max/800/1*HG_lhsM5lzLm2o5oprsutw.png">
+
+So for an object to be an <strong>
+<em>
+iterable</em></strong>, it needs a method that returns an <strong>
+<em>
+iterator</em></strong>, and this methods property is<strong>
+<em>
+ @@iterator (Symbol.iterator</em></strong>)<strong>
+ <em>
+.</em></strong></p>
+<h4>
+What is an iterator?</h4><p>
+Iterator is a way to pull data from a data structure on one-at-a-time fashion, it needs to implement the <strong>
+<em>
+iterator</em></strong> interface.</p><figure>
+<img src="https://cdn-images-1.medium.com/max/800/1*pOTL_06NCO6WTUzOelrPPg.png">
+
+<a href="http://www.ecma-international.org/ecma-262/6.0/index.html#sec-iterator-interface" data-href="http://www.ecma-international.org/ecma-262/6.0/index.html#sec-iterator-interface" class="markup--anchor markup--figure-anchor" rel="nofollow noopener" target="_blank">
+source</a>
+<strong>
+Hint: </strong>the <strong>
+<em>
+iterator</em></strong> interface has another method called <strong>
+<em>
+return()</em></strong>, which is being called when the iteration reaches the last value, or stopped manually by calling it explicitly or for example <strong>
+<em>
+break;</em></strong> a for loop.</p><p>
+And the <strong>
+<em>
+iteratorResult</em></strong> that returns from the iterator <strong>
+<em>
+next()</em></strong> method needs to follow this interface:</p><figure>
+<img src="https://cdn-images-1.medium.com/max/800/1*ZMD-pcNxJwQhM-LTiU7KjQ.png">
+
+<a href="http://www.ecma-international.org/ecma-262/6.0/index.html#sec-iteratorresult-interface" data-href="http://www.ecma-international.org/ecma-262/6.0/index.html#sec-iteratorresult-interface" class="markup--anchor markup--figure-anchor" rel="nofollow noopener" target="_blank">
+source</a><p>
+So each time we call <strong>
+<em>
+next()</em></strong> on an <strong>
+<em>
+iterator</em></strong> we should get<strong>
+<em>
+ {value: the current iteration value, done: false/true}</em></strong></p><p>
+ As we see in the above first image, one of the ways to consume iterables is <strong>
+<em>
+for..of </em></strong>loop, so lets use it on one of the language built-in iterables, an <strong>
+<em>
+array</em></strong>.</p><pre>
+const arr = [1,4,2];</pre><pre>
+for(v of arr){<br>    console.log(arr); // 1 4 2<br>}</pre><p>
+But can we call<strong>
+<em>
+ .next</em></strong> to pull values from an array:</p><pre>
+ const arr = [1,4,2];<br>arr.next() // Error</pre><p>
+<strong>
+Why?</strong> because it is an <strong>
+<em>
+iterable</em></strong> not an <strong>
+<em>
+iterator</em></strong>, and to be able to use <strong>
+<em>
+.next</em></strong> we need to call the <strong>
+<em>
+iterator</em></strong> method this iterable’s <strong>
+<em>
+Symbol.iterator</em></strong> returns:</p><pre>
+const arr = [1,4,2];<br>const iter = arr[Symbol.iterator]();</pre><pre>
+iter.next(); // {value: 1, done: false}<br>iter.next(); // {value: 4, done: false}<br>iter.next(); // {value: 2, done: false}<br>iter.next(); // {value: undefined, done: true}</pre><p>
+<strong>
+<em>
+Symbol.iterator</em></strong> represents the property on any object which when we call, the language looks to find a method that will construct an iterator instance for consuming that object’s values. Many objects come with a default one defined.</p>
+<h4>
+Custom Iterators</h4><p>
+In addition to the standard built-in iterators, you can make your own. <br>All it takes to make them work with ES6&#39;s consumption facilities (e.g., the <strong>
+<em>
+for..of</em></strong> loop and the … operator) is to adhere to the proper interface(s).</p><p>
+Let’s try constructing an <strong>
+<em>
+iterator</em></strong> that produces the infinite series of numbers in the Fibonacci sequence:</p><pre>
+var Fib = {<br> [Symbol.iterator]() {<br>     var n1 = 1, n2 = 1;</pre><pre>
+     return {</pre><pre>
+         next() {<br>             var current = n2;<br>             n2 = n1;<br>             n1 = n1 + current;<br>             return { value: current, done: false };<br>         },</pre><pre>
+         return(v) {<br>             console.log(‘Done’);<br>             return { value: v, done: true };<br>         }<br>     };<br>  }<br>};</pre><pre>
+         for (var v of Fib) {<br>    console.log( v );<br>    if (v &gt; 50) break;<br>}<br>// 1 1 2 3 5 8 13 21 34 55<br>// Done</pre><p>
+Here we can see the benefit of the optional iterator’s <strong>
+<em>
+return(..)</em></strong> method, it is actually so useful as it works as a built-in <strong>
+<em>
+stopIteration</em></strong> method, it is defined as sending a signal to an iterator that the consuming code is complete and will not be pulling any more values from it, so it is being called anyway once we finished iterating, it is the one returning {done:true}, but we can call it manually as well.</p>
+<h4>
+Consuming Iterators:</h4><p>
+<strong>
+1-<em>
+for .. of</em> loop:</strong><br>We can use the new es6 <strong>
+<em>
+for..of</em></strong> loop to consume iterators, but it must be an <strong>
+<em>
+iterable</em></strong> as well, we easily can make any iterator an iterable by providing it with the <strong>
+<em>
+Symbol.iterator</em></strong> property that returns the <strong>
+<em>
+iterator</em></strong> itself:</p><pre>
+var it = {<br> // make the `it` iterator an iterable<br> [Symbol.iterator]() { return this; },</pre><pre>
+next() { .. },<br> ..<br>};</pre><p>
+<strong>
+2-</strong> <strong>
+<em>
+… spread/rest</em></strong> <strong>
+operator</strong>:<br>We can use es6 spread operator to consume iterators. In the above Fibonacci snippet, we can do :</p><pre>
+[…Fib] // [1, 1, 2, 3, 5, 8, 13, 21, 34]</pre><p>
+We can use iterators with array destructuring as well:</p><pre>
+[a, b] = […Fib] // a = 1, b = 1<br>[a,b, …c] = […Fib] // a=1, b=1, c = [3, 5, 8, 13, 21, 34]</pre><h3>
+Generators:</h3><p>
+Pre ES6 there was no way in javascript to pause executing a function at some point, then come later to the same point and resume the function execution.<br>But with generator functions we can do that, because generator functions when executed return an <strong>
+<em>
+iterator</em></strong>, and instead of stopping at each value/element and return <strong>
+<em>
+iteratorResult</em></strong> with each <strong>
+<em>
+.next()</em></strong>, generator functions stop at each <strong>
+<em>
+yield</em></strong> keyword and return the value next to it if any.</p><p>
+To define a generator function you need to add * between the keyword <strong>
+<em>
+function</em></strong> and the function’s name.</p><pre>
+function *foo() {<br>    yield 1<br>    yield 2<br>    yield 3<br>}</pre><pre>
+const iter = foo();<br>iter.next(); // {value: 1, done: false}<br>iter.next(); // {value: 2, done: false}<br>iter.next(); // {value: 3, done: false}</pre><p>
+All iterators created by generators are also iterables, as generators assign the <strong>
+<em>
+Symbol.iterator</em></strong> property by default, so we can use <strong>
+<em>
+for..of</em></strong> with it:</p><pre>
+function *foo() {<br>    yield 1<br>    yield 2<br>    yield 3<br>}</pre><pre>
+const iter = foo();<br>for(v of iter){<br> console.log(v) // 1 2 3<br>}</pre><p>
+You can write generator functions in different ways:<br><strong>
+function declaration:</strong></p><pre>
+function *genFunc() { ··· }<br>const genObj = genFunc();</pre><p>
+<strong>
+function expression:</strong></p><pre>
+const genFunc = function *() { ··· };<br>const genObj = genFunc();</pre><p>
+<strong>
+ES6 method shorthand in object literals:</strong></p><pre>
+ const obj = {<br>     *generatorMethod() {···}<br> };<br> const genObj = obj.generatorMethod();</pre>
+ <h4>
+ yield delegation (aka recursive yield):</h4><p>
+If you check the first image, you will notice we added also <strong>
+<em>
+yield*</em></strong> as one of the <strong>
+<em>
+iterable</em></strong> interface consumers, this pattern is used when you want to pass a generator (or any iterable) to one of your generator’s <strong>
+<em>
+yield</em></strong> keywords:</p><pre>
+function *foo() {<br>    yield *[1,2,3];<br>}</pre><pre>
+const iter = foo();</pre><pre>
+iter.next(); // {value: 1, done: false}<br>iter.next(); // {value: 2, done: false}<br>iter.next(); // {value: 3, done: false}<br>iter.next(); // {value: undefined, done: true}</pre><p>
+So as we see in this example, instead of returning the whole array, it is returning an array iterator which we can call <strong>
+<em>
+next()</em></strong> to pull each value of it.<br>And we can pass another generator function as well:</p><pre>
+function *foo() {<br>    yield 1;<br>    yield 2;<br>    yield 3;<br>}</pre><pre>
+function *bar() {<br>    yield *foo(); <br>}</pre><pre>
+const iter = bar();<br>iter.next(); // {value: 1, done: false}<br>iter.next(); // {value: 2, done: false}<br>iter.next(); // {value: 3, done: false}<br>iter.next(); // {value: undefined, done: true}</pre><p>
+Now Let’s visit the Fibonacci example again but implement it with generators this time:</p><pre>
+var FibGen = {<br>    [Symbol.iterator]() {<br>        var n1 = 1, n2 = 1;<br>        return function* fib () {<br>            var current = n2;<br>            n2 = n1;<br>            n1 = n1 + current;<br>            yield current;<br>            yield* fib();<br>         }();<br>     }<br>}</pre><pre>
+for (var v of FibGen) {<br>    console.log( v );<br>    if(v &gt; 50) break;<br>}</pre><p>
+That was a quick overview of iterables, iterators, and generators in javascript, if you want to read more, here’re some resources:</p><p>
+
+<a href="https://leanpub.com/understandinges6/read#leanpub-auto-iterators-and-generators" data-href="https://leanpub.com/understandinges6/read#leanpub-auto-iterators-and-generators" class="markup--anchor markup--p-anchor" rel="nofollow noopener" target="_blank">
+Iterators and Generators — Understanding ES6</a><br>
+<a href="https://github.com/getify/You-Dont-Know-JS/blob/master/es6%20&amp;%20beyond/ch3.md" data-href="https://github.com/getify/You-Dont-Know-JS/blob/master/es6%20&amp;%20beyond/ch3.md" class="markup--anchor markup--p-anchor" rel="nofollow noopener" target="_blank">
+ES6-Organization — YouDon’tKnowJS- ES6 and Beyond</a><br>
+<a href="http://exploringjs.com/es6/ch_iteration.html" data-href="http://exploringjs.com/es6/ch_iteration.html" class="markup--anchor markup--p-anchor" rel="nofollow noopener" target="_blank">
+Iterables and Iterators — ExploringJS</a><br>
+<a href="http://exploringjs.com/es6/ch_generators.html" data-href="http://exploringjs.com/es6/ch_generators.html" class="markup--anchor markup--p-anchor" rel="nofollow noopener" target="_blank">
+Generators — ExploringJS</a><br>
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators" data-href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators" class="markup--anchor markup--p-anchor" rel="nofollow noopener" target="_blank">
+Iterators and Generators — MDN</a></p>
+<br>
+<br>
+<br>
+<br>
+
+<script>
+	var toc = $('#toc');
+	$('h3,h4').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>
+</body>
+</html>

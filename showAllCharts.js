@@ -7,6 +7,8 @@ $(document).ready(function(){
     showAllCharts();
 });
 
+theList = [];
+
 thisImgPCode= "&period=7";
 
 function showAllCharts(){
