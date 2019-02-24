@@ -14,7 +14,7 @@ $(document).ready(function () {
     var isBreakDue;
     var isPaused;
     var hasStarted;
-    var alarmSound = new Audio('https://freesound.org/data/previews/450/450509_8322461-lq.mp3');
+    var alarmSound = new Audio('http://freesound.org/data/previews/107/107795_367313-lq.mp3');
 
 
     function makeTime(minutes, seconds) {

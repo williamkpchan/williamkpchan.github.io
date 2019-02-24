@@ -1,0 +1,169 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{width:80%;margin-left: 10%}
+strong, h1, h2 {color: gold;}
+</style>
+</head><body>
+<center><h1></h1>
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+<pre>
+<h1>Complete Guide To Node Client-Server Communication</h1>
+After reading 
+<a href="http://chimera.labs.oreilly.com/books/1230000000545/index.html" data-href="http://chimera.labs.oreilly.com/books/1230000000545/index.html" class="markup--anchor markup--p-anchor" rel="nofollow noopener" target="_blank">High-Performance Browser Networking</a> by Ilya Grigorik, I was inspired to implement all of the client-server communication techniques outlined in his book in Node and JavaScript. 
+This post covers the following forms of client-server connection:
+
+XMLHttpRequest
+Server-Sent Events
+WebSocket
+HTTP/2
+Server to server
+You can check out the complete source code for each implementation 
+<a href="https://github.com/JoeKarlsson1/Complete_Guide_To_Client_Server_Communication" data-href="https://github.com/JoeKarlsson1/Complete_Guide_To_Client_Server_Communication" class="markup--anchor markup--p-anchor" rel="nofollow noopener" target="_blank">here</a>.
+
+Before we begin, I should note that there is no one best protocol or API for client/server communication. 
+Every non-trivial application will require a mix of different transports based on a variety of requirements: interaction with the browser cache, protocol overhead, message latency, reliability, type of data transfer, and more. 
+Some protocols may offer low-latency delivery (e.g., Server-Sent Events, WebSocket), but may not meet other critical criteria, such as the ability to leverage the browser cache or support efficient binary transfers in all cases. 
+Here is visualization to help illustrate how XHR, SSE, and WebSockets differ in their implementations.
+<br>
+<img src="https://cdn-images-1.medium.com/max/800/0*1LzuWqDF3n107sFm.png">
+CLIENT SERVER RELATIONSHIP
+XHR</strong> is optimized for “transactional” request-response communication: the client sends the full, well-formed HTTP request to the server, and the server responds with a full response. 
+There is no support for request streaming, and until the Streams API is available, no reliable cross-browser response streaming API.
+SSE</strong> enables efficient, low-latency server-to-client streaming of text-based data: the client initiates the SSE connection, and the server uses the event source protocol to stream updates to the client. 
+The client can’t send any data to the server after the initial handshake.
+WebSocket</strong> is the only transport that allows bidirectional communication over the same TCP connection (Figure 17–2): the client and server can exchange messages at will. 
+As a result, WebSocket provides low latency delivery of text and binary application data in both directions.
+
+<h3>WebSocket Client-Server Demo</h3>
+<a href="https://github.com/JoeKarlsson1/Complete_Guide_To_Client_Server_Communication/tree/master/client-server-sockets" target="_blank">WebSocket Client-Server Demo</a>
+ws</em> protocol, that makes it possible to establish a continuous full-duplex connection stream between a client and a server. 
+A typical websocket client would be a user’s browser, but the protocol is platform independent. 
+It is the closest API to a raw network socket in the browser. 
+Except a WebSocket connection is also much more than a network socket, as the browser abstracts all the complexity behind a simple API and provides a number of additional services:
+Connection negotiation and same-origin policy enforcement
+Interoperability with existing HTTP infrastructure
+Message-oriented communication and efficient message framing
+Subprotocol negotiation and extensibility
+This is a demo shows a demo of a client connecting to a websocket server and sharing data. 
+Here is the server.js of a websocket.
+
+<pre>&#39;use strict&#39;;</pre>
+<pre>const WebSocketServer = require(&#39;ws&#39;).Server<br>const wss = new WebSocketServer({ port: 8081 });</pre>
+<pre>wss.on(&#39;connection&#39;, ((ws) =&amp;gt; {<br>ws.on(&#39;message&#39;, (message) =&amp;gt; {<br>console.log(`received: ${message}`);<br>});</pre>
+<pre>ws.on(&#39;end&#39;, () =&amp;gt; {<br>console.log(&#39;Connection ended...&#39;);<br>});</pre>
+<pre>ws.send(&#39;Hello Client&#39;);<br>}));</pre>
+Here is the client.js of a websocket.
+
+<pre>console.log(&#39;open: &#39;);<br>var ws = new WebSocket(&quot;ws://127.0.0.1:8081&quot;);</pre>
+<pre>ws.onopen = function (event) {<br>console.log(&#39;Connection is open ...&#39;);<br>ws.send(&quot;Hello Server&quot;);<br>};</pre>
+<pre>ws.onerror = function (err) {<br>console.log(&#39;err: &#39;, err);<br>}</pre>
+<pre>ws.onmessage = function (event) {<br>console.log(event.data);<br>document.body.innerHTML += event.data + &#39;&amp;lt;br&amp;gt;&#39;;<br>};</pre>
+<pre>ws.onclose = function() {<br>console.log(&quot;Connection is closed...&quot;);<br>}</pre>
+
+<h3>
+Stream Updates with Server-Sent Events (SSE)</h3>
+SSEs are sent over traditional HTTP. 
+That means they do not require a special protocol or server implementation to get working. 
+WebSockets on the other hand, require full-duplex connections and new Web Socket servers to handle the protocol. 
+In addition, Server-Sent Events have a variety of features that WebSockets lack by design such as automatic reconnection, event IDs, and the ability to send arbitrary events.
+
+<h3>Server-Sent Events vs. 
+WebSockets</h3>
+Why would you choose Server-Sent Events over WebSockets? Good question. 
+One reason SSEs have been kept in the shadow is because later APIs like WebSockets provide a richer protocol to perform bi-directional, full-duplex communication. 
+Having a two-way channel is more attractive for things like games, messaging apps, and for cases where you need near real-time updates in both directions. 
+However, in some scenarios data doesn’t need to be sent from the client. 
+You simply need updates from some server action. 
+A few examples would be friends’ status updates, stock tickers, news feeds, or other automated data push mechanisms (e.g. 
+updating a client-side Web SQL Database or IndexedDB object store). 
+If you’ll need to send data to a server, XMLHttpRequest is always a friend.
+
+Here is the server.js of our Server Sent Event, we will be sending out data to the client every 5 seconds with an updated timestamp via SSE.
+
+<pre>&#39;use strict&#39;;</pre>
+<pre>const http = require(&#39;http&#39;);<br>const util = require(&#39;util&#39;);<br>const fs = require(&#39;fs&#39;);</pre>
+<pre>http.createServer((req, res) =&amp;gt; {<br>debugHeaders(req);</pre>
+<pre>if (req.headers.accept &amp;amp;&amp;amp; req.headers.accept == &#39;text/event-stream&#39;) {<br>if (req.url == &#39;/events&#39;) {<br>sendSSE(req, res);<br>} else {<br>res.writeHead(404);<br>res.end();<br>}<br>} else {<br>res.writeHead(200, {&#39;Content-Type&#39;: &#39;text/html&#39;});<br>res.write(fs.readFileSync(__dirname + &#39;/index.html&#39;));<br>res.end();<br>}<br>}).listen(8000);</pre>
+<pre>const sendSSE = (req, res) =&amp;gt; {<br>res.writeHead(200, {<br>&#39;Content-Type&#39;: &#39;text/event-stream&#39;,<br>&#39;Cache-Control&#39;: &#39;no-cache&#39;,<br>&#39;Connection&#39;: &#39;keep-alive&#39;<br>});</pre>
+<pre>const id = (new Date()).toLocaleTimeString();</pre>
+<pre>setInterval(() =&amp;gt; {<br>constructSSE(res, id, (new Date()).toLocaleTimeString());<br>}, 5000);</pre>
+<pre>constructSSE(res, id, (new Date()).toLocaleTimeString());<br>//res.end();<br>}</pre>
+<pre>const constructSSE = (res, id, data) =&amp;gt; {<br>res.write(&#39;id: &#39; + id + &#39;\n&#39;);<br>res.write(&quot;data: &quot; + data + &#39;\n\n&#39;);<br>}</pre>
+<pre>const debugHeaders = (req) =&amp;gt; {<br>util.puts(&#39;URL: &#39; + req.url);<br>for (let key in req.headers) {<br>util.puts(key + &#39;: &#39; + req.headers[key]);<br>}<br>util.puts(&#39;\n\n&#39;);<br>}</pre>
+And here is the client.js which is reference by the index.html on the client side. 
+Notice how the client never sends out a formal request for data with SSE’s. 
+Once the intial connection has been made with the server then the plain text data can be sent to the client as needed!
+
+<pre>var source = new EventSource(&#39;/events&#39;);<br>source.onmessage = function(e) {<br>document.body.innerHTML += e.data + &#39;&#39;;<br>};</pre>
+<h3>
+<a href="https://github.com/JoeKarlsson1/Complete_Guide_To_Client_Server_Communication/tree/master/xhr" data-href="https://github.com/JoeKarlsson1/Complete_Guide_To_Client_Server_Communication/tree/master/xhr" class="markup--anchor markup--h3-anchor" rel="nofollow noopener" target="_blank">XMLHttpRequest (XHR)</a></h3>
+XMLHttpRequest (XHR) is a browser-level API that enables the client to script data transfers via JavaScript. 
+XHR made its first debut in Internet Explorer 5, became one of the key technologies behind the Asynchronous JavaScript and XML (AJAX) revolution, and is now a fundamental building block of nearly every modern web application.
+<blockquote name="bc07" id="bc07" class="graf graf--blockquote graf-after--p"><em class="markup--em markup--blockquote-em">XMLHTTP changed everything. 
+It put the “D” in DHTML. 
+It allowed us to asynchronously get data from the server and preserve document state on the client… The Outlook Web Access (OWA) team’s desire to build a rich Win32 like application in a browser pushed the technology into IE that allowed AJAX to become a reality. — Jim Van Eaton Outlook Web Access: A catalyst for web evolution</em></blockquote><figure name="ae2f" id="ae2f" class="graf graf--figure graf-after--blockquote">
+<div class="aspectRatioPlaceholder is-locked" style="max-width: 700px; max-height: 382px;">
+<div class="aspectRatioPlaceholder-fill" style="padding-bottom: 54.6%;">
+
+<div class="progressiveMedia js-progressiveMedia graf-image" data-image-id="0*Z7iLEDVToDLrzN-o.png" data-width="1024" data-height="559" data-action="zoom" data-action-value="0*Z7iLEDVToDLrzN-o.png"><br>
+	<img src="https://cdn-images-1.medium.com/freeze/max/30/0*Z7iLEDVToDLrzN-o.png?q=20" crossorigin="anonymous" class="progressiveMedia-thumbnail js-progressiveMedia-thumbnail"><canvas class="progressiveMedia-canvas js-progressiveMedia-canvas"></canvas><br>
+<img class="progressiveMedia-image js-progressiveMedia-image" data-src="https://cdn-images-1.medium.com/max/800/0*Z7iLEDVToDLrzN-o.png">
+
+<br>
+<img src="https://cdn-images-1.medium.com/max/800/0*Z7iLEDVToDLrzN-o.png">
+Here I am running a simple Express server with a simple route to send requested data to the Client.
+
+<pre>&#39;use strict&#39;;</pre>
+<pre>var express = require(&#39;express&#39;);<br>var app = express();</pre>
+<pre>app.use(express.static(`${__dirname}/public`));</pre>
+<pre>app.get(&#39;/api&#39;, function(req, res){<br>res.send((new Date()).toLocaleTimeString());<br>});</pre>
+<pre>app.listen(3000);</pre>
+Here is the javascript file linked to my index.html on the client side. 
+I am using the baked in XHR methods as opposed to jQuery since I love to use vanilla JavaScript whenever possible.
+
+<pre>&#39;use strict&#39;</pre>
+<pre>function reqListener (data) {<br>document.body.innerHTML += this.responseText + &#39;&amp;lt;br&amp;gt;&#39;;<br>}</pre>
+<pre>setInterval(function () {<br>var oReq = new XMLHttpRequest();<br>oReq.addEventListener(&quot;load&quot;, reqListener);<br>oReq.open(&quot;GET&quot;, &quot;/api&quot;);<br>oReq.send();<br>}, 3000);</pre>
+</section><section name="d82c" class="section section--body section--last">
+<div class="section-divider"><hr class="section-divider">
+
+<div class="section-content">
+<div class="section-inner sectionLayout--insetColumn">
+In my Github repo, I cover two more use cases not referenced here, server to server communications and HTTP/2. 
+If you are curious about those forms of communication check it out. 
+One word about HTTP/2 before wrapping up. 
+HTTP/2 is the future of Client-Server communication, but it is a protocol built on top of HTTP/1.1 which means that all of these forms of communicating will be still be relevant in the future, just the means that they are transmitted will be updated.
+
+As you can see there are a ton of different ways you can send data between a client and server. 
+Before working on this project, I had no idea how many different ways were available in vanilla JavaScript for moving data around. 
+Did I miss anything or you see something that needs to be fixed?
+<br>
+<br>
+<br>
+<br>
+
+<script>
+	var toc = $('#toc');
+	$('h2').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>
+</body>
+</html>
