@@ -26,7 +26,7 @@ function sCt(stc) {
   iA = sS + "\n<center>News: " + nA + " . quote: " + qA+ "<br>" ;
 
   for( var pd = 0; pd < iV.length; pd++){
-    iA = iA + iH +   iI +   sC1 +   sC2 +   sC3 +   sC4 +   iCW +   iPC+   iT+ stc + iPC + iV[pd] + iT;
+    iA = iA + iH + iI + sC1 + sC2 + sC3 + sC4 + iCW + stc + iPC + iV[pd] + iT;
   };
   iW.document.write(iA);
 }
