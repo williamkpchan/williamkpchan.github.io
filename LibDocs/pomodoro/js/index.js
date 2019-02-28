@@ -36,6 +36,7 @@ $(document).ready(function () {
 		one('webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend', function () {
 			clockBody.removeClass('animated shake');
 		});
+		showDateAndTime();
 	}
 
 	function makeRed() {
