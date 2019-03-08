@@ -80,8 +80,8 @@ function sCt(stkcode) {
 //change
 //http://www.aastocks.com/tc/stocks/analysis/stock-aafn/2208/0/all/1
 //to
-//newshead = "http://www.aastocks.com/tc/ltp/rtquote.aspx?symbol="
-//newstail = ".HK"
+//newshead = "http://www.aastocks.com/tc/stocks/analysis/stock-aafn/"
+//newstail = "/0/all/1"
 
   newshead = "http://www.aastocks.com/tc/ltp/rtquote.aspx?symbol="
   newstail = ".HK"
