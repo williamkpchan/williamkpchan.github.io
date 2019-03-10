@@ -5,6 +5,9 @@ $(document).ready(function(){
     });
 });
 
+styleStr = "<script type='text/javascript' src='mainscript.js'></script><style>body { background-color: black; color: green;} a { text-decoration: none; color: #28B8B8;}</style><body onkeypress='chkKey()'><center>";
+
+
 function chkKey() {
   var testkey = getChar(event);
   if(testkey == '6'){sCt("64357");}
@@ -20,6 +23,7 @@ function chkKey() {
   if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
   if(testkey == 'g'){window.location = '#_youxi';}
   if(testkey == 'h'){window.open("LibDocs/News Points.html");}
+  if(testkey == 'H'){window.open("LibDocs/monitorHSI.html");}
   if(testkey == 'i'){window.open('http://www.iciba.com');}
   if(testkey == 'j'){window.location = '#Javascript';}
   if(testkey == 'J'){window.location = '#_jiaoyu';}
@@ -86,7 +90,7 @@ function sCt(stkcode) {
   newshead = "http://www.aastocks.com/tc/ltp/rtquote.aspx?symbol="
   newstail = ".HK"
   newsStr = newshead + stkcode + newstail
-  imgAdr = "<style>body { background-color: black; color: green} a { text-decoration: none; color: #28B8B8;}</style><body><center>" +"<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>" 
+  imgAdr = "<script type='text/javascript' src='mainscript.js'></script>\n <style>body { background-color: black; color: green} a { text-decoration: none; color: #28B8B8;}</style><body onkeypress='chkKey()'><center>" +"<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>" 
 
   for( var imgPeriod = 0; imgPeriod < intv.length; imgPeriod++){
     imgAdr = imgAdr + imgHead + stkcode + imgPCode + intv[imgPeriod] + imgTail + imgHead2 + stkcode + imgPCode + intv[imgPeriod] + imgTail;
