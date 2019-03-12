@@ -15,17 +15,16 @@ $(document).ready(function(){
 body{width: 80%;margin-left: 10%}
 li{text-align: left; margin-left: 20%;}
 h1, h2 {color: gold;}
-pre{width: 100%; margin-left: 0px;}
+code,pre{width: 100%; margin-left: 0px;background-color:black;}
 </style>
 
 </head><body>
 <center><h1>R Notes</h1>
 <ul></ul>
-
 <li>data visualization (ggplot2)</li>
 <li>data manipulation (dplyr, lubridate, tidyr, stringr, readr, & forcats)</li>
 <li>data analysis (combine ggplot2, dplyr to explore data and find insights)</li>
-</ul>
+
 <a href="Libraries for Python & R.html">Libraries for Python & R</a>
 <br>
 <div id="toc"></div></center>
@@ -36,6 +35,10 @@ pre{width: 100%; margin-left: 0px;}
 
 
 <pre>
+<br>
+<h2>Cookbook for R</h2>
+<a href="http://www.cookbook-r.com/" target="_blank">Cookbook for R</a>
+<a href="RCookbook.html" target="_blank"><span class="orangesha">&diams;RCookbook</span></a>
 <br>
 <h2>Data Frame</h2>
 <pre>
@@ -1914,7 +1917,176 @@ LastDayTable$Vol
 or
 <span class="cyanword">LastDayTable[,"Vol"] </span>
 </pre>
-<br><br><br><br>
+<h2>Writing data to a file</h2>
+<h3 id="problem">Problem</h3>
+
+<p>You want to write data to a file.</p>
+
+<h3 id="solution">Solution</h3>
+
+<h3 id="writing-to-a-delimited-text-file">Writing to a delimited text file</h3>
+
+<p>The easiest way to do this is to use <code>write.csv()</code>. By default, <code>write.csv()</code> includes row names, but these are usually unnecessary and may cause confusion.</p>
+
+<div class="language-r highlighter-rouge"><pre class="highlight"><code><span class="c1"># A sample data frame
+</span><span class="n">data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read.table</span><span class="p">(</span><span class="n">header</span><span class="o">=</span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="o">=</span><span class="s1">'
+ subject sex size
+       1   M    7
+       2   F    NA
+       3   F    9
+       4   M   11
+ '</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1"># Write to a file, suppress row names
+</span><span class="n">write.csv</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="s2">"data.csv"</span><span class="p">,</span><span class="w"> </span><span class="n">row.names</span><span class="o">=</span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Same, except that instead of "NA", output blank cells
+</span><span class="n">write.csv</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="s2">"data.csv"</span><span class="p">,</span><span class="w"> </span><span class="n">row.names</span><span class="o">=</span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">na</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Use tabs, suppress row names and column names
+</span><span class="n">write.table</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="s2">"data.csv"</span><span class="p">,</span><span class="w"> </span><span class="n">sep</span><span class="o">=</span><span class="s2">"\t"</span><span class="p">,</span><span class="w"> </span><span class="n">row.names</span><span class="o">=</span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">col.names</span><span class="o">=</span><span class="kc">FALSE</span><span class="p">)</span><span class="w"> 
+</span></code></pre>
+</div>
+
+<h3 id="saving-in-r-data-format">Saving in R data format</h3>
+
+<p><code>write.csv()</code> and <code>write.table()</code> are best for interoperability with other data analysis programs. They will not, however, preserve special attributes of the data structures, such as whether a column is a character type or factor, or the order of levels in factors. In order to do that, it should be written out in a special format for R.</p>
+
+<p>Below are are three primary ways of doing this:</p>
+
+<p>The first method is to output R source code which, when run, will re-create the object. This should work for most data objects, but it may not be able to faithfully re-create some more complicated data objects.</p>
+
+<div class="language-r highlighter-rouge"><pre class="highlight"><code><span class="c1"># Save in a text format that can be easily loaded in R
+</span><span class="n">dump</span><span class="p">(</span><span class="s2">"data"</span><span class="p">,</span><span class="w"> </span><span class="s2">"data.Rdmpd"</span><span class="p">)</span><span class="w">
+</span><span class="c1"># Can save multiple objects:
+</span><span class="n">dump</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="s2">"data"</span><span class="p">,</span><span class="w"> </span><span class="s2">"data1"</span><span class="p">),</span><span class="w"> </span><span class="s2">"data.Rdmpd"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># To load the data again: 
+</span><span class="n">source</span><span class="p">(</span><span class="s2">"data.Rdmpd"</span><span class="p">)</span><span class="w">
+</span><span class="c1"># When loaded, the original data names will automatically be used.
+</span></code></pre>
+</div>
+
+<p>The next method is to write out individual data objects in RDS format. This format can be binary or ASCII. Binary is more compact, while ASCII will be more efficient with version control systems like Git.</p>
+
+<div class="language-r highlighter-rouge"><pre class="highlight"><code><span class="c1"># Save a single object in binary RDS format
+</span><span class="n">saveRDS</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="s2">"data.rds"</span><span class="p">)</span><span class="w">
+</span><span class="c1"># Or, using ASCII format
+</span><span class="n">saveRDS</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="s2">"data.rds"</span><span class="p">,</span><span class="w"> </span><span class="n">ascii</span><span class="o">=</span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># To load the data again:
+</span><span class="n">data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">readRDS</span><span class="p">(</span><span class="s2">"data.rds"</span><span class="p">)</span><span class="w">
+</span></code></pre>
+</div>
+
+<p>It’s also possible to save multiple objects into an single file, using the RData format.</p>
+
+<div class="language-r highlighter-rouge"><pre class="highlight"><code><span class="c1"># Saving multiple objects in binary RData format
+</span><span class="n">save</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">file</span><span class="o">=</span><span class="s2">"data.RData"</span><span class="p">)</span><span class="w">
+</span><span class="c1"># Or, using ASCII format
+</span><span class="n">save</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">file</span><span class="o">=</span><span class="s2">"data.RData"</span><span class="p">,</span><span class="w"> </span><span class="n">ascii</span><span class="o">=</span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+</span><span class="c1"># Can save multiple objects
+</span><span class="n">save</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">data1</span><span class="p">,</span><span class="w"> </span><span class="n">file</span><span class="o">=</span><span class="s2">"data.RData"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># To load the data again:
+</span><span class="n">load</span><span class="p">(</span><span class="s2">"data.RData"</span><span class="p">)</span><span class="w">
+</span></code></pre>
+</div>
+
+<p>An important difference between <code>saveRDS()</code> and <code>save()</code> is that, with the former, when you <code>readRDS()</code> the data, you specify the name of the object, and with the latter, when you <code>load()</code> the data, the original object names are automatically used. Automatically using the original object names can sometimes simplify a workflow, but it can also be a drawback if the data object is meant to be distributed to others for use in a different environment.</p>
+
+<h2>Debugging a script or function</h2>
+    <h3>Problem</h3>
+
+<p>You want to debug a script or function.</p>
+
+<h3>Solution</h3>
+
+<p>Insert this into your code at the place where you want to start debugging:</p>
+
+<div class="language-r highlighter-rouge"><pre class="highlight"><code><span class="nf">browser</span><span class="p">()</span><span class="w">
+</span></code></pre>
+</div>
+
+<p>When the R interpreter reaches that line, it will pause your code and you will be able to look at and change variables.</p>
+
+<p>In the browser, typing these letters will do things:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th> </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>c</td>
+      <td>Continue</td>
+    </tr>
+    <tr>
+      <td>n (or Return)</td>
+      <td>Next step</td>
+    </tr>
+    <tr>
+      <td>Q</td>
+      <td>quit</td>
+    </tr>
+    <tr>
+      <td>Ctrl-C</td>
+      <td>go to top level</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>When in the browser, you can see what variables are in the current scope.</p>
+
+<div class="language-r highlighter-rouge"><pre class="highlight"><code><span class="n">ls</span><span class="p">()</span><span class="w">
+</span></code></pre>
+</div>
+
+<p>To pause and start a browser for every line in your function:</p>
+
+<div class="language-r highlighter-rouge"><pre class="highlight"><code><span class="n">debug</span><span class="p">(</span><span class="n">myfunction</span><span class="p">)</span><span class="w">
+</span><span class="n">myfunction</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w">
+</span></code></pre>
+</div>
+
+<h3>Useful options</h3>
+
+<p>By default, every time you press Enter at the browser prompt, it runs the next step. This is equivalent to pressing <code class="highlighter-rouge">n</code> and then Enter. This can be annoying. To disable it use:</p>
+
+<div class="language-r highlighter-rouge"><pre class="highlight"><code><span class="n">options</span><span class="p">(</span><span class="n">browserNLdisabled</span><span class="o">=</span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+</span></code></pre>
+</div>
+
+<p>To start debugging whenever an error is thrown, run this before your function which throws an error:</p>
+
+<div class="language-r highlighter-rouge"><pre class="highlight"><code><span class="n">options</span><span class="p">(</span><span class="n">error</span><span class="o">=</span><span class="n">recover</span><span class="p">)</span><span class="w">
+</span></code></pre>
+</div>
+
+<p>If you want these options to be set every time you start R, you can put them in your <code class="highlighter-rouge">~/.Rprofile</code> file.</p>
+
+<h2>data.table vs data.frame</h2>
+<a href="data.table vs data.frame.html">data.table vs data.frame</a>
+<a href="Introduction to data.table.html">Introduction to data.table</a>
+<a href="http://rstudio-pubs-static.s3.amazonaws.com/52230_5ae0d25125b544caab32f75f0360e775.html">JOINing data in R using data.table</a>
+<br>
+<a href="LibDocs\Advanced tips and tricks with data.table.html"><span class="goldwhiteb">&diams;Advanced tips and tricks with data.table</span></a>
+<br>
+
+<a href="LibDocs\Data.Table Tutorial.html"><span class="silverredb">&diams;Data.Table Tutorial</span></a>
+<br>
+
+<a href="http://brooksandrew.github.io/simpleblog/articles/advanced-data-table/">Advanced tips and tricks with data.table package</a>
+<br>
+
+<br>
+
+
+<br><br><br><br><br>
 
 <script>
   $(function() {

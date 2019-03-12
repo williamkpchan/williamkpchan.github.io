@@ -1,0 +1,192 @@
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{width:80%;margin-left: 10%;color:grey;}
+strong, h1, h2 {color: gold;}
+</style>
+</head><body>
+<center><h1>data.table() vs data.frame()</h1>
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+
+<h2>Why does your machine fail to work with large data sets?</h2>
+<p style="text-align: justify;"> Below are some practices which impedes R's performance on large data sets:</p>
+<ol>
+<li>Using read.csv function to load large files.</li>
+<li style="text-align: justify;">Using Google chrome: Opening several tabs in chrome consumes a significant amount of system's memory. This can be checked using <span class="redword">Shift + Esc</span> key in chrome browser. (same applies to Mozilla web browser as well)</li>
+<li style="text-align: justify;">Machine Specification: R reads entire data set into RAM at once. That is, R objects live in memory entirely. If you are still working on a 2GB RAM machine, you are technically disabled. With 2GB RAM, there isn't enough free RAM space available which could seamlessly work with large data. Hence, It is strongly recommend to work on atleast 4GB RAM machines.</li>
+<li style="text-align: justify;">Working in hot temperature: The processing speed slows the once the machine get heats up. During extreme summers, it evolves into a serious issue.</li>
+</ol>
+<p style="text-align: justify;"><em>Note: My system specification is Intel(R) Core (TM) i5-3230M CPU @ 2.60GHz, 2 Core(s), 4 Logical Processors with 8GB RAM.</em></p>
+<p>&nbsp;</p>
+<h2>What is data.table ?</h2>
+<p>The package data.table is written by <a href="https://www.linkedin.com/in/mattdowle">Matt Dowle</a> in year 2008.</p>
+<p style="text-align: justify;">Think of data.table as an advanced version of data.frame. It inherits from data.frame and works perfectly even when data.frame syntax is applied on data.table. This package is good to use with any other package which accepts data.frame.</p>
+<p>The syntax of data.table is quite similar to SQL. Therefore, if you've worked on SQL you would quickly understand it. The general form of syntax is:</p>
+<blockquote>
+<p style="text-align: center;"><code>DT[i, j, by]</code></p>
+</blockquote>
+<p>where:</p>
+<ol>
+<li><code>DT</code> is referred to the data table.</li>
+<li><code>i &lt;=&gt; where</code>: refers to the row indexing takes place i.e. put the row condition here.</li>
+<li style="text-align: justify;"><code>j &lt;=&gt; select</code>: refers to the column indexing takes place i.e. put the conditions (to filter, to summarise) on columns here.</li>
+<li style="text-align: justify;"><code>by &lt;=&gt; group_by</code>: refers to any categorical variable i.e. put the variable on the basis of which the grouping shall be executed.</li>
+</ol>
+<p>For example:</p>
+<p><code>#creating a dummy data table</code><br />
+<code>DT &lt;- data.table( ID = 1:50,</code><br />
+<code>                Capacity = sample(100:1000, size = 50, replace = F),</code><br />
+<code>                Code = sample(LETTERS[1:4], 50, replace = T),</code><br />
+<code>                State = rep(c("Alabama","Indiana","Texas","Nevada"), 50))</code></p>
+<p><code>#simple data.table command</code><br />
+<code>&gt; DT[Code == "C", mean(Capacity), State]</code></p>
+<p style="text-align: justify;">Let's see how does this command work. After the data table is created, I asked data table to filter the rows whose code is <em>C</em>. Then I asked it to calculate the mean capacity of the rows which have code <em>C</em> for every state separately. It's not necessary that you always mention all the three parts of the syntax.<em> </em>Try doing the following commands at your end :</p>
+<ol>
+<li style="text-align: justify;"><code>DT[Code == "D"]</code></li>
+<li style="text-align: justify;"><code>DT[, mean(Capacity), by = State]</code></li>
+<li style="text-align: justify;"><code>DT[Code == "A", mean(Capacity)]</code></li>
+</ol>
+<p>Write your answers in the comments! Let's see how quickly you are getting this concept.</p>
+<p>&nbsp;</p>
+<h2>Why should you use data.table instead of data.frame?</h2>
+<p style="text-align: justify;">After I delved deeper into data.table, I found several aspects at which data.table package outperforms data.frame. Therefore, I would recommend every R beginner to use data.table as much as they can. There is a lot to explore. The earlier you start, the better you'll become. You should use data.table because:</p>
+<p style="text-align: justify;">1. It provides blazing fast speed when it comes to loading data. With the <code>fread</code> function in data.table package, loading large data sets need just few seconds. For example: I checked the loading time using a data set which contains 439,541 rows. Let's see how fast is fread -</p>
+<p><code>&gt; system.time(dt &lt;- read.csv("data.csv"))</code><br />
+<code> user  system elapsed </code><br />
+<code> 11.46  0.21   11.69</code></p>
+<p><code>&gt; system.time(dt &lt;- fread("data.csv"))</code><br />
+<code> user system elapsed </code><br />
+<code> 0.66  0.00   0.66</code></p>
+<p><code>&gt; dim(dt)</code><br />
+<code>[1] 439541 18</code></p>
+<p style="text-align: justify;">As you saw, loading data with fread is 16x faster than the base function read.csv. fread() is faster than read.csv() because, read.csv() tries to first read rows into memory as character and then tries to convert them into integer and factor as data types. On the other hand, fread() simply reads everything as character.</p>
+<p style="text-align: justify;">2. It is even faster than the popular dplyr, plyr packages used for data manipulation. data.table provides enough room for tasks such as aggregating, filtering, merging, grouping and other related tasks. For example:</p>
+<p><code>&gt; system.time(dt %&gt;% group_by(Store_ID) %&gt;% filter(Gender == "F") %&gt;%                                       summarise(sum(Transaction_Amount), mean(Var2))) #with dplyr</code><br />
+<code> user system elapsed </code><br />
+<code> 0.13  0.02   0.21 </code></p>
+<p><code>&gt; system.time(dt[Gender == "F", .(sum(Transaction_Amount), mean(Var2)), by = Store_ID])</code><br />
+<code> user system elapsed </code><br />
+<code> 0.02  0.00   0.01</code></p>
+<p style="text-align: justify;">data.table has processed this task 20x faster than dplyr. It happened because it avoids allocating memory to the intermediate steps such as filtering. Also, dplyr creates <em>deep copies</em> of the entire data frame where as data.table does a <em>shallow copy</em> of the data frame. Shallow copy means that the data is not physically copied in system's memory. It's just a copy of column pointers (names). Deep copy copies the entire data to another location in the memory. Hence, with memory efficiency, the speed of computation is enhanced.</p>
+<p style="text-align: justify;">3. Not just reading files, writing the files using data.table is much faster than <code>write.csv()</code>. This packages provides <code>fwrite()</code> function enabled with parallelised fast writing ability. So, next time you get to write 1 million rows, try this function.</p>
+<p style="text-align: justify;">4. In built features such as automatic indexing, rolling joins, overlapping range joins further enhances the user experience while working on large data sets.</p>
+<p>Therefore, you see there is nothing wrong with data.frame, it just lacks the wide range of features and operations that data.table is enabled with.</p>
+<p>&nbsp;</p>
+<h2>Important Data Manipulation Commands</h2>
+<p style="text-align: justify;">The idea of this tutorial is to provide you handy commands which can speed up your modeling process. Actually, there is so much to explore in this packages, chances are you might get puzzled from where to start, which command to stick with and when to use a particular command. Here, I provide answer to some of the most common questions which you come across while doing data exploration / manipulation.</p>
+<p style="text-align: justify;">The data set used below can be download from here: <a href="http://download.geonames.org/export/zip/GB_full.csv.zip" target="_blank" rel="nofollow">download</a>. The data set contains 1714258 rows of 12 columns. It will be interesting to see, how long does the data.table takes in loading this data. Time for action!</p>
+<p style="text-align: justify;">Note: The data set contains uneven distribution of observations i.e. blank columns and NA values. The reason of taking this data is to check the performance of data.table on large data sets.</p>
+<p><code>#set working directory</code><br />
+<code>&gt; setwd(".../AV/desktop/Data/")</code></p>
+<p><code>#load data</code><br />
+<code>&gt; DT &lt;- fread("GB_full.csv")</code><br />
+<code>Read 1714258 rows and 12 (of 12) columns from 0.189 GB file in 00:00:07</code></p>
+<p>It took only 7 seconds to read this file. Do try at your end.</p>
+<p>&nbsp;</p>
+<h3 style="text-align: justify;">1. How to subset rows &amp; columns?</h3>
+<p><code>#subsetting rows</code><br />
+<code class="sourceCode r">&gt; sub_rows &lt;- DT[V4 ==<span class="st"> "England"</span> &amp; V3 == "Beswick"]</code></p>
+<p style="text-align: justify;"><code>#subsetting columns</code><br />
+<code>&gt; sub_columns &lt;- DT[,.(V2,V3,V4)]</code></p>
+<p style="text-align: justify;">In a data table, columns are referred to as variables. Therefore, we don't need to refer to variables as <code>DT$column name</code>, column name alone works just fine. If you do <code>DT[,c(V2,V3,V4)]</code>, it would return a vector of values. Using <code>.()</code> symbol, wraps the variables within <code>list()</code> and returns data table. In fact, every data table or data frame is a compilation of list of equal length and different data types. Isn't it?</p>
+<p style="text-align: justify;">Subsetting data can be done even faster setting <code>keys</code> in data table. Keys are nothing but supercharged rownames. A part of it has been demonstrated below.</p>
+<p>&nbsp;</p>
+<h3 style="text-align: justify;">2. How to order variables in ascending or descending order?</h3>
+<p><code class="sourceCode r">#ordering columns<br />
+&gt; dt_order &lt;- DT[<span class="kw">order</span>(V4, -V8)]</code></p>
+<p style="text-align: justify;">Order function is data table is much faster than base function order(). Reason being, order in data table uses radix order sort which impart additional boost. <code>-</code> sign results in descending order.</p>
+<p>&nbsp;</p>
+<h3>3. How to add / update / delete a column or values in a data set?</h3>
+<p><code>#add a new column</code><br />
+<code>&gt; DT[, V_New := V10 + V11]</code></p>
+<p style="text-align: justify;">We did not assign the results back to DT. This is <code>because,</code> := operator modifies the input object by reference. It results in shallow copies in R which leads to better performance with less memory usage. The result is return invisibly.</p>
+<p><code>#update row values</code><br />
+<code>&gt; DT[V8 == "Aberdeen City", V8 := "Abr City"]</code></p>
+<p>With this line of code, we've updated Aberdeen City to Abr City in column V8.</p>
+<p><code>#delete a column</code><br />
+<code>&gt; DT [,c("V6","V7") := NULL ]</code></p>
+<p style="text-align: justify;">Check <code>View(DT). </code>We see that the data contains blank columns in the data set. <code>It</code> can be removed using the code above. In fact, all the three steps can be done in command as well. This is known as chaining of commands.</p>
+<p><code>&gt; DT[V8 == "Aberdeen City", V8 := "Abr City"][, V_New := V10 + V11][,c("V6","V7") := NULL]</code></p>
+<p>&nbsp;</p>
+<h3>4. How to compute functions on variables based on grouping a column?</h3>
+<p>Let's calculate mean of <code>V10</code> variable on the bases of <code>V4</code> (showing country).</p>
+<p><code>#compute the average<br />
+&gt; DT[, .(average = mean(V1o)), by = V4]</code></p>
+<p><code>#compute the count</code><br />
+<code>&gt; DT[, .N, by = V4]</code></p>
+<p style="text-align: justify;">.N is a special variable in data.table used to calculate the count of values in a variable. If you wish to obtain the order of the variable specified with <code>by</code> option, you can replace <code>by</code> with <code>keyby</code>. <code>keyby</code> automatically orders  the grouping variable in ascending order.</p>
+<p>&nbsp;</p>
+<h3>5. How to use keys for subsetting data ?</h3>
+<p style="text-align: justify;"><code>keys</code> in data table delivers incredibly fast results. We usually set keys on column names which can be of any type i.e. numeric, factor, integer, character. Once a <code>key</code> is set of a variable, it reorders the column observations in increasing order. Setting a key is helpful, specially when you know that you need to make multiple computations on one variable.</p>
+<p><code>#setting a key</code><br />
+<code>&gt; setkey(DT, V4) </code></p>
+<p style="text-align: justify;">Once, the key is set, we can subset any value from the key. For example:</p>
+<p><code>#subsetting England from V4</code><br />
+<code>&gt; DT[.("England")]</code></p>
+<p style="text-align: justify;">Once the key is set, we no longer need to provide the column name again and again. If we were to look for multiple values in a column, we can write it as:</p>
+<p>&gt; <code>DT[.(c("England", "Scotland"))]</code></p>
+<p style="text-align: justify;">Similarly, we can set multiple keys as well. This can be done using:</p>
+<p><code>&gt; setkey(DT, V3, V4)</code></p>
+<p>We can again, subset value from these two columns simultaneously using:</p>
+<p><code>&gt; DT[.("Shetland South Ward","Scotland")]</code></p>
+<p style="text-align: justify;">There are several other modifications which can be done in the 5 steps demonstrated above. These 5 steps illustrated above will help you to perform the basic data manipulation tasks using data.table. To learn more, I would suggest you to start using this package in your every day R work. You'd face various hurdles and that's where your learning curve would accelerate. You can also check the official data.table guide <a href="https://github.com/Rdatatable/data.table/wiki/Getting-started" target="_blank" rel="nofollow">here</a>.</p>
+<p>&nbsp;</p>
+<h2>End Notes</h2>
+<p style="text-align: justify;">This article is written to provide you a path using which you can easily deal with large data sets. No longer, you need to spend money on upgrading your machines, instead it's time to upgrade your knowledge of dealing with such situations. Apart from data.table, there are several other packages for parallel computing available. But, I don't see any need to any other package for data manipulation, once you become proficient with data.table.</p>
+<p style="text-align: justify;">In this article, I discussed about some important aspects which every beginner in R must know while working on large data sets. After data manipulation, the very next hurdle which comes is model building. With large data sets, packages like caret, random forest, xgboost takes a lot of time in computation. Has it occurred to you?</p>
+<p style="text-align: justify;">I plan to provide an interesting solution in my post next week! Do let me know your pain points in dealing with large data stets. Did you like reading this article? Which other package do you use when dealing with large data sets? Drop your suggestions / opinions in the comments.</p>
+<h2>the differences</h2>
+<pre>
+While this is a broad question, if someone is new to R this can be confusing and the distinction can get lost.
+
+All data.tables are also data.frames. Loosely speaking, you can think of data.tables as data.frames with extra features.
+
+data.frame is part of base R.
+
+data.table is a package that extends data.frames. Two of its most notable features are speed and cleaner syntax.
+
+However, that syntax sugar is different from the standard R syntax for data.frame while being hard for the untrained eye to distinguish at a glance. Therefore, if you read a code snippet and there is no other context to indicate you are working with data.tables and try to apply the code to a data.frame it may fail or produce unexpected results. (a clear giveaway that you are working with d.t's, besides the library/require call is the presence of the assignment operator := which is unique to d.t)
+
+With all that being said, I think it is hard to actually appreciate the beauty of data.table without experiencing the shortcomings of data.frame. (for example, see the first 3 bullet points of @eddi's answer). In other words, I would very much suggest learning how to work with and manipulate data.frames first then move on to data.tables.
+
+A few differences in my day to day life that come to mind (in no particular order):
+
+not having to specify the data.table name over and over (leading to clumsy syntax and silly mistakes) in expressions (on the flip side I sometimes miss the TAB-completion of names)
+much faster and very intuitive by operations
+no more frantically hitting Ctrl-C after typing df, forgetting how large df was (also leading to almost never using head)
+faster and better file reading with fread
+the package also provides a number of other utility functions, like %between% or rbindlist that make life better
+faster everything else, since a lot of data.frame operations copy the entire thing needlessly
+
+They are similar. Data frames are lists of vectors of equal length while data tables (data.table) is an inheritance of data frames. Therefore data tables are data frames but data frames are not necessarily data tables. The data tables package and function were written to enhance the speed of indexing, ordered joins, assignment, grouping and listing columns (etc.).
+
+<br>
+<br>
+<br>
+<br>
+
+<script>
+	var toc = $('#toc');
+	$('h2').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>
+</body>
+</html>
