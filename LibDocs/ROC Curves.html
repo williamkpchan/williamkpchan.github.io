@@ -1,0 +1,230 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{width:80%;margin-left: 10%}
+strong, h1, h2 {color: gold;}
+</style>
+</head><body>
+<center><h1>ROC Curves</h1>
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+
+<p>I have been thinking about writing a short post on R resources for working with (<a href="https://en.wikipedia.org/wiki/Receiver_operating_characteristic">ROC</a>) curves, but first I thought it would be nice to review the basics. In contrast to the usual (usual for data scientists anyway) machine learning point of view, I’ll frame the topic closer to its historical origins as a portrait of practical decision theory.</p>
+<p>ROC curves were invented during WWII to help radar operators decide whether the signal they were getting indicated the presence of an enemy aircraft or was just noise. (<a href="https://web.stanford.edu/~yesavage/ROC%20Slides%20OHara.ppt">O’Hara et al.</a> specifically refer to the Battle of Britain, but I haven’t been able to track that down.)</p>
+<p>I am relying comes from James Egan’s classic text <a href="https://amzn.to/2FgC3BH"><em>signal Detection Theory and ROC Analysis</em></a>) for the basic setup of the problem. It goes something like this: suppose there is an observed quantity (maybe the amplitude of the radar blip), X, that could indicate either the presence of a meaningful signal (e.g. from a <a href="https://en.wikipedia.org/wiki/Messerschmitt_Bf_109">Messerschmitt</a>) embedded in noise, or just noise alone (geese). When viewing X in some small interval of time, we would like to establish a threshold or cutoff value, c, such that if X &gt; c we will we can be pretty sure we are observing a signal and not just noise. The situation is illustrated in the little animation below.</p>
+<pre class="r"><code>library(tidyverse)
+library(gganimate)  #for animation
+library(magick)     # to put animations side by side</code></pre>
+<p>We model the noise alone as random draws from a N(0,1) distribution, signal plus noise as draws from N(s_mean, S_sd), and we compute two conditional distributions. The probability of a “Hit” or P(X &gt; c | a signal is present) and the probability of a “False Alarm”, P(X &gt; c | noise only).</p>
+<pre class="r"><code>s_mean &lt;- 2  # signal mean
+s_sd &lt;- 1.1   # signal standard deviation
+
+x &lt;- seq(-5,5,by=0.01) # range of signal
+signal &lt;- rnorm(100000,s_mean,s_sd)
+noise &lt;- rnorm(100000,0,1)
+
+PX_n &lt;- 1 - pnorm(x, mean = 0, sd = 1) # P(X &gt; c | noise only) = False alarm rate
+PX_sn &lt;- 1 - pnorm(x, mean = s_mean, sd = s_sd) # P(X &gt; c | signal plus noise) = Hit rate</code></pre>
+<p>We plot these two distributions in the left panel of the animation for different values of the cutoff threshold threshold.</p>
+<pre class="r"><code>threshold &lt;- data.frame(val = seq(from = .5, to = s_mean, by = .2))
+
+dist &lt;- 
+  data.frame(signal = signal, noise = noise) %&gt;% 
+  gather(data, value) %&gt;% 
+  ggplot(aes(x = value, fill = data)) +
+  geom_density(trim = TRUE, alpha = .5) +
+  ggtitle(&quot;Conditional Distributions&quot;) +
+  xlab(&quot;observed signal&quot;)  + 
+  scale_fill_manual(values = c(&quot;pink&quot;, &quot;blue&quot;))
+
+p1 &lt;- dist + geom_vline(data = threshold, xintercept = threshold$val, color = &quot;red&quot;) +
+            transition_manual(threshold$val)
+p1 &lt;- animate(p1)</code></pre>
+<p>And, we plot the ROC curve for our detection system in the right panel. Each point in this plot corresponds to one of the cutoff thresholds in the left panel.</p>
+<pre class="r"><code>df2 &lt;- data.frame(x, PX_n, PX_sn)
+roc &lt;- ggplot(df2) +
+  xlab(&quot;P(X | n)&quot;) + ylab(&quot;P(X | sn)&quot;) +
+  geom_line(aes(PX_n, PX_sn)) +
+  geom_abline(slope = 1) +
+  ggtitle(&quot;ROC Curve&quot;) + 
+  coord_equal()
+
+q1 &lt;- roc +
+        geom_point(data = threshold, aes(1-pnorm(val),
+                          1- pnorm(val, mean = s_mean, sd = s_sd)), 
+                          color = &quot;red&quot;) +
+                          transition_manual(val)
+
+q1 &lt;- animate(q1)</code></pre>
+<p>(The slick trick of getting these two animation panels to line up in the same frame is due to a helper function from Thomas Pedersen and Patrick Touche that can be found <a href="https://github.com/thomasp85/gganimate/issues/226">here</a>)</p>
+<pre class="r"><code>combine_gifs(p1,q1)</code></pre>
+
+<p><img src="https://rviews.rstudio.com/post/2019-01-06-roc-curves_files/figure-html/unnamed-chunk-6-1.gif" /><!-- --></p>
+<p>Notice that as the cutoff line moves further to the right, giving the decision maker a better chance of making a correct decision, the corresponding point moves down the ROC curve towards a lower Hit rate. This illustrates the fundamental tradefoff between hit rate and false alarm rate in the underlying decision problem. For any given problem, a decision algorithm or classifier will live on some ROC curve in false alarm / hit rate space. Improving the hit rate usually come at the cost of increasing the probability of more false alarms.</p>
+<p>The simulation code also lets you vary s_mean, the mean of the signal, Setting this to a large value (maybe 5), will sufficiently separate the signal from the noise, and you will get the kind of perfect looking ROC curve you may be accustomed to seeing produced by your best classification models.</p>
+<p>The usual practice in machine learning applications is to compute the area under the ROC curve, <a href="https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve">AUC</a>. This has become the “gold standard” for evaluating classifiers. Given a choice between different classification algorithms, data scientists routinely select the classifier with the highest AUC. The intuition behind this is compelling: given that the ROC is always a monotone increasing, concave downward curve, the best possible curve will have an inflection point in the upper left hand corner and an AUC approaching one (All of the area in ROC space).</p>
+<p>Unfortunately, the automatic calculation and model selection of the AUC discourages analysis of how the properties and weaknesses of ROC curves may pertain to the problem at hand. Keeping sight of the decision theory point of view may help to protect against the spell of mechanistic thinking encouraged by powerful algorithms. Although, automatically selecting a classifier based on the value of the AUC may make good sense most of the time, things can go wrong. For example, it is not uncommon for analysts to interpret AUC as a measure of the accuracy of the classifier. But, the AUC is not a measure of accuracy as a little thought about the decision problem would make clear. The irony here is that there was a time, not too long ago, when people thought it was necessary to argue that the AUC is a better measure than accuracy for evaluating machine learning algorithms. For example, have a look at the <a href="https://www.cse.ust.hk/nevinZhangGroup/readings/yi/Bradley_PR97.pdf">1997 paper</a> by Andrew Bradley where he concludes that <em>“…AUC be used in preference to overall accuracy for ‘single number’ evaluation of machine learning algorithms”.</em></p>
+<p>What does the AUC measure? For the binary classification problem of our simple signal processing example, a little calculus will show that the AUC is the probability that a randomly drawn interval with a signal present will produce a higher X value than a signal interval containing noise alone. See <a href="https://link.springer.com/content/pdf/10.1007%2Fs10994-009-5119-5.pdf"><em>Hand (2009)</em></a>, and the very informative <a href="https://stats.stackexchange.com/questions/180638/how-to-derive-the-probabilistic-interpretation-of-the-auc"><em>StackExchange</em></a> discussion for the math.</p>
+<p>Also note, that in the paper just cited, Hand examines some of the deficiencies of the AUC. This discussion provides an additional incentive for keeping the decision theory tradeoff in mind when working with ROC curves by . Hand concludes:</p>
+<blockquote>
+<p>…it [AUC] is fundamentally incoherent in terms of misclassification costs: the AUC uses different misclassification cost distributions for different classifiers. This means that using the AUC is equivalent to using different metrics to evaluate different classification rules.</p>
+</blockquote>
+<p>and goes on to propose the <strong>H measure</strong> for ranking classifiers. (See the R package <a href="https://cran.r-project.org/package=hmeasure">hmeasure</a>) Following up on this will have to be an investigation for another day.</p>
+<p>Our discussion in this post has taken us part way along just one path through the enormous literature on ROC curves which could not be totally explored in a hundred posts. I will just mention that not long after its inception, ROC analysis was used to establish a conceptual framework for problems relating to sensation and perception in the field of psychophysics (<a href="https://psych.nyu.edu/pelli/pubs/pelli1995methods.pdf"><em>Pelli and Farell (1995)</em></a>) and thereafter applied to decision problems in Medical Diagnostics, (<a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3755824/#B26"><em>Hajian-Tilaki (2013)</em></a>), National Intelligence (<a href="https://www.nap.edu/read/13062/chapter/7"><em>McCelland (2011)</em></a>) and just about any field that collects data to support decision making.</p>
+<p>If you are interested in delving deeper into ROC curves, the references in papers mentioned above may help to guide further exploration.</p>
+
+<h2>Some R Packages for ROC Curves</h2>
+<p>In a recent <a href="https://rviews.rstudio.com/2019/01/17/roc-curves/">post</a>, I presented some of the theory underlying ROC curves, and outlined the history leading up to their present popularity for characterizing the performance of machine learning models. In this post, I describe how to search CRAN for packages to plot ROC curves, and highlight six useful packages.</p>
+<p>Although I began with a few ideas about packages that I wanted to talk about, like <a href="https://cran.r-project.org/package=ROCR">ROCR</a> and <a href="https://cran.r-project.org/package=pROC">pROC</a>, which I have found useful in the past, I decided to use Gábor Csárdi’s relatively new package <a href="https://cran.r-project.org/package=pkgsearch">pkgsearch</a> to search through CRAN and see what’s out there. The <code>package_search()</code> function takes a text string as input and uses basic text mining techniques to search all of CRAN. The algorithm searches through package text fields, and produces a score for each package it finds that is weighted by the number of reverse dependencies and downloads.</p>
+<pre class="r"><code>library(tidyverse)  # for data manipulation
+library(dlstats)    # for package download stats
+library(pkgsearch)  # for searching packages</code></pre>
+<p>After some trial and error, I settled on the following query, which includes a number of interesting ROC-related packages.</p>
+<pre class="r"><code>rocPkg &lt;-  pkg_search(query=&quot;ROC&quot;,size=200)</code></pre>
+<p>Then, I narrowed down the field to 46 packages by filtering out orphaned packages and packages with a score less than 190.</p>
+<pre class="r"><code>rocPkgShort &lt;- rocPkg %&gt;% 
+               filter(maintainer_name != &quot;ORPHANED&quot;, score &gt; 190) %&gt;%
+               select(score, package, downloads_last_month) %&gt;%
+               arrange(desc(downloads_last_month))
+head(rocPkgShort)</code></pre>
+<pre><code>## # A tibble: 6 x 3
+##   score package  downloads_last_month
+##   &lt;dbl&gt; &lt;chr&gt;                   &lt;int&gt;
+## 1  690. ROCR                    56356
+## 2 7938. pROC                    39584
+## 3 1328. PRROC                    9058
+## 4  833. sROC                     4236
+## 5  266. hmeasure                 1946
+## 6 1021. plotROC                  1672</code></pre>
+<p>To complete the selection process, I did the hard work of browsing the documentation for the packages to pick out what I thought would be generally useful to most data scientists. The following plot uses Guangchuang Yu’s <code>dlstats</code> package to look at the download history for the six packages I selected to profile.</p>
+<pre class="r"><code>library(dlstats)
+shortList &lt;- c(&quot;pROC&quot;,&quot;precrec&quot;,&quot;ROCit&quot;, &quot;PRROC&quot;,&quot;ROCR&quot;,&quot;plotROC&quot;)
+downloads &lt;- cran_stats(shortList)
+ggplot(downloads, aes(end, downloads, group=package, color=package)) +
+  geom_line() + geom_point(aes(shape=package)) +
+  scale_y_continuous(trans = &#39;log2&#39;)</code></pre>
+<p><img src="https://rviews.rstudio.com/post/2019-02-08-some-r-packages-for-roc-curves_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<div id="rocr---2005" class="section level3">
+<h3><a href="https://cran.r-project.org/package=ROCR">ROCR</a> - 2005</h3>
+<p>ROCR has been around for almost 14 years, and has be a rock-solid workhorse for drawing ROC curves. I particularly like the way the <code>performance()</code> function has you set up calculation of the curve by entering the true positive rate, <code>tpr</code>, and false positive rate, <code>fpr</code>, parameters. Not only is this reassuringly transparent, it shows the flexibility to calculate nearly every performance measure for a <a href="https://en.wikipedia.org/wiki/Binary_classification">binary classifier</a> by entering the appropriate parameter. For example, to produce a precision-recall curve, you would enter <code>prec</code> and <code>rec</code>. Although there is no vignette, the documentation of the package is very good.</p>
+<p>The following code sets up and plots the default <code>ROCR</code> ROC curve using a synthetic data set that comes with the package. I will use this same data set throughout this post.</p>
+<pre class="r"><code>library(ROCR)</code></pre>
+<pre><code>## Loading required package: gplots</code></pre>
+<pre><code>## 
+## Attaching package: &#39;gplots&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:stats&#39;:
+## 
+##     lowess</code></pre>
+<pre class="r"><code># plot a ROC curve for a single prediction run
+# and color the curve according to cutoff.
+data(ROCR.simple)
+df &lt;- data.frame(ROCR.simple)
+pred &lt;- prediction(df$predictions, df$labels)
+perf &lt;- performance(pred,&quot;tpr&quot;,&quot;fpr&quot;)
+plot(perf,colorize=TRUE)</code></pre>
+<p><img src="https://rviews.rstudio.com/post/2019-02-08-some-r-packages-for-roc-curves_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+</div>
+<div id="proc---2010" class="section level3">
+<h3><a href="https://CRAN.R-project.org/package=pROC">pROC</a> - 2010</h3>
+<p>It is clear from the downloads curve that <code>pROC</code> is also popular with data scientists. I like that it is pretty easy to get confidence intervals for the Area Under the Curve, <code>AUC</code>, on the plot.</p>
+<pre class="r"><code>library(pROC)</code></pre>
+<pre><code>## Type &#39;citation(&quot;pROC&quot;)&#39; for a citation.</code></pre>
+<pre><code>## 
+## Attaching package: &#39;pROC&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:stats&#39;:
+## 
+##     cov, smooth, var</code></pre>
+<pre class="r"><code>pROC_obj &lt;- roc(df$labels,df$predictions,
+            smoothed = TRUE,
+            # arguments for ci
+            ci=TRUE, ci.alpha=0.9, stratified=FALSE,
+            # arguments for plot
+            plot=TRUE, auc.polygon=TRUE, max.auc.polygon=TRUE, grid=TRUE,
+            print.auc=TRUE, show.thres=TRUE)
+
+
+sens.ci &lt;- ci.se(pROC_obj)
+plot(sens.ci, type=&quot;shape&quot;, col=&quot;lightblue&quot;)</code></pre>
+<pre><code>## Warning in plot.ci.se(sens.ci, type = &quot;shape&quot;, col = &quot;lightblue&quot;): Low
+## definition shape.</code></pre>
+<pre class="r"><code>plot(sens.ci, type=&quot;bars&quot;)</code></pre>
+<p><img src="https://rviews.rstudio.com/post/2019-02-08-some-r-packages-for-roc-curves_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+</div>
+<div id="prroc---2014" class="section level3">
+<h3><a href="https://cran.r-project.org/package=PRROC">PRROC</a> - 2014</h3>
+<p>Although not nearly as popular as <code>ROCR</code> and <code>pROC</code>, <code>PRROC</code> seems to be making a bit of a comeback lately. The terminology for the inputs is a bit eclectic, but once you figure that out the <code>roc.curve()</code> function plots a clean ROC curve with minimal fuss. <code>PRROC</code> is really set up to do precision-recall curves as the <a href="https://cran.r-project.org/web/packages/PRROC/vignettes/PRROC.pdf">vignette</a> indicates.</p>
+<pre class="r"><code>library(PRROC)
+
+PRROC_obj &lt;- roc.curve(scores.class0 = df$predictions, weights.class0=df$labels,
+                       curve=TRUE)
+plot(PRROC_obj)</code></pre>
+<p><img src="https://rviews.rstudio.com/post/2019-02-08-some-r-packages-for-roc-curves_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+</div>
+<div id="plotroc---2014" class="section level3">
+<h3><a href="https://CRAN.R-project.org/package=plotROC">plotROC</a> - 2014</h3>
+<p><code>plotROC</code> is an excellent choice for drawing ROC curves with <code>ggplot()</code>. My guess is that it appears to enjoy only limited popularity because the documentation uses medical terminology like “disease status” and “markers”. Nevertheless, the documentation, which includes both a <a href="https://cran.r-project.org/web/packages/plotROC/vignettes/examples.html">vignette</a> and a <a href="https://sachsmc.shinyapps.io/plotROC/">Shiny application</a>, is very good.</p>
+<p>The package offers a number of feature-rich <code>ggplot()</code> geoms that enable the production of elaborate plots. The following plot contains some styling, and includes <a href="https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Clopper%E2%80%93Pearson_interval">Clopper and Pearson (1934) exact method</a> confidence intervals.</p>
+<pre class="r"><code>library(plotROC)
+rocplot &lt;- ggplot(df, aes(m = predictions, d = labels))+ geom_roc(n.cuts=20,labels=FALSE)
+rocplot + style_roc(theme = theme_grey) + geom_rocci(fill=&quot;pink&quot;) </code></pre>
+<p><img src="https://rviews.rstudio.com/post/2019-02-08-some-r-packages-for-roc-curves_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+</div>
+<div id="precrec---2015" class="section level3">
+<h3><a href="https://cran.r-project.org/package=precrec">precrec</a> - 2015</h3>
+<p><code>precrec</code> is another library for plotting ROC and precision-recall curves.</p>
+<pre class="r"><code>library(precrec)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;precrec&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:pROC&#39;:
+## 
+##     auc</code></pre>
+<pre class="r"><code>precrec_obj &lt;- evalmod(scores = df$predictions, labels = df$labels)
+autoplot(precrec_obj)</code></pre>
+<p><img src="https://rviews.rstudio.com/post/2019-02-08-some-r-packages-for-roc-curves_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p>Parameter options for the <code>evalmod()</code> function make it easy to produce basic plots of various model features.</p>
+<pre class="r"><code>precrec_obj2 &lt;- evalmod(scores = df$predictions, labels = df$labels, mode=&quot;basic&quot;)
+autoplot(precrec_obj2)   </code></pre>
+<p><img src="https://rviews.rstudio.com/post/2019-02-08-some-r-packages-for-roc-curves_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+</div>
+<div id="rocit---2019" class="section level3">
+<h3><a href="https://cran.r-project.org/package=ROCit">ROCit</a> - 2019</h3>
+<p><code>ROCit</code> is a new package for plotting ROC curves and other binary classification visualizations that rocketed onto the scene in January, and is climbing quickly in popularity. I would never have discovered it if I had automatically filtered my original search by downloads. The default plot includes the location of the <a href="https://en.wikipedia.org/wiki/Youden%27s_J_statistic">Yourden’s J Statistic</a>.</p>
+<pre class="r"><code>library(ROCit)</code></pre>
+<pre><code>## Warning: package &#39;ROCit&#39; was built under R version 3.5.2</code></pre>
+<pre class="r"><code>ROCit_obj &lt;- rocit(score=df$predictions,class=df$labels)
+plot(ROCit_obj)</code></pre>
+<p><img src="https://rviews.rstudio.com/post/2019-02-08-some-r-packages-for-roc-curves_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<p>Several other visualizations are possible. The following plot shows the cumulative densities of the positive and negative responses. The KS statistic shows the maximum distance between the two curves.</p>
+<pre class="r"><code>ksplot(ROCit_obj)</code></pre>
+<p><img src="https://rviews.rstudio.com/post/2019-02-08-some-r-packages-for-roc-curves_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<p>In this attempt to dig into CRAN and uncover some of the resources R contains for plotting ROC curves and other binary classifier visualizations, I have only scratched the surface. Moreover, I have deliberately ignored the many packages available for specialized applications, such as <a href="https://cran.r-project.org/package=survivalROC">survivalROC</a> for computing time-dependent ROC curves from censored survival data, and <a href="https://cran.r-project.org/web/packages/cvAUC/index.html">cvAUC</a>, which contains functions for evaluating cross-validated AUC measures. Nevertheless, I hope that this little exercise will help you find what you are looking for.</p>
+</div>
+<br>
+<br>
+<br>
+<br>
+
+<script>
+	var toc = $('#toc');
+	$('h2,h3').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>
+
+</body>
+</html>
