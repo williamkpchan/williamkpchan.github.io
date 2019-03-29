@@ -104,7 +104,7 @@ function sCtmin(stkcode) {
 
 
   imgPCode= "&period=";
-  imgTail="&type=1&logoStyle=1'><br>";
+  imgTail="&type=1&logoStyle=1'>";
 
   // 5000, 5007, 5012, 1, 2, 3, 4, 6, 7, 9, 10, 12, 14, 16, 17, 18
   intv = [5000, 5007, 5012, 4, 3, 2, 1, 7, 11, 12];
