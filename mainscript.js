@@ -77,7 +77,7 @@ function sCt(stkcode) {
   imgPCode= "&period=";
   imgTail="&type=1&logoStyle=1'><br>";
 
-  // 5000, 5007, 5012, 1, 2, 3, 4, 6, 7, 9, 10, 12, 14, 16, 17, 18
+  // 5000, 5007, 1, 2, 3, 4, 6, 7, 9, 10, 12, 14, 16, 17, 18
   intv = [7,4, 3, 2, 1, 5012, 5007, 5000, 7, 11, 12];
   var imgWindow = window.open("");
   
