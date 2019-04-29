@@ -1,0 +1,288 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{width:80%;margin-left: 10%}
+strong, h1, h2,em {color: gold;}
+.r{color:grey;}
+code{background-color:black;}
+</style>
+</head><body>
+<center><h1>call C from R</h1>
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+<a href="https://www.r-bloggers.com/three-ways-to-call-cc-from-r/">call-c-from-r</a>
+<br><pre>
+<h2>Introduction </h2>
+I only recently discovered the fundamental connection between the C and R languages. 
+It was during a <a href="http://bftp.cal.basecampbusiness.com/node/455364" rel="nofollow" target="_blank">Bay Area useR Group</a> meeting, where presenter J.J. 
+Allaire shared two points to motivate his talk on <a href="https://cran.r-project.org/web/packages/Rcpp/index.html" rel="nofollow" target="_blank">Rcpp</a>. 
+The first explained just how much of modern R really <em>is</em> C and C++. 
+For illustration, he used the <a href="http://librestats.com/" rel="nofollow" target="_blank">librestats</a> language composition analysis of <a href="http://librestats.com/2011/08/27/how-much-of-r-is-written-in-r/" rel="nofollow" target="_blank">Core R</a>, which might not have been so interesting if it did not extend to R’s <a href="http://librestats.com/2011/08/29/how-much-of-r-is-written-in-r-part-2-contributed-packages/" rel="nofollow" target="_blank"> contributed packages</a>. 
+Allaire’s second point emphasized R’s roots as an interactive mechanism for calling code from compiled languages like C and Fortran (which you can also hear from S inventor <a href="https://www.youtube.com/watch?v=jk9S3RTAl38" rel="nofollow" target="_blank">John Chambers</a>). 
+While I didn’t understand all of the finer points at the time, I never thought of R in the same way again. 
+
+<a href="https://i1.wp.com/1.bp.blogspot.com/-TuuDIWPa0BE/Ush1COW99KI/AAAAAAAAAMg/wrtcDh9kQXY/s1600/C1.PNG" rel="nofollow" target="_blank"><img src="https://i0.wp.com/www.r-bloggers.com/wp-content/plugins/lazy-load/images/1x1.trans.gif?ssl=1" data-lazy-src="https://i1.wp.com/1.bp.blogspot.com/-TuuDIWPa0BE/Ush1COW99KI/AAAAAAAAAMg/wrtcDh9kQXY/s1600/C1.PNG?w=456" border="0" data-recalc-dims="1"><noscript><img border="0" src="https://i1.wp.com/1.bp.blogspot.com/-TuuDIWPa0BE/Ush1COW99KI/AAAAAAAAAMg/wrtcDh9kQXY/s1600/C1.PNG?w=456" data-recalc-dims="1" /></noscript></a> 
+Wanting to learn more about this connection between languages, I dug into the C calling paradigms of R. 
+My own lack of experience was mitigated by adopting a tremendously limited scope: the function f(<em>x</em>)= 2<em>x</em>. 
+In the course of its implementation, I received advice from respected voices, each highlighting important points about the alternatives. 
+In this article, I’ll share what I learned as concisely as possible. 
+So if you have a passing familiarity with C and an interest in R, grab a cup of coffee, pop open a terminal, and prepare to explore .C, .Call, and <em>Rcpp</em>‘s sourceCpp. 
+
+<h2>The big three </h2>
+<h2>The .C function interface</h2>
+Of R’s native functions, the .C interface is the simplest but also the most limited way to call C from R. 
+Inside a running R session, the .C interface allows objects to be directly accessed in an R session’s active memory. 
+Thus, to write a compatible C function, <em>all arguments must be pointers</em>. 
+No matter the nature of your function’s return value, it too must be handled using pointers. 
+The C function you will write is effectively a subroutine. 
+
+Our function f(<em>x</em>)= 2<em>x</em>, implemented as double_me in the file doubler.c, is shown below. 
+
+<pre class="prettyprint lang-cpp"><br />void double_me(int* x) {<br />  // Doubles the value at the memory location pointed to by x<br />  *x = *x + *x;<br />}<br /></pre>
+To compile the C code, run the following line at your terminal: <pre>$ R CMD SHLIB doubler.c </pre>
+In an R interactive session, run: 
+<pre class="prettyprint lang-r"><br />dyn.load("doubler.so")<br />.C("double_me", x = as.integer(5))<br /></pre><pre><br />$x<br />[1] 10<br /></pre>
+Notice that the output of .C is a list with names corresponding to the arguments. 
+While the above code is pure C, adding C++ code (instead of C) is made possible by using the <a href="https://cran.r-project.org/doc/manuals/R-exts.html#Interfacing-C_002b_002b-code" rel="nofollow" target="_blank">extern wrapper</a>. 
+
+<h2>.Call </h2>
+The .Call interface is the more fully featured and complex cousin of the .C interface. 
+Unlike .C, .Call requires header files that come standard with every R installation. 
+These header files provide access to a new data type, SEXP. 
+The following code, stored in the file, doubler2.c, illustrates its use. 
+
+<pre class="prettyprint lang-cpp"><br />#include <R.h><br />#include <Rdefines.h><br />SEXP double_me2(SEXP x) {<br />  // Doubles the value of the first integer element of the SEXP input<br />  SEXP result;<br />  PROTECT(result = NEW_INTEGER(1)); // i.e., a scalar quantity<br />  INTEGER(result)[0] = INTEGER(x)[0] * 2;<br />  UNPROTECT(1); // Release the one item that was protected<br />  return result;<br />}<br /></pre>
+Unlike our experience with the .C interface, double_me2 is a function and  does return a value. 
+While that appeals to intuition, no matter what the native input and output types, they must now live in a SEXP object. 
+To code double_me2, you must know that there’s an integer in the input x, and extract it as if it were the first item in a C array. 
+For the return value, you must add your integer result to a SEXP object in an equally unnatural way. 
+The PROTECT function must be used to prevent R’s automatic garbage collection from destroying all the objects. 
+
+As before, use R at the command line to compile doubler2.c: <pre>$ R CMD SHLIB doubler2.c </pre>
+Back in the R interactive console, the steps are very similar. 
+
+<pre class="prettyprint lang-r"><br />dyn.load("doubler2.so")<br />.Call("double_me2", as.integer(5))<br /></pre><pre><br />[1] 10<br /></pre>
+Notice now that the output is an integer vector instead of a list. 
+
+<h2>Rcpp and the sourceCpp function</h2>
+The .C and .Call examples above owe a debt to Jonathan Callahan’s entries <a href="http://mazamascience.com/WorkingWithData/?p=1067" rel="nofollow" target="_blank">8</a> and <a href="http://mazamascience.com/WorkingWithData/?p=1099" rel="nofollow" target="_blank">10</a> of his <a href = "http://mazamascience.com/WorkingWithData/?series=using-r">Using R</a> series. 
+When the examples started working, I tweeted to share my excitement. 
+An hour later, I saw a familiar face:   
+<a href="https://i2.wp.com/3.bp.blogspot.com/-zUGsT9YJ814/UsiwGLj3VwI/AAAAAAAAAMw/iUFxpYdht7M/s1600/Hadley.PNG" rel="nofollow" target="_blank"><img src="https://i0.wp.com/www.r-bloggers.com/wp-content/plugins/lazy-load/images/1x1.trans.gif?ssl=1" data-lazy-src="https://i2.wp.com/3.bp.blogspot.com/-zUGsT9YJ814/UsiwGLj3VwI/AAAAAAAAAMw/iUFxpYdht7M/s1600/Hadley.PNG?w=456" border="0" data-recalc-dims="1"><noscript><img border="0" src="https://i2.wp.com/3.bp.blogspot.com/-zUGsT9YJ814/UsiwGLj3VwI/AAAAAAAAAMw/iUFxpYdht7M/s1600/Hadley.PNG?w=456" data-recalc-dims="1" /></noscript></a>
+Let’s check it out. 
+
+In terms of the code alone, it’s easy to see where Hadley is coming from. 
+It’s readable, looks just like standard C++ code, and features data types that make intuitive sense. 
+Our simple function is implemented below, saved in the final static file doubler3.cpp (though, in all humility, it’s really just C). 
+
+<pre class="prettyprint lang-cpp"><br />#include <Rcpp.h><br />using namespace Rcpp;<br />// [[Rcpp::export]]<br />int double_me3(int x) {<br />  // takes a numeric input and doubles it<br />  return 2 * x;<br />}<br /></pre>
+I’ll refer you to Hadley’s article <a href="http://adv-r.had.co.nz/Rcpp.html" rel="nofollow" target="_blank">High performance functions with Rcpp</a> for details on Rcpp, but for now, note the “// [[Rcpp::export]]” comment, necessary before each C/C++ function, and the updated #include statement. 
+Most importantly, notice how the pointers and SEXP objects have been replaced. 
+Just like our original function f(<em>x</em>), double_me3 takes one integer input and returns one integer output. 
+
+After installing the Rcpp package, we’re back to the console one final time. 
+
+<pre class = "prettyprint lang-r"><br />library(Rcpp)<br />sourceCpp("doubler3.cpp")<br />double_me3(5)<br /></pre><pre><br />[1] 10<br /></pre>
+With Rcpp, the function is waiting for us in the global environment, without even compiling at the command line. 
+Pretty convenient!  
+<h2>Discussion </h2>
+With the disclaimer that I am a C++ novice, I summarize my thoughts on the three options below. 
+
+I like the simplicity of the C code written for the .C interface. 
+It doesn’t rely on external header files and it is possible to test using a C compiler alone. 
+On the other hand, I don’t like that a function has to be morphed into a subroutine that uses pointers. 
+
+In the .Call interface, SEXP objects are also pointers, though that is perhaps superfluous. 
+My biggest complaint is the verboseness that was added to our short example. 
+As Jonathan Callahan <a href="http://mazamascience.com/WorkingWithData/?p=1099" rel="nofollow" target="_blank">points out</a>, .Call “requires <strong>much</strong> more knowledge of R internals [but] is the recommended, modern approach for serious C [and C++] programmers.”   
+After seeing Rccp in action, it’s not hard to understand why Hadley sent me directly to Rcpp. 
+The C code looks great, there were fewer steps, and our function was ready for us inside the R global environment. 
+
+Perhaps you’re wondering if there is any reason <em> not</em> to use Rcpp. 
+According <a href="http://research.google.com/pubs/MurrayStokely.html" rel="nofollow" target="_blank">Murray Stokely</a>, Google Software Engineer, it could be risky on a very large project. 
+“Rcpp’s heavy reliance on C macros can make it unsafe to use with large code bases,” says Stokely. 
+For example, the <a href="https://cran.r-project.org/web/packages/Rcpp/vignettes/Rcpp-FAQ.pdf" rel="nofollow" target="_blank">Rcpp FAQ</a> (Section 3.9) describes an unresolved  issue casting 64-bit integer types. 
+The implication, Stokely explains, is that a loss of precision could occur without any errors or warnings. 
+The Rcpp FAQ considers such examples “corner cases,” and perhaps the typical user will not have to worry. 
+
+
+<br>
+<h2></h2>
+<h2>Calling C++ from R</h2>
+<a href="https://www4.stat.ncsu.edu/~reich/BigData/code/doublematrix.html">Calling C++ from R</a>
+<br>
+<p>Calling C++ from R is a great way to speed up computing.  In this toy example,
+we define a C++ function to multiple a matrix by a constant, and then to 
+repeat this multiplication several times.</p>
+
+<h2>These functions allow us to create C++ functions directly in R</h2>
+<pre><code class="r"> library(inline)
+ library(Rcpp)
+</code></pre>
+
+<h2>Define the C++ code to multiply matrix \(x\) by scaler \(k\) as a string</h2>
+<pre><code class="r"> scalemult_code = &quot;
+
+  Rcpp::NumericMatrix xcpp(x);
+  int nr = xcpp.nrow();
+  int nc = xcpp.ncol();
+  double kcpp = Rcpp::as&lt;double&gt;(k);
+
+  Rcpp::NumericMatrix xnew(nr, nc);
+
+  for (int i = 0; i &lt; nr; i++) {
+    for (int j = 0; j &lt; nc; j++) {
+      xnew(i,j) = xcpp(i,j);
+    }
+  }
+
+  for (int i = 0; i &lt; nr; i++){
+    for (int j = 0; j &lt; nc; j++){
+        xnew[nr * j + i] *= kcpp;
+    }
+  }
+
+  return xnew;
+  &quot;
+</code></pre>
+
+<h2>Define an R function to call the C++ function</h2>
+<pre><code class="r"> scalemultmatrix &lt;- cxxfunction(signature(x = &quot;numeric&quot;,k = &quot;numeric&quot;), 
+                                body=scalemult_code, 
+                                plugin=&quot;Rcpp&quot;)
+</code></pre>
+
+<h2>Define the C++ code to repeat scaler multipcation \(pow\) times</h2>
+<pre><code class="r"> power_code = &quot;
+
+  Rcpp::NumericMatrix xcpp(x);
+  int nr = xcpp.nrow();
+  int nc = xcpp.ncol();
+  double kcpp = Rcpp::as&lt;double&gt;(k);
+  int powcpp = Rcpp::as&lt;int&gt;(pow);
+
+  Rcpp::NumericMatrix xnew(nr, nc);
+
+  for (int i = 0; i &lt; nr; i++) {
+    for (int j = 0; j &lt; nc; j++) {
+      xnew(i,j) = xcpp(i,j);
+    }
+  }
+
+
+  for(int r = 0; r&lt;powcpp; r++){
+   for (int i = 0; i &lt; nr; i++){
+    for (int j = 0; j &lt; nc; j++){
+        xnew[nr * j + i] *= kcpp;
+    }
+   }
+  }
+
+  return xnew;
+
+  &quot;
+</code></pre>
+
+<h2>Define an R function to call the C++ function</h2>
+<pre><code class="r"> powermatrix &lt;- cxxfunction(signature(x = &quot;numeric&quot;,k = &quot;numeric&quot;,pow=&quot;integer&quot;),
+                            body=power_code,
+                            plugin=&quot;Rcpp&quot;)
+</code></pre>
+
+<h1>Timing experiment</h1>
+
+<h2>The code below creates the matrix \((k^{pow})*mat\) four ways</h2>
+<pre><code class="r"> n     &lt;- 10^1
+ pow   &lt;- 10^6
+ k     &lt;- exp(log(3)/pow)
+ mat   &lt;- diag(n)+1
+
+ time        &lt;- rep(0,4)
+ names(time) &lt;- c(&quot;R loop&quot;,&quot;R mat&quot;,&quot;C + R&quot;,&quot;C&quot;)
+</code></pre>
+
+<h2>(1) R with a loop</h2>
+<pre><code class="r"> tick    &lt;- proc.time()[3]
+ mat1    &lt;- mat
+ for(rep in 1:pow){for(i in 1:n){for(j in 1:n){
+   mat1[i,j] &lt;- k * mat1[i,j]
+ }}}
+ tock    &lt;- proc.time()[3]
+ time[1] &lt;- tock-tick
+</code></pre>
+
+<h2>(2) R without a loop</h2>
+<pre><code class="r"> tick    &lt;- proc.time()[3]
+ mat2    &lt;- mat
+ for(rep in 1:pow){
+  mat2    &lt;- k*mat2
+ }
+ tock    &lt;- proc.time()[3]
+ time[2] &lt;- tock-tick
+</code></pre>
+
+<h2>(3) Rcpp inside the loop</h2>
+<pre><code class="r"> tick    &lt;- proc.time()[3]
+ mat3    &lt;- mat
+ for(rep in 1:pow){
+   mat3 &lt;- scalemultmatrix(mat3,k)
+ }
+ tock    &lt;- proc.time()[3]
+ time[3] &lt;- tock-tick
+</code></pre>
+
+<h2>(4) All computations in Rcpp</h2>
+<pre><code class="r"> tick    &lt;- proc.time()[3]
+ mat4    &lt;- powermatrix(mat,k,pow)
+ tock    &lt;- proc.time()[3]
+ time[4] &lt;- tock-tick
+</code></pre>
+
+<h2>Results</h2>
+<pre><code class="r"> print(mat1[1,1:4])
+ ## [1] 6 3 3 3
+ print(mat2[1,1:4])
+ ## [1] 6 3 3 3
+ print(mat3[1,1:4])
+ ## [1] 6 3 3 3
+ print(mat4[1,1:4])
+ ## [1] 6 3 3 3
+ print(time)
+ ## R loop  R mat  C + R      C 
+ ## 147.31   0.72   1.74   0.07
+ print(time/time[2])
+ ##       R loop        R mat        C + R            C 
+ ## 204.59722222   1.00000000   2.41666667   0.09722222
+</code></pre>
+
+<h2>Big Data Course</h2>
+<a href="https://www4.stat.ncsu.edu/~reich/BigData/code/">ST810 - Big Data Course</a>
+<br>
+
+<br>
+<br>
+<br>
+
+<script>
+	var toc = $('#toc');
+	$('h2').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>
+</body>
+</html>
