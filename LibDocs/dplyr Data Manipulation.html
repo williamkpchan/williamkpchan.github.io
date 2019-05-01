@@ -1,0 +1,558 @@
+<base target="_blank">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{width:80%;margin-left: 10%}
+strong, h1, h2 {color: gold;}
+.lang-r{color:grey; background-color:#000800;}
+</style>
+</head><body>
+<center><h1>dplyr Data Manipulation</h1>
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+
+<a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8">dplyr</a>
+
+<h2 id="overview">Overview</h2>
+<p>dplyr is a grammar of data manipulation, providing a consistent set of
+verbs that help you solve the most common data manipulation challenges:</p>
+<ul>
+<li><code>mutate()</code> adds new variables that are functions of existing
+variables</li>
+<li><code>select()</code> picks variables based on their names.</li>
+<li><code>filter()</code> picks cases based on their values.</li>
+<li><code>summarise()</code> reduces multiple values down to a single summary.</li>
+<li><code>arrange()</code> changes the ordering of the rows.</li>
+</ul>
+<p>These all combine naturally with <code>group_by()</code> which allows you to
+perform any operation &#x201C;by group&#x201D;. You can learn more about them in
+<code>vignette(&quot;dplyr&quot;)</code>. As well as these single-table verbs, dplyr also
+provides a variety of two-table verbs, which you can learn about in
+<code>vignette(&quot;two-table&quot;)</code>.</p>
+<p>dplyr is designed to abstract over how the data is stored. That means as
+well as working with local data frames, you can also work with remote
+database tables, using exactly the same R code. Install the dbplyr
+package then read <code>vignette(&quot;databases&quot;, package = &quot;dbplyr&quot;)</code>.</p>
+<p>If you are new to dplyr, the best place to start is the <a href="http://r4ds.had.co.nz/transform.html">data import
+chapter</a> in R for data science.</p>
+<h2 id="installation">Installation</h2>
+<pre><code class="lang-r"># The easiest way to get dplyr is to install the whole tidyverse:
+install.packages(&quot;tidyverse&quot;)
+
+# Alternatively, install just dplyr:
+install.packages(&quot;dplyr&quot;)
+
+# Or the development version from GitHub:
+# install.packages(&quot;devtools&quot;)
+devtools::install_github(&quot;tidyverse/dplyr&quot;)
+</code></pre>
+<p>If you encounter a clear bug, please file a minimal reproducible example
+on <a href="https://github.com/tidyverse/dplyr/issues">github</a>. For questions
+and other discussion, please use the <a href="https://groups.google.com/group/manipulatr">manipulatr mailing
+list</a>.</p>
+<h2 id="usage">Usage</h2>
+<pre><code class="lang-r">library(dplyr)
+
+starwars %&gt;% 
+  filter(species == &quot;Droid&quot;)
+#&gt; # A tibble: 5 x 13
+#&gt;   name  height  mass hair_color skin_color  eye_color birth_year gender
+#&gt;   &lt;chr&gt;  &lt;int&gt; &lt;dbl&gt; &lt;chr&gt;&lt;chr&gt; &lt;chr&gt;    &lt;dbl&gt; &lt;chr&gt; 
+#&gt; 1 C-3PO    167   75. &lt;NA&gt; gold  yellow    112. &lt;NA&gt;  
+#&gt; 2 R2-D2     96   32. &lt;NA&gt; white, blue red  33. &lt;NA&gt;  
+#&gt; 3 R5-D4     97   32. &lt;NA&gt; white, red  red  NA  &lt;NA&gt;  
+#&gt; 4 IG-88    200  140. none metal red  15. none  
+#&gt; 5 BB8 NA   NA  none none  blackNA  none  
+#&gt; # ... with 5 more variables: homeworld &lt;chr&gt;, species &lt;chr&gt;, films &lt;list&gt;,
+#&gt; #   vehicles &lt;list&gt;, starships &lt;list&gt;
+
+starwars %&gt;% 
+  select(name, ends_with(&quot;color&quot;))
+#&gt; # A tibble: 87 x 4
+#&gt;   name     hair_color skin_color  eye_color
+#&gt;   &lt;chr&gt;    &lt;chr&gt;&lt;chr&gt; &lt;chr&gt;    
+#&gt; 1 Luke Skywalker blondfair  blue     
+#&gt; 2 C-3PO    &lt;NA&gt; gold  yellow   
+#&gt; 3 R2-D2    &lt;NA&gt; white, blue red
+#&gt; 4 Darth Vader    none white yellow   
+#&gt; 5 Leia Organa    brownlight brown    
+#&gt; # ... with 82 more rows
+
+starwars %&gt;% 
+  mutate(name, bmi = mass / ((height / 100)  ^ 2)) %&gt;%
+  select(name:mass, bmi)
+#&gt; # A tibble: 87 x 4
+#&gt;   name     height  mass   bmi
+#&gt;   &lt;chr&gt;     &lt;int&gt; &lt;dbl&gt; &lt;dbl&gt;
+#&gt; 1 Luke Skywalker    172   77.  26.0
+#&gt; 2 C-3PO 167   75.  26.9
+#&gt; 3 R2-D2  96   32.  34.7
+#&gt; 4 Darth Vader 202  136.  33.3
+#&gt; 5 Leia Organa 150   49.  21.8
+#&gt; # ... with 82 more rows
+
+starwars %&gt;% 
+  arrange(desc(mass))
+#&gt; # A tibble: 87 x 13
+#&gt;   name    height  mass hair_color skin_color  eye_color  birth_year gender
+#&gt;   &lt;chr&gt;    &lt;int&gt; &lt;dbl&gt; &lt;chr&gt;&lt;chr&gt; &lt;chr&gt;     &lt;dbl&gt; &lt;chr&gt; 
+#&gt; 1 Jabba &#x2026;    175 1358. &lt;NA&gt; green-tan,&#x2026; orange    600.  herma&#x2026;
+#&gt; 2 Grievo&#x2026;    216  159. none brown, whi&#x2026; green, ye&#x2026; NA   male  
+#&gt; 3 IG-88200  140. none metal red  15.0 none  
+#&gt; 4 Darth &#x2026;    202  136. none white yellow     41.9 male  
+#&gt; 5 Tarfful    234  136. brownbrown blue NA   male  
+#&gt; # ... with 82 more rows, and 5 more variables: homeworld &lt;chr&gt;,
+#&gt; #   species &lt;chr&gt;, films &lt;list&gt;, vehicles &lt;list&gt;, starships &lt;list&gt;
+
+starwars %&gt;%
+  group_by(species) %&gt;%
+  summarise(
+    n = n(),
+    mass = mean(mass, na.rm = TRUE)
+  ) %&gt;%
+  filter(n &gt; 1)
+#&gt; # A tibble: 9 x 3
+#&gt;   speciesn  mass
+#&gt;   &lt;chr&gt;    &lt;int&gt; &lt;dbl&gt;
+#&gt; 1 Droid  5  69.8
+#&gt; 2 Gungan 3  74.0
+#&gt; 3 Human 35  82.8
+#&gt; 4 Kaminoan     2  88.0
+#&gt; 5 Mirialan     2  53.1
+#&gt; # ... with 4 more rows
+</code></pre>
+<hr>
+<p>Please note that this project is released with a <a href="https://github.com/tidyverse/dplyr/blob/master/CONDUCT.md">Contributor Code of
+Conduct</a>. By participating in this project you agree to
+abide by its terms.</p>
+<div class="anchor" id="functions"></div>
+<h2 class="table-title">Functions in dplyr  </h2>
+<input id="filter" type="text" placeholder="Search">
+<table class = "packagetable">
+  <thead>
+    <tr>
+<td>Name <i class="fa fa-sort" aria-hidden="true"></i></td>
+<td>Description <i class="fa fa-sort" aria-hidden="true"></i></td>
+    </tr>
+  </thead>
+  <tbody id="filterableItems">
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/all_vars">all_vars</a></td>
+  <td>Apply predicate to all variables</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/compute">compute</a></td>
+  <td>Force computation of a database query</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/distinct">distinct</a></td>
+  <td>Select distinct/unique rows</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/as.tbl_cube">as.tbl_cube</a></td>
+  <td>Coerce an existing data structure into a tbl_cube</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/arrange">arrange</a></td>
+  <td>Arrange rows by variables</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/cumall">cumall</a></td>
+  <td>Cumulativate versions of any, all, and mean</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/copy_to">copy_to</a></td>
+  <td>Copy a local data frame to a remote src</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/auto_copy">auto_copy</a></td>
+  <td>Copy tables to same source, if necessary</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/filter">filter</a></td>
+  <td>Return rows with matching conditions</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/filter_all">filter_all</a></td>
+  <td>Filter within a selection of variables</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/do">do</a></td>
+  <td>Do anything</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/group_by_all">group_by_all</a></td>
+  <td>Group by a selection of variables</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/check_dbplyr">check_dbplyr</a></td>
+  <td>dbplyr compatibility functions</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/coalesce">coalesce</a></td>
+  <td>Find first non-missing element</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/backend_dbplyr">backend_dbplyr</a></td>
+  <td>Database and SQL generics.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/explain">explain</a></td>
+  <td>Explain details of a tbl</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/bind">bind</a></td>
+  <td>Efficiently bind multiple data frames by row and column</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/all_equal">all_equal</a></td>
+  <td>Flexible equality comparison for data frames</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/failwith">failwith</a></td>
+  <td>Fail with specified value.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/add_rownames">add_rownames</a></td>
+  <td>Convert row names to an explicit variable.</td>
+</tr>
+<tr>
+
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/case_when">case_when</a></td>
+  <td>A general vectorised if</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/group_by_prepare">group_by_prepare</a></td>
+  <td>Prepare for grouping.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/group_indices">group_indices</a></td>
+  <td>Group id.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/join">join</a></td>
+  <td>Join two tbls together</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/ident">ident</a></td>
+  <td>Flag a character vector as SQL identifiers</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/n">n</a></td>
+  <td>The number of observations in the current group.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/location">location</a></td>
+  <td>Print the location in memory of a data frame</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/lead-lag">lead-lag</a></td>
+  <td>Lead and lag.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/desc">desc</a></td>
+  <td>Descending order</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/n_distinct">n_distinct</a></td>
+  <td>Efficiently count the number of unique values in a set of vector</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/dim_desc">dim_desc</a></td>
+  <td>Describing dimensions</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/id">id</a></td>
+  <td>Compute a unique numeric id for each unique row in a data frame.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/join.tbl_df">join.tbl_df</a></td>
+  <td>Join data frame tbls</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/order_by">order_by</a></td>
+  <td>A helper function for ordering window function output</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/na_if">na_if</a></td>
+  <td>Convert values to NA</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/band_members">band_members</a></td>
+  <td>Band membership</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/funs">funs</a></td>
+  <td>Create a list of functions calls.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/bench_compare">bench_compare</a></td>
+  <td>Evaluate, compare, benchmark operations of a set of srcs.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/recode">recode</a></td>
+  <td>Recode values</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/reexports">reexports</a></td>
+  <td>Objects exported from other packages</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/group_size">group_size</a></td>
+  <td>Calculate group sizes.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/progress_estimated">progress_estimated</a></td>
+  <td>Progress bar with estimated time.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/between">between</a></td>
+  <td>Do values in a numeric vector fall in specified range?</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/nasa">nasa</a></td>
+  <td>NASA spatio-temporal data</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/group_by">group_by</a></td>
+  <td>Group by one or more variables</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/tally_">tally_</a></td>
+  <td>Deprecated SE versions of main verbs.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/select_all">select_all</a></td>
+  <td>Select and rename a selection of variables</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/select">select</a></td>
+  <td>Select/rename variables by name</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/sample">sample</a></td>
+  <td>Sample n rows from a table</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/near">near</a></td>
+  <td>Compare two numeric vectors</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/if_else">if_else</a></td>
+  <td>Vectorised if</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/nth">nth</a></td>
+  <td>Extract the first, last or nth value from a vector</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/init_logging">init_logging</a></td>
+  <td>Enable internal logging</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/src_dbi">src_dbi</a></td>
+  <td>Source for database backends</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/rowwise">rowwise</a></td>
+  <td>Group input by rows</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/src_local">src_local</a></td>
+  <td>A local source.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/scoped">scoped</a></td>
+  <td>Operate on a selection of variables</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/dplyr-package">dplyr-package</a></td>
+  <td>dplyr: a grammar of data manipulation</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/summarise_all">summarise_all</a></td>
+  <td>Summarise and mutate multiple columns.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/summarise_each">summarise_each</a></td>
+  <td>Summarise and mutate multiple columns.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/same_src">same_src</a></td>
+  <td>Figure out if two sources are the same (or two tbl have the same source)</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/dr_dplyr">dr_dplyr</a></td>
+  <td>Dr Dplyr checks your installation for common problems.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/top_n">top_n</a></td>
+  <td>Select top (or bottom) n rows (by value)</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/tbl_vars">tbl_vars</a></td>
+  <td>List variables provided by a tbl.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/select_vars">select_vars</a></td>
+  <td>Select variables</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/grouped_df">grouped_df</a></td>
+  <td>A grouped data frame.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/storms">storms</a></td>
+  <td>Storm tracks data</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/tidyeval">tidyeval</a></td>
+  <td>Tidy eval helpers</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/src_tbls">src_tbls</a></td>
+  <td>List all tbls provided by a source.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/vars">vars</a></td>
+  <td>Select variables</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/starwars">starwars</a></td>
+  <td>Starwars characters</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/summarise">summarise</a></td>
+  <td>Reduces multiple values down to a single value</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/with_order">with_order</a></td>
+  <td>Run a function with one order, translating result back to original order</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/tally">tally</a></td>
+  <td>Count/tally observations by group</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/tbl">tbl</a></td>
+  <td>Create a table from a data source</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/tbl_cube">tbl_cube</a></td>
+  <td>A data cube tbl</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/tbl_df">tbl_df</a></td>
+  <td>Create a data frame tbl.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/groups">groups</a></td>
+  <td>Return grouping variables</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/make_tbl">make_tbl</a></td>
+  <td>Create a &quot;tbl&quot; object</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/mutate">mutate</a></td>
+  <td>Add new variables</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/pull">pull</a></td>
+  <td>Pull out a single variable</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/ranking">ranking</a></td>
+  <td>Windowed rank functions.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/setops">setops</a></td>
+  <td>Set operations</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/slice">slice</a></td>
+  <td>Select rows by position</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/sql">sql</a></td>
+  <td>SQL escaping.</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/src">src</a></td>
+  <td>Create a &quot;src&quot; object</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/common_by">common_by</a></td>
+  <td>Extract out common by variables</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/arrange_all">arrange_all</a></td>
+  <td>Arrange rows by a selection of variables</td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/as.table.tbl_cube">as.table.tbl_cube</a></td>
+  <td>Coerce a tbl_cube to other data structures</td>
+</tr>
+    
+    <tr class="no-results"><td colspan="3">No Results!</td></tr>
+  </tbody>
+</table>
+
+<h2 class="table-title">Vignettes of dplyr  </h2>
+<table class = "packagetable">
+  <thead>
+    <tr>
+<td>Name <i class="fa fa-sort" aria-hidden="true"></i></td>
+    </tr>
+  </thead>
+  <tbody>
+<tr>
+  <td><a href="https://www.rdocumentation.org///www.rdocumentation.org/packages/dplyr/versions/0.7.8/vignettes/internals/hybrid-evaluation.Rmd">internals/hybrid-evaluation.Rmd</a></td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org///www.rdocumentation.org/packages/dplyr/versions/0.7.8/vignettes/compatibility.Rmd">compatibility.Rmd</a></td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org///www.rdocumentation.org/packages/dplyr/versions/0.7.8/vignettes/dplyr.Rmd">dplyr.Rmd</a></td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org///www.rdocumentation.org/packages/dplyr/versions/0.7.8/vignettes/programming.Rmd">programming.Rmd</a></td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org///www.rdocumentation.org/packages/dplyr/versions/0.7.8/vignettes/two-table.Rmd">two-table.Rmd</a></td>
+</tr>
+<tr>
+  <td><a href="https://www.rdocumentation.org///www.rdocumentation.org/packages/dplyr/versions/0.7.8/vignettes/window-functions.Rmd">window-functions.Rmd</a></td>
+</tr>
+    
+    <tr class="no-results"><td colspan="3">No Results!</td></tr>
+  </tbody>
+</table>
+<br>
+<br>
+<br>
+<br>
+
+<script>
+	var toc = $('#toc');
+	$('h2').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>
+</body>
+</html>
