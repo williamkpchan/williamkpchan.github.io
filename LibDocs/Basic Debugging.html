@@ -1,0 +1,140 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:22px;}
+strong, h1, h2, b, strong {color: gold;}
+img {width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%;}
+</style>
+</head><body>
+<center><h1>Basic Debugging</h1>
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+<pre>
+<h2>Debugging skill</h2>
+Programs rarely work the first time, and we need to be able to figure out what is going wrong.
+Debugging can be accomplished a number of ways: two of them are with by logging or by running a debugger (sometimes both).  
+Either way, the goals is to observe the program's operation, and determine where things are going awry.
+Fundamentally, we are interested in <b>two things</b>:
+<ol>
+<li>validating that variables are being updated (set) as expected, and,</li>
+<li>validating control flow is working as expected.</li>
+</ol>
+Once these two things are working, generally speaking, most programs will work, or at least produce more expected results.
+
+In order to debug programs well, it helps a lot to <em><strong>write &quot;simple code&quot;!</strong></em> .  &quot;<em>Simple code</em>&quot; uses more of shorter lines instead of fewer of longer lines.  
+
+The shorter lines are connected to each other through local variables.
+
+<em>In most languages today, especially C, C++, Java, and C#, using local variables is virtually free as they are allocated either on the stack (very inexpensive) or directy to machine registers (completely free) — further if the local variable is used just once — as often happens when programming in this simple style — then the compiler (when optimizing) can fully eliminate the local variable.</em>
+
+Further, let's also note that this approach of &quot;simple code&quot; is applicable to compile-time error fixing as well as runtime debugging.  
+If the compiler is complaining about something, in many languages the error message will be much more informing when using simple code — where there is only one major operation happening on each line of code.  
+
+If program is crashing at runtime (e.g. segmentation fault, or Null Pointer Exception), using simple code will help to zero in on the exact operation that caused the fault — since with simple code we reduce the number of operations per line.
+<em>It is possible to do to much simple code — but really, the only downside is verbosity.  
+
+So, when you're done debugging, you can reassemble some things into larger statements if you like.  
+However, in the other direction, we can apply simple code in the extreme as an approach to debugging things in an area of code where we don't understand what is wrong: in the most extreme, we would do only one operation (e.g. adding, calling, dereferencing) per line using as many variables as needed to connect them.</em>
+Let's look at some examples of how to write simple code:
+<pre><code>if ( ButtonEvents () &amp; BUTTON_1_DOWN ) {
+    ...
+} else {
+    ...
+}
+</code></pre>
+Since the condition being tested involves a function call, we instead capture its return value in a local variable as follows:
+<pre><code>int be = ButtonCheckEvents ();
+if ( be &amp; BUTTON_1_DOWN ) {
+    ...
+} else {
+    ...
+}
+</code></pre>
+This simplification separates a larger more complex if condition into two lines that are connected by a variable (<code>be</code>).  
+Here, the function call result is captured in a variable, and by doing this we can inspect its return value much more easily, whether using a debugger or logging with printf.
+Next, we want to <b>verify variables and control flow</b>.  
+As we have separated the primary expression from the original if statement, it is appropriate to first see the value of the new variable.
+<pre><code>int be = ButtonEvents ();
+printf (&quot;be = %d\n&quot;, be );	// new printf added for debugging (check variable value)
+if ( be &amp; BUTTON_1_DOWN ) {
+    ...
+} else {
+    ...
+}
+</code></pre>
+*We could go even further, even capturing * <code>be &amp; BUTTON_1_DOWN</code> <em>into a local variable, reducing the if condition to testing just one variable.</em>
+Also, we need to verify the flow of control:
+<pre><code>int be = ButtonEvents ();
+printf (&quot;be = %d\n&quot;, be );
+if ( be &amp; BUTTON_1_DOWN ) {
+    printf ( &quot;Button 1 down...\n&quot; );	// new debugging printf, flow of control
+    ...
+} else {
+    printf ( &quot;Button 1 not down...\n&quot; );	// new debugging printf, flow
+    ...
+}
+</code></pre>
+With flow of control, we're looking to see that the overall flow works, whether we are missing an else part, testing the wrong condition, missing a <code>break;</code> statement in a switch statement, off-by-one error in loop control, etc..
+You can see that some printf statements are added just to indicate the flow of control that is happening in the program.  
+Others are used to show the values of variables after their assignment.
+When using a debugger, the idea is to obtain the same information: variable assignment, to see if reasonable values are being computed, and, flow of control, whether it is working or not.
+As mentioned before, once the flow of control is working properly and variable assignments are working, the most programs will work!
+Sometimes, the printfs become to noisy, and to see what the problem is, we need to reduce the chatter.  
+When we're doing printf debugging, we can use simple if-statements to restrict the number of printf's coming out:
+<pre><code>int be = ButtonEvents ();
+if ( count == 100 )						// if condition guard to reduce printfs
+    printf (&quot;be = %d\n&quot;, be );
+if ( be &amp; BUTTON_1_DOWN ) {
+    printf ( &quot;Button 1 down...\n&quot; );
+    ...
+} else {
+    printf ( &quot;Button 1 not down...\n&quot; );
+    ...
+}
+</code></pre>
+As if-conditions that guard/reduce debugging printf's we can either test existing program state (variables) or introduce new state as needed (it goes wrong on the 100th count: do we already have a count for that or should we create a counter?).
+When we're using a debugger, we can sometime introduce a <b>conditional breakpoint</b>, if the debugger supports that concept.  
+However, these may run slower than a regular breakpoint, whereas putting an if-statement testing state may be better:
+<pre><code>int be = ButtonEvents ();
+if ( count == 100 ) {
+    int a = 1;	// good line to put break point in debugger
+}
+if ( be &amp; BUTTON_1_DOWN ) {
+    printf ( &quot;Button 1 down...\n&quot; );
+    ...
+} else {
+    printf ( &quot;Button 1 not down...\n&quot; );
+    ...
+}
+</code></pre>
+This construct has two effects: it provide a good place to put an unconditional break point (while still only breaking on the condition of interest), while also (in most languages) providing a compiler warning that &quot;a&quot; is unused: this is good to help us remember to remove these kind of additions after the code is working.
+Assignment statements can also be simplified, in the sense that if too much work is going on, we can break the logic into two statements, also connected by local variables.
+In summary, write &quot;simple&quot; code.
+<br>
+<br>
+<br>
+<br>
+
+<script>
+	var toc = $('#toc');
+	$('h2, b, strong').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>
+</body>
+</html>
