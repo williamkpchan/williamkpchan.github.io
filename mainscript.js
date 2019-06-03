@@ -36,7 +36,7 @@ function chkKey() {
   if(testkey == 'o'){window.location = '#sclj';}
   if(testkey == 'P'){window.location = '#Python';}
   if(testkey == 'p'){window.location = '#Programming';}
-  if(testkey == 'q'){window.location = '#sclj';}
+  if(testkey == 'q'){window.open('https://www.quora.com/');}
   if(testkey == 'r'){window.location = '#Rlang';}
   if(testkey == 's'){window.open("http://williamkpchan.github.io/stkListVH.html");}
   if(testkey == 'S'){showMMA();}
