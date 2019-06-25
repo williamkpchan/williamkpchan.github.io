@@ -1,0 +1,2301 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>MySQL Sample Databases</title>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<link href="MySQL.css" rel="stylesheet" type="text/css" />
+<!--<script type="text/javascript" src="MySQL.js"></script>-->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:22px;}
+strong, h1, h2, h3, h4, h5 {color: gold;}
+</style>
+</head>
+https://www.ntu.edu.sg/home/ehchua/programming
+<body>
+<center><h1>MySQL Sample Databases</h1>
+<br>
+<div id="toc"></div></center>
+<br>
+<br>
+
+<div id="wrap-outer">
+
+<!-- header filled by JavaScript -->
+<div id="header" class="header-footer"><p>&nbsp;</p></div>
+
+<div id="wrap-inner">
+
+<div id="wrap-toc">
+<!--<h5>TABLE OF CONTENTS <a id="show-toc" href="#show-toc">(HIDE)</a></h5>-->
+<div id="toc"></div>  <!-- for showing the "Table of Content" -->
+</div>
+
+<div id="content-header">
+</div>
+
+<div id="content-main">
+
+<p>There are many excellent and interesting sample databases available, that you can use as a template (or pattern) to design your own databases.</p>
+
+<h3>MySQL's Sample Employee Database</h3>
+
+<p><span class="line-heading">Reference:</span> MySQL's Sample Employees Database @ <a href="http://dev.mysql.com/doc/employee/en/index.html">http://dev.mysql.com/doc/employee/en/index.html</a>.</p>
+
+<p>This is a rather simple database with 6 tables but with millions of records.</p>
+
+<h4>Database and Tables</h4>
+
+<p>There are 6 tables as follows:</p>
+<img class="image-center" src="https://www.ntu.edu.sg/home/ehchua/programming/sql/images/SampleEmployees.png" alt="Database diagram" />
+
+<h5>Table &quot;<span class="font-code">employees</span>&quot;</h5>
+<pre class="color-syntax">CREATE TABLE <strong>employees</strong> (
+    emp_no      INT             NOT NULL,  <span class="color-comment">-- UNSIGNED AUTO_INCREMENT??</span>
+    birth_date  DATE            NOT NULL,
+    first_name  VARCHAR(14)     NOT NULL,
+    last_name   VARCHAR(16)     NOT NULL,
+    gender      ENUM ('M','F')  NOT NULL,  <span class="color-comment">-- Enumeration of either 'M' or 'F'</span>  
+    hire_date   DATE            NOT NULL,
+    PRIMARY KEY (emp_no)                   <span class="color-comment">-- Index built automatically on primary-key column</span>
+                                           <span class="color-comment">-- INDEX (first_name)
+                                           -- INDEX (last_name)</span>
+);</pre>
+
+<p>There are 300,024 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">departments</span>&quot;</h5>
+
+<pre class="color-syntax">CREATE TABLE <strong>departments</strong> (
+    dept_no     CHAR(4)         NOT NULL,  <span class="color-comment">-- in the form of 'dxxx'</span>
+    dept_name   VARCHAR(40)     NOT NULL,
+    PRIMARY KEY (dept_no),                 <span class="color-comment">-- Index built automatically</span>
+    UNIQUE  KEY (dept_name)                <span class="color-comment">-- Build INDEX on this unique-value column</span>
+);</pre>
+
+<p>The keyword <code>KEY</code> is synonym to <code>INDEX</code>. An <code>INDEX</code> can be built on unique-value column (<code>UNIQUE KEY</code> or <code>UNIQUE INDEX</code>) or non-unique-value column (<code>KEY</code> or <code>INDEX</code>). Indexes greatly facilitates fast search.  However, they deplete the performance in <code>INSERT</code>, <code>UPDATE</code> and <code>DELETE</code>.  Generally, relational databases are optimized for retrievals, and NOT for modifications.</p>
+
+<p>There are 9 records for this table.</p>
+
+
+<h5>Table &quot;<span class="font-code">dept_emp</span>&quot;</h5>
+
+<p>Junction table to support between many-to-many relationship between <code>employees</code> and <code>departments</code>. A department has many employees. An employee can belong to different department at different dates, and possibly concurrently.</p>
+
+<pre class="color-syntax">CREATE TABLE <strong>dept_emp</strong> (
+    emp_no      INT         NOT NULL,
+    dept_no     CHAR(4)     NOT NULL,
+    from_date   DATE        NOT NULL,
+    to_date     DATE        NOT NULL,
+    KEY         (emp_no),   <span class="color-comment">-- Build INDEX on this non-unique-value column</span>
+    KEY         (dept_no),  <span class="color-comment">-- Build INDEX on this non-unique-value column</span>
+    FOREIGN KEY (emp_no) REFERENCES employees (emp_no) ON DELETE CASCADE,
+           <span class="color-comment">-- Cascade DELETE from parent table 'employee' to this child table
+           -- If an emp_no is deleted from parent 'employee', all records
+           --  involving this emp_no in this child table are also deleted
+           -- ON UPDATE CASCADE??</span>
+    FOREIGN KEY (dept_no) REFERENCES departments (dept_no) ON DELETE CASCADE,
+           <span class="color-comment">-- ON UPDATE CASCADE??</span>
+    PRIMARY KEY (emp_no, dept_no)
+           <span class="color-comment">-- Might not be unique?? Need to include from_date</span>
+);</pre>
+
+<p>The foreign keys have <code>ON DELETE</code> <em>reference action</em> of <code>CASCADE</code>. If a record having a particular key-value from the parent table (employees and departments) is deleted, all the records in this child table having the same key-value are also deleted. Take note that the default <code>ON DELETE</code> reference action of is <code>RESTRICTED</code>, which disallows <code>DELETE</code> on the parent record, if there are matching records in the child table.</p>
+
+<p>There are two reference actions: <code>ON DELETE</code> and <code>ON UPDATE</code>. The <code>ON UPDATE</code> reference action of is defaulted to <code>RESTRICT</code> (or disallow). It is more meaningful to set <code>ON UPDATE</code> to <code>CASCADE</code>, so that changes in parent table (e.g., change in <code>emp_no</code> and <code>dept_no</code>) can be cascaded down to the child table(s).</p>
+
+<p>There are 331,603 records for this table.</p>
+
+
+<h5>Table &quot;<span class="font-code">dept_manager</span>&quot;</h5>
+
+<p>join table to support between many-to-many relationship between <code></code> <code>employees</code> and <code>departments</code>. Same structure as <code>dept_emp</code>.</p>
+
+<pre class="color-syntax">
+CREATE TABLE <strong>dept_manager</strong> (
+   dept_no      CHAR(4)  NOT NULL,
+   emp_no       INT      NOT NULL,
+   from_date    DATE     NOT NULL,
+   to_date      DATE     NOT NULL,
+   KEY         (emp_no),
+   KEY         (dept_no),
+   FOREIGN KEY (emp_no)  REFERENCES employees (emp_no)    ON DELETE CASCADE,
+                                  <span class="color-comment">-- ON UPDATE CASCADE??</span>
+   FOREIGN KEY (dept_no) REFERENCES departments (dept_no) ON DELETE CASCADE,
+   PRIMARY KEY (emp_no, dept_no)  <span class="color-comment">-- might not be unique?? Need from_date</span>
+);</pre>
+
+<p>There are 24 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">titles</span>&quot;</h5>
+<p>There is a one-to-many relationship between <code>employees</code> and <code>titles</code>. One employee has many titles (concurrently or at different dates). A <code>titles</code> record refers to one employee (via <code>emp_no</code>).</p>
+
+<pre class="color-syntax">
+CREATE TABLE <strong>titles</strong> (
+    emp_no      INT          NOT NULL,
+    title       VARCHAR(50)  NOT NULL,
+    from_date   DATE         NOT NULL,
+    to_date     DATE,
+    KEY         (emp_no),
+    FOREIGN KEY (emp_no) REFERENCES employees (emp_no) ON DELETE CASCADE,
+                         <span class="color-comment">-- ON UPDATE CASCADE??</span>
+    PRIMARY KEY (emp_no, title, from_date)
+       <span class="color-comment">-- This ensures unique combination. 
+       -- An employee may hold the same title but at different period</span>
+);</pre>
+
+<p>There are 443,308 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">salaries</span>&quot;</h5>
+
+<p>Similar structure to <code>titles</code> table. One-to-many relationship between <code>employees</code> and <code>salaries</code>.</p>
+
+<pre class="color-syntax">CREATE TABLE <strong>salaries</strong> (
+    emp_no      INT    NOT NULL,
+    salary      INT    NOT NULL,
+    from_date   DATE   NOT NULL,
+    to_date     DATE   NOT NULL,
+    KEY         (emp_no),
+    FOREIGN KEY (emp_no) REFERENCES employees (emp_no) ON DELETE CASCADE,
+    PRIMARY KEY (emp_no, from_date)
+);</pre>
+
+<p>There are 2,844,047 records for this table.</p>
+
+<h4>Stored Objects</h4>
+<p>No stored objects (view, procedure, function, trigger, event) defined. [Shall try!]</p>
+
+<h3>MySQL's Sample Salika (DVD Rental) Database</h3>
+<p><span class="line-heading">Reference:</span> MySQL's Sample Sakila Database @ <a href="http://dev.mysql.com/doc/sakila/en/index.html">http://dev.mysql.com/doc/sakila/en/index.html</a>.</p>
+<p>The MySQL's Sample Salika (DVD Rental) Database can be downloaded from<a href="http://dev.mysql.com/doc/sakila/en/index.html">http://dev.mysql.com/doc/sakila/en/index.html</a>. It is a complex database with 16 tables. It also illustrates features such as Views, Stored Procedures and Triggers. This is probably the best sample available for studying MySQL databases.</p>
+
+<img class="image-center" src="https://www.ntu.edu.sg/home/ehchua/programming/sql/images/SampleSakila.png" alt="Database diagram" />
+
+<h4>Database and Tables</h4>
+
+<p>All the tables have <code>DEFAULT CHARSET</code> of <code>utf8</code> for internationalization support. All the tables, except <code>film_text<span class="color-comment"></span></code>, use <code>InnoDB</code> engine, which supports foreign key and transaction. The table <code>film_text</code> uses <code>MyISAM</code> to support <code>FULLTEXT</code> search.</p>
+
+<p>For UTF8 support, we could set the <code>DEFAULT CHARSET</code> at the database level as follows:</p>
+<pre class="color-example">
+<span class="color-comment">-- Enable client program to communicate with the server using utf8 character set</span>
+SET NAMES 'utf8';
+
+DROP DATABASE IF EXISTS `sakila`;
+<span class="color-comment">-- Set the default charset to utf8 for internationalization, use case-insensitive (ci) collation
+</span>CREATE DATABASE IF NOT EXISTS `sakila` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+USE `sakila`;</pre>
+
+<p>We could use &quot;<code>SHOW CREATE DATABASE <em>databaseName</em> \G</code>&quot; and &quot;<code>SHOW CREATE TABLE <em>tableName</em> \G</code>&quot; to display all the defaults used in <code>CREATE DATABASE</code> and <code>CREATE TABLE</code>.</p>
+
+<h5>Table &quot;<span class="font-code">actor</span>&quot;</h5>
+
+<pre class="color-syntax">
+CREATE TABLE <strong>actor</strong> (
+  actor_id    SMALLINT     UNSIGNED NOT NULL AUTO_INCREMENT,
+                           <span class="color-comment">-- 16-bit unsigned int in the range of [0, 65535]</span>
+  first_name  VARCHAR(45)  NOT NULL,
+  last_name   VARCHAR(45)  NOT NULL,
+  last_update TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (actor_id),
+  KEY idx_actor_last_name (last_name)   <span class="color-comment">-- To build index (non-unique) on last_name</span>
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+       <span class="color-comment">-- Use InnoDB Engine, which supports foreign key and transaction
+       -- Use Unicode 'utf8' character set for this table</span></pre>
+
+<ul>
+<li>There can be one <code>TIMESTAMP</code> column with <code>DEFAULT CURRENT_TIMESTAMP</code>. If you wish to have both <code>create</code> and <code>last_update</code>, you need to use a <code>ON INSERT</code> trigger to set the <code>create</code> <code>TIMESTAMP</code>. For strict auditing, you might have <code>create_timestamp</code>, <code>create_by</code>, <code>last_update_timestamp</code> and <code>last_update_by</code>.</li>
+
+<li>InnoDB engine is used, which support foreign key and transaction.</li>
+
+<li>The default character set for this table is UTF8, which supports all languages for internationalization.</li>
+<li>Better to use <code>INT UNSIGNED</code> for <code>AUTO_INCREMENT</code> column <code>actor_id</code> to avoid overrun.</li>
+</ul>
+
+<p>There are 200 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">language</span>&quot;</h5>
+
+<p>Languages: such as English, Italian, Japanese, Mandrain, Cantonese, French, German.</p>
+
+<pre class="color-syntax">
+CREATE TABLE <strong>language</strong> (
+  language_id  TINYINT    UNSIGNED NOT NULL AUTO_INCREMENT,
+                          <span class="color-comment">-- 8-bit unsigned int [0, 255]</span>
+  name         CHAR(20)   NOT NULL,
+  last_update  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (language_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>May be simpler to use an <code>ENUM</code> (one choice).</p>
+
+<p>There are 6 records for this table, i.e., <code>'English'</code>, <code>'Italian'</code>, <code>'Japanese'</code>, <code>'Mandarin'</code>, <code>'French'</code>, <code>'German'</code>.</p>
+
+
+<h5>Table &quot;<span class="font-code">film</span>&quot;</h5>
+
+<pre class="color-syntax">
+CREATE TABLE <strong>film</strong> (
+  film_id              SMALLINT     UNSIGNED NOT NULL AUTO_INCREMENT,
+  title                VARCHAR(255) NOT NULL,
+  description          TEXT         DEFAULT NULL,       <span class="color-comment">-- Up to 64KB</span>
+  release_year         YEAR         DEFAULT NULL,       <span class="color-comment">-- 'yyyy'</span>
+  language_id          TINYINT      UNSIGNED NOT NULL,  <span class="color-comment">-- 8-bit unsigned int [0, 255]</span>
+  original_language_id TINYINT      UNSIGNED DEFAULT NULL,
+  rental_duration      TINYINT      UNSIGNED NOT NULL DEFAULT 3,
+  rental_rate          DECIMAL(4,2) NOT NULL DEFAULT 4.99,  <span class="color-comment">
+                                    -- DECIMAL is precise and ideal for currency [99.99]. UNSIGNED?</span>
+  length               SMALLINT     UNSIGNED DEFAULT NULL,  <span class="color-comment">-- 16-bit unsigned int [0, 65535]</span>
+  replacement_cost     DECIMAL(5,2) NOT NULL DEFAULT 19.99, <span class="color-comment">-- [999.99], UNSIGNED??</span>
+  rating               ENUM('G','PG','PG-13','R','NC-17') DEFAULT 'G',
+  special_features     SET('Trailers','Commentaries','Deleted Scenes','Behind the Scenes') DEFAULT NULL,
+                                    <span class="color-comment">-- Can take zero or more values from a SET
+                                    -- But only one value from ENUM</span>
+  last_update          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (film_id),
+  KEY idx_title (title),
+  KEY idx_fk_language_id (language_id),
+  KEY idx_fk_original_language_id (original_language_id),
+        <span class="color-comment">-- To build index on title, language_id, original_language_id and film_id (primary key)</span>
+  CONSTRAINT fk_film_language FOREIGN KEY (language_id) REFERENCES language (language_id)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+        <span class="color-comment">-- Cannot delete parent record if there is any matching child record
+        -- Update the matching child records if parent record is updated</span>
+  CONSTRAINT fk_film_language_original FOREIGN KEY (original_language_id) REFERENCES language (language_id)
+    ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<ul>
+<li>Instead of hard-coding the &quot;language&quot; and &quot;original language&quot;, it uses <code>language_id</code> to look up the <code>language</code> table, in a one-to-one relationship. Could use an <code>ENUM</code> for language directly for simplicity.</li>
+<li><code>KEYs</code> (<code>INDEXes</code>) are defined on certain columns to facilitate fast search on these columns. We would use &quot;<code>SHOW INDEX FROM <em>tableName</em> \G</code>&quot; to display the details on indexes.</li>
+<li>Should include <code>UNSIGNED</code> for for non-negative numeric columns like <code>rental_rate</code>.</li>
+</ul>
+
+<p>There are 1000 records for this table.</p>
+
+
+<h5>Table &quot;<span class="font-code">film_actor</span>&quot;</h5>
+
+<p>Junction table between <code>actor</code> and <code>film</code> to support the many-to-many relationship.</p>
+
+<pre class="color-syntax">
+CREATE TABLE <strong>film_actor</strong> (
+  actor_id     SMALLINT UNSIGNED NOT NULL,
+  film_id      SMALLINT UNSIGNED NOT NULL,
+  last_update  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (actor_id, film_id),
+  KEY idx_fk_film_id (`film_id`),
+  CONSTRAINT fk_film_actor_actor FOREIGN KEY (actor_id) REFERENCES actor (actor_id) 
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_actor_film FOREIGN KEY (film_id) REFERENCES film (film_id) 
+    ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>There are 5462 records for this table.</p>
+
+
+<h5>Table &quot;<span class="font-code">category</span>&quot;</h5>
+
+<pre class="color-syntax">
+CREATE TABLE <strong>category</strong> (
+  category_id  TINYINT      UNSIGNED NOT NULL AUTO_INCREMENT,
+  name         VARCHAR(25)  NOT NULL,
+  last_update  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (category_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<ul>
+<li>There are 16 records for this table, i.e., <code>'Action'</code>, <code>'Animation'</code>, <code>'Children'</code>, <code>'Classics'</code>, <code>'Comedy'</code>, <code>'Documentary'</code>, <code>'Drama'</code>, <code>'Family'</code>, <code>'Foreign'</code>, <code>'Games'</code>, <code>'Horror'</code>, <code>'Music'</code>, <code>'New'</code>, <code>'Sci-Fi'</code>, <code>'Sports'</code>, <code>'Travel'</code>.</li>
+<li>May be better to use a <code>SET</code> to support multiple categories per film, if the number of categories is small. A <code>SET</code> is limited to 64 items in MySQL.</li>
+</ul>
+
+<h5>Table &quot;<span class="font-code">film_category</span>&quot;</h5>
+<p>Junction table to support many-to-many relationship between <code>film</code> and <code>category</code>.</p>
+
+<pre class="color-syntax">
+CREATE TABLE <strong>film_category</strong> (
+  film_id      SMALLINT   UNSIGNED NOT NULL,
+  category_id  TINYINT    UNSIGNED NOT NULL,
+  last_update  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (film_id, category_id),
+  CONSTRAINT fk_film_category_film FOREIGN KEY (film_id) REFERENCES film (film_id) 
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_film_category_category FOREIGN KEY (category_id) REFERENCES category (category_id) 
+    ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>There are 1000 records for this table. Each of the 1000 films has ONE category.</p>
+
+<h5>Table &quot;<span class="font-code">film_text</span>&quot; - <span class="font-code">FULLTEXT</span> Index and Search</h5>
+
+<pre class="color-syntax">
+CREATE TABLE <strong>film_text</strong> (
+  film_id      SMALLINT      NOT NULL,
+  title        VARCHAR(255)  NOT NULL,
+  description  TEXT,
+  PRIMARY KEY  (film_id),
+  FULLTEXT KEY idx_title_description (title, description)
+     <span class="color-comment">-- To build index on FULLTEXT to facilitate text search
+     -- FULLTEXT is supported in MyISAM engine, NOT in InnoDB engine</span>
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;</pre>
+
+<ul>
+<li>This table duplicates information from <code>film</code> table, to support <code>FULLTEXT</code> search. That is, user can efficiently search all the words in <code>title</code> and <code>description</code> columns.</li>
+<li>To ensure consistency between <code>film_text</code> and <code>film</code>, the rows are inserted/updated via a trigger on <code>film</code> table.</li>
+<li><code>FULLTEXT</code> search is supported in <code>MyISAM</code> engine only, not the <code>InnoDB</code> engine. A <code>FULLTEXT</code> index is build on columns <code>(title, description)</code>. You can perform <code>FULLTEXT</code> search on the index using &quot;<code>WHERE MATCH(<em>columns</em>) AGAINST(<em>words</em>)</code>&quot;, for example,
+
+<pre class="color-example">
+mysql&gt; SELECT * FROM film_text
+       <span class="color-new">WHERE MATCH(title, description) AGAINST ('great')</span>;
+             <span class="color-comment">-- search for the given word on the FULLTEXT index columns</span>
+ 
+mysql&gt; SELECT * FROM film_text 
+       WHERE MATCH(title, description) AGAINST (<span class="color-new">'great good'</span>);  
+             <span class="color-comment">-- search for either 'great' or 'good'</span>
+ 
+mysql&gt; SELECT * FROM film_text 
+       WHERE MATCH(title, description) AGAINST ('<span class="color-new">&quot;very good&quot;</span>' <span class="color-new">IN BOOLEAN MODE</span>);
+             <span class="color-comment">-- Use BOOLEAN MODE to match exact phrase (enclosed in double-quotes)</span>
+ 
+mysql&gt; SELECT * FROM film_text 
+       WHERE MATCH(title, description) AGAINST ('<span class="color-new">+</span>good <span class="color-new">-</span>bad' <span class="color-new">IN BOOLEAN MODE</span>);
+             <span class="color-comment">-- Use BOOLEAN MODE to search for the word 'good', but NOT the word 'bad'</span>
+ 
+mysql&gt; SELECT * FROM film_text 
+       WHERE MATCH(title, description) AGAINST ('great<span class="color-new">*</span>' <span class="color-new">IN BOOLEAN MODE</span>);
+             <span class="color-comment">-- In BOOLEAN MODE, wildcard * matches zero or more characters</span>
+ 
+mysql&gt; SELECT * FROM film_text 
+       WHERE MATCH(title, description) AGAINST ('great' <span class="color-new">WITH QUERY EXPANSION</span>);
+             <span class="color-comment">-- Do a second search on words in the most relevant rows from the first search</span></pre>
+</li>
+</ul>
+
+<p>There are 1000 records for this table. Each <code>film</code> record has a <code>film_text</code> counterpart. The records in the <code>film_text</code> table is created via a <code>INSERT</code> trigger on the <code>film</code> table.</p>
+
+<h5>Table &quot;<span class="font-code">inventory</span>&quot;</h5>
+
+<p>The company could have many copies of a particular film (in one store or many stores). Each copy is represented by an <code>inventory</code> record. The store is linked thru <code>store_id</code> to the table <code>store</code>.</p>
+
+<pre class="color-syntax">
+CREATE TABLE <strong>inventory</strong> (
+  inventory_id  MEDIUMINT  UNSIGNED NOT NULL AUTO_INCREMENT,
+                           <span class="color-comment">-- Simpler to use INT UNSIGNED</span>
+  film_id       SMALLINT   UNSIGNED NOT NULL,
+  store_id      TINYINT    UNSIGNED NOT NULL,
+  last_update   TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (inventory_id),
+  KEY idx_fk_film_id (film_id),
+  KEY idx_store_id_film_id (store_id, film_id),
+  CONSTRAINT fk_inventory_store FOREIGN KEY (store_id) REFERENCES store (store_id) 
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_inventory_film FOREIGN KEY (film_id) REFERENCES film (film_id) 
+    ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>There are 4581 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">store<code></code></span>&quot;</h5>
+
+<p>Each store has a manager, linked thru <code>manager_staff_id</code> to the <code>staff</code> table. The address of the store is also linked thru <code>address_id</code> to the <code>address</code> table.</p>
+
+<pre class="color-syntax">
+CREATE TABLE <strong>store</strong> (
+  store_id          TINYINT    UNSIGNED NOT NULL AUTO_INCREMENT,
+  manager_staff_id  TINYINT    UNSIGNED NOT NULL,
+  address_id        SMALLINT   UNSIGNED NOT NULL,
+  last_update       TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (store_id),
+  UNIQUE KEY idx_unique_manager (manager_staff_id),  <span class="color-comment">-- one manager manages only one store</span>
+  KEY idx_fk_address_id (address_id),
+  CONSTRAINT fk_store_staff FOREIGN KEY (manager_staff_id) REFERENCES staff (staff_id) 
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_store_address FOREIGN KEY (address_id) REFERENCES address (address_id) 
+    ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>There are 2 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">staff</span>&quot;</h5>
+
+<pre class="color-syntax">
+CREATE TABLE <strong>staff</strong> (
+  staff_id     TINYINT     UNSIGNED NOT NULL AUTO_INCREMENT,
+  first_name   VARCHAR(45) NOT NULL,
+  last_name    VARCHAR(45) NOT NULL,
+  address_id   SMALLINT    UNSIGNED NOT NULL,
+  picture      BLOB        DEFAULT NULL,           <span class="color-comment">-- Kept a picture as BLOB (up to 64KB)</span>
+  email        VARCHAR(50) DEFAULT NULL,
+  store_id     TINYINT     UNSIGNED NOT NULL,
+  active       BOOLEAN     NOT NULL DEFAULT TRUE,  <span class="color-comment">-- BOOLEAN FALSE (0) TRUE (non-0)</span>
+  username     VARCHAR(16) NOT NULL,
+  password     VARCHAR(40) BINARY DEFAULT NULL,    <span class="color-comment">-- BINARY??</span>
+  last_update  TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (staff_id),
+  KEY idx_fk_store_id (store_id),
+  KEY idx_fk_address_id (address_id),
+  CONSTRAINT fk_staff_store FOREIGN KEY (store_id) REFERENCES store (store_id)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_staff_address FOREIGN KEY (address_id) REFERENCES address (address_id)
+    ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>There are 2 records for this table, with pictures (BLOB) provided.</p>
+
+<h5>Table &quot;<span class="font-code">customer</span>&quot;</h5>
+
+<pre class="color-syntax">
+CREATE TABLE <strong>customer</strong> (
+  customer_id  SMALLINT    UNSIGNED NOT NULL AUTO_INCREMENT,
+  store_id     TINYINT     UNSIGNED NOT NULL,
+  first_name   VARCHAR(45) NOT NULL,
+  last_name    VARCHAR(45) NOT NULL,
+  email        VARCHAR(50) DEFAULT NULL,
+  address_id   SMALLINT    UNSIGNED NOT NULL,
+  active       BOOLEAN     NOT NULL DEFAULT TRUE,
+  create_date  DATETIME    NOT NULL,
+  last_update  TIMESTAMP   DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (customer_id),
+  KEY idx_fk_store_id (store_id),
+  KEY idx_fk_address_id (address_id),
+  KEY idx_last_name (last_name),
+  CONSTRAINT fk_customer_address FOREIGN KEY (address_id) REFERENCES address (address_id)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_customer_store FOREIGN KEY (store_id) REFERENCES store (store_id)
+    ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>There are 599 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">rental</span>&quot;</h5>
+
+<p>Rental rate is kept in the <code>film</code> table.</p>
+
+<pre class="color-syntax">
+CREATE TABLE <strong>rental</strong> (
+  rental_id     INT        NOT NULL AUTO_INCREMENT,
+  rental_date   DATETIME   NOT NULL,
+  inventory_id  MEDIUMINT  UNSIGNED NOT NULL,
+  customer_id   SMALLINT   UNSIGNED NOT NULL,
+  return_date   DATETIME   DEFAULT NULL,
+  staff_id      TINYINT    UNSIGNED NOT NULL,
+  last_update   TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (rental_id),
+  UNIQUE KEY  (rental_date, inventory_id, customer_id),
+  KEY idx_fk_inventory_id (inventory_id),
+  KEY idx_fk_customer_id (customer_id),
+  KEY idx_fk_staff_id (staff_id),
+  CONSTRAINT fk_rental_staff FOREIGN KEY (staff_id) REFERENCES staff (staff_id)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_rental_inventory FOREIGN KEY (inventory_id) REFERENCES inventory (inventory_id)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_rental_customer FOREIGN KEY (customer_id) REFERENCES customer (customer_id)
+    ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>There are 16,044 records for this table.</p>
+
+
+
+<h5>Table &quot;<span class="font-code">payment</span>&quot;</h5>
+
+<p>An rental can have multiple payments?</p>
+
+<pre class="color-syntax">
+CREATE TABLE <strong>payment</strong> (
+  payment_id    SMALLINT     UNSIGNED NOT NULL AUTO_INCREMENT,
+  customer_id   SMALLINT     UNSIGNED NOT NULL,
+  staff_id      TINYINT      UNSIGNED NOT NULL,
+  rental_id     INT          DEFAULT NULL,
+  amount        DECIMAL(5,2) NOT NULL,
+  payment_date  DATETIME     NOT NULL,
+  last_update   TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (payment_id),
+  KEY idx_fk_staff_id (staff_id),
+  KEY idx_fk_customer_id (customer_id),
+  CONSTRAINT fk_payment_rental FOREIGN KEY (rental_id) REFERENCES rental (rental_id)
+    ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_customer FOREIGN KEY (customer_id) REFERENCES customer (customer_id)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_payment_staff FOREIGN KEY (staff_id) REFERENCES staff (staff_id)
+    ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>There are 16,049 records for this table, more than <code>rental</code> table.</p>
+
+
+<h5>Table &quot;<span class="font-code">address</span>&quot;</h5>
+
+<p>It is unlikely that two persons share the same address. Address is often a required field for a rental transaction. So it is probably better to store directly inside the <code>customers</code> table.</p>
+
+<pre class="color-syntax">
+CREATE TABLE <strong>address</strong> (
+  address_id   SMALLINT    UNSIGNED NOT NULL AUTO_INCREMENT,
+  address      VARCHAR(50) NOT NULL,
+  address2     VARCHAR(50) DEFAULT NULL,
+  district     VARCHAR(20) NOT NULL,
+  city_id      SMALLINT    UNSIGNED NOT NULL,
+  postal_code  VARCHAR(10) DEFAULT NULL,
+  phone        VARCHAR(20) NOT NULL,
+  last_update  TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (address_id),
+  KEY idx_fk_city_id (city_id),
+  CONSTRAINT `fk_address_city` FOREIGN KEY (city_id) REFERENCES city (city_id)
+    ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>There are 603 records for this table.</p>
+
+
+<h5>Table &quot;<span class="font-code">city</span>&quot;</h5>
+
+<pre class="color-syntax">
+CREATE TABLE <strong>city</strong> (
+  city_id      SMALLINT    UNSIGNED NOT NULL AUTO_INCREMENT,
+  city         VARCHAR(50) NOT NULL,
+  country_id   SMALLINT    UNSIGNED NOT NULL,
+  last_update  TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (city_id),
+  KEY idx_fk_country_id (country_id),
+  CONSTRAINT `fk_city_country` FOREIGN KEY (country_id) REFERENCES country (country_id)
+    ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>There are 600 records for this table.</p>
+
+
+
+<h5>Table &quot;<span class="font-code">country</span>&quot;</h5>
+
+<p>Having a <code>country</code> table may facilitate the creation of pull-down menu. Alternatively, you could consider using an <code>ENUM</code> (number of countries may exceed <code>ENUM</code>'s limit). For <code>city</code>, there are just too many cities in the world that the list can never be exhaustive. Probably better to keep inside the <code>address</code> table.</p>
+<pre class="color-syntax">
+CREATE TABLE <strong>country</strong> (
+  country_id   SMALLINT    UNSIGNED NOT NULL AUTO_INCREMENT,
+  country      VARCHAR(50) NOT NULL,
+  last_update  TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (country_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>There are 109 records for this table.</p>
+
+
+
+<h4>Views</h4>
+
+<p>A <code>VIEW</code> is a virtual table (without data) that provides an alternate way to look at the data. It could be a consolidated set of columns from multiple table, or include derived column (such as total price).</p>
+<p>We could use &quot;<code>SHOW CREATE VIEW <em>viewName</em> \G</code>&quot; to show all the defaults.</p>
+
+
+<h5>View &quot;<span class="font-code">staff_list</span>&quot;</h5>
+
+<pre class="color-syntax">
+CREATE VIEW <strong>staff_list</strong>
+AS
+SELECT 
+  s.staff_id AS ID,
+  CONCAT(s.first_name, <span class="color-new">_utf8' '</span>, s.last_name) AS name,
+  a.address AS address,
+  a.postal_code AS `zip code`,
+  a.phone AS phone,
+  city.city AS city,
+  country.country AS country,
+  s.store_id AS SID
+FROM staff AS s 
+  JOIN address AS a ON s.address_id = a.address_id
+  JOIN city ON a.city_id = city.city_id
+  JOIN country ON city.country_id = country.country_id;</pre>
+
+
+<ul>
+<li>String literal can be expressed with optional introducer and collation in the form of:
+<pre class="color-example">
+<span class="color-comment">-- Syntax</span>
+[_<em>charsetName</em>]'<em>stringLiteral</em>' [COLLATE <em>collationName</em>]
+ 
+<span class="color-comment">-- Example</span>
+SELECT _utf8' ';   <span class="color-comment">-- space in UTF8</span></pre>
+</li>
+</ul>
+
+<p>For Example,</p>
+
+
+<pre class="color-example">
+mysql&gt; <strong>SELECT * FROM staff_list;</strong>
++----+--------------+----------------------+----------+-------------+------------+-----------+-----+
+| ID | name         | address              | zip code | phone       | city       | country   | SID |
++----+--------------+----------------------+----------+-------------+------------+-----------+-----+
+|  1 | Mike Hillyer | 23 Workhaven Lane    |          | 14033335568 | Lethbridge | Canada    |   1 |
+|  2 | Jon Stephens | 1411 Lillydale Drive |          | 6172235589  | Woodridge  | Australia |   2 |
++----+--------------+----------------------+----------+-------------+------------+-----------+-----+</pre>
+
+<h5>View &quot;<span class="font-code">customer_list</span>&quot;</h5>
+
+<pre class="color-syntax">
+CREATE VIEW <strong>customer_list</strong>
+AS
+SELECT 
+  cu.customer_id AS ID,
+  CONCAT(cu.first_name, _utf8' ', cu.last_name) AS name,
+  a.address AS address,
+  a.postal_code AS `zip code`,
+  a.phone AS phone,
+  city.city AS city,
+  country.country AS country,
+  IF(cu.active, _utf8'active', _utf8'') AS notes,
+  cu.store_id AS SID
+FROM customer AS cu 
+  JOIN address AS a ON cu.address_id = a.address_id
+  JOIN city ON a.city_id = city.city_id
+  JOIN country ON city.country_id = country.country_id;</pre>
+
+
+<h5>View &quot;<span class="font-code">film_list</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE VIEW <strong>film_list</strong>
+AS
+SELECT 
+  film.film_id AS FID,
+  film.title AS title,
+  film.description AS description,
+  category.name AS category,
+  film.rental_rate AS price,
+  film.length AS length,
+  film.rating AS rating,
+  <span class="color-new">GROUP_CONCAT(CONCAT(actor.first_name, _utf8' ', actor.last_name) SEPARATOR ', ')</span> AS actors
+FROM category 
+  <span class="color-new">LEFT JOIN</span> film_category ON category.category_id = film_category.category_id
+  <span class="color-new">LEFT JOIN</span> film ON film_category.film_id = film.film_id
+  <span class="color-new">JOIN</span> film_actor ON film.film_id = film_actor.film_id
+  <span class="color-new">JOIN</span> actor ON film_actor.actor_id = actor.actor_id
+<span class="color-new">GROUP BY film.film_id</span>;</pre>
+
+<ul>
+<li>The <code>GROUP_CONCAT(<em>col</em> SEPARATOR <em>str</em>)</code> <code>GROUP BY</code> aggregate function can be used to produce a concatenate string for each group returned by the <code>GROUP BY</code> clause. Each <code>film_id</code> (in <code>GROUP BY</code>) has many actors.</li>
+<li>For example,
+<pre class="color-example">
+mysql&gt; SELECT * FROM film_list LIMIT 1 \G
+*************************** 1. row ***************************
+        FID: 1
+      title: ACADEMY DINOSAUR
+description: A Epic Drama of a Feminist And a Mad Scientist who must Battle
+             a Teacher in The Canadian Rockies
+   category: Documentary
+      price: 0.99
+     length: 86
+     rating: PG
+     actors: <span class="color-new">PENELOPE GUINESS, CHRISTIAN GABLE, LUCILLE TRACY, SANDRA PECK, JOHNNY CAGE,
+             MENA TEMPLE, WARREN NOLTE, OPRAH KILMER, ROCK DUKAKIS, MARY KEITEL</span></pre>
+</li>
+
+</ul>
+
+
+<h5>View &quot;<span class="font-code">nicer_but_slower_film_list</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE VIEW <strong>nicer_but_slower_film_list</strong>
+AS
+SELECT 
+  film.film_id AS FID,
+  film.title AS title,
+  film.description AS description,
+  category.name AS category,
+  film.rental_rate AS price,
+  film.length AS length,
+  film.rating AS rating,
+  <span class="color-new">GROUP_CONCAT(
+    CONCAT(
+       CONCAT(UCASE(SUBSTR(actor.first_name, 1, 1)),   <span class="color-comment">-- first_name initial-cap</span>
+              LCASE(SUBSTR(actor.first_name, 2, LENGTH(actor.first_name))),
+       _utf8' ',                                       <span class="color-comment">-- space</span>
+       CONCAT(UCASE(SUBSTR(actor.last_name, 1, 1)),    <span class="color-comment">-- last_name initial-cap</span>
+              LCASE(SUBSTR(actor.last_name, 2, LENGTH(actor.last_name))))))  <span class="color-comment">-- end of outer CONCAT</span>
+    SEPARATOR ', ')</span> AS actors
+FROM category 
+  LEFT JOIN film_category ON category.category_id = film_category.category_id 
+  LEFT JOIN film ON film_category.film_id = film.film_id
+  JOIN film_actor ON film.film_id = film_actor.film_id
+  JOIN actor ON film_actor.actor_id = actor.actor_id
+<span class="color-new">GROUP BY film.film_id</span>;</pre>
+
+<ul>
+<li>The complex <code>CONCAT()</code> is used to produce camel-case (initial-capitalized) for the <code>first_name</code> and <code>last_name</code>, e.g., &quot;Penelope Guiness&quot;.</li>
+<li><code>LENGTH(<em>str</em>)</code> returns the length of the string.</li>
+<li><code>SUBSTR(<em>str</em>, <em>fromIndex</em>, <em>length</em>)</code> returns the substring from index of length (index begins at 1).</li>
+<li><code>UCASE(<em>str</em>)</code> and <code>LCASE(<em>str</em>)</code> returns the uppercase and lowercase.</li>
+<li>This view is exactly the same as <code>film_list</code> view. Why is it called <code>nicer_but_slower_film_list</code>?</li>
+</ul>
+
+<h5>View &quot;<span class="font-code">sales_by_store</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE VIEW <strong>sales_by_store</strong>
+AS
+SELECT
+  CONCAT(c.city, _utf8',', cy.country) AS store,
+  CONCAT(m.first_name, _utf8' ', m.last_name) AS manager,
+  <span class="color-new">SUM(p.amount)</span> AS total_sales
+FROM payment AS p
+  INNER JOIN rental AS r ON p.rental_id = r.rental_id
+  INNER JOIN inventory AS i ON r.inventory_id = i.inventory_id
+  INNER JOIN store AS s ON i.store_id = s.store_id
+  INNER JOIN address AS a ON s.address_id = a.address_id
+  INNER JOIN city AS c ON a.city_id = c.city_id
+  INNER JOIN country AS cy ON c.country_id = cy.country_id
+  INNER JOIN staff AS m ON s.manager_staff_id = m.staff_id
+<span class="color-new">GROUP BY s.store_id</span>
+ORDER BY cy.country, c.city;</pre>
+
+<p>The <code>SUM()</code> <code>GROUP BY</code> aggregate function applies to each group of <code>store_id</code>, i.e., per store.</p>
+<p>For example,</p>
+<pre class="color-example">
++---------------------+--------------+-------------+
+| store               | manager      | total_sales |
++---------------------+--------------+-------------+
+| Woodridge,Australia | Jon Stephens |    33726.77 |
+| Lethbridge,Canada   | Mike Hillyer |    33679.79 |
++---------------------+--------------+-------------+</pre>
+
+<h5>View &quot;<span class="font-code">sales_by_film_category</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE VIEW <strong>sales_by_film_category</strong>
+AS
+SELECT
+  c.name AS category,
+  <span class="color-new">SUM(p.amount)</span> AS total_sales
+FROM payment AS p
+  INNER JOIN rental AS r ON p.rental_id = r.rental_id
+  INNER JOIN inventory AS i ON r.inventory_id = i.inventory_id
+  INNER JOIN film AS f ON i.film_id = f.film_id
+  INNER JOIN film_category AS fc ON f.film_id = fc.film_id
+  INNER JOIN category AS c ON fc.category_id = c.category_id
+<span class="color-new">GROUP BY c.name</span>
+ORDER BY total_sales DESC;</pre>
+
+<p>The <code>GROUP BY</code> aggregate function <code>SUM()</code> applies to each group of <code>c.name</code>, i.e., per <code>category</code>'s <code>name</code>.</p>
+
+<h5>View &quot;<span class="font-code">actor_info</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE 
+  <span class="color-new">DEFINER=CURRENT_USER
+  SQL SECURITY INVOKER</span>
+  VIEW <strong>actor_info</strong>
+AS
+SELECT
+  a.actor_id,
+  a.first_name,
+  a.last_name,
+  GROUP_CONCAT(
+     DISTINCT
+     CONCAT(c.name, ': ',
+        (<span class="color-new">SELECT 
+           GROUP_CONCAT(f.title ORDER BY f.title SEPARATOR ', ')
+           FROM sakila.film f
+           INNER JOIN sakila.film_category fc ON f.film_id = fc.film_id
+           INNER JOIN sakila.film_actor fa ON f.film_id = fa.film_id
+           WHERE fc.category_id = c.category_id AND fa.actor_id = a.actor_id)
+        </span>)  <span class="color-comment">-- end CONCAT</span>
+     ORDER BY c.name
+     SEPARATOR '; ') AS film_info
+FROM sakila.actor a
+LEFT JOIN sakila.film_actor fa ON a.actor_id = fa.actor_id
+LEFT JOIN sakila.film_category fc ON fa.film_id = fc.film_id
+LEFT JOIN sakila.category c ON fc.category_id = c.category_id
+<span class="color-new">GROUP BY
+  a.actor_id,
+  a.first_name,
+  a.last_name</span>;</pre>
+
+<ul>
+<li><code>SQL SECURITY INVOKER</code> specifies that the it executes with the privileges of the user who invoke it (instead of the <code>DEFINER</code>).</li>
+<li><code>GROUP_CONCAT([DISTINCT] <em>col</em> [ORDER BY ...] [SEPARATOR ...])</code>: You can apply optional <code>DISTINCT</code> and <code>ORDER BY</code> to <code>GROUP_CONCAT()</code>.</li>
+
+<li>For example,
+<pre class="color-example">
+mysql&gt; <strong>SELECT * FROM actor_info LIMIT 1 \G</strong>
+*************************** 1. row ***************************
+  actor_id: 1
+first_name: PENELOPE
+ last_name: GUINESS
+ film_info: Animation: ANACONDA CONFESSIONS;
+            Children: LANGUAGE COWBOY;
+            Classics: COLOR PHILADELPHIA, WESTWARD SEABISCUIT;
+            ......</pre></li>
+</ul>
+
+
+<h4>Stored Routines: Procedures and Functions</h4>
+
+<h5>Procedure &quot;<span class="font-code">rewards_report</span>&quot;</h5>
+
+<pre class="color-syntax">
+<span class="color-comment">-- Change the MySQL statement delimiter to // as it crashes with procedure's delimiter ';'</span>
+DELIMITER //
+ 
+CREATE PROCEDURE <strong>rewards_report</strong> (
+   IN min_monthly_purchases TINYINT UNSIGNED,              <span class="color-comment">-- min number of purchases</span>
+   IN min_dollar_amount_purchased DECIMAL(10,2) UNSIGNED,  -- <span class="color-comment">min dollar amount purchased</span>
+   OUT count_rewardees INT                                 <span class="color-comment">-- number of customers to be rewarded</span>
+)
+LANGUAGE SQL
+NOT DETERMINISTIC
+READS SQL DATA
+SQL SECURITY DEFINER
+COMMENT 'Provides a customizable report on best customers'
+ 
+proc: BEGIN
+   DECLARE last_month_start DATE;
+   DECLARE last_month_end DATE;
+
+   <span class="color-comment">/* Some sanity checks... */</span>
+   IF min_monthly_purchases = 0 THEN
+      SELECT 'Minimum monthly purchases parameter must be &gt; 0';
+      LEAVE proc;
+   END IF;
+   IF min_dollar_amount_purchased = 0.00 THEN
+      SELECT 'Minimum monthly dollar amount purchased parameter must be &gt; $0.00';
+      LEAVE proc;
+   END IF;
+ 
+   <span class="color-comment">/* Determine start and end time periods */</span>
+   SET last_month_start = DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH);
+   SET last_month_start = STR_TO_DATE(
+                             CONCAT(YEAR(last_month_start), '-', MONTH(last_month_start), '-01'),
+                             '%Y-%m-%d');
+   SET last_month_end = LAST_DAY(last_month_start);
+
+   <span class="color-comment">/* Create a temporary storage area for Customer IDs */</span>
+   CREATE TEMPORARY TABLE tmpCustomer (customer_id SMALLINT UNSIGNED NOT NULL PRIMARY KEY);
+
+   <span class="color-comment">/* Find all customers meeting the monthly purchase requirements */</span>
+   INSERT INTO tmpCustomer (customer_id)
+     SELECT p.customer_id
+     FROM payment AS p
+     WHERE DATE(p.payment_date) BETWEEN last_month_start AND last_month_end
+     GROUP BY customer_id
+     HAVING 
+       SUM(p.amount) &gt; min_dollar_amount_purchased
+       AND COUNT(customer_id) &gt; min_monthly_purchases;
+
+   <span class="color-comment">/* Populate OUT parameter with count of found customers */</span>
+   SELECT COUNT(*) FROM tmpCustomer INTO count_rewardees;
+
+   <span class="color-comment">/* Output ALL customer information of matching rewardees.
+      Customize output as needed. */</span>
+   SELECT c.*
+     FROM tmpCustomer AS t
+     INNER JOIN customer AS c ON t.customer_id = c.customer_id;
+
+   <span class="color-comment">/* Clean up */</span>
+   DROP TABLE tmpCustomer;
+END //
+ 
+<span class="color-comment">-- Change the MySQL delimiter back to ';'</span>
+DELIMITER ;</pre>
+
+<p>To test the procedure,</p>
+<pre class="color-example">
+mysql&gt; CALL rewards_report(2, 10, @numRewardees);
+
+mysel&gt; SELECT @numRewardees;</pre>
+
+
+<h5>Function &quot;<span class="font-code">get_customer_balance</span>&quot;</h5>
+
+<pre class="color-syntax">
+DELIMITER $$
+ 
+CREATE FUNCTION <strong>get_customer_balance</strong>(p_customer_id INT, p_effective_date DATETIME) RETURNS DECIMAL(5,2)
+   DETERMINISTIC
+   READS SQL DATA
+BEGIN
+   <span class="color-comment"># OK, WE NEED TO CALCULATE THE CURRENT BALANCE GIVEN A CUSTOMER_ID AND A DATE
+   # THAT WE WANT THE BALANCE TO BE EFFECTIVE FOR. THE BALANCE IS:
+   #   1) RENTAL FEES FOR ALL PREVIOUS RENTALS
+   #   2) ONE DOLLAR FOR EVERY DAY THE PREVIOUS RENTALS ARE OVERDUE
+   #   3) IF A FILM IS MORE THAN RENTAL_DURATION * 2 OVERDUE, CHARGE THE REPLACEMENT_COST
+   #   4) SUBTRACT ALL PAYMENTS MADE BEFORE THE DATE SPECIFIED</span>
+
+   DECLARE v_rentfees DECIMAL(5,2);  <span class="color-comment"># FEES PAID TO RENT THE VIDEOS INITIALLY</span>
+   DECLARE v_overfees INTEGER;       <span class="color-comment"># LATE FEES FOR PRIOR RENTALS</span>
+   DECLARE v_payments DECIMAL(5,2);  <span class="color-comment"># SUM OF PAYMENTS MADE PREVIOUSLY</span>
+
+   SELECT IFNULL(SUM(film.rental_rate), 0) INTO v_rentfees
+     FROM film, inventory, rental
+     WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date &lt;= p_effective_date
+      AND rental.customer_id = p_customer_id;
+ 
+   SELECT IFNULL(
+             SUM(
+                IF((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) &gt; film.rental_duration,
+                   ((TO_DAYS(rental.return_date) - TO_DAYS(rental.rental_date)) - film.rental_duration), 0)),
+             0)
+          INTO v_overfees
+   FROM rental, inventory, film
+   WHERE film.film_id = inventory.film_id
+      AND inventory.inventory_id = rental.inventory_id
+      AND rental.rental_date &lt;= p_effective_date
+      AND rental.customer_id = p_customer_id;
+ 
+   SELECT IFNULL(SUM(payment.amount), 0) INTO v_payments
+   FROM payment
+   WHERE payment.payment_date &lt;= p_effective_date
+      AND payment.customer_id = p_customer_id;
+ 
+   RETURN v_rentfees + v_overfees - v_payments;
+END $$
+DELIMITER ;</pre>
+
+<h5>Procedure &quot;<span class="font-code">film_in_stock</span>&quot;</h5>
+
+<pre class="color-syntax">
+DELIMITER $$
+<span class="color-comment">-- Given the film_id and store_id, find the film count</span>
+CREATE PROCEDURE <strong>film_in_stock</strong>(
+   IN  p_film_id INT,
+   IN  p_store_id INT,
+   OUT p_film_count INT)
+READS SQL DATA
+BEGIN
+   SELECT inventory_id
+     FROM inventory
+     WHERE film_id = p_film_id
+       AND store_id = p_store_id
+       AND inventory_in_stock(inventory_id);
+ 
+   SELECT FOUND_ROWS() INTO p_film_count;
+END $$
+DELIMITER ;</pre>
+
+<h5>Procedure &quot;<span class="font-code">film_not_in_stock</span>&quot;</h5>
+
+<pre class="color-syntax">
+DELIMITER $$
+CREATE PROCEDURE <strong>film_not_in_stock</strong>(IN p_film_id INT, IN p_store_id INT, OUT p_film_count INT)
+READS SQL DATA
+BEGIN
+   SELECT inventory_id
+   FROM inventory
+   WHERE film_id = p_film_id
+   AND store_id = p_store_id
+   AND NOT inventory_in_stock(inventory_id);
+ 
+   SELECT FOUND_ROWS() INTO p_film_count;
+END $$
+DELIMITER ;</pre>
+
+<h5>Function &quot;<span class="font-code">inventory_held_by_customer</span>&quot;</h5>
+
+<pre class="color-syntax">
+DELIMITER $$
+CREATE FUNCTION <strong>inventory_held_by_customer</strong>(p_inventory_id INT) RETURNS INT
+READS SQL DATA
+BEGIN
+   DECLARE v_customer_id INT;
+   DECLARE EXIT HANDLER FOR NOT FOUND RETURN NULL;
+
+   SELECT customer_id INTO v_customer_id
+   FROM rental
+   WHERE return_date IS NULL AND inventory_id = p_inventory_id;
+
+   RETURN v_customer_id;
+END $$
+DELIMITER ;</pre>
+
+<h5>Function &quot;<span class="font-code">inventory_in_stock</span>&quot;</h5>
+<pre class="color-syntax">
+DELIMITER $$
+CREATE FUNCTION <strong>inventory_in_stock</strong>(p_inventory_id INT) RETURNS BOOLEAN
+READS SQL DATA
+BEGIN
+   DECLARE v_rentals INT;
+   DECLARE v_out     INT;
+
+   <span class="color-comment"># AN ITEM IS IN-STOCK IF THERE ARE EITHER NO ROWS IN THE rental TABLE
+   # FOR THE ITEM OR ALL ROWS HAVE return_date POPULATED</span>
+   SELECT COUNT(*) INTO v_rentals
+   FROM rental
+   WHERE inventory_id = p_inventory_id;
+ 
+   IF v_rentals = 0 THEN
+      RETURN TRUE;
+   END IF;
+ 
+   SELECT COUNT(rental_id) INTO v_out
+   FROM inventory LEFT JOIN rental USING(inventory_id)
+   WHERE inventory.inventory_id = p_inventory_id AND rental.return_date IS NULL;
+ 
+   IF v_out &gt; 0 THEN
+      RETURN FALSE;
+   ELSE
+      RETURN TRUE;
+   END IF;
+END $$
+DELIMITER ;</pre>
+
+<h4>Triggers</h4>
+<p>The <code>film_text</code> table duplicates information from <code>film</code> table to build a <code>FULLTEXT</code> search index. To ensure consistency between the two tables, triggers are used for <code>INSERT</code>, <code>UPDATE</code> and <code>DELETE</code> on each row of <code>film</code> table, that perform corresponding actions in the <code>film_text</code> table.</p>
+
+<h5>Trigger &quot;<span class="font-code">ins_film</span>&quot;</h5>
+<pre class="color-syntax">
+DELIMITER $$
+<span class="color-comment">-- Trigger for INSERT INTO film table
+-- Copy information to film_text table</span>
+CREATE TRIGGER `<strong>ins_film</strong>` AFTER INSERT ON `film` FOR EACH ROW 
+BEGIN
+   INSERT INTO film_text (film_id, title, description)
+      VALUES (new.film_id, new.title, new.description);
+END$$
+DELIMITER ;</pre>
+
+<h5>Trigger &quot;<span class="font-code">upd_film</span>&quot;</h5>
+<pre class="color-syntax">
+<span class="color-comment">-- Trigger for UPDATE film table
+-- Update the film_text table</span>
+DELIMITER $$
+CREATE TRIGGER `<strong>upd_film</strong>` AFTER UPDATE ON `film` FOR EACH ROW 
+BEGIN
+   IF (old.title != new.title) or (old.description != new.description)
+   THEN
+      UPDATE film_text
+      SET title=new.title,
+          description=new.description,
+          film_id=new.film_id
+      WHERE film_id=old.film_id;
+   END IF;
+END$$
+DELIMITER ;</pre>
+
+<h5>Trigger &quot;<span class="font-code">del_film</span>&quot;</h5>
+<pre class="color-syntax">
+<span class="color-comment">-- Trigger for DELECT FROM film table
+-- DELETE from film_text table as well</span>
+DELIMITER $$
+CREATE TRIGGER `<strong>del_film</strong>` AFTER DELETE ON `film` FOR EACH ROW 
+BEGIN
+   DELETE FROM film_text WHERE film_id = old.film_id;
+END$$
+DELIMITER ;</pre>
+
+<h3>Microsoft Northwind Trader Database</h3>
+
+<p>For MS SQL Server, you can download the Northwind database from &quot;<a href="http://www.microsoft.com/en-us/download/details.aspx?id=23654">Northwind and Pubs Sample Databases for SQL Server 2000</a>&quot;. Run the downloaded &quot;<code>.msi</code>&quot; file, it will extract the files into &quot;<code>C:\SQL Server 2000 Sample Databases</code>&quot;. The SQL statements are kept in &quot;<code>instnwnd.sql</code>&quot;.</p>
+<p>For MS Access &rArr; Launch Access &rArr; Choose &quot;Sample&quot; &rArr; Northwind Sample Database &rArr; Download.</p>
+<p>There are various MySQL ports available. For example, &quot;northwindextended&quot; project @ <a href="http://code.google.com/p/northwindextended">http://code.google.com/p/northwindextended</a>.</p>
+
+<h4>Database and Tables</h4>
+<p>There are 13 tables as follows:</p>
+<img class="image-center" src="https://www.ntu.edu.sg/home/ehchua/programming/sql/images/SampleNorthwind.png" alt="Database diagram" />
+
+<h5>Table &quot;<span class="font-code">Customers</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE TABLE `<strong>Customers</strong>` (
+   `CustomerID`   VARCHAR(5)   NOT NULL,
+       <span class="color-comment">-- First 5 letters of CompanyName
+       -- Probably better to use an UNSIGNED INT</span>
+   `CompanyName`  VARCHAR(40)  NOT NULL,
+   `ContactName`  VARCHAR(30),
+   `ContactTitle` VARCHAR(30),
+   `Address`      VARCHAR(60),
+   `City`         VARCHAR(15),
+   `Region`       VARCHAR(15),
+   `PostalCode`   VARCHAR(10),
+   `Country`      VARCHAR(15),
+   `Phone`        VARCHAR(24),
+   `Fax`          VARCHAR(24),
+   PRIMARY KEY (`CustomerID`),
+   INDEX (`City`),
+   INDEX (`CompanyName`),
+   INDEX (`PostalCode`),
+   INDEX (`Region`)
+       <span class="color-comment">-- Build indexes on these columns for fast search</span>
+);</pre>
+
+<p>There are 93 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">Employees</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE TABLE `<strong>Employees</strong>` (
+   `EmployeeID`      MEDIUMINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+                     <span class="color-comment">-- [0, 65535]</span>
+   `LastName`        VARCHAR(20)         NOT NULL,
+   `FirstName`       VARCHAR(10)         NOT NULL,
+   `Title`           VARCHAR(30),  <span class="color-comment">-- e.g., 'Sales Coordinator'</span>
+   `TitleOfCourtesy` VARCHAR(25),  <span class="color-comment">-- e.g., 'Mr.' 'Ms.' (ENUM??)</span>
+   `BirthDate`       DATE,         <span class="color-comment">-- 'YYYY-MM-DD'</span>
+   `HireDate`        DATE,
+   `Address`         VARCHAR(60),
+   `City`            VARCHAR(15),
+   `Region`          VARCHAR(15),
+   `PostalCode`      VARCHAR(10),
+   `Country`         VARCHAR(15),
+   `HomePhone`       VARCHAR(24),
+   `Extension`       VARCHAR(4),
+   `Photo`           BLOB,                          <span class="color-comment">-- 64KB</span>
+   `Notes`           TEXT                NOT NULL,  <span class="color-comment">-- 64KB</span>
+   `ReportsTo`       MEDIUMINT UNSIGNED  NULL,  <span class="color-comment">-- Manager's ID
+                                                -- Allow NULL for boss</span>
+   `PhotoPath`       VARCHAR(255),
+   `Salary`          INT,
+   INDEX (`LastName`),
+   INDEX (`PostalCode`),
+   PRIMARY KEY (`EmployeeID`),
+   FOREIGN KEY (`ReportsTo`) REFERENCES `Employees` (`EmployeeID`)
+);</pre>
+
+<p>To load this table with the sample data provided, you need to move the second record as the first record and hardcode the <code>employeeID</code>. There are 9 records for this table. The photos are included as hex data.</p>
+
+<p>To list the worker names under the manager names, you need to join the <code>employee</code> table to itself. Use <code>LEFT JOIN</code> to retrieve <code>ReportsTo</code> of <code>NULL</code>.</p>
+
+<pre class="color-example">
+<span class="color-comment">-- List the worker names under the managers' ID</span>
+SELECT reportsTo AS `Manager ID`, CONCAT(employees.FirstName, ' ', employees.LastName) AS `Workers`
+FROM employees
+ORDER BY reportsTo;
++------------+------------------+
+| Manager ID | Workers          |
++------------+------------------+
+|       NULL | Andrew Fuller    |
+|          2 | Nancy Davolio    |
+|          2 | Janet Leverling  |
+|          2 | Margaret Peacock |
+|          2 | Steven Buchanan  |
+|          2 | Laura Callahan   |
+|          5 | Michael Suyama   |
+|          5 | Robert King      |
+|          5 | Anne Dodsworth   |
++------------+------------------+
+ 
+<span class="color-comment">-- List the worker name under the managers' name
+-- Need to use a LEFT JOIN</span>
+SELECT
+  CONCAT(managers.FirstName, ' ', managers.LastName) AS `Managers`, 
+  CONCAT(employees.FirstName, ' ', employees.LastName) AS `Workers`
+FROM
+  employees LEFT JOIN employees AS managers ON employees.ReportsTo = managers.employeeID
+ORDER BY
+  managers.employeeID;
++-----------------+------------------+
+| Managers        | Workers          |
++-----------------+------------------+
+| NULL            | Andrew Fuller    |
+| Andrew Fuller   | Margaret Peacock |
+| Andrew Fuller   | Laura Callahan   |
+| Andrew Fuller   | Nancy Davolio    |
+| Andrew Fuller   | Steven Buchanan  |
+| Andrew Fuller   | Janet Leverling  |
+| Steven Buchanan | Robert King      |
+| Steven Buchanan | Anne Dodsworth   |
+| Steven Buchanan | Michael Suyama   |
++-----------------+------------------+</pre>
+
+<h5>Table &quot;<span class="font-code">Region</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE TABLE `<strong>Region</strong>` (
+   `RegionID`           TINYINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+                        <span class="color-comment">-- [0,255]</span>
+   `RegionDescription`  VARCHAR(50)       NOT NULL,
+                        <span class="color-comment">-- e.g., 'Eastern','Western','Northern','Southern'
+                        -- Could use an ENUM and eliminate this table</span>
+   PRIMARY KEY (`RegionID`)
+);</pre>
+
+<p>There are 4 records for this table (<code>'Eastern'</code>, <code>'Western'</code>, <code>'Northern'</code>, <code>'Southern'</code>).</p>
+
+
+<h5>Table &quot;<span class="font-code">Territories</span>&quot;</h5>
+<pre class="color-syntax">
+<span class="color-comment">-- e.g., ('02116', 'Boston', 1)</span>
+CREATE TABLE `<strong>Territories</strong>` (
+   `TerritoryID`           VARCHAR(20)       NOT NULL,  <span class="color-comment">-- ZIP code</span>
+   `TerritoryDescription`  VARCHAR(50)       NOT NULL,  <span class="color-comment">-- Name</span>
+   `RegionID`              TINYINT UNSIGNED  NOT NULL,
+                           <span class="color-comment">-- Could use an ENUM to eliminate `Region` table</span>
+   PRIMARY KEY (`TerritoryID`),
+   FOREIGN KEY (`RegionID`) REFERENCES `Region` (`RegionID`)
+);</pre>
+
+<p>There are 53 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">EmployeeTerritories</span>&quot;</h5>
+<pre class="color-syntax">
+<span class="color-comment">-- Many-to-many Junction table between Employee and Territory</span>
+CREATE TABLE `<strong>EmployeeTerritories</strong>` (
+   `EmployeeID`  MEDIUMINT UNSIGNED  NOT NULL,
+   `TerritoryID` VARCHAR(20) NOT NULL,
+   PRIMARY KEY (`EmployeeID`, `TerritoryID`),
+   FOREIGN KEY (`EmployeeID`) REFERENCES `Employees` (`EmployeeID`),
+   FOREIGN KEY (`TerritoryID`) REFERENCES `Territories` (`TerritoryID`)
+);</pre>
+
+<p>There are 49 records for this table. Each employee has more than one territories. Some territories are not covered (53-49=4).</p>
+
+<pre class="color-example">
+<strong>SELECT EmployeeID, COUNT(*) from EmployeeTerritories GROUP BY EmployeeID WITH ROLLUP;</strong>
++------------+----------+
+| EmployeeID | COUNT(*) |
++------------+----------+
+|          1 |        2 |
+|          2 |        7 |
+|          3 |        4 |
+|          4 |        3 |
+|          5 |        7 |
+|          6 |        5 |
+|          7 |       10 |
+|          8 |        4 |
+|          9 |        7 |
+|       NULL |       49 |
++------------+----------+
+ 
+<strong>SELECT TerritoryID, TerritoryDescription
+FROM Territories LEFT JOIN EmployeeTerritories using (TerritoryID)
+WHERE EmployeeID IS NULL;</strong>
++-------------+----------------------+
+| TerritoryID | TerritoryDescription |
++-------------+----------------------+
+| 29202       | Columbia             |
+| 72716       | Bentonville          |
+| 75234       | Dallas               |
+| 78759       | Austin               |
++-------------+----------------------+</pre>
+
+<h5>Table &quot;<span class="font-code">Categories</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE TABLE `<strong>Categories</strong>` (
+   `CategoryID`   TINYINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+                  <span class="color-comment">-- [0, 255], not expected to be large</span>
+   `CategoryName` VARCHAR(30)       NOT NULL,
+                  <span class="color-comment">-- e.g., 'Beverages','Condiments',etc</span>
+   `Description`  TEXT,       <span class="color-comment">-- up to 64KB characters</span>
+   `Picture`      BLOB,       <span class="color-comment">-- up to 64KB binary</span>
+   PRIMARY KEY  (`CategoryID`),
+   UNIQUE INDEX (`CategoryName`)
+      <span class="color-comment">-- Build index on this unique-value column for fast search</span>
+);</pre>
+
+<p>There are 8 records for the table, with pictures in hex code.</p>
+
+<h5>Table &quot;<span class="font-code">Suppliers</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE TABLE `<strong>Suppliers</strong>` (
+   `SupplierID`   SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+                                     <span class="color-comment">-- [0, 65535]</span>
+   `CompanyName`  VARCHAR(40)        NOT NULL,
+   `ContactName`  VARCHAR(30),
+   `ContactTitle` VARCHAR(30),
+   `Address`      VARCHAR(60),
+   `City`         VARCHAR(15),
+   `Region`       VARCHAR(15),
+   `PostalCode`   VARCHAR(10),
+   `Country`      VARCHAR(15),
+   `Phone`        VARCHAR(24),
+   `Fax`          VARCHAR(24),
+   `HomePage`     TEXT,          <span class="color-comment">-- 64KB?? VARCHAR(255)?</span>
+    PRIMARY KEY (`SupplierID`),
+    INDEX (`CompanyName`),       <span class="color-comment">-- UNIQUE?</span>
+    INDEX (`PostalCode`)
+);</pre>
+
+<p>There are 29 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">Products</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE TABLE `<strong>Products</strong>` (
+   `ProductID`       SMALLINT UNSIGNED       NOT NULL AUTO_INCREMENT,
+   `ProductName`     VARCHAR(40)             NOT NULL,
+   `SupplierID`      SMALLINT UNSIGNED       NOT NULL,  <span class="color-comment">-- one supplier only</span>
+   `CategoryID`      TINYINT UNSIGNED        NOT NULL,
+   `QuantityPerUnit` VARCHAR(20),            <span class="color-comment">-- e.g., '10 boxes x 20 bags'</span>
+   `UnitPrice`       DECIMAL(10,2) UNSIGNED  DEFAULT 0,
+   `UnitsInStock`    SMALLINT                DEFAULT 0,  <span class="color-comment">-- Negative??</span>
+   `UnitsOnOrder`    SMALLINT UNSIGNED       DEFAULT 0,
+   `ReorderLevel`    SMALLINT UNSIGNED       DEFAULT 0,
+   `Discontinued`    BOOLEAN                 NOT NULL DEFAULT FALSE,
+   PRIMARY KEY (`ProductID`),
+   INDEX (`ProductName`),
+   FOREIGN KEY (`CategoryID`) REFERENCES `Categories` (`CategoryID`),
+   FOREIGN KEY (`SupplierID`) REFERENCES `Suppliers` (`SupplierID`)
+);</pre>
+
+<p>There are 77 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">Shippers</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE TABLE `<strong>Shippers</strong>` (
+   `ShipperID`   TINYINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+   `CompanyName` VARCHAR(40)       NOT NULL,
+   `Phone`       VARCHAR(24),
+   PRIMARY KEY (`ShipperID`)
+);</pre>
+
+<p>There are 3 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">Orders</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE TABLE `<strong>Orders</strong>` (
+   `OrderID`        INT UNSIGNED        NOT NULL AUTO_INCREMENT,
+                    <span class="color-comment">-- Use UNSIGNED INT to avoid run-over</span>
+   `CustomerID`     VARCHAR(5),
+   `EmployeeID`     MEDIUMINT UNSIGNED  NOT NULL,
+   `OrderDate`      DATE,
+   `RequiredDate`   DATE,
+   `ShippedDate`    DATE,
+   `ShipVia`        TINYINT UNSIGNED,
+   `Freight`        DECIMAL(10,2) UNSIGNED  DEFAULT 0,
+   `ShipName`       VARCHAR(40),
+   `ShipAddress`    VARCHAR(60),
+   `ShipCity`       VARCHAR(15),
+   `ShipRegion`     VARCHAR(15),
+   `ShipPostalCode` VARCHAR(10),
+   `ShipCountry`    VARCHAR(15),
+   PRIMARY KEY (`OrderID`),
+   INDEX (`OrderDate`),
+   INDEX (`ShippedDate`),
+   INDEX (`ShipPostalCode`),
+   FOREIGN KEY (`CustomerID`) REFERENCES `Customers` (`CustomerID`),
+   FOREIGN KEY (`EmployeeID`) REFERENCES `Employees` (`EmployeeID`),
+   FOREIGN KEY (`ShipVia`)    REFERENCES `Shippers`  (`ShipperID`)
+);</pre>
+
+<p>There are 830 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">Order Details</span>&quot;</h5>
+<pre class="color-syntax">
+<span class="color-comment">-- Many-to-many Junction table between Orders and Products</span>
+CREATE TABLE `<strong>Order Details</strong>` (
+   `OrderID`   INT UNSIGNED           NOT NULL,
+   `ProductID` SMALLINT UNSIGNED      NOT NULL,
+   `UnitPrice` DECIMAL(8,2) UNSIGNED  NOT NULL DEFAULT 999999.99,
+                                      <span class="color-comment">-- max value as default</span>
+   `Quantity`  SMALLINT(2) UNSIGNED   NOT NULL DEFAULT 1,
+   `Discount`  DOUBLE(8,0)            NOT NULL DEFAULT 0, <span class="color-comment">-- e.g., 0.15</span>
+   PRIMARY KEY (`OrderID`, `ProductID`),
+   FOREIGN KEY (`OrderID`)   REFERENCES `Orders`   (`OrderID`),
+   FOREIGN KEY (`ProductID`) REFERENCES `Products` (`ProductID`)
+);</pre>
+
+<p>There are 2155 records for this table.</p>
+
+<pre class="color-example">
+<span class="color-comment">-- List the number of `Order Details` for each OrderID</span>
+SELECT OrderID, COUNT(OrderID)
+FROM Orders INNER JOIN `Order Details` USING (OrderID)
+GROUP BY OrderID
+WITH ROLLUP;</pre>
+
+<h5>Table &quot;<span class="font-code">CustomerDemographics</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE TABLE `<strong>CustomerDemographics</strong>` (
+   `CustomerTypeID`  VARCHAR(10)  NOT NULL,
+   `CustomerDesc`    TEXT,        -- 64KB
+   PRIMARY KEY (`CustomerTypeID`)
+);</pre>
+
+<p>No record is provided for this table?!</p>
+
+<h5>Table &quot;<span class="font-code">CustomerCustomerDemo</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE TABLE `<strong>CustomerCustomerDemo</strong>` (
+   `CustomerID`     VARCHAR(5)   NOT NULL,
+   `CustomerTypeID` VARCHAR(10)  NOT NULL,
+   PRIMARY KEY (`CustomerID`, `CustomerTypeID`),
+   FOREIGN KEY (`CustomerTypeID`) REFERENCES `CustomerDemographics` (`CustomerTypeID`),
+   FOREIGN KEY (`CustomerID`) REFERENCES `Customers` (`CustomerID`)
+);</pre>
+
+<p>No record is provided for this table too?!</p>
+
+<h4>Views</h4>
+
+<p>There are 16 views defined.</p>
+
+<h5>View &quot;<span class="font-code">Current Product List</span>&quot;</h5>
+<pre class="color-syntax">
+<span class="color-comment">-- List current products (not discontinued)</span>
+CREATE VIEW `<strong>Current Product List</strong>`
+AS
+SELECT
+   ProductID,
+   ProductName 
+FROM Products 
+WHERE Discontinued = 0;</pre>
+
+<h5>View &quot;<span class="font-code">Alphabetical list of products</span>&quot;</h5>
+<pre class="color-syntax"><span class="color-comment">-- List products (with category) order by ProductID
+-- which is arranged alphabetically in ProductName</span>
+CREATE VIEW `<strong>Alphabetical list of products</strong>`
+AS
+SELECT 
+   Products.*, 
+   Categories.CategoryName
+FROM Categories 
+   INNER JOIN Products ON Categories.CategoryID = Products.CategoryID
+WHERE Products.Discontinued = 0;  <span class="color-comment">-- FALSE</span></pre>
+
+<pre class="color-example">
+<span class="color-comment">-- Example</span>
+mysql&gt; <strong>SELECT * FROM `Alphabetical list of products` LIMIT 1 \G</strong>
+*************************** 1. row ***************************
+      ProductID: 1
+    ProductName: Chai
+     SupplierID: 1
+     CategoryID: 1
+QuantityPerUnit: 10 boxes x 20 bags
+      UnitPrice: 18.00
+   UnitsInStock: 39
+   UnitsOnOrder: 0
+   ReorderLevel: 10
+   Discontinued: 0
+   CategoryName: Beverages</pre>
+
+<h5>View &quot;<span class="font-code">Products by Category</span>&quot;</h5>
+<pre class="color-syntax">
+<span class="color-comment">-- List all products grouped by category</span>
+CREATE VIEW `<strong>Products by Category</strong>`
+AS
+SELECT 
+   Categories.CategoryName, 
+   Products.ProductName, 
+   Products.QuantityPerUnit, 
+   Products.UnitsInStock, 
+   Products.Discontinued
+FROM Categories 
+   INNER JOIN Products ON Categories.CategoryID = Products.CategoryID
+WHERE Products.Discontinued = 0;  <span class="color-comment">-- FALSE</span></pre>
+
+<pre class="color-example">
+<span class="color-comment">-- Example</span>
+mysql&gt; <strong>SELECT * FROM `Products by Category`;</strong>
++----------------+----------------------------------+----------------------+--------------+--------------+
+| CategoryName   | ProductName                      | QuantityPerUnit      | UnitsInStock | Discontinued |
++----------------+----------------------------------+----------------------+--------------+--------------+
+| Beverages      | Chai                             | 10 boxes x 20 bags   |           39 |            0 |
+| Beverages      | Chang                            | 24 - 12 oz bottles   |           17 |            0 |
+| Beverages      | Sasquatch Ale                    | 24 - 12 oz bottles   |          111 |            0 |
+ .......</pre>
+
+<h5>View &quot;<span class="font-code">Products Above Average Price</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE VIEW `<strong>Products Above Average Price</strong>`
+AS
+SELECT
+   Products.ProductName, 
+   Products.UnitPrice
+FROM Products
+WHERE Products.UnitPrice > <span class="color-new">(SELECT AVG(UnitPrice) From Products)</span>;  <span class="color-comment">-- subquery</span></pre>
+
+<pre class="color-example">
+mysql&gt; <strong>SELECT * FROM `Products Above Average Price` ORDER BY UnitPrice DESC;</strong>
++---------------------------------+-----------+
+| ProductName                     | UnitPrice |
++---------------------------------+-----------+
+| Cte de Blaye                    |    263.50 |
+| Thringer Rostbratwurst          |    123.79 |
+| Mishi Kobe Niku                 |     97.00 |
+ ......</pre>
+
+<h5>View &quot;<span class="font-code">Customer and Suppliers by City</span>&quot;</h5>
+<pre class="color-syntax">
+<span class="color-comment">-- List all customers and suppliers (with an union)
+-- order by City and CompanyName</span>
+CREATE VIEW `<strong>Customer and Suppliers by City</strong>`
+AS
+SELECT 
+   City, 
+   CompanyName, 
+   ContactName, 
+   'Customers' AS Relationship 
+FROM Customers
+UNION  <span class="color-comment">-- Union two result sets (of same column numbers), remove duplicates</span>
+SELECT City, 
+   CompanyName, 
+   ContactName, 
+   'Suppliers'
+FROM Suppliers 
+ORDER BY City, CompanyName;</pre>
+
+<pre class="color-example">
+mysql&gt; <strong>SELECT * FROM `Customer and Suppliers by City` LIMIT 10;</strong>
++--------------+----------------------------+------------------+--------------+
+| City         | CompanyName                | ContactName      | Relationship |
++--------------+----------------------------+------------------+--------------+
+| NULL         | IT                         | Val2             | Customers    |
+| NULL         | IT                         | Valon Hoti       | Customers    |
+| Aachen       | Drachenblut Delikatessen   | Sven Ottlieb     | Customers    |
+| Albuquerque  | Rattlesnake Canyon Grocery | Paula Wilson     | Customers    |
+| Anchorage    | Old World Delicatessen     | Rene Phillips    | Customers    |
+| Ann Arbor    | Grandma Kelly's Homestead  | Regina Murphy    | Suppliers    |
+ ......</pre>
+
+<h5>View &quot;<span class="font-code">Order Details Extended</span>&quot;</h5>
+<pre class="color-syntax">
+<span class="color-comment">-- Extend `Order Details` to include ProductName and TotalPrice</span>
+CREATE VIEW `<strong>Order Details Extended</strong>`
+AS
+SELECT
+   `Order Details`.OrderID, 
+   `Order Details`.ProductID, 
+   <span class="color-new">Products.ProductName,</span> 
+   `Order Details`.UnitPrice, 
+   `Order Details`.Quantity, 
+   `Order Details`.Discount, 
+   <span class="color-new">ROUND(`Order Details`.UnitPrice*Quantity*(1-Discount)) AS ExtendedPrice</span>
+FROM Products 
+   JOIN `Order Details` ON Products.ProductID = `Order Details`.ProductID;</pre>
+
+<pre class="color-example">
+mysql&gt; <strong>SELECT * FROM `Order Details Extended`;</strong>
++---------+-----------+--------------+-----------+----------+----------+---------------+
+| OrderID | ProductID | ProductName  | UnitPrice | Quantity | Discount | ExtendedPrice |
++---------+-----------+--------------+-----------+----------+----------+---------------+
+|   10265 |        17 | Alice Mutton |     31.20 |       30 |        0 |           936 |
+|   10279 |        17 | Alice Mutton |     31.20 |       15 |        0 |           468 |
+|   10294 |        17 | Alice Mutton |     31.20 |       15 |        0 |           468 |
+ ......</pre>
+
+<h5>View &quot;<span class="font-code">Invoices</span>&quot;</h5>
+<pre class="color-syntax">
+<span class="color-comment">-- All information (order, customer, shipper)
+-- for each `Order Details` line.
+-- An invoice is supposed to be per order?!</span>
+CREATE VIEW `<strong>Invoices</strong>`
+AS
+SELECT 
+   Orders.ShipName,
+   Orders.ShipAddress,
+   Orders.ShipCity,
+   Orders.ShipRegion, 
+   Orders.ShipPostalCode,
+   Orders.ShipCountry,
+   Orders.CustomerID,
+   Customers.CompanyName AS CustomerName,
+   Customers.Address,
+   Customers.City,
+   Customers.Region,
+   Customers.PostalCode,
+   Customers.Country,
+   (Employees.FirstName + ' ' + Employees.LastName) AS Salesperson, 
+   Orders.OrderID,
+   Orders.OrderDate,
+   Orders.RequiredDate,
+   Orders.ShippedDate, 
+   Shippers.CompanyName As ShipperName,
+   `Order Details`.ProductID,
+   Products.ProductName, 
+   `Order Details`.UnitPrice,
+   `Order Details`.Quantity,
+   `Order Details`.Discount, 
+   FLOOR(`Order Details`.UnitPrice*Quantity*(1-Discount)) AS ExtendedPrice,
+         <span class="color-comment">-- truncate to nearest dollars</span>
+   Orders.Freight
+FROM Customers
+   JOIN Orders ON Customers.CustomerID = Orders.CustomerID  
+   JOIN Employees ON Employees.EmployeeID = Orders.EmployeeID    
+   JOIN `Order Details` ON Orders.OrderID = `Order Details`.OrderID     
+   JOIN Products ON Products.ProductID = `Order Details`.ProductID      
+   JOIN Shippers ON Shippers.ShipperID = Orders.ShipVia;</pre>
+
+<pre class="color-example">
+<span class="color-comment">-- Example</span>
+mysql&gt; <strong>SELECT * FROM `Invoices` LIMIT 2 \G</strong>
+*************************** 1. row ***************************
+      ShipName: Ernst Handel
+      ......
+    CustomerID: ERNSH
+  CustomerName: Ernst Handel
+      ......
+   Salesperson: 0
+       OrderID: <span class="color-new">10258</span>
+     OrderDate: 1996-07-17
+  RequiredDate: 1996-08-14
+   ShippedDate: 1996-07-23
+   ShipperName: Speedy Express
+     ProductID: 2
+   ProductName: Chang
+     UnitPrice: 15.20
+      Quantity: 50
+      Discount: 0
+ ExtendedPrice: 760
+       Freight: 140.51
+*************************** 2. row ***************************
+      ShipName: Ernst Handel
+      ......
+    CustomerID: ERNSH
+  CustomerName: Ernst Handel
+      ......
+   Salesperson: 0
+       OrderID: <span class="color-new">10258</span>
+     OrderDate: 1996-07-17
+  RequiredDate: 1996-08-14
+   ShippedDate: 1996-07-23
+   ShipperName: Speedy Express
+     ProductID: 5
+   ProductName: Chef Anton's Gumbo Mix
+     UnitPrice: 17.00
+      Quantity: 65
+      Discount: 0
+ ExtendedPrice: 1105
+       Freight: 140.51</pre>
+   
+<h5>View &quot;<span class="font-code">Orders Qry</span>&quot;</h5>
+<pre class="color-syntax">
+<span class="color-comment">-- List details (order and customer) of each order
+--   for customer query</span>
+CREATE VIEW `<strong>Orders Qry</strong>`
+AS
+SELECT 
+   Orders.OrderID,
+   Orders.CustomerID,
+   Orders.EmployeeID, 
+   Orders.OrderDate, 
+   Orders.RequiredDate,
+   Orders.ShippedDate, 
+   Orders.ShipVia, 
+   Orders.Freight,
+   Orders.ShipName, 
+   Orders.ShipAddress, 
+   Orders.ShipCity,
+   Orders.ShipRegion,
+   Orders.ShipPostalCode,
+   Orders.ShipCountry,
+   Customers.CompanyName,
+   Customers.Address,
+   Customers.City,
+   Customers.Region,
+   Customers.PostalCode, 
+   Customers.Country
+FROM Customers 
+   JOIN Orders ON Customers.CustomerID = Orders.CustomerID;</pre>
+   
+<pre class="color-example">
+<span class="color-comment">-- Example</span>
+mysql&gt; <strong>SELECT * FROM `Orders Qry` LIMIT 1 \G;</strong>
+*************************** 1. row ***************************
+       OrderID: 10643
+    CustomerID: ALFKI
+    EmployeeID: 6
+     OrderDate: 1997-08-25
+  RequiredDate: 1997-09-22
+   ShippedDate: 1997-09-02
+       ShipVia: 1
+       Freight: 29.46
+      ShipName: Alfreds Futterkiste
+      ......
+   CompanyName: Alfreds Futterkiste
+      ......</pre>
+   
+<h5>View &quot;<span class="font-code">Product Sales for 1997</span>&quot;</h5>
+<pre class="color-syntax">
+<span class="color-comment">-- List sales for each productName for 1997</span>
+CREATE VIEW `<strong>Product Sales for 1997</strong>`
+AS
+SELECT 
+   Categories.CategoryName, 
+   Products.ProductName, 
+   <span class="color-new">Sum</span>(ROUND(`Order Details`.UnitPrice*Quantity*(1-Discount))) AS ProductSales
+FROM Categories
+   JOIN Products On Categories.CategoryID = Products.CategoryID
+   JOIN `Order Details` on Products.ProductID = `Order Details`.ProductID     
+   JOIN `Orders` on Orders.OrderID = `Order Details`.OrderID 
+WHERE Orders.ShippedDate BETWEEN '1997-01-01' And '1997-12-31'
+<span class="color-new">GROUP BY Categories.CategoryName, Products.ProductName;</span></pre>
+
+<pre class="color-example">
+<span class="color-comment">-- Example</span>
+mysql&gt; <strong>SELECT * FROM `Product Sales for 1997`;</strong>
++----------------+----------------------------------+--------------+
+| CategoryName   | ProductName                      | ProductSales |
++----------------+----------------------------------+--------------+
+| Beverages      | Chai                             |         5296 |
+| Beverages      | Chang                            |         7600 |
+| Beverages      | Chartreuse verte                 |         4928 |
+ ......</pre>
+
+<h5>View &quot;<span class="font-code">Sales by Category</span>&quot;</h5>
+<pre class="color-syntax">
+<span class="color-comment">-- List Sales by ProductName</span>
+CREATE VIEW `<strong>Sales by Category</strong>`
+AS
+SELECT
+   Categories.CategoryID, 
+   Categories.CategoryName, 
+   Products.ProductName, 
+   <span class="color-new">Sum</span>(`Order Details Extended`.ExtendedPrice) AS ProductSales
+FROM Categories 
+   JOIN Products ON Categories.CategoryID = Products.CategoryID
+   JOIN `Order Details Extended` ON Products.ProductID = `Order Details Extended`.ProductID
+   JOIN Orders ON Orders.OrderID = `Order Details Extended`.OrderID 
+WHERE Orders.OrderDate BETWEEN '1997-01-01' And '1997-12-31'
+<span class="color-new">GROUP BY</span>
+   Categories.CategoryID,
+   Categories.CategoryName,
+   <span class="color-new">Products.ProductName;</span></pre>
+
+<pre class="color-example">
+mysql&gt; <strong>SELECT * FROM `Sales by Category`;</strong>
++------------+----------------+----------------------------------+--------------+
+| CategoryID | CategoryName   | ProductName                      | ProductSales |
++------------+----------------+----------------------------------+--------------+
+|          1 | Beverages      | Chai                             |         5296 |
+|          1 | Beverages      | Chang                            |         7600 |
+|          1 | Beverages      | Chartreuse verte                 |         4928 |
+ ......</pre>
+
+<h5>View &quot;<span class="font-code">Category Sales for 1997</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE VIEW `<strong>Category Sales for 1997</strong>`
+AS
+SELECT
+   `Product Sales for 1997`.CategoryName,   <span class="color-comment">-- Use `Product Sales for 1997` view</span>
+   <span class="color-new">Sum</span>(`Product Sales for 1997`.ProductSales) AS CategorySales
+FROM `Product Sales for 1997`
+<span class="color-new">GROUP BY `Product Sales for 1997`.CategoryName;</span></pre>
+
+<pre class="color-example">
+mysql&gt; <strong>SELECT * FROM `Category Sales for 1997`;</strong>
++----------------+---------------+
+| CategoryName   | CategorySales |
++----------------+---------------+
+| Beverages      |        108547 |
+| Condiments     |         59586 |
+| Confections    |         85678 |
+ ......</pre>
+
+<h5>View &quot;<span class="font-code">Quarterly Orders</span>&quot;</h5>
+<pre class="color-syntax">
+<span class="color-comment">-- List sales by customers in 1997</span>
+CREATE VIEW `<strong>Quarterly Orders</strong>`
+AS
+SELECT DISTINCT 
+   Customers.CustomerID, 
+   Customers.CompanyName, 
+   Customers.City, 
+   Customers.Country
+FROM Customers 
+   JOIN Orders ON Customers.CustomerID = Orders.CustomerID
+WHERE Orders.OrderDate BETWEEN '1997-01-01' And '1997-12-31';</pre>
+
+<pre class="color-example">
+mysql&gt; <strong>SELECT * FROM `Quarterly Orders`;</strong>
++------------+------------------------------------+-----------------+-------------+
+| CustomerID | CompanyName                        | City            | Country     |
++------------+------------------------------------+-----------------+-------------+
+| ALFKI      | Alfreds Futterkiste                | Berlin          | Germany     |
+| ANATR      | Ana Trujillo Emparedados y helados | Mxico D.F.      | Mexico      |
+| ANTON      | Antonio Moreno Taquera             | Mxico D.F.      | Mexico      |
+ .......</pre>
+
+<h5>View &quot;<span class="font-code">Order Subtotals</span>&quot;</h5>
+<pre class="color-syntax">
+<span class="color-comment">-- List the total amount for each order</span>
+CREATE VIEW `<strong>Order Subtotals</strong>` 
+AS
+SELECT 
+   `Order Details`.OrderID, 
+   <span class="color-new">Sum</span>(ROUND(`Order Details`.UnitPrice*Quantity*(1-Discount))) AS Subtotal
+FROM `Order Details`
+<span class="color-new">GROUP BY `Order Details`.OrderID</span>;</pre>
+
+<pre class="color-example">
+<span class="color-comment">-- Example</span>
+mysql&gt; <strong>SELECT * FROM `Order Subtotals`</strong> LIMIT 5;
++---------+----------+
+| OrderID | Subtotal |
++---------+----------+
+|   10248 |      440 |
+|   10249 |     1863 |
+|   10250 |     1813 |
+|   10251 |      671 |
+|   10252 |     3730 |
++---------+----------+</pre>
+
+<h5>View &quot;<span class="font-code">Sales Totals by Amount</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE VIEW `<strong>Sales Totals by Amount</strong>`
+AS
+SELECT 
+   `Order Subtotals`.Subtotal AS SaleAmount,   <span class="color-comment">-- `Order Subtotals` is a view</span>
+   Orders.OrderID, 
+   Customers.CompanyName, 
+   Orders.ShippedDate
+FROM Customers 
+   JOIN Orders ON Customers.CustomerID = Orders.CustomerID
+   JOIN `Order Subtotals` ON Orders.OrderID = `Order Subtotals`.OrderID 
+WHERE (`Order Subtotals`.Subtotal > 2500) 
+   AND (Orders.ShippedDate BETWEEN '1997-01-01' And '1997-12-31');</pre>
+   
+<pre class="color-example">
+<span class="color-comment">-- Example</span>
+mysql&gt; <strong>SELECT * FROM `Sales Totals by Amount`;</strong>
++------------+---------+------------------------------+-------------+
+| SaleAmount | OrderID | CompanyName                  | ShippedDate |
++------------+---------+------------------------------+-------------+
+|       3302 |   10393 | Save-a-lot Markets           | 1997-01-03  |
+|       2736 |   10398 | Save-a-lot Markets           | 1997-01-09  |
+|       3063 |   10400 | Eastern Connection           | 1997-01-16  |
+ ......</pre>
+
+<h5>View &quot;<span class="font-code">Summary of Sales by Quarter</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE VIEW `<strong>Summary of Sales by Quarter</strong>`
+AS
+SELECT 
+   Orders.ShippedDate, 
+   Orders.OrderID, 
+   `Order Subtotals`.Subtotal  <span class="color-comment">-- Use `Order Subtotals` view</span>
+FROM Orders 
+   INNER JOIN `Order Subtotals` ON Orders.OrderID = `Order Subtotals`.OrderID
+WHERE Orders.ShippedDate IS NOT NULL;</pre>
+
+<pre class="color-example">
+<span class="color-comment">-- Example</span>
+mysql&gt; <strong>SELECT * FROM `Summary of Sales by Quarter`;</strong>
++-------------+---------+----------+
+| ShippedDate | OrderID | Subtotal |
++-------------+---------+----------+
+| 1996-07-16  |   10248 |      440 |
+| 1996-07-10  |   10249 |     1863 |
+| 1996-07-12  |   10250 |     1813 |
+ ......</pre>
+
+<h5>View &quot;<span class="font-code">Summary of Sales by Year</span>&quot;</h5>
+<pre class="color-syntax">
+<span class="color-comment">-- List each order</span>
+CREATE VIEW `<strong>Summary of Sales by Year</strong>`
+AS
+SELECT
+   Orders.ShippedDate, 
+   Orders.OrderID, 
+   `Order Subtotals`.Subtotal
+FROM Orders 
+   INNER JOIN `Order Subtotals` ON Orders.OrderID = `Order Subtotals`.OrderID
+WHERE Orders.ShippedDate IS NOT NULL;</pre>
+
+<pre class="color-example">
+<span class="color-comment">-- Example</span>
+mysql&gt; <strong>SELECT * FROM `Summary of Sales by Year`;</strong>
++-------------+---------+----------+
+| ShippedDate | OrderID | Subtotal |
++-------------+---------+----------+
+| 1996-07-16  |   10248 |      440 |
+| 1996-07-10  |   10249 |     1863 |
+| 1996-07-12  |   10250 |     1813 |
+ ......</pre>
+
+
+<h4>Stored Routines: Procedures and Functions</h4>
+
+<p>There are 7 procedures defined.</p>
+
+<h5>Procedure &quot;<span class="font-code">CustOrdersDetail</span>&quot;</h5>
+<pre class="color-syntax">
+<span class="color-comment">-- Given an OrderID, print `Order Details`</span>
+DELIMITER $$
+CREATE PROCEDURE `CustOrdersDetail`(IN AtOrderID INT)
+BEGIN
+   SELECT ProductName,
+      `Order Details`.UnitPrice,
+      Quantity,
+      Discount * 100 AS `Discount`, 
+      ROUND(Quantity * (1 - Discount) * `Order Details`.UnitPrice) AS ExtendedPrice
+   FROM Products INNER JOIN `Order Details` USING (ProductID)
+   WHERE `Order Details`.OrderID = AtOrderID;
+END$$
+DELIMITER ;</pre>
+
+<pre class="color-example">
+mysql> <strong>CALL `CustOrdersDetail`(10250);</strong>
++----------------------------------+-----------+----------+----------+---------------+
+| ProductName                      | UnitPrice | Quantity | Discount | ExtendedPrice |
++----------------------------------+-----------+----------+----------+---------------+
+| Jack's New England Clam Chowder  |      7.70 |       10 |        0 |            77 |
+| Manjimup Dried Apples            |     42.40 |       35 |        0 |          1484 |
+| Louisiana Fiery Hot Pepper Sauce |     16.80 |       15 |        0 |           252 |
++----------------------------------+-----------+----------+----------+---------------+</pre>
+
+<h5>Procedure &quot;<span class="font-code">CustOrdersOrders</span>&quot;</h5>
+<pre class="color-syntax">
+DELIMITER $$
+CREATE PROCEDURE `<strong>CustOrdersOrders</strong>`(IN AtCustomerID VARCHAR(5))
+BEGIN
+   SELECT 
+      OrderID,
+      OrderDate,
+      RequiredDate,
+      ShippedDate
+   FROM Orders
+   WHERE CustomerID = AtCustomerID
+   ORDER BY OrderID;
+END $$
+DELIMITER ;</pre>
+
+<pre class="color-example">
+mysql&gt; <strong>CALL `CustOrdersOrders`('ANTON');</strong>
++---------+------------+--------------+-------------+
+| OrderID | OrderDate  | RequiredDate | ShippedDate |
++---------+------------+--------------+-------------+
+|   10365 | 1996-11-27 | 1996-12-25   | 1996-12-02  |
+|   10507 | 1997-04-15 | 1997-05-13   | 1997-04-22  |
+|   10535 | 1997-05-13 | 1997-06-10   | 1997-05-21  |
+ ......</pre>
+
+<h5>Procedure &quot;<span class="font-code">CustOrderHist</span>&quot;</h5>
+<pre class="color-syntax">
+DELIMITER $$
+CREATE PROCEDURE `<strong>CustOrderHist</strong>`(IN AtCustomerID VARCHAR(5))
+BEGIN
+   SELECT
+      ProductName,
+      <span class="color-new">SUM</span>(Quantity) as TOTAL
+   FROM Products
+      INNER JOIN `Order Details` USING(ProductID)
+      INNER JOIN Orders USING (OrderID)
+      INNER JOIN Customers USING (CustomerID)
+   WHERE Customers.CustomerID = AtCustomerID
+   <span class="color-new">GROUP BY ProductName</span>;
+END $$
+DELIMITER ;</pre>
+
+<pre class="color-example">
+mysql&gt; <strong>CALL `CustOrderHist`('ANTON');</strong>
++-------------------------------+-------+
+| ProductName                   | TOTAL |
++-------------------------------+-------+
+| Alice Mutton                  |    18 |
+| Boston Crab Meat              |    10 |
+| Chang                         |    20 |
+ ......</pre>
+
+<h5>Procedure &quot;<span class="font-code">Ten Most Expensive Products</span>&quot;</h5>
+<pre class="color-syntax">
+DROP PROCEDURE IF EXISTS `Ten Most Expensive Products`;
+DELIMITER $$
+CREATE PROCEDURE <strong>`Ten Most Expensive Products`</strong>()
+BEGIN
+   SELECT 
+      Products.ProductName AS TenMostExpensiveProducts,
+      Products.UnitPrice
+   FROM Products
+   ORDER BY Products.UnitPrice DESC
+   LIMIT 10;
+END $$
+DELIMITER ;</pre>
+
+<pre class="color-example">
+mysql&gt; <strong>CALL `Ten Most Expensive Products`;</strong>
++--------------------------+-----------+
+| TenMostExpensiveProducts | UnitPrice |
++--------------------------+-----------+
+| Cte de Blaye             |    263.50 |
+| Thringer Rostbratwurst   |    123.79 |
+| Mishi Kobe Niku          |     97.00 |
+ ......</pre>
+
+<h5>Procedure &quot;<span class="font-code">Employee Sales by Country</span>&quot;</h5>
+<pre class="color-syntax">
+DELIMITER $$
+CREATE PROCEDURE `<strong>Employee Sales by Country</strong>`(IN AtBeginning_Date DATE, IN AtEnding_Date DATE)
+BEGIN
+   SELECT
+      Employees.Country,
+      Employees.LastName,
+      Employees.FirstName,
+      Orders.ShippedDate,
+      Orders.OrderID,
+      `Order Subtotals`.Subtotal AS SaleAmount
+   FROM Employees
+      INNER JOIN Orders ON Employees.EmployeeID = Orders.EmployeeID
+      INNER JOIN `Order Subtotals` ON Orders.OrderID = `Order Subtotals`.OrderID
+   WHERE Orders.ShippedDate BETWEEN AtBeginning_Date AND AtEnding_Date;
+END $$
+DELIMITER ;</pre>
+
+<pre class="color-example">
+mysql&gt; <strong>CALL `Employee Sales by Country`('1997-01-01', '1997-01-31');</strong>
++---------+-----------+-----------+-------------+---------+------------+
+| Country | LastName  | FirstName | ShippedDate | OrderID | SaleAmount |
++---------+-----------+-----------+-------------+---------+------------+
+| USA     | Callahan  | Laura     | 1997-01-16  |   10380 |       1420 |
+| USA     | Fuller    | Andrew    | 1997-01-01  |   10392 |       1440 |
+| USA     | Davolio   | Nancy     | 1997-01-03  |   10393 |       3302 |
+ ......</pre>
+
+<h5>Procedure &quot;<span class="font-code">Sales by Year</span>&quot;</h5>
+<pre class="color-syntax">
+DELIMITER $$
+CREATE PROCEDURE `<strong>Sales by Year</strong>`(IN AtBeginning_Date DATE, IN AtEnding_Date DATE)
+BEGIN
+   SELECT
+      Orders.ShippedDate,
+      Orders.OrderID,
+      `Order Subtotals`.Subtotal,
+      ShippedDate AS Year
+   FROM Orders 
+      JOIN `Order Subtotals` ON Orders.OrderID = `Order Subtotals`.OrderID
+   WHERE Orders.ShippedDate BETWEEN AtBeginning_Date AND AtEnding_Date;
+END $$
+DELIMITER ;</pre>
+
+<pre class="color-example">
+mysql&gt; <strong>CALL `Sales by Year`('1997-01-01', '1997-01-31');</strong>
++-------------+---------+----------+------------+
+| ShippedDate | OrderID | Subtotal | Year       |
++-------------+---------+----------+------------+
+| 1997-01-16  |   10380 |     1420 | 1997-01-16 |
+| 1997-01-01  |   10392 |     1440 | 1997-01-01 |
+| 1997-01-03  |   10393 |     3302 | 1997-01-03 |
+ ......</pre>
+
+<h5>Procedure &quot;<span class="font-code">SalesByCategory</span>&quot;</h5>
+
+<pre class="color-syntax">
+DELIMITER $$
+CREATE PROCEDURE <strong>`SalesByCategory`</strong>(IN AtCategoryName VARCHAR(15), IN AtOrdYear VARCHAR(4))
+BEGIN
+   SELECT
+      ProductName,
+	     ROUND(SUM(OD.Quantity * (1-OD.Discount) * OD.UnitPrice)) AS TotalPurchase
+   FROM `Order Details` AS OD
+      INNER JOIN Orders AS O USING (OrderID)
+      INNER JOIN Products AS P USING (ProductID)
+      INNER JOIN Categories AS C USING (CategoryID)
+   WHERE C.CategoryName = AtCategoryName
+      AND YEAR(O.OrderDate) = AtOrdYear
+   GROUP BY ProductName
+   ORDER BY ProductName;
+END $$
+DELIMITER ;</pre>
+
+<pre class="color-example">
+mysql> <strong>CALL `SalesByCategory`('Beverages', 1997);</strong>
++---------------------------+---------------+
+| ProductName               | TotalPurchase |
++---------------------------+---------------+
+| Chai                      |          5296 |
+| Chang                     |          7600 |
+| Chartreuse verte          |          4928 |
+ ......</pre>
+
+<br />
+<p><span class="line-heading">Try:</span> i18n and UTF8 on MySQL Workbench.</p>
+
+<h3>MySQLTutorial.org's Sample Retailer Database</h3>
+
+<p><span class="line-heading">Reference:</span> The &quot;Classic Models&quot; Retailer database of <a href="http://www.mysqltutorial.org">http://www.mysqltutorial.org</a>.</p>
+
+<h4>Database and Tables</h4>
+
+<img class="image-center" src="https://www.ntu.edu.sg/home/ehchua/programming/sql/images/SampleClassicmodels.png" alt="Database Diagram" />
+
+<p>There are 8 tables, with no stored objects (view, procedure, function, trigger and event) defined.</p>
+<p>I made some modifications to the data type, and added in the foreign keys and indexes.</p>
+
+<h5>Table &quot;<span class="font-code">offices</span>&quot;</h5>
+
+<pre class="color-syntax">
+CREATE TABLE `<strong>offices</strong>` (
+   `officeCode`    VARCHAR(10)  NOT NULL,
+   `city`          VARCHAR(50)  NOT NULL,
+   `phone`         VARCHAR(50)  NOT NULL,
+   `addressLine1`  VARCHAR(50)  NOT NULL,
+   `addressLine2`  VARCHAR(50)  DEFAULT NULL,
+   `state`         VARCHAR(50)  DEFAULT NULL,
+   `country`       VARCHAR(50)  NOT NULL,
+   `postalCode`    VARCHAR(15)  NOT NULL,
+   `territory`     VARCHAR(10)  NOT NULL,
+   PRIMARY KEY  (`officeCode`),
+   INDEX (`phone`),
+   INDEX (`city`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>There are 7 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">employees</span>&quot;</h5>
+
+<pre class="color-syntax">
+CREATE TABLE `<strong>employees</strong>` (
+   `employeeNumber`  INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+   `lastName`        VARCHAR(50)   NOT NULL,
+   `firstName`       VARCHAR(50)   NOT NULL,
+   `extension`       VARCHAR(10)   NOT NULL,
+   `email`           VARCHAR(100)  NOT NULL,
+   `officeCode`      VARCHAR(10)   NOT NULL,
+   `reportsTo`       INT UNSIGNED  DEFAULT NULL,
+   `jobTitle`        VARCHAR(50)   NOT NULL,
+   PRIMARY KEY  (`employeeNumber`),
+   INDEX (`lastName`),
+   INDEX (`firstName`),
+   FOREIGN KEY (`reportsTo`) REFERENCES `employees` (`employeeNumber`)
+      ON DELETE RESTRICT ON UPDATE CASCADE,
+   FOREIGN KEY (`officeCode`) REFERENCES `offices` (`officeCode`)
+      ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>There are 23 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">customers</span>&quot;</h5>
+
+<pre class="color-syntax">
+CREATE TABLE `<strong>customers</strong>` (
+   `customerNumber`   INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+   `customerName`     VARCHAR(50)   NOT NULL,
+   `contactLastName`  VARCHAR(50)   NOT NULL,
+   `contactFirstName` VARCHAR(50)   NOT NULL,
+   `phone`            VARCHAR(50)   NOT NULL,
+   `addressLine1`     VARCHAR(50)   NOT NULL,
+   `addressLine2`     VARCHAR(50)   DEFAULT NULL,
+   `city`             VARCHAR(50)   NOT NULL,
+   `state`            VARCHAR(50)   DEFAULT NULL,
+   `postalCode`       VARCHAR(15)   DEFAULT NULL,
+   `country`          VARCHAR(50)   NOT NULL,
+   `salesRepEmployeeNumber`  INT UNSIGNED  DEFAULT NULL,
+   `creditLimit`      INT UNSIGNED  DEFAULT NULL,
+   PRIMARY KEY (`customerNumber`),
+   INDEX (`customerName`),
+   INDEX (`contactLastName`),
+   INDEX (`contactFirstName`),
+   INDEX (`phone`),
+   INDEX (`postalCode`),
+   FOREIGN KEY (`salesRepEmployeeNumber`) REFERENCES `employees` (`employeeNumber`)
+      ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>There are 122 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">products</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE TABLE `<strong>products</strong>` (
+   `productCode`         VARCHAR(15)  NOT NULL,
+   `productName`         VARCHAR(70)  NOT NULL,
+   `productLine`         VARCHAR(50)  NOT NULL,
+   `productScale`        VARCHAR(10)  NOT NULL,
+   `productVendor`       VARCHAR(50)  NOT NULL,
+   `productDescription`  TEXT         NOT NULL,  <span class="color-comment">-- 64KB</span>
+   `quantityInStock`     SMALLINT     NOT NULL,  <span class="color-comment">-- Allow negative</span>
+   `buyPrice`            DECIMAL(8,2) UNSIGNED  NOT NULL,
+   `MSRP`                DECIMAL(8,2) UNSIGNED  NOT NULL,
+   PRIMARY KEY (`productCode`),
+   INDEX (`productName`),
+   INDEX (`productVendor`),
+   INDEX (`productLine`)    <span class="color-comment">-- needed to be indexed to be used as foreign key</span>
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>There are 110 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">productlines</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE TABLE `<strong>productlines</strong>` (
+   `productLine`      VARCHAR(50)   NOT NULL,
+   `textDescription`  VARCHAR(4000) DEFAULT NULL,
+   `htmlDescription`  TEXT          DEFAULT NULL,  <span class="color-comment">-- 64 KB</span>
+   `image`            BLOB          DEFAULT NULL,  <span class="color-comment">-- 64 KB</span>
+   PRIMARY KEY (`productLine`),
+   FOREIGN KEY (`productLine`) REFERENCES `products` (`productLine`)
+      ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>You need to index the <code>productLine</code> column of the <code>products</code> table to use the column as a foreign key here.</p>
+<p>There are 7 records for this table.</p>
+
+
+<h5>Table &quot;<span class="font-code">orders</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE TABLE `<strong>orders</strong>` (
+   `orderNumber`     INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+   `orderDate`       DATE          NOT NULL,
+   `requiredDate`    DATE          NOT NULL,
+   `shippedDate`     DATE          DEFAULT NULL,
+   `status`          VARCHAR(15)   NOT NULL,  <span class="color-comment">-- use ENUM</span>
+   `comments`        TEXT          DEFAULT NULL,
+   `customerNumber`  INT UNSIGNED  NOT NULL,
+   PRIMARY KEY  (`orderNumber`),
+   INDEX (`orderDate`),
+   INDEX (`customerNumber`),
+   FOREIGN KEY (`customerNumber`) REFERENCES `customers` (`customerNumber`)
+      ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>There are 326 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">orderdetails</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE TABLE `<strong>orderdetails</strong>` (
+   `orderNumber`      INT UNSIGNED       NOT NULL,
+   `productCode`      VARCHAR(15)        NOT NULL,
+   `quantityOrdered`  SMALLINT UNSIGNED  NOT NULL,  <span class="color-comment">-- [0, 65535]<span class="color-new"></span></span>
+   `priceEach`        DECIMAL(7,2)       NOT NULL,
+   `orderLineNumber`  TINYINT UNSIGNED   NOT NULL,   <span class="color-comment">-- [0,255]</span>
+   PRIMARY KEY  (`orderNumber`,`productCode`),
+   FOREIGN KEY (`orderNumber`) REFERENCES `orders` (`orderNumber`)
+      ON DELETE RESTRICT ON UPDATE CASCADE,
+   FOREIGN KEY (`productCode`) REFERENCES `products` (`productCode`)
+      ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>There are 2996 records for this table.</p>
+
+<h5>Table &quot;<span class="font-code">payments</span>&quot;</h5>
+<pre class="color-syntax">
+CREATE TABLE `<strong>payments</strong>` (
+   `customerNumber`  INT UNSIGNED           NOT NULL,
+   `checkNumber`     VARCHAR(50)            NOT NULL,
+   `paymentDate`     DATE                   NOT NULL,
+   `amount`          DECIMAL(8,2) UNSIGNED  NOT NULL,
+   PRIMARY KEY  (`customerNumber`,`checkNumber`),
+   FOREIGN KEY (`customerNumber`) REFERENCES `customers` (`customerNumber`)
+      ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;</pre>
+
+<p>This <code>payment</code> table does not reflect the order paid?! Could also provide a <code>VIEW</code> for <code>invoices</code>.</p>
+<p>There are 273 records for this table.</p>
+
+
+
+<!--
+<h3>Microsoft Pubs Publisher Sample Database</h3>
+
+<h3>Book/Video Catalog Database</h3>
+<p>[TODO]</p>
+
+<h3>School and Tuition Center</h3>
+<p>[TODO]</p>
+-->
+
+<a class="references" href="../howto/References.html#mysql">Link to MySQL References &amp; Resources</a>
+
+</div> <!-- End the content-main division -->
+
+<div id="content-footer">
+<p>Latest version tested: MySQL 5.5.28, MySQL Workbench 5.2.44<br />
+Last modified: October, 2012</p>
+</div>
+
+</div>  <!-- End the wrap-inner division -->
+
+<!-- footer filled by JavaScript -->
+<div id="footer" class="header-footer"><p>&nbsp;</p></div>
+
+</div>  <!-- End the wrap-outer division -->
+
+<br>
+
+<script>
+	var toc = $('#toc');
+	$('h2,h3,h3,h4').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>
+</body>
+</html>
