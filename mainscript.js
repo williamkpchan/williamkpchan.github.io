@@ -38,7 +38,7 @@ function chkKey() {
   if(testkey == 'p'){window.location = '#Programming';}
   if(testkey == 'q'){window.open('https://www.quora.com/');}
   if(testkey == 'r'){window.location = '#Rlang';}
-  if(testkey == 's'){window.open("http://williamkpchan.github.io/stkListVH.html");}
+  if(testkey == 's'){window.open("stkListVH.html");}
   if(testkey == 'S'){showMMA();}
 
   if(testkey == 't'){window.open("http://my.weather.gov.hk/myindex_uc.htm");}
