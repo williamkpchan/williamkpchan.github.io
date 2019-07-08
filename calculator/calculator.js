@@ -38,6 +38,7 @@ for (var i = 0; i < operator.length; i++) {
 	operator[i].addEventListener("click", function(e) {
 
 		// storing current input string and its last character in variables - used later
+		beep(60,620,200);
 		var currentString = input.innerHTML;
 		var lastChar = currentString[currentString.length - 1];
 
@@ -254,4 +255,17 @@ function calResult() {
 function clearDisp() {
 	resultDisplayed = false;
 	input.innerHTML = "";
+}
+
+a=new AudioContext();
+function beep(vol, freq, duration){
+	v=a.createOscillator();
+	u=a.createGain();
+	v.connect(u);
+	v.frequency.value=freq;
+	v.type="triangle";
+	u.connect(a.destination);
+	u.gain.value=vol*0.01;
+	v.start(a.currentTime);
+	v.stop(a.currentTime+ duration*0.001)
 }
