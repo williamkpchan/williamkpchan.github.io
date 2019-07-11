@@ -451,6 +451,84 @@ servo.duty(122)
 </code></pre>
 <p>Ref: <a href="http://micropython-on-esp8266-workshop.readthedocs.io/en/latest/basics.html#servomechanisms" rel="nofollow">http://micropython-on-esp8266-workshop.readthedocs.io/en/latest/basics.html#servomechanisms</a></p>
 
+
+<h2>使用MicroPython从ESP板发送数据到Google表格</h2>
+<pre>
+<a href="https://blog.gypsyengineer.com/en/diy-electronics/micropython-on-esp32-sending-data-to-google-sheets.html">esp32 sending data to google sheets</a>
+
+Google表格提供了很棒的HTTP API，为什么我们不能只发送一个POST请求来将数据插入到工作表中？
+
+原因是Google表格API关注安全性并需要身份验证。
+
+特别是，Google Sheet API支持两种身份验证方法：API密钥和OAuth2令牌。
+
+使用API密钥听起来很简单：
+我们可以在Google IAM控制台中创建一个API密钥，在我们的ESP板上编码，忘记旋转密钥和安全性，并永远使用密钥。
+
+不幸的是（或者说幸运的是）它不会起作用。
+Google Sheet API仅允许API键进行读取操作。
+
+如果要写入工作表，则必须使用OAuth2。这里出现了问题。
+首先，您需要在Google IAM控制台中创建一个服务帐户，然后为该服务帐户创建一个私有RSA密钥。
+
+好的，那并不难。
+然后，您的ESP板必须构建一个JWT请求，将当前时间戳放入其中，并使用RSA-SHA256签名算法使用密钥对请求进行签名。
+接下来，板子必须将签名的JWT请求发送到Google OAuth2服务，该服务最终返回OAuth2令牌。
+最后使用令牌来调用Google表格API。
+让我快速总结一下ESP板能够在Google表格中插入一行需要的内容：
+HTTP客户端、JSON解析器、具有正确时间的实时时钟或NTP客户端，以及RSA-SHA256签名的实现算法。
+
+幸运的是，MicroPython提供了除RSA-SHA256签名之外的大部分内容。
+确切地说，MicroPython可以计算SHA256哈希，但不能使用RSA算法对数据进行签名。
+
+此外，RSA签名是一项昂贵的操作，可能需要相当多的时间和内存，但ESP板并不像PC那么强大，也没有太多的内存。
+
+我猜想Google身份验证带来的复杂性以及缺少MicroPython的RSA，让人们使用了一个公开的表单或一个可以实现认证过程的中间件服务。
+
+当然，作为一名安全工程师，我无法接受一个包含公共可用表格的解决方案，其中包含我房间内温度和湿度等敏感数据。
+
+因为我是一名安全工程师，所以我不喜欢中间件。
+
+最后，唯一的选择是以某种方式在ESP板上实现上述认证过程。
+
+正如我之前提到的，MicroPython已经提供了大部分必需的东西：
+ujson允许解析JSON
+ntptime.py提供NTP客户端
+uhashlib可以计算SHA256哈希值
+http.client提供了一个HTTP客户端
+
+唯一缺少的部分是RSA签名。
+
+密码学的一个主要规则是：不要自己实现任何加密算法，而是使用现有的算法。
+
+我知道这个规则，并发现python-rsa包在纯Python中实现了RSA算法。
+
+除了使用RSA进行签名之外，该库还支持其他操作，例如验证签名，加密和解密，加载和存储密钥等。
+
+这个库对于一个小型的ESP板来说负担太重了，我决定只保留RSA签名的实现并删除剩下的代码。
+我甚至删除了以PKCS1格式加载RSA密钥的代码，因为它需要移植一个不小的pyasn1包。
+我还必须基于从右到左的二进制方法和其他一些操作来实现模块化求幂，因为事实证明它们不是由MicroPython提供的。
+它产生了一个新的micropython-rsa签名库。
+
+我使用ESP8266和MicroPython以前的一个项目作为起点。
+
+在实施身份验证过程并在我的笔记本电脑上进行测试后，我终于成功用ESP8266主板运行了代码。
+
+不幸的是我发现代码运行得很慢，主要问题是ESP8266主板没有足够的内存来完成RSA签名。
+我尝试了一些优化，甚至尝试将应用程序代码嵌入到MicroPython固件中，但没有任何帮助。
+
+最后的希望是在ESP32上运行代码。
+我之前没有用过ESP32，于是订购了我的第一个ESP32开发板。
+幸运的是，它成功了！
+
+应用程序不再抱怨内存不足，事实上它运行得更快了。
+
+该代码可在GitHub上获得。
+README简要描述了如何构建项目。
+我还在Hackaday.io上创建了一个项目。
+我希望我能找到一些时间在后续帖子中提供更多细节。
+https://github.com/artem-smotrakov/esp32-weather-google-sheets
+
 <br>
 <br>
 <br>
