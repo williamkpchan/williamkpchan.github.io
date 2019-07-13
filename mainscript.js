@@ -53,7 +53,6 @@ function chkKey() {
   if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
   if(testkey == 'Y'){window.location = '#yinyue';}
   if(testkey == 'z'){window.open("http://williamkpchan.github.io/LibDocs/shortPeriodMain.html");}
-
 }
 
 function getChar(event) {
