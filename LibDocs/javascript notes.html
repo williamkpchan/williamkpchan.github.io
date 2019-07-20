@@ -3991,7 +3991,174 @@ function getChar(event) {
   }
 }
 
+<b class="topic">Top 10 jQuery functions to Plain Old JavaScript</b>
+<a href="https://devkisslist.com/2019/06/29/top-10-jquery-functions-to-plain-old-javascript/">Top 10 jQuery functions</a>
+<br>
+<div><a href="#topic-1" target="_self">1 $(document).ready(..)</a><br><a href="#topic-2" target="_self">2) $(…).HTML()</a><br><a href="#topic-3" target="_self">3) $(…).Append</a><br><a href="#topic-4" target="_self">4) $(…).prepend()</a><br><a href="#topic-5" target="_self">5) $(…).empty()</a><br><a href="#topic-6" target="_self">6) $(…).Attr(name)</a><br><a href="#topic-7" target="_self">7) $(…).val()</a><br><a href="#topic-8" target="_self">8, 9) $(…).on() | $(…).off()</a><br><a href="#topic-9" target="_self">10) $(…).toggle()</a><br><a href="#topic-10" target="_self">Conclusion</a></div></center>
+These are my top most commonly use jQuery functions converted to Plain Old JavaScript.
+Sometimes I need to create a simple static HTML or landing page, and I don’t feel like bringing in any libraries or bloatware. For those cases I just use plain old JavaScript to get the job done, and honestly it feels good to know how things work.
+So here is my top 10 list, I also use this as reference and now sharing with you.
+If you like to follow along go to the GitHub page here, and feel free to contribute: https://github.com/omarld/jqueryToPlainJS
+Before starting, the titles are the jQuery functions to be converted to plain old JavaScript. That will follow with a brief description of what it is supposed to do, followed by the converted JavaScript code with some additional notes.
+<h2 id="topic-1">1 $(document).ready(..)</h2>
+Check that document has loaded and ready to execute your scripts.
+<pre>let isLoaded = false;
+let myOnLoadCallBack = function(){
+    isLoaded = true;
+    //my stuff here
+}
+document.addEventListener("DOMContentLoaded", myOnLoadCallBack());
 
+document.addEventListener('readystatechange', (event) =&gt; {
+    if (document.readyState === 'complete' &amp;&amp; !isLoaded) {
+        myOnLoadCallBack();
+    }
+);</pre>
+&nbsp;
+Using <em>DOMContentLoaded</em> event listener, this is triggered when the DOM tree has been built but none of other resources have been loaded yet (ie styles, images). <em>DOMContentLoaded</em> also waits for any scripts to be loaded, if there are any <em>script</em> tags found in the HTML document.
+There is catch when loading styles if there is a script tag after your styles. In this case it’s for styles to be loaded before the script, in case the script modifies any styles.
+<em>DOMContentLoaded</em> is not supported by IE 8 or less. In case you have the bad luck of having to support IE 8, you should use <em>document.readyState</em>.
+The different ready states are:
+<ul>
+<li><em>loading</em>       : document is loading</li>
+<li><em>interactive</em> : document was fully read</li>
+<li><em>complete</em>    : document was fully read and all resources (styles, images) are loaded too</li>
+</ul>
+<h2 id="topic-2">2) $(…).HTML()</h2>
+Find the value of an existing DOM element, or insert some content.
+To find existing value, just reference the <em>innerHTML</em> property.
+<pre>var content = document.querySelector("section#html div.content p.retrieve").innerHTML;</pre>
+To insert some content, assign <em>innerHTML </em>to the new content which can contain HTML tags. Note, this will replace any existing content.
+<pre>document.querySelector("section#html div.results p.sample").innerHTML = “&lt;p&gt;Starting a new paragraph&lt;/p&gt;”;</pre>
+<h2 id="topic-3">3) $(…).Append</h2>
+Insert some HTML at the end of an existing element.
+First we need to find/get the element where we want to insert our new content.
+<pre>var appendEl = document.querySelector("section#append div.content div.results");</pre>
+Next create the element we want to insert.
+<pre>var childEl = document.createElement("div");
+childEl.innerHTML = "&lt;p&gt;New &lt;strong&gt;child&lt;/strong&gt; Content!&lt;/p&gt;"</pre>
+Lastly, insert the element.
+<pre>//appending
+appendEl.appendChild(childEl);
+</pre>
+Sure this took three steps to get this done, but we can simplify a bit.<br>
+First lets create the new element.
+<pre>var childEl = document.createElement("div");
+childEl.innerHTML = "&lt;p&gt;New &lt;strong&gt;child&lt;/strong&gt; Content!&lt;/p&gt;"</pre>
+Next let’s find and insert new element in one line.
+<pre>document.querySelector("section#append div.content div.results").appendChild(childEl);</pre>
+If you want to simplify this further or if you find yourself doing this a lot, you can create a wrapper function to do this.
+<h2 id="topic-4">4) $(…).prepend()</h2>
+Very similar to <em>append</em> above, the only difference is that this inserts at the beginning of the element. For this we will jump into the simplified solution.
+Create new element to insert.
+<pre>var newDiv = document.createElement("div");
+var textNode = document.createTextNode("new content to inserted!");
+newDiv.appendChild(textNode);</pre>
+Find existing element and insert new element.
+<pre>document.querySelector("section#prepend div.content p#existing").insertBefore(newDiv, prependEl.firstChild);</pre>
+<h2 id="topic-5">5) $(…).empty()</h2>
+Empty or clear out a DOM element. Initially you might think, lets just assign <em>innerHTML</em> property to an empty string. This would be half right, but then what happens if the target element has child DOM elements? We’ll get to that, it is also simple.
+First let’s start by clearing out content of an existing element.
+<pre>document.getElementById("empty-content").innerHtml = “”;</pre>
+Okay, so now how do we do all inner DOM elements? For that, let’s clear existing content and then lets remove any child DOM elements in a loop.
+<pre>var contentEl = document.getElementById("empty-content");
+contentEl.innerHtml = "";
+while(contentEl.firstChild){
+    contentEl.removeChild(contentEl.firstChild);
+}</pre>
+The while loop iterates until there are no more children to remove.
+<h2 id="topic-6">6) $(…).Attr(name)</h2>
+Get the attribute value of an existing DOM element, or set attribute. The important point to remember about this, is that not all DOM elements have the same attributes. For example a check box vs a button (a button would not have the <em>checked</em> attribute).
+Let’s start by getting the checked attribute of a check box.
+<pre>let isChecked = document.querySelector("div#attributes input#my-check-box").getAttribute("checked");</pre>
+Now let’s see how we can set that same attribute.
+<pre>var el = document.querySelector("div#attributes input#my-check-box");</pre>
+We can access the JavaScript property to change its state.
+<pre>el.checked = true;</pre>
+You might have noticed that I referred to the <em>checked</em> key as a JavaScript property. What is the difference between element attribute and JavaScript property? In simple terms, properties are JavaScript inherited keys from element attributes. This means you can access the DOM elements attributes as JavaScript object properties.
+Here are a few important points to know about properties vs attributes.
+<ul>
+<li>Properties are JavaScript inherited values from attributes (ie. class vs className)</li>
+<li>Element properties are created from attributes only if they are standard. So if you introduced a custom attribute, it won’t be part of the object properties.</li>
+<li>Depending on the element the attributes available would be different (ie checked box vs button)</li>
+</ul>
+<h2 id="topic-7">7) $(…).val()</h2>
+Get the value of the matched DOM element. This is also a simple one, let’s start with getting the value of existing element.
+To make these command clear, I have split them out. Although this can be done in one line.
+<pre>var contentEl = document.querySelector("#my-input-el");
+var lnameValue = contentEl.querySelector("input[name='lname']").value;</pre>
+Setting value is just as simple, and can also be done in one line.
+<pre>contentEl.querySelector("input[name='fname']").value = "Some random value"
+;</pre>
+Similar to using <em>innerHTML</em> to set content, this also overrides any values the element currently has.
+<h2 id="topic-8">8, 9) $(…).on() | $(…).off()</h2>
+To add or remove events from an element use either <em>on()</em> or <em>off()</em> accordingly.
+Adding event handler.
+<pre>document.getElementById("my-button").addEventListener("click", function(evt){
+    //my custom code here
+});</pre>
+Removing event handler, here we need to do extra checks for browser supported properties.
+<pre>var toggleFunction = function(){...}
+if (toggleBtn.removeEventListener) { // For all major browsers, except IE 8 and earlier
+    toggleBtn.removeEventListener("click", toggleFunction);
+} else if (toggleBtn.detachEvent) { // For IE 8 and earlier versions
+    toggleBtn.detachEvent("click", toggleFunction)
+}</pre>
+Here are a few things to note when adding or removing events handlers.
+<ul>
+<li>Element must exist by the time code is instantiated or event won’t be attached.</li>
+<li>When removing event listener, the function reference has to be the same.</li>
+<li>Inline anonymous function will not work, since reference is different.</li>
+<li>Unlike jQuery, when removing event handlers you have to specify which event you want to remove. In jQuery no arguments would remove all, this case has to be handled manually.</li>
+</ul>
+One way to remove all event handlers without being explicit, is to clone the element and replace it. This will also get rid of any attached events to child elements.
+Removing all elements.
+<pre>var currEl = document.getElementById("button");
+var cloneEl= currEl.cloneNode(true);
+currEl.parentNode.replaceChild(cloneEl, currEl);</pre>
+<h2 id="topic-9">10) $(…).toggle()</h2>
+Toggle display on an element, this can be done a couple of ways. Each approach has has different results. You need to decide which behavior you want.
+First way is to change the elements display attribute to none to remove element from the DOM, and set it to <em>initial</em> to set it back. Important point here is that this will impact your layout, and shift elements if you are toggling display.
+Here we are toggling display on an image element by directly accessing the elements style property.
+<pre>if(imgEl.style.display &amp;&amp; imgEl.style.display === "none"){
+    imgEl.style.display = "initial";
+} else {
+    imgEl.style.display = "none";
+}</pre>
+Second approach is to change the elements visibility, which will hide the element and retain layout.
+<pre>if(imgEl.style.visibility &amp;&amp; imgEl.style.visibility === "hidden"){
+    imgEl.style.visibility = "initial";
+} else {
+    imgEl.style.visibility = "hidden";
+};</pre>
+<h2 id="topic-10">Conclusion</h2>
+If you have been using libraries and JavaScript frameworks, it is easy to lose sight on how simple some of implementations are. But most of all, you also lose sight into some core basic understanding of how the DOM works. Having a good understanding the DOM can serve you well not just on design but also on debugging issues.
+Those were just some of my most often used functions when I am trying to keep things simple. Now I am sharing it with you if ever feel like just writing your own rather than adding bloat-ware to your application.
+
+
+<b class="topic">Some javascript Essays</b>
+<a href="http://slicker.me/fractals/animate.htm">Fractal animation</a>
+<br>
+<a href="https://github.com/oliver-moran/jimp">JavaScript Image Manipulation Program</a>
+<br>
+<a href="https://devkisslist.com/2019/06/29/top-10-jquery-functions-to-plain-old-javascript/">Top 10 jQuery functions to Plain Old JavaScript</a>
+<br>
+<a href="https://www.framer.com/motion/">Framer Motion, React library to power production-ready animations</a>
+<br>
+<a href="https://jrsinclair.com/articles/2019/what-is-a-higher-order-function-and-why-should-anyone-care/">HIGHER-ORDER FUNCTIONS</a>
+<br>
+<a href="https://yomguithereal.github.io/posts/lru-cache">IMPLEMENTING AN EFFICIENT LRU CACHE IN JAVASCRIPT</a>
+<br>
+<a href="https://www.freecodecamp.org/news/how-to-master-async-await-with-this-real-world-example-19107e7558ad/">How To Master Async/Await With This Real World Example</a>
+<br>
+<a href="https://github.com/trekhleb/javascript-algorithms">JavaScript Algorithms and Data Structures</a>
+<br>
+<a href="https://tsh.io/blog/new-node-js-features/">New Node.js 12 features will see it disrupt AI, IoT and more surprising areas</a>
+<br>
+<a href="https://nodesource.com/blog/improve-javascript-performance">12 Tips for Improving JavaScript Performance</a>
+<br>
+<a href="https://www.codementor.io/muhammadkasim/currying-in-js-woivjbf1s?utm_swu=7179">Currying in JS</a>
+<br>
 <br><br><br><br><br><br>
 <script>
   $(function() {
