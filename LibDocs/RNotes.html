@@ -2620,6 +2620,137 @@ Determining the optimal number of clusters: use factoextra::fviz_nbclust()
 <h2>树状图</h2>
 <a href="Dendrograms in R.html" target="_blank">Dendrograms in R</a>
 <br>
+<h2>shiny and rpanel - a quick comparison</h2>
+<pre>
+Shiny is a package from RStudio that lets you produce interactive web pages. 
+You build a page with some control widgets and a handler that does something dependent on the value of those widgets. 
+You can build your interface programmatically or create a boilerplate html page that gets filled in by control and output widgets.
+
+A conceptually similar pattern is implemented by the rpanel package, but this uses the tcltk toolkit. 
+A panel is created, control widgets added, and callbacks on the controls can run R code to, for example, update a plot.
+
+qq plot example
+Here's the rpanel version:
+
+require(rpanel)
+# box-cox transform
+bc.fn <- function(y, lambda) {
+    if (abs(lambda) < 0.001) 
+        z <- log(y) else z <- (y^lambda - 1)/lambda
+}
+
+# qqplot of transformed data
+qq.draw <- function(panel) {
+    z <- bc.fn(panel$y, panel$lambda)
+    qqnorm(z, main = paste("lambda =", round(panel$lambda, 2)))
+    panel
+}
+
+# create a new panel with some initial data
+panel <- rp.control(y = exp(rnorm(50)), lambda = 1)
+
+# add a slider that calls qq.draw on change
+rp.slider(panel, lambda, -2, 2, qq.draw)
+
+Run these functions and you should see a slider and a graphics window. 
+Move the slider to modify the plot.
+Note that this might not work too well under RStudio because of the way the embedded RStudio graphics device captures output.
+
+
+And here is the shiny version, which comes in two files living in their own folder.  ui.R and server.R
+
+First qqplot/ui.R:
+
+library(shiny)
+# this defines our page layout
+shinyUI(pageWithSidebar(
+  headerPanel("qqplot example"),
+  sidebarPanel(
+  # a slider called 'lambda':
+    sliderInput("lambda", "Lambda value", min = -2, max = 2, step=0.01, value = 0)
+  ),
+  mainPanel(
+    # the main panel is the plotted output from qqplot:
+    plotOutput("qqPlot")
+  )
+))
+
+and qqplot/server.R:
+
+library(shiny)
+shinyServer(function(input, output) {
+    # b-c transform
+    bc.fn <- function(y, lambda) {
+        if (abs(lambda) < 0.001) 
+            z <- log(y) else z <- (y^lambda - 1)/lambda
+    }
+    # initial data
+    y = exp(rnorm(50))
+    # here's the qqplot method:
+    output$qqPlot <- reactivePlot(function() {
+        z <- bc.fn(y, input$lambda)
+        qqnorm(z, main = paste("lambda =", round(input$lambda, 2)))
+    })
+})
+
+With that done, launch the app with:
+
+runApp("qqplot")
+that should open up the page in your web browser. 
+Hit break, stop, or control-C to quit.
+
+
+Notes
+The rpanel plot updates as you drag the slider, whereas shiny updates only when you let go of the slider.
+
+I find that when I hit Control-C and break a running shiny app, then my tcltk windows go all unresponsive until I quit R and start again. 
+Threading issues? This is on Linux. 
+I've always had problems with tcltk widgets going unresponsive on me, or ending up unkillable.
+
+The shiny UI looks, well, “shiny”, but the rpanel interface looks a bit old and not very exciting (if you can get excited by user interfaces).
+
+Using the tkrplot package, you can build integrated rpanel packages with controls and plots in the same window. 
+Without it, you are stuck with separate graphics and control windows.
+
+Which should I use?
+How do I know?! Shiny looks better, but I do like the update on drag of rpanel - it gives you much better feedback as you control the plot. 
+Maybe this can be done in shiny with some additional work.
+
+I don't really like the two-file method of shiny. 
+Looking at the code I see the files just get sourced in, so conceivably it could be possible to run shiny apps just by specifying the shinyServer and shinyUI functions - but shiny monitors the server.R and ui.R file for changes and updates the application, which is quite nice.
+
+So there's the basic existential dilemma. 
+Choice. 
+I can even throw some more things into the mix if you want - there' RServe, or RApache with gWidgetsWWW and probably many many more. 
+I'm sure we can all agree that the days of needing Java and Apache Tomcat to deploy R applications to the web are now over (http://sysbio.mrc-bsu.cam.ac.uk/Rwui/tutorial/quick_tour.html).
+
+I might try and implement some more of the rpanel examples in shiny shortly. 
+Or why don't you have a go, and publish your works here?
+
+<h2>R GUI 視窗程式設計</h2>
+<a href="http://www.hmwu.idv.tw/web/R/F01-hmwu_R-GUI-Design.pdf">R GUI 視窗程式設計 tcltk/tcltk2, rpanel</a>
+<a href="http://adrian.waddell.ch/EssentialSoftware/Rtcltk_geometry.pdf">Rtcltk_geometry</a>
+
+<a href="http://rstudio-pubs-static.s3.amazonaws.com/2666_f0de0980ac9048d0a71d0f507cd83c3f.html">shiny and rpanel - a quick comparison</a>
+
+<h3>rpanel sample</h3>
+<a href="https://www.academia.edu/370260/rpanel_Simple_Interactive_Controls_for_R_Functions_Using_the_tcltk_Package_9999_">rpanel: Simple Interactive Controls for R Functions Using the tcltk Package </a>
+<a href="https://www.academia.edu/attachments/1880059/download_file?st=MTU2NDAxOTg4MywxODIuMjM5LjExNS4zNg%3D%3D&s=swp-splash-header">download rpanel sample</a>
+<a href="www.stats.gla.ac.uk/~adrian/rpanel">The `rpanel' package</a>
+<a href="http://www.stats.gla.ac.uk/~adrian/rpanel/scripts/rpanel-paper-scripts.r">Simple Interactive Controls for R Functions scripts</a>
+
+library(rpanel)
+x11(width=4,height=4)
+qq.draw <- function(panel)
+ { z <- bc.fn(panel$y, panel$lambda)
+   qqnorm(z, main = paste("lambda =",round(panel$lambda, 2)))
+   panel
+ }
+ panel <- rp.control(y = exp(rnorm(50)), lambda = 1)
+ rp.slider(panel, lambda, -2, 2, qq.draw,showvalue = TRUE)
+
+</pre>
+
 <br><br><br><br><br>
 
 <script>
