@@ -1,0 +1,737 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{width:60%;margin-left: 20%; font-size:22px;}
+strong, h1, h2 {color: gold;}
+img {width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%;}
+</style>
+</head><body>
+<center><h1>SQL Introduction</h1>
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+<a href="https://www.kaggle.com/dansbecker/select-from-where">SQL select from where</a>
+<br>
+<h2>Introduction</h2>
+Now that you know how to access and examine a dataset, you're ready to write your first SQL query!  As you'll soon see, SQL queries will help you sort through a massive dataset, to retrieve only the information that you need.
+We'll begin by using the keywords <strong>SELECT</strong>, <strong>FROM</strong>, and <strong>WHERE</strong>to get data from specific columns based on conditions you specify.
+For clarity, we'll work with a small imaginary dataset <code>pet_records</code> which contains just one table, called <code>pets</code>.
+<img src="https://i.imgur.com/fI5Pvvp.png">
+
+<h2>SELECT ... FROM</h2>
+The most basic SQL query selects a single column from a single table.  To do this,
+<ul>
+<li>
+specify the column you want after the word <strong>SELECT</strong>, and then 
+</li>
+<li>
+specify the table after the word <strong>FROM</strong>.  
+</li>
+</ul>
+For instance, to select the <code>Name</code> column (from the <code>pets</code> table in the <code>pet_records</code> database in the <code>bigquery-public-data</code> project), our query would appear as follows:
+<img src="https://i.imgur.com/c3GxYRt.png">
+Note that when writing an SQL query, the argument we pass to <strong>FROM</strong>is <em>not</em> in single or double quotation marks (' or "). It is in backticks (`).
+<h2>WHERE ...</h2>
+BigQuery datasets are large, so you'll usually want to return only the rows meeting specific conditions. You can do this using the <strong>WHERE</strong>clause.
+The query below returns the entries from the <code>Name</code> column that are in rows where the <code>Animal</code> column has the text <code>'Cat'</code>.
+
+<img src="https://i.imgur.com/HJOT8Kb.png">
+<h2>Example: What are all the U.S. cities in the OpenAQ dataset?</h2>
+
+Now that you've got the basics down, let's work through an example with a real dataset. We'll use an 
+<a href="https://openaq.org">OpenAQ</a> dataset about air quality.
+First, we'll set up everything we need to run queries and take a quick peek at what tables are in our database.  (
+<em>Since you learned how to do this in the previous tutorial, we have hidden the code.  But if you'd like to take a peek, you need only click on the "Code" button below.</em>)
+
+Code
+In [1]:
+<pre>
+from google.cloud import bigquery
+
+# Create a "Client" object
+client = bigquery.Client()
+
+# Construct a reference to the "openaq" dataset
+
+dataset_ref = client.dataset("openaq",project="bigquery-public-data")
+# API request - fetch the dataset
+
+dataset=client.get_dataset(dataset_ref)
+# List all the tables in the "openaq" dataset
+
+tables = list(client.list_tables(dataset))
+
+# Print names of all tables in the dataset (there's only one!)
+
+for table in tables :
+   print(table.table_id)
+</pre>
+
+<pre>
+Using Kaggle's public dataset BigQuery integration.
+global_air_quality
+</pre> 
+
+The dataset contains only one table, called <code>global_air_quality</code>.  We'll fetch the table and take a peek at the first few rows to see what sort of data it contains.  (Again, we have hidden the code.  To take a peek, click on the "Code" button below.) 
+Code
+In [2]:
+
+<pre>
+
+# Construct a reference to the "global_air_quality" table table_ref=dataset_ref.
+table ("global_air_quality")
+
+# API request - fetch the table table=client.
+get_table(table_ref)
+
+# Preview the first five lines of the "global_air_quality" table client.
+list_rows(table , max_results=5).to_dataframe ()
+
+</pre> 
+Out[2]:
+
+<table border="1" class="dataframe">
+  
+<thead>
+<tr style="text-align: right;">
+  <th></th>
+  <th>location</th>
+  <th>city</th>
+  <th>country</th>
+  <th>pollutant</th>
+  <th>value</th>
+  <th>timestamp</th>
+  <th>unit</th>
+  <th>source_name</th>
+  <th>latitude</th>
+  <th>longitude</th>
+  <th>averaged_over_in_hours</th>
+</tr>
+  
+</thead>
+  
+<tbody>
+<tr>
+  <th>0</th>
+  <td>BTM Layout, Bengaluru - KSPCB</td>
+  <td>Bengaluru</td>
+  <td>IN</td>
+  <td>co</td>
+  <td>910.00</td>
+  <td>2018-02-22 03:00:00+00:00</td>
+  <td>µg/m³</td>
+  <td>CPCB</td>
+  <td>12.912811</td>
+  <td>77.60922</td>
+  <td>0.25</td>
+</tr>
+<tr>
+  <th>1</th>
+  <td>BTM Layout, Bengaluru - KSPCB</td>
+  <td>Bengaluru</td>
+  <td>IN</td>
+  <td>no2</td>
+  <td>131.87</td>
+  <td>2018-02-22 03:00:00+00:00</td>
+  <td>µg/m³</td>
+  <td>CPCB</td>
+  <td>12.912811</td>
+  <td>77.60922</td>
+  <td>0.25</td>
+</tr>
+<tr>
+  <th>2</th>
+  <td>BTM Layout, Bengaluru - KSPCB</td>
+  <td>Bengaluru</td>
+  <td>IN</td>
+  <td>o3</td>
+  <td>15.57</td>
+  <td>2018-02-22 03:00:00+00:00</td>
+  <td>µg/m³</td>
+  <td>CPCB</td>
+  <td>12.912811</td>
+  <td>77.60922</td>
+  <td>0.25</td>
+</tr>
+<tr>
+  <th>3</th>
+  <td>BTM Layout, Bengaluru - KSPCB</td>
+  <td>Bengaluru</td>
+  <td>IN</td>
+  <td>pm25</td>
+  <td>45.62</td>
+  <td>2018-02-22 03:00:00+00:00</td>
+  <td>µg/m³</td>
+  <td>CPCB</td>
+  <td>12.912811</td>
+  <td>77.60922</td>
+  <td>0.25</td>
+</tr>
+<tr>
+  <th>4</th>
+  <td>BTM Layout, Bengaluru - KSPCB</td>
+  <td>Bengaluru</td>
+  <td>IN</td>
+  <td>so2</td>
+  <td>4.49</td>
+  <td>2018-02-22 03:00:00+00:00</td>
+  <td>µg/m³</td>
+  <td>CPCB</td>
+  <td>12.912811</td>
+  <td>77.60922</td>
+  <td>0.25</td>
+</tr>
+  
+</tbody>
+</table> 
+
+Everything looks good! So, let's put together a query. Say we want to select all the values from the <code>city</code> column that are in rows where the <code>country</code> column is <code>'US'</code> (for "United States"). 
+
+In [3]:
+
+<pre>
+
+# Query to select all the items from the "city" column where the "country" column is 'US'
+query ="""
+       SELECT city
+       FROM `bigquery-public-data.openaq.global_air_quality`
+       WHERE country = 'US'
+       """
+</pre> 
+
+Take the time now to ensure that this query lines up with what you learned above.
+<h2>Submitting the query to the dataset</h2>
+
+We're ready to use this query to get information from the OpenAQ dataset.  As in the previous tutorial, the first step is to create a <code>Client</code> object. 
+In [4]:
+
+<pre>
+# Create a "Client" object client=bigquery.Client ()
+</pre> 
+
+<pre>
+Using Kaggle's public dataset BigQuery integration.
+
+</pre> 
+
+We begin by setting up the query with the <code>query()</code> method.  We run the method with the default parameters, but this method also allows us to specify more complicated settings that you can read about in the documentation.  We'll revisit this later. 
+In [5]:
+<pre>
+
+# Set up the query query_job=client.
+query(query)</pre> 
+
+Next, we run the query and convert the results to a pandas DataFrame. 
+In [6]:
+
+<pre>
+
+# API request - run the query, and return a pandas DataFrame us_cities=query_job.
+to_dataframe ()
+</pre> 
+
+Now we've got a pandas DataFrame called <code>us_cities</code>, which we can use like any other DataFrame. 
+In [7]:
+
+<pre>
+
+# What five cities have the most measurements? us_cities.city.value_counts ().head ()
+</pre> 
+
+Out[7]: 
+<pre>
+Phoenix-Mesa-Scottsdale                     87
+Houston                                     80
+New York-Northern New Jersey-Long Island    60
+Los Angeles-Long Beach-Santa Ana            60
+Riverside-San Bernardino-Ontario            59
+Name: city, dtype: int64
+</pre> 
+<h2>More queries</h2>
+If you want multiple columns, you can select them with a comma between the names: 
+In [8]:
+<pre>
+query ="""
+       SELECT city, country
+       FROM `bigquery-public-data.openaq.global_air_quality`
+       WHERE country = 'US'
+       """
+</pre> 
+
+You can select all columns with a <code>*</code> like this: 
+In [9]:
+
+<pre>
+query="""
+       SELECT *
+       FROM `bigquery-public-data.openaq.global_air_quality`
+       WHERE country = 'US'
+       """
+</pre> 
+<h2>Q&amp;A: Notes on formatting</h2>
+The formatting of the SQL query might feel unfamiliar. If you have any questions, you can ask in the comments section at the bottom of this page.  Here are answers to two common questions:
+<h3><strong>Question: What's up with the triple quotation marks (""")?</strong>
+
+<a href="#Question:-What's-up-with-the-triple-quotation-marks-(%22%22%22)?" target="_self">
+</h3> <em>Answer</em>: These tell Python that everything inside them is a single string, even though we have line breaks in it. The line breaks aren't necessary, but they make it easier to read your query.
+<h3>
+
+<strong>Question: Do you need to capitalize SELECT and FROM?</strong>
+
+<a href="#Question:-Do-you-need-to-capitalize-SELECT-and-FROM?" target="_self">
+</h3> <em>Answer</em>: No, SQL doesn't care about capitalization. However, it's customary to capitalize your SQL commands, and it makes your queries a bit easier to read. 
+
+<h2>Working with big datasets</h2>
+
+BigQuery datasets can be huge. We allow you to do a lot of computation for free, but everyone has some limit.
+
+<strong>Each Kaggle user can scan 5TB every 30 days for free. Once you hit that limit, you'll have to wait for it to reset.</strong>
+
+The biggest dataset currently on Kaggle is 3TB, so you can go through your 30-day limit in a couple queries if you aren't careful.
+Don't worry though: we'll teach you how to avoid scanning too much data at once, so that you don't run over your limit.
+To begin,you can estimate the size of any query before running it. Here is an example using the (
+<em>very large!</em>) Hacker News dataset. To see how much data a query will scan, we create a <code>QueryJobConfig</code> object and set the <code>dry_run</code> parameter to <code>True</code>. 
+In [10]:
+
+<pre>
+# Query to get the score column from every row where the type column has value "job" query
+=
+"""       SELECT score, title
+       FROM `bigquery-public-data.hacker_news.full`
+       WHERE type = "job" 
+       """
+
+# Create a QueryJobConfig object to estimate size of query without running it dry_run_config=bigquery.<a class="indexed_symbol" onclick="parent.postMessage({'referent':'
+<unknown>
+.google.cloud.bigquery.QueryJobConfig'}, '*')">
+QueryJobConfig ( dry_run=
+
+True)
+# API request - dry run query to estimate costs dry_run_query_job=client.
+query(query ,
+
+job_config= dry_run_config) print (
+
+"This query will process 
+
+{}
+
+bytes.".
+format(dry_run_query_job.
+total_bytes_processed))
+</pre> 
+
+<pre>
+This query will process 399514186 bytes.
+
+</pre> 
+You can also specify a parameter when running the query to limit how much data you are willing to scan. Here's an example with a low limit. 
+n [11]:
+<pre>
+# Only run the query if it's less than 1 MB ONE_MB
+=
+1000 *
+1000 safe_config=bigquery.<a class="indexed_symbol" onclick="parent.postMessage({'referent':'
+<unknown>
+.google.cloud.bigquery.QueryJobConfig'}, '*')">
+QueryJobConfig ( maximum_bytes_billed= ONE_MB)
+# Set up the query (will only run if it's less than 1 MB) safe_query_job=client.
+query(query ,
+
+job_config= safe_config)
+# API request - try to run the query, and return a pandas DataFrame safe_query_job.
+to_dataframe ()
+</pre> 
+
+Out[11]:
+
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {        vertical-align: middle;    }
+    .dataframe tbody tr th {        vertical-align: top;    }
+    .dataframe thead th {        text-align: right;    }
+
+</style>
+<table border="1" class="dataframe">
+  
+<thead>
+<tr style="text-align: right;">
+  <th></th>
+  <th>score</th>
+  <th>title</th>
+</tr>
+  
+</thead>
+  
+<tbody>
+<tr>
+  <th>0</th>
+  <td>51.0</td>
+  <td>Justin.tv is looking for a Product Manager</td>
+</tr>
+<tr>
+  <th>1</th>
+  <td>5.0</td>
+  <td>WePay - Designer</td>
+</tr>
+<tr>
+  <th>2</th>
+  <td>14.0</td>
+  <td>Greplin is looking for an iPhone developer</td>
+</tr>
+<tr>
+  <th>3</th>
+  <td>46.0</td>
+  <td>Senior Software Engineer - Comprehend Systems ...</td>
+</tr>
+<tr>
+  <th>4</th>
+  <td>15.0</td>
+  <td>Justin.tv is still hiring Software Engineering...</td>
+</tr>
+<tr>
+  <th>5</th>
+  <td>5.0</td>
+  <td>Backend Developer at Listia</td>
+</tr>
+<tr>
+  <th>6</th>
+  <td>6.0</td>
+  <td>[DISQUS - San Francisco] Hiring: Back-end deve...</td>
+</tr>
+<tr>
+  <th>7</th>
+  <td>7.0</td>
+  <td>Lead iOS Developer - HighlightCam</td>
+</tr>
+<tr>
+  <th>8</th>
+  <td>7.0</td>
+  <td>Mixpanel - Designer</td>
+</tr>
+<tr>
+  <th>9</th>
+  <td>72.0</td>
+  <td>thesixtyone (YC W09) is hiring software engineers</td>
+</tr>
+<tr>
+  <th>10</th>
+  <td>70.0</td>
+  <td>Weebly is hiring a front-end web developer in ...</td>
+</tr>
+<tr>
+  <th>11</th>
+  <td>32.0</td>
+  <td>Work at Socialcam and help the world share mob...</td>
+</tr>
+<tr>
+  <th>12</th>
+  <td>44.0</td>
+  <td>Posterous - Frontend Design Engineer</td>
+</tr>
+<tr>
+  <th>13</th>
+  <td>47.0</td>
+  <td>drchrono is looking for Healthcare Hackers. Jo...</td>
+</tr>
+<tr>
+  <th>14</th>
+  <td>24.0</td>
+  <td>Justin.tv looking for a Head of Communications</td>
+</tr>
+<tr>
+  <th>15</th>
+  <td>20.0</td>
+  <td>Wundrbar seeking iPhone developer</td>
+</tr>
+<tr>
+  <th>16</th>
+  <td>4.0</td>
+  <td>WePay - Operations Associate</td>
+</tr>
+<tr>
+  <th>17</th>
+  <td>11.0</td>
+  <td>Scoopler is Hiring: Join the real-time Revolut...</td>
+</tr>
+<tr>
+  <th>18</th>
+  <td>5.0</td>
+  <td>Listia (YC S09) needs a great Rails Developer/...</td>
+</tr>
+<tr>
+  <th>19</th>
+  <td>5.0</td>
+  <td>Justin.tv is hiring the smartest hackers from ...</td>
+</tr>
+<tr>
+  <th>20</th>
+  <td>44.0</td>
+  <td>Graphic Designer needed for stealth/VC funded ...</td>
+</tr>
+<tr>
+  <th>21</th>
+  <td>21.0</td>
+  <td>Work on something millions use: Intern at Just...</td>
+</tr>
+<tr>
+  <th>22</th>
+  <td>39.0</td>
+  <td>Posterous is hiring UI Designers and Software ...</td>
+</tr>
+<tr>
+  <th>23</th>
+  <td>70.0</td>
+  <td>BackType (YC S08) is hiring an Engineer (3rd T...</td>
+</tr>
+<tr>
+  <th>24</th>
+  <td>34.0</td>
+  <td>Heysan looking for Java-developer   [San Franc...</td>
+</tr>
+<tr>
+  <th>25</th>
+  <td>6.0</td>
+  <td>Mixpanel - Hardcore Engineer</td>
+</tr>
+<tr>
+  <th>26</th>
+  <td>14.0</td>
+  <td>[Mountain View/Vancouver] SocialPicks Looking ...</td>
+</tr>
+<tr>
+  <th>27</th>
+  <td>7.0</td>
+  <td>Airbnb hiring SEM specialist</td>
+</tr>
+<tr>
+  <th>28</th>
+  <td>8.0</td>
+  <td>Mixpanel (S09) hiring a Software Engineer</td>
+</tr>
+<tr>
+  <th>29</th>
+  <td>53.0</td>
+  <td>Optimizely is hiring software engineers!</td>
+</tr>
+<tr>
+  <th>...</th>
+  <td>...</td>
+  <td>...</td>
+</tr>
+<tr>
+  <th>12129</th>
+  <td>3.0</td>
+  <td>YC startup looking for short-term contract help</td>
+</tr>
+<tr>
+  <th>12130</th>
+  <td>3.0</td>
+  <td>Frontend Engineer - Mixpanel Analytics [SF]</td>
+</tr>
+<tr>
+  <th>12131</th>
+  <td>3.0</td>
+  <td>Airbnb hiring analytics specialist</td>
+</tr>
+<tr>
+  <th>12132</th>
+  <td>3.0</td>
+  <td>Airbnb - Frontend Engineer</td>
+</tr>
+<tr>
+  <th>12133</th>
+  <td>3.0</td>
+  <td>Airbnb - Fraud Management Engineer</td>
+</tr>
+<tr>
+  <th>12134</th>
+  <td>3.0</td>
+  <td>Web developer intern - Mertado</td>
+</tr>
+<tr>
+  <th>12135</th>
+  <td>3.0</td>
+  <td>BackType is hiring front and back-end developers</td>
+</tr>
+<tr>
+  <th>12136</th>
+  <td>3.0</td>
+  <td>Software Architect at Mertado</td>
+</tr>
+<tr>
+  <th>12137</th>
+  <td>3.0</td>
+  <td>WePay - Lead Designer</td>
+</tr>
+<tr>
+  <th>12138</th>
+  <td>3.0</td>
+  <td>Front-end developers: hack your way around the...</td>
+</tr>
+<tr>
+  <th>12139</th>
+  <td>3.0</td>
+  <td>BackType is hiring a BD engineer</td>
+</tr>
+<tr>
+  <th>12140</th>
+  <td>3.0</td>
+  <td>BackType Is Hiring Search And Software Engineers</td>
+</tr>
+<tr>
+  <th>12141</th>
+  <td>3.0</td>
+  <td>Weebly [W07] hiring a System Administrator - T...</td>
+</tr>
+<tr>
+  <th>12142</th>
+  <td>3.0</td>
+  <td>Mertado (venture funded) is hiring web engineers</td>
+</tr>
+<tr>
+  <th>12143</th>
+  <td>3.0</td>
+  <td>BackType is hiring designers and product engin...</td>
+</tr>
+<tr>
+  <th>12144</th>
+  <td>3.0</td>
+  <td>Airbnb - Frontend Engineer</td>
+</tr>
+<tr>
+  <th>12145</th>
+  <td>3.0</td>
+  <td>Airbnb - SEM Specialist</td>
+</tr>
+<tr>
+  <th>12146</th>
+  <td>3.0</td>
+  <td>Mixpanel needs a frontend engineer (Python/JS)</td>
+</tr>
+<tr>
+  <th>12147</th>
+  <td>3.0</td>
+  <td>Airbnb hiring 3 front-end engineers</td>
+</tr>
+<tr>
+  <th>12148</th>
+  <td>3.0</td>
+  <td>Men wanted for hazardous journey: AdGrok (YC S...</td>
+</tr>
+<tr>
+  <th>12149</th>
+  <td>3.0</td>
+  <td>Rails Programmer at Inkling</td>
+</tr>
+<tr>
+  <th>12150</th>
+  <td>3.0</td>
+  <td>Javascript badass - Mixpanel</td>
+</tr>
+<tr>
+  <th>12151</th>
+  <td>3.0</td>
+  <td>Mixpanel is looking for a great frontend devel...</td>
+</tr>
+<tr>
+  <th>12152</th>
+  <td>3.0</td>
+  <td>BackType - Interns - SF</td>
+</tr>
+<tr>
+  <th>12153</th>
+  <td>3.0</td>
+  <td>Tuxebo - Hiring London based hacker</td>
+</tr>
+<tr>
+  <th>12154</th>
+  <td>3.0</td>
+  <td>Software Engineers Wanted (bounty: iPad for ea...</td>
+</tr>
+<tr>
+  <th>12155</th>
+  <td>3.0</td>
+  <td>Airbnb - User Acquisition Engineer</td>
+</tr>
+<tr>
+  <th>12156</th>
+  <td>3.0</td>
+  <td>Mixpanel is looking for a front-end engineer</td>
+</tr>
+<tr>
+  <th>12157</th>
+  <td>3.0</td>
+  <td>Nowmov (YC 2010W) looking for Rails rockstars</td>
+</tr>
+<tr>
+  <th>12158</th>
+  <td>3.0</td>
+  <td>WePay - Senior Backend Engineer</td>
+</tr>
+  
+</tbody>
+</table>
+12159 rows × 2 columns 
+In this case, the query was cancelled, because the limit of 1 MB was exceeded.  However, we can increase the limit to run the query successfully! 
+n [12]:
+<pre>
+# Only run the query if it's less than 1 GB ONE_GB
+=
+1000 *
+1000 *
+
+1000 safe_config=bigquery.<a class="indexed_symbol" onclick="parent.postMessage({'referent':'
+<unknown>
+.google.cloud.bigquery.QueryJobConfig'}, '*')">
+QueryJobConfig ( maximum_bytes_billed= ONE_GB)
+# Set up the query (will only run if it's less than 1 GB) safe_query_job=client.
+query(query ,
+
+job_config= safe_config)
+# API request - try to run the query, and return a pandas DataFrame job_post_scores=safe_query_job.
+to_dataframe ()
+
+# Print average score for job posts job_post_scores.
+score.
+mean ()
+</pre> 
+
+Out[12]: 
+<pre>
+1.95482369169756
+</pre> 
+<h2>our turn</h2>
+
+Writing <strong>SELECT</strong>statements is the key to using SQL. So <strong>
+<a href="https://www.kaggle.com/kernels/fork/681989" target="_top">
+try your new skills</strong>
+!
+
+<br>
+<br>
+<br>
+<br>
+
+<script>
+	var toc = $('#toc');
+	$('h2').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>
+
+</body>
+</html>
