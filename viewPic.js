@@ -2,7 +2,7 @@
 function chkKey() {
   var testkey = getChar(event);
   if(testkey == 'b'){ backward();}
-  if(testkey == 'f'){ foreward();}
+  if((testkey == 'f')|(testkey == ' ')){ foreward();}
   if(testkey == '1'){ backward();}
   if(testkey == '3'){ foreward();}
   if(testkey == '5'){ zoomin();}
