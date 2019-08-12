@@ -31,7 +31,7 @@ function chkKey() {
   if(testkey == 'm'){window.open("http://williamkpchan.github.io/medical.html");}
   if(testkey == 'M'){window.open("https://www.google.com.hk/maps/");}
   if(testkey == 'n'){window.location = '#xinwen';}
-  if(testkey == 'N'){window.location = '#Notes';}
+  if(testkey == 'N'){window.location.href = '#Notes';}
 
   if(testkey == 'o'){window.location = '#sclj';}
   if(testkey == 'P'){window.location = '#Python';}
