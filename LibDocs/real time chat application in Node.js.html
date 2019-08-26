@@ -1,0 +1,212 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{width:60%;margin-left: 20%; font-size:22px;}
+strong, h1, h2 {color: gold;}
+img {width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%;}
+</style>
+</head><body>
+<center><h1>real time chat application in Node.js</h1>
+using Express, Mongoose and Socket.io
+<br>
+<a href="https://www.freecodecamp.org/news/simple-chat-application-in-node-js-using-express-mongoose-and-socket-io-ee62d94f5804/">real time chat application in Node.js</a>
+<br><a href="https://itnext.io/creating-a-chat-with-node-js-from-the-scratch-707896d64593">Creating a chat with Node.js from the scratch</a>
+<br>
+<a href="https://stackoverflow.com/questions/11115508/in-node-js-how-do-i-communicate-with-client-side-javascript">In Node.js communicate with client side JavaScript</a>
+<br>
+<a href="https://stackoverflow.com/questions/35213706/simple-way-of-client-server-communication-in-nodejs">Simple way of client-server communication in NodeJS</a>
+<br><div id="toc"></div></center>
+<br>
+<p>In this tutorial, we will use the Node.js platform to build a <strong>real time chat application</strong> that sends and shows messages to a recipient instantly without any page refresh. We will use the JavaScript framework Express.js and the libraries Mongoose and Socket.io to achieve this.</p>
+<p>Before we start, lets have a quick look at the basics of Node.js</p>
+<h3 id="node-js"><strong>Node.js</strong></h3>
+<p><a href="https://en.wikipedia.org/wiki/Node.js" rel="noopener">Node.js</a> is an open-source, cross-platform JavaScript run-time environment that executes JavaScript code outside the browser. The most important advantage of using Node is that we can use JavaScript as both a front-end and back-end language.</p>
+<p>As we know, JavaScript was used primarily for client-side scripting, in which scripts were embedded in a webpage’s HTML and run client-side by a JavaScript engine in the user’s web browser.</p>
+<p>Node.js lets developers use JavaScript to write Command Line tools and for server-side scripting — running scripts server-side to produce dynamic web page content before the page is sent to the user’s web browser.</p>
+<p>To install node:</p>
+<p><a href="https://nodejs.org/en/download/" rel="noopener">https://nodejs.org/en/download</a>/</p>
+<p>Even though the node is single threaded it’s still faster to use asynchronous functions. For example, Node can process other things while a file is being read off disk, or while waiting for an HTTP request to complete. The asynchronous behaviour can be implemented using callbacks. Also the JavaScript works well with JSON and No-SQL databases.</p>
+<h4 id="npm-modules"><strong>NPM Modules</strong></h4>
+<p>Nodejs allows the modules of libraries to be included in the application. These modules can be user-defined or third party modules.</p>
+<p>The third party modules can be installed using the following command:</p><!--kg-card-begin: code--><pre><code class="language-bash">npm install module_name</code></pre><!--kg-card-end: code-->
+<p>and the installed modules can be used using the <strong>require()</strong> function:</p><!--kg-card-begin: code--><pre><code class="language-js">var module = require(‘module_name’)</code></pre><!--kg-card-end: code-->
+<p>In Node apps we will be using a package.json file to maintain the module versions. This file can be created by this command:</p><!--kg-card-begin: code--><pre><code class="language-bash">npm init</code></pre><!--kg-card-end: code-->
+<p>and the packages must be installed as follows:</p><!--kg-card-begin: code--><pre><code class="language-bash">npm install -s module_name</code></pre><!--kg-card-end: code-->
+<p>There are many frameworks that can be added as modules to our Node application. These will be explained further on as needed.</p>
+<h3 id="simple-chat-application"><strong>Simple Chat Application</strong></h3>
+<p>The app must allow multiple users to chat together. The messages must be updated without refreshing the page. For simplicity we will be avoiding the authentication part.</p>
+<p>We can start by creating a new project directory and moving into it. Then we can initiate our project by the following command:</p><!--kg-card-begin: code--><pre><code class="language-bash">npm init</code></pre><!--kg-card-end: code-->
+<p>This will prompt us to enter details about our project.</p>
+<p>After this a <strong>package.json</strong> file will be created:</p><!--kg-card-begin: code--><pre><code class="language-json">{
+ “name”: “test”,
+ “version”: “1.0.0”,
+ “description”: “”,
+ “main”: “index.js”,
+ “scripts”: {
+ “test”: “echo \”Error: no test specified\” &amp;&amp; exit 1"
+ },
+ “author”: “”,
+ “license”: “ISC”
+}</code></pre><!--kg-card-end: code-->
+<p>Our app directory is now set.</p>
+<p>The first thing we need to create is a server. In order to create that, we will be making use of a framework named <strong>Express.</strong></p>
+<h4 id="express-js"><strong>Express.js</strong></h4>
+<p>Express.js, or simply Express, is a web application framework for Node.js. Express <a href="https://expressjs.com/" rel="noopener">provides a robust set of features for web and mobile applications</a>. Express provides a thin layer of fundamental web application features, without obscuring Node.js features.</p>
+<p>We will install Express.js using the following command:</p><!--kg-card-begin: code--><pre><code class="language-bash">npm install -s express</code></pre><!--kg-card-end: code-->
+<p>Inside the package.json file a new line will be added:</p><!--kg-card-begin: code--><pre><code class="language-json">dependencies”: {
+ “express”: “⁴.16.3”
+ }</code></pre><!--kg-card-end: code-->
+<p>Next we will create a <strong>server.js</strong> file.</p>
+<p>In this file we need to require Express and create a reference to a variable from an instance of Express. Static contents like HTML, CSS or JavaScript can be served using express.js:</p><!--kg-card-begin: code--><pre><code>var express = require(‘express’);
+var app = express();</code></pre><!--kg-card-end: code-->
+<p>and we can start listening to a port using the code:</p><!--kg-card-begin: code--><pre><code class="language-js">var server = app.listen(3000, () =&gt; {
+ console.log(‘server is running on port’, server.address().port);
+});</code></pre><!--kg-card-end: code-->
+<p>Now we need to create an HTML file index.html that displays our UI. I have added bootstrap and JQuery cdn.</p><!--kg-card-begin: code--><pre><code class="language-html">//index.html
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+ &lt;! — include bootstap and jquery cdn →
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div class=”container”&gt;
+ &lt;br&gt;
+ &lt;div class=”jumbotron”&gt;
+ &lt;h1 class=”display-4"&gt;Send Message&lt;/h1&gt;
+ &lt;input id = “name” class=”form-control” placeholder=”Name”&gt;
+ &lt;textarea id = “message” class=”form-control” placeholder=”Your Message Here”&gt;
+&lt;/textarea&gt;
+ &lt;button id=”send” class=”btn btn-success”&gt;Send&lt;/button&gt;
+ &lt;/div&gt;
+ &lt;div id=”messages”&gt;
+ 
+&lt;/div&gt;
+&lt;script&gt;
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre><!--kg-card-end: code-->
+<p>Please note that the empty <em>&lt;script&gt; &lt;</em>;/script&gt;tag will be the place where we will write the client side JavaScript code.</p>
+<p>In-order to tell Express that, we will be using a static file. We will add a new line inside <strong>server.js:</strong></p><!--kg-card-begin: code--><pre><code class="language-js">app.use(express.static(__dirname));</code></pre><!--kg-card-end: code-->
+<p>We can run the server.js using the command</p><!--kg-card-begin: code--><pre><code class="language-bash">node ./server.js</code></pre><!--kg-card-end: code-->
+<p>or a package called <strong>nodemon</strong>, so that the changes made in the code will be automatically detected. We will download nodemon using the command</p><!--kg-card-begin: code--><pre><code class="language-bash">npm install -g nodemon</code></pre><!--kg-card-end: code-->
+<p>-g — global, so that it is accessible in all projects.</p>
+<p>We will run the code using the command</p><!--kg-card-begin: code--><pre><code class="language-bash">nodemon ./server.js</code></pre><!--kg-card-end: code-->
+<p>If you go to localhost:3000 we can see the index file:</p><!--kg-card-begin: image--><figure class="kg-card kg-image-card kg-card-hascaption"><img src="https://cdn-media-1.freecodecamp.org/images/caxmtV7tYzJ1EUU69TeX4YQVsC69EhgzcSL5" class="kg-image"><figcaption>index.html</figcaption></figure><!--kg-card-end: image-->
+<p>Now that our server is up and running, we need to create our database. For this app we will having a No-SQL database and will be using <strong>Mongodb</strong>. I am setting up my mongodb in <a href="https://mlab.com/" rel="noopener"><strong>mlab.com</strong></a>. Our database will contain a single collection called <strong>messages</strong> with fields <strong>name</strong> and <strong>message.</strong></p><!--kg-card-begin: image--><figure class="kg-card kg-image-card"><img src="https://cdn-media-1.freecodecamp.org/images/UWJYcDmpxrFhUoKRCrgkhtaTcBD4z4NivreC" class="kg-image"></figure><!--kg-card-end: image-->
+<p>In-order to connect this database to the app, we will use another package called <strong>Mongoose</strong>.</p>
+<h4 id="mongoose"><strong>Mongoose</strong></h4>
+<p>Mongoose is a MongoDB object modeling tool designed to work in an asynchronous environment. Mongoose can be installed using the command</p><!--kg-card-begin: code--><pre><code class="language-bash">npm install -s mongoose</code></pre><!--kg-card-end: code-->
+<p>Inside <strong>server.js</strong> we will require mongoose:</p><!--kg-card-begin: code--><pre><code class="language-js">var mongoose = require(‘mongoose’);</code></pre><!--kg-card-end: code-->
+<p>And we will assign a variable, the URL of our mlab database:</p><!--kg-card-begin: code--><pre><code class="language-js">var dbUrl = ‘mongodb://username:<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="70001103033014034245474948415e1d1c11125e131f1d">[email&#160;protected]</a>:57981/simple-chat’</code></pre><!--kg-card-end: code-->
+<p>Mongoose will connect to the mlab database with the connect method:</p><!--kg-card-begin: code--><pre><code class="language-js">mongoose.connect(dbUrl , (err) =&gt; { 
+   console.log(‘mongodb connected’,err);
+})</code></pre><!--kg-card-end: code-->
+<p>And we will be defining our message model as</p><!--kg-card-begin: code--><pre><code class="language-js">var Message = mongoose.model(‘Message’,{ name : String, message : String})</code></pre><!--kg-card-end: code-->
+<p>We can implement the chat logic now. But before that there is one more package that needs to be added.</p>
+<h4 id="body-parser"><strong>Body-Parser</strong></h4>
+<p>Body-Parser extracts the entire body portion of an incoming request stream and exposes it on req.body. The middleware was a part of Express.js earlier, but now you have to install it separately.</p>
+<p>Install it using the following command:</p><!--kg-card-begin: code--><pre><code class="language-bash">npm install -s body-parser</code></pre><!--kg-card-end: code-->
+<p>Add the following codes to <strong>server.js:</strong></p><!--kg-card-begin: code--><pre><code class="language-js">var bodyParser = require(‘body-parser’)
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: false}))</code></pre><!--kg-card-end: code-->
+<h4 id="routing"><strong>Routing</strong></h4>
+<p>Routing refers to how an application’s endpoints (URIs) respond to client requests. You define routing using methods of the Express app object that correspond to HTTP methods: app.get() to handle GET requests and app.post() to handle POST requests.</p>
+<p>These routing methods <a href="https://expressjs.com/en/guide/routing.html" rel="noopener">specify a callback function</a> (sometimes called “handler functions”) called when the application receives a request to the specified route (endpoint) and HTTP method. In other words, the application “listens” for requests that match the specified routes and methods, and when it detects a match, it calls the specified callback function.</p>
+<p>Now we need to create two routes to the messages for our chat to work.</p>
+<p>Inside <strong>server.js:</strong></p>
+<p><strong>get : </strong>will get all the message from database</p><!--kg-card-begin: code--><pre><code class="language-js">app.get('/messages', (req, res) =&gt; {
+  Message.find({},(err, messages)=&gt; {
+    res.send(messages);
+  })
+<p><strong>post : </strong>will post new messages created by the user to the database</p><!--kg-card-begin: code--><pre><code class="language-js">app.post('/messages', (req, res) =&gt; {
+  var message = new Message(req.body);
+  message.save((err) =&gt;{
+    if(err)
+      sendStatus(500);
+    res.sendStatus(200);
+<p>In order to connect these routes to the front end we need to add the following code in the client side script tag in the <strong>index.html:</strong></p><!--kg-card-begin: code--><pre><code class="language-js">$(() =&gt; {
+    $("#send").click(()=&gt;{
+       sendMessage({
+          name: $("#name").val(), 
+          message:$("#message").val()});
+        })
+      getMessages()
+    })
+    
+function addMessages(message){
+   $(“#messages”).append(`
+      &lt;h4&gt; ${message.name} &lt;/h4&gt;
+      &lt;p&gt;  ${message.message} &lt;/p&gt;`)
+   }
+   
+function getMessages(){
+  $.get(‘http://localhost:3000/messages', (data) =&gt; {
+   data.forEach(addMessages);
+   })
+ }
+function sendMessage(message){
+   $.post(‘http://localhost:3000/messages', message)
+<p>Here the <strong>sendMessage</strong> is used to invoke the post route of the messages, and save a message sent by the user. The message is created when a user clicks the send button.</p>
+<p>Similarly the <strong>getMessage</strong> is used to invoke the get route of messages. This will get all the messages saved in the database and will be appended to the messages div.</p><!--kg-card-begin: image--><figure class="kg-card kg-image-card"><img src="https://cdn-media-1.freecodecamp.org/images/m1tJ6aV53XnmvkU8PjY7u16wkI1gKrplYWHo" class="kg-image"></figure><!--kg-card-end: image-->
+<p>The only issue now is that there is no way for the client to know if the server is updated. So each time we post a message we need to refresh the page to see the new messages.</p>
+<p>To solve this we can add a push notification system that will send messages from server to client. In Node.js we use <strong>socket.io.</strong></p>
+<h4 id="socket-io"><strong>Socket.io</strong></h4>
+<p>Socket.IO is a JavaScript library for realtime web applications. <a href="https://www.tutorialspoint.com/socket.io/socket.io_overview.htm" rel="noopener">It enables realtime, bi-directional communication between web clients and server</a>. It has two parts: a client-side library that runs in the browser, and a server-side library for Node.js. Socket.io enables real-time bidirectional event-based communication.</p>
+<p>To install socket.io:</p><!--kg-card-begin: code--><pre><code class="language-bash">npm install -s socket.io</code></pre><!--kg-card-end: code-->
+<p>we also need an HTTP package for Socket.io to work:</p><!--kg-card-begin: code--><pre><code class="language-bash">npm install -s http</code></pre><!--kg-card-end: code-->
+<p>Add the following code to <strong>server.js:</strong></p><!--kg-card-begin: code--><pre><code class="language-js">var http = require(‘http’).Server(app);
+var io = require(‘socket.io’)(http);</code></pre><!--kg-card-end: code-->
+<p>And we can create a connection:</p><!--kg-card-begin: code--><pre><code class="language-js">io.on(‘connection’, () =&gt;{
+ console.log(‘a user is connected’)
+<p>In the <strong>index.html </strong>add the following tag:</p><!--kg-card-begin: code--><pre><code class="language-html">&lt;script src=”/socket.io/socket.io.js”&gt;&lt;/script&gt;</code></pre><!--kg-card-end: code-->
+<p>Now we need to create an emit action when a message is created in <strong>server.js</strong>. So the post route becomes this:</p><!--kg-card-begin: code--><pre><code class="language-js">app.post('/messages', (req, res) =&gt; {
+    io.emit('message', req.body);
+<p>And in the client side script tag in <strong>index.html, </strong>add the following code:</p><!--kg-card-begin: code--><pre><code class="language-html">var socket = io();
+socket.on(‘message’, addMessages)</code></pre><!--kg-card-end: code-->
+<p>So each time a message is posted, the server will update the messages in the message div.</p><!--kg-card-begin: image--><figure class="kg-card kg-image-card"><img src="https://cdn-media-1.freecodecamp.org/images/6KUYtaL4L3ShtPNaHRKWXvP6v3mMuUAdq6R0" class="kg-image"></figure><!--kg-card-end: image-->
+<p>Great!!</p>
+<p>This is very basic application that we can create in Node.js. There is lot of scope for improvement. The finished code can be found in <a href="https://github.com/amkurian/simple-chat" rel="noopener">https://github.com/amkurian/simple-chat</a></p>
+<p><strong>server.js</strong></p><!--kg-card-begin: code--><pre><code class="language-js">var express = require('express');
+var bodyParser = require('body-parser')
+var app = express();
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
+var mongoose = require('mongoose');
+app.use(express.static(__dirname));
+app.use(bodyParser.urlencoded({extended: false}))
+var Message = mongoose.model('Message',{
+  name : String,
+  message : String
+})
+var dbUrl = 'mongodb://username:<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="97e7f6e4e4e0f8e5f3d7f3e4a5a2a0aeafa6b9fafbf6f5b9f4f8fa">[email&#160;protected]</a>:57981/simple-chat'
+app.get('/messages', (req, res) =&gt; {
+app.post('/messages', (req, res) =&gt; {
+io.on('connection', () =&gt;{
+  console.log('a user is connected')
+mongoose.connect(dbUrl ,{useMongoClient : true} ,(err) =&gt; {
+  console.log('mongodb connected',err);
+var server = http.listen(3001, () =&gt; {
+  console.log('server is running on port', server.address().port);
+<p>Hope this was helpful in understanding some basic concepts.</p>
+<p>Some useful links</p>
+<p><a href="https://socket.io/" rel="noopener"><strong>Socket.IO</strong></a><br><a href="https://socket.io/" rel="noopener"><em>SOCKET.IO 2.0 IS HERE FEATURING THE FASTEST AND MOST RELIABLE REAL-TIME ENGINE ~/Projects/tweets/index.js var io =…</em>socket.io</a><a href="https://expressjs.com/" rel="noopener"><strong>Express - Node.js web application framework</strong></a><br><a href="https://expressjs.com/" rel="noopener"><em>Express is a minimal and flexible Node.js web application framework that provides a robust set of features for web and…</em>expressjs.com</a></p>
+<p><a href="http://mongoosejs.com/" rel="noopener">http://mongoosejs.com/</a></p>
+	var toc = $('#toc');
+	$('h3,h4').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</body>
+</html>
