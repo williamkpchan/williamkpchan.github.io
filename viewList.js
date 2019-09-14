@@ -1,12 +1,10 @@
 
 function chkKey() {
   var testkey = getChar(event);
-  if(testkey == 'b'){ backward();}
-  if((testkey == 'f')|(testkey == ' ')){ foreward();}
+  if((testkey == 'b')|(testkey == '1')){ backward();}
+  if((testkey == 'f')|(testkey == ' ')|(testkey == '3')){ foreward();}
   if(testkey == '4'){ backwardList();}
   if(testkey == '6'){ forewardList();}
-  if(testkey == '1'){ backward();}
-  if(testkey == '3'){ foreward();}
   if(testkey == '5'){ zoomin();}
   if(testkey == '2'){ zoomout();}
   if(testkey == 'p'){ pause();}
@@ -232,6 +230,7 @@ function forewardList() {
         showList();
     };
 }
+
 
 init_AllList();
 changeList();
