@@ -12,7 +12,7 @@ $(document).ready(function(){
 });
 </script>
 <style>
-body{width:80%;margin-left: 10%; color: grey;}
+body{width:80%;margin-left: 10%; color: grey; font-size:22px;}
 h1, h2 {color: goldenrod;}
 code{color: teal;}
 dt{color: green;}
@@ -24,7 +24,91 @@ pre{font-size: 80%;}
 <div id="toc"></div></center>
 <br>
 <br>
+<h2>complete list of the core commands</h2>
+There is a fairly complete list of the core commands in Sublime available via the <a href="http://docs.sublimetext.info/en/latest/" rel="noreferrer">Unofficial Docs</a>, in particular in the <a href="http://docs.sublimetext.info/en/latest/reference/commands.html" rel="noreferrer">command list section</a>. 
 <br>
+This however doesn't help you to learn about commands that third party packages and plugins may have added, however.</p>
+
+<p>
+If you're in the situation of knowing some way to invoke a command (key, command palette, menu) and wondering what the command is, Sublime has you covered.</p>
+
+<p>If you open the Sublime console with <kbd>Ctrl+`</kbd> or <code>View &gt; Show Console</code>, you can enter the following command:</p>
+
+<pre class="lang-python prettyprint-override"><code>sublime.log_commands(True)
+</code></pre>
+
+<p>Now whenever you do anything, Sublime logs the command that it's executing the console, along with any arguments that it might take. For example, if you turn on logging and press each of the arrow keys in turn, the console will display this:</p>
+
+<pre class="lang-none prettyprint-override"><code>command: move {"by": "lines", "forward": false}
+command: move {"by": "lines", "forward": true}
+command: move {"by": "characters", "forward": false}
+command: move {"by": "characters", "forward": true}
+</code></pre>
+
+<p>Using this facility you can figure out what commands various actions take, so that you can use them elsewhere. <br>
+This is also a handy technique for diagnosing things like keyboard shortcuts that don't seem to do what you think they should do, for example. <br>
+Run the same command with <code>False</code> instead of <code>True</code> (or restart Sublime) to turn the logging off.</p>
+
+<p>If you're really interested in the gritty internal details of every possible command, something like the following is possible. <br>
+This implements a command labelled <code>list_all_commands</code> which, when you run it, will list all of the available commands of all types into a new scratch buffer.</p>
+
+<p>Note that not all implemented commands are necessarily meant for external use; plugins sometimes define helper commands for their own use. <br>
+This means that although this tells you all of the commands that exist, it doesn't mean that all of them are meant for you to play with.</p>
+
+<p>Additionally, although this lists roughly the arguments that the <code>run</code> method on the command class takes (which is what Sublime executes to run the command), some commands may have obscure argument lists.</p>
+
+<pre class="lang-python prettyprint-override"><code>import sublime
+import sublime_plugin
+
+import inspect
+
+from sublime_plugin import application_command_classes
+from sublime_plugin import window_command_classes
+from sublime_plugin import text_command_classes
+
+
+class ListAllCommandsCommand(sublime_plugin.WindowCommand):
+    def run(self):
+        self.view = self.window.new_file()
+        self.view.set_scratch(True)
+        self.view.set_name("Command List")
+
+        self.list_category("Application Commands", application_command_classes)
+        self.list_category("Window Commands", window_command_classes)
+        self.list_category("Text Commands", text_command_classes)
+
+    def append(self, line):
+        self.view.run_command("append", {"characters": line + "\n"})
+
+    def list_category(self, title, command_list):
+        self.append(title)
+        self.append(len(title)*"=")
+
+        for command in command_list:
+            self.append("{cmd} {args}".format(
+                cmd=self.get_name(command),
+                args=str(inspect.signature(command.run))))
+
+        self.append("")
+
+    def get_name(self, cls):
+        clsname = cls.__name__
+        name = clsname[0].lower()
+        last_upper = False
+        for c in clsname[1:]:
+            if c.isupper() and not last_upper:
+                name += '_'
+                name += c.lower()
+            else:
+                name += c
+            last_upper = c.isupper()
+        if name.endswith("_command"):
+            name = name[0:-8]
+        return name
+</code></pre>
+
+<br>
+<h2>How to Edit Macros</h2>
 <a href="http://docs.sublimetext.info/en/latest/extensibility/macros.html">How to Edit Macros</a>
 <br>
 <pre>
