@@ -16,6 +16,7 @@ body{width: 80%;margin-left: 10%; line-height:2; font-size:22px}
 h1, h2 {color: gold;}
 *{-webkit-box-sizing: border-box; box-sizing: border-box;}
 img{width:80%;}
+b{color:white}
 </style>
 </head><body>
 <center><h1>sublime text Notes</h1>
@@ -98,7 +99,6 @@ now just do a normal Edit - Sort Lines
 <h4>Sublime text Commands</h4>
 <a href="Sublime text Commands.html"><span class="redb">&diams;Sublime text Commands</span></a>
 <br><br><br>
-<canvas id="nokey" width="800" height="800" style="position: absolute; left: 0; top: 1600; z-index: 0;"></canvas>
 
 <h4>Preferences.sublime-settings</h4>
 Note: for portable version, create a folder: Color Scheme - Default, and put the theme file 0Amytheme.tmTheme to be effective.
@@ -281,6 +281,9 @@ The "A Better Way To Create Regex Rules" in <a href="http://facelessuser.github.
 <h4>Emmet Notes</h4>
 <pre>
 <a href="Emmet for Sublime Text.html"><span class="redb">&diams;Emmet Notes</span></a><br>
+
+<a href="Mastering Emmet.html" class="bordred1 borRad10 green limebs">&diams;Mastering Emmet</a><br>
+
 
 <h4>programming sublime</h4>
 
@@ -1833,12 +1836,166 @@ Enjoy!</p>
 
 <img src="https://pawelgrzybek.com/photos/2015-06-12-3.jpg">
 
+<h4>Developing Sublime Text Plugin</h4>
+The following steps show you in detail how to develop a plugin in Sublime Text
+<b>Step 1</b> Select the <b>New Plugin</b> option by navigating through <b>Tools &rarr; Developer &rarr; New Plugin</b> as shown below
+
+<img src ="https://www.tutorialspoint.com/sublime_text/images/developing_plugin_step1.jpg">
+<b>Step 2</b> The basic code of a plugin includes import of two main libraries: <b>sublime</b> and <b>sublime_plugin</b>.
+<img src ="https://www.tutorialspoint.com/sublime_text/images/developing_plugin_step2.jpg">
+The code for the plugin is
+<pre class="prettyprint notranslate">
+import sublime
+import sublime_plugin
+class ExampleCommand(sublime_plugin.TextCommand):
+   def run(self, edit):
+      self.view.insert(edit, 0, "Hello, World!")
+</pre>
+<b>Step 3</b> The customized plugins are saved in <b>Packages &rarr; User</b> folder. 
+Refer to the following screenshot that gives you the complete understanding of the plugins saved in Sublime Text editor.
+<img src ="https://www.tutorialspoint.com/sublime_text/images/developing_plugin_step3.jpg">
+<h2>Running the plugin</h2>
+When you have created a plugin and saved it, open the console using the shortcut key <b>Ctrl+`</b> on Windows and <b>Cmd+`</b> on OSX, and execute the command shown here
+<pre class="result notranslate">
+view.run_command(plugin-name)
+</pre>
+<img src ="https://www.tutorialspoint.com/sublime_text/images/running_the_plugin.jpg">
+This command will execute the plugin defined by the user with the list of activities included in it.
+
+<h4>Writing a simple Sublime Text plugin</h4>
+One of the neat Sublime Text features is that it provides you with a list of <a href="http://sublime-text-unofficial-documentation.readthedocs.org/en/latest/reference/commands.html" alt="Sublime Text Command API">commands</a> which you can extend (or write your own) and assign them to different key binds. 
+
+In this blog post I will go over configuring key binds and use <code>insert_snippet</code> command to generate some debug statements and then we will write few lines of python to extend <code>insert_snippet</code> to use text from clipboard as well.
+Lets start with key mapping. 
+If you go to Sublime Text preferences you will find a two item grouping for key binds (User and Default). 
+Your new key binds should always go into User. 
+Default should never be modified. 
+If you wish to change any of the default key binds you can override them in the user config instead. 
+Sublime Text will always load default config first, followed by OS specific config and user config last (each overriding previous definitions if needed).
+Ok, lets add couple of simple key binds to our config file:
+<javascript>
+// Default.sublime-keymap
+[
+  { "keys": ["ctrl+shift+h"],
+    "command": "insert_snippet",
+    "args": {
+      "contents": "console.log('=== HEARTBEAT $TM_FILENAME [$TM_LINE_NUMBER] ===');${0}"
+    },
+    "context": [{
+      "key": "selector",
+      "operator": "equal",
+      "operand": "source.js",
+      "match_all": true
+    }]
+  },
+  { "keys": ["ctrl+shift+d"],
+    "command": "insert_snippet",
+    "args": {
+      "contents": "console.log('=== $SELECTION $TM_FILENAME [$TM_LINE_NUMBER] ===', $SELECTION);${0}"
+    },
+    "context": [{
+      "key": "selector",
+      "operator": "equal",
+      "operand": "source.js",
+      "match_all": true
+    }]
+  }
+]</javascript>
+The config is simple array of JSON objects, each containing a set of rules for particular key bind. 
+I have configured two key binds: <code>ctrl+shift+h</code> and <code>ctrl+shift+d</code>. 
+Both use <code>insert_snippet</code> command and are defined within the context of "source.js" (I will explain in a bit). 
+We are passing <code>"console.log(...)"</code> as an argument to <code>insert_snippet</code> in both cases. 
+This is the string that will be inserted at the cursor position once we use <code>ctrl+shift+h</code> or <code>ctrl+shift+d</code>. 
+<code>$TM_LINE_NUMBER</code>, <code>$TM_FILENAME</code> and <code>$SELECTION</code> are <a href="https://sublime-text-unofficial-documentation.readthedocs.org/en/latest/reference/snippets.html?highlight=TM_FILENAME#environment-variables" alt="Sublime Text Environment Variables">environment variables</a> which will be dynamically replaced by Sublime Text at insert time. 
+The following snippet - <code>${0}</code> will set the caret at this position once our console.log is generated.
+The context allows you to write language specific key binds. 
+In my case these will work with javascript files. 
+You can have the same key bind with different implementations specific to the programming language you are working in. 
+We can duplicate these two blocks and replace source.js with source.php to make it work with php and change console.log to print_r or dpm (or a different debug function) and Sublime Text will pick the correct snippet to insert depending on the language we are working in. 
+ 
+This is a sample output of the two key binds we defined above:
+<javascript>
+// ctrl+shift+h
+// 477 is a line number
+// some_file.js is the current js file we are working in.
+console.log('=== HEARTBEAT some_file.js [477] ===');</javascript>
+// ctrl+shift+d
+// 478 is a line number
+// testvar was string we had selected when we pressed our key combination
+// some_file.js is the current js file we are working in.
+console.log('=== testvar some_file.js [478] ===', testvar);
+So we have two key binds, one inserting a general debug heartbeat and the other one printing contents of a selected variable. 
+That's ok so far, but I really wanted to be able to use <code>ctrl+shift+d</code> to create a var dump statement of a variable (string) that is in the clipboard as a fallback or use selected text as it behaves currently. 
+Unfortunately <code>insert_snippet</code> doesn't have access to the clipboard content and we don't have environment variable that contains clipboard content either. 
+There is a <code>paste</code> method in Sublime Text, but unfortunately we are unable to wrap arbitrary string around the clipboard content and can only paste clipboard content alone. 
+We have exhausted all the available resources and will have to write few lines of python and create our own plugin/command that will extend the functionality of <code>insert_snippet</code> and allow it to use the contents from clipboard if needed.
+Lets write our first <a href="http://sublimetext.info/docs/en/extensibility/plugins.html" alt="Writing Sublime Text plugin">Sublime Text plugin</a> that will handle the functionality we outlined above. 
+We start by going to <code>Tools &gt; New Plugin...</code> which will generate a template for our new plugin. 
+The code stub will look something like this:
+<python>
+import sublime, sublime_plugin
+class ExampleCommand(sublime_plugin.TextCommand):
+  def run(self, edit):
+    self.view.insert(edit, 0, "Hello, World!")</python>I rewrote this template and my plugin looks something like this:
+<python>
+# insert_snippet_and_clipboard.py
+import sublime, sublime_plugin
+class InsertSnippetAndClipboardCommand(sublime_plugin.TextCommand):
+  def run(self, edit, **args):
+    for region in self.view.sel():
+      if not region.empty():
+        replacement = self.view.substr(region)
+        args['contents'] = args['contents'].replace('$SELECTION_OR_CLIPBOARD', replacement)
+        self.view.run_command('insert_snippet', args)
+      else:
+        replacement = sublime.get_clipboard().strip()
+        args['contents'] = args['contents'].replace('$SELECTION_OR_CLIPBOARD', replacement)
+        self.view.run_command('insert_snippet', args)</python>
+You can now save the file as <code>insert_snippet_and_clipboard.py</code> within <code>packages/user/</code>.
+You can open a Sublime Text console using <code>Ctrl+`</code> and debug your new plugin during development by calling your command using <code class="bordred1 borRad10 white">view.run_command("example")</code>. 
+You can pass optional arguments to your command by passing them to run_command like this: <code>view.run_command("example", args)</code>.
+By following Sublime Text convention and naming our class <code>SomeFunctionNameCommand(sublime_plugin.TextCommand):</code> we are creating a text command named some_function_name. 
+In our example we are creating <code>insert_snippet_and_clipboard</code> command which will provide user with <code>$SELECTION_OR_CLIPBOARD</code> environment variable. 
+This environment variable will be populated at insert time. 
+In this implementation we are prioritizing selected text, if no text is selected we are using the last clipboard snipped, and as a fallback we will replace the variable with an empty string.
+And finally, lets update our key bind <code>ctrl+shift+d</code> to use <code>insert_snippet_and_clipboard</code> command:<javascript>
+// Default.sublime-keymap
+[
+  { "keys": ["ctrl+shift+h"],
+    "command": "insert_snippet",
+    "args": {
+      "contents": "console.log('=== HEARTBEAT $TM_FILENAME [$TM_LINE_NUMBER] ===');${0}"
+    },
+    "context": [{
+      "key": "selector",
+      "operator": "equal",
+      "operand": "source.js",
+      "match_all": true
+    }]
+  },
+  { "keys": ["ctrl+shift+d"],
+    "command": "insert_snippet_and_clipboard",
+    "args": {
+      "contents": "console.log('=== $SELECTION_OR_CLIPBOARD $TM_FILENAME [$TM_LINE_NUMBER] ===', $SELECTION_OR_CLIPBOARD);${0}"
+    },
+    "context": [{
+      "key": "selector",
+      "operator": "equal",
+      "operand": "source.js",
+      "match_all": true
+    }]
+  }
+]</javascript>
+And that is it. 
+We should be able to generate some var debug statements right away by either selecting a piece of text (or copying it) and hitting <code>ctrl+shift+d</code>. 
+
 <br>
 <br>
 <br>
 <br>
 
 
+<canvas id="nokey" width="800" height="1400" style="position: absolute; left: 0; top: 2600; z-index: 0;"></canvas>
 
 <script>
   $(function() {
