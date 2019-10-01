@@ -1,16 +1,16 @@
 <base target="_blank">
 <html>
 <head>
-	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <link rel="stylesheet" href="../maincss.css">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script type='text/javascript' src='../mainscript.js'></script>
 <style>
-body, p, li{margin-left: 10%; margin-right: 10%;   overflow: hidden; white-space: pre-wrap;}
+body{width: 80%;margin-left: 10%; margin-right: 10%; white-space: pre-wrap; font-size:22px;}
 p, li{margin-left: 0%;}
-#toc{max-width: 80%;; color: gold; padding: 3%; text-align: left; box-shadow: 5px 5px 10px silver inset, -5px -5px 10px silver inset; border-radius: 5px; border: 1px solid DarkSlateGray; font-size: 90%;}
+#toc{max-width: 70%; color: gold; padding: 3%; text-align: left; box-shadow: 5px 5px 10px silver inset, -5px -5px 10px silver inset; border-radius: 5px; border: 1px solid DarkSlateGray; font-size: 90%;}
 .topic{color: lime;font-size:24px;}
-pre{white-space: pre-wrap; width:80%; font-size:18px;}
+pre{white-space: pre-wrap; width:80%;}
 </style>
 <script>
 $(document).ready(function(){
@@ -4850,6 +4850,177 @@ socket.addEventListener('message', function (event) {
     console.log('Message from server ', event.data);
 });
 There are alternatives if you can't use websockets, such as polling (where the client periodically calls the server to see if theres a message), and long-polling (where the server holds a http request open for an artificially long period of time until a message is ready).
+
+
+<b class="topic">lookaheads and lookbehinds</b>
+
+<a href="https://www.stefanjudis.com/today-i-learned/the-complicated-syntax-of-lookaheads-in-javascript-regular-expressions/">lookaheads (and lookbehinds) in JavaScript regular expressions</a>
+
+Today, I just had my Sunday morning coffee and worked myself through the slide deck <a href="https://slidr.io/mathiasbynens/what-s-new-in-es2018#1">"What's new in ES2018"</a> by <a href="https://twitter.com/bmeurer?lang=de">Benedikt Meurer</a> and <a href="https://twitter.com/mathias">Mathias Bynens</a>.
+
+There is so much useful information in these slides, and besides new language features like async iterations, object spread properties and <a href="https://github.com/tc39/proposal-regexp-named-groups">named capture groups in regular expressions</a> (🎉) it also covers lookaheads (and the upcoming lookbehinds) in regular expressions. 
+
+Now and then lookaheads in JavaScript regular expressions cross my way, and I have to admit that I never had to use them but now the counter part <strong>lookbehinds</strong> are going to be in the language, too, so I decided to read some documentation and finally learn what these lookaheads are.
+
+<h2>Lookaheads in JavaScript</h2>
+With lookaheads, you can define patterns that only match when they're followed or not followed by another pattern.
+
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions">The MDN article about regular expressions</a> describes two different types of lookaheads in regular expressions. 
+
+Positive and negative lookaheads:
+
+<ul>
+<li><code>x(?=y)</code> – positive lookahead (matches 'x' when it's followed by 'y')</li>
+<li><code>x(?!y)</code> – negative lookahead (matches 'x' when it's not followed by 'y')</li>
+</ul>
+
+<h2>Captured groups in JavaScript – the similar looking companions</h2>
+  
+Oh well... <code>x(?=y)</code> – that's a tricky syntax if you ask me. The thing that confused me initially is that I usually use <code>()</code> for captured groups in JavaScript expressions.
+
+Let's look at an example for a captured group:
+
+<pre><code>const regex = /\w+\s(\w+)\s\w+/;
+
+regex.exec('eins zwei drei');
+// ['eins zwei drei', 'zwei']
+//                      /\
+//                      ||
+//                captured group
+//                 defined with
+//                    (\w+)</code></pre>
+What you see above is a regular expression that captures a word (<code>zwei</code> in this case) that is surrounded by one space and another word. 
+
+<h2>Lookaheads are not like captured groups</h2>
+  
+So let's look at a typical example that you'll find when you read about lookaheads in JavaScript regular expressions.
+
+<pre><code>const regex = /Max(?= Mustermann)/
+
+regex.exec('Max Mustermann')
+// ['Max']
+regex.exec('Max Müller')
+// null</code></pre>
+This example matches <code>Max</code> whenever it is followed by a space and <code>Mustermann</code> otherwise it's not matching and returns <code>null</code>. The interesting part for me is that it only matches <code>Max</code> and not the pattern that is defined in the lookahead. Which seems to be a weird after working with regular expressions for a while but when you think of it, that's the point of lookaheads.
+
+
+The "Max Mustermann" example is not useful in my opinion so let's dive into positive and negative lookaheads with a real-world use case.
+
+<h3>Positive lookahead</h3>
+  
+Let's assume you have a long string of Markdown that includes a list of people and their food preferences. How would you figure out which people are vegan when everything's just a long string?
+
+<pre><code>const people = `
+- Bob (vegetarian)
+- Billa (vegan)
+- Francis
+- Elli (vegetarian)
+- Fred (vegan)
+`;
+
+const regex = /-\s(\w+?)\s(?=\(vegan\))/g;
+//                |----|  |-----------|
+//                  /            \
+//           more than one        \
+//           word character      positive lookahead
+//           but as few as       => followed by "(vegan)"
+//           possible
+
+let result = regex.exec(people);
+
+while(result) {
+  console.log(result[1]);
+  result = regex.exec(people);
+}
+
+// Result:
+// Billa
+// Fred</code></pre>
+Let's have a quick look at the regular expression and try to phrase it in words.
+
+<pre><code>const regex = /-\s(\w+?)\s(?=\(vegan\))/g;</code></pre>
+Alright... let's do this!
+
+<blockquote>
+
+Match any dash followed by one space character followed by more one or more but as few as possible word characters (A-Za-z0-9_) followed by a space and the pattern "(vegan)"
+
+</blockquote>
+<h3>Negative/negating lookaheads</h3>
+  
+On the other hand, how would you figure out who is not vegan?
+
+<pre><code>const people = `
+- Bob (vegetarian)
+- Billa (vegan)
+- Francis
+- Elli (vegetarian)
+- Fred (vegan)
+`;
+
+const regex = /-\s(\w+)\s(?!\(vegan\))/g
+//                |---|  |-----------|
+//                  /          \
+//           more than one      \
+//           word character     negative lookahead
+//           but as few as      => not followed by "(vegan)"
+//           possible
+
+let result = regex.exec(people);
+
+while(result) {
+  console.log(result[1]);
+  result = regex.exec(people);
+}
+
+// Result:
+// Bob
+// Francis
+// Elli</code></pre>
+Let's have a quick look at the regular expression and try to phrase it in words, too.
+
+<pre><code>const regex = /-\s(\w+)\s(?!\(vegan\))/g</code></pre><blockquote>
+
+Match any dash followed by one space character followed by more one or more but as few as possible word characters (A-Za-z0-9_) followed by a space character (which includes line breaks) not followed by the pattern "(vegan)"
+
+</blockquote>
+
+<h2>lookaheads will have company from lookbehinds soon</h2>
+  
+<a href="https://github.com/tc39/proposal-regexp-lookbehind">Lookbehinds</a> will work the same way but for patterns before the matching pattern (lookaheads consider the patters after the matching part) and <a href="http://kangax.github.io/compat-table/es2016plus/#test-RegExp_Lookbehind_Assertions">are already supported in Chrome today</a>. They will also be available as positive lookbehind <code>x(?&lt;=y)</code> and the negative lookbehind <code>x(?&lt;!y)</code>. 
+
+
+When we flip the strings in the example around it still works the same way using lookbehinds then. :)
+
+<pre><code>const people = `
+- (vegetarian) Bob
+- (vegan) Billa
+- Francis
+- (vegetarian) Elli
+- (vegan) Fred
+`;
+
+const regex = /(?&lt;=\(vegan\))\s(\w+)/g
+//             |------------|  |---|  
+//                  /             \__
+//         positive lookbehind        \
+//       => following "(vegan)"     more than one
+//                                  word character
+//                                  but as few as possible
+
+let result = regex.exec(people);
+
+while(result) {
+  console.log(result[1]);
+  result = regex.exec(people);
+}
+
+// Result:
+// Billa
+// Fred</code></pre>
+<em>Sidenote: I usually recommend <a href="http://regexr.com/">RegExr</a> for the fiddling with regular expressions but lookbehinds are not supported yet.</em>
+
+If you're interested in more cutting edge features have a look at Mathias' and Benedikt's <a href="https://slidr.io/mathiasbynens/what-s-new-in-es2018#1">slides on new features coming to JavaScript</a> there is way more exciting stuff to come.
 
 
 <br><br><br><br><br>
