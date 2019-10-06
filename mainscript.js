@@ -22,6 +22,7 @@ function chkKey() {
   if(testkey == 'f'){window.open("http://williamkpchan.github.io/ForexChart.htm");}
   if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
   if(testkey == 'g'){window.location = '#_youxi';}
+  if(testkey == 'G'){window.open("https://www.amap.com/");}
   if(testkey == 'h'){window.open("LibDocs/News Points.html");}
   if(testkey == 'H'){window.open("LibDocs/monitorHSI.html");}
   if(testkey == 'i'){window.open('http://www.iciba.com');}
