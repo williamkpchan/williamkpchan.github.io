@@ -14,6 +14,7 @@ function chkKey() {
   if(testkey == '7'){sCt("700");}
   if(testkey == '8'){sCt("857");}
   if(testkey == 'A'){window.open("halfHourMonA.html");}
+  if(testkey == 'a'){window.open("apptechno.html");}
   if(testkey == 'b'){window.open("LibDocs/Random Charts.html");}
   if(testkey == 'c'){showChart();}
   if(testkey == 'C'){window.open("https://www.desmos.com/fourfunction");}

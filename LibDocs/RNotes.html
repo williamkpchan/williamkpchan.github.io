@@ -1535,6 +1535,216 @@ str_replace_all(pattern = "\\s+", replacement = " ") %>%
 str_trim(side = "both") %>% 
 substr(start = nchar(body_text)-700, stop = nchar(body_text))
 
+################
+# rvest tutorials
+https://blog.rstudio.com/2014/11/24/rvest-easy-web-scraping-with-r/
+https://blog.gtwang.org/r/rvest-web-scraping-with-r/
+https://www.rdocumentation.org/packages/rvest/versions/0.3.4
+https://www.datacamp.com/community/tutorials/r-web-scraping-rvest
+https://stat4701.github.io/edav/2015/04/02/rvest_tutorial/
+https://lmyint.github.io/post/dnd-scraping-rvest-rselenium/
+
+################
+# parse guancha
+library(rvest)
+pageHeader="https://user.guancha.cn/main/content?id=181885"
+pagesource <- read_html(pageHeader)
+
+################
+# parse RTHK and metroradio
+library(rvest)
+pageHeader = "http://news.rthk.hk/rthk/ch/latest-news.htm"
+pagesource <- read_html(pageHeader)
+className = ".ns2-title"
+keywordList <- html_nodes(pagesource, className)
+html_text(keywordList)
+
+pageHeader = "http://www.metroradio.com.hk/MetroFinance/News/NewsLive.aspx"
+pagesource <- read_html(pageHeader)
+className = ".n13newslist"
+keywordList <- html_nodes(pagesource, className)
+className = "a"
+keywordList <- html_nodes(keywordList, className)
+html_text(keywordList)
+
+################
+# parse xhamster
+library(rvest)
+pageHeader = "https://xhamster.com/users/fredlake/photos"
+pagesource <- read_html(pageHeader)
+className = ".xh-paginator-button"
+keywordList <- html_nodes(pagesource, className)
+html_text(keywordList)
+html_name(keywordList)
+html_attrs(keywordList)
+
+thelist = unlist(html_attrs(keywordList))
+
+length(keywordList)
+as.numeric(html_text(keywordList[length(keywordList)]))
+
+pagesource %>% html_nodes(className) %>% html_text() %>% as.numeric()
+
+for ( i in keywordList ) { 
+ qlink <- html_nodes(s, ".gallery-thumb")
+ cat("Title:", html_text(qlink), "\n")
+ qviews <- html_nodes(s, "name")
+ cat("Views:", html_text(qviews), "\n")
+}
+
+################
+# html_nodes samples
+html_nodes(".a1.b1")
+html_nodes(".b1:not(.a1)")  # Select class contains b1 not a1:
+html_nodes(".content__info__item__value")
+html_nodes("[class='b1']")
+html_nodes("center")
+html_nodes("font")
+html_nodes(ateam, "center")
+html_nodes(ateam, "center font")
+html_nodes(ateam, "center font b")
+html_nodes("table") %>% .[[3]] %>% html_table()
+html_nodes("td")
+html_nodes() returns all nodes
+html_nodes(pagesource, className)
+html_nodes(pg, "div > input:first-of-type"), "value")
+html_nodes(s, ".gallery-thumb")
+html_nodes(s, "name")
+html_nodes(xpath = '//*[@id="a"]')
+
+ateam %>% html_nodes("center") %>% html_nodes("td")
+ateam %>% html_nodes("center") %>% html_nodes("font")
+
+td <- ateam %>% html_nodes("center") %>% html_nodes("td")
+td %>% html_nodes("font")
+
+if (utils::packageVersion("xml2") > "0.1.2") {
+  td %>% html_node("font")
+}
+
+# To pick out an element at specified position, use magrittr::extract2
+# which is an alias for [[
+library(magrittr)
+ateam %>% html_nodes("table") %>% extract2(1) %>% html_nodes("img")
+ateam %>% html_nodes("table") %>% `[[`(1) %>% html_nodes("img")
+
+# Find all images contained in the first two tables
+ateam %>% html_nodes("table") %>% `[`(1:2) %>% html_nodes("img")
+ateam %>% html_nodes("table") %>% extract(1:2) %>% html_nodes("img")
+
+# XPath selectors ---------------------------------------------
+# chaining with XPath is a little trickier - you may need to vary
+# the prefix you're using - // always selects from the root node
+# regardless of where you currently are in the doc
+ateam %>% html_nodes(xpath = "//center//font//b") %>% html_nodes(xpath = "//b")
+
+read_html()
+html_nodes(doc, "table td")
+html_nodes(doc, xpath = "//table//td"))
+html_name() (the name of the tag)
+html_text() (all text inside the tag)
+html_attrs() (all attributes).
+# html_attrs(keywordList) this cannot use id, just list all details
+# html_attr(keywordList, "id") this select the ids
+# html_attr(keywordList, "href") this select the hrefs
+
+html_nodes("#titleCast .itemprop span")
+html_nodes("#img_primary img")
+html_nodes("div.name > strong > a")
+html_attr("href")
+
+html_text(keywordList, trim = FALSE)
+html_name(keywordList)
+html_children(keywordList)
+html_attrs(keywordList)
+html_attr(keywordList, "[href]", default = NA_character_)
+
+parse with xml()
+then extract components using 
+xml_node()
+xml_attr()
+xml_attrs()
+xml_text() and xml_name()
+
+Parse tables into data frames with 
+html_table().
+
+Extract, modify and submit forms with 
+html_form()
+set_values()
+submit_form().
+
+Detect and repair encoding problems with 
+guess_encoding()
+repair_encoding().
+
+Navigate around a website as if you’re in a browser with 
+html_session()
+jump_to()
+follow_link()
+back()
+forward()
+submit_form() and so on.
+
+######### demos #########
+# Inspired by https://github.com/notesofdabbler
+library(rvest)
+library(tidyr)
+
+page <- read_html("http://www.zillow.com/homes/for_sale/....")
+
+houses <- page %>% html_nodes(".photo-cards li article")
+z_id <- houses %>% html_attr("id")
+
+address <- houses %>% html_node(".zsg-photo-card-address") %>% html_text()
+
+price <- houses %>% html_node(".zsg-photo-card-price") %>% html_text() %>% readr::parse_number()
+
+params <- houses %>% html_node(".zsg-photo-card-info") %>% html_text() %>% strsplit("\u00b7")
+
+beds <- params %>% purrr::map_chr(1) %>% readr::parse_number()
+baths <- params %>% purrr::map_chr(2) %>% readr::parse_number()
+house_area <- params %>% purrr::map_chr(3) %>% readr::parse_number()
+
+################
+pagesource %>% html_nodes("table") %>% .[[3]] %>% html_table()
+
+read_html(doc) %>% html_nodes(".b1:not(.a1)") # Select class contains b1 not a1:
+# [1] <span class="b1"> text2 </span>
+
+use the attribute selector:
+read_html(doc) %>% html_nodes("[class='b1']")
+# [1] <span class="b1"> text2 </span>
+
+Select class contains both:
+read_html(doc) %>% html_nodes(".a1.b1")
+# [1] <span class="a1 b1"> text1 </span>
+
+combine class and ID in CSS selector
+div#content.sectionA
+
+in_learning_page %>%
+  html_nodes(".content__info__item__value") %>% 
+  str_subset(., "viewers")
+
+h <- read_html(text)
+
+h %>% html_nodes(xpath = '//*[@id="a"]') %>% xml_attr("value")
+
+html_attr(html_nodes(pg, "div > input:first-of-type"), "value")
+
+ateam %>% html_nodes("center") %>% html_nodes("td")
+ateam %>% html_nodes("center") %>% html_nodes("font")
+
+td <- ateam %>% html_nodes("center") %>% html_nodes("td")
+
+# When applied to a list of nodes, html_nodes() returns all nodes,
+# collapsing results into a new nodelist.
+td %>% html_nodes("font")
+# nodes, it returns a "missing" node
+if (utils::packageVersion("xml2") > "0.1.2") {
+  td %>% html_nodes("font")
+
 </pre>
 <br>
 <br>
@@ -2330,6 +2540,9 @@ Adding features like auto complete, go to definition, or documentation on hover 
 Rscript.exe  alert.r
 Rscript.exe  something.r
 
+calling chrome by batch script in sequence
+can also call by R
+
 <a href="https://stackoverflow.com/questions/31190468/integrating-r-and-its-graphics-with-existing-javascript-html-application"><strong>R and Javascript : Execution, Libraries, Integration</strong></a>
 <br>
 In today’s date, R is the megastar language for <a href="https://www.cuelogic.com/big-data-solution" data-href="https://www.cuelogic.com/big-data-solution" target="_blank">big data analytics</a>. 
@@ -2810,6 +3023,53 @@ summary(mytable) # chi-square test of indepedence
 <h2>edply</h2>
 <a href="https://www.r-bloggers.com/edply-combining-plyr-and-expand-grid/">edply: combining plyr and expand.grid</a>
 
+<h2>column merge two tables</h2>
+
+AChoice = "C:/Users/user/Desktop"
+setwd(AChoice)
+
+Sys.setlocale(category = 'LC_ALL', 'Chinese')	# this must be added to script to show chinese
+lista = readLines("list1.txt")
+listb = readLines("list2.txt")
+listc = paste0(lista, "  ",listb)
+sink("list3.txt")
+cat(listc, sep="\n")
+sink()
+
+note: may use cbind in dataframe
+
+<h2>chop in blocks</h2>
+groupPageNum = 7
+theList = 1:78
+if(length(theList)%%groupPageNum==0){
+  pageNo = length(theList)%/%groupPageNum
+}else{
+  pageNo = length(theList)%/%groupPageNum +1
+}
+pageNo
+
+
+for(page in 1:pageNo){
+  if(length(theList) > groupPageNum){
+	thepage= theList[1:groupPageNum]
+	theList= theList[-(1:groupPageNum)]
+     arrangePages(thepage)
+	page = page + 1
+  }else{
+     arrangePages(theList)
+  }
+}
+
+
+<h2>remove items</h2>
+
+fmList=c('02917','01876','01960','03938','02951','02952','06820','06110','03601','01895')
+itemList=c('02718','02696')
+
+commons = fmList[fmList %in% itemList]
+cat("\n\nnumber of Items to remove: ", length(commons), "\n")
+for(item in commons){fmList = fmList[-(which(fmList == item))]}
+fmList
 
 </pre>
 
