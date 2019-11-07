@@ -29,5 +29,7 @@ function sCt(stc) {
     iA = iA + iH + iI + sC1 + sC2 + sC3 + sC4 + iCW + stc + iPC + iV[pd] + iT;
   };
   iW.document.write(iA);
+  localStorage.stkDailyCode = stkcode;
+  window.open("file:///D:/Dropbox/Public/LibDocs/OHLCOtherCode.html");
 }
 
