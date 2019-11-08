@@ -105,8 +105,6 @@ function sCt(stkcode) {
   };
   imgWindow.document.write(imgAdr);
   if (stkcode != "HSI") { stkcode = FormatNumberLength5(stkcode);}
-  localStorage.stkDailyCode = stkcode;
-  window.open("file:///D:/Dropbox/Public/LibDocs/OHLCOtherCode.html");
 }
 function FormatNumberLength5(num) {
     var r = "" + num;

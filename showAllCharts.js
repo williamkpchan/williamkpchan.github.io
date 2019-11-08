@@ -22,13 +22,13 @@ function showAllCharts(){
 	$( "#codelist" ).append("Total: " + theList.length + "<br>");
 
 	theList.forEach(function(value) {
-		$( "#codelist" ).append('<span onclick=sCt("' +value + '")>' + value + '</span>&emsp;');
+		$( "#codelist" ).append('<span onclick=showBoth("' +value + '")>' + value + '</span>&emsp;');
 	});
 	$( "#codelist" ).append("<br>");
 
 	for( var codeNo = 0; codeNo < theList.length; codeNo++){
 		theText = theList[codeNo];
-		theFunccode =  "<div>" + (codeNo+1) + " &emsp; " + theText + "<br>" + thisImgHead + theText + thisImgPCode + thisImgTail + "onclick = \"sCt('" + theText + "')\">" + "</div>";
+		theFunccode =  "<div>" + (codeNo+1) + " &emsp; " + theText + "<br>" + thisImgHead + theText + thisImgPCode + thisImgTail + "onclick = \"showBoth('" + theText + "')\">" + "</div>";
 		$( "#codelist" ).append( theFunccode);
 	};
 };
