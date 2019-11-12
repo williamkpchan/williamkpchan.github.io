@@ -3032,6 +3032,8 @@ byrow = TRUE)        # fill matrix by rows
 
 
 <h2>cross tabulations</h2>
+<a href="Contingency Table.html" class="bordred2 borRad10 green whitebs">Contingency Table</a>  <a href="Xtabs exercises.html" class="bordred2 borRad10 white whitebs">Xtabs exercises</a> 
+
 a chart is different from a table
 a chart is a graphic representation
 a table is a numeric representation
@@ -3137,6 +3139,163 @@ copy the thumb address and replace ending 320x300.jpg with 1000x2000
 x = sort(rnorm(13,5,12))
 x
 cut(x,5)
+
+<h2>R GUI: RGtk or Tcl/Tk, gWidgets</h2>
+<a href="http://www.ggobi.org/rgtk2/">RGtk2</a>
+
+<a href="https://www.r-bloggers.com/playing-with-guis-in-r-with-rgtk2/">Playing with GUIs in R with RGtk2</a>
+
+<a href="https://www.r-bloggers.com/gui-building-in-r-gwidgets-vs-deducer/">GUI building in R: gWidgets vs Deducer</a>
+
+require("RGtk2")
+
+window <- gtkWindow()
+window["title"] <- "Calculator"
+
+frame <- gtkFrameNew("Calculate")
+window$add(frame)
+
+box1 <- gtkVBoxNew()
+box1$setBorderWidth(30)
+frame$add(box1)   #add box1 to the frame
+
+box2 <- gtkHBoxNew(spacing= 10) #distance between elements
+box2$setBorderWidth(24)
+
+TextToCalculate<- gtkEntryNew() #text field with expresion to calculate
+TextToCalculate$setWidthChars(25)
+box1$packStart(TextToCalculate)
+
+label = gtkLabelNewWithMnemonic("Result") #text label
+box1$packStart(label)
+
+result<- gtkEntryNew() #text field with result of our calculation
+result$setWidthChars(25)
+box1$packStart(result)
+
+box2 <- gtkHBoxNew(spacing= 10) # distance between elements
+box2$setBorderWidth(24)
+box1$packStart(box2)
+
+Calculate <- gtkButton("Calculate")
+box2$packStart(Calculate,fill=F) #button which will start calculating
+
+Sin <- gtkButton("Sin") #button to paste sin() to TextToCalculate
+box2$packStart(Sin,fill=F)
+
+Cos <- gtkButton("Cos") #button to paste cos() to TextToCalculate
+box2$packStart(Cos,fill=F)
+
+model<-rGtkDataFrame(c("double","integer"))
+combobox <- gtkComboBox(model)
+#combobox allowing to decide whether we want result as integer or double
+
+crt <- gtkCellRendererText()
+combobox$packStart(crt)
+combobox$addAttribute(crt, "text", 0)
+
+gtkComboBoxSetActive(combobox,0)
+box2$packStart(combobox)
+
+DoCalculation<-function(button)
+{
+
+  if ((TextToCalculate$getText())=="") return(invisible(NULL)) #if no text do nothing
+
+   #display error if R fails at calculating
+   tryCatch(
+      if (gtkComboBoxGetActive(combobox)==0)
+   result$setText((eval(parse(text=TextToCalculate$getText()))))
+   else (result$setText(as.integer(eval(parse(text=TextToCalculate$getText()))))),
+   error=function(e)
+      {
+      ErrorBox <- gtkDialogNewWithButtons("Error",window, "modal","gtk-ok", GtkResponseType["ok"])
+      box1 <- gtkVBoxNew()
+      box1$setBorderWidth(24)
+      ErrorBox$getContentArea()$packStart(box1)
+
+      box2 <- gtkHBoxNew()
+      box1$packStart(box2)
+
+      ErrorLabel <- gtkLabelNewWithMnemonic("There is something wrong with your text!")
+      box2$packStart(ErrorLabel)
+      response <- ErrorBox$run()
+
+
+      if (response == GtkResponseType["ok"])
+         ErrorBox$destroy()
+
+      }
+   )
+
+}
+
+
+  PasteSin<-function(button)
+{
+   TextToCalculate$setText(paste(TextToCalculate$getText(),"sin()",sep=""))
+
+}
+
+PasteCos<-function(button)
+{
+   TextToCalculate$setText(paste(TextToCalculate$getText(),"cos()",sep=""))
+
+}
+
+#however button variable was never used inside 
+#functions, without it gSignalConnect would not work
+gSignalConnect(Calculate, "clicked", DoCalculation)
+gSignalConnect(Sin, "clicked", PasteSin)
+gSignalConnect(Cos, "clicked", PasteCos)
+Now it works like planned.
+
+
+
+library(RGtk2)
+createWindow <- function()
+{
+    window <- gtkWindow()
+
+    label <- gtkLabel("Hello World")
+    window$add(label)
+}
+
+createWindow()
+gtk.main()
+
+<h2>To keep the scripts and algorithm secret</h2>
+by saving functions using save(). 
+For example, here's a function f() you want to keep secret:
+
+f <- function(x, y) { return(x + y)}
+
+Save it :
+save(f, file = 'C:\\Users\\Joyce\\Documents\\R\\Secret.rda')
+
+And when you want to use the function:
+load("C:\\Users\\Joyce\\Documents\\R\\Secret.rda")
+
+Save all functions in separate files, 
+put them in a folder and have one plain old .R script
+loading them all in and executing whatever.
+Zip the whole thing up and distribute it to whoever.
+Maybe even compile it into a package.
+Effectively the whole thing would be read-only then.
+
+This solution isn't that great though.
+You can still see the function in R by typing the name of the function
+so it's not hidden in that sense.
+But if you open the .rda files their contents are all garbled.
+It all depends really on how experienced the recipients of your code are with R.
+
+One form of having encrypted code is implemented in the petals function in the TeachingDemos package.
+
+it would only take intermediate level programing skills to find the hidden code,
+however it does take deliberate effort and the user would not be able to claim having seen the code by accident.
+You would then need some type of license agreement in place to enforce any no peeking agreements.
+
+Well you are going to need R installed on the deployment machine.
 
 </pre>
 

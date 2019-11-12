@@ -66,6 +66,14 @@ function getChar(event) {
   }
 }
 
+function askList() {
+	var inputList = prompt("CodeList, Number (5 digits) sep by space： ", "");
+	if (inputList != null && inputList != "") {
+		if (inputList != "HSI") { theList = inputList.split(" ");}
+	}
+	showAllCharts();
+}
+
 function showChart() {
     var thecode = prompt("Code Number:", "");
     if (thecode != null && thecode != "") {sCt(thecode);}
