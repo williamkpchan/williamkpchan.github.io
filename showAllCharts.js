@@ -49,6 +49,7 @@ function chkKey() { var testkey = getChar(event);
   if(testkey == 'h'){window.open("Hmain.html");}
   if(testkey == 'H'){window.open("monitorHSI.html");}
   if(testkey == 'A'){window.open("monitorA.html");}
+  if(testkey == 'e'){window.scrollTo(0,9999999);}
 }
 
 function getChar(event) {
