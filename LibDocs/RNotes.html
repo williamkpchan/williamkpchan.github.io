@@ -16,6 +16,7 @@ body{width: 80%;margin-left: 10%}
 li{text-align: left; margin-left: 20%;}
 h1, h2 {color: gold;}
 code,pre{width: 100%; margin-left: 0px;background-color:black;}
+i{color:brown;}
 </style>
 
 </head><body>
@@ -156,7 +157,27 @@ readLines(con = stdin(), n = -1L, ok = TRUE, warn = TRUE, encoding = "unknown", 
 readLines(con <- file("Unicode.txt", encoding = "UCS-2LE"))
 close(con)
 unique(Encoding(A)) # will most likely be UTF-8
+==================
 
+Read text as UTF-8 encoding
+
+the following reads in encoding twice and works but reasons unknown
+readLines(textConnection("Z\u00FCrich", encoding="UTF-8"), encoding="UTF-8")
+[1] "Zürich"
+
+==================
+the page source claim to be using UTF-8 encoding:
+meta http-equiv="Content-Type" content="text/html; charset=utf-8"
+
+So, the question is, are they really using a different enough encoding, 
+or can we just convert to utf-8, guessing that any errors will be negligible?
+
+A quick and dirty approach just force utf-8 using iconv:
+
+TV_Audio_Video <- read_html(iconv(page_source[[1]], to = "UTF-8"), encoding = "utf8")
+
+In general, this is a bad idea - better to specify the encoding it's from.
+In this case, maybe the error is theirs, so this quick and dirty approach might be ok.
 
 </pre>
 
@@ -1654,7 +1675,7 @@ html_attr(img, "data-alt")
 ################
 # html_nodes samples
 html_nodes(".a1.b1")
-html_nodes(".b1:not(.a1)")  # Select class contains b1 not a1:
+html_nodes(".b1:not(.a1)")  # <i>Select class contains b1 not a1:</i>
 html_nodes(".content__info__item__value")
 html_nodes("[class='b1']")
 html_nodes("center")
@@ -1768,19 +1789,45 @@ house_area <- params %>% purrr::map_chr(3) %>% readr::parse_number()
 ################
 pagesource %>% html_nodes("table") %>% .[[3]] %>% html_table()
 
-read_html(doc) %>% html_nodes(".b1:not(.a1)") # Select class contains b1 not a1:
+read_html(doc) %>% html_nodes(".b1:not(.a1)") # <i>Select class contains b1 not a1:</i>
 # [1] <span class="b1"> text2 </span>
 
-use the attribute selector:
+<i>use the attribute selector:</i>
 read_html(doc) %>% html_nodes("[class='b1']")
 # [1] <span class="b1"> text2 </span>
 
-Select class contains both:
-read_html(doc) %>% html_nodes(".a1.b1")
+<i>Select class contains both:</i>
+read_html(doc) %>% html_nodes(".a1.b1")  # <i>this is 'and' operation</i>
 # [1] <span class="a1 b1"> text1 </span>
 
 combine class and ID in CSS selector
-div#content.sectionA
+div#content.sectionA  # <i>this is 'and' operation</i>
+
+=====================
+<i>select 2 classes in 1 tag</i>
+Select class contains b1 not a1:
+read_html(doc) %>% html_nodes(".b1:not(.a1)")
+
+<i>use the attribute selector:</i>
+read_html(doc) %>% html_nodes("[class='b1']")
+
+<i>Select class contains both:</i>
+read_html(doc) %>% html_nodes(".a1.b1")  # <i>this is 'and' operation</i>
+=====================
+standard CSS selector specify either or both
+
+html_nodes(".content__info__item__value, skill")  # <i>the comma is 'or' operation</i>
+{xml_nodeset (4)}
+[1] <span class="content__info__item__value duration">5h 59m 42s</span>
+[2] <span class="content__info__item__value skill">Beginner + Intermediate</span>
+[3] <span class="content__info__item__value released">September 26, 2013</span>
+[4] <span class="content__info__item__value viewers">82,552</span>
+
+# has both classes in_learning_page
+html_nodes(".content__info__item__value.skill")   # <i>this is 'and' operation</i>
+{xml_nodeset (1)}
+[1] <span class="content__info__item__value skill">Beginner + Intermediate</span>
+
 
 in_learning_page %>%
   html_nodes(".content__info__item__value") %>% 

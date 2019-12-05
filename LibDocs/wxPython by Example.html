@@ -1,0 +1,278 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script type='text/javascript' src='../mainscript.js'></script>
+
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{width:90%;margin-left: 5%; font-size:22px;}
+strong, h1, h2 {color: gold;}
+img {width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%;}
+pre{width:100%;}
+</style>
+</head>
+<body onkeypress="chkKey()">
+<center><h1>wxPython by Example</h1>
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+<pre>
+<h2>A Full Example</h2>
+The following code shows an example of a wxPython application with a frame containing a menu bar, status bar and panel. 
+
+The panel contains a label and a button that is bound to an exit function. 
+
+The menu bar has a Help-&gt;About action that is bound to a dialog box. 
+The dialog box shows how to display an HTML message and bring up a link in the user's default browser. 
+You might find this example useful as a starting point that you can adapt. 
+In a larger program it would be best to put the about box code into a separate file so that the main program file does not become too large. 
+If this example is too large to start with then see the second example. 
+
+<pre>
+import wxversion
+wxversion.select("2.8")
+import wx, wx.html
+import sys
+
+aboutText = """&lt;p&gt;Sorry, there is no information about this program. 
+It is running on version %(wxpy)s of &lt;b&gt;wxPython&lt;/b&gt; and %(python)s of &lt;b&gt;Python&lt;/b&gt;.""" 
+
+class HtmlWindow(wx.html.HtmlWindow):
+    def __init__(self, parent, id, size=(600,400)):
+        wx.html.HtmlWindow.__init__(self,parent, id, size=size)
+        if "gtk2" in wx.PlatformInfo:
+            self.SetStandardFonts()
+
+    def OnLinkClicked(self, link):
+        wx.LaunchDefaultBrowser(link.GetHref())
+        
+class AboutBox(wx.Dialog):
+    def __init__(self):
+        wx.Dialog.__init__(self, None, -1, "About &lt;&lt;project&gt;&gt;",
+            style=wx.DEFAULT_DIALOG_STYLE|wx.THICK_FRAME|wx.RESIZE_BORDER|
+                wx.TAB_TRAVERSAL)
+        hwin = HtmlWindow(self, -1, size=(400,200))
+        vers = {}
+        vers["python"] = sys.version.split()[0]
+        vers["wxpy"] = wx.VERSION_STRING
+        hwin.SetPage(aboutText % vers)
+        btn = hwin.FindWindowById(wx.ID_OK)
+        irep = hwin.GetInternalRepresentation()
+        hwin.SetSize((irep.GetWidth()+25, irep.GetHeight()+10))
+        self.SetClientSize(hwin.GetSize())
+        self.CentreOnParent(wx.BOTH)
+        self.SetFocus()
+
+class Frame(wx.Frame):
+    def __init__(self, title):
+        wx.Frame.__init__(self, None, title=title, pos=(150,150), size=(350,200))
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+        menuBar = wx.MenuBar()
+        menu = wx.Menu()
+        m_exit = menu.Append(wx.ID_EXIT, "E&amp;xit\tAlt-X", "Close window and exit program.")
+        self.Bind(wx.EVT_MENU, self.OnClose, m_exit)
+        menuBar.Append(menu, "&amp;File")
+        menu = wx.Menu()
+        m_about = menu.Append(wx.ID_ABOUT, "&amp;About", "Information about this program")
+        self.Bind(wx.EVT_MENU, self.OnAbout, m_about)
+        menuBar.Append(menu, "&amp;Help")
+        self.SetMenuBar(menuBar)
+        
+        self.statusbar = self.CreateStatusBar()
+
+        panel = wx.Panel(self)
+        box = wx.BoxSizer(wx.VERTICAL)
+        
+        m_text = wx.StaticText(panel, -1, "Hello World!")
+        m_text.SetFont(wx.Font(14, wx.SWISS, wx.NORMAL, wx.BOLD))
+        m_text.SetSize(m_text.GetBestSize())
+        box.Add(m_text, 0, wx.ALL, 10)
+        
+        m_close = wx.Button(panel, wx.ID_CLOSE, "Close")
+        m_close.Bind(wx.EVT_BUTTON, self.OnClose)
+        box.Add(m_close, 0, wx.ALL, 10)
+        
+        panel.SetSizer(box)
+        panel.Layout()
+
+    def OnClose(self, event):
+        dlg = wx.MessageDialog(self, 
+            "Do you really want to close this application?",
+            "Confirm Exit", wx.OK|wx.CANCEL|wx.ICON_QUESTION)
+        result = dlg.ShowModal()
+        dlg.Destroy()
+        if result == wx.ID_OK:
+            self.Destroy()
+
+    def OnAbout(self, event):
+        dlg = AboutBox()
+        dlg.ShowModal()
+        dlg.Destroy()  
+
+app = wx.App(redirect=True)   # Error messages go to popup window
+top = Frame("&lt;&lt;project&gt;&gt;")
+top.Show()
+app.MainLoop()
+</pre>
+<h2>A Bare-Bones Application</h2>
+The following is a minimum wxPython application in the tradition of Hello World: 
+<pre>import wx
+
+app = wx.App(redirect=True)
+top = wx.Frame(None, title="Hello World", size=(300,200))
+top.Show()
+app.MainLoop()
+</pre>
+<ul>
+<li>The first thing to do in the main program is to create the wx.App object that provides the event loop. 
+You need to do this first because some other objects use it behind the scenes. 
+The redirect=True option  </li>
+<li class="gap">The topmost GUI interface element, or <em>widget</em>, is the wx.Frame. 
+All it consists of is an empty rectangular frame with a title bar. 
+In all but this very basic example the frame would be sub-classed to allow the definition of further widgets and call-back functions within it. 
+</li>
+
+<li>The frame and its contents are not displayed automatically. 
+You must explicitly call the Show() function. 
+</li>
+
+<li>At this point the application is visible on the screen but is not responding to events. 
+You must call the MainLoop function to do this but note that once started the event loop never returns. 
+Although no events have been defined explicitly there are some event handlers provided by wxPython. 
+If you click on the X icon on the title bar the application receives a wx.EVT_CLOSE event that tells the application to terminate. 
+ </li></ul>
+<h2>Sub-Classing the Frame</h2>
+It is common practice use an object-orientated approach as shown here. 
+However, a procedural structure is equally valid and is shown in a subsequent section. 
+To develop this application further you need to add your own frame object before you can add functionality to the wx.Frame. 
+
+<pre>import wx
+
+class Frame(wx.Frame):
+    def __init__(self, title):
+        wx.Frame.__init__(self, None, title=title, size=(350,200))
+
+app = wx.App(redirect=True)
+top = Frame("Hello World")
+top.Show()
+app.MainLoop()
+</pre>
+
+If you are not very familiar with using objects in Python you should look closely at this example as sub-classing is used quite frequently in wxPython. 
+In this example the Frame class is based on wx.Frame. 
+Any functions that appear in the derived class will hide those of the same name in the base class. 
+This commonly applies to the __init__ function that is called automatically when a new object is defined. 
+In this case the statement is top&nbsp;=&nbsp;Frame("Hello&nbsp;World"). 
+It is necessary for the derived class to call the __init__ function in the base class explicitly. 
+Note that the first argument is self so that the base class knows what object is being initialized. 
+ 
+<h2>Adding an Event Handler</h2>
+
+<pre>class Frame(wx.Frame):
+    def __init__(self, title):
+        wx.Frame.__init__(self, None, title=title, size=(350,200))
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+    def OnClose(self, event):
+        dlg = wx.MessageDialog(self, 
+            "Do you really want to close this application?",
+            "Confirm Exit", wx.OK|wx.CANCEL|wx.ICON_QUESTION)
+        result = dlg.ShowModal()
+        dlg.Destroy()
+        if result == wx.ID_OK:
+            self.Destroy()
+</pre>
+
+This example shows how to add a function that will handle the wx.EVT_CLOSE event that is generated when the user clicks on the X icon on the title bar of the frame. 
+The Bind() function tells the event loop the name of the function to call when the event is detected. 
+It is a useful convention to start the name of any event handlers with "On". 
+This helps to ensure that the function name does not clash with one in the base class. 
+The OnClose function illustrates how to use a message dialog. 
+The ShowModal function not only displays the dialog but also waits for the user to click on one of the buttons. 
+The result is either wx.ID_OK or wx.ID_CANCEL. 
+The Destroy function is used to terminate the application when the OK button is pressed. 
+If self.Close() had been used instead of self.Destroy() the program would get into a loop as a further wx.EVT_CLOSE event would be issued. 
+  
+<h2>An Alternative Program Structure</h2>
+Since there is only one wx.Frame object there is no need to sub-class it and you can write the whole program as a simple procedure. 
+Since the event handler, OnClose() is no longer a member function of the frame object there is no self argument and so global variables are used instead. 
+
+<pre>import wx
+
+def OnClose(event):
+    dlg = wx.MessageDialog(top, 
+        "Do you really want to close this application?",
+        "Confirm Exit", wx.OK|wx.CANCEL|wx.ICON_QUESTION)
+    result = dlg.ShowModal()
+    dlg.Destroy()
+    if result == wx.ID_OK:
+        top.Destroy()
+
+app = wx.App(redirect=True)
+top = wx.Frame(None, title="Hello World", size=(300,200))
+top.Bind(wx.EVT_CLOSE, OnClose)
+top.Show()
+app.MainLoop()
+</pre>
+<h2>Adding Content to the Frame</h2>
+This example shows how to add a menu bar, a status bar and a panel containing a button. 
+The menu bar has only a single File menu but this is extended with a Help menu in the final example. 
+ 
+<pre>class Frame(wx.Frame):
+    def __init__(self, title):
+        wx.Frame.__init__(self, None, title=title, pos=(150,150), size=(350,200))
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+        menuBar = wx.MenuBar()
+        menu = wx.Menu()
+        m_exit = menu.Append(wx.ID_EXIT, "E&amp;xit\tAlt-X", "Close window and exit program.")
+        self.Bind(wx.EVT_MENU, self.OnClose, m_exit)
+        menuBar.Append(menu, "&amp;File")
+        self.SetMenuBar(menuBar)
+        
+        self.statusbar = self.CreateStatusBar()
+
+        panel = wx.Panel(self)
+        box = wx.BoxSizer(wx.VERTICAL)
+        
+        m_text = wx.StaticText(panel, -1, "Hello World!")
+        m_text.SetFont(wx.Font(14, wx.SWISS, wx.NORMAL, wx.BOLD))
+        m_text.SetSize(m_text.GetBestSize())
+        box.Add(m_text, 0, wx.ALL, 10)
+        
+        m_close = wx.Button(panel, wx.ID_CLOSE, "Close")
+        m_close.Bind(wx.EVT_BUTTON, self.OnClose)
+        box.Add(m_close, 0, wx.ALL, 10)
+        
+        panel.SetSizer(box)
+        panel.Layout()
+</pre>
+
+The full example is based on the wxPython template that is used in the Luke-SDK IDE.
+<br>
+<br>
+<br>
+<br>
+
+<script>
+	var toc = $('#toc');
+	$('h2').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>
+</body>
+</html>

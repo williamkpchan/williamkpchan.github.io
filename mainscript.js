@@ -44,7 +44,7 @@ function chkKey() {
   if(testkey == 's'){window.open("stkListVH.html");}
   if(testkey == 'S'){showMMA();}
 
-  if(testkey == 't'){window.open("http://my.weather.gov.hk/myindex_uc.htm");}
+  if(testkey == 't'){window.open("https://my.weather.gov.hk/tc/myindex.htm");}
   if(testkey == 'T'){window.open("https://translate.google.com/#en/zh-CN");}
   if(testkey == 'u'){window.open("https://www.urbandictionary.com/");}
   if(testkey == 'v'){window.open("https://williamkpchan.github.io/LibDocs/StkImgViewer.html");}
