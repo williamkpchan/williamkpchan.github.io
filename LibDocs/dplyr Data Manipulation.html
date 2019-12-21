@@ -13,9 +13,10 @@ $(document).ready(function(){
 });
 </script>
 <style>
-body{width:80%;margin-left: 10%}
+body{width:80%;margin-left: 10%; font-size:22px;}
 strong, h1, h2 {color: gold;}
 .lang-r{color:grey; background-color:#000800;}
+i{color:brown;}
 </style>
 </head><body>
 <center><h1>dplyr Data Manipulation</h1>
@@ -543,6 +544,192 @@ abide by its terms.</p>
 </table>
 <br>
 <br>
+<pre>
+<h2>Useful dplyr Functions</h2>
+
+The R package<strong><em> dplyr</em></strong> is an extremely useful resource for data cleaning, manipulation, visualisation and analysis. 
+It contains a large number of very useful functions and is, without doubt, one of my top 3 R packages today (<em><strong>ggplot2</strong> </em>and<em><strong> reshape2</strong></em> being the others). 
+
+Commonly used in data manipulation tasks. 
+
+select() 
+filter()
+mutate() 
+group_by() 
+summarise()
+arrange() 
+join()
+
+require(dplyr)<em>
+
+# Data file</em>
+file <- "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"
+
+<em># Some sensible variable names</em>
+df_names <- c("age", "wrkclass", "fnlweight", "education_lvl", "edu_score",
+ "marital_status", "occupation", "relationship", "ethnic", "gender",
+ "cap_gain", "cap_loss", "hrs_wk", "nationality", "income")
+
+<em># Import the data</em>
+df <- read.csv(file, header = F,
+ sep = ",",
+ na.strings = c(" ?", " ", ""),
+ row.names = NULL,
+ col.names = df_names)
+
+Many data manipulation tasks in dplyr can be performed with the assistance of the <i>forward-pipe operator (%>%)</i>. 
+
+The first function I would like to introduce removes duplicate entries which, in fact, <em>is</em> a preprocessing step one may carry out in a data analysis. 
+It is so useful that it must be included.
+<em># Remove duplicate rows and check number of rows</em>
+<i>df %>% distinct() %>% nrow()</i>
+
+<em># Drop duplicate rows and assign to new dataframe object</em>
+<i>df_clean <- df %>% distinct()</i>
+
+<em># Drop duplicates based on one or more variables</em>
+<i>df %>% distinct(gender, .keep_all = T)</i>
+<i>df %>% distinct(gender, education_lvl, .keep_all =  T)</i>
+
+Taking random samples of data is easy with dplyr.
+<em># Sample random rows with or without replacement</em>
+<i>sample_n(df, size = nrow(df) * 0.7, replace = F)
+sample_n(df, size = 20, replace = T)
+</i>
+<em># Sample a proportion of rows with or without replacement</em>
+<i>sample_frac(df, size = 0.7, replace = F)
+sample_frac(df, size = 0.8, replace = T
+</i>
+Renaming variables is also easy with dplyr.
+<em># Rename one or more variables in a dataframe</em>
+<i>df <- df %>% rename("INCOME" = "income")
+df <- df %>% rename("INCOME" = "income", "AGE" = "age")
+</i>
+The main “verbs” of dplyr are now introduced. 
+Let’s begin with the <strong>select()</strong> verb which filters a dataframe by column.
+<em># Select specific columns (note that INCOME is the new name from earlier)</em>
+<i>df %>% select(education_lvl, INCOME)</i>
+ 
+<em># With dplyr 0.7.0 the pull() function extracts a variable as a vector</em>
+<i>df %>% pull(age)</i>
+
+<em># Drop a column using the - operator (variable can be referenced by name or column position)</em>
+<i>df %>% select(-edu_score)
+df %>% select(-1, -4)
+df %>% select(-c(2:6))
+</i>
+Some useful helper functions are available in dplyr and can be used in conjunction with the select() verb. 
+Here are some quick examples.
+<em># Select columns with their names starting with "e"</em>
+<i>df %>% select(starts_with("e"))</i>
+
+<em># The negative sign works for dropping here too</em>
+<i>df %>% select(-starts_with("e"))
+</i>
+<em># Select columns with some pattern in the column name</em>
+<i>df %>% select(contains("edu"))
+</i>
+<em># Reorder data to place a particular column at the start followed by all others </em><em>using everything()</em>
+<i>df %>% select(INCOME, everything())</i>
+
+<em># Select columns ending with a pattern</em>
+<i>df %>% select(ends_with("e"))</i>
+
+<i>df %>% select(ends_with("_loss"))</i>
+
+The next major verb we look at is <strong>filter() </strong>which, surprisingly enough, filters a dataframe by row based on one or more conditions.
+<em># Filter rows to retain observations where age is greater than 30</em>
+<i>df %>% filter(age > 30)</i>
+
+<em># Filter by multiple conditions using the %in% operator (make sure strings match)</em>
+<i>df %>% filter(relationship %in% c(" Unmarried", " Wife"))</i>
+
+<em># You can also use the OR operator (|)</em>
+<i>df %>% filter(relationship == " Husband" | relationship == " Wife")</i>
+
+<em># Filter using the AND operator</em>
+<i>df %>% filter(age > 30 & INCOME == " >50K")</i>
+
+<em># Combine them too</em>
+<i>df %>% filter(education_lvl %in% c(" Doctorate", " Masters") & age > 30)</i>
+
+<em># The NOT condition (filter out doctorate holders)</em>
+<i>df %>% filter(education_lvl != " Doctorate")</i>
+
+<em># The grepl() function can be conveniently used with filter()</em>
+<i>df %>% filter(grepl(" Wi", relationship))</i>
+
+Next, we look at the <strong>summarise()</strong> verb which allows one to dynamically summarise groups of data and even pipe groups to ggplot data visualisations.
+<em># The summarise() verb in dplyr is useful for summarising grouped data</em>
+<i>df %>% filter(INCOME == " >50K") %>%
+ summarise(mean_age = mean(age), median_age = median(age), sd_age = sd(age))
+</i>
+<em># Summarise multiple variables using summarise_at()</em>
+<i>df %>% filter(INCOME == " >50K") %>%
+ summarise_at(vars(age, hrs_wk), funs(n(), mean, median))
+</i>
+<em># We can also summarise with custom functions</em>
+<em># The . in parentheses represents all called variables</em>
+<i>df %>% summarise_at(vars(age, hrs_wk),
+ funs(n(), missing = sum(is.na(.)), mean = mean(., na.rm = T)))
+</i>
+<em># Create a new summary statistic with an anonymous function</em>
+<i>df %>% summarise_at(vars(age),
+ function(x) { sum((x - mean(x)) / sd(x)) })
+</i>
+<em># Summarise conditionally using summarise_if()</em>
+<i>df %>% filter(INCOME == " >50K") %>% summarise_if(is.numeric, funs(n(), mean, median))
+ </i>
+<em># Subset numeric variables and use summarise_all() to get summary statistics</em>
+<i>ints <- df[sapply(df, is.numeric)]
+summarise_all(ints, funs(mean, median, sd, var))
+</i>
+Next up is the <strong>arrange()</strong> verb which is useful for sorting data in ascending or descending order (ascending is default).
+<em># Sort by ascending age and print top 10</em>
+<i>df %>% arrange(age) %>% head(10)</i>
+
+<em># Sort by descending age and print top 10</em>
+<i>df %>% arrange(desc(age)) %>% head(10)</i>
+
+The<strong> group_by()</strong> verb is useful for grouping together observations which share common characteristics.
+<em># The group_by verb is extremely useful for data analysis</em>
+<i>df %>% group_by(gender) %>% summarise(Mean = mean(age))</i>
+<i>df %>% group_by(relationship) %>% summarise(total = n())</i>
+<i>df %>% group_by(relationship) %>% summarise(total = n(), mean_age = mean(age))</i>
+
+The<strong> mutate()</strong> verb is used to create new variables from existing local variables or global objects. 
+New variables, such as sequences, can be also specified within mutate().
+<em># Create new variables from existing or global variables</em>
+<i>df %>% mutate(norm_age = (age - mean(age)) / sd(age))</i>
+ 
+
+<em># Multiply each numeric element by 1000 (the name "new" is added to the original variable name)</em>
+<i>df %>% mutate_if(is.numeric, funs(new = (. * 1000))) %>% head()</i>
+
+The<strong> join()</strong> verb is used to merge rows from disjoint tables which share a primary key ID  or some other common variable. 
+There are many join variants but I will consider just left, right, inner and full joins.
+<em># Create ID variable which will be used as the primary key</em>
+<i>df <- df %>% mutate(ID = seq(1:nrow(df))) %>% select(ID, everything())</i>
+
+<em># Create two tables (purposely overlap to facilitate joins)</em>
+<i>table_1 <- df[1:50 , ] %>% select(ID, age, education_lvl)</i>
+
+<i>table_2 <- df[26:75 , ] %>% select(ID, gender, INCOME)</i>
+
+<em># Left join joins rows from table 2 to table 1 (the direction is implicit in the argument order)</em>
+<i>left_join(table_1, table_2, by = "ID")</i>
+
+<em># Right join joins rows from table 1 to table 2</em>
+<i>right_join(table_1, table_2, by = "ID")</i>
+
+<em># Inner join joins and retains only complete cases</em>
+<i>inner_join(table_1, table_2, by = "ID")</i>
+
+<em># Full join joins and retains all values</em>
+<i>full_join(table_1, table_2, by = "ID"</i>
+
+That wraps up a brief demonstration of some of dplyr’s excellent functions. 
+For additional information on the functions and their arguments, check out the help documentation using the template: ?<function>
 <br>
 <br>
 

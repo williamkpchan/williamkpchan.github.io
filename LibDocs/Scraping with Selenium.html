@@ -25,12 +25,38 @@ i{color:brown;}
 <center><h1>Scraping with Selenium</h1>
 <a href="https://www.youtube.com/watch?v=zcUGla8EjjY">RSelenium Webinar JavaScript Example</a>
 <br>
+<a href="https://stackoverflow.com/questions/50113232/attributeerror-issue-module-selenium-webdriver-has-no-attribute-chrome">'selenium.webdriver' has no attribute 'Chrome'</a>
+<br>
+
 <div id="toc"></div></center>
 <br>
 <br>
 <br>
 <pre>
-Selenium is a web automation tool.
+
+D:/R-3.4.3/library/RSelenium/
+
+https://stackoverflow.com/questions/42468831/how-to-set-up-rselenium-for-r
+Download latest version of RSelenium >= 1.7.1. Run the following:
+
+library(RSelenium)
+rD <- rsDriver() # runs a chrome browser, wait for necessary files to download
+remDr <- rD$client
+# no need for remDr$open() browser should already be open
+
+https://blog.gtwang.org/r/rselenium-r-selenium-browser-web-scraping-tutorial/
+RSelenium：R 使用 Selenium 操控瀏覽器下載網頁資料
+
+D:\R-3.4.3\library\RSelenium\chromedriver.exe
+
+
+https://stackoverflow.com/questions/45395849/cant-execute-rsdriver-connection-refused
+
+rD <- rsDriver() # runs a chrome browser, wait for necessary files to download
+remDr <- rD$client
+# no need for remDr$open() browser should already be open
+
+
 
 <h2>rselenium tutorial</h2>
 RSelenium allows us to integrate from within R testing and manipulation of projects such as <a href="https://www.rstudio.com/shiny/">shiny</a>, <a href="https://saucelabs.com/">sauceLabs</a>.
@@ -56,9 +82,13 @@ If you intend to drive a browser on the same machine that RSelenium is running o
 <h4 id="how-do-i-get-the-selenium-server-stand-alone-binary">How do I get the Selenium Server stand-alone binary?</h4>
 RSelenium has a built-in function that will download the stand-alone java binary and place it in the RSelenium package location in the <code>/bin/</code> directory. 
 If you would like to install elsewhere the function takes a <code>dir</code> argument and can also update an existing binary.
-<code>RSelenium::checkForServer()
-</code>
-
+<i>
+Note: checkForServer is now defunct. 
+Users in future can find the function in 
+file.path(find.package("RSelenium"), "examples/serverUtils"). 
+The recommended way to run a selenium server is via Docker. 
+Alternatively see the RSelenium::rsDriver function.
+</i>
 If you would like to download the binary manually it is currently found <a href="https://selenium-release.storage.googleapis.com/">here</a>. 
 Look for <code>selenium-server-standalone-x.xx.x.jar</code>.
 
@@ -929,6 +959,129 @@ Kill PIDs of any processes listed.
 For example:
 <code class="language-r" data-lang="r">kill 30681</code>
 <br>
+<h2></h2>
+
+<h2>Python 進階爬蟲技巧 selenium + chrome</h2>
+
+隨著網路教學資源的豐富，簡易的爬蟲稍微有點程式基礎就可以寫出來，這間接導致很多網站加上了 captcha 來避免爬蟲，由於 captcha 是由 javascript 產生，這幾乎就阻擋了大部分的簡易爬蟲 (如 requests + bs4)。
+
+之前一直有再用 requests + bs4 來做自動簽到，但最近這網站突然加上了 captcha，導致爬圖突然不能用了，買一個進階會員需要 500 RMB，想了一下還是決定土炮弄一套進階的簽到程式，並跑在 linode (cloud server) 上，用以達到每天簽到的功能。
+
+這邊文章會教你如何使用 selenium + chrome 模擬瀏覽器行為抓取資料，並分享我踩到的各種雷，有興趣歡迎 follow。
+
+
+原始碼在 <a href="https://github.com/kcfang/python-selenium-crawler" target="_blank">https://github.com/kcfang/python-selenium-crawler</a>
+
+
+<h2>系統設置</h2>這邊使用 docker ubuntu 18.04 image 作範例。
+
+
+<h2>安裝 Python3 + Selenium</h2>
+
+apt update
+apt install -y python3 python3-pip
+pip install selenium
+
+
+<h2>安裝 Chrome + Chromedriver (selenium調用接口)</h2>
+
+安裝 chrome
+wget <a href="https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb" target="_blank">https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb</a>
+apt install ./google-chrome-stable_current_amd64.deb
+
+查看 chrome 版本
+google-chrome --version
+Google Chrome 74.0.3729.131
+
+到<a href="http://chromedriver.chromium.org/downloads" class= target="_blank" rel="noopener nofollow">chrome driver網站下</a>載對應版本的 driver。
+
+
+安裝 chrome driver (v74版)
+wget <a href="https://chromedriver.storage.googleapis.com/74.0.3729.6/chromedriver_linux64.zip" class= target="_blank" rel="noopener nofollow">https://chromedriver.storage.googleapis.com/74.0.3729.6/chromedriver_linux64.zip</a>
+
+這邊將 chromedriver 放到家目錄下 (docker image以/root為家目錄)
+unzip chromedriver_linux64.zip -d /root/
+
+
+<h2>Selenium 簡易教學 + 安裝測試</h2>
+Selenium 的主要功能是透過程式去操作網頁 DOM，所以很多公司都拿 Selenium 來寫前端的自動化測試，我們要做的就是使用 Selenium 模擬人工的行為。
+
+
+#!/usr/bin/python3
+# python yahoo.py
+
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
+if __name__ == "__main__":
+    options = Options()
+    options.add_argument('--headless')
+    options.add_argument('--no-sandbox')
+    driver = webdriver.Chrome('~/chromedriver', chrome_options=options)
+    driver.set_window_size(1024, 960)
+
+    # 使用 driver 開起 <a href="https://tw.yahoo.com" class= target="_blank" rel="noopener nofollow">https://tw.yahoo.com</a>
+    driver.get("<a href="https://tw.yahoo.com" class= target="_blank" rel="noopener nofollow">https://tw.yahoo.com</a>")
+
+    # 使用 xpath 找到搜尋欄並填入 hello world
+    inputs = driver.find_element_by_xpath('//*[<a href="http://twitter.com/id" class= target="_blank" rel="noopener nofollow">@id</a>="UHSearchBox"]')
+    inputs.send_keys("hello world")
+
+    # 找到送出鍵並點擊
+    driver.find_element_by_xpath('//*[<a href="http://twitter.com/id" class= target="_blank" rel="noopener nofollow">@id</a>="UHSearchWeb"]').click()
+
+    # 將目前頁面存到 yahoo.png
+    driver.save_screenshot('yahoo.png')
+
+上面的程式簡單透過 chromedrive 控制 chrome，由於我程式是跑在 cloud server 上，所以需要加上 --headless 及 --no-sandbox 選項，這樣 chromedriver 就不需要開啟 chrome。
+
+直接執行 yahoo.py 可以看到當前資料夾出現了一張 yahoo.png。
+
+
+
+<img src="https://miro.medium.com/max/1382/0*zaIJPLqh0CGAVPaE.png">
+
+比較值得注意的是粗體的那行 driver.set_window_size(1024, 960)，由於 Selenium 是模擬瀏覽器行為，瀏覽器大小也會直接影響結果，我在抓取 captcha 的時候就踩到瀏覽器視窗不夠大的坑，這讓我 debug 了半小時…
+
+<h2>疑難排解</h2>
+
+問題 1.
+
+selenium.common.exceptions.WebDriverException: Message: unknown error: session deleted because of page crash from tab crashed
+
+如果遇到 Message: unknown error: session deleted because of page crash
+from tab crashed，有可能的原因是你的系統資源不夠，由於我是跑在最便宜的 cloud server 上，1G 的 RAM 可能會支撐不住 Chrome 的摧殘…
+如果遇到就把程式用不到的程式關一關，chrome / chromedriver 也都砍到掉，然後再重跑一次。
+
+
+問題 2.
+
+selenium.common.exceptions.WebDriverException: Message: 'chromedriver' executable needs to be in PATH. Please see <a href="https://sites.google.com/a/chromium.org/chromedriver/home" class= target="_blank" rel="noopener nofollow">https://sites.google.com/a/chromium.org/chromedriver/home</a>
+
+這是因為 chromedriver 找不到，請確認 chromedriver 有放到 ${HOME} 下。
+
+
+問題 3.
+
+selenium.common.exceptions.WebDriverException: Message: unknown error: Chrome failed to start: crashed
+
+這有兩個可能
+
+chromedriver / chrome 版本對不上，請參考教學重新下載正確的 chromedriver。
+
+與問題 1 一樣，資源不夠連開都開不起來 orz…
+
+<h2>如何找到 DOM 的 xpath</h2>
+打開<a href="https://developers.google.com/web/tools/chrome-devtools/?hl=zh-tw" class= target="_blank" rel="noopener nofollow">開發人員工具</a>，<a href="https://developers.google.com/web/tools/chrome-devtools/dom/?hl=zh-tw" class= target="_blank" rel="noopener nofollow">選取需要的 DOM</a>，右鍵→Copy→Copy XPath。
+
+
+<img class= src="https://miro.medium.com/max/1078/1*EeK8JgACc2OLd_CZG0AiQg.png">
+
+
+<h2>小結</h2>基本上到這邊就可以簡單使用 selenium + chrome 對網頁進行操作，
+
+
+
 <br>
 <br>
 <br>

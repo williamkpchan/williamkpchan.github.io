@@ -16,6 +16,7 @@ body{width:80%;margin-left: 10%; font-size:22px;}
 strong, h1, h2 {color: gold;}
 img {display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius: 3px;}
 i{color:brown;}
+
 </style>
 </head><body>
 <center><h1>SQL Introduction</h1>
@@ -23,6 +24,39 @@ i{color:brown;}
 <br>
 <a href="https://sqlzoo.net/">SQLZoo practise SQL</a>
 <br>
+<a href="MySQL by Examples1.html" class="pink">MySQL by Examples1</a>
+<br>
+<pre>
+To log in mysql:
+shell> mysql --user=user_name --password db_name
+Enter password: your_password
+
+<i>mysql -u user_name -p  then press_enter_key
+then type password
+i.e.
+line-1 : mysql -u root -p
+line-2 : admin
+</i>
+
+Import an SQL file <b class="gold">using the command</b> line in MySQL
+mysql> use db_name;
+mysql> source backup-file.sql;
+
+source C:\\Users\\User\\Desktop\\mysqlsampledatabase.sql;
+
+desc example;
+desc t_test;
+
+use classicmodels;
+desc classicmodels;
+
+http://www.mysqltutorial.org/mysql-sample-database.aspx
+http://www.mysqltutorial.org/getting-started-with-mysql/
+http://www.mysqltutorial.org/
+
+
+
+</pre>
 <div id="toc"></div></center>
 <br>
 <br>
@@ -1635,6 +1669,371 @@ dbClearResult(res)
 # Disconnect from the database
 dbDisconnect(con)</code>
 
+<h2></h2>
+<h2><span class="red">Database Queries With R</span></h2>
+There are many ways to query data with R. 
+This article shows you three of the most common ways:
+<ol style="list-style-type: decimal">
+<li>Using <code>DBI</code></li>
+<li>Using <code>dplyr</code> syntax</li>
+<li>Using R Notebooks</li>
+</ol>
+
+<h3>Background</h3>
+Several recent package improvements make it easier for you to use databases with R. 
+The query examples below demonstrate some of the capabilities of these R packages.
+<ul>
+<li><a href="/dbi">DBI</a>. 
+The <code>DBI</code> specification has gone through many <a href="https://www.r-consortium.org/blog/2017/05/15/improving-dbi-a-retrospect">recent improvements</a>. 
+When working with databases, you should always use packages that are <code>DBI</code>-compliant.</li>
+<li><a href="/dplyr">dplyr</a> &amp; <code>dbplyr</code>. 
+The <code>dplyr</code> package now has a generalized SQL backend for talking to databases, and the new <code>dbplyr</code> package translates R code into database-specific variants. 
+As of this writing, SQL variants are supported for the following databases: Oracle, Microsoft SQL Server, PostgreSQL, Amazon Redshift, Apache Hive, and Apache Impala. 
+More will follow over time.</li>
+<li><a href="/odbc">odbc</a>. 
+The <code>odbc</code> R package provides a standard way for you to connect to any database as long as you have an ODBC driver installed. 
+The <code>odbc</code> R package is <code>DBI</code>-compliant, and is recommended for ODBC connections.</li>
+</ul>
+RStudio also made recent improvements to its products so they work better with databases.
+<ul>
+<li><a href="/connections">RStudio>. 
+With the latest version of the RStudio>connections contract</a>.</li>
+<li><a href="/rstudio/pro-drivers/">RStudio Professional Drivers</a>. 
+If you are using RStudio professional products, you can download RStudio Professional Drivers for no additional cost. 
+The examples below use the Oracle ODBC driver. 
+If you are using open-source tools, you can bring your own driver or use community packages – many open-source drivers and community packages exist for connecting to a variety of databases.</li>
+</ul>
+Using databases with R is a broad subject and there is more work to be done. 
+An earlier blog post discussed <a href="https://blog.rstudio.com/2017/06/27/dbplyr-1-1-0/">our vision</a>.
+
+
+<h3>Example: Query bank data in an Oracle database</h3>
+In this example, we will query bank data in an Oracle database. 
+We connect to the database by using the <code>DBI</code> and <code>odbc</code> packages. 
+This specific connection requires a database driver and a data source name (DSN) that have both been configured by the system administrator. 
+Your connection might use another method.
+<code>library(DBI)
+library(dplyr)
+library(dbplyr)
+library(odbc)
+con &lt;- dbConnect(odbc::odbc(), &quot;Oracle DB&quot;)</code>
+
+
+<h3>1. Query using <code>DBI</code></h3>
+You can query your data with <code>DBI</code> by using the <code>dbGetQuery()</code> function. 
+Simply paste your SQL code into the R function as a quoted string. 
+This method is sometimes referred to as <em>pass through SQL code</em>, and is probably the simplest way to query your data. 
+Care should be used to escape your quotes as needed. 
+For example, <code>'yes'</code> is written as <code>\'yes\'</code>.
+<code>dbGetQuery(con,&#39;
+  select &quot;month_idx&quot;, &quot;year&quot;, &quot;month&quot;,
+  sum(case when &quot;term_deposit&quot; = \&#39;yes\&#39; then 1.0 else 0.0 end) as subscribe,
+  count(*) as total
+  from &quot;bank&quot;
+  group by &quot;month_idx&quot;, &quot;year&quot;, &quot;month&quot;
+&#39;)</code>
+
+
+<h3>2. Query using dplyr syntax</h3>
+You can write your code in <code>dplyr</code> syntax, and <code>dplyr</code> will translate your code into SQL. 
+There are several benefits to writing queries in <code>dplyr</code> syntax: you can keep the same consistent language both for R objects and database tables, no knowledge of SQL or the specific SQL variant is required, and you can take advantage of the fact that <code>dplyr</code> uses <a href="http://dbplyr.tidyverse.org/articles/dbplyr.html">lazy evaluation</a>. 
+<code>dplyr</code> syntax is easy to read, but you can always inspect the SQL translation with the <code>show_query()</code> function.
+<code>q1 &lt;- tbl(con, &quot;bank&quot;) %&gt;%
+  group_by(month_idx, year, month) %&gt;%
+  summarise(
+    subscribe = sum(ifelse(term_deposit == &quot;yes&quot;, 1, 0)),
+    total = n())
+show_query(q1)</code>
+<br/>
+<code>&lt;SQL&gt;
+SELECT &quot;month_idx&quot;, &quot;year&quot;, &quot;month&quot;, SUM(CASE WHEN (&quot;term_deposit&quot; = &#39;yes&#39;) THEN (1.0) ELSE (0.0) END) AS &quot;subscribe&quot;, COUNT(*) AS &quot;total&quot;
+FROM (&quot;bank&quot;) 
+GROUP BY &quot;month_idx&quot;, &quot;year&quot;, &quot;month&quot;</code>
+
+
+<h3>3. Query using an R Notebooks</h3>
+Did you know that you can run SQL code in an <a href="http://rmarkdown.rstudio.com/r_notebooks.html">R Notebook</a> code chunk? To use SQL, open an <a href="http://rmarkdown.rstudio.com/r_notebooks.html">R Notebook</a> in the RStudio>File &gt; New File</strong> menu. 
+Start a new code chunk with <code>{sql}</code>, and specify your connection with the <code>connection=con</code> code chunk option. 
+If you want to send the query output to an R dataframe, use <code>output.var = &quot;mydataframe&quot;</code> in the code chunk options. 
+When you specify <code>output.var</code>, you will be able to use the output in subsequent R code chunks. 
+In this example, we use the output in <code>ggplot2</code>.
+<code>```{sql, connection=con, output.var = &quot;mydataframe&quot;}
+SELECT &quot;month_idx&quot;, &quot;year&quot;, &quot;month&quot;, SUM(CASE WHEN (&quot;term_deposit&quot; = &#39;yes&#39;) THEN (1.0) ELSE (0.0) END) AS &quot;subscribe&quot;,
+COUNT(*) AS &quot;total&quot;
+FROM (&quot;bank&quot;) 
+GROUP BY &quot;month_idx&quot;, &quot;year&quot;, &quot;month&quot;
+```</code>
+<br/>
+<code>```{r}
+library(ggplot2)
+ggplot(mydataframe, aes(total, subscribe, color = year)) +
+  geom_point() +
+  xlab(&quot;Total contacts&quot;) +
+  ylab(&quot;Term Deposit Subscriptions&quot;) +
+  ggtitle(&quot;Contact volume&quot;)
+```</code>
+<img src="https://d33wubrfki0l68.cloudfront.net/d821119ba6b773602e2b49539741197c815725cf/ca183/images/bankggplot.png" />
+The benefits to using SQL in a code chunk are that you can paste your SQL code without any modification. 
+For example, you do not have to escape quotes. 
+If you are using the proverbial <em>spaghetti code</em> that is hundreds of lines long, then a SQL code chunk might be a good option. 
+Another benefit is that the SQL code in a code chunk is highlighted, making it very easy to read. 
+For more information on SQL engines, see this page on <a href="http://rmarkdown.rstudio.com/authoring_knitr_engines.html">knitr language engines</a>.
+
+
+<h3>Summary</h3>
+There is no single best way to query data with R. 
+You have many methods to chose from, and each has its advantages. 
+Here are some of the advantages using the methods described in this article.
+</pre>
+<table>
+<colgroup>
+<col width="34%" />
+<col width="65%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>Advantages</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><ol style="list-style-type: decimal">
+<li>DBI::dbGetQuery</li>
+</ol></td>
+<td><ul>
+<li>Fewer dependencies required</li>
+</ul></td>
+</tr>
+<tr class="even">
+<td><ol start="2" style="list-style-type: decimal">
+<li>dplyr syntax</li>
+</ol></td>
+<td><ul>
+<li>Use the same syntax for R and database objects</li>
+<li>No knowledge of SQL required</li>
+<li>Code is standard across SQL variants</li>
+<li>Lazy evaluation</li>
+</ul></td>
+</tr>
+<tr class="odd">
+<td><ol start="3" style="list-style-type: decimal">
+<li>R Notebook SQL engine</li>
+</ol></td>
+<td><ul>
+<li>Copy and paste SQL – no formatting required</li>
+<li>SQL syntax is highlighted</li>
+</ul></td>
+</tr>
+</tbody>
+</table>
+
+<h2></h2>
+<pre>
+<h2>SQL in R</h2>
+SQL is a database query language - a language designed specifically for interacting with a database. 
+It offers syntax for extracting data, updating data, replacing data, creating data, etc. 
+For our purposes, it will typically be used when accessing data off a server database. 
+If the database isn’t too large, you can grab the entire data set and stick it in a <code>data.frame</code>. 
+However, often the data are quite large so you interact with it piecemeal via SQL.
+There are various database implementations (SQLite, Microsoft SQL Server, PostgreSQL, etc) which are database management software which use SQL to access the data. 
+The method of connecting with each database may differ, but they support SQL (specifically they support ANSI SQL) and often extend it in subtle ways. 
+This means that in general, SQL written to access a SQLite database may not work to access a PostgreSQL database.
+Thankfully, most of these differences are on more fringe operations, and standard commands tend to be equivalent.
+
+<h2>SQL in this</h2>
+The first (and in my opinion, biggest) hurdle in using SQL is accessing the actual data. 
+If you are accessing data which someone else is hosting, they will (hopefully) have IT administrators who can assist you with this task. 
+The exact method and settings used with differ greatly by project, so we will not be covering it in this>
+<li><a href="https://cran.r-project.org/web/packages/DBI/index.html">DBI</a></li>
+<li><a href="https://cran.r-project.org/web/packages/RODBC/index.html">RODBC</a></li>
+<li><a href="https://cran.r-project.org/web/packages/dbConnect/index.html">dbConnect</a></li>
+<li><a href="https://cran.r-project.org/web/packages/RSQLite/index.html">RSQLite</a></li>
+<li><a href="https://cran.r-project.org/web/packages/RMySQL/index.html">RMySQL</a></li>
+<li><a href="https://cran.r-project.org/web/packages/RPostgreSQL/index.html">RPostgreSQL</a></li>
+</ul>
+For these notes, we will cover only the syntax of SQL queries, using the <a href="https://cran.r-project.org/web/packages/sqldf/index.html">sqldf</a> package which enables SQL queries on a <code>data.frame</code>. 
+<em>We will not cover connecting to a SQL server, nor modifying an existing database, only extracting the data to analyze in R with normal methods.</em>
+
+<h2>sqldf package</h2>
+<code>library(sqldf)</code>
+The sqldf package is incredibly simple, from R’s point of view. 
+There is a single function are concerned about: <code>sqldf</code>. 
+Passed to this function is a SQL statement, such as
+<code>sqldf('SELECT age, circumference FROM Orange WHERE Tree = 1 ORDER BY circumference ASC')
+## Warning: Quoted identifiers should have>
+##    age circumference
+## 1  118            30
+## 2  484            58
+## 3  664            87
+## 4 1004           115
+## 5 1231           120
+## 6 1372           142
+## 7 1582           145</code>
+(Note: The above warning is due to some <a href="https://github.com/rstats-db/RSQLite/issues/196">compatibility issues</a> between sqldf and RSQLite and shouldn’t affect anything.)
+<h2>SQL Queries</h2>
+There are a large number of SQL major commands. 
+Queries are accomplished with the <code>SELECT</code> command. 
+First a note about convention:
+By convention, SQL syntax is written in all UPPER CASE and variable names/database names are written in lower case. 
+Technically, the SQL syntax is case insensitive, so it can be written in lower case or otherwise. 
+Note however that R is <strong>not</strong> case insensitive, so variable names and data frame names must have proper capitalization. 
+Hence
+<code>sqldf("SELECT * FROM iris")
+sqldf("select * from iris")</code>
+are equivalent, but this would fail (assuming you haven’t created a new object called “IRIS”):
+<code>sqldf("SELECT * from IRIS")</code>
+The basic syntax for SELECT is
+<code>SELECT variable1, variable2 FROM data</code>
+For example,
+<code>data(BOD)
+BOD</code>
+<code>##   Time demand
+## 1    1    8.3
+## 2    2   10.3
+## 3    3   19.0
+## 4    4   16.0
+## 5    5   15.6
+## 6    7   19.8</code>
+<code>sqldf('SELECT demand FROM BOD')</code>
+<code>##   demand
+## 1    8.3
+## 2   10.3
+## 3   19.0
+## 4   16.0
+## 5   15.6
+## 6   19.8</code>
+<code>sqldf('SELECT Time, demand from BOD')</code>
+<code>##   Time demand
+## 1    1    8.3
+## 2    2   10.3
+## 3    3   19.0
+## 4    4   16.0
+## 5    5   15.6
+## 6    7   19.8</code>
+A quick sidenote: SQL does not like variables with <code>.</code> in their name. 
+If you have any, refer to the variable wrapped in quotes, such as
+<code>iris1 &lt;- sqldf('SELECT Petal.Width FROM iris')</code>
+<code>## Error in rsqlite_send_query(conn@ptr, statement): no such column: Petal.Width</code>
+<code>iris2 &lt;- sqldf('SELECT "Petal.Width" FROM iris')</code>
+
+<h2>Wildcard</h2>
+A wild card can be passed to extract everything.
+<code>bod2 &lt;- sqldf('SELECT * FROM BOD')
+bod2</code>
+<code>##   Time demand
+## 1    1    8.3
+## 2    2   10.3
+## 3    3   19.0
+## 4    4   16.0
+## 5    5   15.6
+## 6    7   19.8</code>
+<h2>LIMIT</h2>
+To control the number of results returned, use <code>LIMIT #</code>.
+<code>sqldf('SELECT * FROM iris LIMIT 5')</code>
+<code>##   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+## 1          5.1         3.5          1.4         0.2  setosa
+## 2          4.9         3.0          1.4         0.2  setosa
+## 3          4.7         3.2          1.3         0.2  setosa
+## 4          4.6         3.1          1.5         0.2  setosa
+## 5          5.0         3.6          1.4         0.2  setosa</code>
+<h2>ORDER BY</h2>
+To order variables, use the syntax
+<code>ORDER BY var1 {ASC/DESC}, var2 {ASC/DESC}</code>
+where the choice of <code>ASC</code> for ascending or <code>DESC</code> for descending is made per variable.
+<code>sqldf("SELECT * FROM Orange ORDER BY age ASC, circumference DESC LIMIT 5")</code>
+<code>##   Tree age circumference
+## 1    2 118            33
+## 2    4 118            32
+## 3    1 118            30
+## 4    3 118            30
+## 5    5 118            30</code>
+<h2>WHERE</h2>
+Conditional statements can be added via <code>WHERE</code>:
+<code>sqldf('SELECT demand FROM BOD WHERE Time &lt; 3')</code>
+<code>##   demand
+## 1    8.3
+## 2   10.3</code>
+Both <code>AND</code> and <code>OR</code> are valid, along with paranthese to affect order of operations.
+<code>sqldf('SELECT * FROM rock WHERE (peri &gt; 5000 AND shape &lt; .05) OR perm &gt; 1000')</code>
+<code>##   area     peri    shape perm
+## 1 5048  941.543 0.328641 1300
+## 2 1016  308.642 0.230081 1300
+## 3 5605 1145.690 0.464125 1300
+## 4 8793 2280.490 0.420477 1300</code>
+There are few more complicated ways to use <code>WHERE</code>:
+
+<h3>IN</h3>
+<code>WHERE IN</code> is used similar to R’s <code>%in%</code>. 
+It also supports <code>NOT</code>.
+<code>sqldf('SELECT * FROM BOD WHERE Time IN (1,7)')</code>
+<code>##   Time demand
+## 1    1    8.3
+## 2    7   19.8</code>
+<code>sqldf('SELECT * FROM BOD WHERE Time NOT IN (1,7)')</code>
+<code>##   Time demand
+## 1    2   10.3
+## 2    3   19.0
+## 3    4   16.0
+## 4    5   15.6</code>
+<h3>LIKE</h3>
+<code>LIKE</code> can be thought of as a weak regular expression command. 
+It only allows the single wildcard <code>%</code> which matches any number of characters. 
+For example, to extract the data where the feed ends with “bean”:
+<code>sqldf('SELECT * FROM chickwts WHERE feed LIKE "%bean" LIMIT 5')</code>
+<code>##   weight      feed
+## 1    179 horsebean
+## 2    160 horsebean
+## 3    136 horsebean
+## 4    227 horsebean
+## 5    217 horsebean</code>
+<code>sqldf('SELECT * FROM chickwts WHERE feed NOT LIKE "%bean" LIMIT 5')</code>
+<code>##   weight    feed
+## 1    309 linseed
+## 2    229 linseed
+## 3    181 linseed
+## 4    141 linseed
+## 5    260 linseed</code>
+
+<h2>Aggregated data</h2>
+Select statements can create aggregated data using <code>AVG</code>, <code>MEDIAN</code>, <code>MAX</code>, <code>MIN</code>, and <code>SUM</code> as functions in the list of variables to select. 
+The <code>GROUP BY</code> statement can be added to aggregate by groups. 
+<code>AS</code> can name the
+<code>sqldf("SELECT AVG(circumference) FROM Orange")</code>
+<code>##   AVG(circumference)
+## 1           115.8571</code>
+<code>sqldf("SELECT tree, AVG(circumference) AS meancirc FROM Orange GROUP BY tree")</code>
+<code>##   Tree  meancirc
+## 1    1  99.57143
+## 2    2 135.28571
+## 3    3  94.00000
+## 4    4 139.28571
+## 5    5 111.14286</code>
+
+<h3>Counting data</h3>
+<code>SELECT COUNT()</code> returns the number of observations. 
+Passing <code>*</code> or nothing returns total rows, passing a variable name returns the number of non-NA entries. 
+<code>AS</code> works as well.
+<code>d &lt;- data.frame(a = c(1,1,1), b = c(1,NA,NA))
+d</code>
+<code>##   a  b
+## 1 1  1
+## 2 1 NA
+## 3 1 NA</code>
+<code>sqldf("SELECT COUNT() as numrows FROM d")</code>
+<code>##   numrows
+## 1       3</code>
+<code>sqldf("SELECT COUNT(b) FROM d")</code>
+<code>##   COUNT(b)
+## 1        1</code>
+
+
+<h2>Conclusion</h2>
+This is only the tip of the iceberg which is SQL. 
+There are far more advanced commands available, from <code>DELETE</code> or <code>UPDATE</code> to modify a database, to various <code>JOIN</code> commands for merging. 
+If the database is large enough that you cannot store the entire dataset on your computer, you may need to learn more commands. 
+For some tutorials into more advanced SQL see the following:
+</pre>
 <br>
 <br>
 <br>

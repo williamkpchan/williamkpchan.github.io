@@ -3421,6 +3421,181 @@ Well you are going to need R installed on the deployment machine.
 grepl("abc", "abcde")
 note: RE will be applied, take care of the expression
 
+<h2>get password</h2>
+install.packages("getPass")
+pass = getPass::getPass(msg = "PASSWORD: ", noblank = FALSE, forcemask = FALSE)
+
+<h2>tryCatch loop</h2>
+  retrieveData <- function(urlAddr){      
+    retryCounter = 0
+    while(retryCounter < 20) {
+      cat("..",retryCounter," ") 
+      retriveFile <- tryCatch(readLines(urlAddr, warn=F), 
+          warning = function(w){return("code param error")}, 
+          error = function(e) {return("code param error")}
+          )
+      if (grepl("code param error", retriveFile)) {
+        cat("Error in connection, try 5 secs later!\n")
+        retryCounter <- retryCounter + 1
+        retriveFile = ""  # if end of loop this will be returned
+      }else{
+        retryCounter = 200  # to jump out of loop
+      }
+    }
+    return(retriveFile)
+  }
+
+  retrieveData <- function(urlAddr){      
+    retryCounter = 1
+    while(retryCounter < 20) {
+      cat("..try ",retryCounter," ") 
+      retriveFile <- tryCatch(read_html(urlAddr, warn=F), 
+          warning = function(w){return("code param error")}, 
+          error = function(e) {return("code param error")}
+          )
+      if (grepl("code param error", retriveFile)) {
+        cat("Error in connection, try 5 secs later!\n")
+        retryCounter <- retryCounter + 1
+        retriveFile = ""  # if end of loop this will be returned
+      }else{
+        retryCounter = 200  # to jump out of loop
+      }
+    }
+    return(retriveFile)
+  }
+
+<h2>變異數分析, 方差分析 ANOVA </h2>
+<a href="http://personality-project.org/r/r.guide/r.anova.html">r.anova</a>
+<br>
+<a href="https://alex59638.pixnet.net/blog/post/403137005-用r進行anova%28變方分析%29">ANOVA可分析多組間的差異 變異數分析 (ANOVA)</a>
+<a href="http://programmermagazine.github.io/201310/htm/article3.html">主成分分析 Principle Component Analysis</a>
+<br>
+<h2>常用統計檢驗法簡介</h2>
+
+T.test(又稱 T 檢定、T檢驗、t.test，以下簡稱T檢驗)
+T檢驗主要用於檢定樣本的平均值，這是一項重點。
+
+如果要看一個樣本的平均是否等於某值，要用 T 檢驗。
+
+如果要看兩個樣本的平均是否相等，要用 T 檢驗。
+
+T 檢驗分成三種類別
+1.單樣本T檢驗(One smaple T test)
+2.獨立雙樣本T檢驗
+3.配對雙樣本T檢驗
+
+要看 30 個男生的身高是否等於 180，用單樣本T檢驗。
+[R語法:t.test(樣本,mu=平均)]
+
+要看 A 班與 B 班男生身高是否相等，用獨立雙樣本T檢驗。
+[R語法:t.test(A樣本,B樣本)]
+
+要看 30 個男生吃藥前與吃藥後身高是否相等，用配對雙樣本T檢驗
+[R語法:t.test(A樣本,B樣本,paired=TURE)]
+
+每一種 T 檢驗都還可以再分成雙尾與單尾檢驗。
+[R語法:t.test(樣本,mu=平均,alternative= "two.sided")]
+
+two.sided代表等於，就是雙尾的意思，也可以改成單尾的大於"greater"或是單尾的小於"less"。
+
+重點只有"檢驗平均等於某值時"是雙尾，"檢驗平均小於某值時"是單尾，"檢驗平均大於某值時"是單尾。
+請看到這裡後不要再講單尾或是雙尾了，一點意義也沒有，講大於等於小於就好了。
+但Eecel沒有大於小於的選項，只有單尾雙尾，因此要自己判斷是大於還是小於(從樣本平均看即可)。
+[Eecel語法:TTEST(A樣本,B樣本,2,2)]，2代表雙尾，改成1就變成單尾。
+
+要看 30 個男生的身高是否大於 180，用單樣本T檢驗
+[R語法:t.test(樣本,mu=180),alternative="greater"]
+
+要看 A 班與 B 班男生身高差異是否小於 30，用獨立雙樣本T檢驗
+[R語法:t.test(A,B,mu=30,alternative="less")]
+
+要看 30 個男生吃藥前與吃藥後身高是否相等，用配對雙樣本T檢驗
+[R語法:t.test(A,B,mu=30,paired=T)]
+[Eecel語法:TTEST(A樣本,B樣本,2,1)]
+
+其中獨立雙樣本T檢驗(Welch Two smaple T test)還細分成變異數相等或變異數不相等兩種，這要看你母體與取樣的方法，如果不確定，嚴格一點是認為不相等的。
+
+變異數相等
+[R語法:t.test(A,B,mu=0,var.equal=T)]
+
+變異數不相等
+[R語法:t.test(A,B,mu=0,var.equal=F)]
+
+<h3>卡方檢定 chi-square test(以下簡稱卡方檢定)</h3>
+卡方檢驗用於確認樣本是否符合某種分配
+骰子丟一百次，每面的機率是否為1/6</a>)，
+或是兩個屬性之間是否有所關聯(男生是否比較容易選擇藍色商品)。
+
+這其實是一樣的概念，假設兩個屬性之間無關，其分佈上應該會呈現隨機;
+如果兩個屬性有關，例如男生喜歡藍色商品，在同樣的其況下，男生買藍色商品的次數會比男生買紅色商品的次數多，也就是不符合隨機的分配(理論上無關的話次數會一樣多)。
+
+卡方檢定分成三種
+1.適合度檢定（Goodness of fit test）
+2.獨立性檢定（Test of independence）
+3.同質性檢定 (Test of Homogeneity)
+
+其實獨立性與同質性檢定是同一個東西，只是問法不一樣而已卡方適合度檢定用來檢驗樣本是否服從某種分佈，這種分佈你的心裡要有底，比方隨機(丟骰子各面是1/6)，孟德爾的紅花白花是3:1等等，如果你不知道要選擇哪種分佈，那就不能用卡方適合度檢定。
+
+紅花969株，白花360株，檢驗是否符合孟德爾3:1的分佈，用卡方適合度檢定
+chisq.test(c(969,360),p=c(0.75,0.25))
+#次數表放第一個變數,p後面接機率，機率合要等於1[R語法:chisq.test(次數表,p=機率)]
+
+骰子1000次，檢驗每面是否為1/6的分佈，用卡方適合度檢定
+x=ceiling(runif(1000)*6)#丟1000次骰子, ceiling是無條件進位，讓數值落在1~6的整數
+table(x)
+#這是卡方檢定的重點，必須輸入統計次數，知道骰出1的有幾次，2的有幾次
+chisq.test(table(x),p=c(1/6,1/6,1/6,1/6,1/6,1/6))
+#次數表放第一個，p後面接分佈的機率，本次是6個1/6。
+
+[R語法:chisq.test(次數表,p=機率)]
+
+<h3>費雪精確性檢定 Fisher's exact test</h3>
+類似卡方檢定的小樣本方式，通常用於樣本小於20的狀況，案例是猜八杯茶是先加奶還是先加茶。
+fisher.test(table(real,guess))
+
+<h2>變異數分析 ANOVA</h2>
+兩組資料連續看是否有差異，用t.test，兩組以上則用ANOVA，其虛無假說H0:u1=u2=u3=...un。
+若p值小於0.05，則認為並非所有的資料來自同一個母體。
+
+若要知道到底是哪組資料不同，可使用 
+pairwise.t.test(Y, B, p.adjust.method="none")
+其中Y為資料列，B為組別列，並且不調整p值。
+雙因子變異數分析
+aov(cardspent~factor(region)*factor(gender)
+使用*符號而不是+
+
+
+<h2>羅吉斯迴歸 Logistic Regression</h2>
+一般的線性迴歸、多元迴歸等方式，其應變數都是連續數值，例如身高或體重。
+但有些情況下的應變數為類別，例如生還與否(1或0)，就可以採用羅吉斯迴歸。
+
+(附註:若自變項為類別資料，可採用上述的卡方檢定)
+
+羅吉斯迴歸有幾項要點，
+1.他需要應變數為類別變項
+2.他會給出一個式子，帶入自變數後(可為連續變項或類別變項)，會得出一個值
+3.這個值稱為勝算比
+
+
+以鐵達尼號乘客名單的資料作為範例分析
+model1&lt;-glm data="titanic_passenger," family="binomial(link=" formula="survival~fare," logit="" na.action="na.exclude)&lt;/p"&gt;summary(model1)
+其中fare 對 survival 的對數機率為 0.013108
+勝算比為exp(0.013108)=1.013085
+多一英鎊，多1%生還率。
+參考資料
+<a href="https://sites.google.com/site/rlearningsite/catagory/logit" target="_blank">Logistic迴歸模型</a>
+<a href="http://xn--r-vc8at2mlrkqvkh65cu2ccyjyqb/" target="_blank">R语言逻辑回归分析</a>
+<a href="https://www.r-bloggers.com/how-to-perform-a-logistic-regression-in-r/" target="_blank">How to perform a Logistic Regression in R</a><!---glm-->
+
+
+<a href="http://ccckmit.wikidot.com/r:optimize">一維空間優化方法：optimize()</a>
+<br>
+<a href="http://ccckmit.wikidot.com/r:main">R 統計軟體 作者：陳鍾誠</a>
+<br>
+<a href="http://programmermagazine.github.io/201309/htm/article3.html">R 統計軟體(6) – 迴歸分析</a>
+<br>
+
+
 
 </pre>
 

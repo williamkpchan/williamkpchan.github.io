@@ -1,0 +1,1140 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script type='text/javascript' src='../mainscript.js'></script>
+
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:22px;}
+strong, h1, h2 {color: gold;}
+img {display: inline-block; margin-top: 2%;margin-bottom: 1%;border-radius:2px;}
+i{color:brown;}
+code{color:green}
+</style>
+
+</head>
+<body onkeypress="chkKey()">
+<center><h1>Python Pandas and SciPy Tutorial</h1>
+
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+<pre>
+<h2>Pandas First Steps</h2>
+<h3>-- Install and import</h3>
+pip install pandas
+
+import pandas as pd
+
+<h2>Core components of pandas: Series and DataFrames</h2>
+The primary two components of pandas are the <code>Series</code> and <code>DataFrame</code>.
+A <code>Series</code> is essentially a column, and a <code>DataFrame</code> is a multi-dimensional table made up of a collection of Series.
+
+<img src="https://storage.googleapis.com/lds-media/images/series-and-dataframe.width-1200.png">
+
+
+<h3>-- Creating DataFrames from scratch</h3>
+Let's say we have a fruit stand that sells apples and oranges. 
+We want to have a column for each fruit and a row for each customer purchase. 
+To organize this as a dictionary for pandas we could do something like:
+
+data = {
+    'apples': [3, 2, 0, 1], 
+    'oranges': [0, 3, 7, 2]
+}
+
+And then pass it to the pandas DataFrame constructor:
+
+<i>purchases = pd.DataFrame(data)</i>
+
+purchases
+
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right"><th></th><th>apples</th><th>oranges</th></tr></thead><tbody><tr><th>0</th><td>3</td><td>0</td></tr><tr><th>1</th><td>2</td><td>3</td></tr><tr><th>2</th><td>0</td><td>7</td></tr><tr><th>3</th><td>1</td><td>2</td></tr></tbody></table>
+
+Let's have customer names as our index:
+
+<i>purchases = pd.DataFrame(data, index=['June', 'Robert', 'Lily', 'David'])
+</i>
+purchases
+
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right"><th></th><th>apples</th><th>oranges</th></tr></thead><tbody><tr><th>June</th><td>3</td><td>0</td></tr><tr><th>Robert</th><td>2</td><td>3</td></tr><tr><th>Lily</th><td>0</td><td>7</td></tr><tr><th>David</th><td>1</td><td>2</td></tr></tbody></table>
+So now we could <b>loc</b>ate a customer's order by using their name:
+<i>
+purchases.loc['June']
+</i>
+Out:
+apples     3
+oranges    0
+Name: June, dtype: int64
+
+<h2>How to read in data</h2>
+<h3>-- Reading data from CSVs</h3>
+With CSV files all you need is a single line to load in the data:
+<i>
+df = pd.read_csv('purchases.csv')
+</i>
+df
+
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right"><th></th><th>Unnamed: 0</th><th>apples</th><th>oranges</th></tr></thead><tbody><tr><th>0</th><td>June</td><td>3</td><td>0</td></tr><tr><th>1</th><td>Robert</td><td>2</td><td>3</td></tr><tr><th>2</th><td>Lily</td><td>0</td><td>7</td></tr><tr><th>3</th><td>David</td><td>1</td><td>2</td></tr></tbody></table>
+CSVs don't have indexes like our DataFrames, so all we need to do is just designate the <code>index_col</code> when reading:
+<i>
+df = pd.read_csv('purchases.csv', index_col=0)
+</i>
+df
+
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right"><th></th><th>apples</th><th>oranges</th></tr></thead><tbody><tr><th>June</th><td>3</td><td>0</td></tr><tr><th>Robert</th><td>2</td><td>3</td></tr><tr><th>Lily</th><td>0</td><td>7</td></tr><tr><th>David</th><td>1</td><td>2</td></tr></tbody></table>
+
+Here we're setting the index to be column zero.You'll find that most CSVs won't ever have an index column and so usually you don't have to worry about this step.
+
+
+<h3>-- Reading data from JSON</h3>
+If you have a JSON file — which is essentially a stored Python <code>dict</code> — pandas can read this just as easily:
+<i>
+df = pd.read_json('purchases.json')
+</i>
+df
+
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right"><th></th><th>apples</th><th>oranges</th></tr></thead><tbody><tr><th>David</th><td>1</td><td>2</td></tr><tr><th>June</th><td>3</td><td>0</td></tr><tr><th>Lily</th><td>0</td><td>7</td></tr><tr><th>Robert</th><td>2</td><td>3</td></tr></tbody></table>
+
+Notice this time our index came with us correctly since using JSON allowed indexes to work through nesting. 
+
+
+<h3>-- Reading data from a SQL database</h3>
+
+If you’re working with data from a SQL database you need to first establish a connection using an appropriate Python library, then pass a query to pandas. 
+Here we'll use SQLite to demonstrate.
+First, we need <code>pysqlite3</code> installed, so run this command in your terminal:<code>pip install pysqlite3</code>Or run this cell if you're in a notebook:
+<i>
+pip install pysqlite3
+</i>
+<code>sqlite3</code> is used to create a connection to a database which we can then use to generate a DataFrame through a <code>SELECT</code> query.
+So first we'll make a connection to a SQLite database file:
+<i>
+import sqlite3
+con = sqlite3.connect("database.db")
+</i>
+<h4>. . . SQL Tip</h4>
+If you have data in PostgreSQL, MySQL, or some other SQL server, you'll need to obtain the right Python library to make a connection. 
+For example, <code>psycopg2</code> (<a href="http://initd.org/psycopg/download/">link</a>) is a commonly used library for making connections to PostgreSQL. 
+Furthermore, you would make a connection to a database URI instead of a file like we did here with SQLite.
+
+In this SQLite database we have a table called <i>purchases</i>, and our index is in a column called "index".
+By passing a SELECT query and our <code>con</code>, we can read from the <i>purchases</i> table:
+<i>
+df = pd.read_sql_query("SELECT * FROM purchases", con)
+</i>
+df
+
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right"><th></th><th>index</th><th>apples</th><th>oranges</th></tr></thead><tbody><tr><th>0</th><td>June</td><td>3</td><td>0</td></tr><tr><th>1</th><td>Robert</td><td>2</td><td>3</td></tr><tr><th>2</th><td>Lily</td><td>0</td><td>7</td></tr><tr><th>3</th><td>David</td><td>1</td><td>2</td></tr></tbody></table>
+Just like with CSVs, we could pass <code>index_col='index'</code>, but we can also set an index after-the-fact:
+<i>
+df = df.set_index('index')
+</i>
+df
+
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right"><th></th><th>apples</th><th>oranges</th></tr><tr><th>index</th><th></th><th></th></tr></thead><tbody><tr><th>June</th><td>3</td><td>0</td></tr><tr><th>Robert</th><td>2</td><td>3</td></tr><tr><th>Lily</th><td>0</td><td>7</td></tr><tr><th>David</th><td>1</td><td>2</td></tr></tbody></table>
+In fact, we could use <code>set_index()</code> on <i>any</i> DataFrame using <i>any</i> column at <i>any</i> time. 
+Indexing Series and DataFrames is a very common task, and the different ways of doing it is worth remembering.
+
+
+<h3>-- Converting back to a CSV, JSON, or SQL</h3>
+To save it as a file of your choice. 
+Similar to the ways we read in data, pandas provides intuitive commands to save it:
+<i>
+df.to_csv('new_purchases.csv')
+df.to_json('new_purchases.json')
+df.to_sql('new_purchases', con)
+</i>
+When we save JSON and CSV files, all we have to input into those functions is our desired filename with the appropriate file extension. 
+With SQL, we’re not creating a new file but instead inserting a new table into the database using our <code>con</code> variable from before.Let's move on to importing some real-world data and detailing a few of the operations you'll be using a lot.
+
+
+<h2>Most important DataFrame operations</h2>
+DataFrames possess hundreds of methods and other operations that are crucial to any analysis. 
+As a beginner, you should know the operations that perform simple transformations of your data and those that provide fundamental statistical analysis.
+Let's load in the IMDB movies dataset to begin:
+<i>
+movies_df = pd.read_csv("IMDB-Movie-Data.csv", index_col="Title")
+</i>
+We're loading this dataset from a CSV and designating the movie titles to be our index.
+
+
+<h3>-- Viewing your data</h3>
+The first thing to do when opening a new dataset is print out a few rows to keep as a visual reference. 
+We accomplish this with <code>.head()</code>:
+<i>
+movies_df.head()
+</i>
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right"><th></th><th>Rank</th><th>Genre</th><th>Description</th><th>Director</th><th>Actors</th><th>Year</th><th>Runtime (Minutes)</th><th>Rating</th><th>Votes</th><th>Revenue (Millions)</th><th>Metascore</th></tr><tr><th>Title</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody><tr><th>Guardians of the Galaxy</th><td>1</td><td>Action,Adventure,Sci-Fi</td><td>A group of intergalactic criminals are forced ...</td><td>James Gunn</td><td>Chris Pratt, Vin Diesel, Bradley Cooper, Zoe S...</td><td>2014</td><td>121</td><td>8.1</td><td>757074</td><td>333.13</td><td>76.0</td></tr><tr><th>Prometheus</th><td>2</td><td>Adventure,Mystery,Sci-Fi</td><td>Following clues to the origin of mankind, a te...</td><td>Ridley Scott</td><td>Noomi Rapace, Logan Marshall-Green, Michael Fa...</td><td>2012</td><td>124</td><td>7.0</td><td>485820</td><td>126.46</td><td>65.0</td></tr><tr><th>Split</th><td>3</td><td>Horror,Thriller</td><td>Three girls are kidnapped by a man with a diag...</td><td>M. 
+Night Shyamalan</td><td>James McAvoy, Anya Taylor-Joy, Haley Lu Richar...</td><td>2016</td><td>117</td><td>7.3</td><td>157606</td><td>138.12</td><td>62.0</td></tr><tr><th>Sing</th><td>4</td><td>Animation,Comedy,Family</td><td>In a city of humanoid animals, a hustling thea...</td><td>Christophe Lourdelet</td><td>Matthew McConaughey,Reese Witherspoon, Seth Ma...</td><td>2016</td><td>108</td><td>7.2</td><td>60545</td><td>270.32</td><td>59.0</td></tr><tr><th>Suicide Squad</th><td>5</td><td>Action,Adventure,Fantasy</td><td>A secret government agency recruits some of th...</td><td>David Ayer</td><td>Will Smith, Jared Leto, Margot Robbie, Viola D...</td><td>2016</td><td>123</td><td>6.2</td><td>393727</td><td>325.02</td><td>40.0</td></tr></tbody></table>
+
+<code>.head()</code> outputs the <b>first</b> five rows of your DataFrame by default, but we could also pass a number as well: <code>movies_df.head(10)</code> would output the top ten rows, for example.To see the <b>last</b> five rows use <code>.tail()</code>. 
+<code>tail()</code> also accepts a number, and in this case we printing the bottom two rows.:
+<i>
+movies_df.tail(2)
+</i>
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right"><th></th><th>Rank</th><th>Genre</th><th>Description</th><th>Director</th><th>Actors</th><th>Year</th><th>Runtime (Minutes)</th><th>Rating</th><th>Votes</th><th>Revenue (Millions)</th><th>Metascore</th></tr><tr><th>Title</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody><tr><th>Search Party</th><td>999</td><td>Adventure,Comedy</td><td>A pair of friends embark on a mission to reuni...</td><td>Scot Armstrong</td><td>Adam Pally, T.J. 
+Miller, Thomas Middleditch,Sh...</td><td>2014</td><td>93</td><td>5.6</td><td>4881</td><td>NaN</td><td>22.0</td></tr><tr><th>Nine Lives</th><td>1000</td><td>Comedy,Family,Fantasy</td><td>A stuffy businessman finds himself trapped ins...</td><td>Barry Sonnenfeld</td><td>Kevin Spacey, Jennifer Garner, Robbie Amell,Ch...</td><td>2016</td><td>87</td><td>5.3</td><td>12435</td><td>19.64</td><td>11.0</td></tr></tbody></table>
+
+Typically when we load in a dataset, we like to view the first five or so rows to see what's under the hood. 
+Here we can see the names of each column, the index, and examples of values in each row.You'll notice that the index in our DataFrame is the <i>Title</i> column, which you can tell by how the word <i>Title</i> is slightly lower than the rest of the columns.
+
+
+<h3>-- Getting info about your data</h3>
+<code>.info()</code> should be one of the very first commands you run after loading your data:
+<i>
+movies_df.info()
+</i>
+Out:
+&lt;class 'pandas.core.frame.DataFrame'&gt;
+Index: 1000 entries, Guardians of the Galaxy to Nine Lives
+Data columns (total 11 columns):
+Rank                  1000 non-null int64
+Genre                 1000 non-null object
+Description           1000 non-null object
+Director              1000 non-null object
+Actors                1000 non-null object
+Year                  1000 non-null int64
+Runtime (Minutes)     1000 non-null int64
+Rating                1000 non-null float64
+Votes                 1000 non-null int64
+Revenue (Millions)    872 non-null float64
+Metascore             936 non-null float64
+dtypes: float64(3), int64(4), object(4)
+memory usage: 93.8+ KB
+
+
+<code>.info()</code> provides the essential details about your dataset, such as the number of rows and columns, the number of non-null values, what type of data is in each column, and how much memory your DataFrame is using.
+
+Notice in our movies dataset we have some obvious missing values in the <code>Revenue</code> and <code>Metascore</code> columns. 
+
+Imagine you just imported some JSON and the integers were recorded as strings. 
+You go to do some arithmetic and find an "unsupported operand" Exception because you can't do math with strings. 
+Calling <code>.info()</code> will quickly point out that your column you thought was all integers are actually string objects.
+Another fast and useful attribute is <code>.shape</code>, which outputs just a tuple of (rows, columns):
+<i>
+movies_df.shape
+</i>
+Out:
+(1000, 11)
+
+
+Note that <code>.shape</code> has no parentheses and is a simple tuple of format (rows, columns). 
+So we have <b>1000 rows</b> and <b>11 columns</b> in our movies DataFrame.
+You'll be going to <code>.shape</code> a lot when cleaning and transforming data. 
+For example, you might filter some rows based on some criteria and then want to know quickly how many rows were removed.
+
+<h3>-- Handling duplicates</h3>
+This dataset does not have duplicate rows, but it is always important to verify you aren't aggregating duplicate rows.
+To demonstrate, let's simply just double up our movies DataFrame by appending it to itself:
+<i>
+temp_df = movies_df.append(movies_df)
+</i>
+temp_df.shape
+
+Out:
+(2000, 11)
+
+Using <code>append()</code> will return a copy without affecting the original DataFrame. 
+We are capturing this copy in <code>temp</code> so we aren't working with the real data.Notice call <code>.shape</code> quickly proves our DataFrame rows have doubled.Now we can try dropping duplicates:
+<i>
+temp_df = temp_df.drop_duplicates()
+</i>
+temp_df.shape
+
+Out:
+(1000, 11)
+
+Just like <code>append()</code>, the <code>drop_duplicates()</code> method will also return a copy of your DataFrame, but this time <i>with duplicates removed</i>. 
+Calling <code>.shape</code> confirms we're back to the 1000 rows of our original dataset.
+It's a little verbose to keep assigning DataFrames to the same variable like in this example. 
+For this reason, pandas has the <code>inplace</code> keyword argument on many of its methods. 
+Using <code>inplace=True</code> will modify the DataFrame object in place:
+<i>
+temp_df.drop_duplicates(inplace=True)
+</i>
+Now our <code>temp_df</code> will have the <i>transformed data</i> automatically.
+Another important argument for <code>drop_duplicates()</code> is <code>keep</code>, which has three possible options:
+
+<code>first</code>: (default) Drop duplicates except for the first occurrence.
+<code>last</code>: Drop duplicates except for the last occurrence.
+<code>False</code>: Drop all duplicates.
+Since we didn't define the <code>keep</code> arugment in the previous example it was defaulted to <code>first</code>. 
+This means that if two rows are the same pandas will drop the second row and keep the first row. 
+Using <code>last</code> has the opposite effect: the first row is dropped.<code>keep</code>, on the other hand, will drop all duplicates. 
+If two rows are the same then both will be dropped. 
+Watch what happens to <code>temp_df</code>:
+<i>
+temp_df = movies_df.append(movies_df)  # make a new copy
+temp_df.drop_duplicates(inplace=True, keep=False)
+temp_df.shape
+</i>
+Out:
+(0, 11)
+
+Since all rows were duplicates, <code>keep=False</code> dropped them all resulting in zero rows being left over. 
+If you're wondering why you would want to do this, one reason is that it allows you to locate all duplicates in your dataset. 
+When conditional selections are shown below you'll see how to do that.
+
+
+<h3>-- Column cleanup</h3>
+
+Many times datasets will have verbose column names with symbols, upper and lowercase words, spaces, and typos. 
+To make selecting data by column name easier we can spend a little time cleaning up their names.
+Here's how to print the column names of our dataset:
+<i>
+movies_df.columns
+</i>
+Out:
+Index(['Rank', 'Genre', 'Description', 'Director', 'Actors', 'Year',
+       'Runtime (Minutes)', 'Rating', 'Votes', 'Revenue (Millions)',
+       'Metascore'],
+      dtype='object')
+
+
+Not only does <code>.columns</code> come in handy if you want to rename columns by allowing for simple copy and paste, it's also useful if you need to understand why you are receiving a <code>Key Error</code> when selecting data by column.
+We can use the <code>.rename()</code> method to rename certain or all columns via a <code>dict</code>. 
+We don't want parentheses, so let's rename those:
+<i>
+movies_df.rename(columns={
+        'Runtime (Minutes)': 'Runtime', 
+        'Revenue (Millions)': 'Revenue_millions'
+    }, inplace=True)
+</i>
+
+movies_df.columns
+
+Out:
+Index(['Rank', 'Genre', 'Description', 'Director', 'Actors', 'Year', 'Runtime',
+       'Rating', 'Votes', 'Revenue_millions', 'Metascore'],
+      dtype='object')
+
+Excellent. 
+But what if we want to lowercase all names? Instead of using <code>.rename()</code> we could also set a list of names to the columns like so:
+<i>
+movies_df.columns = ['rank', 'genre', 'description', 'director', 'actors', 'year', 'runtime', 'rating', 'votes', 'revenue_millions', 'metascore']
+</i>
+
+movies_df.columns
+
+Out:
+Index(['rank', 'genre', 'description', 'director', 'actors', 'year', 'runtime',
+       'rating', 'votes', 'revenue_millions', 'metascore'],
+      dtype='object')
+
+But that's too much work. 
+Instead of just renaming each column manually we can do a list comprehension:
+<i>
+movies_df.columns = [col.lower() for col in movies_df]
+</i>
+movies_df.columns
+
+Out:
+Index(['rank', 'genre', 'description', 'director', 'actors', 'year', 'runtime',
+       'rating', 'votes', 'revenue_millions', 'metascore'],
+      dtype='object')
+
+
+<code>list</code> (and <code>dict</code>) comprehensions come in handy a lot when working with pandas and data in general.It's a good idea to lowercase, remove special characters, and replace spaces with underscores if you'll be working with a dataset for some time.
+
+
+<h3>-- How to work with missing values</h3>
+
+When exploring data, you’ll most likely encounter missing or null values, which are essentially placeholders for non-existent values. 
+Most commonly you'll see Python's <code>None</code> or NumPy's <code>np.nan</code>, each of which are handled differently in some situations.
+There are two options in dealing with nulls:<ol>
+Get rid of rows or columns with nulls
+Replace nulls with non-null values, a technique known as <b>imputation</b></ol>Let's calculate to total number of nulls in each column of our dataset. 
+The first step is to check which cells in our DataFrame are null:
+<i>
+movies_df.isnull()
+</i>
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right;"><th></th><th>rank</th><th>genre</th><th>description</th><th>director</th><th>actors</th><th>year</th><th>runtime</th><th>rating</th><th>votes</th><th>revenue_millions</th><th>metascore</th></tr><tr><th>Title</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody><tr><th>Guardians of the Galaxy</th><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td></tr><tr><th>Prometheus</th><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td></tr><tr><th>Split</th><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td></tr><tr><th>Sing</th><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td></tr><tr><th>Suicide Squad</th><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td><td>False</td></tr></tbody></table>
+
+Notice <code>isnull()</code> returns a DataFrame where each cell is either True or False depending on that cell's null status.
+To count the number of nulls in each column we use an aggregate function for summing:
+<i>
+movies_df.isnull().sum()
+</i>
+Out:
+rank                  0
+genre                 0
+description           0
+director              0
+actors                0
+year                  0
+runtime               0
+rating                0
+votes                 0
+revenue_millions    128
+metascore            64
+dtype: int64
+
+
+<code>.isnull()</code> just by iteself isn't very useful, and is usually used in conjunction with other methods, like <code>sum()</code>.
+We can see now that our data has <b>128</b> missing values for <code>revenue_millions</code> and <b>64</b> missing values for <code>metascore</code>.
+
+<h4>. . . Removing null values</h4>
+Data Scientists and Analysts regularly face the dilemma of dropping or imputing null values, and is a decision that requires intimate knowledge of your data and its context. 
+Overall, removing null data is only suggested if you have a small amount of missing data.Remove nulls is pretty simple:
+
+movies_df.dropna()
+
+
+This operation will delete any <b>row</b> with at least a single null value, but it will return a new DataFrame without altering the original one. 
+You could specify <code>inplace=True</code> in this method as well.So in the case of our dataset, this operation would remove 128 rows where <code>revenue_millions</code> is null and 64 rows where <code>metascore</code> is null. 
+This obviously seems like a waste since there's perfectly good data in the other columns of those dropped rows. 
+That's why we'll look at imputation next.Other than just dropping rows, you can also drop columns with null values by setting <code>axis=1</code>:
+
+movies_df.dropna(axis=1)
+
+In our dataset, this operation would drop the <code>revenue_millions</code> and <code>metascore</code> columns
+
+
+<h4>. . . Intuition</h4>
+<b>What's with this</b> <b><code>axis=1</code></b><b>parameter?</b>It's not immediately obvious where <code>axis</code> comes from and why you need it to be 1 for it to affect columns. 
+To see why, just look at the <code>.shape</code> output:
+<code>movies_df.shape</code><code>Out: (1000, 11)</code>
+As we learned above, this is a tuple that represents the shape of the DataFrame, i.e. 
+1000 rows and 11 columns. 
+Note that the <i>rows</i> are at index zero of this tuple and <i>columns</i> are at <b>index one</b> of this tuple. 
+This is why <code>axis=1</code> affects columns. 
+This comes from NumPy, and is a great example of why learning NumPy is worth your time.
+
+
+
+<h4>. . . Imputation</h4>
+
+Imputation is a conventional feature engineering technique used to keep valuable data that have null values.There may be instances where dropping every row with a null value removes too big a chunk from your dataset, so instead we can impute that null with another value, usually the <b>mean</b> or the <b>median</b> of that column.Let's look at imputing the missing values in the <code>revenue_millions</code> column. 
+First we'll extract that column into its own variable:
+
+revenue = movies_df['revenue_millions']
+
+
+Using square brackets is the general way we select columns in a DataFrame.If you remember back to when we created DataFrames from scratch, the keys of the <code>dict</code> ended up as column names. 
+Now when we select columns of a DataFrame, we use brackets just like if we were accessing a Python dictionary.<code>revenue</code> now contains a Series:
+
+revenue.head()
+
+Out:
+Title
+Guardians of the Galaxy    333.13
+Prometheus                 126.46
+Split                      138.12
+Sing                       270.32
+Suicide Squad              325.02
+Name: revenue_millions, dtype: float64
+
+
+Slightly different formatting than a DataFrame, but we still have our <code>Title</code> index.We'll impute the missing values of revenue using the mean. 
+Here's the mean value:
+
+revenue_mean = revenue.mean()
+
+revenue_mean
+
+Out:
+82.95637614678897
+
+With the mean, let's fill the nulls using <code>fillna()</code>:
+
+revenue.fillna(revenue_mean, inplace=True)
+
+We have now replaced all nulls in <code>revenue</code> with the mean of the column. 
+Notice that by using <code>inplace=True</code> we have actually affected the original <code>movies_df</code>:
+
+movies_df.isnull().sum()
+
+Out:
+rank                 0
+genre                0
+description          0
+director             0
+actors               0
+year                 0
+runtime              0
+rating               0
+votes                0
+revenue_millions     0
+metascore           64
+dtype: int64
+
+
+Imputing an entire column with the same value like this is a basic example. 
+It would be a better idea to try a more granular imputation by Genre or Director.For example, you would find the mean of the revenue generated in each genre individually and impute the nulls in each genre with that genre's mean.Let's now look at more ways to examine and understand the dataset.
+
+
+<h4>. . . Understanding your variables</h4>
+Using <code>describe()</code> on an entire DataFrame we can get a summary of the distribution of continuous variables:
+
+movies_df.describe()
+
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right;"><th></th><th>rank</th><th>year</th><th>runtime</th><th>rating</th><th>votes</th><th>revenue_millions</th><th>metascore</th></tr></thead><tbody><tr><th>count</th><td>1000.000000</td><td>1000.000000</td><td>1000.000000</td><td>1000.000000</td><td>1.000000e+03</td><td>1000.000000</td><td>936.000000</td></tr><tr><th>mean</th><td>500.500000</td><td>2012.783000</td><td>113.172000</td><td>6.723200</td><td>1.698083e+05</td><td>82.956376</td><td>58.985043</td></tr><tr><th>std</th><td>288.819436</td><td>3.205962</td><td>18.810908</td><td>0.945429</td><td>1.887626e+05</td><td>96.412043</td><td>17.194757</td></tr><tr><th>min</th><td>1.000000</td><td>2006.000000</td><td>66.000000</td><td>1.900000</td><td>6.100000e+01</td><td>0.000000</td><td>11.000000</td></tr><tr><th>25%</th><td>250.750000</td><td>2010.000000</td><td>100.000000</td><td>6.200000</td><td>3.630900e+04</td><td>17.442500</td><td>47.000000</td></tr><tr><th>50%</th><td>500.500000</td><td>2014.000000</td><td>111.000000</td><td>6.800000</td><td>1.107990e+05</td><td>60.375000</td><td>59.500000</td></tr><tr><th>75%</th><td>750.250000</td><td>2016.000000</td><td>123.000000</td><td>7.400000</td><td>2.399098e+05</td><td>99.177500</td><td>72.000000</td></tr><tr><th>max</th><td>1000.000000</td><td>2016.000000</td><td>191.000000</td><td>9.000000</td><td>1.791916e+06</td><td>936.630000</td><td>100.000000</td></tr></tbody></table>
+
+Understanding which numbers are continuous also comes in handy when thinking about the type of plot to use to represent your data visually.<code>.describe()</code> can also be used on a categorical variable to get the count of rows, unique count of categories, top category, and freq of top category:
+
+movies_df['genre'].describe()
+
+Out:
+count                        1000
+unique                        207
+top       Action,Adventure,Sci-Fi
+freq                           50
+Name: genre, dtype: object
+
+
+This tells us that the genre column has 207 unique values, the top value is Action/Adventure/Sci-Fi, which shows up 50 times (freq).<code>.value_counts()</code> can tell us the frequency of all values in a column:
+
+movies_df['genre'].value_counts().head(10)
+
+Out:
+Action,Adventure,Sci-Fi       50
+Drama                         48
+Comedy,Drama,Romance          35
+Comedy                        32
+Drama,Romance                 31
+Action,Adventure,Fantasy      27
+Comedy,Drama                  27
+Animation,Adventure,Comedy    27
+Comedy,Romance                26
+Crime,Drama,Thriller          24
+Name: genre, dtype: int64
+
+
+
+
+<h4>. . . Relationships between continuous variables</h4>
+By using the correlation method <code>.corr()</code> we can generate the relationship between each continuous variable:
+
+movies_df.corr()
+
+<table border="1" class="dataframe"><thead><tr style="text-align: right"><th></th><th>rank</th><th>year</th><th>runtime</th><th>rating</th><th>votes</th><th>revenue_millions</th><th>metascore</th></tr></thead><tbody><tr><th>rank</th><td>1.000000</td><td>-0.261605</td><td>-0.221739</td><td>-0.219555</td><td>-0.283876</td><td>-0.252996</td><td>-0.191869</td></tr><tr><th>year</th><td>-0.261605</td><td>1.000000</td><td>-0.164900</td><td>-0.211219</td><td>-0.411904</td><td>-0.117562</td><td>-0.079305</td></tr><tr><th>runtime</th><td>-0.221739</td><td>-0.164900</td><td>1.000000</td><td>0.392214</td><td>0.407062</td><td>0.247834</td><td>0.211978</td></tr><tr><th>rating</th><td>-0.219555</td><td>-0.211219</td><td>0.392214</td><td>1.000000</td><td>0.511537</td><td>0.189527</td><td>0.631897</td></tr><tr><th>votes</th><td>-0.283876</td><td>-0.411904</td><td>0.407062</td><td>0.511537</td><td>1.000000</td><td>0.607941</td><td>0.325684</td></tr><tr><th>revenue_millions</th><td>-0.252996</td><td>-0.117562</td><td>0.247834</td><td>0.189527</td><td>0.607941</td><td>1.000000</td><td>0.133328</td></tr><tr><th>metascore</th><td>-0.191869</td><td>-0.079305</td><td>0.211978</td><td>0.631897</td><td>0.325684</td><td>0.133328</td><td>1.000000</td></tr></tbody></table>
+
+Correlation tables are a numerical representation of the bivariate relationships in the dataset.Positive numbers indicate a positive correlation — one goes up the other goes up — and negative numbers represent an inverse correlation — one goes up the other goes down. 
+1.0 indicates a perfect correlation.So looking in the first row, first column we see <code>rank</code> has a perfect correlation with itself, which is obvious. 
+On the other hand, the correlation between <code>votes</code> and <code>revenue_millions</code> is 0.6. 
+A little more interesting.Examining bivariate relationships comes in handy when you have an outcome or dependent variable in mind and would like to see the features most correlated to the increase or decrease of the outcome. 
+You can visually represent bivariate relationships with scatterplots (seen below in the plotting section).For a deeper look into data summarizations check out <a href="https://www.learndatasci.com/tutorials/data-science-statistics-using-python/">Essential Statistics for Data Science</a>.Let's now look more at manipulating DataFrames.
+
+
+<h3>-- DataFrame slicing, selecting, extracting</h3>
+
+Up until now we've focused on some basic summaries of our data. 
+We've learned about simple column extraction using single brackets, and we imputed null values in a column using <code>fillna()</code>. 
+Below are the other methods of slicing, selecting, and extracting you'll need to use constantly.It's important to note that, although many methods are the same, DataFrames and Series have different attributes, so you'll need be sure to know which type you are working with or else you will receive attribute errors.Let's look at working with columns first.
+
+
+<h4>. . . By column</h4>
+You already saw how to extract a column using square brackets like this:
+
+genre_col = movies_df['genre']
+
+type(genre_col)
+
+Out:
+pandas.core.series.Series
+
+This will return a <i>Series</i>. 
+To extract a column as a <i>DataFrame</i>, you need to pass a list of column names. 
+In our case that's just a single column:
+
+genre_col = movies_df[['genre']]
+
+type(genre_col)
+
+
+pandas.core.frame.DataFrame
+
+Since it's just a list, adding another column name is easy:
+
+subset = movies_df[['genre', 'rating']]
+
+subset.head()
+
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right"><th></th><th>genre</th><th>rating</th></tr><tr><th>Title</th><th></th><th></th></tr></thead><tbody><tr><th>Guardians of the Galaxy</th><td>Action,Adventure,Sci-Fi</td><td>8.1</td></tr><tr><th>Prometheus</th><td>Adventure,Mystery,Sci-Fi</td><td>7.0</td></tr><tr><th>Split</th><td>Horror,Thriller</td><td>7.3</td></tr><tr><th>Sing</th><td>Animation,Comedy,Family</td><td>7.2</td></tr><tr><th>Suicide Squad</th><td>Action,Adventure,Fantasy</td><td>6.2</td></tr></tbody></table>
+Now we'll look at getting data by rows.
+
+
+<h4>. . . By rows</h4>
+
+For rows, we have two options:
+
+<code>.loc</code> - <b>loc</b>ates by name
+<code>.iloc</code>- <b>loc</b>ates by numerical <b>i</b>ndex
+Remember that we are still indexed by movie Title, so to use <code>.loc</code> we give it the Title of a movie:
+
+prom = movies_df.loc["Prometheus"]
+
+prom
+
+Out:
+rank                                                                2
+genre                                        Adventure,Mystery,Sci-Fi
+description         Following clues to the origin of mankind, a te...
+director                                                 Ridley Scott
+actors              Noomi Rapace, Logan Marshall-Green, Michael Fa...
+year                                                             2012
+runtime                                                           124
+rating                                                              7
+votes                                                          485820
+revenue_millions                                               126.46
+metascore                                                          65
+Name: Prometheus, dtype: object
+
+On the other hand, with <code>iloc</code> we give it the numerical index of Prometheus:
+
+prom = movies_df.iloc[1]
+
+
+<code>loc</code> and <code>iloc</code> can be thought of as similar to Python <code>list</code> slicing. 
+To show this even further, let's select multiple rows.How would you do it with a list? In Python, just slice with brackets like <code>example_list[1:4]</code>. 
+It's works the same way in pandas:
+
+movie_subset = movies_df.loc['Prometheus':'Sing']
+
+movie_subset = movies_df.iloc[1:4]
+
+movie_subset
+
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right"><th></th><th>rank</th><th>genre</th><th>description</th><th>director</th><th>actors</th><th>year</th><th>runtime</th><th>rating</th><th>votes</th><th>revenue_millions</th><th>metascore</th></tr><tr><th>Title</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody><tr><th>Prometheus</th><td>2</td><td>Adventure,Mystery,Sci-Fi</td><td>Following clues to the origin of mankind, a te...</td><td>Ridley Scott</td><td>Noomi Rapace, Logan Marshall-Green, Michael Fa...</td><td>2012</td><td>124</td><td>7.0</td><td>485820</td><td>126.46</td><td>65.0</td></tr><tr><th>Split</th><td>3</td><td>Horror,Thriller</td><td>Three girls are kidnapped by a man with a diag...</td><td>M. 
+Night Shyamalan</td><td>James McAvoy, Anya Taylor-Joy, Haley Lu Richar...</td><td>2016</td><td>117</td><td>7.3</td><td>157606</td><td>138.12</td><td>62.0</td></tr><tr><th>Sing</th><td>4</td><td>Animation,Comedy,Family</td><td>In a city of humanoid animals, a hustling thea...</td><td>Christophe Lourdelet</td><td>Matthew McConaughey,Reese Witherspoon, Seth Ma...</td><td>2016</td><td>108</td><td>7.2</td><td>60545</td><td>270.32</td><td>59.0</td></tr></tbody></table>
+
+One important distinction between using <code>.loc</code> and <code>.iloc</code> to select multiple rows is that <code>.loc</code>includes the movie <i>Sing</i> in the result, but when using <code>.iloc</code> we're getting rows 1:4 but the movie at index 4 (<i>Suicide Squad</i>) is not included.Slicing with <code>.iloc</code> follows the same rules as slicing with lists, the object at the index at the end is not included.
+
+
+<h4>. . . Conditional selections</h4>
+
+We’ve gone over how to select columns and rows, but what if we want to make a conditional selection?For example, what if we want to filter our movies DataFrame to show only films directed by Ridley Scott or films with a rating greater than or equal to 8.0?To do that, we take a column from the DataFrame and apply a Boolean condition to it. 
+Here's an example of a Boolean condition:
+
+condition = (movies_df['director'] == "Ridley Scott")
+
+condition.head()
+
+Out:
+Title
+Guardians of the Galaxy    False
+Prometheus                  True
+Split                      False
+Sing                       False
+Suicide Squad              False
+Name: director, dtype: bool
+
+
+Similar to <code>isnull()</code>, this returns a Series of True and False values: True for films directed by Ridley Scott and False for ones not directed by him.We want to filter out all movies not directed by Ridley Scott, in other words, we don’t want the False films. 
+To return the rows where that condition is True we have to pass this operation into the DataFrame:
+
+movies_df[movies_df['director'] == "Ridley Scott"]
+
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right;"><th></th><th>rank</th><th>genre</th><th>description</th><th>director</th><th>actors</th><th>year</th><th>runtime</th><th>rating</th><th>votes</th><th>revenue_millions</th><th>metascore</th><th>rating_category</th></tr><tr><th>Title</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody><tr><th>Prometheus</th><td>2</td><td>Adventure,Mystery,Sci-Fi</td><td>Following clues to the origin of mankind, a te...</td><td>Ridley Scott</td><td>Noomi Rapace, Logan Marshall-Green, Michael Fa...</td><td>2012</td><td>124</td><td>7.0</td><td>485820</td><td>126.46</td><td>65.0</td><td>bad</td></tr><tr><th>The Martian</th><td>103</td><td>Adventure,Drama,Sci-Fi</td><td>An astronaut becomes stranded on Mars after hi...</td><td>Ridley Scott</td><td>Matt Damon, Jessica Chastain, Kristen Wiig, Ka...</td><td>2015</td><td>144</td><td>8.0</td><td>556097</td><td>228.43</td><td>80.0</td><td>good</td></tr><tr><th>Robin Hood</th><td>388</td><td>Action,Adventure,Drama</td><td>In 12th century England, Robin and his band of...</td><td>Ridley Scott</td><td>Russell Crowe, Cate Blanchett, Matthew Macfady...</td><td>2010</td><td>140</td><td>6.7</td><td>221117</td><td>105.22</td><td>53.0</td><td>bad</td></tr><tr><th>American Gangster</th><td>471</td><td>Biography,Crime,Drama</td><td>In 1970s America, a detective works to bring d...</td><td>Ridley Scott</td><td>Denzel Washington, Russell Crowe, Chiwetel Eji...</td><td>2007</td><td>157</td><td>7.8</td><td>337835</td><td>130.13</td><td>76.0</td><td>bad</td></tr><tr><th>Exodus: Gods and Kings</th><td>517</td><td>Action,Adventure,Drama</td><td>The defiant leader Moses rises up against the ...</td><td>Ridley Scott</td><td>Christian Bale, Joel Edgerton, Ben Kingsley, S...</td><td>2014</td><td>150</td><td>6.0</td><td>137299</td><td>65.01</td><td>52.0</td><td>bad</td></tr></tbody></table>
+
+You can get used to looking at these conditionals by reading it like:<b>Select</b> <b><code>movies_df</code></b> <b>where</b> <code>movies_df</code> <b>director equals Ridley Scott.</b>Let's look at conditional selections using numerical values by filtering the DataFrame by ratings:
+
+movies_df[movies_df['rating'] &gt;= 8.6].head(3)
+
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right"><th></th><th>rank</th><th>genre</th><th>description</th><th>director</th><th>actors</th><th>year</th><th>runtime</th><th>rating</th><th>votes</th><th>revenue_millions</th><th>metascore</th></tr><tr><th>Title</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody><tr><th>Interstellar</th><td>37</td><td>Adventure,Drama,Sci-Fi</td><td>A team of explorers travel through a wormhole ...</td><td>Christopher Nolan</td><td>Matthew McConaughey, Anne Hathaway, Jessica Ch...</td><td>2014</td><td>169</td><td>8.6</td><td>1047747</td><td>187.99</td><td>74.0</td></tr><tr><th>The Dark Knight</th><td>55</td><td>Action,Crime,Drama</td><td>When the menace known as the Joker wreaks havo...</td><td>Christopher Nolan</td><td>Christian Bale, Heath Ledger, Aaron Eckhart,Mi...</td><td>2008</td><td>152</td><td>9.0</td><td>1791916</td><td>533.32</td><td>82.0</td></tr><tr><th>Inception</th><td>81</td><td>Action,Adventure,Sci-Fi</td><td>A thief, who steals corporate secrets through ...</td><td>Christopher Nolan</td><td>Leonardo DiCaprio, Joseph Gordon-Levitt, Ellen...</td><td>2010</td><td>148</td><td>8.8</td><td>1583625</td><td>292.57</td><td>74.0</td></tr></tbody></table>
+
+We can make some richer conditionals by using logical operators <code>|</code> for "or" and <code>&amp;</code> for "and".Let's filter the the DataFrame to show only movies by Christopher Nolan OR Ridley Scott:
+
+movies_df[(movies_df['director'] == 'Christopher Nolan') | (movies_df['director'] == 'Ridley Scott')].head()
+
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right"><th></th><th>rank</th><th>genre</th><th>description</th><th>director</th><th>actors</th><th>year</th><th>runtime</th><th>rating</th><th>votes</th><th>revenue_millions</th><th>metascore</th></tr><tr><th>Title</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody><tr><th>Prometheus</th><td>2</td><td>Adventure,Mystery,Sci-Fi</td><td>Following clues to the origin of mankind, a te...</td><td>Ridley Scott</td><td>Noomi Rapace, Logan Marshall-Green, Michael Fa...</td><td>2012</td><td>124</td><td>7.0</td><td>485820</td><td>126.46</td><td>65.0</td></tr><tr><th>Interstellar</th><td>37</td><td>Adventure,Drama,Sci-Fi</td><td>A team of explorers travel through a wormhole ...</td><td>Christopher Nolan</td><td>Matthew McConaughey, Anne Hathaway, Jessica Ch...</td><td>2014</td><td>169</td><td>8.6</td><td>1047747</td><td>187.99</td><td>74.0</td></tr><tr><th>The Dark Knight</th><td>55</td><td>Action,Crime,Drama</td><td>When the menace known as the Joker wreaks havo...</td><td>Christopher Nolan</td><td>Christian Bale, Heath Ledger, Aaron Eckhart,Mi...</td><td>2008</td><td>152</td><td>9.0</td><td>1791916</td><td>533.32</td><td>82.0</td></tr><tr><th>The Prestige</th><td>65</td><td>Drama,Mystery,Sci-Fi</td><td>Two stage magicians engage in competitive one-...</td><td>Christopher Nolan</td><td>Christian Bale, Hugh Jackman, Scarlett Johanss...</td><td>2006</td><td>130</td><td>8.5</td><td>913152</td><td>53.08</td><td>66.0</td></tr><tr><th>Inception</th><td>81</td><td>Action,Adventure,Sci-Fi</td><td>A thief, who steals corporate secrets through ...</td><td>Christopher Nolan</td><td>Leonardo DiCaprio, Joseph Gordon-Levitt, Ellen...</td><td>2010</td><td>148</td><td>8.8</td><td>1583625</td><td>292.57</td><td>74.0</td></tr></tbody></table>
+
+We need to make sure to group evaluations with parentheses so Python knows how to evaluate the conditional.Using the <code>isin()</code> method we could make this more concise though:
+
+movies_df[movies_df['director'].isin(['Christopher Nolan', 'Ridley Scott'])].head()
+
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right"><th></th><th>rank</th><th>genre</th><th>description</th><th>director</th><th>actors</th><th>year</th><th>runtime</th><th>rating</th><th>votes</th><th>revenue_millions</th><th>metascore</th></tr><tr><th>Title</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody><tr><th>Prometheus</th><td>2</td><td>Adventure,Mystery,Sci-Fi</td><td>Following clues to the origin of mankind, a te...</td><td>Ridley Scott</td><td>Noomi Rapace, Logan Marshall-Green, Michael Fa...</td><td>2012</td><td>124</td><td>7.0</td><td>485820</td><td>126.46</td><td>65.0</td></tr><tr><th>Interstellar</th><td>37</td><td>Adventure,Drama,Sci-Fi</td><td>A team of explorers travel through a wormhole ...</td><td>Christopher Nolan</td><td>Matthew McConaughey, Anne Hathaway, Jessica Ch...</td><td>2014</td><td>169</td><td>8.6</td><td>1047747</td><td>187.99</td><td>74.0</td></tr><tr><th>The Dark Knight</th><td>55</td><td>Action,Crime,Drama</td><td>When the menace known as the Joker wreaks havo...</td><td>Christopher Nolan</td><td>Christian Bale, Heath Ledger, Aaron Eckhart,Mi...</td><td>2008</td><td>152</td><td>9.0</td><td>1791916</td><td>533.32</td><td>82.0</td></tr><tr><th>The Prestige</th><td>65</td><td>Drama,Mystery,Sci-Fi</td><td>Two stage magicians engage in competitive one-...</td><td>Christopher Nolan</td><td>Christian Bale, Hugh Jackman, Scarlett Johanss...</td><td>2006</td><td>130</td><td>8.5</td><td>913152</td><td>53.08</td><td>66.0</td></tr><tr><th>Inception</th><td>81</td><td>Action,Adventure,Sci-Fi</td><td>A thief, who steals corporate secrets through ...</td><td>Christopher Nolan</td><td>Leonardo DiCaprio, Joseph Gordon-Levitt, Ellen...</td><td>2010</td><td>148</td><td>8.8</td><td>1583625</td><td>292.57</td><td>74.0</td></tr></tbody></table>
+
+Let's say we want all movies that were released between 2005 and 2010, have a rating above 8.0, but made below the 25th percentile in revenue.Here's how we could do all of that:
+
+movies_df[
+    ((movies_df['year'] &gt;= 2005) &amp; (movies_df['year'] &lt;= 2010))
+    &amp; (movies_df['rating'] &gt; 8.0)
+    &amp; (movies_df['revenue_millions'] &lt; movies_df['revenue_millions'].quantile(0.25))
+]
+
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right"><th></th><th>rank</th><th>genre</th><th>description</th><th>director</th><th>actors</th><th>year</th><th>runtime</th><th>rating</th><th>votes</th><th>revenue_millions</th><th>metascore</th></tr><tr><th>Title</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody><tr><th>3 Idiots</th><td>431</td><td>Comedy,Drama</td><td>Two friends are searching for their long lost ...</td><td>Rajkumar Hirani</td><td>Aamir Khan, Madhavan, Mona Singh, Sharman Joshi</td><td>2009</td><td>170</td><td>8.4</td><td>238789</td><td>6.52</td><td>67.0</td></tr><tr><th>The Lives of Others</th><td>477</td><td>Drama,Thriller</td><td>In 1984 East Berlin, an agent of the secret po...</td><td>Florian Henckel von Donnersmarck</td><td>Ulrich Mühe, Martina Gedeck,Sebastian Koch, Ul...</td><td>2006</td><td>137</td><td>8.5</td><td>278103</td><td>11.28</td><td>89.0</td></tr><tr><th>Incendies</th><td>714</td><td>Drama,Mystery,War</td><td>Twins journey to the Middle East to discover t...</td><td>Denis Villeneuve</td><td>Lubna Azabal, Mélissa Désormeaux-Poulin, Maxim...</td><td>2010</td><td>131</td><td>8.2</td><td>92863</td><td>6.86</td><td>80.0</td></tr><tr><th>Taare Zameen Par</th><td>992</td><td>Drama,Family,Music</td><td>An eight-year-old boy is thought to be a lazy ...</td><td>Aamir Khan</td><td>Darsheel Safary, Aamir Khan, Tanay Chheda, Sac...</td><td>2007</td><td>165</td><td>8.5</td><td>102697</td><td>1.20</td><td>42.0</td></tr></tbody></table>
+
+If you recall up when we used <code>.describe()</code> the 25th percentile for revenue was about 17.4, and we can access this value directly by using the <code>quantile()</code> method with a float of 0.25.So here we have only four movies that match that criteria.
+
+
+<h3>-- Applying functions</h3>
+
+It is possible to iterate over a DataFrame or Series as you would with a list, but doing so — especially on large datasets — is very slow.An efficient alternative is to <code>apply()</code> a function to the dataset. 
+For example, we could use a function to convert movies with an 8.0 or greater to a string value of "good" and the rest to "bad" and use this transformed values to create a new column.First we would create a function that, when given a rating, determines if it's good or bad:
+
+def rating_function(x):
+    if x &gt;= 8.0:
+        return "good"
+    else:
+        return "bad"
+
+Now we want to send the entire rating column through this function, which is what <code>apply()</code> does:
+
+movies_df["rating_category"] = movies_df["rating"].apply(rating_function)
+
+movies_df.head(2)
+
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right"><th></th><th>rank</th><th>genre</th><th>description</th><th>director</th><th>actors</th><th>year</th><th>runtime</th><th>rating</th><th>votes</th><th>revenue_millions</th><th>metascore</th><th>rating_category</th></tr><tr><th>Title</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody><tr><th>Guardians of the Galaxy</th><td>1</td><td>Action,Adventure,Sci-Fi</td><td>A group of intergalactic criminals are forced ...</td><td>James Gunn</td><td>Chris Pratt, Vin Diesel, Bradley Cooper, Zoe S...</td><td>2014</td><td>121</td><td>8.1</td><td>757074</td><td>333.13</td><td>76.0</td><td>good</td></tr><tr><th>Prometheus</th><td>2</td><td>Adventure,Mystery,Sci-Fi</td><td>Following clues to the origin of mankind, a te...</td><td>Ridley Scott</td><td>Noomi Rapace, Logan Marshall-Green, Michael Fa...</td><td>2012</td><td>124</td><td>7.0</td><td>485820</td><td>126.46</td><td>65.0</td><td>bad</td></tr></tbody></table>
+
+The <code>.apply()</code> method passes every value in the <code>rating</code> column through the <code>rating_function</code> and then returns a new Series. 
+This Series is then assigned to a new column called <code>rating_category</code>.You can also use anonymous functions as well. 
+This lambda function achieves the same result as <code>rating_function</code>:
+
+movies_df["rating_category"] = movies_df["rating"].apply(lambda x: 'good' if x &gt;= 8.0 else 'bad')
+
+movies_df.head(2)
+
+Out:<table border="1" class="dataframe"><thead><tr style="text-align: right"><th></th><th>rank</th><th>genre</th><th>description</th><th>director</th><th>actors</th><th>year</th><th>runtime</th><th>rating</th><th>votes</th><th>revenue_millions</th><th>metascore</th><th>rating_category</th></tr><tr><th>Title</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody><tr><th>Guardians of the Galaxy</th><td>1</td><td>Action,Adventure,Sci-Fi</td><td>A group of intergalactic criminals are forced ...</td><td>James Gunn</td><td>Chris Pratt, Vin Diesel, Bradley Cooper, Zoe S...</td><td>2014</td><td>121</td><td>8.1</td><td>757074</td><td>333.13</td><td>76.0</td><td>good</td></tr><tr><th>Prometheus</th><td>2</td><td>Adventure,Mystery,Sci-Fi</td><td>Following clues to the origin of mankind, a te...</td><td>Ridley Scott</td><td>Noomi Rapace, Logan Marshall-Green, Michael Fa...</td><td>2012</td><td>124</td><td>7.0</td><td>485820</td><td>126.46</td><td>65.0</td><td>bad</td></tr></tbody></table>
+Overall, using <code>apply()</code> will be much faster than iterating manually over rows because pandas is utilizing vectorization.
+<blockquote>Vectorization: a style of computer programming where operations are applied to whole arrays instead of individual elements —<a href="https://en.wikipedia.org/wiki/Vectorization" target="_blank">Wikipedia</a></blockquote>
+A good example of high usage of <code>apply()</code> is during natural language processing (NLP) work. 
+You'll need to apply all sorts of text cleaning functions to strings to prepare for machine learning.
+
+
+<h3>-- Brief Plotting</h3>
+Another great thing about pandas is that it integrates with Matplotlib, so you get the ability to plot directly off DataFrames and Series. 
+To get started we need to import Matplotlib (<code>pip install matplotlib</code>):
+
+import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 20, 'figure.figsize': (10, 8)}) # set font and plot size to be larger
+
+Now we can begin. 
+There won't be a lot of coverage on plotting, but it should be enough to explore you're data easily.
+
+
+<h4>. . . Plotting Tip</h4>
+For categorical variables utilize Bar Charts* and Boxplots.For continuous variables utilize Histograms, Scatterplots, Line graphs, and Boxplots.
+
+Let's plot the relationship between ratings and revenue. 
+All we need to do is call <code>.plot()</code> on <code>movies_df</code> with some info about how to construct the plot:
+
+movies_df.plot(kind='scatter', x='rating', y='revenue_millions', title='Revenue (millions) vs Rating');
+
+RESULT:
+<img src="https://storage.googleapis.com/lds-media/images/revenue_vs_rating.width-1200.png">
+What's with the semicolon? It's not a syntax error, just a way to hide the <code>&lt;matplotlib.axes._subplots.AxesSubplot at 0x26613b5cc18&gt;</code> output when plotting in Jupyter notebooks.If we want to plot a simple Histogram based on a single column, we can call plot on a column:
+
+movies_df['rating'].plot(kind='hist', title='Rating');
+
+RESULT:
+<img src="https://storage.googleapis.com/lds-media/images/rating_histogram.width-1200.png"> gives us on the ratings column:
+
+movies_df['rating'].describe()
+
+Out:
+count    1000.000000
+mean        6.723200
+std         0.945429
+min         1.900000
+25%         6.200000
+50%         6.800000
+75%         7.400000
+max         9.000000
+Name: rating, dtype: float64
+
+Using a Boxplot we can visualize this data:
+
+movies_df['rating'].plot(kind="box");
+
+RESULT:
+<img src="https://storage.googleapis.com/lds-media/images/rating_boxplot.width-1200.png">
+<img src="https://i1.wp.com/flowingdata.com/wp-content/uploads/2008/02/box-plot-explained.gif"/><figcaption>Source: *Flowing Data*</figcaption>By combining categorical and continuous data, we can create a Boxplot of revenue that is grouped by the Rating Category we created above:
+
+movies_df.boxplot(column='revenue_millions', by='rating_category');
+
+RESULT:
+<img src="https://storage.googleapis.com/lds-media/images/revenue_grouped_by_rating_category_boxplot.width-1200.png"> for more information on what it can do.
+
+
+<h2>Wrapping up</h2>
+
+Exploring, cleaning, transforming, and visualization data with pandas in Python is an essential skill in data science. 
+Just cleaning wrangling data is 80% of your job as a Data Scientist. 
+After a few projects and some practice, you should be very comfortable with most of the basics.
+To keep improving, view the <a href="https://pandas.pydata.org/pandas-docs/stable/tutorials.html">extensive tutorials</a> offered by the official pandas docs, follow along with a few <a href="https://www.kaggle.com/kernels">Kaggle kernels</a>, and keep working on your own projects!
+<br>
+<br>
+<h2></h2>
+<h2>Statistical Analysis in Python</h2>
+In this section, we introduce a few useful methods for analyzing your data in Python. 
+Namely, we cover how to compute the mean, variance, and standard error of a data set. 
+For more advanced statistical analysis, we cover how to perform a Mann-Whitney-Wilcoxon (MWW) RankSum test, how to perform an Analysis of variance (ANOVA) between multiple data sets, and how to compute bootstrapped 95% confidence intervals for non-normally distributed data sets.
+
+<h3>- Python's SciPy Module</h3>
+The majority of data analysis in Python can be performed with the SciPy module. 
+SciPy provides a plethora of statistical functions and tests that will handle the majority of your analytical needs. 
+If we don't cover a statistical function or test that you require for your research, SciPy's full statistical library is described in detail at: <a href="https://docs.scipy.org/doc/scipy/reference/tutorial/stats.html">http://docs.scipy.org/doc/scipy/reference/tutorial/stats.html</a>
+
+<h3>- Python's pandas Module</h3>
+	from pandas import *
+	
+	# must specify that blank space " " is NaN<i>
+	experimentDF = read_csv("parasite_data.csv", na_values=[" "])
+	</i>
+
+
+<h3>- Accessing data in pandas DataFrames</h3>
+You can directly access any column and row by indexing the DataFrame.
+
+	# show all entries in the Virulence column
+	print(experimentDF["Virulence"])
+
+	# show the 12th row in the ShannonDiversity column
+	print(experimentDF["ShannonDiversity"][12])
+
+
+You can also access all of the values in a column meeting a certain criteria.
+
+	# show all entries in the ShannonDiversity column > 2.0
+	print(experimentDF[experimentDF["ShannonDiversity"] > 2.0])
+
+<h3>- Blank/omitted data (NA or NaN) in pandas DataFrames</h3>
+Blank/omitted data is a piece of cake to handle in pandas. 
+Here's an example data set with NA/NaN values.
+
+	import numpy as np
+	print(experimentDF[np.isnan(experimentDF["Virulence"])])
+
+
+DataFrame methods automatically ignore NA/NaN values.
+
+	print("Mean virulence across all treatments:", experimentDF["Virulence"].mean())
+	
+	Mean virulence across all treatments: 0.75
+
+
+However, not all methods in Python are guaranteed to handle NA/NaN values properly.
+
+	<i>from scipy import stats</i>
+
+	print("Mean virulence across all treatments:", stats.sem(experimentDF["Virulence"]))
+	
+	Mean virulence across all treatments: nan
+
+
+Thus, it behooves you to take care of the NA/NaN values before performing your analysis. 
+You can either:
+
+<strong>(1) filter out all of the entries with NA/NaN</strong>
+
+	# NOTE: this drops the entire row if any of its entries are NA/NaN!
+	<i>print(experimentDF.dropna())</i>
+
+
+If you only care about NA/NaN values in a specific column, you can specify the column name first.
+
+	<i>print(experimentDF["Virulence"].dropna())</i>
+
+<strong>(2) replace all of the NA/NaN entries with a valid value</strong>
+
+	print(experimentDF.fillna(0.0)["Virulence"])
+
+Take care when deciding what to do with NA/NaN entries. 
+It can have a significant impact on your results!
+
+	print ("Mean virulence across all treatments w/ dropped NaN:",
+		experimentDF["Virulence"].dropna().mean())
+	
+	print ("Mean virulence across all treatments w/ filled NaN:",
+		experimentDF.fillna(0.0)["Virulence"].mean())
+	
+	Mean virulence across all treatments w/ dropped NaN: 0.75
+	Mean virulence across all treatments w/ filled NaN: 0.642857142857
+
+
+<h3>- Mean of a data set</h3>
+The mean performance of an experiment gives a good idea of how the experiment will turn out <em>on average</em> under a given treatment.
+
+Conveniently, DataFrames have all kinds of built-in functions to perform standard operations on them en masse: `add()`, `sub()`, `mul()`, `div()`, `mean()`, `std()`, etc. 
+The full list is located at: <a href="https://pandas.pydata.org/pandas-docs/stable/api.html#computations-descriptive-stats">http://pandas.pydata.org/pandas-docs/stable/api.html#computations-descriptive-stats</a>
+
+Thus, computing the mean of a DataFrame only takes one line of code:
+
+	from pandas import *
+	
+	print ("Mean Shannon Diversity w/ 0.8 Parasite Virulence =",
+		experimentDF[experimentDF["Virulence"] == 0.8]["ShannonDiversity"].mean())
+	
+	Mean Shannon Diversity w/ 0.8 Parasite Virulence = 1.2691338188
+
+
+<h3>- Variance in a data set</h3>
+The variance in the performance provides a measurement of how consistent the results of an experiment are. 
+The lower the variance, the more consistent the results are, and vice versa.
+
+Computing the variance is also built in to pandas DataFrames:
+
+	from pandas import *
+	
+	print ("Variance in Shannon Diversity w/ 0.8 Parasite Virulence =",
+		experimentDF[experimentDF["Virulence"] == 0.8]["ShannonDiversity"].var())
+	
+	Variance in Shannon Diversity w/ 0.8 Parasite Virulence = 0.611038433313
+
+
+<h3>- Standard Error of the Mean (SEM)</h3>
+Combined with the mean, the SEM enables you to establish a range around a mean that the majority of any future replicate experiments will most likely fall within.
+
+pandas DataFrames don't have methods like SEM built in, but since DataFrame rows/columns are treated as lists, you can use any NumPy/SciPy method you like on them.
+
+	from pandas import *
+	from scipy import stats
+	
+	print ("SEM of Shannon Diversity w/ 0.8 Parasite Virulence =",
+		stats.sem(experimentDF[experimentDF["Virulence"] == 0.8]["ShannonDiversity"]))
+	
+	SEM of Shannon Diversity w/ 0.8 Parasite Virulence = 0.110547585529
+
+
+A single SEM will usually envelop 68% of the possible replicate means and two SEMs envelop 95% of the possible replicate means. 
+Two SEMs are called the &#8220;estimated 95% confidence interval.&#8221; The confidence interval is estimated because the exact width depend on how many replicates you have; this approximation is good when you have more than 20 replicates.
+
+<h3>- Mann-Whitney-Wilcoxon (MWW) RankSum test</h3>
+The MWW RankSum test is a useful test to determine if two distributions are significantly different or not. 
+Unlike the t-test, the RankSum test does not assume that the data are normally distributed, potentially providing a more accurate assessment of the data sets.
+
+As an example, let's say we want to determine if the results of the two following treatments significantly differ or not:
+
+	# select two treatment data sets from the parasite data
+	treatment1 = experimentDF[experimentDF["Virulence"] == 0.5]["ShannonDiversity"]
+	treatment2 = experimentDF[experimentDF["Virulence"] == 0.8]["ShannonDiversity"]
+	
+	print "Data set 1:\n", treatment1
+	print "Data set 2:\n", treatment2
+	
+	Data set 1:
+	0     0.059262
+	1     1.093600
+	2     1.139390
+	3     0.547651
+	...
+	45    1.937930
+	46    1.284150
+	47    1.651680
+	48    0.000000
+	49    0.000000
+	Name: ShannonDiversity
+	Data set 2:
+	150    1.433800
+	151    2.079700
+	152    0.892139
+	153    2.384740
+	...
+	196    2.077180
+	197    1.566410
+	198    0.000000
+	199    1.990900
+	Name: ShannonDiversity
+
+
+A RankSum test will provide a P value indicating whether or not the two distributions are the same.
+
+	from scipy import stats
+	
+	z_stat, p_val = stats.ranksums(treatment1, treatment2)
+	
+	print "MWW RankSum P for treatments 1 and 2 =", p_val
+	
+	MWW RankSum P for treatments 1 and 2 = 0.000983355902735
+
+
+If P <= 0.05, we are highly confident that the distributions significantly differ, and can claim that the treatments had a significant impact on the measured value.
+If the treatments do <em>not</em> significantly differ, we could expect a result such as the following:
+
+	treatment3 = experimentDF[experimentDF["Virulence"] == 0.8]["ShannonDiversity"]
+	treatment4 = experimentDF[experimentDF["Virulence"] == 0.9]["ShannonDiversity"]
+	
+	print "Data set 3:\n", treatment3
+	print "Data set 4:\n", treatment4
+	
+	Data set 3:
+	150    1.433800
+	151    2.079700
+	152    0.892139
+	153    2.384740
+	...
+	196    2.077180
+	197    1.566410
+	198    0.000000
+	199    1.990900
+	Name: ShannonDiversity
+	Data set 4:
+	200    1.036930
+	201    0.938018
+	202    0.995956
+	203    1.006970
+	...
+	246    1.564330
+	247    1.870380
+	248    1.262280
+	249    0.000000
+	Name: ShannonDiversity
+
+
+	# compute RankSum P value
+	z_stat, p_val = stats.ranksums(treatment3, treatment4)
+
+	print "MWW RankSum P for treatments 3 and 4 =", p_val
+	
+	MWW RankSum P for treatments 3 and 4 = 0.994499571124
+
+
+With P > 0.05, we must say that the distributions do not significantly differ. 
+Thus changing the parasite virulence between 0.8 and 0.9 does not result in a significant change in Shannon Diversity.
+
+<h3>- One-way analysis of variance (ANOVA)</h3>
+If you need to compare more than two data sets at a time, an ANOVA is your best bet. 
+For example, we have the results from three experiments with overlapping 95% confidence intervals, and we want to confirm that the results for all three experiments are not significantly different.
+
+	treatment1 = experimentDF[experimentDF["Virulence"] == 0.7]["ShannonDiversity"]
+	treatment2 = experimentDF[experimentDF["Virulence"] == 0.8]["ShannonDiversity"]
+	treatment3 = experimentDF[experimentDF["Virulence"] == 0.9]["ShannonDiversity"]
+	
+	print "Data set 1:\n", treatment1
+	print "Data set 2:\n", treatment2
+	print "Data set 3:\n", treatment3
+	
+	Data set 1:
+	100    1.595440
+	101    1.419730
+	102    0.000000
+	103    0.000000
+	...
+	146    0.000000
+	147    1.139100
+	148    2.383260
+	149    0.056819
+	Name: ShannonDiversity
+	Data set 2:
+	150    1.433800
+	151    2.079700
+	152    0.892139
+	153    2.384740
+	...
+	196    2.077180
+	197    1.566410
+	198    0.000000
+	199    1.990900
+	Name: ShannonDiversity
+	Data set 3:
+	200    1.036930
+	201    0.938018
+	202    0.995956
+	203    1.006970
+	...
+	246    1.564330
+	247    1.870380
+	248    1.262280
+	249    0.000000
+	Name: ShannonDiversity
+
+
+	# compute one-way ANOVA P value	
+	from scipy import stats
+		
+	f_val, p_val = stats.f_oneway(treatment1, treatment2, treatment3)
+	
+	print "One-way ANOVA P =", p_val
+	
+	One-way ANOVA P = 0.381509481874
+
+
+If P > 0.05, we can claim with high confidence that the means of the results of all three experiments are not significantly different.
+
+<h3>- Bootstrapped 95% confidence intervals</h3>
+Oftentimes in wet lab research, it's difficult to perform the 20 replicate runs recommended for computing reliable confidence intervals with SEM.
+
+In this case, bootstrapping the confidence intervals is a much more accurate method of determining the 95% confidence interval around your experiment's mean performance.
+
+Unfortunately, SciPy doesn't have bootstrapping built into its standard library yet. 
+However, there is already a scikit out there for bootstrapping. 
+Enter the following command to install it:
+
+sudo easy_install scikits.bootstrap
+
+
+Bootstrapping 95% confidence intervals around the mean with this function is simple:
+
+	# subset a list of 10 data points
+	treatment1 = experimentDF[experimentDF["Virulence"] == 0.8]["ShannonDiversity"][:10]
+	
+	print "Small data set:\n", treatment1
+	
+	Small data set:
+	150    1.433800
+	151    2.079700
+	152    0.892139
+	153    2.384740
+	154    0.006980
+	155    1.971760
+	156    0.000000
+	157    1.428470
+	158    1.715950
+	159    0.000000
+	Name: ShannonDiversity
+
+
+	import scipy
+	import scikits.bootstrap as bootstrap
+
+	# compute 95% confidence intervals around the mean
+	CIs = bootstrap.ci(data=treatment1, statfunction=scipy.mean)
+
+	print "Bootstrapped 95% confidence intervals\nLow:", CIs[0], "\nHigh:", CIs[1]
+	
+	Bootstrapped 95% confidence intervals
+	Low: 0.659028048 
+	High: 1.722468024
+
+
+Note that you can change the range of the confidence interval by setting the alpha:
+
+	# 80% confidence interval
+	CIs = bootstrap.ci(treatment1, scipy.mean, alpha=0.2)
+	print "Bootstrapped 80% confidence interval\nLow:", CIs[0], "\nHigh:", CIs[1]
+	
+	Bootstrapped 80% confidence interval
+	Low: 0.827291024 
+	High: 1.5420059
+
+
+And also modify the size of the bootstrapped sample pool that the confidence intervals are taken from:
+
+	# bootstrap 20,000 samples instead of only 10,000
+	CIs = bootstrap.ci(treatment1, scipy.mean, n_samples=20000)
+	print ("Bootstrapped 95% confidence interval w/ 20,000 samples\nLow:",
+		CIs[0], "\nHigh:", CIs[1])
+	
+	Bootstrapped 95% confidence interval w/ 20,000 samples
+	Low: 0.644756972 
+	High: 1.7071459
+
+
+Generally, bootstrapped 95% confidence intervals provide more accurate confidence intervals than 95% confidence intervals estimated from the SEM.
+
+<br>
+</pre>
+
+<script>
+	var toc = $('#toc');
+	$('h2,h3,h4').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>
+</body>
+</html>
