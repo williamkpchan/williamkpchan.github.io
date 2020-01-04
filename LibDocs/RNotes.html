@@ -13,7 +13,7 @@ $(document).ready(function(){
 </script>
 <style>
 body{width: 80%;margin-left: 10%}
-li{text-align: left; margin-left: 20%;}
+li{text-align: left; margin-left: 5%;}
 h1, h2 {color: gold;}
 code,pre{width: 100%; margin-left: 0px;background-color:black;}
 i{color:brown;}
@@ -322,7 +322,7 @@ v <- c('a','b','c','e')
 
 <pre>
 
-<h2>31:37 %in% 0:36</h2>
+<h2>check vector includes in 31:37 %in% 0:36</h2>
 #=============
 31:37 %in% 0:36
 #
@@ -3209,7 +3209,8 @@ summary(mytable) # chi-square test of indepedence
 <h2>parallel 平行計算</h2>
 <a href="https://blog.gtwang.org/r/r-parallel-computing-module-tutorial/">R 的 parallel 平行計算套件使用教學與範例</a>
 <br>
-
+<a href="How-to go parallel in R.html">How-to go parallel in R</a>
+<br>
 <h2>edply</h2>
 <a href="https://www.r-bloggers.com/edply-combining-plyr-and-expand-grid/">edply: combining plyr and expand.grid</a>
 
@@ -3617,6 +3618,219 @@ model1&lt;-glm data="titanic_passenger," family="binomial(link=" formula="surviv
 <a href="https://blog.revolutionanalytics.com/2013/06/plotting-classification-and-regression-trees-with-plotrpart.html">Classification and Regression Trees with the rpart.plot package</a>
 <br>
 
+<h2>Grouping functions (tapply, by, aggregate) and the *apply family</h2>
+R has many *apply functions.
+Much of the functionality of the *apply family is covered by the extremely popular <code>plyr</code> package, the base functions remain useful and worth knowing.
+
+<li><strong>apply</strong> - <em>When you want to apply a function to the rows or columns of a matrix (and higher-dimensional analogues); not generally advisable for data frames as it will coerce to a matrix first.</em>
+
+<code># Two dimensional matrix
+M &lt;- matrix(seq(1,16), 4, 4)
+
+# apply min to rows
+apply(M, 1, min)
+[1] 1 2 3 4
+
+# apply max to columns
+apply(M, 2, max)
+[1]  4  8 12 16
+
+# 3 dimensional array
+M &lt;- array( seq(32), dim = c(4,4,2))
+
+# Apply sum across each M[*, , ] - i.e Sum across 2nd and 3rd dimension, look from top is an area
+apply(M, 1, sum)
+# Result is one-dimensional
+[1] 120 128 136 144
+
+# Apply sum across each M[*, *, ] - i.e Sum across 3rd dimension
+apply(M, c(1,2), sum)
+# Result is two-dimensional
+     [,1] [,2] [,3] [,4]
+[1,]   18   26   34   42
+[2,]   20   28   36   44
+[3,]   22   30   38   46
+[4,]   24   32   40   48
+</code>
+
+If you want row/column means or sums for a 2D matrix, be sure to investigate the highly optimized, lightning-quick <code>colMeans</code>, <code>rowMeans</code>, <code>colSums</code>, <code>rowSums</code>.</li>
+<li><strong>lapply</strong> - <em>When you want to apply a function to each element of a list in turn and get a list back.</em>
+
+This is the workhorse of many of the other *apply functions. 
+Peel back their code and you will often find <code>lapply</code> underneath.
+
+<code>x &lt;- list(a = 1, b = 1:3, c = 10:100) 
+lapply(x, FUN = length) 
+$a 
+[1] 1
+$b 
+[1] 3
+$c 
+[1] 91
+lapply(x, FUN = sum) 
+$a 
+[1] 1
+$b 
+[1] 6
+$c 
+[1] 5005</code></li>
+<li><strong>sapply</strong> - <em>When you want to apply a function to each element of a list in turn, but you want a <strong>vector</strong> back, rather than a list.</em>
+
+If you find yourself typing <code>unlist(lapply(...))</code>, stop and consider <code>sapply</code>.
+
+<code>x &lt;- list(a = 1, b = 1:3, c = 10:100)
+# Compare with above; a named vector, not a list 
+sapply(x, FUN = length)  
+a  b  c   
+1  3 91
+
+sapply(x, FUN = sum)   
+a    b    c    
+1    6 5005 
+</code>
+
+In more advanced uses of <code>sapply</code> it will attempt to coerce the result to a multi-dimensional array, if appropriate. 
+For example, if our function returns vectors of the same length, <code>sapply</code> will use them as columns of a matrix:
+
+<code>sapply(1:5,function(x) rnorm(3,x))
+</code>
+
+If our function returns a 2 dimensional matrix, <code>sapply</code> will do essentially the same thing, treating each returned matrix as a single long vector:
+
+<code>sapply(1:5,function(x) matrix(x,2,2))</code>
+
+Unless we specify <code>simplify = "array"</code>, in which case it will use the individual matrices to build a multi-dimensional array:
+
+<code>sapply(1:5,function(x) matrix(x,2,2), simplify = "array")</code>
+
+Each of these behaviors is of course contingent on our function returning vectors or matrices of the same length or dimension.</li>
+<li><strong>vapply</strong> - <em>When you want to use <code>sapply</code> but perhaps need to squeeze some more speed out of your code.</em>
+
+For <code>vapply</code>, you basically give R an example of what sort of thing your function will return, which can save some time coercing returned values to fit in a single atomic vector.
+
+<code>x &lt;- list(a = 1, b = 1:3, c = 10:100)
+# Note that since the advantage here is mainly speed, this
+# example is only for illustration. 
+We're telling R that
+# everything returned by length() should be an integer of length 1. 
+
+vapply(x, FUN = length, FUN.VALUE = 0L) 
+a  b  c  
+1  3 91
+</code></li>
+<li><strong>mapply</strong> - <em>For when you have several data structures (e.g. 
+vectors, lists) and you want to apply a function to the 1st elements of each, and then the 2nd elements of each, etc., coercing the result to a vector/array as in <code>sapply</code>.</em>
+
+This is multivariate in the sense that your function must accept multiple arguments.
+
+<code>#Sums the 1st elements, the 2nd elements, etc. 
+
+mapply(sum, 1:5, 1:5, 1:5) 
+[1]  3  6  9 12 15
+#To do rep(1,4), rep(2,3), etc.
+mapply(rep, 1:4, 4:1)   
+[[1]]
+[1] 1 1 1 1
+
+[[2]]
+[1] 2 2 2
+
+[[3]]
+[1] 3 3
+
+[[4]]
+[1] 4
+</code></li>
+<li><strong>Map</strong> - <em>A wrapper to <code>mapply</code> with <code>SIMPLIFY = FALSE</code>, so it is guaranteed to return a list.</em>
+
+<code>Map(sum, 1:5, 1:5, 1:5)
+[[1]]
+[1] 3
+
+[[2]]
+[1] 6
+
+[[3]]
+[1] 9
+
+[[4]]
+[1] 12
+
+[[5]]
+[1] 15
+</code></li>
+<li><strong>rapply</strong> - <em>For when you want to apply a function to each element of a <strong>nested list</strong> structure, recursively.</em>
+
+To give you some idea of how uncommon <code>rapply</code> is, I forgot about it when first posting this answer! Obviously, I'm sure many people use it, but YMMV. 
+<code>rapply</code> is best illustrated with a user-defined function to apply:
+
+<code># Append ! to string, otherwise increment
+myFun &lt;- function(x){
+    if(is.character(x)){
+      return(paste(x,"!",sep=""))
+    }
+    else{
+      return(x + 1)
+    }
+}
+
+#A nested list structure
+l &lt;- list(a = list(a1 = "Boo", b1 = 2, c1 = "Eeek"), 
+          b = 3, c = "Yikes", 
+          d = list(a2 = 1, b2 = list(a3 = "Hey", b3 = 5)))
+
+
+# Result is named vector, coerced to character          
+rapply(l, myFun)
+
+# Result is a nested list like l, with values altered
+rapply(l, myFun, how="replace")
+</code></li>
+<li><strong>tapply</strong> - <em>For when you want to apply a function to <strong>subsets</strong> of a vector and the subsets are defined by some other vector, usually a factor.</em>
+
+The black sheep of the *apply family, of sorts. 
+The help file's use of the phrase "ragged array" can be a bit <a href="https://stackoverflow.com/questions/6297201/explain-r-tapply-description/6297396#6297396">confusing</a>, but it is actually quite simple.
+
+A vector:
+
+<code>x &lt;- 1:20</code>
+
+A factor (of the same length!) defining groups:
+
+<code>y &lt;- factor(rep(letters[1:5], each = 4))</code>
+
+Add up the values in <code>x</code> within each subgroup defined by <code>y</code>:
+
+<code>tapply(x, y, sum)  
+ a  b  c  d  e  
+10 26 42 58 74 
+</code>
+
+More complex examples can be handled where the subgroups are defined by the unique combinations of a list of several factors. 
+<code>tapply</code> is similar in spirit to the split-apply-combine functions that are common in R (<code>aggregate</code>, <code>by</code>, <code>ave</code>, <code>ddply</code>, etc.) Hence its black sheep status.</li>
+
+<b>Slice vector</b>
+We can use lapply() or sapply() interchangeable to slice a data frame. 
+We create a function, below_average(), that takes a vector of numerical values and returns a vector that only contains the values that are strictly above the average. 
+
+below_ave <- function(x) {  
+    ave <- mean(x) 
+    return(x[x > ave])
+}
+
+Compare both results with the identical() function.
+dataf_s<- sapply(dataf, below_ave)
+dataf_l<- lapply(dataf, below_ave)
+identical(dataf_s, dataf_l)
+
+
+<h2>Principal Component Methods</h2>
+<a href="Principal Component Methods.html">Principal Component Methods</a>
+
+
+<h2>NLP techniques</h2>
+<a href="NLP techniques.html">NLP techniques</a>
+<br>
 </pre>
 
 <br><br><br><br><br>
@@ -3629,7 +3843,7 @@ model1&lt;-glm data="titanic_passenger," family="binomial(link=" formula="surviv
       return $('<a href="' + href + '" target="_self">' + text + '</a><br>');
     }
 
-    $('h2,strong').each(function(i) {
+    $('h2').each(function(i) {
       var chapter = $(this), chapterNumber = i + 1;
       toc.append( i + 1 + " ",
         makeLi(chapter.text(), '#chapter-' + chapterNumber)

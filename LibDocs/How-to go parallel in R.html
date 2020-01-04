@@ -1,0 +1,1145 @@
+<html>
+<head>
+<title>..</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"/>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script type='text/javascript' src='../mainscript.js'></script>
+
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:22px;}
+strong, h1, h2 {color: gold;}
+img {width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%;}
+textarea{background-color:black; color:#80a080; border:none;}
+</style>
+</head>
+<body onkeypress="chkKey()">
+<center><h1>How-to go parallel in R – basics + tips</h1>
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+<pre>
+使用 detectCores() 函數可以知道電腦 CPU 有幾個運算核心
+運算完之後，要輸入 stopCluster(cl) 指令，以防止 R 繼續占用電腦資源。
+
+library(parallel)
+detectCores()
+cl <- makeCluster(7)
+parLapply(cl, 2:4, function(x) x^3)
+stopCluster(cl)
+
+Today is a good day to start parallelizing your code. 
+I've been using the parallel package since its integration with R (v. 2.14.0) and its much easier than it at first seems. 
+In this post I'll go through the basics for implementing parallel computations in R, cover a few common pitfalls, and give tips on how to avoid them. 
+
+The common motivation behind parallel computing is that something is taking too long time. 
+For me that means any computation that takes more than 3 minutes &#8211; this because parallelization is incredibly simple and most tasks that take time are <a href="http://en.wikipedia.org
+/wiki/Embarrassingly_parallel">embarrassingly parallel</a>. 
+Here are a few common tasks that fit the description:
+
+Bootstrapping
+Cross-validation
+Multivariate Imputation by Chained Equations (MICE)
+Fitting multiple regression models
+<h2>Learning <code>lapply</code> is key</h2>
+
+One thing I regret is not learning earlier <code>lapply</code>. 
+The function is beautiful in its simplicity: It takes one parameter (a vector/list), feeds that variable into the function, and returns a list:
+
+lapply(1:3, function(x) c(x, x^2, x^3))
+
+lapply(1:3, function(x) c(x, x^2, x^3))
+
+[[1]]
+ [1] 1 1 1
+
+[[2]]
+ [1] 2 4 8
+
+[[3]]
+ [1] 3 9 27
+
+[[1]] [1] 1 1 1 [[2]] [1] 2 4 8 [[3]] [1] 3 9 27
+
+You can feed it additional values by adding named parameters:
+
+lapply(1:3/3, round, digits=3)
+
+lapply(1:3/3, round, digits=3)
+
+[[1]]
+[1] 0.333
+
+[[2]]
+[1] 0.667
+
+[[3]]
+[1] 1
+
+[[1]][1] 0.333 [[2]][1] 0.667 [[3]][1] 1
+
+The tasks are <a href="http://en.wikipedia.org
+/wiki/Embarrassingly_parallel">embarrassingly parallel</a> as the elements are calculated independently, i.e. 
+second element is independent of the result from the first element. 
+After learning to code using <code>lapply</code> you will find that parallelizing your code is a breeze.
+
+<h2>The <code>parallel</code> package</h2>
+
+The <code>parallel</code> package is basically about doing the above in parallel. 
+The main difference is that we need to start with setting up a cluster, a collection of &#8220;workers&#8221; that will be doing the job. 
+A good number of clusters is the <em>numbers of available cores &#8211; 1</em>. 
+I've found that using all 8 cores on my machine will prevent me from doing anything else (the computers comes to a standstill until the R task has finished). 
+I therefore always set up the cluster as follows:
+
+library(parallel)
+
+# Calculate the number of cores
+no_cores &lt;- detectCores() - 1
+
+# Initiate cluster
+cl &lt;- makeCluster(no_cores)
+
+library(parallel) # Calculate the number of coresno_cores &lt;- detectCores() - 1 # Initiate clustercl &lt;- makeCluster(no_cores)
+
+Now we just call the parallel version of <code>lapply</code>, <code>parLapply</code>:
+
+parLapply(cl, 2:4,
+          function(exponent)
+            2^exponent)
+
+parLapply(cl, 2:4,          function(exponent)            2^exponent)
+
+[[1]]
+[1] 4
+
+[[2]]
+[1] 8
+
+[[3]]
+[1] 16
+
+[[1]][1] 4 [[2]][1] 8 [[3]][1] 16
+
+Once we are done we need to close the cluster so that resources such as memory are returned to the operating system.
+
+stopCluster(cl)
+
+stopCluster(cl)
+
+<h3>Variable scope</h3>
+
+On Mac/Linux you have the option of using <code>makeCluster(no_core, type="FORK")</code> that automatically contains all environment variables (more details on this <a href="#fork_psock">below</a>). 
+On Windows you have to use the <em>Parallel Socket Cluster</em> (PSOCK) that starts out with only the base packages loaded (note that PSOCK is default on <em>all</em> systems). 
+You should therefore always specify exactly what variables and libraries that you need for the parallel function to work, e.g. 
+the following fails:
+
+cl&lt;-makeCluster(no_cores)
+base &lt;- 2
+
+parLapply(cl, 
+          2:4, 
+          function(exponent) 
+            base^exponent)
+
+stopCluster(cl)
+
+cl&lt;-makeCluster(no_cores)base &lt;- 2 parLapply(cl,           2:4,           function(exponent)             base^exponent) stopCluster(cl)
+
+ Error in checkForRemoteErrors(val) : 
+  3 nodes produced errors; first error: object 'base' not found 
+
+ Error in checkForRemoteErrors(val) :   3 nodes produced errors; first error: object 'base' not found 
+
+While this passes:
+
+cl&lt;-makeCluster(no_cores)
+
+base &lt;- 2
+clusterExport(cl, "base")
+parLapply(cl, 
+          2:4, 
+          function(exponent) 
+            base^exponent)
+
+stopCluster(cl)
+
+cl&lt;-makeCluster(no_cores) base &lt;- 2clusterExport(cl, "base")parLapply(cl,           2:4,           function(exponent)             base^exponent) stopCluster(cl)
+
+[[1]]
+[1] 4
+
+[[2]]
+[1] 8
+
+[[3]]
+[1] 16
+
+[[1]][1] 4 [[2]][1] 8 [[3]][1] 16
+
+Note that you need the <code>clusterExport(cl, "base")</code> in order for the function to see the <strong>base</strong> variable. 
+If you are using some special packages you will similarly need to load those through <code>clusterEvalQ</code>, e.g. 
+I often use the <code>rms</code> package and I therefore use <code>clusterEvalQ(cl, library(rms))</code>. 
+Note that any changes to the variable after <code>clusterExport</code> are ignored:
+
+cl&lt;-makeCluster(no_cores)
+clusterExport(cl, "base")
+base &lt;- 4
+# Run
+parLapply(cl, 
+          2:4, 
+          function(exponent) 
+            base^exponent)
+
+# Finish
+stopCluster(cl)
+
+cl&lt;-makeCluster(no_cores)clusterExport(cl, "base")base &lt;- 4# RunparLapply(cl,           2:4,           function(exponent)             base^exponent) # FinishstopCluster(cl)
+
+[[1]]
+[1] 4
+
+[[2]]
+[1] 8
+
+[[3]]
+[1] 16
+
+[[1]][1] 4 [[2]][1] 8 [[3]][1] 16
+
+<h3>Using <code style="text-transform: none; font-variant: none;">parSapply</code></h3>
+
+Sometimes we only want to return a simple value and directly get it processed as a vector/matrix. 
+The <code>lapply</code> version that does this is called <code>sapply</code>, thus it is hardly surprising that its parallel version is <code>parSapply</code>:
+
+parSapply(cl, 2:4, 
+          function(exponent) 
+            base^exponent)
+
+parSapply(cl, 2:4,           function(exponent)             base^exponent)
+
+[1]  4  8 16
+
+[1]  4  8 16
+
+Matrix output with names (this is why we need the <code>as.character</code>):
+
+parSapply(cl, as.character(2:4), 
+          function(exponent){
+            x &lt;- as.numeric(exponent)
+            c(base = base^x, self = x^x)
+          })
+
+parSapply(cl, as.character(2:4),           function(exponent){            x &lt;- as.numeric(exponent)            c(base = base^x, self = x^x)          })
+
+     2  3   4
+base 4  8  16
+self 4 27 256
+
+     2  3   4base 4  8  16self 4 27 256
+
+<h2>The <code>foreach</code> package</h2>
+
+The idea behind the <code>foreach</code> package is to create <em>&#8216;a hybrid of the standard for loop and lapply function'</em> and its ease of use has made it rather popular. 
+The set-up is slightly different, you need &#8220;register&#8221; the cluster as below:
+
+library(foreach)
+library(doParallel)
+
+cl&lt;-makeCluster(no_cores)
+registerDoParallel(cl)
+
+library(foreach)library(doParallel) cl&lt;-makeCluster(no_cores)registerDoParallel(cl)
+
+Note that you can change the last two lines to:
+
+registerDoParallel(no_cores)
+
+registerDoParallel(no_cores)
+
+But then you need to remember to instead of <code>stopCluster()</code> at the end do:
+
+stopImplicitCluster()
+
+stopImplicitCluster()
+
+The <code>foreach</code> function can be viewed as being a more controlled version of the <code>parSapply</code> that allows combining the results into a suitable format. 
+By specifying the <code>.combine</code> argument we can choose how to combine our results, below is a vector, matrix, and a list example: 
+
+foreach(exponent = 2:4, 
+        .combine = c)  %dopar%  
+  base^exponent
+
+foreach(exponent = 2:4,         .combine = c)  %dopar%    base^exponent
+
+[1]  4  8 16
+
+[1]  4  8 16
+
+foreach(exponent = 2:4, 
+        .combine = rbind)  %dopar%  
+  base^exponent
+
+foreach(exponent = 2:4,         .combine = rbind)  %dopar%    base^exponent
+
+         [,1]
+result.1    4
+result.2    8
+result.3   16
+
+         [,1]result.1    4result.2    8result.3   16
+
+foreach(exponent = 2:4, 
+        .combine = list,
+        .multicombine = TRUE)  %dopar%  
+  base^exponent
+
+foreach(exponent = 2:4,         .combine = list,        .multicombine = TRUE)  %dopar%    base^exponent
+
+[[1]]
+[1] 4
+
+[[2]]
+[1] 8
+
+[[3]]
+[1] 16
+
+[[1]][1] 4 [[2]][1] 8 [[3]][1] 16
+
+Note that the last is the default and can be achieved without any tweaking, just <code>foreach(exponent = 2:4) %dopar%</code>. 
+In the example it is worth noting the <code>.multicombine</code> argument that is needed to avoid a nested list. 
+The nesting occurs due to the sequential <code>.combine</code> function calls, i.e. 
+<code>list(list(result.1, result.2), result.3)</code>:
+
+foreach(exponent = 2:4, 
+        .combine = list)  %dopar%  
+  base^exponent
+
+foreach(exponent = 2:4,         .combine = list)  %dopar%    base^exponent
+
+[[1]]
+[[1]][[1]]
+[1] 4
+
+[[1]][[2]]
+[1] 8
+[[2]]
+[1] 16
+
+[[1]][[1]][[1]][1] 4 [[1]][[2]][1] 8  [[2]][1] 16
+
+<h3>Variable scope</h3>
+
+The variable scope constraints are slightly different for the <code>foreach</code> package. 
+Variable within the same <em>local</em> environment are by default available:
+
+base &lt;- 2
+cl&lt;-makeCluster(2)
+registerDoParallel(cl)
+foreach(exponent = 2:4, 
+        .combine = c)  %dopar%  
+  base^exponent
+stopCluster(cl)
+
+base &lt;- 2cl&lt;-makeCluster(2)registerDoParallel(cl)foreach(exponent = 2:4,         .combine = c)  %dopar%    base^exponentstopCluster(cl)
+
+ [1]  4  8 16
+
+ [1]  4  8 16
+
+While variables from a <a href="http://adv-r.had.co.nz/Environments.html">parent environment</a> will not be available, i.e. 
+the following will <a href="http://stackoverflow.com/questions/6689937/r-problem-with-foreach-dopar-inside-function-called-by-optim/15638393#15638393">throw an error</a>:
+
+test &lt;- function (exponent) {
+  foreach(exponent = 2:4, 
+          .combine = c)  %dopar%  
+    base^exponent
+}
+test()
+
+test &lt;- function (exponent) {  foreach(exponent = 2:4,           .combine = c)  %dopar%      base^exponent}test()
+
+ Error in base^exponent : task 1 failed - "object 'base' not found" 
+
+ Error in base^exponent : task 1 failed - "object 'base' not found" 
+
+A nice feature is that you can use the <code>.export</code> option instead of the <code>clusterExport</code>. 
+Note that as it is part of the parallel call it will have the latest version of the variable, i.e. 
+the following change in &#8220;base&#8221; will work:
+
+base &lt;- 2
+cl&lt;-makeCluster(2)
+registerDoParallel(cl)
+
+base &lt;- 4
+test &lt;- function (exponent) {
+  foreach(exponent = 2:4, 
+          .combine = c,
+          .export = "base")  %dopar%  
+    base^exponent
+}
+test()
+
+stopCluster(cl)
+
+base &lt;- 2cl&lt;-makeCluster(2)registerDoParallel(cl) base &lt;- 4test &lt;- function (exponent) {  foreach(exponent = 2:4,           .combine = c,          .export = "base")  %dopar%      base^exponent}test() stopCluster(cl)
+
+ [1]  4  8 16
+
+ [1]  4  8 16
+
+Similarly you can load packages with the <code>.packages</code> option, e.g. 
+<code>.packages = c("rms", "mice")</code>. 
+I strongly recommend always exporting the variables you need as it limits issues that arise when encapsulating the code within functions.
+
+<h2>Fork or sock?</h2>
+
+I do most of my analyses on Windows and have therefore gotten used to the PSOCK system. 
+For those of you on other systems you should be aware of some important differences between the two main alternatives:
+<strong>FORK</strong>: &quot;to divide in branches and go separate ways&quot;<br />
+Systems: Unix/Mac (not Windows)<br />
+Environment: Link all
+<strong>PSOCK</strong>: Parallel Socket Cluster<br />
+Systems: All (including Windows)<br />
+Environment: Empty
+
+<h3>Memory handling</h3>
+
+Unless you are using multiple computers or Windows or planning on sharing your code with someone using a Windows machine, you should try to use FORK (I use capitalized due to the <code>makeCluster</code> <em>type</em> argument). 
+It is leaner on the memory usage by linking to the same address space. 
+Below you can see that the memory address space for variables exported to PSOCK are not the same as the original:
+
+library(pryr) # Used for memory analyses
+cl&lt;-makeCluster(no_cores)
+clusterExport(cl, "a")
+clusterEvalQ(cl, library(pryr))
+
+parSapply(cl, X = 1:10, function(x) {address(a)}) == address(a)
+
+library(pryr) # Used for memory analysescl&lt;-makeCluster(no_cores)clusterExport(cl, "a")clusterEvalQ(cl, library(pryr)) parSapply(cl, X = 1:10, function(x) {address(a)}) == address(a)
+
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+
+ [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+
+While they are for FORK clusters:
+
+cl&lt;-makeCluster(no_cores, type="FORK")
+parSapply(cl, X = 1:10, function(x) address(a)) == address(a)
+
+cl&lt;-makeCluster(no_cores, type="FORK")parSapply(cl, X = 1:10, function(x) address(a)) == address(a)
+
+ [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+
+ [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+
+This can save a lot of time during setup and also memory. 
+Interestingly, you do not need to worry about variable corruption:
+
+b &lt;- 0
+parSapply(cl, X = 1:10, function(x) {b &lt;- b + 1; b})
+# [1] 1 1 1 1 1 1 1 1 1 1
+parSapply(cl, X = 1:10, function(x) {b &lt;&lt;- b + 1; b})
+# [1] 1 2 3 4 5 1 2 3 4 5
+b
+# [1] 0
+
+b &lt;- 0parSapply(cl, X = 1:10, function(x) {b &lt;- b + 1; b})# [1] 1 1 1 1 1 1 1 1 1 1parSapply(cl, X = 1:10, function(x) {b &lt;&lt;- b + 1; b})# [1] 1 2 3 4 5 1 2 3 4 5b# [1] 0
+
+<h2>Debugging</h2>
+
+Debugging is especially hard when working in a parallelized environment. 
+You cannot simply call <code>browser</code>/<code>cat</code>/<code>print</code> in order to find out what the issue is. 
+
+<h3>The <code style="text-transform: none; font-variant: none;">tryCatch</code> &#8211; <code style="text-transform: none; font-variant: none;">list</code> approach</h3>
+
+Using <code>stop()</code> for debugging without modification is generally a bad idea; while you will receive the error message, there is a large chance that you have forgotten about that <code>stop()</code>, and it gets evoked once you have run your software for a day or two. 
+It is annoying to throw away all the previous successful computations just because one failed (yup, this is default behavior of all the above functions). 
+You should therefore try to catch errors and return a text explaining the setting that caused the error:
+
+foreach(x=list(1, 2, "a"))  %dopar%  
+{
+  tryCatch({
+    c(1/x, x, 2^x)
+  }, error = function(e) return(paste0("The variable '", x, "'", 
+                                      " caused the error: '", e, "'")))
+}
+
+foreach(x=list(1, 2, "a"))  %dopar%  {  tryCatch({    c(1/x, x, 2^x)  }, error = function(e) return(paste0("The variable '", x, "'",                                       " caused the error: '", e, "'")))}
+
+[[1]]
+[1] 1 1 2
+
+[[2]]
+[1] 0.5 2.0 4.0
+
+[[3]]
+[1] "The variable 'a' caused the error: 'Error in 1/x: non-numeric argument to binary operator\n'"
+
+[[1]][1] 1 1 2 [[2]][1] 0.5 2.0 4.0 [[3]][1] "The variable 'a' caused the error: 'Error in 1/x: non-numeric argument to binary operator\n'"
+
+This is also why I like lists, the <code>.combine</code> may look appealing but it is easy to manually apply and if you have function that crashes when one of the element is not of the expected type you will loose all your data. 
+Here is a simple example of how to call <code>rbind</code> on a <code>lapply</code> output:
+
+out &lt;- lapply(1:3, function(x) c(x, 2^x, x^x))
+do.call(rbind, out)
+
+out &lt;- lapply(1:3, function(x) c(x, 2^x, x^x))do.call(rbind, out)
+
+     [,1] [,2] [,3]
+[1,]    1    2    1
+[2,]    2    4    4
+[3,]    3    8   27
+
+     [,1] [,2] [,3][1,]    1    2    1[2,]    2    4    4[3,]    3    8   27
+
+<h3>Creating a common output file</h3>
+
+Since we can't have a console per worker we can set a shared file. 
+I would say that this is a &#8220;last resort&#8221; solution: 
+
+cl&lt;-makeCluster(no_cores, outfile = "debug.txt")
+registerDoParallel(cl)
+foreach(x=list(1, 2, "a"))  %dopar%  
+{
+  print(x)
+}
+stopCluster(cl)
+
+cl&lt;-makeCluster(no_cores, outfile = "debug.txt")registerDoParallel(cl)foreach(x=list(1, 2, "a"))  %dopar%  {  print(x)}stopCluster(cl)
+
+starting worker pid=7392 on localhost:11411 at 00:11:21.077
+starting worker pid=7276 on localhost:11411 at 00:11:21.319
+starting worker pid=7576 on localhost:11411 at 00:11:21.762
+[1] 2]
+
+[1] "a"
+
+starting worker pid=7392 on localhost:11411 at 00:11:21.077starting worker pid=7276 on localhost:11411 at 00:11:21.319starting worker pid=7576 on localhost:11411 at 00:11:21.762[1] 2] [1] "a"
+
+As you can see due to a race between first and the second node the output is a little garbled and therefore in my opinion less useful than returning a custom statement.
+
+<h3>Creating a node-specific file</h3>
+
+A perhaps slightly more appealing alternative is to a have a node-specific file. 
+This could potentially be interesting when you have a dataset that is causing some issues and you want to have a closer look at that data set:
+
+cl&lt;-makeCluster(no_cores, outfile = "debug.txt")
+registerDoParallel(cl)
+foreach(x=list(1, 2, "a"))  %dopar%  
+{
+  cat(dput(x), file = paste0("debug_file_", x, ".txt"))
+} 
+stopCluster(cl)
+
+cl&lt;-makeCluster(no_cores, outfile = "debug.txt")registerDoParallel(cl)foreach(x=list(1, 2, "a"))  %dopar%  {  cat(dput(x), file = paste0("debug_file_", x, ".txt"))} stopCluster(cl)
+
+A tip is to combine this with your <code>tryCatch</code> &#8211; <code>list</code> approach. 
+Thereby you can extract any data that is not suitable for a simple message (e.g. 
+a large data.frame), load that, and debug it without parallel. 
+If the <code>x</code> is too long for a file name I suggest that you use digest as <a href="#caching">described below</a> for the cache function.
+
+<h3>The <code>partools</code> package</h3>
+
+There is an interesting package <code>partools</code> that has a <a href="https://matloff.wordpress.com/2015/01/03/debugging-parallel-code-with-dbs/">dbs()</a> function that may be worth looking into (unless your on a Windows machine). 
+It allows coupling terminals per process and debugging through them.
+
+<h2>Caching</h2>
+
+I strongly recommend implementing some caching when doing large computations. 
+There may be a multitude of reasons to why you need to exit a computation and it would be a pity to waist all that valuable time. 
+There is a package for caching, <a href="http://cran.r-project.org/web/packages/R.cache/index.html">R.cache</a>, but I've found it easier to write the function myself. 
+All you need is the built-in <code>digest</code> package. 
+By feeding the data + the function that you are using to the <code>digest()</code> you get an unique key, if that key matches your previous calculation there is no need for re-running that particular section. 
+Here is a function with caching:
+
+cacheParallel &lt;- function(){
+  vars &lt;- 1:2
+  tmp &lt;- clusterEvalQ(cl, 
+                      library(digest))
+  
+  parSapply(cl, vars, function(var){
+    fn &lt;- function(a) a^2
+    dg &lt;- digest(list(fn, var))
+    cache_fn &lt;- 
+      sprintf("Cache_%s.Rdata", 
+              dg)
+    if (file.exists(cache_fn)){
+      load(cache_fn)
+    }else{
+      var &lt;- fn(var); 
+      Sys.sleep(5)
+      save(var, file = cache_fn)
+    }
+    return(var)
+  })
+}
+
+cacheParallel &lt;- function(){  vars &lt;- 1:2  tmp &lt;- clusterEvalQ(cl,                       library(digest))    parSapply(cl, vars, function(var){    fn &lt;- function(a) a^2    dg &lt;- digest(list(fn, var))    cache_fn &lt;-       sprintf("Cache_%s.Rdata",               dg)    if (file.exists(cache_fn)){      load(cache_fn)    }else{      var &lt;- fn(var);       Sys.sleep(5)      save(var, file = cache_fn)    }    return(var)  })}
+
+The when running the code it is pretty obvious that the <code>Sys.sleep</code> is not invoked the second time around:
+
+system.time(out &lt;- cacheParallel())
+# user system elapsed
+# 0.003 0.001 5.079
+out
+# [1] 1 4
+system.time(out &lt;- cacheParallel())
+# user system elapsed
+# 0.001 0.004 0.046
+out
+# [1] 1 4
+
+# To clean up the files just do:
+file.remove(list.files(pattern = "Cache.+\\.Rdata"))
+
+system.time(out &lt;- cacheParallel())# user system elapsed# 0.003 0.001 5.079out# [1] 1 4system.time(out &lt;- cacheParallel())# user system elapsed# 0.001 0.004 0.046out# [1] 1 4 # To clean up the files just do:file.remove(list.files(pattern = "Cache.+\\.Rdata"))
+
+<h2>Load balancing</h2>
+
+Balancing so that the cores have similar weight load and don't fight for memory resources is core for a successful parallelization scheme.
+
+<h3>Work load</h3>
+
+Note that the <code>parLapply</code> and <code>foreach</code> are wrapper functions. 
+This means that they are not directly doing the processing the parallel code, but rely on other functions for this. 
+In the <code>parLapply</code> the function is defined as:
+
+parLapply &lt;- function (cl = NULL, X, fun, ...) 
+{
+    cl &lt;- defaultCluster(cl)
+    do.call(c, clusterApply(cl, x = splitList(X, length(cl)), 
+        fun = lapply, fun, ...), quote = TRUE)
+} 
+
+parLapply &lt;- function (cl = NULL, X, fun, ...) {    cl &lt;- defaultCluster(cl)    do.call(c, clusterApply(cl, x = splitList(X, length(cl)),         fun = lapply, fun, ...), quote = TRUE)} 
+
+Note the <code>splitList(X, length(cl))</code>. 
+This will split the tasks into even portions and send them onto the workers. 
+If you have many of those cached or there is a big computational difference between the tasks you risk ending up with only one cluster actually working while the others are inactive. 
+To avoid this you should when caching try to remove those that are cached from the X or try to mix everything into an even workload. 
+E.g. 
+if we want to find optimal number of neurons in a neural network we may want to change:
+
+# From the nnet example
+parLapply(cl, c(10, 20, 30, 40, 50), function(neurons) 
+  nnet(ir[samp,], targets[samp,],
+       size = neurons))
+
+# From the nnet exampleparLapply(cl, c(10, 20, 30, 40, 50), function(neurons)   nnet(ir[samp,], targets[samp,],       size = neurons))
+
+to:
+
+# From the nnet example
+parLapply(cl, c(10, 50, 30, 40, 20), function(neurons) 
+  nnet(ir[samp,], targets[samp,],
+       size = neurons))
+
+# From the nnet exampleparLapply(cl, c(10, 50, 30, 40, 20), function(neurons)   nnet(ir[samp,], targets[samp,],       size = neurons))
+
+<h3>Memory load</h3>
+
+Running large datasets in parallel can quickly get you into trouble. 
+If you run out of memory the system will either crash or run incredibly slow. 
+The former happens to me on Linux systems while the latter is quite common on Windows systems. 
+You should therefore always monitor your parallelization to make sure that you aren't too close to the memory ceiling. 
+
+Using FORKs is an important tool for handling memory ceilings. 
+As they link to the original variable address the fork will not require any time for exporting variables or take up any additional space when using these. 
+The impact on performance can be significant (my system has 16Gb of memory and eight cores):
+
+&gt; rm(list=ls())
+&gt; library(pryr)
+&gt; library(magrittr)
+&gt; a &lt;- matrix(1, ncol=10^4*2, nrow=10^4)
+&gt; object_size(a)
+1.6 GB
+&gt; system.time(mean(a))
+   user  system elapsed 
+  0.338   0.000   0.337 
+&gt; system.time(mean(a + 1))
+   user  system elapsed 
+  0.490   0.084   0.574 
+&gt; library(parallel)
+&gt; cl &lt;- makeCluster(4, type = "PSOCK")
+&gt; system.time(clusterExport(cl, "a"))
+   user  system elapsed 
+  5.253   0.544   7.289 
+&gt; system.time(parSapply(cl, 1:8, 
+                        function(x) mean(a + 1)))
+   user  system elapsed 
+  0.008   0.008   3.365 
+&gt; stopCluster(cl); gc();
+&gt; cl &lt;- makeCluster(4, type = "FORK")
+&gt; system.time(parSapply(cl, 1:8, 
+                        function(x) mean(a + 1)))
+   user  system elapsed 
+  0.009   0.008   3.123 
+&gt; stopCluster(cl)
+
+&gt; rm(list=ls())&gt; library(pryr)&gt; library(magrittr)&gt; a &lt;- matrix(1, ncol=10^4*2, nrow=10^4)&gt; object_size(a)1.6 GB&gt; system.time(mean(a))   user  system elapsed   0.338   0.000   0.337 &gt; system.time(mean(a + 1))   user  system elapsed   0.490   0.084   0.574 &gt; library(parallel)&gt; cl &lt;- makeCluster(4, type = "PSOCK")&gt; system.time(clusterExport(cl, "a"))   user  system elapsed   5.253   0.544   7.289 &gt; system.time(parSapply(cl, 1:8,                         function(x) mean(a + 1)))   user  system elapsed   0.008   0.008   3.365 &gt; stopCluster(cl); gc();&gt; cl &lt;- makeCluster(4, type = "FORK")&gt; system.time(parSapply(cl, 1:8,                         function(x) mean(a + 1)))   user  system elapsed   0.009   0.008   3.123 &gt; stopCluster(cl)
+
+FORKs can also make your able to run code in parallel that otherwise crashes:
+
+&gt; cl &lt;- makeCluster(8, type = "PSOCK")
+&gt; system.time(clusterExport(cl, "a"))
+   user  system elapsed 
+ 10.576   1.263  15.877 
+&gt; system.time(parSapply(cl, 1:8, function(x) mean(a + 1)))
+Error in checkForRemoteErrors(val) : 
+  8 nodes produced errors; first error: cannot allocate vector of size 1.5 Gb
+Timing stopped at: 0.004 0 0.389 
+&gt; stopCluster(cl)
+&gt; cl &lt;- makeCluster(8, type = "FORK")
+&gt; system.time(parSapply(cl, 1:8, function(x) mean(a + 1)))
+   user  system elapsed 
+  0.014   0.016   3.735 
+&gt; stopCluster(cl)
+
+&gt; cl &lt;- makeCluster(8, type = "PSOCK")&gt; system.time(clusterExport(cl, "a"))   user  system elapsed  10.576   1.263  15.877 &gt; system.time(parSapply(cl, 1:8, function(x) mean(a + 1)))Error in checkForRemoteErrors(val) :   8 nodes produced errors; first error: cannot allocate vector of size 1.5 GbTiming stopped at: 0.004 0 0.389 &gt; stopCluster(cl)&gt; cl &lt;- makeCluster(8, type = "FORK")&gt; system.time(parSapply(cl, 1:8, function(x) mean(a + 1)))   user  system elapsed   0.014   0.016   3.735 &gt; stopCluster(cl)
+
+Although, it won't save you from yourself 😀 as you can see below when we create an intermediate variable that takes up storage space:
+
+&gt; a &lt;- matrix(1, ncol=10^4*2.1, nrow=10^4)
+&gt; cl &lt;- makeCluster(8, type = "FORK")
+&gt; parSapply(cl, 1:8, function(x) {
++   b &lt;- a + 1
++   mean(b)
++   })
+Error in unserialize(node$con) : error reading from connection
+
+&gt; a &lt;- matrix(1, ncol=10^4*2.1, nrow=10^4)&gt; cl &lt;- makeCluster(8, type = "FORK")&gt; parSapply(cl, 1:8, function(x) {+   b &lt;- a + 1+   mean(b)+   })Error in unserialize(node$con) : error reading from connection
+
+<h3>Memory tips</h3>
+Frequently use <code>rm()</code> in order to avoid having unused variables around
+Frequently call the garbage collector <code>gc()</code>. 
+Although this should be implemented automatically in R, I've found that while it may releases the memory locally it may not return it to the operating system (OS). 
+This makes sense when running at a single instance as this is an time expensive procedure but if you have multiple processes this may not be a good strategy. 
+Each process needs to get their memory from the OS and it is therefore vital that each process returns memory once they no longer need it.
+Although it is often better to parallelize at a large scale due to initialization costs it may in memory situations be better to parallelize at a small scale, i.e. 
+in subroutines.
+I sometimes run code in parallel, cache the results, and once I reach the limit I change to sequential.
+You can also manually limit the number of cores, using all the cores is of no use if the memory isn't large enough. 
+A simple way to think of it is: <code>memory.limit()/memory.size() = max cores</code>
+<h2>Other tips</h2>
+A general core detector function that I often use is:
+
+max(1, detectCores() - 1)
+
+max(1, detectCores() - 1)
+
+<strong>Never use</strong> <code>set.seed()</code>, use <code>clusterSetRNGStream()</code> instead, to set the cluster seed if you want reproducible results
+If you have a Nvidia GPU-card, you can get huge gains from micro-parallelization through the <code>gputools</code> package (Warning though, the installation can be rather difficult&#8230;).
+When using <a href="http://stackoverflow.com/questions/24040280/parallel-computation-of-multiple-imputation-by-using-mice-r-package/27087791#27087791"><code>mice</code> in parallel</a> remember to use <code>ibind()</code> for combining the imputations.
+<br>
+<br>
+
+<h2 class="title">Parallel Processing in R</h2>
+
+<h2>Serial versus Parallel processing</h2>
+We’ve vaguely discussed this idea in passing, specifically in that <code>*apply</code> functions are faster than for loops (usually). 
+Let’s be a little more formal.
+
+Consider that we have a series of functions to run, <code>f1</code>, <code>f2</code>, etc.
+
+Serial processing means that <code>f1</code> runs first, and until <code>f1</code> completes, nothing else can run. 
+Once <code>f1</code> completes, <code>f2</code> begins, and the process repeats.
+
+Parallel processing (in the extreme) means that all the <code>f#</code> processes start simultaneously and run to completion on their own.
+
+If we have a single computer at our disposal and have to run <code>n</code> models, each taking <code>s</code> seconds, the total running time will be <code>n*s</code>. 
+If however, we have <code>k &lt; n</code> computers we can run our models on, the total running time will <code>n*s/k</code>. 
+In the old days this was how parallel code was run; and is still run on larger servers. 
+However, modern computers have “multicore” processors and can be equivalent to running multiple computers at a time. 
+The equation is not quite as clean (there are other things running on each process; overhead in transferring between processors exists; etc) but in general we see the same gain.
+
+<h2>The serial-parallel scale</h2>
+
+A problem can range from “inherently serial” to “perfectly parallel”<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>.
+
+An “inherently serial” problem is one which cannot be parallelized at all - for example, if <code>f2</code> depended on the output of <code>f1</code> before it could begin, even if we used multiple computers, we would gain no speed-ups<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>.
+
+On the other hand a “perfectly parallel” problem is one in which there is absolutely no dependency between iterations; most of the <code>*apply</code> calls or simulations we’ve discussed in this class fall into this category. 
+In this case, any <code>f*</code> can start at any point and run to completion regardless of the status of any other <code>f*</code>.
+
+Sometimes the dependency occurs at the end of each function; so we could start running <code>f1</code> and <code>f2</code> in completion, but <code>f2</code> would pause before finishing while it waits for <code>f1</code> to finish. 
+We can still see a speed gain here.
+
+In general, if each <code>f*</code> is very fast, running them all parallel may not be the most efficient (due to overhead). 
+It may be better to run the first k in serial, the next k in serial, etc.
+
+Here we’re going to exclusively discuss the perfectly parallel situation; it is where most (though of course not all) statistical situations will land. 
+The more complicated parallel situations arise generally in deeper computer science scenarios, for example handling many users of a service.
+
+<h2>Terminology</h2>
+
+Let’s just nail down some terminology.
+
+<li>A <em>core</em> is a general term for either a single processor on your own computer (technically you only have one processor, but a modern processor like the i7 can have multiple cores - hence the term) or a single machine in a cluster network.</li>
+<li>A <em>cluster</em> is a collection of objecting capable of hosting cores, either a network or just the collection of cores on your personal computer.</li>
+<li>A <em>process</em> is a single running version of R (or more generally any program). 
+Each core runs a single process.</li>
+
+<h2>The <code>parallel</code> package</h2>
+
+There are a number of packages which can be used for parallel processing in R. 
+Two of the earliest and strongest were <code>multicore</code> and <code>snow</code>. 
+However, both were adopted in the base R installation and merged into the <code>parallel</code> package.
+
+<code class="sourceCode r">library(parallel)</code>
+
+You can easily check the number of cores you have access to with <code>detectCores</code>:
+
+<code class="sourceCode r">detectCores()</code>
+
+<code>## [1] 4</code>
+
+The number of cores represented is not neccessarily correlated with the number of processors you actually have thanks to the concept of “logical CPUs”. 
+For the most part, you can use this number as accurate. 
+Trying to use more cores than you have available won’t provide any benefit.
+
+<h2>Methods of Paralleization</h2>
+
+There are two main ways in which code can be parallelized, via <em>sockets</em> or via <em>forking</em>. 
+These function slightly differently:
+
+<li>The <em>socket</em> approach launches a new version of R on each core. 
+Technically this connection is done via networking (e.g.&nbsp;the same as if you connected to a remote server), but the connection is happening all on your own computer<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a> I mention this because you may get a warning from your computer asking whether to allow R to accept incoming connections, you should allow it.</li>
+<li>The <em>forking</em> approach copies the entire current version of R and moves it to a new core.</li>
+
+There are various pro’s and con’s to the two approaches:
+
+Socket:
+
+<li>Pro: Works on any system (including Windows).</li>
+<li>Pro: Each process on each node is unique so it can’t cross-contaminate.</li>
+<li>Con: Each process is unique so it will be slower</li>
+<li>Con: Things such as package loading need to be done in each process separately. 
+Variables defined on your main version of R don’t exist on each core unless explicitly placed there.</li>
+<li>Con: More complicated to implement.</li>
+
+Forking:
+
+<li>Con: Only works on POSIX systems (Mac, Linux, Unix, BSD) and not Windows.</li>
+<li>Con: Because processes are duplicates, it can cause issues specifically with random number generation (which should usually be handled by <code>parallel</code> in the background) or when running in a GUI (such as RStudio). 
+This doesn’t come up often, but if you get odd behavior, this may be the case.</li>
+<li>Pro: Faster than sockets.</li>
+<li>Pro: Because it copies the existing version of R, your entire workspace exists in each process.</li>
+<li>Pro: Trivially easy to implement.</li>
+
+In general, I’d recommend using forking if you’re not on Windows.
+
+<em>Note</em>: These notes were compiled on OS X.
+
+<h2>Forking with <code>mclapply</code></h2>
+
+The most straightforward way to enable parallel processing is by switching from using <code>lapply</code> to <code>mclapply</code>. 
+(Note I’m using <code>system.time</code> instead of <code>profvis</code> here because I only care about running time, not profiling.)
+
+<code class="sourceCode r">library(lme4)</code>
+
+<code>## Loading required package: Matrix</code>
+
+<code class="sourceCode r">f &lt;- function(i) {
+  lmer(Petal.Width ~ . 
+- Species + (1 | Species), data = iris)
+}
+ 
+system.time(save1 &lt;- lapply(1:100, f))</code>
+
+<code>##    user  system elapsed 
+##   2.048   0.019   2.084</code>
+
+<code class="sourceCode r">system.time(save2 &lt;- mclapply(1:100, f))</code>
+
+<code>##    user  system elapsed 
+##   1.295   0.150   1.471</code>
+
+If you were to run this code on Windows, <code>mclapply</code> would simply call <code>lapply</code>, so the code works but sees no speed gain.
+
+<code>mclapply</code> takes an argument, <code>mc.cores</code>. 
+By default, <code>mclapply</code> will use all cores available to it. 
+If you don’t want to (either becaues you’re on a shared system or you just want to save processing power for other purposes) you can set this to a value lower than the number of cores you have. 
+Setting it to 1 disables parallel processing, and setting it higher than the number of available cores has no effect.
+
+<h2>Using sockets with <code>parLapply</code></h2>
+
+As promised, the sockets approach to parallel processing is more complicated and a bit slower, but works on Windows systems. 
+The general process we’ll follow is
+
+<ol style="list-style-type: decimal">
+<li>Start a cluster with nnn nodes.</li>
+<li>Execute any pre-processing code necessary in each node (e.g.&nbsp;loading a package)</li>
+<li>Use <code>par*apply</code> as a replacement for <code>*apply</code>. 
+Note that unlike <code>mcapply</code>, this is <em>not</em> a drop-in replacement.</li>
+<li>Destroy the cluster (not necessary, but best practices).</li>
+</ol>
+
+<h3>Starting a cluster</h3>
+
+The function to start a cluster is <code>makeCluster</code> which takes in as an argument the number of cores:
+
+<code class="sourceCode r">numCores &lt;- detectCores()
+numCores</code>
+
+<code>## [1] 4</code>
+
+<code class="sourceCode r">cl &lt;- makeCluster(numCores)</code>
+
+The function takes an argument <code>type</code> which can be either <code>PSOCK</code> (the socket version) or <code>FORK</code> (the fork version). 
+Generally, <code>mclapply</code> should be used for the forking approach, so there’s no need to change this.
+
+If you were running this on a network of multiple computers as opposed to on your local machine, there are additional argumnts you may wish to run, but generally the other defaults should be specific.
+
+<h3>Pre-processing code</h3>
+
+When using the socket approach to parallel processing, each process is started fresh, so things like loaded packages and any variables existing in your current session do not exist. 
+We must instead move those into each process.
+
+The most generic way to do this is the <code>clusterEvalQ</code> function, which takes a cluster and any expression, and executes the expression on each process.
+
+<code class="sourceCode r">clusterEvalQ(cl, 2 + 2)</code>
+
+<code>## [[1]]
+## [1] 4
+## 
+## [[2]]
+## [1] 4
+## 
+## [[3]]
+## [1] 4
+## 
+## [[4]]
+## [1] 4</code>
+
+Note the lack of inheritance:
+
+<code class="sourceCode r">x &lt;- 1
+clusterEvalQ(cl, x)</code>
+
+<code>## Error in checkForRemoteErrors(lapply(cl, recvResult)): 4 nodes produced errors; first error: object 'x' not found</code>
+
+We could fix this by wrapping the assignment in a <code>clusterEvalQ</code> call:
+
+<code class="sourceCode r">clusterEvalQ(cl, y &lt;- 1)</code>
+
+<code>## [[1]]
+## [1] 1
+## 
+## [[2]]
+## [1] 1
+## 
+## [[3]]
+## [1] 1
+## 
+## [[4]]
+## [1] 1</code>
+
+<code class="sourceCode r">clusterEvalQ(cl, y)</code>
+
+<code>## [[1]]
+## [1] 1
+## 
+## [[2]]
+## [1] 1
+## 
+## [[3]]
+## [1] 1
+## 
+## [[4]]
+## [1] 1</code>
+
+<code class="sourceCode r">y</code>
+
+<code>## Error in eval(expr, envir, enclos): object 'y' not found</code>
+
+However, now <code>y</code> doesn’t exist in the main process. 
+We can instead use <code>clusterExport</code> to pass objects to the processes:
+
+<code class="sourceCode r">clusterExport(cl, "x")
+clusterEvalQ(cl, x)</code>
+
+<code>## [[1]]
+## [1] 1
+## 
+## [[2]]
+## [1] 1
+## 
+## [[3]]
+## [1] 1
+## 
+## [[4]]
+## [1] 1</code>
+
+The second argument is a vector of strings naming the variables to pass.
+
+Finally, we can use <code>clusterEvalQ</code> to load packages:
+
+<code class="sourceCode r">clusterEvalQ(cl, {
+  library(ggplot2)
+  library(stringr)
+})</code>
+
+<code>## [[1]]
+## [1] "stringr"   "ggplot2"   "stats"     "graphics"  "grDevices" "utils"    
+## [7] "datasets"  "methods"   "base"     
+## 
+## [[2]]
+## [1] "stringr"   "ggplot2"   "stats"     "graphics"  "grDevices" "utils"    
+## [7] "datasets"  "methods"   "base"     
+## 
+## [[3]]
+## [1] "stringr"   "ggplot2"   "stats"     "graphics"  "grDevices" "utils"    
+## [7] "datasets"  "methods"   "base"     
+## 
+## [[4]]
+## [1] "stringr"   "ggplot2"   "stats"     "graphics"  "grDevices" "utils"    
+## [7] "datasets"  "methods"   "base"</code>
+
+Note that this helpfully returns a list of the packages loaded in each process.
+
+<h3>Using <code>par*apply</code></h3>
+
+There are parallel versions of the three main <code>apply</code> statements: <code>parApply</code>, <code>parLapply</code> and <code>parSapply</code> for <code>apply</code>, <code>lapply</code> and <code>sapply</code> respectively. 
+They take an additional argument for the cluster to operate on.
+
+<code class="sourceCode r">parSapply(cl, Orange, mean, na.rm = TRUE)</code>
+
+<code>##          Tree           age circumference 
+##            NA      922.1429      115.8571</code>
+
+All the general advice and rules about <code>par*apply</code> apply as with the normal <code>*apply</code> functions.
+
+<h3>Close the cluster</h3>
+
+<code class="sourceCode r">stopCluster(cl)</code>
+
+This is not fully necessary, but is best practices. 
+If not stopped, the processes continue to run in the background, consuming resources, and any new processes can be slowed or delayed. 
+If you exit R, it should automatically close all processes also. 
+This <em>does not</em> delete the <code>cl</code> object, just the cluster it refers to in the background.
+
+Keep in mind that closing a cluster is equivalent to quitting R in each; anything saved there is lost and packages will need to be re-loaded.
+
+<h3>Continuing the example</h3>
+
+<code class="sourceCode r">cl &lt;- makeCluster(detectCores())
+clusterEvalQ(cl, library(lme4))</code>
+
+<code>## [[1]]
+## [1] "lme4"      "Matrix"    "stats"     "graphics"  "grDevices" "utils"    
+## [7] "datasets"  "methods"   "base"     
+## 
+## [[2]]
+## [1] "lme4"      "Matrix"    "stats"     "graphics"  "grDevices" "utils"    
+## [7] "datasets"  "methods"   "base"     
+## 
+## [[3]]
+## [1] "lme4"      "Matrix"    "stats"     "graphics"  "grDevices" "utils"    
+## [7] "datasets"  "methods"   "base"     
+## 
+## [[4]]
+## [1] "lme4"      "Matrix"    "stats"     "graphics"  "grDevices" "utils"    
+## [7] "datasets"  "methods"   "base"</code>
+
+<code class="sourceCode r">system.time(save3 &lt;- parLapply(cl, 1:100, f))</code>
+
+<code>##    user  system elapsed 
+##   0.095   0.017   1.145</code>
+
+<code class="sourceCode r">stopCluster(cl)</code>
+
+Timing this is tricky - if we just time the <code>parLapply</code> call we’re not capturing the time to open and close the cluster, and if we time the whole thing, we’re including the call to lme4. 
+To be completely fair, we need to include loading <code>lme4</code> in all three cases. 
+I do this outside of this Markdown file to ensure no added complications. 
+The three pieces of code were, with a complete restart of R after each:
+
+<code class="sourceCode r">### lapply
+library(parallel)
+f &lt;- function(i) {
+  lmer(Petal.Width ~ . 
+- Species + (1 | Species), data = iris)
+}
+
+system.time({
+  library(lme4)
+  save1 &lt;- lapply(1:100, f)
+})
+
+### mclapply
+library(parallel)
+f &lt;- function(i) {
+  lmer(Petal.Width ~ . 
+- Species + (1 | Species), data = iris)
+}
+
+system.time({
+  library(lme4)
+  save2 &lt;- mclapply(1:100, f)
+})
+
+### mclapply
+library(parallel)
+f &lt;- function(i) {
+  lmer(Petal.Width ~ . 
+- Species + (1 | Species), data = iris)
+}
+
+system.time({
+  cl &lt;- makeCluster(detectCores())
+  clusterEvalQ(cl, library(lme4))
+  save3 &lt;- parLapply(cl, 1:100, f)
+  stopCluster(cl)
+})</code>
+<table>
+<thead>
+<tr class="header">
+<th align="center">lapply</th>
+<th align="center">mclapply</th>
+<th align="center">parLapply</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">4.237</td>
+<td align="center">4.087</td>
+<td align="center">6.954</td>
+</tr>
+</tbody>
+</table>
+
+This shows the additional overhead that can occur with the socket approach - it can definitely be faster, but in this case the overhead which is added slows it down. 
+The individual running time of the single <code>parLapply</code> call is faster.
+
+<hr>
+<ol>
+<li id="fn1">
+Also known as “embarrassingly parallel” though I don’t like that term.<a href="#fnref1">↩</a>
+</li>
+<li id="fn2">
+In this situation, we would actually run <em>slower</em> because of the overhead!<a href="#fnref2">↩</a>
+</li>
+<li id="fn3">
+The flexibility of this to work across computers is what allows massive servers made up of many computers to work in parallel.<a href="#fnref3">↩</a>
+</li>
+<br>
+<br>
+
+<script>
+	var toc = $('#toc');
+	$('h2').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>
