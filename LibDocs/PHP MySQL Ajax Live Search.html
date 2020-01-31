@@ -1,0 +1,253 @@
+<html>
+<head>
+<title>PHP MySQL Ajax Live Search</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script type='text/javascript' src='../mainscript.js'></script>
+
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:22px;}
+strong, h1, h2 {color: gold;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style>
+</head>
+<body onkeypress="chkKey()">
+<center><h1>PHP MySQL Ajax Live Search</h1>
+<div id="toc"></div></center>
+<br>
+<br>
+<pre>
+https://www.tutorialrepublic.com/php-tutorial/php-mysql-ajax-live-search.php
+
+In this tutorial you'll learn how to create a live MySQL database search feature using PHP and Ajax.
+
+<h3>Step 1: Creating the Database Table</h3>
+Execute the following SQL query to create the <i>countries</i> table in your MySQL database.
+
+CREATE TABLE countries (
+    id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL
+);
+
+After creating the table, you need to populate it with some data using the SQL <code>INSERT</code> statement. 
+
+<h3>Step 2: Creating the Search Form</h3>
+Now, let's create a simple web interface that allows user to live search the names of countries available in our <i>countries</i> table, just like an autocomplete or typeahead.
+
+Create a PHP file named "search-form.php" and put the following code inside of it.
+
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+&lt;meta charset="UTF-8"&gt;
+&lt;title&gt;PHP Live MySQL Database Search&lt;/title&gt;
+
+&lt;script src="https://code.jquery.com/jquery-1.12.4.min.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+$(document).ready(function(){
+    $('.search-box input[type="text"]').on("keyup input", function(){
+        /* Get input value on change */
+        var inputVal = $(this).val();
+        var resultDropdown = $(this).siblings(".result");
+        if(inputVal.length){
+            $.get("backend-search.php", {term: inputVal}).done(function(data){
+                // Display the returned data in browser
+                resultDropdown.html(data);
+            });
+        } else{
+            resultDropdown.empty();
+        }
+    });
+    
+    // Set search input value on click of result item
+    $(document).on("click", ".result p", function(){
+        $(this).parents(".search-box").find('input[type="text"]').val($(this).text());
+        $(this).parent(".result").empty();
+    });
+});
+&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div class="search-box"&gt;
+        &lt;input type="text" autocomplete="off" placeholder="Search country..." /&gt;
+        &lt;div class="result"&gt;&lt;/div&gt;
+    &lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+
+Every time the content of search input is changed or keyup event occur on search input the jQuery code (<i>line no-47 to 67</i>) sent an Ajax request to the "backend-search.php" file which retrieves the records from <i>countries</i> table related to the searched term. 
+Those records later will be inserted inside a <code>&lt;div&gt;</code> by the jQuery and displayed on the browser.
+
+<h3>Step 3: Processing Search Query in Backend</h3>
+And here's the source code of our "backend-search.php" file which searches the database based on query string sent by the Ajax request and send the results back to browser.
+
+
+<h4>Example</h4>
+
+&lt;?php
+/* Attempt MySQL server connection. 
+Assuming you are running MySQL
+server with default setting (user 'root' with no password) */
+$link = mysqli_connect("localhost", "root", "", "demo");
+ 
+// Check connection
+if($link === false){
+    die("ERROR: Could not connect." . mysqli_connect_error());
+}
+ 
+if(isset($_REQUEST["term"])){
+    // Prepare a select statement
+    $sql = "SELECT * FROM countries WHERE name LIKE ?";
+    
+    if($stmt = mysqli_prepare($link, $sql)){
+// Bind variables to the prepared statement as parameters
+mysqli_stmt_bind_param($stmt, "s", $param_term);
+
+// Set parameters
+$param_term = $_REQUEST["term"] . '%';
+
+// Attempt to execute the prepared statement
+if(mysqli_stmt_execute($stmt)){
+    $result = mysqli_stmt_get_result($stmt);
+    
+    // Check number of rows in the result set
+    if(mysqli_num_rows($result) > 0){
+// Fetch result rows as an associative array
+while($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
+    echo "&lt;p&gt;" . $row["name"] . "&lt;/p&gt;";
+}
+    } else{
+echo "&lt;p&gt;No matches found&lt;/p&gt;";
+    }
+} else{
+    echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
+}
+    }
+     
+    // Close statement
+    mysqli_stmt_close($stmt);
+}
+ 
+// close connection
+mysqli_close($link);
+?&gt;
+
+&lt;?php
+/* Attempt MySQL server connection. 
+Assuming you are running MySQL
+server with default setting (user 'root' with no password) */
+$mysqli = new mysqli("localhost", "root", "", "demo");
+ 
+// Check connection
+if($mysqli === false){
+    die("ERROR: Could not connect. " . $mysqli->connect_error);
+}
+ 
+if(isset($_REQUEST["term"])){
+    // Prepare a select statement
+    $sql = "SELECT * FROM countries WHERE name LIKE ?";
+    
+    if($stmt = $mysqli->prepare($sql)){
+// Bind variables to the prepared statement as parameters
+$stmt->bind_param("s", $param_term);
+
+// Set parameters
+$param_term = $_REQUEST["term"] . '%';
+
+// Attempt to execute the prepared statement
+if($stmt->execute()){
+    $result = $stmt->get_result();
+    
+    // Check number of rows in the result set
+    if($result->num_rows > 0){
+// Fetch result rows as an associative array
+while($row = $result->fetch_array(MYSQLI_ASSOC)){
+    echo "&lt;p&gt;" . $row["name"] . "&lt;/p&gt;";
+}
+    } else{
+echo "&lt;p&gt;No matches found&lt;/p&gt;";
+    }
+} else{
+    echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
+}
+    }
+     
+    // Close statement
+    $stmt->close();
+}
+ 
+// Close connection
+$mysqli->close();
+?&gt;
+
+&lt;?php
+/* Attempt MySQL server connection. 
+Assuming you are running MySQL
+server with default setting (user 'root' with no password) */
+try{
+    $pdo = new PDO("mysql:host=localhost;dbname=demo", "root", "");
+    // Set the PDO error mode to exception
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch(PDOException $e){
+    die("ERROR: Could not connect. " . $e->getMessage());
+}
+ 
+// Attempt search query execution
+try{
+    if(isset($_REQUEST["term"])){
+// create prepared statement
+$sql = "SELECT * FROM countries WHERE name LIKE :term";
+$stmt = $pdo->prepare($sql);
+$term = $_REQUEST["term"] . '%';
+// bind parameters to statement
+$stmt->bindParam(":term", $term);
+// execute the prepared statement
+$stmt->execute();
+if($stmt->rowCount() > 0){
+    while($row = $stmt->fetch()){
+echo "&lt;p&gt;" . $row["name"] . "&lt;/p&gt;";
+    }
+} else{
+    echo "&lt;p&gt;No matches found&lt;/p&gt;";
+}
+    }  
+} catch(PDOException $e){
+    die("ERROR: Could not able to execute $sql. " . $e->getMessage());
+}
+ 
+// Close statement
+unset($stmt);
+ 
+// Close connection
+unset($pdo);
+?&gt;
+
+The SQL <code>SELECT</code> statement is used in combination with the <code>LIKE</code> operator (<i>line no-16</i>) to find the matching records in <i>countries</i> database table. 
+We've implemented the prepared statement for better search performance as well as to prevent the SQL injection attack.
+
+<strong>Note:</strong> Always filter and validate user input before using it in a SQL statement. 
+You can also use PHP <code>mysqli_real_escape_string()</code> function to escape special characters in a user input and create a legal SQL string to protect against SQL injection.
+
+<br>
+<br>
+<br>
+<br>
+
+<script>
+	var toc = $('#toc');
+	$('h2, h3,h4').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>

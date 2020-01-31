@@ -1,0 +1,741 @@
+<html>
+<head>
+<title>multi user role based admin</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script type='text/javascript' src='../mainscript.js'></script>
+
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:22px;}
+strong, h1, h2 {color: gold;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style>
+</head>
+<body onkeypress="chkKey()">
+<center><h1>multi user role based admin</h1>
+<div id="toc"></div></center>
+<br>
+<br>
+<br>
+<pre>
+https://www.thesoftwareguy.in/creating-multi-user-role-based-admin-using-php-mysql-bootstrap/
+
+<a id="view-demo" title="View Demo" target="_blank" href="http://demos.thesoftwareguy.in/multi-user-admin/" class="sc-button sc-button-medium sc-button-view-demo"><i class="fa fa-rocket"></i> View Demo</a>
+
+<h2>What is multi user role based admin?</h2>
+Suppose you have an online inventory store. 
+You have multiple employee each has their specific roles. 
+i.e some person are responsible for feeding data (Data Operator), some are responsible for customer support and some for sales. 
+In this case you don&#8217;t want all your modules/data to be available to every one of them. 
+So what you have to do is to assign a role to them, and then they will have the privilege to access limited data only.
+
+
+In this tutorial I am not going to make a full fledged admin panel. 
+I will show the trick using mysql database and php logic to create multi user admin. 
+Follow the steps below.
+
+<h3>Step 1. Create a database and add modules,system users, role and their rights.</h3>
+The first step is to create a database. 
+I have created a database named <strong>multi-admin</strong>. 
+Create some modules that you will be using in your application. 
+Check the sample sql below.
+
+Creating database and modules
+MySQL
+
+CREATE DATABASE `multi-admin`;
+USE `multi-admin`;
+
+CREATE TABLE IF NOT EXISTS `module` (
+  `mod_modulegroupcode` varchar(25) NOT NULL,
+  `mod_modulegroupname` varchar(50) NOT NULL,
+  `mod_modulecode` varchar(25) NOT NULL,
+  `mod_modulename` varchar(50) NOT NULL,
+  `mod_modulegrouporder` int(3) NOT NULL,
+  `mod_moduleorder` int(3) NOT NULL,
+  `mod_modulepagename` varchar(255) NOT NULL,
+  PRIMARY KEY (`mod_modulegroupcode`,`mod_modulecode`),
+  UNIQUE(`mod_modulecode`)
+) ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+Once you have created modules table, feed some data into it. 
+I have used purchases, sales, stocks and Shipping, payment and taxes. 
+So there are 6 modules in two groups.
+
+
+
+Add modules to the table
+MySQL
+
+INSERT INTO module (mod_modulegroupcode, mod_modulegroupname, mod_modulecode, mod_modulename, mod_modulegrouporder, mod_moduleorder, mod_modulepagename) VALUES 
+("INVT","Inventory", "PURCHASES","Purchases", 2, 1,'purchases.php'),
+("INVT","Inventory", "STOCKS","Stocks", 2, 2,'stocks.php'),
+("INVT","Inventory", "SALES","Sales", 2, 3,'sales.php'),
+("CHECKOUT","Checkout","SHIPPING","Shipping", 3, 1,'shipping.php'),
+("CHECKOUT","Checkout","PAYMENT","Payment", 3, 2,'payment.php'),
+("CHECKOUT","Checkout","TAX","Tax", 3, 3,'tax.php');
+
+Create roles that will be assigned to the admins.
+
+Creating some roles for admin
+MySQL
+
+CREATE TABLE IF NOT EXISTS `role` (
+  `role_rolecode` varchar(50) NOT NULL,
+  `role_rolename` varchar(50) NOT NULL,
+  PRIMARY KEY (`role_rolecode`)
+) ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+INSERT INTO `role` (`role_rolecode`, `role_rolename`) VALUES
+('SUPERADMIN', 'Super Admin'),
+('ADMIN', 'Administrator');
+
+Add system user/admin who will manage the application. 
+Assign each <strong>admin</strong> with a <strong>role</strong>.
+
+Add admin and assign them with a role
+MySQL
+
+CREATE TABLE IF NOT EXISTS `system_users` (
+  `u_userid` int(11) AUTO_INCREMENT  NOT NULL,
+  `u_username` varchar(100) NOT NULL,
+  `u_password` varchar(255) NOT NULL,
+  `u_rolecode` varchar(50) NOT NULL,
+  PRIMARY KEY (`u_userid`),
+  FOREIGN KEY (`u_rolecode`) REFERENCES `role` (`role_rolecode`)  ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+INSERT INTO `system_users` (`u_username`, `u_password`, `u_rolecode`) VALUES
+('shahrukh', '123456', 'SUPERADMIN'),
+('ronaldo', 'ronaldo', 'ADMIN');
+
+The final step is to give each <strong>role</strong> the privilege to access <strong>modules</strong>. 
+I have used 4 options i.e create, edit, view and delete.
+
+Access for each role to each modules
+MySQL
+
+INSERT INTO `role_rights` (`rr_rolecode`, `rr_modulecode`, `rr_create`, `rr_edit`, `rr_delete`, `rr_view`) VALUES
+('SUPERADMIN', 'PURCHASES', 'yes', 'yes', 'yes', 'yes'),
+('SUPERADMIN', 'STOCKS', 'yes', 'yes', 'yes', 'yes'),
+('SUPERADMIN', 'SALES', 'yes', 'yes', 'yes', 'yes'),
+('SUPERADMIN', 'SHIPPING', 'yes', 'yes', 'yes', 'yes'),
+('SUPERADMIN', 'PAYMENT', 'yes', 'yes', 'yes', 'yes'),
+('SUPERADMIN', 'TAX', 'yes', 'yes', 'yes', 'yes'),
+ 
+('ADMIN', 'PURCHASES', 'yes', 'yes', 'yes', 'yes'),
+('ADMIN', 'STOCKS', 'no', 'no', 'no', 'yes'),
+('ADMIN', 'SALES', 'no', 'no', 'no', 'no'),
+('ADMIN', 'SHIPPING', 'yes', 'yes', 'yes', 'yes'),
+('ADMIN', 'PAYMENT', 'no', 'no', 'no', 'yes'),
+('ADMIN', 'TAX', 'no', 'no', 'no', 'no');
+
+<h3>Step 2. Create files for every single modules.</h3>
+
+This step is very easy. 
+You have to create files for each modules based on names you have given in the database (module table). 
+Apart from the 6 pages that are given the database, you have to create 3 more pages viz. 
+<strong>login.php</strong> (user will login), <strong>dashboard.php</strong> (user will see the menu/modules), and <strong>logout.php</strong> (to clear the session).
+
+<h3>Step 3. Creating login form.</h3>
+
+If you have followed my earlier tutorials, you should know that I use PDO classes to access the database. 
+If you are new to PDO classes try learning it from a sample mini-project <a title="Simple address book with php and mysql using pdo" href="https://www.thesoftwareguy.in/simple-address-book-with-php-and-mysql-using-pdo/" target="_blank">Simple address book with php and mysql using pdo</a>.
+
+
+
+Login form
+XHTML
+
+&lt;form class="form-horizontal" name="contact_form" id="contact_form" method="post" action=""&gt;
+&lt;input type="hidden" name="mode" value="login" &gt;
+
+&lt;fieldset&gt;
+&lt;div class="form-group"&gt;
+&lt;label class="c2 control-label" for="username"&gt;&lt;span class="required"&gt;*&lt;/span&gt;Username:&lt;/label&gt;
+    &lt;div class="c6"&gt;
+&lt;input type="text" value="" placeholder="User Name" id="username" class="form-control" name="username" required="" &gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class="form-group"&gt;
+&lt;label class="c2 control-label" for="user_password"&gt;&lt;span class="required"&gt;*&lt;/span&gt;Password:&lt;/label&gt;
+    &lt;div class="c6"&gt;
+&lt;input type="password" value="" placeholder="Password" id="user_password" class="form-control" name="user_password" required="" &gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class="form-group"&gt;
+    &lt;div class="c6 coffset-2"&gt;
+            &lt;button class="btn btn-primary" type="submit"&gt;Submit&lt;/button&gt; 
+    &lt;/div&gt;
+&lt;/div&gt;
+&lt;/fieldset&gt;
+&lt;/form&gt;
+ &lt;form class="form-horizontal" name="contact_form" id="contact_form" method="post" action=""&gt;
+&lt;input type="hidden" name="mode" value="login" &gt;
+ 
+&lt;fieldset&gt;
+&lt;div class="form-group"&gt;
+&lt;label class="c2 control-label" for="username"&gt;&lt;span class="required"&gt;*&lt;/span&gt;Username:&lt;/label&gt;
+    &lt;div class="c6"&gt;
+&lt;input type="text" value="" placeholder="User Name" id="username" class="form-control" name="username" required="" &gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+ 
+&lt;div class="form-group"&gt;
+&lt;label class="c2 control-label" for="user_password"&gt;&lt;span class="required"&gt;*&lt;/span&gt;Password:&lt;/label&gt;
+    &lt;div class="c6"&gt;
+&lt;input type="password" value="" placeholder="Password" id="user_password" class="form-control" name="user_password" required="" &gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+ 
+&lt;div class="form-group"&gt;
+    &lt;div class="c6 coffset-2"&gt;
+            &lt;button class="btn btn-primary" type="submit"&gt;Submit&lt;/button&gt; 
+    &lt;/div&gt;
+&lt;/div&gt;
+&lt;/fieldset&gt;
+&lt;/form&gt;
+
+
+Create a file name config.php to set up basic configuration.
+
+database connection and other basic configuration
+error_reporting( E_ALL &amp;amp; ~E_DEPRECATED &amp;amp; ~E_NOTICE );
+ob_start();
+session_start();
+
+define('DB_DRIVER', 'mysql');
+define('DB_SERVER', 'localhost');
+define('DB_SERVER_USERNAME', 'root');
+define('DB_SERVER_PASSWORD', '');
+define('DB_DATABASE', 'multi-admin');
+
+define('PROJECT_NAME', 'Create Multi admin using php mysql and bootstrap library');
+$dboptions = array(
+              PDO::ATTR_PERSISTENT =&amp;gt; FALSE, 
+              PDO::ATTR_DEFAULT_FETCH_MODE =&amp;gt; PDO::FETCH_ASSOC, 
+              PDO::ATTR_ERRMODE =&amp;gt; PDO::ERRMODE_EXCEPTION,
+              PDO::MYSQL_ATTR_INIT_COMMAND =&amp;gt; 'SET NAMES utf8',
+            );
+
+try {
+  $DB = new PDO(DB_DRIVER.':host='.DB_SERVER.';dbname='.DB_DATABASE, DB_SERVER_USERNAME, DB_SERVER_PASSWORD , $dboptions);  
+} catch (Exception $ex) {
+  echo $ex-&amp;gt;getMessage();
+  die;
+}
+
+require_once 'functions.php';
+
+//get error/success messages
+if ($_SESSION["errorType"] != "" &amp;amp;&amp;amp; $_SESSION["errorMsg"] != "" ) {
+    $ERROR_TYPE = $_SESSION["errorType"];
+    $ERROR_MSG = $_SESSION["errorMsg"];
+    $_SESSION["errorType"] = "";
+    $_SESSION["errorMsg"] = "";
+}
+
+Validating user login using PHP
+
+validating user login
+PHP
+
+$mode = $_REQUEST["mode"];
+if ($mode == "login") {
+    $username = trim($_POST['username']);
+    $pass = trim($_POST['user_password']);
+
+    if ($username == "" || $pass == "") {
+
+        $_SESSION["errorType"] = "danger";
+        $_SESSION["errorMsg"] = "Enter manadatory fields";
+    } else {
+        $sql = "SELECT * FROM system_users WHERE u_username = :uname AND u_password = :upass ";
+
+        try {
+            $stmt = $DB-&gt;prepare($sql);
+
+            // bind the values
+            $stmt-&gt;bindValue(":uname", $username);
+            $stmt-&gt;bindValue(":upass", $pass);
+
+            // execute Query
+            $stmt-&gt;execute();
+            $results = $stmt-&gt;fetchAll();
+
+            if (count($results) &gt; 0) {
+                $_SESSION["errorType"] = "success";
+                $_SESSION["errorMsg"] = "You have successfully logged in.";
+
+                $_SESSION["user_id"] = $results[0]["u_userid"];
+                $_SESSION["rolecode"] = $results[0]["u_rolecode"];
+                $_SESSION["username"] = $results[0]["u_username"];
+
+                redirect("dashboard.php");
+                exit;
+            } else {
+                $_SESSION["errorType"] = "info";
+                $_SESSION["errorMsg"] = "username or password does not exist.";
+            }
+        } catch (Exception $ex) {
+
+            $_SESSION["errorType"] = "danger";
+            $_SESSION["errorMsg"] = $ex-&gt;getMessage();
+        }
+    }
+   // redirect function is found in functions.php page
+    redirect("index.php");
+}
+
+$mode = $_REQUEST["mode"];
+if ($mode == "login") {
+    $username = trim($_POST['username']);
+    $pass = trim($_POST['user_password']);
+ 
+    if ($username == "" || $pass == "") {
+ 
+        $_SESSION["errorType"] = "danger";
+        $_SESSION["errorMsg"] = "Enter manadatory fields";
+    } else {
+        $sql = "SELECT * FROM system_users WHERE u_username = :uname AND u_password = :upass ";
+ 
+        try {
+            $stmt = $DB-&gt;prepare($sql);
+ 
+            // bind the values
+            $stmt-&gt;bindValue(":uname", $username);
+            $stmt-&gt;bindValue(":upass", $pass);
+ 
+            // execute Query
+            $stmt-&gt;execute();
+            $results = $stmt-&gt;fetchAll();
+ 
+            if (count($results) &gt; 0) {
+                $_SESSION["errorType"] = "success";
+                $_SESSION["errorMsg"] = "You have successfully logged in.";
+ 
+                $_SESSION["user_id"] = $results[0]["u_userid"];
+                $_SESSION["rolecode"] = $results[0]["u_rolecode"];
+                $_SESSION["username"] = $results[0]["u_username"];
+ 
+                redirect("dashboard.php");
+                exit;
+            } else {
+                $_SESSION["errorType"] = "info";
+                $_SESSION["errorMsg"] = "username or password does not exist.";
+            }
+        } catch (Exception $ex) {
+ 
+            $_SESSION["errorType"] = "danger";
+            $_SESSION["errorMsg"] = $ex-&gt;getMessage();
+        }
+    }
+   // redirect function is found in functions.php page
+    redirect("index.php");
+}
+
+
+Once you are logged in you are redirected to <strong>dashboard.php</strong> where you will see the menu/modules that are assigned as per your role. 
+Your <strong>role</strong> is <strong>saved in session</strong> when you are logged in.
+
+
+
+Fetch the modules based on roles.
+PHP
+
+// if the rights are not set then add them in the current session
+if (!isset($_SESSION["access"])) {
+
+    try {
+
+        $sql = "SELECT mod_modulegroupcode, mod_modulegroupname FROM module "
+                . 
+" WHERE 1 GROUP BY `mod_modulegroupcode` "
+                . 
+" ORDER BY `mod_modulegrouporder` ASC, `mod_moduleorder` ASC  ";
+
+        $stmt = $DB-&gt;prepare($sql);
+        $stmt-&gt;execute();
+        // modules group
+        $commonModules = $stmt-&gt;fetchAll();
+
+        $sql = "SELECT mod_modulegroupcode, mod_modulegroupname, mod_modulepagename,  mod_modulecode, mod_modulename FROM module "
+                . 
+" WHERE 1 "
+                . 
+" ORDER BY `mod_modulegrouporder` ASC, `mod_moduleorder` ASC  ";
+
+        $stmt = $DB-&gt;prepare($sql);
+        $stmt-&gt;execute();
+        // all modules
+        $allModules = $stmt-&gt;fetchAll();
+
+        $sql = "SELECT rr_modulecode, rr_create,  rr_edit, rr_delete, rr_view FROM role_rights "
+                . 
+" WHERE  rr_rolecode = :rc "
+                . 
+" ORDER BY `rr_modulecode` ASC  ";
+
+        $stmt = $DB-&gt;prepare($sql);
+        $stmt-&gt;bindValue(":rc", $_SESSION["rolecode"]);
+
+        $stmt-&gt;execute();
+        // modules based on user role
+        $userRights = $stmt-&gt;fetchAll();
+
+        $_SESSION["access"] = set_rights($allModules, $userRights, $commonModules);
+
+    } catch (Exception $ex) {
+
+        echo $ex-&gt;getMessage();
+    }
+}
+// if the rights are not set then add them in the current session
+if (!isset($_SESSION["access"])) {
+ 
+    try {
+ 
+        $sql = "SELECT mod_modulegroupcode, mod_modulegroupname FROM module "
+                . " WHERE 1 GROUP BY `mod_modulegroupcode` "
+                . " ORDER BY `mod_modulegrouporder` ASC, `mod_moduleorder` ASC  ";
+ 
+        $stmt = $DB-&gt;prepare($sql);
+        $stmt-&gt;execute();
+        // modules group
+        $commonModules = $stmt-&gt;fetchAll();
+ 
+        $sql = "SELECT mod_modulegroupcode, mod_modulegroupname, mod_modulepagename,  mod_modulecode, mod_modulename FROM module "
+                . " WHERE 1 "
+                . " ORDER BY `mod_modulegrouporder` ASC, `mod_moduleorder` ASC  ";
+ 
+        $stmt = $DB-&gt;prepare($sql);
+        $stmt-&gt;execute();
+        // all modules
+        $allModules = $stmt-&gt;fetchAll();
+ 
+        $sql = "SELECT rr_modulecode, rr_create,  rr_edit, rr_delete, rr_view FROM role_rights "
+                . " WHERE  rr_rolecode = :rc "
+                . " ORDER BY `rr_modulecode` ASC  ";
+ 
+        $stmt = $DB-&gt;prepare($sql);
+        $stmt-&gt;bindValue(":rc", $_SESSION["rolecode"]);
+ 
+        $stmt-&gt;execute();
+        // modules based on user role
+        $userRights = $stmt-&gt;fetchAll();
+ 
+        $_SESSION["access"] = set_rights($allModules, $userRights, $commonModules);
+ 
+    } catch (Exception $ex) {
+ 
+        echo $ex-&gt;getMessage();
+    }
+}
+
+
+In the above script all the data are passed into a function named <strong>set_rights()</strong> which return an array based on user roles.
+
+
+
+set_rights()  returns user role in an array
+PHP
+
+function set_rights($menus, $menuRights, $topmenu) {
+    $data = array();
+
+    for ($i = 0, $c = count($menus); $i &lt; $c; $i++) {
+
+        $row = array();
+        for ($j = 0, $c2 = count($menuRights); $j &lt; $c2; $j++) {
+            if ($menuRights[$j]["rr_modulecode"] == $menus[$i]["mod_modulecode"]) {
+                if (authorize($menuRights[$j]["rr_create"]) || authorize($menuRights[$j]["rr_edit"]) ||
+                        authorize($menuRights[$j]["rr_delete"]) || authorize($menuRights[$j]["rr_view"])
+                ) {
+
+                    $row["menu"] = $menus[$i]["mod_modulegroupcode"];
+                    $row["menu_name"] = $menus[$i]["mod_modulename"];
+                    $row["page_name"] = $menus[$i]["mod_modulepagename"];
+                    $row["create"] = $menuRights[$j]["rr_create"];
+                    $row["edit"] = $menuRights[$j]["rr_edit"];
+                    $row["delete"] = $menuRights[$j]["rr_delete"];
+                    $row["view"] = $menuRights[$j]["rr_view"];
+
+                    $data[$menus[$i]["mod_modulegroupcode"]][$menuRights[$j]["rr_modulecode"]] = $row;
+                    $data[$menus[$i]["mod_modulegroupcode"]]["top_menu_name"] = $menus[$i]["mod_modulegroupname"];
+                }
+            }
+        }
+    }
+
+    return $data;
+}
+
+// this function is used by set_rights() function
+function authorize($module) {
+    return $module == "yes" ? TRUE : FALSE;
+}
+
+function set_rights($menus, $menuRights, $topmenu) {
+    $data = array();
+ 
+    for ($i = 0, $c = count($menus); $i &lt; $c; $i++) {
+ 
+        $row = array();
+        for ($j = 0, $c2 = count($menuRights); $j &lt; $c2; $j++) {
+            if ($menuRights[$j]["rr_modulecode"] == $menus[$i]["mod_modulecode"]) {
+                if (authorize($menuRights[$j]["rr_create"]) || authorize($menuRights[$j]["rr_edit"]) ||
+                        authorize($menuRights[$j]["rr_delete"]) || authorize($menuRights[$j]["rr_view"])
+                ) {
+ 
+                    $row["menu"] = $menus[$i]["mod_modulegroupcode"];
+                    $row["menu_name"] = $menus[$i]["mod_modulename"];
+                    $row["page_name"] = $menus[$i]["mod_modulepagename"];
+                    $row["create"] = $menuRights[$j]["rr_create"];
+                    $row["edit"] = $menuRights[$j]["rr_edit"];
+                    $row["delete"] = $menuRights[$j]["rr_delete"];
+                    $row["view"] = $menuRights[$j]["rr_view"];
+ 
+                    $data[$menus[$i]["mod_modulegroupcode"]][$menuRights[$j]["rr_modulecode"]] = $row;
+                    $data[$menus[$i]["mod_modulegroupcode"]]["top_menu_name"] = $menus[$i]["mod_modulegroupname"];
+                }
+            }
+        }
+    }
+ 
+    return $data;
+}
+ 
+// this function is used by set_rights() function
+function authorize($module) {
+    return $module == "yes" ? TRUE : FALSE;
+}
+
+
+Once you have all the modules based on your role in a session variable. 
+Display it as list menu.
+
+
+
+Displaying menu as a list
+
+PHP
+
+ &lt;ul&gt;
+    &lt;?php foreach ($_SESSION["access"] as $key =&gt; $access) { ?&gt;
+        &lt;li&gt;
+            &lt;?php echo $access["top_menu_name"]; ?&gt;
+            &lt;?php
+                        echo '&lt;ul&gt;';
+                        foreach ($access as $k =&gt; $val) {
+                            if ($k != "top_menu_name") {
+                                echo '&lt;li&gt;&lt;a href="' . 
+($val["page_name"]) . 
+'"&gt;' . 
+$val["menu_name"] . 
+'&lt;/a&gt;&lt;/li&gt;';
+                                ?&gt;
+                    &lt;?php
+                            }
+                        }
+                        echo '&lt;/ul&gt;';
+                        ?&gt;
+        &lt;/li&gt;
+        &lt;?php
+                }
+                ?&gt;
+&lt;/ul&gt; &lt;ul&gt;
+    &lt;?php foreach ($_SESSION["access"] as $key =&gt; $access) { ?&gt;
+        &lt;li&gt;
+            &lt;?php echo $access["top_menu_name"]; ?&gt;
+            &lt;?php
+                        echo '&lt;ul&gt;';
+                        foreach ($access as $k =&gt; $val) {
+                            if ($k != "top_menu_name") {
+                                echo '&lt;li&gt;&lt;a href="' . ($val["page_name"]) . '"&gt;' . $val["menu_name"] . '&lt;/a&gt;&lt;/li&gt;';
+                                ?&gt;
+                    &lt;?php
+                            }
+                        }
+                        echo '&lt;/ul&gt;';
+                        ?&gt;
+        &lt;/li&gt;
+        &lt;?php
+                }
+                ?&gt;
+&lt;/ul&gt;
+<h3>Step 4. Conditional checking for each modules functionality.</h3>
+
+In this step you have to manually check write a security check for a module functionaliy. 
+Let say user has the right to create, edit and view purchases but not delete it. 
+In this case you have to add a conditional checking before each buttons/links. 
+See a sample below for purchases.php page module.
+
+
+
+purchases.php adding conditional checking for each functions
+&lt;!-- for creating purchase function --&gt;
+&lt;?php if (authorize($_SESSION["access"]["INVT"]["PURCHASES"]["create"])) { ?&gt;
+&lt;button class="btn btn-sm btn-primary" type="button"&gt;&lt;i class="fa fa-plus"&gt;&lt;/i&gt; ADD PURCHASE&lt;/button&gt; 
+&lt;?php } ?&gt;
+
+&lt;!-- for updating purchase function --&gt;
+&lt;?php if (authorize($_SESSION["access"]["INVT"]["PURCHASES"]["edit"])) { ?&gt;
+&lt;button class="btn btn-sm btn-info" type="button"&gt;&lt;i class="fa fa-edit"&gt;&lt;/i&gt; EDIT&lt;/button&gt; 
+&lt;?php } ?&gt;
+
+&lt;!-- for view purchase function --&gt;
+&lt;?php if (authorize($_SESSION["access"]["INVT"]["PURCHASES"]["view"])) { ?&gt;
+&lt;button class="btn btn-sm btn-warning" type="button"&gt;&lt;i class="fa fa-search-plus"&gt;&lt;/i&gt; VIEW&lt;/button&gt;
+&lt;?php } ?&gt;
+
+&lt;!-- for delete purchase function --&gt;
+&lt;?php if (authorize($_SESSION["access"]["INVT"]["PURCHASES"]["delete"])) { ?&gt;
+&lt;button class="btn btn-sm btn-danger" type="button"&gt;&lt;i class="fa fa-trash-o"&gt;&lt;/i&gt; DELETE&lt;/button&gt;
+&lt;?php } ?&gt;
+
+
+&lt;!-- for creating purchase function --&gt;
+&lt;?php if (authorize($_SESSION["access"]["INVT"]["PURCHASES"]["create"])) { ?&gt;
+&lt;button class="btn btn-sm btn-primary" type="button"&gt;&lt;i class="fa fa-plus"&gt;&lt;/i&gt; ADD PURCHASE&lt;/button&gt; 
+&lt;?php } ?&gt;
+ 
+&lt;!-- for updating purchase function --&gt;
+&lt;?php if (authorize($_SESSION["access"]["INVT"]["PURCHASES"]["edit"])) { ?&gt;
+&lt;button class="btn btn-sm btn-info" type="button"&gt;&lt;i class="fa fa-edit"&gt;&lt;/i&gt; EDIT&lt;/button&gt; 
+&lt;?php } ?&gt;
+ 
+&lt;!-- for view purchase function --&gt;
+&lt;?php if (authorize($_SESSION["access"]["INVT"]["PURCHASES"]["view"])) { ?&gt;
+&lt;button class="btn btn-sm btn-warning" type="button"&gt;&lt;i class="fa fa-search-plus"&gt;&lt;/i&gt; VIEW&lt;/button&gt;
+&lt;?php } ?&gt;
+ 
+&lt;!-- for delete purchase function --&gt;
+&lt;?php if (authorize($_SESSION["access"]["INVT"]["PURCHASES"]["delete"])) { ?&gt;
+&lt;button class="btn btn-sm btn-danger" type="button"&gt;&lt;i class="fa fa-trash-o"&gt;&lt;/i&gt; DELETE&lt;/button&gt;
+&lt;?php } ?&gt;
+<h3>Step 5. Validation for logged in and non-logged in user.</h3>
+
+Another security checking, you can add this checking for individual page. 
+check the two test cases below.
+
+<ul>
+<li>If user is logged in and trying to access login page. 
+User will be redirected to dashboard.</li>
+<li>If user is not logged in and trying to access any page expect login page. 
+User will be redirected to login page.</li>
+</ul>
+
+Admin security check.
+PHP
+
+// paste this in login page
+if (isset($_SESSION["user_id"]) &amp;&amp; $_SESSION["user_id"] != "") {
+    // if logged in send to dashboard page
+    redirect("dashboard.php");
+}
+
+// paste this in any page which require admin authorization
+if (!isset($_SESSION["user_id"]) || $_SESSION["user_id"] == "") {
+    // not logged in send to login page
+    redirect("index.php");
+}
+
+
+// paste this in login page
+if (isset($_SESSION["user_id"]) &amp;&amp; $_SESSION["user_id"] != "") {
+    // if logged in send to dashboard page
+    redirect("dashboard.php");
+}
+ 
+// paste this in any page which require admin authorization
+if (!isset($_SESSION["user_id"]) || $_SESSION["user_id"] == "") {
+    // not logged in send to login page
+    redirect("index.php");
+}
+
+
+You can also add another layer of security check for each modules pages if you want. 
+In case if user is trying to access a modules using direct page URL but is not assigned for, they must not passed this security check.
+
+
+
+Page level security check
+PHP
+
+$status = FALSE;
+if ( authorize($_SESSION["access"]["INVT"]["PURCHASES"]["create"]) || 
+authorize($_SESSION["access"]["INVT"]["PURCHASES"]["edit"]) || 
+authorize($_SESSION["access"]["INVT"]["PURCHASES"]["view"]) || 
+authorize($_SESSION["access"]["INVT"]["PURCHASES"]["delete"]) ) {
+ $status = TRUE;
+}
+
+if ($status === FALSE) {
+die("You dont have the permission to access this page");
+}
+
+
+$status = FALSE;
+if ( authorize($_SESSION["access"]["INVT"]["PURCHASES"]["create"]) || 
+authorize($_SESSION["access"]["INVT"]["PURCHASES"]["edit"]) || 
+authorize($_SESSION["access"]["INVT"]["PURCHASES"]["view"]) || 
+authorize($_SESSION["access"]["INVT"]["PURCHASES"]["delete"]) ) {
+ $status = TRUE;
+}
+ 
+if ($status === FALSE) {
+die("You dont have the permission to access this page");
+}
+<h3>Step 6. Logout Page.</h3>
+
+The step is just for clearing the session and redirecting user back to login page.
+
+
+
+logout.php
+PHP
+
+session_start();
+$_SESSION = array();
+unset($_SESSION);
+session_destroy();
+header("location:index.php");
+exit;
+
+session_start();
+$_SESSION = array();
+unset($_SESSION);
+session_destroy();
+header("location:index.php");
+exit;
+
+
+<a id="view-demo" title="View Demo" target="_blank" href="http://demos.thesoftwareguy.in/multi-user-admin/" class="sc-button sc-button-medium sc-button-view-demo"><i class="fa fa-rocket"></i> View Demo</a><br />
+<a href="#" name="pay"></a><a title="Download File" id="download-file" target="_blank" href="https://app.box.com/s/bzkb3x94rojnnpvi328d" class="sc-button sc-button-medium sc-button-download-file"><i class="fa fa-download"></i> Download</a>
+
+<br>
+<br>
+<br>
+<br>
+
+<script>
+	var toc = $('#toc');
+	$('h2, h3').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>
+
