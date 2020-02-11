@@ -24,7 +24,7 @@ function chkKey() {
   if(testkey == 'f'){window.open("http://williamkpchan.github.io/ForexChart.htm");}
   if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
   if(testkey == 'g'){window.location = '#_youxi';}
-  if(testkey == 'G'){window.open("https://www.amap.com/");}
+  if(testkey == 'G'){window.open("https://www.guancha.cn");}
   if(testkey == 'h'){window.open("LibDocs/News Points.html");}
   if(testkey == 'H'){window.open("LibDocs/monitorHSI.html");}
   if(testkey == 'i'){window.open('http://www.iciba.com');}
@@ -37,9 +37,14 @@ function chkKey() {
   if(testkey == 'N'){window.location = '#Notes';}
 
   if(testkey == 'o'){window.location = '#sclj';}
+  if(testkey == 'O'){window.open("LibDocs/extractOHLCV2.html");}
+
   if(testkey == 'P'){window.location = '#Python';}
   if(testkey == 'p'){window.location = '#Programming';}
+
   if(testkey == 'q'){window.open('https://www.quora.com/');}
+  if(testkey == 'Q'){window.open('https://news.qq.com/zt2020/page/feiyan.htm');}
+
   if(testkey == 'r'){window.location = '#Rlang';}
   if(testkey == 's'){window.open("stkListVH.html");}
   if(testkey == 'S'){showMMA();}
@@ -60,18 +65,18 @@ function chkKey() {
 
 function getChar(event) {
   if (event.which!=0 && event.charCode!=0) {
-    return String.fromCharCode(event.which)   // the rest
+    return String.fromCharCode(event.which);   // the rest
   } else {
-    return null // special key
+    return null; // special key
   }
 }
 
 function askList() {
-	var inputList = prompt("CodeList, Number (5 digits) sep by space： ", "");
-	if (inputList != null && inputList != "") {
-		if (inputList != "HSI") { theList = inputList.split(" ");}
-	}
-	showAllCharts();
+    var inputList = prompt("CodeList, Number (5 digits) sep by space： ", "");
+    if (inputList != null && inputList != "") {
+        if (inputList != "HSI") { theList = inputList.split(" ");}
+    }
+    showAllCharts();
 }
 
 function showChart() {
@@ -81,9 +86,9 @@ function showChart() {
 
 function showBoth(stkcode) {
      if (stkcode != "HSI") { stkcode = FormatNumberLength5(stkcode);}
-	localStorage.otherCode = stkcode;
-	window.open("file:///D:/Dropbox/Public/LibDocs/OHLCOtherCode.html");
-	sCt(stkcode);
+    localStorage.otherCode = stkcode;
+    window.open("file:///D:/Dropbox/Public/LibDocs/OHLCOtherCode.html");
+    sCt(stkcode);
 }
 function sCt(stkcode) {
   imgHead = "<img src='http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=3&indpara1=3&indpara2=5&indpara3=10&indpara4=15&indpara5=20&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&subChart3=12&ref3para1=0&ref3para2=0&ref3para3=0&scheme=3&com=100&chartwidth=1050&chartheight=690&stockid=";
@@ -108,7 +113,7 @@ function sCt(stkcode) {
   newsStr = newshead + stkcode + newstail
   imgAdr = "<script type='text/javascript' src='mainscript.js'></script>\n <style>body { background-color: black; color: green} a { text-decoration: none; color: #28B8B8;}</style><body onkeypress='chkKey()'><center>" +"<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>" 
 
-  for( var imgPeriod = 0; imgPeriod < intv.length; imgPeriod++){
+  for( imgPeriod = 0; imgPeriod < intv.length; imgPeriod++){
     imgAdr = imgAdr + imgHead + stkcode + imgPCode + intv[imgPeriod] + imgTail + imgHead2 + stkcode + imgPCode + intv[imgPeriod] + imgTail;
   };
   imgWindow.document.write(imgAdr);
@@ -132,22 +137,38 @@ function sCtmin(stkcode) {
   // 5000, 5007, 5012, 1, 2, 3, 4, 6, 7, 9, 10, 12, 14, 16, 17, 18
   intv = [7, 4, 5000, 5007, 3, 2, 1, 11, 12];
   var imgWindow = window.open("");
-  
+
 //change
 //http://www.aastocks.com/tc/stocks/analysis/stock-aafn/2208/0/all/1
 //to
 //newshead = "http://www.aastocks.com/tc/ltp/rtquote.aspx?symbol="
 //newstail = ".HK"
 
-  newshead = "http://www.aastocks.com/tc/ltp/rtquote.aspx?symbol="
-  newstail = ".HK"
-  newsStr = newshead + stkcode + newstail
-  imgAdr = "<style>body { background-color: black; color: green} a { text-decoration: none; color: #28B8B8;}</style><body><center>" +"<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>" 
-
-  for( var imgPeriod = 0; imgPeriod < intv.length; imgPeriod++){
+  newshead = "http://www.aastocks.com/tc/ltp/rtquote.aspx?symbol=";
+  newstail = ".HK";
+  newsStr = newshead + stkcode + newstail;
+  imgAdr = "<style>body { background-color: black; color: green} a { text-decoration: none; color: #28B8B8;}</style><body><center>" +"<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>";
+  for( imgPeriod = 0; imgPeriod < intv.length; imgPeriod++){
     imgAdr = imgAdr + imgHead + stkcode + imgPCode + intv[imgPeriod] + imgTail + imgHead2 + stkcode + imgPCode + intv[imgPeriod] + imgTail;
   };
   imgWindow.document.write(imgAdr);
+}
+
+function openLogFile() {
+    var d = new Date();
+    var curr_date = d.getDate();
+    var curr_month = d.getMonth()+1;
+    var curr_year = d.getFullYear();
+    dateNum = last2Digit(curr_year) +last2Digit(curr_month) +last2Digit(curr_date)
+    fileHeader = "file:///C:/Users/User/Desktop/" + dateNum;
+
+    filenameUp = fileHeader + "/mylist AAURec" + dateNum + ".html";
+    window.open(filenameUp);
+
+    filenameDn = fileHeader + "/mylist AADRec" + dateNum + ".html";
+    setTimeout(function(){ window.open(filenameDn, "down"); }, 500);
+    filenameLog = fileHeader + "/mylist APC5UpLog" + dateNum + ".html";
+    setTimeout(function(){ window.open(filenameLog, "Log"); }, 500);
 }
 
 function showDate() {
@@ -157,23 +178,27 @@ function showDate() {
     var curr_date = d.getDate();
     var curr_month = d.getMonth(); //months are zero based
     var curr_year = d.getFullYear();
-    var datemsg = days[d.getDay()] + ", " + curr_date + " " + months[d.getMonth()] + ", " + curr_year
-    return(datemsg)
+    var datemsg = days[d.getDay()] + ", " + curr_date + " " + months[d.getMonth()] + ", " + curr_year;
+    return(datemsg);
 }
 
 function showTime() {
-	var d = new Date();
-	var secs=d.getSeconds();
-	var mins=d.getMinutes();
-	var hr=d.getHours();
-	var timemsg = FormatNumberLength(hr) + ":" + FormatNumberLength(mins) + ":" + FormatNumberLength(secs)
-	return(timemsg)
+    var d = new Date();
+    var secs=d.getSeconds();
+    var mins=d.getMinutes();
+    var hr=d.getHours();
+    var timemsg = FormatNumberLength(hr) + ":" + FormatNumberLength(mins) + ":" + FormatNumberLength(secs)
+    return(timemsg)
 }
 
 function showDateAndTime() {
-	var theDateTime = showDate() +" "+ showTime();
-	document.getElementById("dateAndTime").innerHTML = theDateTime;
+    var theDateTime = showDate() +" "+ showTime();
+    document.getElementById("dateAndTime").innerHTML = theDateTime;
 }
+
+function last2Digit(aNum) {
+    return(("0" + aNum).slice(-2))
+};
 
 function FormatNumberLength(num) {
     var r = "" + num;
@@ -184,10 +209,10 @@ function FormatNumberLength(num) {
 }
 
 function oMMA(thecode) {
-	if(typeof(Storage) !== "undefined") {
-		localStorage.stkCode = thecode;
-		window.open("LibDocs/minMACharts.html");
-	}
+    if(typeof(Storage) !== "undefined") {
+        localStorage.stkCode = thecode;
+        window.open("LibDocs/minMACharts.html");
+    }
 }
 
 function showMMA() {
