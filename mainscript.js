@@ -81,7 +81,7 @@ function askList() {
 
 function showChart() {
     var thecode = prompt("Code Number:", "");
-    if (thecode != null && thecode != "") {sCt(thecode);}
+    if (thecode != null && thecode != "") {showBoth(thecode);}
 }
 
 function showBoth(stkcode) {
