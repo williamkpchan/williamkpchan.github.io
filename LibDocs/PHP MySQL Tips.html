@@ -1,0 +1,412 @@
+<html>
+<head>
+<title>PHP MySQL Tips</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script type='text/javascript' src='../mainscript.js'></script>
+
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:22px;}
+strong, h1, h2 {color: gold;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style>
+</head>
+<body onkeypress="chkKey()">
+<center>
+<h1>PHP MySQL Tips</h1>
+<div id="toc"></div></center>
+
+<pre>
+<br>
+<br>
+<br>
+<h2>Open a Connection to MySQL</h2>
+Before we can access data in the MySQL database, we need to be able to connect to the server:
+
+<h3> - Example (MySQLi Object-Oriented)</h3>
+&lt;?php
+$servername = "localhost"; // note: hostname is the same meaning
+$username = "username";
+$password = "password";
+// may add database name here
+
+// Create connection
+$conn = new mysqli($servername, $username, $password);
+
+// Check connection
+if ($conn-&gt;connect_error) {
+    die("Connection failed: " . $conn-&gt;connect_error);
+}
+echo "Connected successfully";
+?&gt;
+
+<h2>PHP MySQL Update Data</h2>
+&lt;?php
+$servername = &quot;localhost&quot;;
+$username = &quot;username&quot;;
+$password = &quot;password&quot;;
+$dbname = &quot;myDB&quot;;
+
+// Create connection
+$conn = new mysqli($servername, $username, $password, $dbname);
+ // Check connection
+ if ($conn-&gt;connect_error) {
+    die(&quot;Connection failed: &quot; . $conn-&gt;connect_error);
+}
+$sql = &quot;UPDATE MyGuests SET lastname='Doe' WHERE id=2&quot;;
+if ($conn-&gt;query($sql) === TRUE) {
+    echo &quot;Record updated successfully&quot;;
+} else {
+    echo &quot;Error updating record: &quot; . $conn-&gt;error;
+}
+$conn-&gt;close();
+?&gt;
+
+<h2>Login sample</h2>
+dbconnection.php
+&lt;?php
+$con=$mysqli = new mysqli("localhost", "root", "asdf1234", "ptmsdb");
+?>
+
+&lt;?php
+  session_start();
+  error_reporting(0);
+  include('includes/dbconnection.php');
+  
+  if(isset($_POST['login'])) {
+    $adminuser=$_POST['username'];
+    $password=md5($_POST['password']);
+    $query=mysqli_query($con,"select ID from tbladmin where UserName='$adminuser' && Password='$password' ");
+    $ret=mysqli_fetch_array($query);
+    if($ret>0){
+      $_SESSION['ptmsaid']=$ret['ID'];
+      header('location:dashboard.php');
+    } else {
+    echo '&lt;script>alert("Invalid Detail.")&lt;/script>';
+    }
+  }
+?>
+
+&lt;form action="#" method="post" name="login">
+ &lt;?php if($msg){ echo $msg; }  ?>&lt;br>
+Please sign in!&lt;br>
+&lt;label for="username">User Name&lt;/label>&lt;br>
+&lt;input type="text" id="username" name="username" required="true">
+&lt;br>
+&lt;label for="password">Password&lt;/label>&lt;br>
+&lt;input type="password" id="password" name="password" required="true">&lt;br>
+&lt;button id="form_submit" type="submit" name="login">Submit&lt;/button>&lt;br>
+&lt;a href="forgot-password.php">Forgot Password?&lt;/a>&lt;br>
+&lt;/form>
+
+<h2>Insert Data from an HTML Form</h2>
+
+&lt;?php
+$link = mysqli_connect("localhost", "root", "", "demo");
+
+// Check connection
+if($link === false){
+    die("ERROR: Could not connect. " . mysqli_connect_error());
+}
+
+// Escape user inputs for security
+$first_name = mysqli_real_escape_string($link, $_REQUEST['first_name']);
+$last_name = mysqli_real_escape_string($link, $_REQUEST['last_name']);
+$email = mysqli_real_escape_string($link, $_REQUEST['email']);
+ 
+// Attempt insert query execution
+$sql = "INSERT INTO persons (first_name, last_name, email) VALUES ('$first_name', '$last_name', '$email')";
+if(mysqli_query($link, $sql)){
+    echo "Records added successfully.";
+} else{
+    echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
+}
+
+// Close connection
+mysqli_close($link);
+?>
+
+&lt;form action="insert.php" method="post">
+        &lt;label for="firstName">First Name:&lt;/label>
+        &lt;input type="text" name="first_name" id="firstName">
+        &lt;label for="lastName">Last Name:&lt;/label>
+        &lt;input type="text" name="last_name" id="lastName">
+        &lt;label for="emailAddress">Email Address:&lt;/label>
+        &lt;input type="text" name="email" id="emailAddress">
+    &lt;input type="submit" value="Submit">
+&lt;/form>
+
+<h2>Update ticket</h2>
+&lt;?php
+session_start();
+include('includes/dbconnection.php');
+error_reporting(0);
+if (strlen($_SESSION['ptmsaid']==0)) {
+  header('location:logout.php');
+} else{
+  if(isset($_POST['submit'])){
+    $tid=$_GET['editid'];
+    $tpype=$_POST['tickettype'];
+    $tprice=$_POST['tprice'];
+    $query=mysqli_query($con, "update tbltickettype set TicketType='$tpype',Price='$tprice' where ID='$tid'");
+    if ($query) {
+      echo '&lt;script>alert("Ticket detail has been Updated.")&lt;/script>';
+    }
+    else {echo '&lt;script>alert("Wrong. Please try again.")&lt;/script>';}
+}
+?>
+
+&lt;?php include_once('includes/sidebar.php');?>
+&lt;?php include_once('includes/header.php');?>
+&lt;?php include_once('includes/pagetitle.php');?>
+
+&lt;h4 class="header-title">Update Ticket&lt;/h4>
+&lt;form method="post" action="" name="">
+&lt;?php
+  $tid=$_GET['editid'];
+  $ret=mysqli_query($con,"select * from tbltickettype where ID='$tid'");
+  $cnt=1;
+  while ($row=mysqli_fetch_array($ret)) {
+?>
+
+&lt;label>Ticket Type&lt;/label>
+&lt;input type="text" id="tickettype" name="tickettype"
+   value="&lt;?php  echo $row['TicketType'];?>"
+   required="true" readonly>
+
+&lt;label>Ticket Cost&lt;/label>
+&lt;input type="text" id="tprice" name="tprice"
+   value="&lt;?php  echo $row['Price'];?>"
+   required="true">
+
+&lt;?php } ?>
+&lt;button type="submit" name="submit">Update&lt;/button>
+&lt;/form>
+
+&lt;?php include_once('includes/footer.php');?>
+&lt;?php }  ?>
+
+<h2>MySQL Version and Settings</h2>
+Here are a few commands to help orient yourself.
+To just check which version you're running, use <code>SELECT VERSION()</code>
+
+<code>SHOW VARIABLES</code> will display a lot of useful settings. For instance, what is your default_storage_engine? What is your datadir? I have to read up on these as some of these must be critical to performance&mdash;starting with the size of the query cache. I'll start with tips from <a href="http://www.mysqlperformanceblog.com/2006/09/29/what-to-tune-in-mysql-server-after-installation/" target="_blank">Peter Zaitsev</a>.
+
+The settings used to be littered in many my.ini files. Now that I've upgraded to 5.5, the my.ini files have disappeared. The main file seems to be "/etc/my.cnf". At the moment that seems to be the main version. There are also some sample config files in "/usr/share/mysql". I need to have a look at them.
+
+<h2>Re-Setting the Auto-Increment Number</h2>
+When you are testing, you can create and delete a lot of records. With auto-increment on, you can find yourself with ID fields with high values when there is not much in the database. To reset this, use:
+
+<code>ALTER TABLE mytable AUTO_INCREMENT = 12</code>
+
+Where 12 is the next number you want to use. It has to be beyond the last current number.
+If you want to renumber everything in the auto-increment column (which is a different task, and one to consider carefully as if another table depends on that ID, you are toast), then just drop the column, and create it again, with autoimcrement.
+
+<h2>Obtaining the Column Names of a mySQL table (PDO)</h2>
+
+function all_table_column_names($dbh,$table) { 
+// returns all the column names of a table.
+// Source: <a href="http://stackoverflow.com/questions/5428262/php-pdo-get-the-columns-name-of-a-table" target="_blank">Stack</a>
+
+$q = $dbh-&gt;prepare("DESCRIBE ".$table);
+$q-&gt;execute();
+$fields = $q-&gt;fetchAll(PDO::FETCH_COLUMN);
+return ($fields);
+} // END all_table_column_names
+
+
+<h2>Obtaining the Column Names returned by a Query (PDO)</h2>
+When you build queries programmatically, you may not know what fields you've requested&mdash;but you may need the names in order to display them.
+
+$row = $sth->fetch(PDO::FETCH_ASSOC);
+if( ! $row ) { // some error
+       }
+$col_names = array_keys($row);
+
+<h2>Stored Procedures vs. Stored Functions</h2>
+The main difference to keep in mind is that stored functions can be used in a SQL statement, just like native functions such as AVG(), whereas procedures must be called on their own, using CALL. 
+
+<h2>Default Values</h2>
+For the DATE type that is non NULL, unless you specify a default value, MySQL will use '000-00-00', which is not a valid date and may affect your performance. I use '1970-01-01', which is the earliest date that works with InnoDB tables, despite what the manual says.
+
+<h2>Counting Rows for Paging</h2>
+When paging, you will probably issue a SELECT with a LIMIT. To know the total number of records, the traditional approach would be to issue a second query: SELECT COUNT(*) etc.
+Instead, in your SELECT query with the LIMIT, insert the 'SQL_CALC_FOUND_ROWS' flag just after SELECT, e.g. <code>SELECT SQL_CALC_FOUND_ROWS title FROM movies LIMIT 20</code>. This causes MySQL to calculate the total number of rows that would have been returned without the LIMIT. Next, to retrieve the number of rows, issue a SELECT FOUND_ROWS().
+
+<h2>Materialized Views</h2>
+MySQL Views are basically stored SELECT statements. This means that every time you look at the data, you issue a SELECT. If, instead, the view is stored in a table, the fetching can be faster. This is called a "materialized view". According to the authors of <a href="http://www.amazon.com/dp/1449314287?tag=onamazon-20"  rel="nofollow" target="_blank">High-Performance MySQL</a>, <a href="http://code.google.com/p/flexviews/" target="_blank">Flexviews</a> is an excellent implementation of materialized views. I haven't tried it yet, but it's on the to-do list.
+
+<h2>Tricks with User-Defined Variables</h2>
+
+In MySQL, you can assign user-defined variables, which are prefixed with an '@' character, with this syntax (among others): <code>@a := 5;</code>
+
+The neat thing is that you can assign variables "inline" during a query. But if you are setting a variable in the SELECT part of the statement and testing it in the WHERE, you are headed for trouble, as variables may not get initialized when you think. Read the manual.
+
+<b>Showing Row Numbers</b>
+
+Here is a well-known trick to display row numbers. 
+SET @n = 0;
+SELECT @n := @n+1 AS rownum, title FROM movies
+
+<b>Finding Dates that have an Aniversary in the Next x Days</b>
+Here is a trick I devised for selecting rows that include a date field 'whn' (perhaps a birthday, or a date of registration) that will have a birthday in the next x days (10 in the example):
+SELECT whn
+FROM friends
+WHERE whn BETWEEN
+(@p := TIMESTAMPADD(YEAR,TIMESTAMPDIFF(YEAR,CURDATE(),whn)-1,CURDATE()) )
+AND ( @p + INTERVAL 10 DAY )
+
+<b>Single Query to Show Row Number, Toggle and Oscillator</b>
+In this query, in addition to the row number, we'll show a toggle (1,0,1,0 &hellip;) and an oscillator (1,-1,1,-1&hellip;), which can come in handy when combined with other fields. 
+
+This time, instead of executing two queries (one to initialize the variables, one using the variables), we'll execute a single query. The variables are initialized in a joined table whose only role is to hold the initial values. This is certainly not more efficient than the two-query approach, but it's fun to see. To make this work, replace "somefield" and "sometable" with a field and table name.
+
+SELECT somefield,
+(@n1:= @n1 + 1) num, (@n2 := 1 - @n2) tog, (@n3:= -@n3) osc
+FROM sometable t
+JOIN (SELECT @n1:=0, @n2:=0, @n3:=-1 ) inits	
+
+<b>More about user-defined variables</b>
+<em>High-Performance MySQL</em> has a number of neat tricks with user-defined variables.
+
+<h2>Using a Table of Integers</h2>
+A table of integers ranging from, say, 1 to 100, or 1 to 10,000, can be useful to make MySQL perform some operations that normally require loops in procedural languages, such as building a list of 50 dates starting tomorrow:
+SELECT today + INTERVAL i DAY AS mydate FROM
+(SELECT CURDATE() today ) d
+JOIN int100 i
+LIMIT 50
+
+Such tables (often easier to google as "auxilliary tables of numbers") have many uses such as generating sequences (as above), finding gaps or parsing strings.
+
+<b>Using a Table of Integers to Normalize a Field that Contains Multiple Values Separated by Commas or Dashes</b>
+Let's say you have a table called images, containing the names of jpg files, and a "tags" field that contains a number of tags separated by commas, such as "beach,sunset,frisbee". This works for a while in that you can search the tags fiels using LIKE or REGEXP, but at some stage you realize that you really need to normalize the database, and have the tags stored separately in a correspondence table. This query (a well-known trick) will give you a list of the picture ids and their individual tags, listing each picture as many times as it has a tag. Coming across this kind of beautiful little technique is the sort of small event that makes me glad to be alive.
+
+SELECT imageid,
+
+# Explaining the next line: to extract tag #2 (for instance), take the left of the string to the second comma (the inner SUBSTRING_INDEX),
+# then take the right of the string, starting from the right, to the first comma (the outer SUBSTRING_INDEX)
+SUBSTRING_INDEX(SUBSTRING_INDEX(tags, ',', i), ',', -1) tags
+
+FROM images img CROSS JOIN 
+( SELECT i FROM int100 ) ints
+
+# To know the number of items in the tags field, count the commas then add 1.
+# To count the commas, remove them (the REPLACE operation), and compare the length of the original and shortened strings.
+WHERE i <= 1 + (LENGTH(tags) - LENGTH(REPLACE(tags, ',' , '')) )
+
+ORDER BY imageid, tags
+
+The int100 table is a table of integers, and its column i contains integers from 1 to 100 (way over the maximum for a number of tags that may be contained in the "tags" field).
+
+From tere, you are a couple steps away from denormalizing by using an "INSERT INTO ... SELECT", or from making a list of unique tags by using a "DISTINCT".
+
+To learn more, see:
+	<li><a href="http://sqlserver2000.databases.aspfaq.com/why-should-i-consider-using-an-auxiliary-numbers-table.html" target="_blank">Using a Numbers Table</a></li>
+	<li><a href="http://stackoverflow.com/questions/9751318/creating-a-numbers-table-in-mysql" target="_blank">Methods to Generate a Table of Integers</a></li>
+
+<h2>Using the Right Time Zones</h2>
+The MySQL Manual has information about lots of ways to set the time zone in various circumstances (when launching MySQL, globally at run-time, at the connection level&hellip;) That's all well and good, but the allowable timezone values vary depending on whether you're running MySQL on Windows (e.g. Xampp), Unix (e.g. cPanel) and so on. For instance, on my cPanel VPS, by default you cannot use time_zone values such as 'Pacific/Auckland'. Instead, you have to specify an offset from UTC time&mdash;but of course such an offset will change with daylight saving time.
+
+Instead of messing with all that, if your needs are simply to have one consistent time, in my view the simplest and easiest solution for a cPanel VPS is to set your server time exactly how you like it. You need to do it in two places (both in WHM). 
+&bull; First, in Server Configuration / Server Time.
+&bull; Second, in PHP Configuration Editor / Advanced / date.timezone
+
+When you're done, you can check that everything is working right by issuing a <code>SELECT NOW()</code> in MySQL, an an <code>echo date("m/d/Y h:i:s a", time());</code> in PHP.
+
+<h2>Is Your Query Cache Working?</h2>
+
+At the top of this page, we discussed variables you can tweak in the server. To see your cache variables, run this:
+<code>show VARIABLES where variable_name regexp 'query_cache'</code>
+
+A <code>SHOW GLOBAL STATUS</code> will reveal a number of counters (stored in information_schema.GLOBAL_STATUS) that can tell you how your system is running. To look at the query cache in the particular, narrow down on the Qcache variables:
+<code>SHOW GLOBAL STATUS WHERE variable_name REGEXP 'Qcache'</code>
+
+The query cache's hit rate is Qcache_hits / (Qcache_hits + Com_select). If you feel too lazy to look up the values and punch them in your calculator, this query will do it for you. 
+
+SELECT 100*(hits/(hits+nocache)) AS hit_ratio
+FROM
+
+   (SELECT VARIABLE_VALUE hits FROM information_schema.GLOBAL_STATUS
+   WHERE VARIABLE_NAME = 'QCACHE_HITS') h,
+
+   (SELECT VARIABLE_VALUE nocache FROM information_schema.GLOBAL_STATUS
+   WHERE VARIABLE_NAME = 'COM_SELECT') n
+
+You want this to be as high as possible.
+
+For your hits-to-inserts ratio, paste this:
+
+SELECT hits/inserts AS hits_to_inserts
+FROM
+(SELECT VARIABLE_VALUE hits FROM information_schema.GLOBAL_STATUS
+WHERE VARIABLE_NAME = 'QCACHE_HITS') h,
+(SELECT VARIABLE_VALUE inserts FROM information_schema.GLOBAL_STATUS
+WHERE VARIABLE_NAME = 'QCACHE_INSERTS') n
+
+Again, you want this to be as high as possible.
+
+To fully interpret these results&hellip; Well, that's the subject of a long discussion in <cite>High-Performance MySQL</cite>.
+
+To defragment (but not "flush" in the sense of resetting) the query cache, run this:
+<code>FLUSH QUERY CACHE</code>
+
+<h2>Lost Tables after Xampp Upgrade on Windows: Using mysqlfrm</h2>
+When I upgraded from xampp 1.8.0 to 1.8.3, I was complacent about backing up my databases because the previous upgrade had gone down so well. I copied the files in mysql\data, but lo and behold, I lost all my innodb tables, probably because of the jump from MySQL 5.5 to 5.6.
+
+Fortunately the data for the most important tables was on the server, so restoring those was easy. But on the dev server I had lots of tables for local programs I'd built, and I didn't want to lose those. The data didn't matter, and that was a good thing because I wasn't able to get it back. But I managed to restore the structure of all these tables. Here are the steps.
+
+First, download and install <a href="http://dev.mysql.com/downloads/tools/utilities/" target="_blank">MySQL utilities</a>. Use the Xampp console to stop MySQL. In xampp\mysql\data, locate all the frm files that are not working. Rename each TableName.frm file to bak_TableName.frm. Restart MySQL. Run MySQL utilities. For each file, paste this in the console:
+
+mysqlfrm --server=root:@localhost --diagnostic --show-stats C:/xampp/mysql/data/yourdatabase/bak_TableName.frm > C:/xampp/mysql/data/yourdatabase/TableName.txt
+
+
+This assumes you have no root password. If you do, modify to --server=root:YourPassword@localhost
+
+
+For each table, a text file is generated in mysql\data\yourdatabase. Open each text file. In each file, you will find a CREATE statement. Paste it in <a href="c_sqlyog.html" target="_blank">SQLyog</a> or phpMyAdmin. Adjust the table name, for instance changing `C:/xampp/mysql/data/yourdatabase`.`bak_TableName` to just `TableName`. Run the statement to recreate the table (without the data). 
+
+When you are done, stop MySQL, remove the bak_TableName.frm files, restart MySQL.
+
+
+<h2>Warning: PDO::__construct(): MySQL server has gone away</h2>
+
+I used to run into this bug. After reading up on it, I tweaked some of the variables in my.cnf. (For how to do this, see the section on <a href="#variables" >MySQL Version and Settings</a>
+
+innodb_buffer_pool_size = 300M
+innodb_additional_mem_pool_size = 20M
+innodb_log_file_size = 75M
+innodb_log_buffer_size = 10M
+innodb_lock_wait_timeout = 180
+innodb_flush_log_at_trx_commit = 2
+
+Note that if you try to do this, MySQL will not restart. You can change all these values except innodb_log_file_size. The reason is that to change the size of the log files, you first need to stop MySQL, move the existing log files to a backup location. Then you can edit innodb_log_file_size and restart MySQL.
+Here are the steps on a typical LAMP setup:
+/etc/init.d/mysql stop
+mv /var/lib/mysql/ib_logfile0 /var/lib/mysql/ib_logfile0.bak
+mv /var/libmysql/ib_logfile1 /var/lib/mysql/ib_logfile1.bak
+/etc/init.d/mysql start 
+
+On XAMPP, you'll normally find the log files (ib_logfile0 and ib_logfile1) in C:\xampp\mysql\data.
+<br>
+<br>
+
+<script>
+	var toc = $('#toc');
+	$('h2, h3').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>
+
+
