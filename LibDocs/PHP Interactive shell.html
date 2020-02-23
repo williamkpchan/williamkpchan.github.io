@@ -1,0 +1,911 @@
+<html>
+<head>
+<title>PHP Interactive shell</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script type='text/javascript' src='../mainscript.js'></script>
+
+<script>
+$(document).ready(function(){
+    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
+    parent.history.back();
+    return false;
+    });
+});
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:22px;}
+strong, h1, h2 {color: gold;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+pre{background-color:none;}
+</style>
+</head>
+<body onkeypress="chkKey()">
+<center>
+<h1>Interactive shell</h1>
+<div id="toc"></div></center>
+
+<pre>
+<br>
+<br>
+<br>
+
+As of PHP 5.1.0, the CLI SAPI provides an interactive shell using the
+<strong>-a option</strong> if PHP is compiled with the <strong>--with-readline</strong> option.
+As of PHP 7.1.0 the interactive shell is also available on Windows, if the
+<a href="https://www.php.net/manual/en/book.readline.php" class="link">readline extension</a> is enabled.
+Using the interactive shell you are able to type PHP code and have it
+executed directly.
+
+<strong>Executing code using the interactive shell</strong>
+$ php -a
+Interactive shell
+
+php > echo 5+8;
+13
+php > function addTwo($n)
+php > {
+php { return $n + 2;
+php { }
+php > var_dump(addtwo(2));
+int(4)
+php >
+
+The interactive shell also features tab completion for functions,
+constants, class names, variables, static method calls and class
+constants.
+
+<strong>Tab completion</strong>
+ Pressing the tab key twice when there are multiple possible completions
+ will result in a list of these completions:
+
+php > strp[TAB][TAB]
+strpbrk   strpos    strptime  
+php > strp
+
+ When there is only one possible completion, pressing tab once will
+ complete the rest on the same line:
+
+php > strpt[TAB]ime(
+
+ Completion will also work for names that have been defined
+ during the current interactive shell session:
+
+php > $fooThisIsAReallyLongVariableName = 42;
+php > $foo[TAB]ThisIsAReallyLongVariableName
+
+The interactive shell stores your history which can be accessed using the up
+and down keys. The history is saved in the
+~/.php_history file.
+As of PHP 5.4.0, the CLI SAPI provides
+the php.ini settings <code>cli.pager</code> and
+<code>cli.prompt</code>. The <code>cli.pager</code>
+setting allows an external program (such as less) to
+act as a pager for the output instead of being displayed directly on the
+screen. The <code>cli.prompt</code> setting makes it possible to
+change the <em>php ></em> prompt.
+In PHP 5.4.0 it was also made possible to set
+php.ini settings in the interactive shell using a shorthand notation.
+
+<strong>Setting php.ini settings in the interactive shell</strong>
+ The <code>cli.prompt</code> setting:
+
+php > #cli.prompt=hello world :> 
+hello world :>
+
+ Using backticks it is possible to have PHP code executed in the prompt:
+
+php > #cli.prompt=`echo date(&#039;H:i:s&#039;);` php > 
+15:49:35 php > echo &#039;hi&#039;;
+hi
+15:49:43 php > sleep(2);
+15:49:45 php >
+
+ Setting the pager to less:
+
+php > #cli.pager=less
+php > phpinfo();
+(output displayed in less)
+php >
+
+The <code>cli.prompt</code> setting supports a few escape
+sequences:
+<table>
+ <strong><code>cli.prompt</code> escape sequences</strong>
+  <thead>
+   <tr>
+    <th>Sequence</th>
+    <th>Description</th>
+   </tr>
+  </thead>
+  <tbody class="tbody">
+   <tr>
+    <td><em>\e</em></td>
+    <td>
+     Used for adding colors to the prompt. An example could be
+     <em>\e[032m\v \e[031m\b \e[34m\> \e[0m</em>
+    </td>
+   </tr>
+
+   <tr>
+    <td><em>\v</em></td>
+    <td>The PHP version.</td>
+   </tr>
+
+   <tr>
+    <td><em>\b</em></td>
+    <td>
+     Indicates which block PHP is in. For instance <em>/*</em> to
+     indicate being inside a multi-line comment. The outer scope is denoted by
+     <em>php</em>.
+    </td>
+   </tr>
+
+   <tr>
+    <td><em>\></em></td>
+    <td>
+     Indicates the prompt character. By default this is
+     <em>></em>, but changes when the shell is inside an
+     unterminated block or string. Possible characters are: <em>&#039; &quot; {
+     ( ></em>
+    </td>
+   </tr>
+
+  </tbody>
+ 
+</table>
+
+  <blockquote><strong>Note</strong>: 
+
+ Files included through <a href="https://www.php.net/manual/en/ini.core.php#ini.auto-prepend-file" class="link">auto_prepend_file</a> and <a href="https://www.php.net/manual/en/ini.core.php#ini.auto-append-file" class="link">auto_append_file</a> are parsed in
+ this mode but with some restrictions - e.g. functions have to be
+ defined before called.
+</blockquote>
+
+  <blockquote><strong>Note</strong>: 
+ <a href="https://www.php.net/manual/en/language.oop5.autoload.php" class="link">Autoloading</a> is not
+ available if using PHP in CLI interactive mode.
+</blockquote>
+<br>
+<br>
+<strong>Built-in web server</strong>
+The web server runs only one single-threaded process, so PHP applications will stall if a request is blocked.
+
+Starting the web server
+$ cd ~/public_html
+$ php -S localhost:8000
+
+Starting with a specific document root directory
+$ cd ~/public_html
+$ php -S localhost:8000 -t foo/
+
+
+Using a Router Script
+In this example, requests for images will display them, but requests for HTML files will display "Welcome to PHP":
+
+&lt;?php
+// router.php
+if (preg_match('/\.(?:png|jpg|jpeg|gif)$/', $_SERVER["REQUEST_URI"])) {
+    return false;    // serve the requested resource as-is.
+} else { 
+    echo "&lt;p>Welcome to PHP&lt;/p>";
+}
+?>
+$ php -S localhost:8000 router.php
+<br>
+Example #4 Checking for CLI Web Server Use
+
+To reuse a framework router script during development with the CLI web server and later also with a production web server:
+
+&lt;?php
+// router.php
+if (php_sapi_name() == 'cli-server') {
+    /* route static assets and return false */
+}
+/* go on with normal index.php operations */
+?>
+$ php -S localhost:8000 router.php
+Example #5 Handling Unsupported File Types
+
+If you need to serve a static resource whose MIME type is not handled by the CLI web server, use:
+
+&lt;?php
+// router.php
+$path = pathinfo($_SERVER["SCRIPT_FILENAME"]);
+if ($path["extension"] == "el") {
+    header("Content-Type: text/x-script.elisp");
+    readfile($_SERVER["SCRIPT_FILENAME"]);
+}
+else {
+    return FALSE;
+}
+?>
+$ php -S localhost:8000 router.php
+Example #6 Accessing the CLI Web Server From Remote Machines
+
+You can make the web server accessible on port 8000 to any interface with:
+
+$ php -S 0.0.0.0:8000
+
+<br>
+<h2>Command line options</h2>
+   The list of command line options provided by the PHP binary can be queried at any time by running PHP with the <strong>-h</strong> switch:
+
+Usage: php [options] [-f] &lt;file> [--] [args...]
+   php [options] -r &lt;code> [--] [args...]
+   php [options] [-B &lt;begin_code>] -R &lt;code> [-E &lt;end_code>] [--] [args...]
+   php [options] [-B &lt;begin_code>] -F &lt;file> [-E &lt;end_code>] [--] [args...]
+   php [options] -- [args...]
+   php [options] -a
+
+  -a               Run interactively
+  -c &lt;path>|&lt;file> Look for php.ini file in this directory
+  -n               No php.ini file will be used
+  -d foo[=bar]     Define INI entry foo with value &#039;bar&#039;
+  -e               Generate extended information for debugger/profiler
+  -f &lt;file>        Parse and execute &lt;file>.
+  -h               This help
+  -i               PHP information
+  -l               Syntax check only (lint)
+  -m               Show compiled in modules
+  -r &lt;code>        Run PHP &lt;code> without using script tags &lt;?..?>
+  -B &lt;begin_code>  Run PHP &lt;begin_code> before processing input lines
+  -R &lt;code>        Run PHP &lt;code> for every input line
+  -F &lt;file>        Parse and execute &lt;file> for every input line
+  -E &lt;end_code>    Run PHP &lt;end_code> after processing all input lines
+  -H               Hide any passed arguments from external tools.
+  -S &lt;addr>:&lt;port> Run with built-in web server.
+  -t &lt;docroot>     Specify document root &lt;docroot> for built-in web server.
+  -s               Output HTML syntax highlighted source.
+  -v               Version number
+  -w               Output source with stripped comments and whitespace.
+  -z &lt;file>        Load Zend extension &lt;file>.
+
+  args...          Arguments passed to script. Use -- args when first argument
+                   starts with - or script is read from stdin
+
+  --ini            Show configuration file names
+
+  --rf &lt;name>      Show information about function &lt;name>.
+  --rc &lt;name>      Show information about class &lt;name>.
+  --re &lt;name>      Show information about extension &lt;name>.
+  --rz &lt;name>      Show information about Zend extension &lt;name>.
+  --ri &lt;name>      Show configuration for extension &lt;name>.
+
+   <table>
+    <caption><strong>Command line options</strong></caption>
+     <thead>
+      <tr>
+       <th>Option</th>
+       <th>Long Option</th>
+       <th>Description</th>
+      </tr>
+
+     </thead>
+
+     <tbody>
+      <tr>
+       <td>-a</td>
+       <td>--interactive</td>
+       <td>
+               Run PHP interactively. For more information, see the <a href="https://www.php.net/manual/en/features.commandline.interactive.php" class="link">Interactive shell</a>
+         section.
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>-b</td>
+       <td>--bindpath</td>
+       <td>
+               Bind Path for external FASTCGI Server mode (<acronym title="Common Gateway Interface">CGI</acronym> only).
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>-C</td>
+       <td>--no-chdir</td>
+       <td>
+               Do not chdir to the script&#039;s directory (<acronym title="Common Gateway Interface">CGI</acronym> only).
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>-q</td>
+       <td>--no-header</td>
+       <td>
+               Quiet-mode. Suppress <acronym title="Hypertext Transfer Protocol">HTTP</acronym> header output
+         (<acronym title="Common Gateway Interface">CGI</acronym> only).
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>-T</td>
+       <td>--timing</td>
+       <td>
+               Measure execution time of script repeated <var class="varname"><var class="varname">count</var></var>
+         times (<acronym title="Common Gateway Interface">CGI</acronym> only).
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>-c</td>
+       <td>--php-ini</td>
+       <td>
+               Specifies either a directory in which to look for
+         <var class="filename">php.ini</var>, or a custom <em>INI</em> file
+         (which does not need to be named <var class="filename">php.ini</var>), e.g.:
+        
+        
+      
+$ php -c /custom/directory/ my_script.php
+
+$ php -c /custom/directory/custom-file.ini my_script.php
+
+         
+        
+               If this option is not specified, <var class="filename">php.ini</var> is searched for in the
+         <a href="https://www.php.net/manual/en/configuration.file.php" class="link">default locations</a>.
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>-n</td>
+       <td>--no-php-ini</td>
+       <td>
+               Ignore <var class="filename">php.ini</var> completely.
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>-d</td>
+       <td>--define</td>
+       <td>
+               Set a custom value for any of the configuration
+         directives allowed in <var class="filename">php.ini</var>. The syntax is:
+         
+ 
+ -d configuration_directive[=value]
+ 
+         
+        
+        
+      
+# Omitting the value part will set the given configuration directive to &quot;1&quot;
+$ php -d max_execution_time
+        -r &#039;$foo = ini_get(&quot;max_execution_time&quot;); var_dump($foo);&#039;
+string(1) &quot;1&quot;
+
+# Passing an empty value part will set the configuration directive to &quot;&quot;
+php -d max_execution_time=
+        -r &#039;$foo = ini_get(&quot;max_execution_time&quot;); var_dump($foo);&#039;
+string(0) &quot;&quot;
+
+# The configuration directive will be set to anything passed after the &#039;=&#039; character
+$  php -d max_execution_time=20
+        -r &#039;$foo = ini_get(&quot;max_execution_time&quot;); var_dump($foo);&#039;
+string(2) &quot;20&quot;
+$  php
+        -d max_execution_time=doesntmakesense
+        -r &#039;$foo = ini_get(&quot;max_execution_time&quot;); var_dump($foo);&#039;
+string(15) &quot;doesntmakesense&quot;
+
+         
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>-e</td>
+       <td>--profile-info</td>
+       <td>
+               Activate the extended information mode, to be used by a
+         debugger/profiler.
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>-f</td>
+       <td>--file</td>
+       <td>
+               Parse and execute the specified file. The
+         <strong>-f</strong>
+ is optional and may be omitted - providing just
+         the filename to execute is sufficient.
+        
+        <blockquote><strong>Note</strong>: 
+                 To pass arguments to a script, the first argument must be
+          <em>--</em>, otherwise PHP will interpret them as PHP
+          options.
+         
+        </blockquote>
+       </td>
+      </tr>
+
+      <tr>
+       <td>-h and -?</td>
+       <td>--help and --usage</td>
+       <td>
+        Output a list of
+        command line options with one line descriptions of what they do.
+       </td>
+      </tr>
+
+      <tr>
+       <td>-i</td>
+       <td>--info</td>
+       <td>
+        Calls <span class="function"><a href="https://www.php.net/manual/en/function.phpinfo.php" class="function">phpinfo()</a></span>, and prints out the results.
+        If PHP is not working correctly, it is advisable to use the command
+        <strong class="command">php -i</strong> and see whether any error
+        messages are printed out before or in place of the information tables.
+        Beware that when using the <acronym title="Common Gateway Interface">CGI</acronym> mode the output is in
+        <acronym title="Hyper Text Markup Language">HTML</acronym> and therefore very large.
+       </td>
+      </tr>
+
+      <tr>
+       <td>-l</td>
+       <td>--syntax-check</td>
+       <td>
+               Provides a convenient way to perform only a syntax check
+         on the given PHP code. On success, the text
+         <em>No syntax errors detected in &lt;filename></em> is
+         written to standard output and the shell return code is
+         <em>0</em>. On failure, the text <em>Errors parsing
+         &lt;filename></em> in addition to the internal parser error
+         message is written to standard output and the shell return code is set
+         to <em>-1</em>.
+        
+               This option won&#039;t find fatal errors (like undefined functions). Use
+         the <strong>-f</strong>
+ to test for fatal errors too.
+        
+        <blockquote><strong>Note</strong>: 
+                 This option does not work together with the <strong>-r</strong>
+
+          option.
+         
+        </blockquote>
+       </td>
+      </tr>
+
+      <tr>
+       <td>-m</td>
+       <td>--modules</td>
+       <td>
+        
+         <strong>Printing built in (and loaded) PHP and Zend modules</strong>
+<pre>
+$ php -m
+[PHP Modules]
+xml
+tokenizer
+standard
+session
+posix
+pcre
+overload
+mysql
+mbstring
+ctype
+
+[Zend Modules]
+</pre>
+</td>
+      </tr>
+
+      <tr>
+       <td>-r</td>
+       <td>--run</td>
+       <td>
+               Allows execution of PHP included directly on the command line.
+         The PHP start and end tags (<em>&lt;?php</em> and
+         <em>?></em>) are <em class="emphasis">not
+         needed</em> and will cause a parse error if present.
+        
+        <blockquote><strong>Note</strong>: 
+                 Care must be taken when using this form of PHP not
+          to collide with command line variable substitution done by the
+          shell.
+         
+         
+          <strong>Getting a syntax error when using double quotes</strong>
+       
+$ php -r &quot;$foo = get_defined_constants();&quot;
+PHP Parse error:  syntax error, unexpected &#039;=&#039; in Command line code on line 1
+
+Parse error: syntax error, unexpected &#039;=&#039; in Command line code on line 1
+
+          
+         
+                 The problem here is that sh/bash performs variable substitution
+          even when using double quotes <em>&quot;</em>. Since the
+          variable <var class="varname"><var class="varname">$foo</var></var> is unlikely to be defined, it
+          expands to nothing which results in the code passed to
+          PHP for execution actually reading:
+         
+         
+       
+$ php -r &quot; = get_defined_constants();&quot;
+
+          
+         
+         
+                 The correct way would be to use single quotes <em>&#039;</em>.
+          Variables in single-quoted strings are not expanded
+          by sh/bash.
+         
+         
+          <strong>Using single quotes to prevent the shell&#039;s variable
+          substitution</strong>
+       
+$ php -r &#039;$foo = get_defined_constants(); var_dump($foo);&#039;
+array(370) {
+  [&quot;E_ERROR&quot;]=>
+  int(1)
+  [&quot;E_WARNING&quot;]=>
+  int(2)
+  [&quot;E_PARSE&quot;]=>
+  int(4)
+  [&quot;E_NOTICE&quot;]=>
+  int(8)
+  [&quot;E_CORE_ERROR&quot;]=>
+  [...]
+
+          
+         
+                 If using a shell other than sh/bash, further issues might be
+          experienced - if appropriate, a bug report should be opened at
+          <a href="https://www.php.net/manual/en/https://bugs.php.net/" class="link external">&raquo;&nbsp;https://bugs.php.net/</a>.
+          It is still easy to run into trouble when trying to use variables
+          (shell or PHP) in commnad-line code, or using backslashes for
+          escaping, so take great care when doing so. You have been warned!
+         
+        </blockquote>
+        <blockquote><strong>Note</strong>: 
+                 <strong>-r</strong>
+ is available in the <acronym title="Command Line Interpreter/Interface">CLI</acronym> <acronym title="Server Application Programming Interface">SAPI</acronym>, but not in the
+          <em class="emphasis">CGI</em> <acronym title="Server Application Programming Interface">SAPI</acronym>.
+         
+        </blockquote>
+        <blockquote><strong>Note</strong>: 
+                 This option is only intended for very basic code, so some
+          configuration directives (such as <a href="https://www.php.net/manual/en/ini.core.php#ini.auto-prepend-file" class="link">auto_prepend_file</a> and <a href="https://www.php.net/manual/en/ini.core.php#ini.auto-append-file" class="link">auto_append_file</a>) are ignored
+          in this mode.
+         
+        </blockquote>
+       </td>
+      </tr>
+
+      <tr>
+       <td>-B</td>
+       <td>--process-begin</td>
+       <td>
+               PHP code to execute before processing stdin. Added in PHP 5.
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>-R</td>
+       <td>--process-code</td>
+       <td>
+               PHP code to execute for every input line. Added in PHP 5.
+        
+               There are two special variables available in this mode:
+         <var class="varname"><var class="varname">$argn</var></var> and <var class="varname"><var class="varname">$argi</var></var>.
+         <var class="varname"><var class="varname">$argn</var></var> will contain the line PHP is processing at
+         that moment, while <var class="varname"><var class="varname">$argi</var></var> will contain the line
+         number.
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>-F</td>
+       <td>--process-file</td>
+       <td>
+               PHP file to execute for every input line. Added in PHP 5.
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>-E</td>
+       <td>--process-end</td>
+       <td>
+               PHP code to execute after processing the input. Added in PHP 5.
+         <strong>Using the -B, -R and -E</strong> options to count the number of lines of a project.
+      
+$ find my_proj | php -B &#039;$l=0;&#039; -R &#039;$l += count(@file($argn));&#039; -E &#039;echo &quot;Total Lines: $l\n&quot;;&#039;
+Total Lines: 37328
+
+         
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>-S</td>
+       <td>--server</td>
+       <td>
+               Starts <a href="https://www.php.net/manual/en/features.commandline.webserver.php" class="link">built-in web
+         server</a>. Available as of PHP 5.4.0.
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>-t</td>
+       <td>--docroot</td>
+       <td>
+        Specifies document root for <a href="https://www.php.net/manual/en/features.commandline.webserver.php" class="link">built-in web server</a>.
+        Available as of PHP 5.4.0.
+       </td>
+      </tr>
+
+      <tr>
+       <td>-s</td>
+       <td>--syntax-highlight and --syntax-highlighting</td>
+       <td>
+               Display colour syntax highlighted source.
+        
+               This option uses the internal mechanism to parse the file and writes
+         an HTML highlighted version of it to
+         standard output. Note that all it does is generate a block of
+         <em>&lt;code> [...] &lt;/code></em>
+         HTML tags, no HTML headers.
+        
+        <blockquote><strong>Note</strong>: 
+                 This option does not work together with the <strong>-r</strong> option.
+        </blockquote>
+       </td>
+      </tr>
+
+      <tr>
+       <td>-v</td>
+       <td>--version</td>
+       <td>
+        
+         <strong>Using -v</strong>
+ to get the <acronym title="Server Application Programming Interface">SAPI</acronym> name and the version of PHP and Zend<pre>
+$ php -v
+PHP 5.3.1 (cli) (built: Dec 11 2009 19:55:07)
+Copyright (c) 1997-2009 The PHP Group
+Zend Engine v2.3.0, Copyright (c) 1998-2009 Zend Technologies
+</pre>
+       </td>
+      </tr>
+
+      <tr>
+       <td>-w</td>
+       <td>--strip</td>
+       <td>
+               Display source with comments and whitespace stripped.
+        
+        <blockquote><strong>Note</strong>: 
+                 This option does not work together with the <strong>-r</strong>
+
+          option.
+         
+        </blockquote>
+       </td>
+      </tr>
+
+      <tr>
+       <td>-z</td>
+       <td>--zend-extension</td>
+       <td>
+               Load Zend extension. If only a filename is given, PHP tries to load
+         this extension from the current default library path on your system
+         (usually <var class="filename">/etc/ld.so.conf</var> on Linux systems, for
+         example). Passing a filename with an absolute path will
+         not use the system&#039;s library search path. A relative filename including
+         directory information will tell PHP to try
+         loading the extension relative to the current directory.
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td class="empty">&nbsp;</td>
+       <td>--ini</td>
+       <td>
+               Show configuration file names and scanned directories. Available as
+         of PHP 5.2.3.
+         
+          <strong>Example #6 <em>--ini</em> example</strong>
+          
+$ php --ini
+Configuration File (php.ini) Path: /usr/dev/php/5.2/lib
+Loaded Configuration File:         /usr/dev/php/5.2/lib/php.ini
+Scan for additional .ini files in: (none)
+Additional .ini files parsed:      (none)
+
+       
+         
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>--rf</td>
+       <td>--rfunction</td>
+       <td>
+               Show information about the given function or class method (e.g.
+         number and name of the parameters). Available as of PHP 5.1.2.
+        
+               This option is only available if PHP was compiled with
+         <a href="https://www.php.net/manual/en/book.reflection.php" class="link">Reflection</a> support.
+        
+               
+          <strong>Example #7 basic <em>--rf</em> usage</strong>
+          
+$ php --rf var_dump
+Function [ &lt;internal> public function var_dump ] {
+
+  - Parameters [2] {
+    Parameter #0 [ &lt;required> $var ]
+    Parameter #1 [ &lt;optional> $... ]
+  }
+}
+
+       
+         
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>--rc</td>
+       <td>--rclass</td>
+       <td>
+               Show information about the given class (list of constants, properties
+         and methods). Available as of PHP 5.1.2.
+        
+               This option is only available if PHP was compiled with
+         <a href="https://www.php.net/manual/en/book.reflection.php" class="link">Reflection</a> support.
+        
+               
+          <strong>Example #8 <em>--rc</em> example</strong>
+          
+$ php --rc Directory
+Class [ &lt;internal:standard> class Directory ] {
+
+  - Constants [0] {
+  }
+
+  - Static properties [0] {
+  }
+
+  - Static methods [0] {
+  }
+
+  - Properties [0] {
+  }
+
+  - Methods [3] {
+    Method [ &lt;internal> public method close ] {
+    }
+
+    Method [ &lt;internal> public method rewind ] {
+    }
+
+    Method [ &lt;internal> public method read ] {
+    }
+  }
+}
+
+       
+         
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>--re</td>
+       <td>--rextension</td>
+       <td>
+               Show information about the given extension (list of <var class="filename">php.ini</var> options,
+         defined functions, constants and classes). Available as of PHP 5.1.2.
+        
+               This option is only available if PHP was compiled with
+         <a href="https://www.php.net/manual/en/book.reflection.php" class="link">Reflection</a> support.
+        
+               
+          <strong>Example #9 <em>--re</em> example</strong>
+          
+$ php --re json
+Extension [ &lt;persistent> extension #19 json version 1.2.1 ] {
+
+  - Functions {
+    Function [ &lt;internal> function json_encode ] {
+    }
+    Function [ &lt;internal> function json_decode ] {
+    }
+  }
+}
+
+       
+         
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>--rz</td>
+       <td>--rzendextension</td>
+       <td>
+               Show the configuration information for the given Zend extension (the
+         same information that is returned by <span class="function"><a href="https://www.php.net/manual/en/function.phpinfo.php" class="function">phpinfo()</a></span>).
+         Available as of PHP 5.4.0.
+        
+       </td>
+      </tr>
+
+      <tr>
+       <td>--ri</td>
+       <td>--rextinfo</td>
+       <td>
+               Show the configuration information for the given extension (the same
+         information that is returned by <span class="function"><a href="https://www.php.net/manual/en/function.phpinfo.php" class="function">phpinfo()</a></span>).
+         Available as of PHP 5.2.2. The core configuration information
+         is available using &quot;main&quot; as extension name.
+        
+               
+          <strong>Example #10 <em>--ri</em> example</strong>
+          
+$ php --ri date
+
+date
+
+date/time support => enabled
+&quot;Olson&quot; Timezone Database Version => 2009.20
+Timezone Database => internal
+Default timezone => Europe/Oslo
+
+Directive => Local Value => Master Value
+date.timezone => Europe/Oslo => Europe/Oslo
+date.default_latitude => 59.930972 => 59.930972
+date.default_longitude => 10.776699 => 10.776699
+date.sunset_zenith => 90.583333 => 90.583333
+date.sunrise_zenith => 90.583333 => 90.583333
+
+       
+         
+        
+       </td>
+      </tr>
+
+     </tbody>
+   </table>
+
+  
+  
+  <blockquote><strong>Note</strong>: 
+     Options <em>-rBRFEH</em>, <em>--ini</em> and
+    <em>--r[fcezi]</em> are available only in <acronym title="Command Line Interpreter/Interface">CLI</acronym>.
+   
+  </blockquote>
+
+<script>
+	var toc = $('#toc');
+	$('strong').each(function(i) {
+		var topic = $(this), topicNumber = i + 1;
+		toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
+		topic.attr('id', 'topic-' + topicNumber);
+	});
+</script>
+
+
+
