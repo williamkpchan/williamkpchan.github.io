@@ -10,48 +10,32 @@ styleStr = "<script type='text/javascript' src='mainscript.js'></script><style>b
 
 function chkKey() {
   var testkey = getChar(event);
-  if(testkey == '6'){sCt("64357");}
-  if(testkey == '7'){sCt("700");}
-  if(testkey == '8'){sCt("857");}
-  if(testkey == 'A'){window.open("halfHourMonA.html");}
   if(testkey == 'a'){window.open("apptechno.html");}
-  if(testkey == 'b'){window.open("LibDocs/Random Charts.html");}
   if(testkey == 'c'){showChart();}
 // calculator  if(testkey == 'C'){window.open("https://www.desmos.com/fourfunction");}
   if(testkey == 'C'){window.open("LibDocs/caseStudiesLog.html");}
-  if(testkey == 'd'){window.open("LibDocs/clock.html");}
   if(testkey == 'e'){window.location = '#ertong';}
   if(testkey == 'f'){window.open("http://williamkpchan.github.io/ForexChart.htm");}
   if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
   if(testkey == 'g'){window.location = '#_youxi';}
-  if(testkey == 'G'){window.open("https://www.guancha.cn");}
   if(testkey == 'h'){window.open("LibDocs/News Points.html");}
   if(testkey == 'H'){window.open("LibDocs/monitorHSI.html");}
-  if(testkey == 'i'){window.open('http://www.iciba.com');}
-  if(testkey == 'j'){window.location = '#Javascript';}
   if(testkey == 'J'){window.location = '#_jiaoyu';}
   if(testkey == 'l'){window.location = '#dushu';}
   if(testkey == 'm'){window.open("http://williamkpchan.github.io/medical.html");}
   if(testkey == 'M'){window.open("https://www.google.com.hk/maps/");}
   if(testkey == 'n'){window.location = '#xinwen';}
   if(testkey == 'N'){window.location = '#Notes';}
-
-  if(testkey == 'o'){window.location = '#sclj';}
-  if(testkey == 'O'){window.open("LibDocs/extractOHLCV2.html");}
-
-  if(testkey == 'P'){window.location = '#Python';}
   if(testkey == 'p'){window.location = '#Programming';}
 
   if(testkey == 'q'){window.open('https://www.quora.com/');}
   if(testkey == 'Q'){window.open('https://news.qq.com/zt2020/page/feiyan.htm');}
 
-  if(testkey == 'r'){window.location = '#Rlang';}
   if(testkey == 's'){window.open("stkListVH.html");}
   if(testkey == 'S'){showMMA();}
 
   if(testkey == 't'){window.open("https://my.weather.gov.hk/tc/myindex.htm");}
   if(testkey == 'T'){window.open("https://translate.google.com/#en/zh-CN");}
-  if(testkey == 'u'){window.open("https://www.urbandictionary.com/");}
   if(testkey == 'v'){window.open("https://williamkpchan.github.io/LibDocs/StkImgViewer.html");}
   if(testkey == 'w'){window.location = '#ruanjian';}
   if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
@@ -59,8 +43,6 @@ function chkKey() {
   if(testkey == 'X'){window.open("http://williamkpchan.github.io/LibDocs/Random Charts.html");}
 
   if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
-  if(testkey == 'Y'){window.location = '#yinyue';}
-  if(testkey == 'z'){window.open("http://williamkpchan.github.io/LibDocs/shortPeriodMain.html");}
 }
 
 function getChar(event) {
