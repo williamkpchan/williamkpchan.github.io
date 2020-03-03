@@ -1,0 +1,593 @@
+<base target="_blank"><html><head><title>Puppeteer Examples</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script type='text/javascript' src='../mainscript.js'></script>
+<style>
+body{width:80%;margin-left: 10%; font-size:22px;}
+strong, h1, h2 {color: gold;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>Getting to Know Puppeteer Using Practical Examples</h1>
+<div id="toc"></div></center>
+<pre>
+<br>
+<br>
+<h2>Getting to Know Puppeteer Using Practical Examples</h2>
+17 min read
+An overview, concrete guide and kinda cheat sheet for the popular browser automation library, based on Node.js, which provides a high-level API over the Chrome DevTools Protocol.
+
+Contents
+</pre>
+<ul>
+<li><a href="#how-to-install">How to Install</a>
+<ul>
+<li><a href="#library-package">Library Package</a></li>
+<li><a href="#product-package">Product Package</a></li>
+</ul></li>
+<li><a href="#interacting-browser">Interacting Browser</a>
+<ul>
+<li><a href="#launching-chromium">Launching Chromium</a></li>
+<li><a href="#connecting-chromium">Connecting Chromium</a></li>
+<li><a href="#launching-firefox">Launching Firefox</a></li>
+<li><a href="#browser-context">Browser Context</a></li>
+<li><a href="#headful-mode">Headful Mode</a></li>
+<li><a href="#debugging">Debugging</a></li>
+</ul></li>
+<li><a href="#interacting-page">Interacting Page</a>
+<ul>
+<li><a href="#navigating-by-url">Navigating by URL</a></li>
+<li><a href="#emulating-devices">Emulating Devices</a></li>
+<li><a href="#handling-events">Handling Events</a></li>
+<li><a href="#operating-mouse">Operating Mouse</a></li>
+<li><a href="#operating-keyboard">Operating Keyboard</a></li>
+<li><a href="#taking-screenshots">Taking Screenshots</a></li>
+<li><a href="#generating-pdf">Generating PDF</a></li>
+<li><a href="#faking-geolocation">Faking Geolocation</a></li>
+<li><a href="#accessibility">Accessibility</a></li>
+<li><a href="#code-coverage">Code Coverage</a></li>
+<li><a href="#measuring-performance">Measuring Performance</a></li>
+</ul></li>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#vs-code-snippets">VS Code Snippets</a></li>
+</ul>
+<pre>
+<a href="https://pptr.dev" target="_blank">Puppeteer</a> is a project from the Google Chrome team which enables us to control a Chrome (or any other Chrome DevTools Protocol based browser) and execute common actions, much like in a real browser - programmatically, through a decent API.
+Put simply, it&rsquo;s a super useful and easy tool for <strong>automating, testing and scraping</strong> web pages over a headless mode or headful either.
+
+<figure>
+    <img src="https://d33wubrfki0l68.cloudfront.net/58bbf88ce5160641f8775322e78cbffbf2898b8f/4b6fd/images/posts/2018-08-26-debugging-nodejs-application-in-chrome-devtools-using-ndb/puppeteer-logo.png"
+         alt="Puppeteer&#39;s logo" width="200"/> <figcaption>
+            <h4>Puppeteer&#39;s logo</h4>
+        </figcaption>
+</figure>
+
+In this article we&rsquo;re going to try out Puppeteer and demonstrate a variety of the available capabilities, through concrete examples.
+
+<em><strong>Disclaimer:</strong> This article doesn&rsquo;t claim to replace <a href="https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md" target="_blank">the official documentation</a> but rather elaborate it - you definitely should go over it in order to be aligned with the most updated API specification.</em>
+
+<h2 id="how-to-install">How to Install</h2>
+
+To begin with, we&rsquo;ll have to install one of Puppeteer&rsquo;s <a href="https://pptr.dev/#?product=Puppeteer&amp;show=api-puppeteer-vs-puppeteer-core" target="_blank">packages</a>.
+
+<h2 id="library-package">Library Package</h2>
+
+A lightweight package, called <code>puppeteer-core</code>, which is a <strong>library</strong> that interacts with any browser that&rsquo;s based on DevTools protocol - without actually installing Chromium. 
+It comes in handy mainly when we don’t need a downloaded version of Chromium, for instance, bundling this library within a project that interacts with a browser remotely.
+
+In order to install, just run:
+
+<code>npm install puppeteer-core
+</code>
+
+<h2 id="product-package">Product Package</h2>
+
+The main package, called <code>puppeteer</code>, which is actually a full <strong>product</strong> for browser automation on top of <code>puppeteer-core</code>. 
+Once it&rsquo;s installed, the most recent version of Chromium is placed inside <code>node_modules</code>, what guarantees that the downloaded version is compatible with the host operating system.
+
+Simply run the following to install:
+
+<code>npm install puppeteer
+</code>
+<br>
+
+Now, we&rsquo;re absolutely ready to go! 🤓
+
+<h2 id="interacting-browser">Interacting Browser</h2>
+
+As mentioned before, Puppeteer is just an API over the Chrome DevTools Protocol. 
+Naturally, it should have a Chromium instance to interact with. 
+This is the reason why Puppeteer&rsquo;s ecosystem provides methods to launch a new Chromium instance and connect an existing instance also.
+
+Let&rsquo;s examine a few cases.
+
+<h2 id="launching-chromium">Launching Chromium</h2>
+
+The easiest way to interact with the browser is by launching a Chromium instance using Puppeteer:
+
+<script type="application/javascript" src="//gist.github.com/nitayneeman/08c100ef25dffa0ddce9bcacd1925377.js"></script>
+
+The <code>launch</code> method initializes the instance at first, and then attaching Puppeteer to that.
+Notice this method is <strong>asynchronous</strong> (like most Puppeteer&rsquo;s methods) which, as we know, returns a <code>Promise</code>. 
+Once it’s resolved, we get a <a href="https://pptr.dev/#?product=Puppeteer&amp;show=api-class-browser" target="_blank">browser</a> instance that represents our initialized instance.
+
+<h2 id="connecting-chromium">Connecting Chromium</h2>
+
+Sometimes we want to interact with an existing Chromium instance - whether using <code>puppeteer-core</code> or just attaching a remote instance:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/69876fea604aed196ad6cdf4c3e25f97.js"></script>
+
+Well, it&rsquo;s easy to see that we use <a href="https://github.com/GoogleChrome/chrome-launcher" target="_blank">chrome-launcher</a> in order to launch a Chrome instance <strong>manually</strong>.
+Then, we simply fetch the <code>webSocketDebuggerUrl</code> value of the created instance.
+
+The <code>connect</code> method attaches the instance we just created to Puppeteer. 
+All we&rsquo;ve to do is supplying the WebSocket endpoint of our instance.
+
+<em><strong>Note:</strong> Of course, chrome-launcher is only to demonstrate an instance creation. 
+We absolutely could connect an instance in other ways, as long as we have the appropriate WebSocket endpoint.</em>
+
+<h2 id="launching-firefox">Launching Firefox</h2>
+
+Some of you might wonder - could Puppeteer interact with other browsers besides Chromium? 🤔
+
+Although there are projects that claim to support the variety browsers - the official team has started to maintain an <a href="https://github.com/GoogleChrome/puppeteer/tree/master/experimental/puppeteer-firefox" target="_blank">experimental project</a> that interacts with <strong>Firefox</strong>, specifically:
+
+<code>npm install puppeteer-firefox
+</code>
+This project exposes the same decent API, what means we&rsquo;re already familiar with how to launch the browser:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/4c1cf0ad571891a94564bb39020c4975.js"></script>
+
+⚠️ Pay attention - the API isn&rsquo;t totally ready yet and implemented progressively. 
+Also, it&rsquo;s better to check out the implementation status <a href="https://aslushnikov.github.io/ispuppeteerfirefoxready/" target="_blank">here</a>.
+
+<h2 id="browser-context">Browser Context</h2>
+
+Imagine that instead of recreating a browser instance each time, which is pretty expensive operation, we could use the same instance but separate it into different individual sessions which belong to this shared browser.
+
+It&rsquo;s actually possible, and these sessions are known as <strong><a href="https://pptr.dev/#?product=Puppeteer&amp;show=api-class-browsercontext" target="_blank">Browser Contexts</a></strong>.
+
+A default browser context is created as soon as creating a browser instance, but we can create additional browser contexts as necessary:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/1d7782b6430b280b5e64956d2ffabff8.js"></script>
+
+Apart from the fact that we demonstrate how to access each context, we need to know that the only way to terminate the default context is by closing the browser instance - which, in fact, terminates all the contexts that belong to the browser.
+
+Better yet, the browser context also come in handy when we want to apply a specific configuration on the session isolatedly - for instance, granting additional permissions.
+
+<h2 id="headful-mode">Headful Mode</h2>
+
+As opposed to the <strong>headless</strong> mode - which merely uses the command line,
+the <strong>headful</strong> mode opens the browser with a graphical user interface during the instruction:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/da8135d4035a964cb251920a0c56944d.js"></script>
+
+Because of the fact that the browser is launched in headless mode by default, we demonstrate how to launch it in a headful way.
+
+In case you wonder - headless mode is mostly useful for environments that don&rsquo;t really need the UI or neither support such an interface. 
+The cool thing is that we can headless almost everything in Puppeteer. 
+💪
+
+<em><strong>Note:</strong> We&rsquo;re going to launch the browser in a headful mode for most of the upcoming examples, which will allow us to notice the result clearly.</em>
+
+<h2 id="debugging">Debugging</h2>
+
+When writing code, we should be aware of what kinds of ways are available to debug our program. 
+The documentation lists several <a href="https://developers.google.com/web/tools/puppeteer/debugging" target="_blank">tips</a> about debugging Puppeteer.
+
+Let&rsquo;s cover the core principles:
+
+<strong>1️⃣ - Checking how the browser is operated</strong>
+
+That&rsquo;s fairly probable we would like to see how our script instructs the browser and what&rsquo;s actually displayed, at some point.
+
+The headful mode, which we&rsquo;re already familiar with, helps us to practically do that:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/a43a27099aa3e1d2a3d6efc16203974f.js"></script>
+
+Beyond that the browser is truly opened, we can notice now the operated instructions clearly - due to <code>slowMo</code> which slows down Puppeteer when performing each operation.
+
+<strong>2️⃣ - Debugging our application code in the browser</strong>
+
+In case we want to debug the application itself in the opened browser - it basically means to open the DevTools and start debugging as usual:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/2264841aaee50c8621536a8f39f81576.js"></script>
+
+Notice that we use <code>devtools</code> which launches the browser in a headful mode by default and opens the DevTools automatically.
+On top of that, we utilize <code>waitForTarget</code> in order to hold the browser process until we terminate it <strong>explicitly</strong>.
+
+Apparently - some of you may wonder if it&rsquo;s possible to <strong>sleep</strong> the browser with a specified time period, so:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/7d52c5724b19ac0e28196ee0b9574aaa.js"></script>
+
+The first approach is merely a function that resolves a promise when <code>setTimeout</code> finishes.
+The second approach, however, is much simpler but demands having a page instance (we&rsquo;ll get to that later).
+
+<strong>3️⃣ - Debugging the process that uses Puppeteer</strong>
+
+As we know, Puppeteer is executed in a Node.js process - which is absolutely separated from the browser process.
+Hence, in this case, we should treat it as much as we debug a regular Node.js application.
+
+Whether we connect to an <a href="https://nodejs.org/de/docs/guides/debugging-getting-started/#inspector-clients" target="_blank">inspector client</a> or prefer using <a href="/posts/debugging-nodejs-application-in-chrome-devtools-using-ndb/" target="_blank">ndb</a> -
+it&rsquo;s all about placing the breakpoints right before Puppeteer&rsquo;s operation. 
+Adding them programmatically is possible either, simply by inserting the <code>debugger;</code> statement, obviously.
+
+<h2 id="interacting-page">Interacting Page</h2>
+
+Now that Puppeteer is attached to a browser instance - which, as we already mentioned, represents our browser instance (Chromium, Firefox, whatever),
+allows us creating easily a page (or multiple pages):
+<script type="application/javascript" src="//gist.github.com/nitayneeman/9f082cbf5fa5bab43a6f0458369a057b.js"></script>
+
+In the code example above we plainly create a new page by invoking the <code>newPage</code> method. 
+Notice it&rsquo;s created on the default browser context.
+
+Basically, <code>Page</code> is a class that represents a single tab in the browser (or an <a href="https://developer.chrome.com/extensions/background_pages" target="_blank">extension background</a>).
+As you guess, this class provides handy methods and events in order to interact with the page (such as selecting elements, retrieving information, waiting for elements, etc.).
+
+Well, it&rsquo;s about time to present a list of practical examples, as promised. 
+To do this, we&rsquo;re going to scrape data from <a href="https://pptr.dev" target="_blank">the official Puppeteer website</a> and operate it.🕵
+
+<h2 id="navigating-by-url">Navigating by URL</h2>
+
+One of the earliest things is, intuitively, instructing the blank page to navigate to a specified URL:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/c40b7dcb7752f961e2301bde52751ffd.js"></script>
+
+We use <code>goto</code> to drive the created page to navigate Puppeteer’s website. 
+Afterward, we just take the title of Page’s main frame, print it, and expect to get that as an output:
+<figure>
+    <img src="https://d33wubrfki0l68.cloudfront.net/a9ddcfd11c579a020459f942ee7a7ac41cf2fc93/63d90/images/posts/2019-03-16-getting-to-know-puppeteer-using-practical-examples/getting-to-know-puppeteer.example.gif"
+         alt="Navigating by a URL and scraping the title"/> <figcaption>
+            <h4>Navigating by a URL and scraping the title</h4>
+        </figcaption>
+</figure>
+
+
+As we notice, the title is unexpectedly missing. 
+🧐
+
+This example shows us which there&rsquo;s no guarantee that our page would render the selected element at the right moment, and if anything.
+To clarify - possible reasons could be that the page is loaded slowly, part of the page is lazy-loaded, or perhaps it&rsquo;s navigated immediately to another page.
+
+That&rsquo;s exactly why Puppeteer provides methods to wait for stuff like <a href="https://pptr.dev/#?product=Puppeteer&amp;show=api-pagewaitforselectorselector-options" target="_blank">elements</a>, <a href="https://pptr.dev/#?product=Puppeteer&amp;show=api-pagewaitfornavigationoptions" target="_blank">navigation</a>, <a href="https://pptr.dev/#?product=Puppeteer&amp;show=api-pagewaitforfunctionpagefunction-options-args" target="_blank">functions</a>, <a href="https://pptr.dev/#?product=Puppeteer&amp;show=api-pagewaitforrequesturlorpredicate-options" target="_blank">requests</a>, <a href="https://pptr.dev/#?product=Puppeteer&amp;show=api-pagewaitforresponseurlorpredicate-options" target="_blank">responses</a> or simply a certain <a href="https://pptr.dev/#?product=Puppeteer&amp;show=api-pagewaitforselectororfunctionortimeout-options-args" target="_blank">predicate</a> - mainly to deal with an <strong>asynchronous</strong> flow.
+
+Anyway, it turns out that Puppeteer&rsquo;s website has an entry page, which immediately redirects us to the well-known website&rsquo;s index page.
+The thing is, that entry page in question doesn&rsquo;t render a <code>title</code> meta element:
+<figure>
+    <img src="https://d33wubrfki0l68.cloudfront.net/bee4443f4c56ef79a8a669da3a374b1f23339947/9ae10/images/posts/2019-03-16-getting-to-know-puppeteer-using-practical-examples/getting-to-know-puppeteer2.example.gif"
+         alt="Evaluating the title meta element"/> <figcaption>
+            <h4>Evaluating the title meta element</h4>
+        </figcaption>
+</figure>
+
+
+When navigating to Puppeteer&rsquo;s website, the <code>title</code> element is evaluated as an empty string. 
+However, a few moments later, the page is really navigated to the website&rsquo;s index page and rendered with a title.
+
+This means that the invoked <code>title</code> method is actually applied too early, on the entry page, instead of the website&rsquo;s index page. 
+Thus, the entry page is considered as the first main frame, and eventually its title, which is an empty string, is returned.
+
+Let&rsquo;s solve that case in a simple way:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/33efd11d066b17dcd42e6aebca06e65f.js"></script>
+
+All we do, is instructing Puppeteer to wait until the page renders a <code>title</code> meta element, which is achieved by invoking <code>waitForSelector</code>. 
+This method basically waits until the selected element is rendered within the page.
+
+In that way - we can easily deal with asynchronous rendering and ensure that elements are visible on the page.
+
+<h2 id="emulating-devices">Emulating Devices</h2>
+
+Puppeteer&rsquo;s library provides tools for approximating how the page looks and behaves on various devices, which are pretty useful when testing a website&rsquo;s responsiveness.
+
+Let&rsquo;s emulate a mobile device and navigate to the official website:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/c90a7fb97bd7cf25a9afda84e44086ac.js"></script>
+
+We choose to emulate an iPhone X - which means changing the user agent appropriately.
+Furthermore, we adjust the viewport size according to the display points that appear <a href="https://developer.apple.com/library/archive/documentation/DeviceInformation/Reference/iOSDeviceCompatibility/Displays/Displays.html" target="_blank">here</a>.
+
+It&rsquo;s easy to understand that <code>setUserAgent</code> defines a specific user agent for the page, whereas <code>setViewport</code> modifies the viewport definition of the page. 
+In case of multiple pages, each one has its own user agent and viewport definition.
+
+Here&rsquo;s the result of the code example above:
+
+<figure>
+    <img src="https://d33wubrfki0l68.cloudfront.net/e3ece42c36997561f49f75036eaec5205b31a0d9/4736d/images/posts/2019-03-16-getting-to-know-puppeteer-using-practical-examples/getting-to-know-puppeteer3.example.png"
+         alt="Emulating an iPhone X" width="300"/> <figcaption>
+            <h4>Emulating an iPhone X</h4>
+        </figcaption>
+</figure>
+
+Indeed, the console panel shows us that the page is opened with the right user agent and viewport size.
+
+The truth is that we don&rsquo;t have to specify the iPhone X&rsquo;s descriptions explicitly, because the library arrives with a built-in list of <a href="https://github.com/GoogleChrome/puppeteer/blob/master/DeviceDescriptors.js" target="_blank">device descriptors</a>. 
+On top of that, it provides a method called <code>emulate</code> which is practically a shortcut for invoking <code>setUserAgent</code> and <code>setViewport</code>, one after another.
+
+Let&rsquo;s use that:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/4d5aff2659bd6eb62446da749a8d49d1.js"></script>
+
+It&rsquo;s merely changed to pass the <a href="https://github.com/GoogleChrome/puppeteer/blob/master/DeviceDescriptors.js#L451" target="_blank">boilerplate descriptor</a> to <code>emulate</code> (instead of declaring that explicitly).
+Notice we import the descriptors out of <code>puppeteer/DeviceDescriptors</code>.
+
+<h2 id="handling-events">Handling Events</h2>
+
+The <code>Page</code> class supports emitting of various events by actually extending the Node.js&rsquo;s <code>EventEmitter</code> object.
+This means we can use the <a href="https://nodejs.org/api/events.html#events_class_eventemitter" target="_blank">natively supported methods</a> in order to handle these events - such as: <code>on</code>, <code>once</code>, <code>removeListener</code> and so on.
+
+Here&rsquo;s the list of the supported events:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/34f212f8727e27521f48b864e78b4771.js"></script>
+
+From looking at the list above - we clearly understand that the supported events include aspects of loading, frames, metrics, console, errors, requests, responses and even more!
+
+Let&rsquo;s simulate and trigger part of the events by adding this script:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/7546990595cb946c8a45dc44869814c8.js"></script>
+
+As we probably know, <code>evaluate</code> just executes the supplied script within the page context.
+
+Though, the output is going to reflect the events we listen:
+
+<figure>
+    <img src="https://d33wubrfki0l68.cloudfront.net/34f535b0b1adec45010489abc0235da6180e110c/005f6/images/posts/2019-03-16-getting-to-know-puppeteer-using-practical-examples/getting-to-know-puppeteer4.example.gif"
+         alt="Listening the page events"/> <figcaption>
+            <h4>Listening the page events</h4>
+        </figcaption>
+</figure>
+
+In case you wonder - it&rsquo;s possible to listen for <strong>custom events</strong> that are triggered in the page. 
+Basically it means to define the event handler on page&rsquo;s window using the <code>exposeFunction</code> method.
+Check out <a href="https://github.com/GoogleChrome/puppeteer/blob/master/examples/custom-event.js" target="_blank">this</a> example to understand exactly how to implement it.
+
+<h2 id="operating-mouse">Operating Mouse</h2>
+
+In general, the mouse controls the motion of a pointer in two dimensions within a viewport.
+Unsurprisingly, Puppeteer represents the mouse by a class called <code>Mouse</code>.
+
+Moreover, every <code>Page</code> instance has a <code>Mouse</code> - which allows performing operations such as changing its position and clicking within the viewport.
+
+Let&rsquo;s start with changing the mouse position:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/c8460dd50235c93d3ceb57517980b068.js"></script>
+
+The scenario we simulate is moving the mouse over the second link of the left API sidebar.
+We set a viewport size and wait explicitly for the sidebar component to ensure it&rsquo;s really rendered.
+
+Then, we invoke <code>move</code> in order to position the mouse with appropriate coordinates, that actually represent the center of the second link.
+
+This is the expected result:
+<figure>
+    <img src="https://d33wubrfki0l68.cloudfront.net/590fda7859240dfbb59565fb182ad971d89611f2/f4a7d/images/posts/2019-03-16-getting-to-know-puppeteer-using-practical-examples/getting-to-know-puppeteer5.example.png"
+         alt="Hovering the second link"/> <figcaption>
+            <h4>Hovering the second link</h4>
+        </figcaption>
+</figure>
+
+
+Although it&rsquo;s hard to see, the second link is hovered as we planned.
+
+The next step is simply clicking on the link by the respective coordinates:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/d15e2a83f245f778cf4a75aa94e4b576.js"></script>
+
+Instead of changing the position explicitly, we just use <code>click</code> - which basically triggers <code>mousemove</code>, <code>mousedown</code> and <code>mouseup</code> events, one after another.
+
+<em><strong>Note:</strong> We delay the pressing in order to demonstrate how to modify the click behavior, nothing more. 
+It’s worth pointing out that we can also control the mouse buttons (left, center, right) and the number of clicks.</em>
+
+Another nice thing is the ability to simulate a <strong>drag and drop</strong> behavior easily:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/d8cd4b051e7c419bbc959cc4267da286.js"></script>
+
+All we do is using the <code>Mouse</code> methods for grabbing the mouse, from one position to another, and afterward releasing it.
+
+<h2 id="operating-keyboard">Operating Keyboard</h2>
+
+The keyboard is another way to interact with the page, mostly for input purposes.
+
+Similar to the mouse, Puppeteer represents the keyboard by a class called <code>Keyboard</code> - and every <code>Page</code> instance holds such an instance.
+
+Let&rsquo;s type some text within the search input:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/6e67f7662d46c462adc174ebe76654e9.js"></script>
+
+Notice that we wait for the toolbar (instead of the API sidebar).
+Then, we focus the search input element and simply type a text into it.
+
+On top of typing text, it&rsquo;s obviously possible to trigger keyboard events:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/4aa1c17b612ce08f6049735166fd36bb.js"></script>
+
+Basically, we press <code>ArrowDown</code> twice and <code>Enter</code> in order to choose the third search result.
+
+See that in action:
+<figure>
+    <img src="https://d33wubrfki0l68.cloudfront.net/12f476512961c9ed6d32506b86dcb1cffc2100da/60d7f/images/posts/2019-03-16-getting-to-know-puppeteer-using-practical-examples/getting-to-know-puppeteer6.example.gif"
+         alt="Choosing a search result using the keyboard"/> <figcaption>
+            <h4>Choosing a search result using the keyboard</h4>
+        </figcaption>
+</figure>
+
+
+By the way, it&rsquo;s nice to know that there is a <a href="https://github.com/GoogleChrome/puppeteer/blob/master/lib/USKeyboardLayout.js" target="_blank">list</a> of the key codes.
+
+<h2 id="taking-screenshots">Taking Screenshots</h2>
+
+Taking screenshots through Puppeteer is a quite easy mission.
+
+The API provides us a dedicated method for that:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/d058aeb61e73d6d4d0c1b9580da90b68.js"></script>
+
+As we see, the <code>screenshot</code> method makes all the charm - whereas we just have to insert a path for the output.
+
+Moreover, it&rsquo;s also possible to control the type, quality and even clipping the image:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/8cff466fa9c094e0fb80a8ca18dc9371.js"></script>
+
+Here&rsquo;s the output:
+<figure>
+    <img src="https://d33wubrfki0l68.cloudfront.net/0130bb3e10ca459bf52270cb592e7247291f5124/b7e54/images/posts/2019-03-16-getting-to-know-puppeteer-using-practical-examples/getting-to-know-puppeteer7.example.jpg"
+         alt="Capturing an area within the page"/> <figcaption>
+            <h4>Capturing an area within the page</h4>
+        </figcaption>
+</figure>
+
+
+<h2 id="generating-pdf">Generating PDF</h2>
+
+Puppeteer is either useful for generating a PDF file from the page content.
+
+Let&rsquo;s demonstrate that:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/357b53391fe7afbdd4f4a2e9084fb31f.js"></script>
+
+Running the <code>pdf</code> method simply generates us the following file:
+<figure>
+    <img src="https://d33wubrfki0l68.cloudfront.net/459fa3b18f9b1b40223039f4b82727a02600187b/9eaf7/images/posts/2019-03-16-getting-to-know-puppeteer-using-practical-examples/getting-to-know-puppeteer8.example.gif"
+         alt="Generating a PDF file from the content"/> <figcaption>
+            <h4>Generating a PDF file from the content</h4>
+        </figcaption>
+</figure>
+
+
+<h2 id="faking-geolocation">Faking Geolocation</h2>
+
+Many websites customize their content based on the user&rsquo;s geolocation.
+
+Modifying the geolocation of a page is pretty obvious:
+
+<script type="application/javascript" src="//gist.github.com/nitayneeman/bb00805785011013d4117a8e59a4aa8a.js"></script>
+
+First, we grants the browser context the appropriate permissions. 
+Then, we use <code>setGeolocation</code> to override the current geolocation with the coordinates of the north pole.
+
+Here&rsquo;s what we get when printing the location through <code>navigator</code>:
+
+<figure>
+    <img src="https://d33wubrfki0l68.cloudfront.net/24b351dc0af93891b977a39e6d490eb612662455/f39dd/images/posts/2019-03-16-getting-to-know-puppeteer-using-practical-examples/getting-to-know-puppeteer9.example.png"
+         alt="Changing the geolocation of the page" width="640"/> <figcaption>
+            <h4>Changing the geolocation of the page</h4>
+        </figcaption>
+</figure>
+
+<h2 id="accessibility">Accessibility</h2>
+
+The <a href="https://developers.google.com/web/fundamentals/accessibility/semantics-builtin/the-accessibility-tree" target="_blank">accessibility tree</a> is a subset of the DOM that includes only elements with relevant information for assistive technologies such as screen readers, voice controls and so on.
+Having the accessibility tree means we can analyze and test the accessibility support in the page.
+
+When it comes to Puppeteer, it enables to capture the current state of the tree:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/06e407d4e7f40fee2199dc02f8d2595c.js"></script>
+
+The snapshot doesn&rsquo;t pretend to be the full tree, but rather including just the interesting nodes (those which are acceptable by most of the assistive technologies).
+
+<em><strong>Note:</strong> We can obtain the full tree through setting <code>interestingOnly</code> to false.</em>
+
+<h2 id="code-coverage">Code Coverage</h2>
+
+The code coverage feature was introduced officially as part of <a href="https://developers.google.com/web/updates/2017/04/devtools-release-notes#coverage" target="_blank">Chrome v59</a> - and provides the ability to measure how much code is being used, compared to the code that is actually loaded.
+In this manner, we can reduce the dead code and eventually speed up the loading time of the pages.
+
+With Puppeteer, we can manipulate the same feature programmatically:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/acd0c653f5bf3dea1a0fd34ce1018099.js"></script>
+
+We instruct Puppeteer to gather coverage information for JavaScript and CSS files, until the page is loaded.
+Thereafter, we define <code>calculateUsedBytes</code> which goes through a collected coverage data and calculates how many bytes are being used (based on the coverage).
+At last, we merely invoke the created function on both coverages.
+
+Let&rsquo;s look at the output:
+
+<script type="application/javascript" src="//gist.github.com/nitayneeman/48b9f0f7f26210667f3ae1fcc64d2950.js"></script>
+
+As expected, the output contains <code>usedBytes</code> and <code>totalBytes</code> for each file.
+
+<h2 id="measuring-performance">Measuring Performance</h2>
+
+One objective of measuring performance in terms of websites is to analyze how a page performs, during load and runtime - intending to make it faster.
+
+Let&rsquo;s see how we use Puppeteer to measure our page performance:
+
+<strong>1️⃣ - Analyzing load time through metrics</strong>
+
+<a href="https://www.w3.org/TR/navigation-timing/" target="_blank">Navigation Timing</a> is a Web API that provides information and metrics relating to page navigation and load events, and accessible by <code>window.performance</code>.
+
+In order to benefit from it, we should evaluate this API within the page context:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/b75273777f14a37f8ec4c04a0a01f9ec.js"></script>
+
+Notice that if <code>evaluate</code> receives a function which returns a non-serializable value - then <code>evaluate</code> returns eventually <code>undefined</code>.
+That&rsquo;s exactly why we stringify <code>window.performance</code> when evaluating within the page context.
+
+The result is transformed into a comfy object, which looks like the following:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/5b8967e8acdadcee36e774ea24187275.js"></script>
+
+Now we can simply combine these metrics and calculate different load times over the loading timeline.
+For instance, <code>loadEventEnd - navigationStart</code> represents the time since the navigation started until the page is loaded.
+
+<em><strong>Note:</strong> All explanations about the different timings above are available <a href="https://www.w3.org/TR/navigation-timing/#processing-model" target="_blank">here</a>.</em>
+
+<strong>2️⃣ - Analyzing runtime through metrics</strong>
+
+As far as the runtime metrics, unlike load time, Puppeteer provides a neat API:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/2b2c92450d5f7a5a8ba177293df25282.js"></script>
+
+We invoke the <code>metrics</code> method and get the following result:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/10f3528f9f549d68627196e1ba9012a5.js"></script>
+
+The interesting metric above is apparently <code>JSHeapUsedSize</code> which represents, in other words, the actual memory usage of the page.
+Notice that the result is actually the output of <code>Performance.getMetrics</code>, which is part of <a href="https://chromedevtools.github.io/devtools-protocol/tot/Performance#method-getMetrics" target="_blank">Chrome DevTools Protocol</a>.
+
+<strong>3️⃣ - Analyzing browser activities through tracing</strong>
+
+<a href="http://www.chromium.org/developers/how-tos/trace-event-profiling-tool" target="_blank">Chromium Tracing</a> is a profiling tool that allows recording what the browser is really doing under the hood - with an emphasis on every thread, tab, and process.
+And yet, it&rsquo;s reflected in Chrome DevTools as part of the <a href="https://developers.google.com/web/tools/chrome-devtools/evaluate-performance/timeline-tool" target="_blank">Timeline</a> panel.
+
+Furthermore, this tracing ability is possible with Puppeteer either - which, as we might guess, practically uses the <a href="https://chromedevtools.github.io/devtools-protocol/tot/Tracing" target="_blank">Chrome DevTools Protocol</a>.
+
+For example, let&rsquo;s record the browser activities during navigation:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/a7aa5b461498da58790c8b8b0ea1e54e.js"></script>
+
+When the recording is stopped, a file called <code>trace.json</code> is created and contains the output that looks like:
+<script type="application/javascript" src="//gist.github.com/nitayneeman/05b903701d236406d98537ddb08d86e3.js"></script>
+
+Now that we&rsquo;ve the trace file, we can open it using Chrome DevTools, <a href="chrome://tracing" target="_blank">chrome://tracing</a> or <a href="https://chromedevtools.github.io/timeline-viewer/" target="_blank">Timeline Viewer</a>.
+
+Here&rsquo;s the Performance panel after importing the trace file into the DevTools:
+<figure>
+    <img src="https://d33wubrfki0l68.cloudfront.net/e5fee1863ff460eb709686601c2c2d4b723a073f/567c5/images/posts/2019-03-16-getting-to-know-puppeteer-using-practical-examples/getting-to-know-puppeteer11.example.png"
+         alt="Importing a trace file" width="640"/> <figcaption>
+            <h4>Importing a trace file</h4>
+        </figcaption>
+</figure>
+
+
+<h2 id="summary">Summary</h2>
+
+We introduced today the Puppeteer&rsquo;s API through concrete examples.
+
+Let&rsquo;s recap the main points:
+
+<ul>
+<li>Puppeteer is a Node.js library for automating, testing and scraping web pages on top of the Chrome DevTools Protocol.</li>
+<li>Puppeteer&rsquo;s ecosystem provides a lightweight package, <code>puppeteer-core</code>, which is a library for browser automation - that interacts with any browser, which is based on DevTools protocol, without installing Chromium.</li>
+<li>Puppeteer&rsquo;s ecosystem provides a package, which is actually the full product, that installs Chromium in addition to the browser automation library.</li>
+<li>Puppeteer provides the ability to launch a Chromium browser instance or just connect an existing instance.</li>
+<li>Puppeteer&rsquo;s ecosystem provides an experimental package, <code>puppeteer-firefox</code>, that interacts with Firefox.</li>
+<li>The browser context allows separating different sessions for a single browser instance.</li>
+<li>Puppeteer launches the browser in a headless mode by default, which merely uses the command line. 
+Also - a headful mode, for opening the browser with a GUI, is supported either.</li>
+<li>Puppeteer provides several ways to debug our application in the browser, whereas, debugging the process that executes Puppeteer is obviously the same as debugging a regular Node.js process.</li>
+<li>Puppeteer allows navigating to a page by a URL and operating the page through the mouse and keyboard.</li>
+<li>Puppeteer allows examining a page&rsquo;s visibility, behavior and responsiveness on various devices.</li>
+<li>Puppeteer allows taking screenshots of the page and generating PDFs from the content, easily.</li>
+<li>Puppeteer allows analyzing and testing the accessibility support in the page.</li>
+<li>Puppeteer allows speeding up the page performance by providing information about the dead code, handy metrics and manually tracing ability.</li>
+</ul>
+
+And finally, Puppeteer is a powerful browser automation tool with a pretty simple API.
+A decent number of capabilities are supported, including such we haven&rsquo;t covered at all - and that&rsquo;s why your next step could definitely be <a href="https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md" target="_blank">the official documentation</a>. 
+😉
+
+Here&rsquo;s attached the final <a href="https://github.com/nitayneeman/puppeteer-examples" target="_blank">project</a>:
+<iframe
+        type="text/html"
+        async-src="https://stackblitz.com/edit/puppeteer-examples?ctl=1&embed=1&file=02-interacting-page%2fcreating-a-page.js&view=editor"
+        frameborder="0">
+</iframe>
+
+<h2 id="vs-code-snippets">VS Code Snippets</h2>
+
+Well, if you wish to get some useful code snippets of Puppeteer API for Visual Studio Code - then the following extension might interest you:
+
+<figure>
+    <img src="https://github.com/nitayneeman/vscode-puppeteer-snippets/blob/master/images/preview.gif?raw=true"
+         alt="Using the snippets to generate a bsic Puppeteer script"/> <figcaption>
+            <h4>Using the snippets to generate a basic Puppeteer script</h4>
+        </figcaption>
+</figure>
+
+You&rsquo;re welcome to take a look at <a href="https://marketplace.visualstudio.com/items?itemName=nitayneeman.puppeteer-snippets" target="_blank">the extension page</a>.
+
+<script type='text/javascript' src='readbook.js'></script>
+</pre></body></html>

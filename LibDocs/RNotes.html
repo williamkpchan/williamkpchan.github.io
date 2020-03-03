@@ -3990,6 +3990,78 @@ a <- 1
 b <- 2
 substitute(a + b + z) ## a + b + z
 
+<h2>When to use CPUs vs GPUs vs TPUs?</h2>
+Behind every machine learning algorithm is hardware crunching away at multiple gigahertz. 
+You may have noticed several processor options when setting up Kaggle notebooks, but which one is best for you? In this blog post, we compare the relative advantages and disadvantages of using CPUs (<a href="https://www.intel.com/content/www/us/en/products/processors/xeon.html" target="_blank">Intel Xeon</a>*) vs GPUs (<a href="https://www.nvidia.com/en-us/data-center/tesla-p100/" target="_blank">Nvidia Tesla P100</a>) vs TPUs (<a href="https://cloud.google.com/tpu/" target="_blank">Google TPU v3</a>) for training machine learning models that were written using <a href="https://keras.io/" target="_blank">tf.keras</a> (Figure 1**). 
+We’re hoping this will help you make sense of the options and select the right choice for your project.
+
+<img src="https://miro.medium.com/max/1466/1*suXcuHEe29aKLPrQnXGBrg.png">
+
+How we prepared the test
+In order to compare the performance of CPUs vs GPUs vs TPUs for accomplishing common data science tasks, we used the <a href="https://www.tensorflow.org/datasets/catalog/tf_flowers" target="_blank">tf_flowers dataset</a> to train a convolutional neural network, and then the exact same code was run three times using the three different backends (CPUs vs GPUs vs TPUs; GPUs were NVIDIA P100 with Intel Xeon 2GHz (2 core) CPU and 13GB RAM. 
+TPUs were TPUv3 (8 core) with Intel Xeon 2GHz (4 core) CPU and 16GB RAM). 
+The accompanying <a href="https://www.kaggle.com/mgornergoogle/flowers-with-keras-and-xception-fine-tuned-on-gpu" target="_blank">tutorial notebook</a> demonstrates a few best practices for getting the best performance out of your TPU.
+For example:
+
+Using a dataset of sharded files (<a href="https://www.kaggle.com/paultimothymooney/convert-kaggle-dataset-to-gcs-bucket-of-tfrecords" target="_blank">e.g., .TFRecord</a>)
+Using the <a href="https://www.tensorflow.org/guide/data" target="_blank">tf.data</a> API to pass the training data to the TPU
+Using large batch sizes (e.g. 
+batch_size=128)
+
+By adding these precursory steps to your workflow, it is possible to avoid a common I/O bottleneck that otherwise prevents the TPU from operating at its full potential. 
+You can find additional tips for optimizing your code to run on TPUs by visiting the official <a href="https://www.kaggle.com/docs/tpu" target="_blank">Kaggle TPU documentation</a>.
+How the hardware performed
+The most notable difference between the three hardware types that we tested was the speed that it took to train a model using <a href="https://keras.io/" target="_blank">tf.keras</a>. 
+The tf.keras library is one of the most popular machine learning frameworks because tf.keras makes it easy to quickly experiment with new ideas. 
+If you spend less time writing code then you have more time to perform your calculations, and if you spend less time waiting for your code to run, then you have more time to evaluate new ideas (Figure 2). 
+tf.keras and TPUs are a powerful combination when participating in <a href="https://kaggle.com/c/flower-classification-with-tpus" target="_blank">machine learning competitions</a>!
+
+<img src="https://miro.medium.com/max/1438/1*bqmG-YzgJzVeLbQ5Ym1iFg.png">
+For our first experiment, we used the same code (a modified version*** of the <a href="https://www.kaggle.com/mgornergoogle/flowers-with-keras-and-xception-fine-tuned-on-gpu" target="_blank">official tutorial notebook</a>) for all three hardware types, which required using a very small batch size of 16 in order to avoid out-of-memory errors from the CPU and GPU. 
+Under these conditions, we observed that TPUs were responsible for a ~100x speedup as compared to CPUs and a ~3.5x speedup as compared to GPUs when training an <a href="https://keras.io/applications/#xception" target="_blank">Xception</a> model (Figure 3). 
+Because TPUs operate more efficiently with large batch sizes, we also tried increasing the batch size to 128 and this resulted in an additional ~2x speedup for TPUs and out-of-memory errors for GPUs and CPUs. 
+Under these conditions, the TPU was able to train an <a href="https://keras.io/applications/#xception" target="_blank">Xception</a> model more than 7x as fast as the GPU from the previous experiment****.
+
+<img src="https://miro.medium.com/max/1438/1*p2X9DQcq9K5Iu76Kk82vrg.png">
+The observed speedups for model training varied according to the type of model, with Xception and Vgg16 performing better than ResNet50 (Figure 4). Model training was the only type of task where we observed the TPU to outperform the GPU by such a large margin. 
+For example, we observed that in our hands the TPUs were ~3x faster than CPUs and ~3x slower than GPUs for performing a small number of predictions (TPUs perform exceptionally when making predictions in some situations such as when <a href="https://docs.google.com/presentation/d/1O49AkNyYV48n0X4nWr7KE-5aask88pz9gBSQ26ZG-5o/edit#slide=id.g50ce3d3866_0_1590" target="_blank">making predictions</a> on very large batches, which were not present in this experiment).
+
+<img src="https://miro.medium.com/max/46/1*p7U2zlYn9O5Yvjluh2P-dg.png">
+<img src="https://miro.medium.com/max/1466/1*p7U2zlYn9O5Yvjluh2P-dg.png">
+To supplement these results, we note that <a href="https://arxiv.org/abs/1907.10701" target="_blank">Wang<em> et. 
+al</em></a> have developed a rigorous benchmark called ParaDnn [1] that can be used to compare the performance of different hardware types for training machine learning models. 
+By using this method Wang<em> et. 
+al</em> were able to conclude that the performance benefit for parameterized models ranged from 1x to 10x, and the performance benefit for real models ranged from 3x to 6.8x when a TPU was used instead of a GPU (Figure 5). 
+TPUs perform best when combined with sharded datasets, large batch sizes, and large models.
+
+<img src="https://miro.medium.com/max/1466/1*QbP2CPDZH5BQWlnaTtW3oA.png">
+Price considerations when training models
+While our comparisons treated the hardware equally, there is a sizeable difference in pricing. TPUs are ~5x as expensive as GPUs (<a href="https://cloud.google.com/compute/gpus-pricing" target="_blank">$1.46/hr</a> for a <a href="https://www.nvidia.com/en-us/data-center/tesla-p100/" target="_blank">Nvidia Tesla P100</a> GPU vs <a href="https://cloud.google.com/tpu/pricing" target="_blank">$8.00/hr</a> for a <a href="https://cloud.google.com/tpu/" target="_blank">Google TPU v3</a> vs <a href="https://cloud.google.com/tpu/pricing" target="_blank">$4.50/hr</a> for the TPUv2 with “on-demand” access on <a href="https://cloud.google.com/pricing/" target="_blank">GCP</a> ). 
+If you are trying to optimize for cost then it makes sense to use a TPU if it will train your model at least 5 times as fast as if you trained the same model using a GPU.
+We consistently observed model training speedups on the order of ~5x when the data was stored in <a href="https://www.kaggle.com/paultimothymooney/convert-kaggle-dataset-to-gcs-bucket-of-tfrecords" target="_blank">a sharded format</a> in a <a href="https://www.kaggle.com/paultimothymooney/how-to-move-data-from-kaggle-to-gcs-and-back" target="_blank">GCS bucket</a> then passed to the TPU in large batch sizes, and therefore we recommend TPUs to cost-conscious consumers that are familiar with the <a href="http://tf.data" target="_blank">tf.data</a> API.
+Some machine learning practitioners prioritize the reduction of model training time as opposed to prioritizing the reduction of model training costs. 
+For someone that just wants to train their model as fast as possible, the TPU is the best choice. 
+If you spend less time training your model, then you have more time to iterate upon new ideas. 
+But don’t take our word for it — you can evaluate the performance benefits of CPUs, GPUs, and TPUs by running your own code in a <a href="https://www.kaggle.com/docs/kernels#the-kernels-environment" target="_blank">Kaggle Notebook</a>, free-of-charge. 
+Kaggle users are already having a lot of fun and success experimenting with TPUs and text data: check out <a href="https://www.kaggle.com/c/tensorflow2-question-answering/discussion/127333" target="_blank">this forum post</a> that describes how TPUs were used to train a BERT transformer model to win $8,000 (2nd prize) in a recent <a href="https://www.kaggle.com/c/tensorflow2-question-answering" target="_blank">Kaggle competition</a>.
+Which hardware option should you choose?
+In summary, we recommend CPUs for their versatility and for their large memory capacity. 
+GPUs are a great alternative to CPUs when you want to speed up a variety of data science workflows, and TPUs are best when you specifically want to train a machine learning model as fast as you possibly can.
+You can get better results by optimizing your code for the specific hardware that you are using and we think it would be especially interesting to compare runtimes for code that has been optimized for a GPU to runtimes for code that has been optimized for a TPU. 
+For example, it would be interesting to record the time that it takes to train a gradient-boosted model using a GPU-accelerated library such as <a href="https://rapids.ai/" target="_blank">RAPIDS.ai</a> and then to compare that to the time that it takes to train a deep learning model using a TPU-accelerated library such as <a href="https://keras.io/" target="_blank">tf.keras</a>.
+What is the least amount of time that one can train an accurate machine learning model? How many different ideas can you evaluate in a single day? When used in combination with tf.keras, TPUs allow machine learning practitioners to spend less time writing code and less time waiting for their code to run — leaving more time to evaluate new ideas and improve one’s performance in <a href="http://kaggle.com/c/flower-classification-with-tpus" target="_blank">Kaggle Competitions</a>.
+
+<h3>Footnotes</h3>* CPU types vary according to variability. 
+In addition to the Intel Xeon CPUs, you can also get assigned to either Intel Skylake, Intel Broadwell, or Intel Haswell CPUs. 
+GPUs were NVIDIA P100 with Intel Xeon 2GHz (2 core) CPU and 13GB RAM. 
+TPUs were TPUv3 (8 core) with Intel Xeon 2GHz (4 core) CPU and 16GB RAM).
+** Image for Figure 1 from <a href="https://cloud.google.com/blog/products/ai-machine-learning/cloud-tpu-breaks-scalability-records-for-ai-inference" target="_blank">https://cloud.google.com/blog/products/ai-machine-learning/cloud-tpu-breaks-scalability-records-for-ai-inference,</a> with permission.
+*** The tutorial notebook was modified to keep the parameters (e.g. 
+batch_size, learning_rate, etc) consistent between the three different backends.
+**** CPU and GPU experiments used a batch size of 16 because it allowed the Kaggle notebooks to run from top to bottom without memory errors or 9-hr timeout errors. 
+Only TPU-enabled notebooks were able to run successfully when the batch size was increased to 128.
+,
+
 </pre>
 
 <br>
