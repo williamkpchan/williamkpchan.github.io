@@ -48,7 +48,8 @@ function changeImg() {
  if (topicpointer >= ImgList.length - 1) { topicpointer = 0;}
  else if (topicpointer < 0) { topicpointer = ImgList.length - 1;} 
  else { topicpointer = topicpointer + 1;}
- showImg()
+ console.log(topicpointer);
+ showImg();
 }
 function backward() { topicpointer = topicpointer - 2; changeImg();}
 function foreward() { changeImg();}
