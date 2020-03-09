@@ -27,6 +27,7 @@ if(testkey == "c"){ continU();}
 if(testkey == "r"){ randomFlip();}
 if(testkey == "5"){ randomFlip();}
 if(testkey == "s"){ showMov();}
+if(testkey == "0"){ showMov();}
 if(testkey == 't'){window.location = '#toc';}
 if(testkey == '8'){window.location = '#toc';}
 if(testkey == 'T'){window.scrollTo(0,0);}
@@ -48,7 +49,7 @@ function changeImg() {
  if (topicpointer >= ImgList.length - 1) { topicpointer = 0;}
  else if (topicpointer < 0) { topicpointer = ImgList.length - 1;} 
  else { topicpointer = topicpointer + 1;}
- console.log(topicpointer);
+ // console.log(topicpointer);
  showImg();
 }
 function backward() { topicpointer = topicpointer - 2; changeImg();}
@@ -57,13 +58,23 @@ function pause() { clearInterval(myVar);}
 function continU() { myVar = setInterval(changeImg, timer); foreward()}
 function showImg() { var thePointerImg = document.querySelector(".imagearea");
  thePointerImg.innerHTML = ImgList[topicpointer];
- console.log(thePointerImg.innerHTML); scroll(0,0);
+ // console.log(thePointerImg.innerHTML);
+ scroll(0,0);
 }
 function showMov() { var imgAdr = ImgList[topicpointer];
- var start = imgAdr.indexOf('<a href="')+8;
- var end = imgAdr.indexOf('">', start+1);
+ var start = imgAdr.indexOf('<a href="');
+   console.log("start number is " + start);
+
+ if(start == -1){
+   return;
+ } else {
+   start = start + 8;
+ }
+
+ var end = imgAdr.indexOf('"', start+1);
  var list = imgAdr.substring(start+1, end);
- console.log(list); window.open(list);
+ console.log(list);
+ window.open(list);
 }
 function randomFlip() { topicpointer = Math.floor(Math.random() * ImgList.length); changeImg();}
 randomFlip();
