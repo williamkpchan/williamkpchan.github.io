@@ -1,0 +1,1943 @@
+<base target="_blank"><html><head><title>machine library and ESP32 reference</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script type='text/javascript' src='../mainscript.js'></script>
+<style>
+body{width:80%;margin-left: 10%; font-size:22px;}
+strong, h1, h2 {color: gold;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>machine library and ESP32 reference</h1>
+<div id="toc"></div></center>
+<pre>
+<br>
+<br>
+<h2><span class="embossts"><code>machine</code></a> - functions related to the hardware</span></h2>
+The <code>machine</code> module contains specific functions related to the hardware on a particular board. 
+Most functions in this module allow to achieve direct and unrestricted access to and control of hardware blocks on a system (like CPU, timers, buses, etc.). 
+Used incorrectly, this can lead to malfunction, lockups, crashes of your board, and in extreme cases, hardware damage.
+
+A note of callbacks used by functions and class methods of <code>machine</code></a> module:
+all these callbacks should be considered as executing in an interrupt context.
+This is true for both physical devices with IDs &gt;= 0 and "virtual" devices with negative IDs like -1 (these "virtual" devices are still thin shims on top of real hardware and real hardware interrupts). 
+See Writing interrupt handlers.
+<h2> -- Reset related functions</h2>
+<dl><dt><code>machine.</code><code>reset</code>()</dt>
+<dd>Resets the device in a manner similar to pushing the external RESET
+button.</dd></dl>
+
+<dl><dt><code>machine.</code><code>soft_reset</code>()</dt>
+<dd>Performs a soft reset of the interpreter, deleting all Python objects and resetting the Python heap. 
+It tries to retain the method by which the user is connected to the MicroPython REPL (eg serial, USB, Wifi).</dd></dl>
+
+<dl><dt><code>machine.</code><code>reset_cause</code>()</dt>
+<dd>Get the reset cause. 
+See constants</a> for the possible return values.</dd></dl>
+
+
+<h2> -- Interrupt related functions</h2>
+<dl><dt><code>machine.</code><code>disable_irq</code>()</dt>
+<dd>Disable interrupt requests.
+Returns the previous IRQ state which should be considered an opaque value.
+This return value should be passed to the <code>enable_irq()</code></a> function to restore interrupts to their original state, before <code>disable_irq()</code></a> was called.</dd></dl>
+
+<dl><dt><code>machine.</code><code>enable_irq</code>(<em>state</em>)</dt>
+<dd>Re-enable interrupt requests.
+The <em>state</em> parameter should be the value that was returned from the most recent call to the <code>disable_irq()</code></a> function.</dd></dl>
+
+
+<h2> -- Power related functions</h2>
+<dl><dt><code>machine.</code><code>freq</code>()</dt>
+<dd>Returns CPU frequency in hertz.</dd></dl>
+
+<dl><dt><code>machine.</code><code>idle</code>()</dt>
+<dd>Gates the clock to the CPU, useful to reduce power consumption at any time during short or long periods. 
+Peripherals continue working and execution resumes as soon as any interrupt is triggered (on many ports this includes system timer interrupt occurring at regular intervals on the order of millisecond).</dd></dl>
+
+<dl><dt><code>machine.</code><code>sleep</code>()</dt>
+<dd>
+Note
+
+This function is deprecated, use <code>lightsleep()</code></a> instead with no arguments.
+
+
+</dd></dl>
+
+<dl><dt><code>machine.</code><code>lightsleep</code>([<em>time_ms</em>])</dt><dt>
+<code>machine.</code><code>deepsleep</code>([<em>time_ms</em>])</dt>
+<dd>Stops execution in an attempt to enter a low power state.
+
+If <em>time_ms</em> is specified then this will be the maximum time in milliseconds that the sleep will last for. 
+Otherwise the sleep can last indefinitely.
+
+With or without a timout, execution may resume at any time if there are events that require processing. 
+Such events, or wake sources, should be configured before sleeping, like <code>Pin</code></a> change or <code>RTC</code></a> timeout.
+
+The precise behaviour and power-saving capabilities of lightsleep and deepsleep is highly dependent on the underlying hardware, but the general properties are:
+
+<li>A lightsleep has full RAM and state retention. 
+Upon wake execution is resumed from the point where the sleep was requested, with all subsystems operational.</li>
+<li>A deepsleep may not retain RAM or any other state of the system (for example peripherals or network interfaces). 
+Upon wake execution is resumed from the main script, similar to a hard or power-on reset. 
+The <code>reset_cause()</code></a> function will return <code>machine.DEEPSLEEP</code></a> and this can be used to distinguish a deepsleep wake from other resets.</li>
+</ul>
+</dd></dl>
+
+<dl><dt><code>machine.</code><code>wake_reason</code>()</dt>
+<dd>Get the wake reason. 
+See constants</a> for the possible return values.
+
+Availability: ESP32, WiPy.</dd></dl>
+
+
+<h2> -- Miscellaneous functions</h2>
+<dl><dt><code>machine.</code><code>unique_id</code>()</dt>
+<dd>Returns a byte string with a unique identifier of a board/SoC. 
+It will vary from a board/SoC instance to another, if underlying hardware allows. 
+Length varies by hardware (so use substring of a full value if you expect a short ID). 
+In some MicroPython ports, ID corresponds to the network MAC address.</dd></dl>
+
+<dl><dt><code>machine.</code><code>time_pulse_us</code>(<em>pin</em>, <em>pulse_level</em>, <em>timeout_us=1000000</em>, <em>/</em>)</dt>
+<dd>Time a pulse on the given <em>pin</em>, and return the duration of the pulse in microseconds. 
+The <em>pulse_level</em> argument should be 0 to time a low pulse
+or 1 to time a high pulse.
+
+If the current input value of the pin is different to <em>pulse_level</em>,
+the function first (*) waits until the pin input becomes equal to <em>pulse_level</em>, then (**) times the duration that the pin is equal to <em>pulse_level</em>.
+If the pin is already equal to <em>pulse_level</em> then timing starts straight away.
+
+The function will return -2 if there was timeout waiting for condition marked (*) above, and -1 if there was timeout during the main measurement, marked (**) above. 
+The timeout is the same for both cases and given by <em>timeout_us</em> (which is in microseconds).</dd></dl>
+
+<dl><dt><code>machine.</code><code>rng</code>()</dt>
+<dd>Return a 24-bit software generated random number.
+
+Availability: WiPy.</dd></dl>
+
+<h3>Constants</h3>
+<dl><dt><code>machine.</code><code>IDLE</code></dt><dt>
+<code>machine.</code><code>SLEEP</code></dt><dt>
+<code>machine.</code><code>DEEPSLEEP</code></dt>
+<dd>IRQ wake values.</dd></dl>
+
+<dl><dt><code>machine.</code><code>PWRON_RESET</code></dt><dt>
+<code>machine.</code><code>HARD_RESET</code></dt><dt>
+<code>machine.</code><code>WDT_RESET</code></dt><dt>
+<code>machine.</code><code>DEEPSLEEP_RESET</code></dt><dt>
+<code>machine.</code><code>SOFT_RESET</code></dt>
+<dd>Reset causes.</dd></dl>
+
+<dl><dt><code>machine.</code><code>WLAN_WAKE</code></dt><dt>
+<code>machine.</code><code>PIN_WAKE</code></dt><dt>
+<code>machine.</code><code>RTC_WAKE</code></dt>
+<dd>Wake-up reasons.</dd></dl>
+
+
+<h2> -- Classes</h2>
+class Pin - control I/O pins
+class Signal - control and sense external I/O devices
+class ADC - analog to digital conversion
+class UART - duplex serial communication bus
+class SPI - a Serial Peripheral Interface bus protocol (master side)
+class I2C - a two-wire serial protocol
+class RTC - real time clock
+class Timer - control hardware timers
+class WDT - watchdog timer
+class SD - secure digital memory card (cc3200 port only)
+class SDCard - secure digital memory card
+<h2><span class="embossts">class Pin - control I/O pins</span></h2>
+A pin object is used to control I/O pins (also known as GPIO - general-purpose
+input/output). 
+Pin objects are commonly associated with a physical pin that can drive an output voltage and read input voltages. 
+The pin class has methods to set the mode of the pin (IN, OUT, etc) and methods to get and set the digital logic level.
+For analog control of a pin, see the <code>ADC</code> class.
+
+A pin object is constructed by using an identifier which unambiguously
+specifies a certain I/O pin. 
+The allowed forms of the identifier and the physical pin that the identifier maps to are port-specific. 
+Possibilities for the identifier are an integer, a string or a tuple with port and pin number.
+
+Usage Model:
+
+from machine import Pin
+
+# create an output pin on pin #0
+p0 = Pin(0, Pin.OUT)
+
+# set the value low then high
+p0.value(0)
+p0.value(1)
+
+# create an input pin on pin #2, with a pull up resistor
+p2 = Pin(2, Pin.IN, Pin.PULL_UP)
+
+# read and print the pin value
+print(p2.value())
+
+# reconfigure pin #0 in input mode
+p0.mode(p0.IN)
+
+# configure an irq callback
+p0.irq(lambda p:print(p))
+
+
+<h3>Constructors</h3>
+<dl><dt><em>class </em><code>machine.</code><code>Pin</code>(<em>id</em>, <em>mode=-1</em>, <em>pull=-1</em>, <em>*</em>, <em>value</em>, <em>drive</em>, <em>alt</em>)</dt>
+<dd>Access the pin peripheral (GPIO pin) associated with the given <code>id</code>. 
+If additional arguments are given in the constructor then they are used to initialise the pin. 
+Any settings that are not specified will remain in their previous state.
+
+The arguments are:
+
+<blockquote>
+<li><code>id</code> is mandatory and can be an arbitrary object. 
+Among possible value types are: int (an internal Pin identifier), str (a Pin name), and tuple (pair of [port, pin]).</li>
+<li><code>mode</code> specifies the pin mode, which can be one of:<ul>
+<li><code>Pin.IN</code> - Pin is configured for input. 
+If viewed as an output the pin is in high-impedance state.</li>
+<li><code>Pin.OUT</code> - Pin is configured for (normal) output.</li>
+<li><code>Pin.OPEN_DRAIN</code> - Pin is configured for open-drain output. 
+Open-drain output works in the following way: if the output value is set to 0 the pin is active at a low level; if the output value is 1 the pin is in a high-impedance state. 
+Not all ports implement this mode, or some might only on certain pins.</li>
+<li><code>Pin.ALT</code> - Pin is configured to perform an alternative function, which is port specific. 
+For a pin configured in such a way any other Pin methods
+(except <code>Pin.init()</code></a>) are not applicable (calling them will lead to undefined, or a hardware-specific, result). 
+Not all ports implement this mode.</li>
+<li><code>Pin.ALT_OPEN_DRAIN</code> - The Same as <code>Pin.ALT</code>, but the pin is configured as open-drain. 
+Not all ports implement this mode.</li>
+</ul>
+</li>
+<li><code>pull</code> specifies if the pin has a (weak) pull resistor attached, and can be one of:<ul>
+<li><code>None</code> - No pull up or down resistor.</li>
+<li><code>Pin.PULL_UP</code> - Pull up resistor enabled.</li>
+<li><code>Pin.PULL_DOWN</code> - Pull down resistor enabled.</li>
+</ul>
+</li>
+<li><code>value</code> is valid only for Pin.OUT and Pin.OPEN_DRAIN modes and specifies initial output pin value if given, otherwise the state of the pin peripheral remains unchanged.</li>
+<li><code>drive</code> specifies the output power of the pin and can be one of: <code>Pin.LOW_POWER</code>, <code>Pin.MED_POWER</code> or <code>Pin.HIGH_POWER</code>. 
+The actual current driving capabilities are port dependent. 
+Not all ports implement this argument.</li>
+<li><code>alt</code> specifies an alternate function for the pin and the values it can take are port dependent. 
+This argument is valid only for <code>Pin.ALT</code> and <code>Pin.ALT_OPEN_DRAIN</code> modes. 
+It may be used when a pin supports more than one alternate function. 
+If only one pin alternate function is supported the this argument is not required. 
+Not all ports implement this argument.</li>
+</ul>
+</blockquote>
+As specified above, the Pin class allows to set an alternate function for a particular pin, but it does not specify any further operations on such a pin. 
+Pins configured in alternate-function mode are usually not used as GPIO but are instead driven by other hardware peripherals. 
+The only operation supported on such a pin is re-initialising,
+by calling the constructor or <code>Pin.init()</code></a> method. 
+If a pin that is configured in alternate-function mode is re-initialised with <code>Pin.IN</code>, <code>Pin.OUT</code>, or <code>Pin.OPEN_DRAIN</code>, the alternate function will be removed from the pin.</dd></dl>
+
+<h3>Methods</h3>
+<dl><dt><code>Pin.</code><code>init</code>(<em>mode=-1</em>, <em>pull=-1</em>, <em>*</em>, <em>value</em>, <em>drive</em>, <em>alt</em>)</dt>
+<dd>Re-initialise the pin using the given parameters. 
+Only those arguments that are specified will be set. 
+The rest of the pin peripheral state will remain unchanged. 
+See the constructor documentation for details of the arguments.
+
+Returns <code>None</code>.</dd></dl>
+
+<dl><dt><code>Pin.</code><code>value</code>([<em>x</em>])</dt>
+<dd>This method allows to set and get the value of the pin, depending on whether the argument <code>x</code> is supplied or not.
+
+If the argument is omitted then this method gets the digital logic level of
+the pin, returning 0 or 1 corresponding to low and high voltage signals
+respectively. 
+The behaviour of this method depends on the mode of the pin:
+
+<blockquote>
+<li><code>Pin.IN</code> - The method returns the actual input value currently present on the pin.</li>
+<li><code>Pin.OUT</code> - The behaviour and return value of the method is undefined.</li>
+<li><code>Pin.OPEN_DRAIN</code> - If the pin is in state &#8216;0&#8217; then the behaviour and return value of the method is undefined. 
+Otherwise, if the pin is in state &#8216;1&#8217;, the method returns the actual input value currently present on the pin.</li>
+</ul>
+</blockquote>
+If the argument is supplied then this method sets the digital logic level of
+the pin. 
+The argument <code>x</code> can be anything that converts to a boolean.
+If it converts to <code>True</code>, the pin is set to state &#8216;1&#8217;, otherwise it is set to state &#8216;0&#8217;. 
+The behaviour of this method depends on the mode of the pin:
+
+<blockquote>
+<li><code>Pin.IN</code> - The value is stored in the output buffer for the pin. 
+The pin state does not change, it remains in the high-impedance state. 
+The stored value will become active on the pin as soon as it is changed to
+<code>Pin.OUT</code> or <code>Pin.OPEN_DRAIN</code> mode.</li>
+<li><code>Pin.OUT</code> - The output buffer is set to the given value immediately.</li>
+<li><code>Pin.OPEN_DRAIN</code> - If the value is &#8216;0&#8217; the pin is set to a low voltage state. 
+Otherwise the pin is set to high-impedance state.</li>
+</ul>
+</blockquote>
+When setting the value this method returns <code>None</code>.</dd></dl>
+
+<dl><dt><code>Pin.</code><code>__call__</code>([<em>x</em>])</dt>
+<dd>Pin objects are callable. 
+The call method provides a (fast) shortcut to set and get the value of the pin. 
+It is equivalent to Pin.value([x]).
+See <code>Pin.value()</code></a> for more details.</dd></dl>
+
+<dl><dt><code>Pin.</code><code>on</code>()</dt>
+<dd>Set pin to "1" output level.</dd></dl>
+
+<dl><dt><code>Pin.</code><code>off</code>()</dt>
+<dd>Set pin to "0" output level.</dd></dl>
+
+<dl><dt><code>Pin.</code><code>mode</code>([<em>mode</em>])</dt>
+<dd>Get or set the pin mode.
+See the constructor documentation for details of the <code>mode</code> argument.</dd></dl>
+
+<dl><dt><code>Pin.</code><code>pull</code>([<em>pull</em>])</dt>
+<dd>Get or set the pin pull state.
+See the constructor documentation for details of the <code>pull</code> argument.</dd></dl>
+
+<dl><dt><code>Pin.</code><code>drive</code>([<em>drive</em>])</dt>
+<dd>Get or set the pin drive strength.
+See the constructor documentation for details of the <code>drive</code> argument.
+
+Not all ports implement this method.
+
+Availability: WiPy.</dd></dl>
+
+<dl><dt><code>Pin.</code><code>irq</code>(<em>handler=None</em>, <em>trigger=(Pin.IRQ_FALLING | Pin.IRQ_RISING)</em>, <em>*</em>, <em>priority=1</em>, <em>wake=None</em>, <em>hard=False</em>)</dt>
+<dd>Configure an interrupt handler to be called when the trigger source of the pin is active. 
+If the pin mode is <code>Pin.IN</code> then the trigger source is
+the external value on the pin. 
+If the pin mode is <code>Pin.OUT</code> then the trigger source is the output buffer of the pin. 
+Otherwise, if the pin mode is <code>Pin.OPEN_DRAIN</code> then the trigger source is the output buffer for state &#8216;0&#8217; and the external pin value for state &#8216;1&#8217;.
+
+The arguments are:
+
+<blockquote>
+<li><code>handler</code> is an optional function to be called when the interrupt triggers. 
+The handler must take exactly one argument which is the <code>Pin</code> instance.
+
+</li>
+<li><code>trigger</code> configures the event which can generate an interrupt.
+Possible values are:
+
+<li><code>Pin.IRQ_FALLING</code> interrupt on falling edge.</li>
+<li><code>Pin.IRQ_RISING</code> interrupt on rising edge.</li>
+<li><code>Pin.IRQ_LOW_LEVEL</code> interrupt on low level.</li>
+<li><code>Pin.IRQ_HIGH_LEVEL</code> interrupt on high level.</li>
+</ul>
+These values can be OR&#8217;ed together to trigger on multiple events.
+
+</li>
+<li><code>priority</code> sets the priority level of the interrupt. 
+The values it can take are port-specific, but higher values always represent higher priorities.
+
+</li>
+<li><code>wake</code> selects the power mode in which this interrupt can wake up the system. 
+It can be <code>machine.IDLE</code>, <code>machine.SLEEP</code> or <code>machine.DEEPSLEEP</code>.
+These values can also be OR&#8217;ed together to make a pin generate interrupts in more than one power mode.
+
+</li>
+<li><code>hard</code> if true a hardware interrupt is used. 
+This reduces the delay between the pin change and the handler being called. 
+Hard interrupt handlers may not allocate memory; see Writing interrupt handlers</a>.
+
+</li>
+</ul>
+</blockquote>
+This method returns a callback object.</dd></dl>
+
+<h3>Constants</h3>
+The following constants are used to configure the pin objects. 
+Note that
+not all constants are available on all ports.
+
+<dl><dt><code>Pin.</code><code>IN</code></dt><dt>
+<code>Pin.</code><code>OUT</code></dt><dt>
+<code>Pin.</code><code>OPEN_DRAIN</code></dt><dt>
+<code>Pin.</code><code>ALT</code></dt><dt>
+<code>Pin.</code><code>ALT_OPEN_DRAIN</code></dt>
+<dd>Selects the pin mode.</dd></dl>
+
+<dl><dt><code>Pin.</code><code>PULL_UP</code></dt><dt>
+<code>Pin.</code><code>PULL_DOWN</code></dt><dt>
+<code>Pin.</code><code>PULL_HOLD</code></dt>
+<dd>Selects whether there is a pull up/down resistor. 
+Use the value
+<code>None</code> for no pull.</dd></dl>
+
+<dl><dt><code>Pin.</code><code>LOW_POWER</code></dt><dt>
+<code>Pin.</code><code>MED_POWER</code></dt><dt>
+<code>Pin.</code><code>HIGH_POWER</code></dt>
+<dd>Selects the pin drive strength.</dd></dl>
+
+<dl><dt><code>Pin.</code><code>IRQ_FALLING</code></dt><dt>
+<code>Pin.</code><code>IRQ_RISING</code></dt><dt>
+<code>Pin.</code><code>IRQ_LOW_LEVEL</code></dt><dt>
+<code>Pin.</code><code>IRQ_HIGH_LEVEL</code></dt>
+<dd>Selects the IRQ trigger type.</dd></dl>
+<h2><span class="embossts">class Signal - control and sense external I/O devices</span></h2>
+The Signal class is a simple extension of the <code>Pin</code></a> class. 
+Unlike Pin, which
+can be only in "absolute" 0 and 1 states, a Signal can be in "asserted"
+(on) or "deasserted" (off) states, while being inverted (active-low) or
+not. 
+In other words, it adds logical inversion support to Pin functionality.
+While this may seem a simple addition, it is exactly what is needed to
+support wide array of simple digital devices in a way portable across
+different boards, which is one of the major MicroPython goals. 
+Regardless
+of whether different users have an active-high or active-low LED, a normally
+open or normally closed relay - you can develop a single, nicely looking
+application which works with each of them, and capture hardware
+configuration differences in few lines in the config file of your app.
+
+Example:
+
+from machine import Pin, Signal
+
+# Suppose you have an active-high LED on pin 0
+led1_pin = Pin(0, Pin.OUT)
+# ... 
+and active-low LED on pin 1
+led2_pin = Pin(1, Pin.OUT)
+
+# Now to light up both of them using Pin class, you&#39;ll need to set
+# them to different values
+led1_pin.value(1)
+led2_pin.value(0)
+
+# Signal class allows to abstract away active-high/active-low
+# difference
+led1 = Signal(led1_pin, invert=False)
+led2 = Signal(led2_pin, invert=True)
+
+# Now lighting up them looks the same
+led1.value(1)
+led2.value(1)
+
+# Even better:
+led1.on()
+led2.on()
+
+Following is the guide when Signal vs Pin should be used:
+
+<li>Use Signal: If you want to control a simple on/off (including software
+PWM!) devices like LEDs, multi-segment indicators, relays, buzzers, or
+read simple binary sensors, like normally open or normally closed buttons,
+pulled high or low, Reed switches, moisture/flame detectors, etc. 
+etc.
+Summing up, if you have a real physical device/sensor requiring GPIO
+access, you likely should use a Signal.</li>
+<li>Use Pin: If you implement a higher-level protocol or bus to communicate
+with more complex devices.</li>
+</ul>
+The split between Pin and Signal come from the usecases above and the
+architecture of MicroPython: Pin offers the lowest overhead, which may
+be important when bit-banging protocols. 
+But Signal adds additional
+flexibility on top of Pin, at the cost of minor overhead (much smaller
+than if you implemented active-high vs active-low device differences in
+Python manually!). 
+Also, Pin is a low-level object which needs to be
+implemented for each support board, while Signal is a high-level object
+which comes for free once Pin is implemented.
+
+If in doubt, give the Signal a try! Once again, it is offered to save
+developers from the need to handle unexciting differences like active-low
+vs active-high signals, and allow other users to share and enjoy your
+application, instead of being frustrated by the fact that it doesn&#8217;t
+work for them simply because their LEDs or relays are wired in a slightly
+different way.
+
+<h3>Constructors</h3>
+<dl><dt><em>class </em><code>machine.</code><code>Signal</code>(<em>pin_obj</em>, <em>invert=False</em>)</dt><dt>
+<em>class </em><code>machine.</code><code>Signal</code>(<em>pin_arguments...</em>, <em>*</em>, <em>invert=False</em>)</dt>
+<dd>Create a Signal object. 
+There&#8217;re two ways to create it:
+
+<li>By wrapping existing Pin object - universal method which works for
+any board.</li>
+<li>By passing required Pin parameters directly to Signal constructor,
+skipping the need to create intermediate Pin object. 
+Available on
+many, but not all boards.</li>
+</ul>
+The arguments are:
+
+<blockquote>
+<li><code>pin_obj</code> is existing Pin object.</li>
+<li><code>pin_arguments</code> are the same arguments as can be passed to Pin constructor.</li>
+<li><code>invert</code> - if True, the signal will be inverted (active low).</li>
+</ul>
+</blockquote>
+</dd></dl>
+
+<h3>Methods</h3>
+<dl><dt><code>Signal.</code><code>value</code>([<em>x</em>])</dt>
+<dd>This method allows to set and get the value of the signal, depending on whether
+the argument <code>x</code> is supplied or not.
+
+If the argument is omitted then this method gets the signal level, 1 meaning
+signal is asserted (active) and 0 - signal inactive.
+
+If the argument is supplied then this method sets the signal level. 
+The
+argument <code>x</code> can be anything that converts to a boolean. 
+If it converts
+to <code>True</code>, the signal is active, otherwise it is inactive.
+
+Correspondence between signal being active and actual logic level on the
+underlying pin depends on whether signal is inverted (active-low) or not.
+For non-inverted signal, active status corresponds to logical 1, inactive -
+to logical 0. 
+For inverted/active-low signal, active status corresponds
+to logical 0, while inactive - to logical 1.</dd></dl>
+
+<dl><dt><code>Signal.</code><code>on</code>()</dt>
+<dd>Activate signal.</dd></dl>
+
+<dl><dt><code>Signal.</code><code>off</code>()</dt>
+<dd>Deactivate signal.</dd></dl>
+<h2><span class="embossts">class ADC - analog to digital conversion</span></h2>
+The ADC class provides an interface to analog-to-digital convertors, and
+represents a single endpoint that can sample a continuous voltage and
+convert it to a discretised value.
+
+Example usage:
+
+import machine
+
+adc = machine.ADC(pin)   # create an ADC object acting on a pin
+val = adc.read_u16()     # read a raw analog value in the range 0-65535
+
+
+<h3>Constructors</h3>
+<dl><dt><em>class </em><code>machine.</code><code>ADC</code>(<em>id</em>)</dt>
+<dd>Access the ADC associated with a source identified by <em>id</em>. 
+This
+<em>id</em> may be an integer (usually specifying a channel number), a
+Pin</a> object, or other value supported by the
+underlying machine.</dd></dl>
+
+<h3>Methods</h3>
+<dl><dt><code>ADC.</code><code>read_u16</code>()</dt>
+<dd>Take an analog reading and return an integer in the range 0-65535.
+The return value represents the raw reading taken by the ADC, scaled
+such that the minimum value is 0 and the maximum value is 65535.</dd></dl>
+<h2><span class="embossts">class UART - duplex serial communication bus</span></h2>
+UART implements the standard UART/USART duplex serial communications protocol. 
+At
+the physical level it consists of 2 lines: RX and TX. 
+The unit of communication
+is a character (not to be confused with a string character) which can be 8 or 9
+bits wide.
+
+UART objects can be created and initialised using:
+
+from machine import UART
+
+uart = UART(1, 9600)                         # init with given baudrate
+uart.init(9600, bits=8, parity=None, stop=1) # init with given parameters
+
+Supported parameters differ on a board:
+
+Pyboard: Bits can be 7, 8 or 9. 
+Stop can be 1 or 2. 
+With <em>parity=None</em>,
+only 8 and 9 bits are supported. 
+With parity enabled, only 7 and 8 bits
+are supported.
+
+WiPy/CC3200: Bits can be 5, 6, 7, 8. 
+Stop can be 1 or 2.
+
+A UART object acts like a <code>stream</code></a> object and reading and writing is done
+using the standard stream methods:
+
+uart.read(10)       # read 10 characters, returns a bytes object
+uart.read()         # read all available characters
+uart.readline()     # read a line
+uart.readinto(buf)  # read and store into the given buffer
+uart.write(&#39;abc&#39;)   # write the 3 characters
+
+
+<h3>Constructors</h3>
+<dl><dt><em>class </em><code>machine.</code><code>UART</code>(<em>id</em>, <em>...</em>)</dt>
+<dd>Construct a UART object of the given id.</dd></dl>
+
+<h3>Methods</h3>
+<dl><dt><code>UART.</code><code>init</code>(<em>baudrate=9600</em>, <em>bits=8</em>, <em>parity=None</em>, <em>stop=1</em>, <em>*</em>, <em>...</em>)</dt>
+<dd>Initialise the UART bus with the given parameters:
+
+<blockquote>
+<li><em>baudrate</em> is the clock rate.</li>
+<li><em>bits</em> is the number of bits per character, 7, 8 or 9.</li>
+<li><em>parity</em> is the parity, <code>None</code>, 0 (even) or 1 (odd).</li>
+<li><em>stop</em> is the number of stop bits, 1 or 2.</li>
+</ul>
+</blockquote>
+Additional keyword-only parameters that may be supported by a port are:
+
+<blockquote>
+<li><em>tx</em> specifies the TX pin to use.</li>
+<li><em>rx</em> specifies the RX pin to use.</li>
+<li><em>txbuf</em> specifies the length in characters of the TX buffer.</li>
+<li><em>rxbuf</em> specifies the length in characters of the RX buffer.</li>
+<li><em>timeout</em> specifies the time to wait for the first character (in ms).</li>
+<li><em>timeout_char</em> specifies the time to wait between characters (in ms).</li>
+<li><em>invert</em> specifies which lines to invert.</li>
+</ul>
+</blockquote>
+On the WiPy only the following keyword-only parameter is supported:
+
+<blockquote>
+<li><em>pins</em> is a 4 or 2 item list indicating the TX, RX, RTS and CTS pins (in that order).
+Any of the pins can be None if one wants the UART to operate with limited functionality.
+If the RTS pin is given the the RX pin must be given as well. 
+The same applies to CTS.
+When no pins are given, then the default set of TX and RX pins is taken, and hardware
+flow control will be disabled. 
+If <em>pins</em> is <code>None</code>, no pin assignment will be made.</li>
+</ul>
+</blockquote>
+</dd></dl>
+
+<dl><dt><code>UART.</code><code>deinit</code>()</dt>
+<dd>Turn off the UART bus.</dd></dl>
+
+<dl><dt><code>UART.</code><code>any</code>()</dt>
+<dd>Returns an integer counting the number of characters that can be read without
+blocking. 
+It will return 0 if there are no characters available and a positive
+number if there are characters. 
+The method may return 1 even if there is more
+than one character available for reading.
+
+For more sophisticated querying of available characters use select.poll:
+
+poll = select.poll()
+poll.register(uart, select.POLLIN)
+poll.poll(timeout)
+
+</dd></dl>
+
+<dl><dt><code>UART.</code><code>read</code>([<em>nbytes</em>])</dt>
+<dd>Read characters. 
+If <code>nbytes</code> is specified then read at most that many bytes,
+otherwise read as much data as possible. 
+It may return sooner if a timeout
+is reached. 
+The timeout is configurable in the constructor.
+
+Return value: a bytes object containing the bytes read in. 
+Returns <code>None</code>
+on timeout.</dd></dl>
+
+<dl><dt><code>UART.</code><code>readinto</code>(<em>buf</em>[, <em>nbytes</em>])</dt>
+<dd>Read bytes into the <code>buf</code>. 
+If <code>nbytes</code> is specified then read at most
+that many bytes. 
+Otherwise, read at most <code>len(buf)</code> bytes. 
+It may return sooner if a timeout
+is reached. 
+The timeout is configurable in the constructor.
+
+Return value: number of bytes read and stored into <code>buf</code> or <code>None</code> on
+timeout.</dd></dl>
+
+<dl><dt><code>UART.</code><code>readline</code>()</dt>
+<dd>Read a line, ending in a newline character. 
+It may return sooner if a timeout
+is reached. 
+The timeout is configurable in the constructor.
+
+Return value: the line read or <code>None</code> on timeout.</dd></dl>
+
+<dl><dt><code>UART.</code><code>write</code>(<em>buf</em>)</dt>
+<dd>Write the buffer of bytes to the bus.
+
+Return value: number of bytes written or <code>None</code> on timeout.</dd></dl>
+
+<dl><dt><code>UART.</code><code>sendbreak</code>()</dt>
+<dd>Send a break condition on the bus. 
+This drives the bus low for a duration
+longer than required for a normal transmission of a character.</dd></dl>
+
+<dl><dt><code>UART.</code><code>irq</code>(<em>trigger</em>, <em>priority=1</em>, <em>handler=None</em>, <em>wake=machine.IDLE</em>)</dt>
+<dd>Create a callback to be triggered when data is received on the UART.
+
+<blockquote>
+<li><em>trigger</em> can only be <code>UART.RX_ANY</code></li>
+<li><em>priority</em> level of the interrupt. 
+Can take values in the range 1-7.
+Higher values represent higher priorities.</li>
+<li><em>handler</em> an optional function to be called when new characters arrive.</li>
+<li><em>wake</em> can only be <code>machine.IDLE</code>.</li>
+</ul>
+</blockquote>
+
+Note
+
+The handler will be called whenever any of the following two conditions are met:
+
+<blockquote>
+<li>8 new characters have been received.</li>
+<li>At least 1 new character is waiting in the Rx buffer and the Rx line has been
+silent for the duration of 1 complete frame.</li>
+</ul>
+</blockquote>
+This means that when the handler function is called there will be between 1 to 8
+characters waiting.
+
+
+Returns an irq object.
+
+Availability: WiPy.</dd></dl>
+
+<h3>Constants</h3>
+<dl><dt><code>UART.</code><code>RX_ANY</code></dt>
+<dd>IRQ trigger sources
+
+Availability: WiPy.</dd></dl>
+<h2><span class="embossts">class SPI - a Serial Peripheral Interface bus protocol (master side)</span></h2>
+SPI is a synchronous serial protocol that is driven by a master. 
+At the
+physical level, a bus consists of 3 lines: SCK, MOSI, MISO. 
+Multiple devices
+can share the same bus. 
+Each device should have a separate, 4th signal,
+SS (Slave Select), to select a particular device on a bus with which
+communication takes place. 
+Management of an SS signal should happen in
+user code (via machine.Pin class).
+
+<h3>Constructors</h3>
+<dl><dt><em>class </em><code>machine.</code><code>SPI</code>(<em>id</em>, <em>...</em>)</dt>
+<dd>Construct an SPI object on the given bus, <code>id</code>. 
+Values of <code>id</code> depend
+on a particular port and its hardware. 
+Values 0, 1, etc. 
+are commonly used
+to select hardware SPI block #0, #1, etc. 
+Value -1 can be used for
+bitbanging (software) implementation of SPI (if supported by a port).
+
+With no additional parameters, the SPI object is created but not
+initialised (it has the settings from the last initialisation of
+the bus, if any). 
+If extra arguments are given, the bus is initialised.
+See <code>init</code> for parameters of initialisation.</dd></dl>
+
+<h3>Methods</h3>
+<dl><dt><code>SPI.</code><code>init</code>(<em>baudrate=1000000</em>, <em>*</em>, <em>polarity=0</em>, <em>phase=0</em>, <em>bits=8</em>, <em>firstbit=SPI.MSB</em>, <em>sck=None</em>, <em>mosi=None</em>, <em>miso=None</em>, <em>pins=(SCK</em>, <em>MOSI</em>, <em>MISO)</em>)</dt>
+<dd>Initialise the SPI bus with the given parameters:
+
+<blockquote>
+<li><code>baudrate</code> is the SCK clock rate.</li>
+<li><code>polarity</code> can be 0 or 1, and is the level the idle clock line sits at.</li>
+<li><code>phase</code> can be 0 or 1 to sample data on the first or second clock edge
+respectively.</li>
+<li><code>bits</code> is the width in bits of each transfer. 
+Only 8 is guaranteed to be supported by all hardware.</li>
+<li><code>firstbit</code> can be <code>SPI.MSB</code> or <code>SPI.LSB</code>.</li>
+<li><code>sck</code>, <code>mosi</code>, <code>miso</code> are pins (machine.Pin) objects to use for bus signals. 
+For most
+hardware SPI blocks (as selected by <code>id</code> parameter to the constructor), pins are fixed
+and cannot be changed. 
+In some cases, hardware blocks allow 2-3 alternative pin sets for
+a hardware SPI block. 
+Arbitrary pin assignments are possible only for a bitbanging SPI driver
+(<code>id</code> = -1).</li>
+<li><code>pins</code> - WiPy port doesn&#8217;t <code>sck</code>, <code>mosi</code>, <code>miso</code> arguments, and instead allows to
+specify them as a tuple of <code>pins</code> parameter.</li>
+</ul>
+</blockquote>
+In the case of hardware SPI the actual clock frequency may be lower than the
+requested baudrate. 
+This is dependant on the platform hardware. 
+The actual
+rate may be determined by printing the SPI object.</dd></dl>
+
+<dl><dt><code>SPI.</code><code>deinit</code>()</dt>
+<dd>Turn off the SPI bus.</dd></dl>
+
+<dl><dt><code>SPI.</code><code>read</code>(<em>nbytes</em>, <em>write=0x00</em>)</dt>
+<dd>Read a number of bytes specified by <code>nbytes</code> while continuously writing
+the single byte given by <code>write</code>.
+Returns a <code>bytes</code> object with the data that was read.</dd></dl>
+
+<dl><dt><code>SPI.</code><code>readinto</code>(<em>buf</em>, <em>write=0x00</em>)</dt>
+<dd>Read into the buffer specified by <code>buf</code> while continuously writing the
+single byte given by <code>write</code>.
+Returns <code>None</code>.
+
+Note: on WiPy this function returns the number of bytes read.</dd></dl>
+
+<dl><dt><code>SPI.</code><code>write</code>(<em>buf</em>)</dt>
+<dd>Write the bytes contained in <code>buf</code>.
+Returns <code>None</code>.
+
+Note: on WiPy this function returns the number of bytes written.</dd></dl>
+
+<dl><dt><code>SPI.</code><code>write_readinto</code>(<em>write_buf</em>, <em>read_buf</em>)</dt>
+<dd>Write the bytes from <code>write_buf</code> while reading into <code>read_buf</code>. 
+The
+buffers can be the same or different, but both buffers must have the
+same length.
+Returns <code>None</code>.
+
+Note: on WiPy this function returns the number of bytes written.</dd></dl>
+
+<h3>Constants</h3>
+<dl><dt><code>SPI.</code><code>MASTER</code></dt>
+<dd>for initialising the SPI bus to master; this is only used for the WiPy</dd></dl>
+
+<dl><dt><code>SPI.</code><code>MSB</code></dt>
+<dd>set the first bit to be the most significant bit</dd></dl>
+
+<dl><dt><code>SPI.</code><code>LSB</code></dt>
+<dd>set the first bit to be the least significant bit</dd></dl>
+<h2><span class="embossts">class I2C - a two-wire serial protocol</span></h2>
+I2C is a two-wire protocol for communicating between devices. 
+At the physical
+level it consists of 2 wires: SCL and SDA, the clock and data lines respectively.
+
+I2C objects are created attached to a specific bus. 
+They can be initialised
+when created, or initialised later on.
+
+Printing the I2C object gives you information about its configuration.
+
+Example usage:
+
+from machine import I2C
+
+i2c = I2C(freq=400000)          # create I2C peripheral at frequency of 400kHz
+                               # depending on the port, extra parameters may be required
+                               # to select the peripheral and/or pins to use
+
+i2c.scan()                      # scan for slaves, returning a list of 7-bit addresses
+
+i2c.writeto(42, b&#39;123&#39;)         # write 3 bytes to slave with 7-bit address 42
+i2c.readfrom(42, 4)             # read 4 bytes from slave with 7-bit address 42
+
+i2c.readfrom_mem(42, 8, 3)      # read 3 bytes from memory of slave 42,
+                               #   starting at memory-address 8 in the slave
+i2c.writeto_mem(42, 2, b&#39;\x10&#39;) # write 1 byte to memory of slave 42
+                               #   starting at address 2 in the slave
+
+
+<h3>Constructors</h3>
+<dl><dt><em>class </em><code>machine.</code><code>I2C</code>(<em>id=-1</em>, <em>*</em>, <em>scl</em>, <em>sda</em>, <em>freq=400000</em>)</dt>
+<dd>Construct and return a new I2C object using the following parameters:
+
+<blockquote>
+<li><em>id</em> identifies a particular I2C peripheral. 
+The default
+value of -1 selects a software implementation of I2C which can
+work (in most cases) with arbitrary pins for SCL and SDA.
+If <em>id</em> is -1 then <em>scl</em> and <em>sda</em> must be specified. 
+Other
+allowed values for <em>id</em> depend on the particular port/board,
+and specifying <em>scl</em> and <em>sda</em> may or may not be required or
+allowed in this case.</li>
+<li><em>scl</em> should be a pin object specifying the pin to use for SCL.</li>
+<li><em>sda</em> should be a pin object specifying the pin to use for SDA.</li>
+<li><em>freq</em> should be an integer which sets the maximum frequency
+for SCL.</li>
+</ul>
+</blockquote>
+</dd></dl>
+
+
+<h2> -- General Methods</h2>
+<dl><dt><code>I2C.</code><code>init</code>(<em>scl</em>, <em>sda</em>, <em>*</em>, <em>freq=400000</em>)</dt>
+<dd>Initialise the I2C bus with the given arguments:
+
+<blockquote>
+<li><em>scl</em> is a pin object for the SCL line</li>
+<li><em>sda</em> is a pin object for the SDA line</li>
+<li><em>freq</em> is the SCL clock rate</li>
+</ul>
+</blockquote>
+</dd></dl>
+
+<dl><dt><code>I2C.</code><code>deinit</code>()</dt>
+<dd>Turn off the I2C bus.
+
+Availability: WiPy.</dd></dl>
+
+<dl><dt><code>I2C.</code><code>scan</code>()</dt>
+<dd>Scan all I2C addresses between 0x08 and 0x77 inclusive and return a list of
+those that respond. 
+A device responds if it pulls the SDA line low after
+its address (including a write bit) is sent on the bus.</dd></dl>
+
+
+<h2> -- Primitive I2C operations</h2>
+The following methods implement the primitive I2C master bus operations and can
+be combined to make any I2C transaction. 
+They are provided if you need more
+control over the bus, otherwise the standard methods (see below) can be used.
+
+These methods are available on software I2C only.
+
+<dl><dt><code>I2C.</code><code>start</code>()</dt>
+<dd>Generate a START condition on the bus (SDA transitions to low while SCL is high).</dd></dl>
+
+<dl><dt><code>I2C.</code><code>stop</code>()</dt>
+<dd>Generate a STOP condition on the bus (SDA transitions to high while SCL is high).</dd></dl>
+
+<dl><dt><code>I2C.</code><code>readinto</code>(<em>buf</em>, <em>nack=True</em>, <em>/</em>)</dt>
+<dd>Reads bytes from the bus and stores them into <em>buf</em>. 
+The number of bytes
+read is the length of <em>buf</em>. 
+An ACK will be sent on the bus after
+receiving all but the last byte. 
+After the last byte is received, if <em>nack</em>
+is true then a NACK will be sent, otherwise an ACK will be sent (and in this
+case the slave assumes more bytes are going to be read in a later call).</dd></dl>
+
+<dl><dt><code>I2C.</code><code>write</code>(<em>buf</em>)</dt>
+<dd>Write the bytes from <em>buf</em> to the bus. 
+Checks that an ACK is received
+after each byte and stops transmitting the remaining bytes if a NACK is
+received. 
+The function returns the number of ACKs that were received.</dd></dl>
+
+
+<h2> -- Standard bus operations</h2>
+The following methods implement the standard I2C master read and write
+operations that target a given slave device.
+
+<dl><dt><code>I2C.</code><code>readfrom</code>(<em>addr</em>, <em>nbytes</em>, <em>stop=True</em>, <em>/</em>)</dt>
+<dd>Read <em>nbytes</em> from the slave specified by <em>addr</em>.
+If <em>stop</em> is true then a STOP condition is generated at the end of the transfer.
+Returns a <code>bytes</code></a> object with the data read.</dd></dl>
+
+<dl><dt><code>I2C.</code><code>readfrom_into</code>(<em>addr</em>, <em>buf</em>, <em>stop=True</em>, <em>/</em>)</dt>
+<dd>Read into <em>buf</em> from the slave specified by <em>addr</em>.
+The number of bytes read will be the length of <em>buf</em>.
+If <em>stop</em> is true then a STOP condition is generated at the end of the transfer.
+
+The method returns <code>None</code>.</dd></dl>
+
+<dl><dt><code>I2C.</code><code>writeto</code>(<em>addr</em>, <em>buf</em>, <em>stop=True</em>, <em>/</em>)</dt>
+<dd>Write the bytes from <em>buf</em> to the slave specified by <em>addr</em>. 
+If a
+NACK is received following the write of a byte from <em>buf</em> then the
+remaining bytes are not sent. 
+If <em>stop</em> is true then a STOP condition is
+generated at the end of the transfer, even if a NACK is received.
+The function returns the number of ACKs that were received.</dd></dl>
+
+<dl><dt><code>I2C.</code><code>writevto</code>(<em>addr</em>, <em>vector</em>, <em>stop=True</em>, <em>/</em>)</dt>
+<dd>Write the bytes contained in <em>vector</em> to the slave specified by <em>addr</em>.
+<em>vector</em> should be a tuple or list of objects with the buffer protocol.
+The <em>addr</em> is sent once and then the bytes from each object in <em>vector</em>
+are written out sequentially. 
+The objects in <em>vector</em> may be zero bytes
+in length in which case they don&#8217;t contribute to the output.
+
+If a NACK is received following the write of a byte from one of the
+objects in <em>vector</em> then the remaining bytes, and any remaining objects,
+are not sent. 
+If <em>stop</em> is true then a STOP condition is generated at
+the end of the transfer, even if a NACK is received. 
+The function
+returns the number of ACKs that were received.</dd></dl>
+
+
+<h2> -- Memory operations</h2>
+Some I2C devices act as a memory device (or set of registers) that can be read
+from and written to. 
+In this case there are two addresses associated with an
+I2C transaction: the slave address and the memory address. 
+The following
+methods are convenience functions to communicate with such devices.
+
+<dl><dt><code>I2C.</code><code>readfrom_mem</code>(<em>addr</em>, <em>memaddr</em>, <em>nbytes</em>, <em>*</em>, <em>addrsize=8</em>)</dt>
+<dd>Read <em>nbytes</em> from the slave specified by <em>addr</em> starting from the memory
+address specified by <em>memaddr</em>.
+The argument <em>addrsize</em> specifies the address size in bits.
+Returns a <code>bytes</code></a> object with the data read.</dd></dl>
+
+<dl><dt><code>I2C.</code><code>readfrom_mem_into</code>(<em>addr</em>, <em>memaddr</em>, <em>buf</em>, <em>*</em>, <em>addrsize=8</em>)</dt>
+<dd>Read into <em>buf</em> from the slave specified by <em>addr</em> starting from the
+memory address specified by <em>memaddr</em>. 
+The number of bytes read is the
+length of <em>buf</em>.
+The argument <em>addrsize</em> specifies the address size in bits (on ESP8266
+this argument is not recognised and the address size is always 8 bits).
+
+The method returns <code>None</code>.</dd></dl>
+
+<dl><dt><code>I2C.</code><code>writeto_mem</code>(<em>addr</em>, <em>memaddr</em>, <em>buf</em>, <em>*</em>, <em>addrsize=8</em>)</dt>
+<dd>Write <em>buf</em> to the slave specified by <em>addr</em> starting from the
+memory address specified by <em>memaddr</em>.
+The argument <em>addrsize</em> specifies the address size in bits (on ESP8266
+this argument is not recognised and the address size is always 8 bits).
+
+The method returns <code>None</code>.</dd></dl>
+<h2><span class="embossts">class RTC - real time clock</span></h2>
+The RTC is and independent clock that keeps track of the date
+and time.
+
+Example usage:
+
+rtc = machine.RTC()
+rtc.init((2014, 5, 1, 4, 13, 0, 0, 0))
+print(rtc.now())
+
+
+<h3>Constructors</h3>
+<dl><dt><em>class </em><code>machine.</code><code>RTC</code>(<em>id=0</em>, <em>...</em>)</dt>
+<dd>Create an RTC object. 
+See init for parameters of initialization.</dd></dl>
+
+<h3>Methods</h3>
+<dl><dt><code>RTC.</code><code>init</code>(<em>datetime</em>)</dt>
+<dd>Initialise the RTC. 
+Datetime is a tuple of the form:
+
+<blockquote>
+<code>(year, month, day[, hour[, minute[, second[, microsecond[, tzinfo]]]]])</code></blockquote>
+</dd></dl>
+
+<dl><dt><code>RTC.</code><code>now</code>()</dt>
+<dd>Get get the current datetime tuple.</dd></dl>
+
+<dl><dt><code>RTC.</code><code>deinit</code>()</dt>
+<dd>Resets the RTC to the time of January 1, 2015 and starts running it again.</dd></dl>
+
+<dl><dt><code>RTC.</code><code>alarm</code>(<em>id</em>, <em>time</em>, <em>*</em>, <em>repeat=False</em>)</dt>
+<dd>Set the RTC alarm. 
+Time might be either a millisecond value to program the alarm to
+current time + time_in_ms in the future, or a datetimetuple. 
+If the time passed is in
+milliseconds, repeat can be set to <code>True</code> to make the alarm periodic.</dd></dl>
+
+<dl><dt><code>RTC.</code><code>alarm_left</code>(<em>alarm_id=0</em>)</dt>
+<dd>Get the number of milliseconds left before the alarm expires.</dd></dl>
+
+<dl><dt><code>RTC.</code><code>cancel</code>(<em>alarm_id=0</em>)</dt>
+<dd>Cancel a running alarm.</dd></dl>
+
+<dl><dt><code>RTC.</code><code>irq</code>(<em>*</em>, <em>trigger</em>, <em>handler=None</em>, <em>wake=machine.IDLE</em>)</dt>
+<dd>Create an irq object triggered by a real time clock alarm.
+
+<blockquote>
+<li><code>trigger</code> must be <code>RTC.ALARM0</code></li>
+<li><code>handler</code> is the function to be called when the callback is triggered.</li>
+<li><code>wake</code> specifies the sleep mode from where this interrupt can wake
+up the system.</li>
+</ul>
+</blockquote>
+</dd></dl>
+
+<h3>Constants</h3>
+<dl><dt><code>RTC.</code><code>ALARM0</code></dt>
+<dd>irq trigger source</dd></dl>
+<h2><span class="embossts">class Timer - control hardware timers</span></h2>
+Hardware timers deal with timing of periods and events. 
+Timers are perhaps
+the most flexible and heterogeneous kind of hardware in MCUs and SoCs,
+differently greatly from a model to a model. 
+MicroPython&#8217;s Timer class
+defines a baseline operation of executing a callback with a given period
+(or once after some delay), and allow specific boards to define more
+non-standard behavior (which thus won&#8217;t be portable to other boards).
+
+See discussion of important constraints</a> on
+Timer callbacks.
+
+Note
+
+Memory can&#8217;t be allocated inside irq handlers (an interrupt) and so
+exceptions raised within a handler don&#8217;t give much information. 
+See
+<code>micropython.alloc_emergency_exception_buf()</code></a> for how to get around this
+limitation.
+
+
+If you are using a WiPy board please refer to machine.TimerWiPy</a>
+instead of this class.
+
+<h3>Constructors</h3>
+<dl><dt><em>class </em><code>machine.</code><code>Timer</code>(<em>id</em>, <em>...</em>)</dt>
+<dd>Construct a new timer object of the given id. 
+Id of -1 constructs a
+virtual timer (if supported by a board).</dd></dl>
+
+<h3>Methods</h3>
+<dl><dt><code>Timer.</code><code>init</code>(<em>*</em>, <em>mode=Timer.PERIODIC</em>, <em>period=-1</em>, <em>callback=None</em>)</dt>
+<dd>Initialise the timer. 
+Example:
+
+tim.init(period=100)                         # periodic with 100ms period
+tim.init(mode=Timer.ONE_SHOT, period=1000)   # one shot firing after 1000ms
+
+Keyword arguments:
+
+<blockquote>
+<li><code>mode</code> can be one of:<ul>
+<li><code>Timer.ONE_SHOT</code> - The timer runs once until the configured
+period of the channel expires.</li>
+<li><code>Timer.PERIODIC</code> - The timer runs periodically at the configured
+frequency of the channel.</li>
+</ul>
+</li>
+</ul>
+</blockquote>
+</dd></dl>
+
+<dl><dt><code>Timer.</code><code>deinit</code>()</dt>
+<dd>Deinitialises the timer. 
+Stops the timer, and disables the timer peripheral.</dd></dl>
+
+<h3>Constants</h3>
+<dl><dt><code>Timer.</code><code>ONE_SHOT</code></dt><dt>
+<code>Timer.</code><code>PERIODIC</code></dt>
+<dd>Timer operating mode.</dd></dl>
+<h2><span class="embossts">class WDT - watchdog timer</span></h2>
+The WDT is used to restart the system when the application crashes and ends
+up into a non recoverable state. 
+Once started it cannot be stopped or
+reconfigured in any way. 
+After enabling, the application must "feed" the
+watchdog periodically to prevent it from expiring and resetting the system.
+
+Example usage:
+
+from machine import WDT
+wdt = WDT(timeout=2000)  # enable it with a timeout of 2s
+wdt.feed()
+
+Availability of this class: pyboard, WiPy.
+
+<h3>Constructors</h3>
+<dl><dt><em>class </em><code>machine.</code><code>WDT</code>(<em>id=0</em>, <em>timeout=5000</em>)</dt>
+<dd>Create a WDT object and start it. 
+The timeout must be given in seconds and
+the minimum value that is accepted is 1 second. 
+Once it is running the timeout
+cannot be changed and the WDT cannot be stopped either.</dd></dl>
+
+<h3>Methods</h3>
+<dl><dt><code>wdt.</code><code>feed</code>()</dt>
+<dd>Feed the WDT to prevent it from resetting the system. 
+The application
+should place this call in a sensible place ensuring that the WDT is
+only fed after verifying that everything is functioning correctly.</dd></dl>
+<h2><span class="embossts">class SD - secure digital memory card (cc3200 port only)</span></h2>
+Warning
+
+This is a non-standard class and is only available on the cc3200 port.
+
+
+The SD card class allows to configure and enable the memory card
+module of the WiPy and automatically mount it as <code>/sd</code> as part
+of the file system. 
+There are several pin combinations that can be
+used to wire the SD card socket to the WiPy and the pins used can
+be specified in the constructor. 
+Please check the <a>pinout and alternate functions
+table.</a> for
+more info regarding the pins which can be remapped to be used with a SD card.
+
+Example usage:
+
+from machine import SD
+import os
+# clk cmd and dat0 pins must be passed along with
+# their respective alternate functions
+sd = machine.SD(pins=(&#39;GP10&#39;, &#39;GP11&#39;, &#39;GP15&#39;))
+os.mount(sd, &#39;/sd&#39;)
+# do normal file operations
+
+
+<h3>Constructors</h3>
+<dl><dt><em>class </em><code>machine.</code><code>SD</code>(<em>id</em>, <em>...</em>)</dt>
+<dd>Create a SD card object. 
+See <code>init()</code> for parameters if initialization.</dd></dl>
+
+<h3>Methods</h3>
+<dl><dt><code>SD.</code><code>init</code>(<em>id=0</em>, <em>pins=('GP10'</em>, <em>'GP11'</em>, <em>'GP15')</em>)</dt>
+<dd>Enable the SD card. 
+In order to initialize the card, give it a 3-tuple:
+<code>(clk_pin, cmd_pin, dat0_pin)</code>.</dd></dl>
+
+<dl><dt><code>SD.</code><code>deinit</code>()</dt>
+<dd>Disable the SD card.</dd></dl>
+<h2><span class="embossts">class SDCard - secure digital memory card</span></h2>
+SD cards are one of the most common small form factor removable storage media.
+SD cards come in a variety of sizes and physical form factors. 
+MMC cards are
+similar removable storage devices while eMMC devices are electrically similar
+storage devices designed to be embedded into other systems. 
+All three form
+share a common protocol for communication with their host system and high-level
+support looks the same for them all. 
+As such in MicroPython they are implemented
+in a single class called <code>machine.SDCard</code></a> .
+
+Both SD and MMC interfaces support being accessed with a variety of bus widths.
+When being accessed with a 1-bit wide interface they can be accessed using the
+SPI protocol. 
+Different MicroPython hardware platforms support different widths
+and pin configurations but for most platforms there is a standard configuration
+for any given hardware. 
+In general constructing an <code>SDCard</code> object with without
+passing any parameters will initialise the interface to the default card slot
+for the current hardware. 
+The arguments listed below represent the common
+arguments that might need to be set in order to use either a non-standard slot
+or a non-standard pin assignment. 
+The exact subset of arguments supported will
+vary from platform to platform.
+
+<dl><dt><em>class </em><code>machine.</code><code>SDCard</code>(<em>slot=1</em>, <em>width=1</em>, <em>cd=None</em>, <em>wp=None</em>, <em>sck=None</em>, <em>miso=None</em>, <em>mosi=None</em>, <em>cs=None</em>)</dt>
+<dd>This class provides access to SD or MMC storage cards using either
+a dedicated SD/MMC interface hardware or through an SPI channel.
+The class implements the block protocol defined by <code>uos.AbstractBlockDev</code></a>.
+This allows the mounting of an SD card to be as simple as:
+
+uos.mount(machine.SDCard(), &quot;/sd&quot;)
+
+The constructor takes the following parameters:
+
+<blockquote>
+<li><em>slot</em> selects which of the available interfaces to use. 
+Leaving this
+unset will select the default interface.</li>
+<li><em>width</em> selects the bus width for the SD/MMC interface.</li>
+<li><em>cd</em> can be used to specify a card-detect pin.</li>
+<li><em>wp</em> can be used to specify a write-protect pin.</li>
+<li><em>sck</em> can be used to specify an SPI clock pin.</li>
+<li><em>miso</em> can be used to specify an SPI miso pin.</li>
+<li><em>mosi</em> can be used to specify an SPI mosi pin.</li>
+<li><em>cs</em> can be used to specify an SPI chip select pin.</li>
+</ul>
+</blockquote>
+</dd></dl>
+<h2> -- Implementation-specific details</h2>
+Different implementations of the <code>SDCard</code> class on different hardware support
+varying subsets of the options above.
+
+<h3> .. 
+PyBoard</h3>
+The standard PyBoard has just one slot. 
+No arguments are necessary or supported.
+
+<h3> .. 
+ESP32</h3>
+The ESP32 provides two channels of SD/MMC hardware and also supports
+access to SD Cards through either of the two SPI ports that are
+generally available to the user. 
+As a result the <em>slot</em> argument can
+take a value between 0 and 3, inclusive. 
+Slots 0 and 1 use the
+built-in SD/MMC hardware while slots 2 and 3 use the SPI ports. 
+Slot 0
+supports 1, 4 or 8-bit wide access while slot 1 supports 1 or 4-bit
+access; the SPI slots only support 1-bit access.
+
+<blockquote>
+
+Note
+
+Slot 0 is used to communicate with on-board flash memory
+on most ESP32 modules and so will be unavailable to the
+user.
+
+Note
+
+Most ESP32 modules that provide an SD card slot using the
+dedicated hardware only wire up 1 data pin, so the default
+value for <em>width</em> is 1.
+
+
+</blockquote>
+The pins used by the dedicated SD/MMC hardware are fixed. 
+The pins
+used by the SPI hardware can be reassigned.
+
+<blockquote>
+
+Note
+
+If any of the SPI signals are remapped then all of the SPI
+signals will pass through a GPIO multiplexer unit which
+can limit the performance of high frequency signals. 
+Since
+the normal operating speed for SD cards is 40MHz this can
+cause problems on some cards.
+
+
+</blockquote>
+The default (and preferred) pin assignment are as follows:
+
+<blockquote>
+<table border="1">
+<colgroup>
+<col width="20%" />
+<col width="20%" />
+<col width="20%" />
+<col width="20%" />
+<col width="20%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th>Slot</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+</tr>
+<tr><th>Signal</th>
+<th>Pin</th>
+<th>Pin</th>
+<th>Pin</th>
+<th>Pin</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>sck</td>
+<td>6</td>
+<td>14</td>
+<td>18</td>
+<td>14</td>
+</tr>
+<tr><td>cmd</td>
+<td>11</td>
+<td>15</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr><td>cs</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>5</td>
+<td>15</td>
+</tr>
+<tr><td>miso</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>19</td>
+<td>12</td>
+</tr>
+<tr><td>mosi</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>23</td>
+<td>13</td>
+</tr>
+<tr><td>D0</td>
+<td>7</td>
+<td>2</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr><td>D1</td>
+<td>8</td>
+<td>4</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr><td>D2</td>
+<td>9</td>
+<td>12</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr><td>D3</td>
+<td>10</td>
+<td>13</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr><td>D4</td>
+<td>16</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr><td>D5</td>
+<td>17</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr><td>D6</td>
+<td>5</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr><td>D7</td>
+<td>18</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+
+
+<h3> .. 
+cc3200</h3>
+You can set the pins used for SPI access by passing a tuple as the
+<em>pins</em> argument.
+
+<em>Note:</em> The current cc3200 SD card implementation names the this class
+<code>machine.SD</code></a> rather than <code>machine.SDCard</code></a> .
+
+
+<h2><span class="embossts">Quick reference for the ESP32</span></h2>
+<a><img alt="ESP32 board" src="../_images/esp32.jpg" style="width: 640px;" /></a>
+The Espressif ESP32 Development Board (image attribution: Adafruit).
+
+Below is a quick reference for ESP32-based boards. 
+If it is your first time
+working with this board it may be useful to get an overview of the microcontroller:
+
+<li>General information about the ESP32 port
+<li>Getting started with MicroPython on the ESP32
+<h2> -- Installing MicroPython</h2>
+See the corresponding section of tutorial: Getting started with MicroPython on the ESP32</a>. 
+It also includes
+a troubleshooting subsection.
+
+
+<h2> -- General board control</h2>
+The MicroPython REPL is on UART0 (GPIO1=TX, GPIO3=RX) at baudrate 115200.
+Tab-completion is useful to find out what methods an object has.
+Paste mode (ctrl-E) is useful to paste a large slab of Python code into
+the REPL.
+
+The <code>machine</code></a> module:
+
+import machine
+
+machine.freq()          # get the current frequency of the CPU
+machine.freq(240000000) # set the CPU frequency to 240 MHz
+
+The <code>esp</code></a> module:
+
+import esp
+
+esp.osdebug(None)       # turn off vendor O/S debugging messages
+esp.osdebug(0)          # redirect vendor O/S debugging messages to UART(0)
+
+# low level methods to interact with flash storage
+esp.flash_size()
+esp.flash_user_start()
+esp.flash_erase(sector_no)
+esp.flash_write(byte_offset, buffer)
+esp.flash_read(byte_offset, buffer)
+
+The <code>esp32</code></a> module:
+
+import esp32
+
+esp32.hall_sensor()     # read the internal hall sensor
+esp32.raw_temperature() # read the internal temperature of the MCU, in Farenheit
+esp32.ULP()             # access to the Ultra-Low-Power Co-processor
+
+Note that the temperature sensor in the ESP32 will typically read higher than
+ambient due to the IC getting warm while it runs. 
+This effect can be minimised
+by reading the temperature sensor immediately after waking up from sleep.
+
+
+<h2> -- Networking</h2>
+The <code>network</code></a> module:
+
+import network
+
+wlan = network.WLAN(network.STA_IF) # create station interface
+wlan.active(True)       # activate the interface
+wlan.scan()             # scan for access points
+wlan.isconnected()      # check if the station is connected to an AP
+wlan.connect(&#39;essid&#39;, &#39;password&#39;) # connect to an AP
+wlan.config(&#39;mac&#39;)      # get the interface&#39;s MAC address
+wlan.ifconfig()         # get the interface&#39;s IP/netmask/gw/DNS addresses
+
+ap = network.WLAN(network.AP_IF) # create access-point interface
+ap.config(essid=&#39;ESP-AP&#39;) # set the ESSID of the access point
+ap.config(max_clients=10) # set how many clients can connect to the network
+ap.active(True)         # activate the interface
+
+A useful function for connecting to your local WiFi network is:
+
+def do_connect():
+   import network
+   wlan = network.WLAN(network.STA_IF)
+   wlan.active(True)
+   if not wlan.isconnected():
+       print(&#39;connecting to network...&#39;)
+       wlan.connect(&#39;essid&#39;, &#39;password&#39;)
+       while not wlan.isconnected():
+           pass
+   print(&#39;network config:&#39;, wlan.ifconfig())
+
+Once the network is established the <code>socket</code></a> module can be used
+to create and use TCP/UDP sockets as usual, and the <code>urequests</code> module for
+convenient HTTP requests.
+
+
+<h2> -- Delay and timing</h2>
+Use the <code>time</code></a> module:
+
+import time
+
+time.sleep(1)           # sleep for 1 second
+time.sleep_ms(500)      # sleep for 500 milliseconds
+time.sleep_us(10)       # sleep for 10 microseconds
+start = time.ticks_ms() # get millisecond counter
+delta = time.ticks_diff(time.ticks_ms(), start) # compute time difference
+
+
+<h2> -- Timers</h2>
+Virtual (RTOS-based) timers are supported. 
+Use the machine.Timer</a> class
+with timer ID of -1:
+
+from machine import Timer
+
+tim = Timer(-1)
+tim.init(period=5000, mode=Timer.ONE_SHOT, callback=lambda t:print(1))
+tim.init(period=2000, mode=Timer.PERIODIC, callback=lambda t:print(2))
+
+The period is in milliseconds.
+
+
+<h2> -- Pins and GPIO</h2>
+Use the machine.Pin</a> class:
+
+from machine import Pin
+
+p0 = Pin(0, Pin.OUT)    # create output pin on GPIO0
+p0.on()                 # set pin to &quot;on&quot; (high) level
+p0.off()                # set pin to &quot;off&quot; (low) level
+p0.value(1)             # set pin to on/high
+
+p2 = Pin(2, Pin.IN)     # create input pin on GPIO2
+print(p2.value())       # get value, 0 or 1
+
+p4 = Pin(4, Pin.IN, Pin.PULL_UP) # enable internal pull-up resistor
+p5 = Pin(5, Pin.OUT, value=1) # set pin high on creation
+
+Available Pins are from the following ranges (inclusive): 0-19, 21-23, 25-27, 32-39.
+These correspond to the actual GPIO pin numbers of ESP32 chip. 
+Note that many
+end-user boards use their own adhoc pin numbering (marked e.g. 
+D0, D1, ...).
+For mapping between board logical pins and physical chip pins consult your board
+documentation.
+
+Notes:
+
+<li>Pins 1 and 3 are REPL UART TX and RX respectively</li>
+<li>Pins 6, 7, 8, 11, 16, and 17 are used for connecting the embedded flash,
+and are not recommended for other uses</li>
+<li>Pins 34-39 are input only, and also do not have internal pull-up resistors</li>
+<li>The pull value of some pins can be set to <code>Pin.PULL_HOLD</code> to reduce power
+consumption during deepsleep.</li>
+<h2> -- PWM (pulse width modulation)</h2>
+PWM can be enabled on all output-enabled pins. 
+The base frequency can
+range from 1Hz to 40MHz but there is a tradeoff; as the base frequency
+<em>increases</em> the duty resolution <em>decreases</em>. 
+See
+<a>LED Control</a>
+for more details.
+
+Use the <code>machine.PWM</code> class:
+
+from machine import Pin, PWM
+
+pwm0 = PWM(Pin(0))      # create PWM object from a pin
+pwm0.freq()             # get current frequency
+pwm0.freq(1000)         # set frequency
+pwm0.duty()             # get current duty cycle
+pwm0.duty(200)          # set duty cycle
+pwm0.deinit()           # turn off PWM on the pin
+
+pwm2 = PWM(Pin(2), freq=20000, duty=512) # create and configure in one go
+
+
+<h2> -- ADC (analog to digital conversion)</h2>
+On the ESP32 ADC functionality is available on Pins 32-39. 
+Note that, when
+using the default configuration, input voltages on the ADC pin must be between
+0.0v and 1.0v (anything above 1.0v will just read as 4095). 
+Attenuation must
+be applied in order to increase this usable voltage range.
+
+Use the machine.ADC</a> class:
+
+from machine import ADC
+
+adc = ADC(Pin(32))          # create ADC object on ADC pin
+adc.read()                  # read value, 0-4095 across voltage range 0.0v - 1.0v
+
+adc.atten(ADC.ATTN_11DB)    # set 11dB input attenuation (voltage range roughly 0.0v - 3.6v)
+adc.width(ADC.WIDTH_9BIT)   # set 9 bit return values (returned range 0-511)
+adc.read()                  # read value using the newly configured attenuation and width
+
+ESP32 specific ADC class method reference:
+
+<dl><dt><code>ADC.</code><code>atten</code>(<em>attenuation</em>)</dt>
+<dd>This method allows for the setting of the amount of attenuation on the
+input of the ADC. 
+This allows for a wider possible input voltage range,
+at the cost of accuracy (the same number of bits now represents a wider
+range). 
+The possible attenuation options are:
+
+<blockquote>
+<li><code>ADC.ATTN_0DB</code>: 0dB attenuation, gives a maximum input voltage
+of 1.00v - this is the default configuration</li>
+<li><code>ADC.ATTN_2_5DB</code>: 2.5dB attenuation, gives a maximum input voltage
+of approximately 1.34v</li>
+<li><code>ADC.ATTN_6DB</code>: 6dB attenuation, gives a maximum input voltage
+of approximately 2.00v</li>
+<li><code>ADC.ATTN_11DB</code>: 11dB attenuation, gives a maximum input voltage
+of approximately 3.6v</li>
+</ul>
+</blockquote>
+</dd></dl>
+
+Warning
+
+Despite 11dB attenuation allowing for up to a 3.6v range, note that the
+absolute maximum voltage rating for the input pins is 3.6v, and so going
+near this boundary may be damaging to the IC!
+
+
+<dl><dt><code>ADC.</code><code>width</code>(<em>width</em>)</dt>
+<dd>This method allows for the setting of the number of bits to be utilised
+and returned during ADC reads. 
+Possible width options are:
+
+<blockquote>
+<li><code>ADC.WIDTH_9BIT</code>: 9 bit data</li>
+<li><code>ADC.WIDTH_10BIT</code>: 10 bit data</li>
+<li><code>ADC.WIDTH_11BIT</code>: 11 bit data</li>
+<li><code>ADC.WIDTH_12BIT</code>: 12 bit data - this is the default configuration</li>
+</ul>
+</blockquote>
+</dd></dl>
+
+
+<h2> -- Software SPI bus</h2>
+There are two SPI drivers. 
+One is implemented in software (bit-banging)
+and works on all pins, and is accessed via the machine.SPI</a>
+class:
+
+from machine import Pin, SPI
+
+# construct an SPI bus on the given pins
+# polarity is the idle state of SCK
+# phase=0 means sample on the first edge of SCK, phase=1 means the second
+spi = SPI(baudrate=100000, polarity=1, phase=0, sck=Pin(0), mosi=Pin(2), miso=Pin(4))
+
+spi.init(baudrate=200000) # set the baudrate
+
+spi.read(10)            # read 10 bytes on MISO
+spi.read(10, 0xff)      # read 10 bytes while outputting 0xff on MOSI
+
+buf = bytearray(50)     # create a buffer
+spi.readinto(buf)       # read into the given buffer (reads 50 bytes in this case)
+spi.readinto(buf, 0xff) # read into the given buffer and output 0xff on MOSI
+
+spi.write(b&#39;12345&#39;)     # write 5 bytes on MOSI
+
+buf = bytearray(4)      # create a buffer
+spi.write_readinto(b&#39;1234&#39;, buf) # write to MOSI and read from MISO into the buffer
+spi.write_readinto(buf, buf) # write buf to MOSI and read MISO back into buf
+
+
+Warning
+
+Currently <em>all</em> of <code>sck</code>, <code>mosi</code> and <code>miso</code> <em>must</em> be specified when
+initialising Software SPI.
+
+<h2> -- Hardware SPI bus</h2>
+There are two hardware SPI channels that allow faster transmission
+rates (up to 80Mhz). 
+These may be used on any IO pins that support the
+required direction and are otherwise unused (see Pins and GPIO</a>)
+but if they are not configured to their default pins then they need to
+pass through an extra layer of GPIO multiplexing, which can impact
+their reliability at high speeds. 
+Hardware SPI channels are limited
+to 40MHz when used on pins other than the default ones listed below.
+
+<table border="1">
+<colgroup>
+<col width="18%" />
+<col width="39%" />
+<col width="43%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th></th>
+<th>HSPI (id=1)</th>
+<th>VSPI (id=2)</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>sck</td>
+<td>14</td>
+<td>18</td>
+</tr>
+<tr><td>mosi</td>
+<td>13</td>
+<td>23</td>
+</tr>
+<tr><td>miso</td>
+<td>12</td>
+<td>19</td>
+</tr>
+</tbody>
+</table>
+Hardware SPI has the same methods as Software SPI above:
+
+from machine import Pin, SPI
+
+hspi = SPI(1, 10000000, sck=Pin(14), mosi=Pin(13), miso=Pin(12))
+vspi = SPI(2, baudrate=80000000, polarity=0, phase=0, bits=8, firstbit=0, sck=Pin(18), mosi=Pin(23), miso=Pin(19))
+
+
+<h2> -- I2C bus</h2>
+The I2C driver has both software and hardware implementations, and the two
+hardware peripherals have identifiers 0 and 1. 
+Any available output-capable
+pins can be used for SCL and SDA. 
+The driver is accessed via the
+machine.I2C</a> class:
+
+from machine import Pin, I2C
+
+# construct a software I2C bus
+i2c = I2C(scl=Pin(5), sda=Pin(4), freq=100000)
+
+# construct a hardware I2C bus
+i2c = I2C(0)
+i2c = I2C(1, scl=Pin(5), sda=Pin(4), freq=400000)
+
+i2c.scan()              # scan for slave devices
+
+i2c.readfrom(0x3a, 4)   # read 4 bytes from slave device with address 0x3a
+i2c.writeto(0x3a, &#39;12&#39;) # write &#39;12&#39; to slave device with address 0x3a
+
+buf = bytearray(10)     # create a buffer with 10 bytes
+i2c.writeto(0x3a, buf)  # write the given buffer to the slave
+
+
+<h2> -- Real time clock (RTC)</h2>
+See machine.RTC</a>
+
+from machine import RTC
+
+rtc = RTC()
+rtc.datetime((2017, 8, 23, 1, 12, 48, 0, 0)) # set a specific date and time
+rtc.datetime() # get date and time
+
+
+<h2> -- Deep-sleep mode</h2>
+The following code can be used to sleep, wake and check the reset cause:
+
+import machine
+
+# check if the device woke from a deep sleep
+if machine.reset_cause() == machine.DEEPSLEEP_RESET:
+   print(&#39;woke from a deep sleep&#39;)
+
+# put the device to sleep for 10 seconds
+machine.deepsleep(10000)
+
+Notes:
+
+<li>Calling <code>deepsleep()</code> without an argument will put the device to sleep
+indefinitely
+
+</li>
+<li>A software reset does not change the reset cause
+
+</li>
+<li>There may be some leakage current flowing through enabled internal pullups.
+To further reduce power consumption it is possible to disable the internal pullups:
+
+p1 = Pin(4, Pin.IN, Pin.PULL_HOLD)
+
+After leaving deepsleep it may be necessary to un-hold the pin explicitly (e.g. 
+if
+it is an output pin) via:
+
+p1 = Pin(4, Pin.OUT, None)
+
+</li>
+<h2> -- RMT</h2>
+The RMT is ESP32-specific and allows generation of accurate digital pulses with
+12.5ns resolution. 
+See esp32.RMT</a> for details. 
+Usage is:
+
+import esp32
+from machine import Pin
+
+r = esp32.RMT(0, pin=Pin(18), clock_div=8)
+r   # RMT(channel=0, pin=18, source_freq=80000000, clock_div=8)
+# The channel resolution is 100ns (1/(source_freq/clock_div)).
+r.write_pulses((1, 20, 2, 40), start=0) # Send 0 for 100ns, 1 for 2000ns, 0 for 200ns, 1 for 4000ns
+
+
+<h2> -- OneWire driver</h2>
+The OneWire driver is implemented in software and works on all pins:
+
+from machine import Pin
+import onewire
+
+ow = onewire.OneWire(Pin(12)) # create a OneWire bus on GPIO12
+ow.scan()               # return a list of devices on the bus
+ow.reset()              # reset the bus
+ow.readbyte()           # read a byte
+ow.writebyte(0x12)      # write a byte on the bus
+ow.write(&#39;123&#39;)         # write bytes on the bus
+ow.select_rom(b&#39;12345678&#39;) # select a specific device by its ROM code
+
+There is a specific driver for DS18S20 and DS18B20 devices:
+
+import time, ds18x20
+ds = ds18x20.DS18X20(ow)
+roms = ds.scan()
+ds.convert_temp()
+time.sleep_ms(750)
+for rom in roms:
+   print(ds.read_temp(rom))
+
+Be sure to put a 4.7k pull-up resistor on the data line. 
+Note that
+the <code>convert_temp()</code> method must be called each time you want to
+sample the temperature.
+
+
+<h2> -- NeoPixel driver</h2>
+Use the <code>neopixel</code> module:
+
+from machine import Pin
+from neopixel import NeoPixel
+
+pin = Pin(0, Pin.OUT)   # set GPIO0 to output to drive NeoPixels
+np = NeoPixel(pin, 8)   # create NeoPixel driver on GPIO0 for 8 pixels
+np[0] = (255, 255, 255) # set the first pixel to white
+np.write()              # write data to all pixels
+r, g, b = np[0]         # get first pixel colour
+
+For low-level driving of a NeoPixel:
+
+import esp
+esp.neopixel_write(pin, grb_buf, is800khz)
+
+
+Warning
+
+By default <code>NeoPixel</code> is configured to control the more popular <em>800kHz</em>
+units. 
+It is possible to use alternative timing to control other (typically
+400kHz) devices by passing <code>timing=0</code> when constructing the
+<code>NeoPixel</code> object.
+
+<h2> -- Capacitive touch</h2>
+Use the <code>TouchPad</code> class in the <code>machine</code> module:
+
+from machine import TouchPad, Pin
+
+t = TouchPad(Pin(14))
+t.read()              # Returns a smaller number when touched
+
+<code>TouchPad.read</code> returns a value relative to the capacitive variation. 
+Small numbers (typically in
+the <em>tens</em>) are common when a pin is touched, larger numbers (above <em>one thousand</em>) when
+no touch is present. 
+However the values are <em>relative</em> and can vary depending on the board
+and surrounding composition so some calibration may be required.
+
+There are ten capacitive touch-enabled pins that can be used on the ESP32: 0, 2, 4, 12, 13
+14, 15, 27, 32, 33. 
+Trying to assign to any other pins will result in a <code>ValueError</code>.
+
+Note that TouchPads can be used to wake an ESP32 from sleep:
+
+import machine
+from machine import TouchPad, Pin
+import esp32
+
+t = TouchPad(Pin(14))
+t.config(500)               # configure the threshold at which the pin is considered touched
+esp32.wake_on_touch(True)
+machine.lightsleep()        # put the MCU to sleep until a touchpad is touched
+
+For more details on touchpads refer to <a>Espressif Touch Sensor</a>.
+
+
+<h2> -- DHT driver</h2>
+The DHT driver is implemented in software and works on all pins:
+
+import dht
+import machine
+
+d = dht.DHT11(machine.Pin(4))
+d.measure()
+d.temperature() # eg. 
+23 (°C)
+d.humidity()    # eg. 
+41 (% RH)
+
+d = dht.DHT22(machine.Pin(4))
+d.measure()
+d.temperature() # eg. 
+23.6 (°C)
+d.humidity()    # eg. 
+41.3 (% RH)
+
+
+<h2> -- WebREPL (web browser interactive prompt)</h2>
+WebREPL (REPL over WebSockets, accessible via a web browser) is an
+experimental feature available in ESP32 port. 
+Download web client
+from <a>https://github.com/micropython/webrepl</a> (hosted version available
+at <a>http://micropython.org/webrepl</a>), and configure it by executing:
+
+import webrepl_setup
+
+and following on-screen instructions. 
+After reboot, it will be available
+for connection. 
+If you disabled automatic start-up on boot, you may
+run configured daemon on demand using:
+
+import webrepl
+webrepl.start()
+
+# or, start with a specific password
+webrepl.start(password=&#39;mypass&#39;)
+
+The WebREPL daemon listens on all active interfaces, which can be STA or
+AP. 
+This allows you to connect to the ESP32 via a router (the STA
+interface) or directly when connected to its access point.
+
+In addition to terminal/command prompt access, WebREPL also has provision
+for file transfer (both upload and download). 
+The web client has buttons for
+the corresponding functions, or you can use the command-line client
+<code>webrepl_cli.py</code> from the repository above.
+
+See the MicroPython forum for other community-supported alternatives
+to transfer files to an ESP32 board.
+
+<script type='text/javascript' src='readbook.js'></script>
+</body></html>

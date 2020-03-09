@@ -4189,6 +4189,447 @@ library(XML)
 r <- xmlRoot(doc)
 removeNodes(r[names(r) == "location"])
 
+<h2>Comment out block of code</h2>
+
+if(FALSE) {
+  all your code
+}
+
+
+<h2>Reading XML data</h2>
+
+You may sometimes need to extract data from websites. 
+Many providers also supply data in XML and JSON formats. 
+In this recipe, we learn about reading XML data.
+<h3>Getting ready</h3>
+
+If the XML package is not already installed in your R environment, install the package now as follows:
+
+<code>&gt; install.packages("XML")</code>
+
+<h3>How to do it...</h3>
+
+XML data can be read by following these steps:
+
+Load the library and initialize:
+
+<code>&gt; library(XML)
+&gt; url &lt;- "http://www.w3schools.com/xml/cd_catalog.xml"</code>
+
+Parse the XML file and get the root node:
+
+<code>&gt; xmldoc &lt;- xmlParse(url)
+&gt; rootNode &lt;- xmlRoot(xmldoc)
+&gt; rootNode[1]</code>
+
+Extract XML data:
+
+<code>&gt; data &lt;- xmlSApply(rootNode,function(x) xmlSApply(x, xmlValue))</code>
+
+Convert the extracted data into a data frame:
+
+<code>&gt; cd.catalog &lt;- data.frame(t(data),row.names=NULL)</code>
+
+Verify the results:
+
+<code>&gt; cd.catalog[1:2,]</code>
+
+
+<h3>How it works...</h3>
+
+The <code>xmlParse</code> function returns an object of the <code>XMLInternalDocument</code> class, which is a C-level internal data structure.
+The <code>xmlRoot()</code> function gets access to the root node and its elements. 
+We check the first element of the root node:
+
+<code>&gt; rootNode[1]
+
+$CD
+&lt;CD&gt;
+  &lt;TITLE&gt;Empire Burlesque&lt;/TITLE&gt;
+  &lt;ARTIST&gt;Bob Dylan&lt;/ARTIST&gt;
+  &lt;COUNTRY&gt;USA&lt;/COUNTRY&gt;
+  &lt;COMPANY&gt;Columbia&lt;/COMPANY&gt;
+  &lt;PRICE&gt;10.90&lt;/PRICE&gt;
+  &lt;YEAR&gt;1985&lt;/YEAR&gt;
+&lt;/CD&gt;
+attr(,"class")
+[1] "XMLInternalNodeList" "XMLNodeList"</code>
+To extract data from the root node, we use the <code>xmlSApply()</code> function iteratively over all the children of the root node. 
+The <code>xmlSApply</code> function returns a matrix.
+To convert the preceding matrix into a data frame, we transpose the matrix using the <code>t()</code> function. 
+We then extract the first two rows from the <code>cd.catalog</code> data frame:
+
+<code>&gt; cd.catalog[1:2,]
+             TITLE       ARTIST COUNTRY     COMPANY PRICE YEAR
+1 Empire Burlesque    Bob Dylan     USA    Columbia 10.90 1985
+2  Hide your heart Bonnie Tyler      UK CBS Records  9.90 1988</code>
+
+<h3>There's more...</h3>
+
+XML data can be deeply nested and hence can become complex to extract. 
+Knowledge of <code>XPath</code> will be helpful to access specific XML tags. 
+R provides several functions such as <code>xpathSApply</code> and <code>getNodeSet</code> to locate specific elements.
+<h4>Extracting HTML table data from a web page</h4>
+
+Though it is possible to treat HTML data as a specialized form of XML, R provides specific functions to extract data from HTML tables as follows:
+
+<code>&gt; url &lt;- "http://en.wikipedia.org/wiki/World_population"
+&gt; tables &lt;- readHTMLTable(url)
+&gt; world.pop &lt;- tables[[5]]</code>
+The <code>readHTMLTable()</code> function parses the web page and returns a <code>list</code> of all tables that are found on the page. 
+For tables that have an <code>id</code> attribute, the function uses the <code>id</code> attribute as the name of that list element.
+We are interested in extracting the "10 most populous countries," which is the fifth table; hence we use <code>tables[[5]]</code>.
+
+<h4>Extracting a single HTML table from a web page</h4>
+
+A single table can be extracted using the following command:
+
+<code>&gt; table &lt;- readHTMLTable(url,which=5)</code>
+Specify <code>which</code> to get data from a specific table. 
+R returns a data frame.
+
+<h2>An Introduction to XPath: How to Get Started</h2>
+
+XPath is a powerful language that is often used for scraping the web. 
+It allows you to select nodes or compute values from an XML or HTML document and is actually one of the languages that you can use to extract web data using Scrapy. 
+The other is CSS and while CSS selectors are a popular choice, XPath can actually allow you to do more.
+
+With XPath, you can extract data based on text elements' contents, and not only on the page structure. 
+So when you are scraping the web and you run into a hard-to-scrape website, XPath may just save the day (and a bunch of your time!).
+
+This is an introductory tutorial that will walk you through the basic concepts of XPath, crucial to a good understanding of it, before diving into more complex use cases.
+
+<blockquote>
+<strong>Note:</strong> You can use the <strong>XPath playground</strong> to experiment with XPath. 
+Just paste the HTML samples provided in this post and play with the expressions.
+
+</blockquote>
+<h3>The basics</h3>
+Consider this HTML document:
+
+<code>&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;My page&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;h2&gt;Welcome to my &lt;a href="#"&gt;page&lt;/a&gt;&lt;/h2&gt;
+    &lt;p&gt;This is the first paragraph.&lt;/p&gt;
+    &lt;!-- this is the end --&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code>
+
+XPath handles any XML/HTML document as a tree. 
+This tree's root node is not part of the document itself. 
+It is in fact the parent of the document element node (<code>&lt;html&gt;</code> in case of the HTML above). 
+This is how the XPath tree for the HTML document looks like:
+
+<img src="https://blog.scrapinghub.com/hs-fs/hubfs/tree-7.png" style="background-color: gray">
+
+As you can see, there are many node types in an XPath tree:
+
+<li><strong>Element node:</strong> represents an HTML element, a.k.a an HTML tag.</li>
+<li><strong>Attribute node:</strong> represents an attribute from an element node, e.g. 
+“href” attribute in <code>&lt;a href=”http://www.example.com”&gt;example&lt;/a&gt;</code>.</li>
+<li><strong>Comment node:</strong> represents comments in the document (<code>&lt;!-- … --&gt;</code>).</li>
+<li><strong>Text node:</strong> represents the text enclosed in an element node (<code>example</code> in <code>&lt;p&gt;example&lt;/p&gt;</code>).</li>
+</ul>
+Distinguishing between these different types is useful to understand how XPath expressions work. 
+Now let's start digging into XPath.
+
+Here is how we can select the title element from the page above using an XPath expression:
+
+/html/head/title
+
+
+This is what we call a location path. 
+It allows us to specify the path from the <strong>context node</strong> (in this case the root of the tree) to the element we want to select, as we do when addressing files in a file system. 
+The location path above has three location steps, separated by slashes. 
+It roughly means: <em>start from the ‘html’ element, look for a ‘head’ element underneath, and a ‘title’ element underneath that ‘head’</em>. 
+The context node changes in each step. 
+For example, the <code>head</code> node is the context node when the last step is being evaluated.
+
+However, we usually don't know or don’t care about the full explicit node-by-node path, we just care about the nodes with a given name. 
+We can select them using:
+
+//title
+
+
+Which means:<em> look in the whole tree, starting from the root of the tree (<code>//</code>) and select only those nodes whose name matches <code>title</code></em>. 
+In this example, <code>//</code> is the <strong>axis</strong> and <code>title</code> is the <strong>node test</strong>.
+
+In fact, the expressions we've just seen are using XPath's abbreviated syntax. 
+Translating <code>//title</code> to the full syntax we get:
+
+/descendant-or-self::node()/child::title
+
+
+So, <code>//</code> in the abbreviated syntax is short for <code>descendant-or-self</code>, which means <em>the current node or any node below it in the tree</em>. 
+This part of the expression is called the <strong>axis</strong> and it specifies a set of nodes to select from, based on their direction on the tree from the current context (downwards, upwards, on the same tree level). 
+Other examples of axes are: parent, child, ancestor, etc -- we’ll dig more into this later on.
+
+The next part of the expression, <code>node()</code>, is called a <strong>node test</strong>, and it contains an expression that is evaluated to decide whether a given node should be selected or not. 
+In this case, it selects nodes from all types. 
+Then we have another axis,<code>child</code>, which means <em>go to the child nodes from the current context</em>, followed by another node test, which selects the nodes named as <code>title</code>.
+
+<blockquote>
+So, the <strong>axis</strong> defines where in the tree the <strong>node test</strong> should be applied and the nodes that match the node test will be returned as a <strong>result</strong>.
+
+</blockquote>
+You can test nodes against their name or against their type.
+
+Here are some examples of name tests:
+
+<table>
+<tbody>
+<tr>
+<th>Expression</th>
+<th>Meaning</th>
+</tr>
+<tr>
+<td>/html</td>
+<td>Selects the node named <code>html</code>, which is under the root.</td>
+</tr>
+<tr>
+<td>/html/head</td>
+<td>Selects the node named <code>head</code>, which is under the <code>html</code> node.</td>
+</tr>
+<tr>
+<td>//title</td>
+<td>Selects all the <code>title</code> nodes from the HTML tree.</td>
+</tr>
+<tr>
+<td>//h2/a</td>
+<td>Selects all <code>a</code> nodes which are directly under an <code>h2</code> node.</td>
+</tr>
+</tbody>
+</table>
+And here are some examples of node type tests:
+
+<table>
+<tbody>
+<tr>
+<th>Expression</th>
+<th>Meaning</th>
+</tr>
+<tr>
+<td>//comment()</td>
+<td>Selects only comment nodes.</td>
+</tr>
+<tr>
+<td>//node()</td>
+<td>Selects any kind of node in the tree.</td>
+</tr>
+<tr>
+<td>//text()</td>
+<td>Selects only text nodes, such as "This is the first paragraph".</td>
+</tr>
+<tr>
+<td>//*</td>
+<td>Selects all nodes, except comment and text nodes.</td>
+</tr>
+</tbody>
+</table>
+We can also combine name and node tests in the same expression. 
+For example:
+
+//p/text()
+
+
+This expression selects the text nodes from inside <code>p</code> elements. 
+In the HTML snippet shown above, it would select "This is the first paragraph.".
+
+Now, <strong>let’s see how we can further filter and specify things</strong>. 
+Consider this HTML document:
+
+<code>&lt;html&gt;
+  &lt;body&gt;
+    &lt;ul&gt;
+      &lt;li&gt;Quote 1&lt;/li&gt;
+      &lt;li&gt;Quote 2 with &lt;a href="..."&gt;link&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;Quote 3 with &lt;a href="..."&gt;another link&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;h2&gt;Quote 4 title&lt;/h2&gt; ...&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code>
+
+Say we want to select only the first <code>li</code> node from the snippet above. 
+We can do this with:
+
+//li[position() = 1]
+
+
+The expression surrounded by square brackets is called a predicate and it filters the node set returned by <code>//li</code> (that is, all <code>li</code> nodes from the document) using the given condition. 
+In this case it checks each node's position using the <code>position()</code> function, which returns the position of the current node in the resulting node set (notice that positions in XPath start at 1, not 0). 
+We can abbreviate the expression above to:
+
+//li[1]
+
+
+Both XPath expressions above would select the following element:
+
+    &lt;li class="quote"&gt;Quote 1&lt;/li&gt;
+
+
+Check out a few more predicate examples:
+
+<table>
+<tbody>
+<tr>
+<th>Expression</th>
+<th>Meaning</th>
+</tr>
+<tr>
+<td>//li[position()%2=0]</td>
+<td>Selects the <code>li</code> elements at even positions.</td>
+</tr>
+<tr>
+<td>//li[a]</td>
+<td>Selects the <code>li</code> elements which enclose an <code>a</code> element.</td>
+</tr>
+<tr>
+<td>//li[a or h2]</td>
+<td>Selects the <code>li</code> elements which enclose either an <code>a</code> or an <code>h2</code> element.</td>
+</tr>
+<tr>
+<td>//li[ a [ text() = "link" ] ]</td>
+<td>Selects the <code>li</code> elements which enclose an <code>a</code> element whose text is "link". 
+Can also be written as <code>//li[ a/text()="link" ]</code>.</td>
+</tr>
+<tr>
+<td>//li[last()]</td>
+<td>Selects the last <code>li</code> element in the document.</td>
+</tr>
+</tbody>
+</table>
+So, a location path is basically composed by steps, which are separated by <code>/</code> and each step can have an axis, a node test and a predicate. 
+Here we have an expression composed by two steps, each one with axis, node test and predicate:
+
+&lt;span style="font-weight: 400;"&gt;//li[ 4 ]/h2[ text() = "Quote 4 title" ]&lt;/span&gt;
+
+
+And here is the same expression, written using the non-abbreviated syntax:
+
+/descendant-or-self::node()<br>
+    /child::li[ position() = 4 ]<br>
+        /child::h2[ text() = "Quote 4 title" ]
+
+
+We can also <strong>combine</strong> multiple XPath expressions in a single one using the union operator <code>|</code>. 
+For example, we can select all <code>a</code> and <code>h2</code> elements in the document above using this expression:
+
+//a | //h2
+
+
+Now, consider this HTML document:
+
+<code>&lt;html&gt;
+  &lt;body&gt;
+    &lt;ul&gt;
+      &lt;li id="begin"&gt;&lt;a href="https://scrapy.org"&gt;Scrapy&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href="https://scrapinghub.com"&gt;Scrapinghub&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href="https://blog.scrapinghub.com"&gt;Scrapinghub Blog&lt;/a&gt;&lt;/li&gt;
+      &lt;li id="end"&gt;&lt;a href="http://quotes.toscrape.com"&gt;Quotes To Scrape&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code>
+
+Say we want to select only the <code>a</code> elements whose link points to an HTTPS URL. 
+We can do it by checking their <code>href</code> <strong>attribute</strong>:
+
+//a[starts-with(@href, "https")]
+
+
+This expression first selects all the <code>a</code> elements from the document and for each of those elements, it checks whether their <code>href</code> attribute starts with "https". 
+We can access any node attribute using the <code>@attributename</code> syntax.
+
+Here we have a few additional examples using attributes:
+
+<table>
+<tbody>
+<tr>
+<th>Expression</th>
+<th>Meaning</th>
+</tr>
+<tr>
+<td>//a[@href="https://scrapy.org"]</td>
+<td>Selects the <code>a</code> elements pointing to https://scrapy.org.</td>
+</tr>
+<tr>
+<td>//a/@href</td>
+<td>Selects the value of the <code>href</code> attribute from all the <code>a</code> elements in the document.</td>
+</tr>
+<tr>
+<td>//li[@id]</td>
+<td>Selects only the <code>li</code> elements which have an <code>id</code> attribute.</td>
+</tr>
+</tbody>
+</table>
+<h3>More on Axes</h3>
+We've seen only two types of axes so far:
+
+<li>descendant-or-self</li>
+<li>child</li>
+</ul>
+But there's plenty more where they came from and we'll see a few examples. 
+Consider this HTML document:
+
+<code>&lt;html&gt;
+  &lt;body&gt;
+    &lt;p&gt;Intro paragraph&lt;/p&gt;
+    &lt;h1&gt;Title #1&lt;/h1&gt;
+    &lt;p&gt;A random paragraph #1&lt;/p&gt;
+    &lt;h1&gt;Title #2&lt;/h1&gt;
+    &lt;p&gt;A random paragraph #2&lt;/p&gt;
+    &lt;p&gt;Another one #2&lt;/p&gt;
+    A single paragraph, with no markup
+    &lt;div id="footer"&gt;&lt;p&gt;Footer text&lt;/p&gt;&lt;/div&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code>
+
+Now we want to extract only the first paragraph after each of the titles. 
+To do that, we can use the <code>following-sibling</code> axis, which selects all the siblings after the context node. 
+Siblings are nodes who are children of the same parent, for example all children nodes of the <code>body</code> tag are siblings. 
+This is the expression:
+
+//h1/following-sibling::p[1]
+
+
+In this example, the context node where the <code>following-sibling</code> axis is applied to is each of the <code>h1</code> nodes from the page.
+
+What if we want to select only the text that is right before the <code>footer</code>? We can use the <code>preceding-sibling</code> axis:
+
+//div[@id='footer']/preceding-sibling::text()[1]
+
+
+In this case, we are selecting the first text node before the <code>div</code> footer (<em>"A single paragraph, with no markup"</em>).
+
+XPath also allows us to select elements based on their text content. 
+We can use such a feature, along with the <code>parent</code> axis, to select the parent of the <code>p</code> element whose text is "Footer text":
+
+//p[ text()="Footer text" ]/..
+
+
+The expression above selects <code>&lt;div id="footer"&gt;&lt;p&gt;Footer text&lt;/p&gt;&lt;/div&gt;</code>. 
+As you may have noticed, we used <code>..</code> here as a shortcut to the <code>parent</code> axis.
+
+As an alternative to the expression above, we could use:
+
+//*[p/text()="Footer text"]
+
+
+It selects, from all elements, the ones that have a <code>p</code> child which text is "Footer text", getting the same result as the previous expression.
+
+You can find additional axes in the XPath specification: https://www.w3.org/TR/xpath/#axes
+
+<h3>Wrap up</h3>
+XPath is very powerful and this post is just an introduction to the basic concepts. 
+If you want to learn more about it, check out these resources:
+
+<li>http://zvon.org/comp/r/tut-XPath_1.html</li>
+<li>http://fr.slideshare.net/scrapinghub/xpath-for-web-scraping</li>
+<li>https://blog.scrapinghub.com/2014/07/17/xpath-tips-from-the-web-scraping-trenches/</li>
+</ul>
+And <strong>stay tuned</strong>, because we will post a series with more XPath tips from the trenches in the following months.
 
 </pre>
 
