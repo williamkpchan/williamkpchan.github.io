@@ -60,7 +60,7 @@ function showImg() { var thePointerImg = document.querySelector(".imagearea");
  console.log(thePointerImg.innerHTML); scroll(0,0);
 }
 function showMov() { var imgAdr = ImgList[topicpointer];
- var start = imgAdr.indexOf('<a href="')+1;
+ var start = imgAdr.indexOf('<a href="')+9;
  var end = imgAdr.indexOf('">', start+1);
  var list = imgAdr.substring(start+1, end);
  console.log(list); window.open(list);
