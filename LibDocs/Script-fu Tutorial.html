@@ -1,0 +1,382 @@
+<base target="_blank"><html><head><title>Script-fu Tutorial</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script type='text/javascript' src='../mainscript.js'></script>
+<script>
+  var showTopicNumber = true;
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:22px;}
+strong, h1, h2 {color: gold;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>Script-fu Tutorial</h1>
+<a href="https://www.seul.org/~grumbel/gimp/script-fu/script-fu-tut.html" class="whitebut ">Script-fu Tutorial</a>
+<br>
+<div id="toc"></div></center>
+
+<pre>
+<br>
+<br>
+
+
+<h2>Preface</h2>
+
+The following tutorial is written for <strong>The Gimp 1.1.24</strong>. 
+Some things described here will not work or will work differently with The Gimp 1.0.x.
+
+<h2>Introduction</h2>
+The goal is to have a Script-Fu, which produces a metal style text. 
+I assume, that the reader has a basic knowlege of Scheme, which is the programming language that is used in Script-Fu
+
+<h2>First step on the road to a Script-Fu</h2>
+
+Ok, now we take the first step:what we want to do in Script-Fu,  we try to do first in The Gimp as normal. 
+That is important, 'cause we need to know exactly which operation we need, and in which order we need to call them.
+
+So let's create our test image, first of we create a new rgb image (<span class="menu">File-&gt;New Image</span>) and insert some text into it, say the word "Test".
+
+<img src="https://www.seul.org/~grumbel/gimp/script-fu/images/step1.jpg" alt="Image of step1">
+
+Then we duplicate the text and apply a metal gradient to the top layer.
+
+<img src="https://www.seul.org/~grumbel/gimp/script-fu/images/step2.jpg" alt="Image of step2">
+
+Then we take the second text layer and enlarge it a bit, to do so, we use the alpha-to-selection function and grow the selection by a few pixels. 
+Then we fill the selection with the same gradient, but in a another orientation.
+
+<img src="https://www.seul.org/~grumbel/gimp/script-fu/images/step3.jpg" alt="Image of step3">
+
+At last, we merge the layers and apply a standard drop shadow. 
+When that is done, we auto-crop the image, to remove all unnecessary parts of the image.
+
+<img src="https://www.seul.org/~grumbel/gimp/script-fu/images/step4.jpg" alt="Image of step4">
+
+<h2>Reproducing the steps in the Script-Fu Console</h2>
+
+Ok: the image looks now as we expected it to, so lets summarize  what we have done:
+
+<ol> <li>Create an new image</li> <li>Create a text layer</li> <li>Duplicate the text layer</li> <li>Enlarge the bottom text layer</li> <li>Fill both text layers with a gradient</li> <li>Merge the text layers</li> <li>Apply a drop shadow</li> <li>Merge all layers</li> <li>Auto-crop the image</li>
+</ol>
+
+The task is now to reproduce these steps in the <strong>Script-Fu Console</strong>: where you can enter Script-Fu Commands and test them. 
+Use the Console to test all new functions you aren't handy with; in the Console you can more or less debug your written scripts. 
+It's easiest if you test every line of Script-Fu first in the Console and then parallel-write the Script-Fu, once the commands act as you expect them to.
+
+<img src="https://www.seul.org/~grumbel/gimp/script-fu/images/script-fu-console.png" alt="Image of Script-Fu Console">
+
+To do so, we open the Script-Fu Console (<span class="menu">Xtns-&gt;Script-fu-&gt;Consol</span>). 
+When the console is open, we click on the <span class="menu">Browse...</span> button in the bottom left corner; this brings us to the <strong>DB Browser</strong>, where you can search for functions which you can access from within Script-Fu. 
+Along with the name of the function, you also get a description of the arguments it expects and a general description what the function does.
+
+<img src="https://www.seul.org/~grumbel/gimp/script-fu/images/db-browser.png" alt="Image of DB Browser">
+
+Now it's time to reproduce our first step in the image creation, so we need a function to create an new image. 
+Most of the functions you find in the DB Browser have names similar to those in the menus of the Gimp. 
+After a little search for "new" we find the function <span class="code">gimp-image-new</span>, which sounds like what we are searching for. 
+We enter the following into the console:
+
+(gimp-image-new 256 256 RGB)
+
+and we will get an output as follows:
+
+=&gt; (gimp-image-new 256 256 RGB)
+
+(3)
+
+The first line is simply the command that was executed, the second line is the return value of the function. 
+As you can read in the DB Browser, this is the ID of the newly created image. 
+You can simply use the ID as an argument to functions in the console. 
+The return value is also the first pitfall on our journey to Script-Fu. 
+It comes as a one element long list and <em>not</em> as a integer value! So to use the value, we have to get the first element of the list with <span class="code">car</span>, it will then return the image with ID 3.
+
+You might now wonder, where the image is that we have created, 'cause you cannot see it. 
+The answer is: we don't have a display for it, so the image is only inside the memory, but is not displayed, so we need create an display for it. 
+ So we try <span class="code">(gimp-display-new 3)</span>, but we get an error:
+
+ERROR: Procedural database execution failed:
+(gimp_display_new 3)
+
+So, that's just another pitfall. 
+Not all functions in Script-Fu, act the same as their counterparts in the menus. 
+Sometimes they are much more low-level, so you have to do some more work, to get the results you expect. 
+The problem here is that our newly created image doesn't contain any layers. 
+To display an image, we actually need at least one layer. 
+So the next step is to create an layer:
+
+=&gt; (gimp-layer-new 3 256 256 RGB-IMAGE "foobar" 100 NORMAL-MODE)
+
+(21)
+
+You might notice that the constants RGB-IMAGE and NORMAL-MODE is listed as RGB_IMAGE and NORMAL_MODE in the DB Browser (notice the underscore '_'). 
+You have to replace all the underscrores with minus's '-' in the Script-Fu world. 
+If your are unsure if your replacements are right, just enter the constant into the console.
+
+The next step is to add the newly created layer to the image, as described in the DB browser:
+
+=&gt; (gimp-image-add-layer 3 21 -1)
+
+()
+And now we can finally display our image:
+
+=&gt; (gimp-display-new 3)
+
+(4)
+
+The displayed image looks a bit wierd, cause it is filled with random colors, to erase them, we will fill the layer with the current background color.
+
+=&gt; (gimp-drawable-fill 21 BG-IMAGE-FILL)
+
+()
+
+The function to fill a layer is called <span class="code">gimp-drawable-fill</span> and not <span class="code">gimp-layer-fill</span> as you might expect, that's because a layer is a drawable. 
+So if you are searching for functions to manipulate layers, you should also look out for stuff that manipulates drawables.
+
+Now we have our image set up. 
+To quick for you? Then lets summarize and write our first scheme function. 
+First we encapsule all of it into a let* clause, and than add the let* clause into a function body:
+
+(define (my-make-new-image)
+(let* ((image (car (gimp-image-new 256 256 RGB)))   (layer (car (gimp-layer-new image 256 256                RGB-IMAGE "foobar" 100 NORMAL-MODE))))  (gimp-drawable-fill layer BG-IMAGE-FILL)  (gimp-image-add-layer image layer 0)  (gimp-display-new image)  image))
+
+The last line in a scheme function is the return value, so <span class="code">image</span> is the return value in this function.
+
+So back to our metal-text thing, we need now to add a text string and play with it. 
+A little browsing in the DB brings up <span class="code">gimp-text-fontname</span>. 
+ To call it we type:
+
+=&gt; (gimp-text-fontname 3 21 -1 0 "Foobar" 0 TRUE 25 PIXELS 	    "-freefont-blippo-heavy-r-normal-*-24-*-*-*-p-*-iso8859-1")
+
+(33)
+
+And voila, we have our text on a newly created layer. 
+The string <span class="code">"-freefont-blippo-heavy-r-normal-*-24-*-*-*-p-*-iso8859-1"</span> might look like black-magic to you, but we will see later an easy way to create it.
+
+Now we need to duplicate that layer, you might notice that there is no duplicate layer function in the DB, so we need to do it manually and write another scheme function:
+
+(define (my-duplicate-layer image layer) (let* ((dup-layer (car (gimp-layer-copy layer 1))))         (gimp-image-add-layer image dup-layer 0)       dup-layer)) and then:
+
+=&gt; (my-duplicate-layer 3 34)
+
+41
+
+The next step is to add some space for the enlarged text border, gimp-layer-resize is our friend:
+
+(gimp-layer-resize 41 200 100 5 5)
+
+This works, but the width and height are hard coded, so we try again in a more flexible manner:
+
+(define (my-layer-add-border layer border) (let* ((width  (car (gimp-drawable-width  layer)))        (height (car (gimp-drawable-height layer))))        (gimp-layer-resize layer 			  (+ width border) (+ height border) 			  (/ border 2) (/ border 2))))
+
+Now we need to transfer the layers alpha cannel to the selection and grow it some pixels:
+
+(gimp-selection-layer-alpha 41)
+(gimp-selection-grow 3 5)
+
+Before we fill the layer, we have to remove the "Keep trans" flag, which causes that all transparent areas stay transparent:
+
+(gimp-layer-set-preserve-trans 41 0)
+
+Now we will fill the selection with a gradient:
+
+(gimp-blend 41 CUSTOM NORMAL LINEAR 100 0 REPEAT-NONE FALSE 0 0 0 0 30 50)
+
+<h2>Writing down the Script-Fu</h2>
+
+Huh, now we have everything for our script-fu ready, we just need to attach the pieces. 
+In the following steps we will also remove some unnecessary action and probably add some stuff.
+
+Ok, so how to write a Script-Fu? Well, you need basically three things. 
+First, a file where your script is written down, that file should be placed in <span class="file">~/.gimp-1.1/scripts/</span>. 
+Second, a function, which does all the image manipulation, and finally you need to have a call to <span class="code">script-fu-register</span> to make your script visible from inside the Gimp.
+
+So lets write an empty function and register it. 
+You should copy&amp;paste the following code into a file <span class="file">dummy.scm</span> and save it to <span class="file">~/.gimp-1.1/scripts/</span> as described above.
+
+(define (my-dummy-function a b)
+ (print "Do nothing"))
+
+(script-fu-register "my-dummy-function" 	    _"&lt;Toolbox&gt;/Xtns/Script-Fu/My Stuff/Dummy..." 	    "Do nothing" 	    "Joey User" 	    "Joey User" 	    "August 2000" 	    "" 	    SF-ADJUSTMENT _"Width" '(400 1 2000 1 10 0 1) 	    SF-ADJUSTMENT _"Height" '(30 1 2000 1 10 0 1))
+
+When you then press <span class="menu">Xtns-&gt;Scritp-fu-&gt;Reload</span> your script will be loaded into the Gimp and should be accessable from the menu.
+
+Notice, that there are two kinds of Script-Fu's. 
+The first kind will create a new image, thats used for logo's and accessible through the menu <span class="menu">Xtns-&gt;Scritp-fu-&gt;...</span>, and the second kind will manipulate an existing image, this kind is accessible through the right-click pop-up menu on an image <span class="menu">Scritp-fu-&gt;...</span>. 
+To register the second kind of Script-Fu, you need to adjust the path to <span class="code">&lt;Image&gt;/Script-Fu/...</span> and it needs to take the first two arguments of type SF-IMAGE and SF-DRAWABLE.
+
+This brings us to the next topic, the arguments that your function can get, they can have the following types:
+
+<table> <tr> <th>Argument Type</th> <th>Data Type</th> <th>Description</th> </tr>
+<tr> <td><span class="code">SF-IMAGE</span></td> <td>Integer (image id)</td> <td>Used to get an image id</td> </tr>
+<tr> <td><span class="code">SF-DRAWABLE</span></td> <td>Integer (drawable id)</td> <td>Get a drawable id</td> </tr>
+<tr> <td><span class="code">SF-VALUE</span></td> <td>String</td> <td>Input a numeric value</td> </tr>
+<tr> <td><span class="code">SF-TOGGLE</span></td> <td>Boolean (TRUE or FALSE)</td> <td>Input a booleon value</td> </tr>
+<tr> <td><span class="code">SF-PATTERN</span></td> <td>String (Pattern name)</td> <td>Lets you select a pattern</td> </tr>
+<tr> <td><span class="code">SF-ADJUSTMENT</span></td> <td>List   (start-value min-value max-value small-step large-step   [int=0 or float=1] [slider=0 or roll-box=1])</td> <td>Creates a slider bar or a input box with range   values</td> </tr>
+<tr> <td><span class="code">SF-FILENAME</span></td> <td>String (pathname)</td> <td>Lets you browse for the file</td> </tr>
+<tr> <td><span class="code">SF-STRING</span></td> <td>String</td> <td>Creates a input box</td> </tr>
+<tr> <td><span class="code">SF-FONT</span></td> <td>String (fontname)</td> <td>Lets you select a font</td> </tr>
+<tr> <td><span class="code">SF-COLOR</span></td> <td>List (red green blue) [0-255]</td> <td>Lets you select a color</td> </tr>
+<tr> <td><span class="code">SF-OPTION</span></td> <td>List of strings</td> <td>Lets you select an item out of a list</td> </tr>
+<tr> <td><span class="code">SF-GRADIENT</span></td> <td>String (gradient name)</td> <td>Lets you select a gradient</td> </tr>
+</table>
+
+The following code creates a box with all possible input types:
+
+(define (my-demo-box value adj1 adj2 image drawable toggle pattern string font color option gradient)
+ (print "Do nothing"))
+
+(script-fu-register "my-demo-box" 	    "&lt;Toolbox&gt;/Xtns/Script-Fu/My Stuff/Demo Box..." 	    "Do nothing" 	    "Joe User" 	    "Joe User" 	    "August 2000" 	    "" 	    SF-ADJUSTMENT "SF-ADJUSTMENT (slider)" '( 30 1 2000 1 10 1 0) 	    SF-ADJUSTMENT "SF-ADJUSTMENT"         '(400 1 2000 1 10 1 1) 	    SF-COLOR      "SF-COLOR" '(255 0 255) 	    SF-DRAWABLE   "SF-DRAWABLE" 0 	    SF-FONT       "SF-FONT" "" 	    SF-GRADIENT   "SF-GRADIENT"  "Golden" 	    SF-IMAGE      "SF-IMAGE" 0 	    SF-OPTION     "SF-OPTION" '("Option 1" "Option 2" "Option 3") 	    SF-PATTERN    "SF-PATTERN" "Wood" 	    SF-STRING     "SF-STRING" "Test String" 	    SF-TOGGLE     "SF-TOGGLE" TRUE 	    SF-VALUE      "SF-VALUE" "0"               SF-FILENAME   "SF-FILENAME" "/")
+
+The resulting box will look like this:
+
+<img src="https://www.seul.org/~grumbel/gimp/script-fu/images/demo-box.png" alt="Image of demo box">
+
+So back to business, lets finish our Script-Fu example. 
+We should start with the frame work, so we need to decide which argument types we need. 
+As we want to create a font, we first need the text, so we use SF-STRING, than we should use SF-FONT for the font selection and in addition SF-VALUE to enter the font size.
+
+The creation of the <span class="code">script-fu-register</span> is left as an exercise for the user. 
+If you don't want to try it yourself you can look some lines below for the finished script. 
+The resulting box might then look like this:
+
+<!-- Insert image -->
+
+Now that we have our register call set up, we can fill the function with some code. 
+First of we insert our two helper functions: <span class="code">my-duplicate-layer</span> and <span class="code">my-layer-add-border</span>, at the top of the file. 
+Next, we more or less copy&amp;paste our Script-Fu Console experiments together. 
+We move the <span class="code">gimp-display-new</span> call to the end of our function, so we don't have to see how the image rendering works. 
+We also add another helper function, which will cut the final image to the right size. 
+The resulting script might look then something like this:
+
+(define (my-image-to-layer-size image layer)
+ (gimp-layer-set-offsets layer 0 0)
+ (gimp-image-resize image 	     (car (gimp-drawable-width layer)) 	     (car (gimp-drawable-height layer)) 	     0 0))
+
+(define (my-layer-add-border layer border) (let* ((width  (car (gimp-drawable-width  layer)))        (height (car (gimp-drawable-height layer))))        (gimp-layer-resize layer 			  (+ width border) (+ height border) 			  (/ border 2) (/ border 2))))
+
+(define (my-duplicate-layer image layer) (let* ((dup-layer (car (gimp-layer-copy layer 1))))         (gimp-image-add-layer image dup-layer 0)       dup-layer))
+
+(define (my-make-metal-font text font font-size)
+(let* ((image (car (gimp-image-new 256 256 RGB))) (bottom-font-layer (car (gimp-text-fontname image -1 0 0 text 0 TRUE font-size PIXELS 				     font))))
+
+  (let* ((top-font-layer (my-duplicate-layer image bottom-font-layer)))
+
+(my-layer-add-border bottom-font-layer 20)
+
+(gimp-layer-set-preserve-trans bottom-font-layer 0)
+(gimp-gradients-set-active "Four_bars")
+
+(gimp-selection-layer-alpha bottom-font-layer)
+(gimp-selection-grow image 3)
+(gimp-blend bottom-font-layer CUSTOM NORMAL LINEAR 100 0 REPEAT-NONE FALSE 0 0 0 0 200 50)
+
+(gimp-selection-layer-alpha top-font-layer)
+(gimp-blend top-font-layer    CUSTOM NORMAL LINEAR 100 0 REPEAT-NONE FALSE 0 0 0 50 200 0)
+(gimp-selection-clear image)
+
+(let* ((new-layer (car (gimp-image-merge-visible-layers 		     image EXPAND-AS-NECESSARY))))  (my-image-to-layer-size image new-layer))
+
+(gimp-display-new image))
+  ))
+
+(script-fu-register "my-make-metal-font" 	    "&lt;Toolbox&gt;/Xtns/Script-Fu/Logos/Metal Font..." 	    "Create an example image of a custom gradient" 	    "Federico Mena Quintero" 	    "Federico Mena Quintero" 	    "June 1997" 	    "" 	    SF-STRING     "Text" "The GIMP" 	    SF-FONT       "Font" "-*-blippo-*-r-*-*-24-*-*-*-p-*-*-*" 	    SF-VALUE      "Font Size" "50" )
+
+<h2>Common Pitfalls</h2>
+The following is a list of common pitfalls in Script-Fu.
+
+<h3>Return Values</h3>
+
+When a function returns a value, it will always be encapsulated in a list; it doesn't matter whether only one value or multiple values. 
+Even if the return value is itself a list, like for example the color returned by <span class="code">gimp-color-picker</span>, the return value will always be encapsulated in an extra list.
+
+If multiple values are returned they are also in a list, the first return value is the first element in the list, the second is the second list element, etc. 
+So you need to always apply a <span class="code">car</span> call to get the correct value.
+
+<h3>R5SR Compliance</h3>
+
+<a   href="http://www.schemers.org/Documents/Standards/R5RS/">R5SR</a> is the document which describes the scheme language, but sadly the language used in the Gimp is not R5SR compliance; not even close. 
+Thats because Gimp uses SIOD as its scheme interpreter. 
+SIOD is a small scheme implementation, the price is that it only provides a small subset of R5SR functions; even some of the functions' names have been changed. 
+For example you don't have <span class="code">display</span>, only a function called <span class="code">print</span>. 
+For a summary of scheme functions supported by the Gimp, you can have a look at the webpage of <a 	    href="http://people.delphi.com/gjc/siod.html">SIOD</a>. 
+To make it even worse The Gimp doesn't even provide all the functions listed on the SIOD page, but its a good starting point. 
+You can also use the function <span class="code">apropos</span> in   the console to search for a specific function:
+
+=> (apropos "write")
+
+(fwrite writes swrite write-mask stroke-overwrite)
+
+<h2>Debugging</h2>
+
+When you start to play with Script-Fu, and even when you are familiar with it, you will very often run into a situation where your script doesn't work. 
+To make it even worse, sometimes you will not even get a error message. 
+Most of the time, the cause will be simple, but the search hard. 
+The following steps might make the search easier.
+
+First of check that your script is syntactically correct; that means you have closed all opened parentheses and quotes. 
+An editor with syntax highlighting, automatic indention and parentheses highlighting will help to accomplish that.
+
+Second, you might have forgotten to add a <span class="code">car</span> to some return value. 
+To check for these errors, copy&amp;paste your code into the Script-Fu Console and call it manually.
+
+ERROR: Invalid types specified for arguments
+
+The above is most likely the error message you will get, if you get another error message, your bug might be elsewhere.
+
+When you call a function with too few or to much arguments, you will get the following error message:
+
+=&gt; (gimp-image-get-layers)
+ERROR: too few arguments (see errobj)
+
+Than simply have a look at the errobj: it will tell you which arguments were expected and which you supplied.
+
+=&gt; (print errobj)
+
+((image))
+()
+
+At last if your function will still not work, add some <span class="code">print</span> calls at the right places to check that everything is working correctly. 
+To see the output of the prints you have to run your Script-Fu in the console.
+
+<h2>Thing you can't do in Script-Fu</h2>
+
+For now I have described what you can do with Script-Fu, but there are also a lot of things which you can't do in Script-Fu.
+
+The first thing, that you might want to do is to provide some better default values for the argument that your function will recieve. 
+The bad news is that you can't do that, you can only pass constant values to the Script-Fu register call. 
+So if your default value should, for example, be half the width of the image, you simply can't do that, you have to live with an constant value.
+
+Another thing you might want to have is some sort of GUI which goes behind the stuff that is provided by the SF-* values; and again: you can't do this. 
+The SF-* values are all the gui that you can expect from Script-Fu. 
+If you want more complicated stuff, like a preview window, you have to write a real Gimp Plug-in.
+
+At some point you might want to write your own filter or effect, which needs image manipulation at pixel level. 
+That's a thing that you actually can do in Script-Fu. 
+But it will be extremly slow, due to the interpreted nature of Script-Fu. 
+So again, it's better to write that as a real Gimp Plug-in.
+
+You might also want to open a directory and open all the images in it. 
+Not even that is possible. 
+The SIOD webpage describes the <span class="code">opendir</span> function, but when you try it in Script-Fu it will not work as many other SIOD function.
+
+=&gt; (opendir "/")
+
+ERROR: unbound variable (errobj opendir)
+
+To solve this you have to work-around this by dumping the directory contents to a file and read that file instead, or you can write a Perl-Fu, Python-Fu or a Gimp Plug-in.
+
+There exists a project called <a href="http://anoncvs.jp.gnome.org/index.cgi/gimp-plugins-unstable/gimple/">gimple</a> in the Gnome CVS repositiory which might fix some of these issues. 
+Gimple is a Guile interface for Gimp. 
+It will have much better R5SR compliance than SIOD and will probably be able to call guile-gtk, to enable the creation of much more flexible gui-interfaces, but I don't know the status of this project and have never seen it in action.
+
+<h2>Examples</h2>
+
+It is always a good idea to have a look at foreign Script-Fu's to learn. 
+Script-Fu's can for example be found in the Gimp directory <span class="file">/usr/share/gimp/1.1/scripts/</span>.
+There are also some links to other Script-Fu sites at the <a href="http://www.gimp.org">Gimp</a> webpage. 
+I have also uploaded my Script-Fu's, you can find them <a href="https://github.com/Grumbel/script-fu/tree/master/scripts/">here</a>, but be warned, most of them are not documented, and some might not work at all.
+<script type='text/javascript' src='readbook.js'></script>
+</pre></body></html>

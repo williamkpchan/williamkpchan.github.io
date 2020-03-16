@@ -26,14 +26,14 @@ function chkKey() {
 }
 function getChar(event){
   if (event.which!=0 && event.charCode!=0) {
-    return String.fromCharCode(event.which)}
-  else {return null}}
+    return String.fromCharCode(event.which);}
+  else {return null;}}
 
 var topicLength
 
 function changeTopic() {
  if (topicpointer >= topicLength) { topicpointer = 1;}
- else if (topicpointer < 0) { topicpointer = topicLength;} 
+ else if (topicpointer < 0) { topicpointer = topicLength;}
  else { topicpointer = topicpointer + 1;}
  showTopic()
 }
@@ -46,7 +46,17 @@ function randomFlip() {topicpointer = Math.floor(Math.random() * topicLength); c
 var toc = $('#toc');
 $('h2').each(function(i) {
     var topic = $(this), topicNumber = i + 1; topicLength = topicNumber;
-    toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
+
+    if (typeof(showTopicNumber) !== 'undefined'){
+      if (showTopicNumber == true){
+        toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
+      }else{
+        toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
+      }
+    }else{
+      toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
+    }
+    // toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
     topic.attr('id', 'topic-' + topicNumber);
 });
 var topicpointer = topicLength
