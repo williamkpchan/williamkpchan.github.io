@@ -31,6 +31,10 @@ function getChar(event){
 
 var topicLength
 
+if (typeof markerName == 'undefined') {
+  markerName = 'h2';
+}
+
 function changeTopic() {
  if (topicpointer >= topicLength) { topicpointer = 1;}
  else if (topicpointer < 0) { topicpointer = topicLength;}
