@@ -43,6 +43,7 @@ function chkKey() {
   if(testkey == 'X'){window.open("http://williamkpchan.github.io/LibDocs/Random Charts.html");}
 
   if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
+  if(testkey == 'z'){showTenYear();}
 }
 
 function getChar(event) {
@@ -202,3 +203,14 @@ function showMMA() {
   if (thecode != null && thecode != "") {oMMA(thecode);}
 }
 
+function showTenYear() {
+  var thecode = prompt("showTenYear Code Number:", "");
+  if (thecode != null && thecode != "") {showTY(thecode);}
+}
+
+function showTY(stkcode) {
+  imgHead = "http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=3&indpara1=3&indpara2=5&indpara3=10&indpara4=15&indpara5=20&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&subChart3=12&ref3para1=0&ref3para2=0&ref3para3=0&scheme=3&com=100&chartwidth=1600&chartheight=900&stockid=";
+  imgTail= "&period=2060&type=1&logoStyle=1";
+
+  var imgWindow = window.open(imgHead + stkcode + imgTail);
+}
