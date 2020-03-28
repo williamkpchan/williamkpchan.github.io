@@ -36,6 +36,8 @@ function chkKey() {
 
   if(testkey == 't'){window.open("https://my.weather.gov.hk/tc/myindex.htm");}
   if(testkey == 'T'){window.open("https://translate.google.com/#en/zh-CN");}
+
+  if(testkey == 'u'){window.open("https://www.worldometers.info/coronavirus/");}
   if(testkey == 'v'){window.open("https://williamkpchan.github.io/LibDocs/StkImgViewer.html");}
   if(testkey == 'w'){window.location = '#ruanjian';}
   if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
