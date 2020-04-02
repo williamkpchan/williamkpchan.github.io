@@ -39,7 +39,9 @@ function shuffle(array) {
     return ImgList;
 }
 
-ImgList = shuffle(Array.from(Array(ImgList.length).keys()));
+if ( (typeof(showTopicNumber) !== 'undefined') & (shuffleSW == true) ){
+    ImgList = shuffle(Array.from(Array(ImgList.length).keys()));
+}
 
 function changeImg() {
     if (listLen > 0) {
