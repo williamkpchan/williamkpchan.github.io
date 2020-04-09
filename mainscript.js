@@ -14,6 +14,7 @@ function chkKey() {
   if(testkey == 'c'){showChart();}
 // calculator  if(testkey == 'C'){window.open("https://www.desmos.com/fourfunction");}
   if(testkey == 'C'){window.open("LibDocs/caseStudiesLog.html");}
+  if(testkey == 'd'){window.open("https://www.youdao.com/");}
   if(testkey == 'e'){window.location = '#ertong';}
   if(testkey == 'f'){window.open("http://williamkpchan.github.io/ForexChart.htm");}
   if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
