@@ -52,7 +52,7 @@ function chkKey() { 'use strict'; testkey = getChar(event);
   if(testkey == 'A'){window.open("monitorA.html");}
 //  if(testkey == 'e'){window.scrollTo(0,9999999);}
   if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
-  if(testkey == 'l'){askList();} // input a list of codes
+  if(testkey == 'l'){askaList();} // input a list of codes and store it
   if(testkey == 'T'){window.scrollTo(0,0);}
 }
 
@@ -76,7 +76,7 @@ function showChart() {
   if (thecode != null && thecode != "") {sCt(thecode);}
 }
 
-function askList() {
+function askaList() {
   var theList = prompt("Enter stk list seperated by space:", "");
   if (theList != null && theList != "") {
     localStorage.setItem("stkListArr",theList);
