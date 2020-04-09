@@ -51,13 +51,14 @@ function chkKey() { var testkey = getChar(event);
   if(testkey == 'A'){window.open("monitorA.html");}
 //  if(testkey == 'e'){window.scrollTo(0,9999999);}
   if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
+  if(testkey == 'l'){askList();} // input a list of codes
 }
 
 function getChar(event) {
   if (event.which!=0 && event.charCode!=0) {
-    return String.fromCharCode(event.which)   // the rest
+    return String.fromCharCode(event.which);   // the rest
   } else {
-    return null // special key
+    return null; // special key
   }
 }
 
@@ -69,4 +70,22 @@ function openHtml(){
 function showChart() {
   var thecode = prompt("Code Number:", "");
   if (thecode != null && thecode != "") {sCt(thecode);}
+}
+
+function askList() {
+	var theList = prompt("Enter stk list seperated by space:", "");
+	if (theList != null && theList != "") {
+		localStorage.setItem("stkListArr",theList);
+		location.reload();
+	}
+}
+
+function _stkChartInit() {
+	if (localStorage.getItem("stkListArr") === null) { theList = "00700";}
+	else { fullStkChartInit(); }
+}
+
+function fullStkChartInit() {
+		theList = localStorage.getItem("stkListArr");
+		theList = theList.split(' '); 
 }
