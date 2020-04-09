@@ -1,6 +1,5 @@
 
 $(document).ready(function(){
-   "use strict";
     $('.keys').click(function(){
       parent.history.back();
       return false;
@@ -14,7 +13,6 @@ thisImgPCode= "&period=7";
 
 function showAllCharts(){
 //    $("#codelist").load("HKCodelist.txt");
-  "use strict";
   thisImgHead = "<img src='http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=3&indpara1=3&indpara2=6&indpara3=9&indpara4=12&indpara5=15&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&subChart3=12&ref3para1=0&ref3para2=0&ref3para3=0&scheme=3&com=100&chartwidth=680&chartheight=400&stockid=";
   thisImgTail="&type=1&logoStyle=1' ";
 
@@ -34,7 +32,7 @@ function showAllCharts(){
   }
 }
 
-function chkKey() { 'use strict'; testkey = getChar(event);
+function chkKey() { testkey = getChar(event);
   if(testkey == 'c'){showChart();}
 //  if(testkey == 'f'){ window.location = '#stkcodeid';  $('#stkcode').value =""; }
 
@@ -57,7 +55,6 @@ function chkKey() { 'use strict'; testkey = getChar(event);
 }
 
 function getChar(event) {
-  'use strict';
   if (event.which!=0 && event.charCode!=0) {
     return String.fromCharCode(event.which);   // the rest
   } else {
@@ -65,9 +62,7 @@ function getChar(event) {
   }
 }
 
-
 function openHtml(){
-  'use strict';
   console.log( "keypress: " + $(this).value );
 }
 
