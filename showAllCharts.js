@@ -88,3 +88,4 @@ function fullStkChartInit() {
     theList = localStorage.getItem("stkListArr");
     theList = theList.split(' ');
 }
+

@@ -60,6 +60,7 @@ function showImg() { var thePointerImg = document.querySelector(".imagearea");
  thePointerImg.innerHTML = ImgList[topicpointer];
  // console.log(thePointerImg.innerHTML);
  scroll(0,0);
+ lazyLoadInstance.update();
 }
 function showMov() { var imgAdr = ImgList[topicpointer];
  var start = imgAdr.indexOf('<a href="');
