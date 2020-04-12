@@ -4,6 +4,7 @@ $(document).ready(function(){
       parent.history.back();
       return false;
     });
+    _stkChartInit()
     showAllCharts();
 });
 
@@ -87,5 +88,7 @@ function _stkChartInit() {
 function fullStkChartInit() {
     theList = localStorage.getItem("stkListArr");
     theList = theList.split(' ');
+    titleBar = localStorage.getItem("titleBar");
+    $("#titlebar").append(titleBar);
 }
 

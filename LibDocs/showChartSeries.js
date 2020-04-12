@@ -19,6 +19,8 @@ function jumpto(index) {
 function showstkList() {
   var theList = ImgList[topicpointer];
   var topic = theList.match(patt1)[0];
+  if (theList != null && theList != "") {localStorage.setItem("titleBar",topic);};
+
   topic = theList.replace(topic, "");
   if (theList != null && theList != "") {
     localStorage.setItem("stkListArr",topic);
