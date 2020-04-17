@@ -5,11 +5,11 @@ function sCt(stc) {
   sC2 = "&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9"
   sC3 = "&subChart3=12&ref3para1=0&ref3para2=0&ref3para3=0"
   sC4 = "&scheme=3&com=100"
-  iCW ="&chartwidth=1050&chartheight=690&stockid=";
+  iCW ="&chartwidth=1350&chartheight=700&stockid=";
   iPC= "&period=";
   iT="&type=1&logoStyle=1'><br>";
   sA = "http://www.aastocks.com"
-  iV = [4, 3, 2, 1, 5012, 5007, 5000, 7, 11, 12];
+  iV = [4, 3, 2, 1, 5012, 5007, 5000, 7, 11, 12, 2060];
   ah = "<a href='"
   var iW = window.open("");
 

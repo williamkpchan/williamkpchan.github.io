@@ -41,7 +41,7 @@ function chkKey() { testkey = getChar(event);
   if(testkey == 'd'){thisImgPCode= "&period=7"; showAllCharts();}
   if(testkey == 'w'){thisImgPCode= "&period=11"; showAllCharts();}
   if(testkey == '5'){thisImgPCode= "&period=5012"; showAllCharts();}
-  if(testkey == 'm'){thisImgPCode= "&period=5000"; showAllCharts();}
+  if(testkey == '1'){thisImgPCode= "&period=5000"; showAllCharts();}
 
   if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
   if(testkey == 's'){window.open("../stkListVH.html");}

@@ -8551,6 +8551,618 @@ alert(filtered);
 or
 arr = arr.filter((val) => val != "");
 
+<h2>create script element and load it</h2>
+document.createElement(“script”) synchronously
+
+create &lt;script> element with an "onload" handler, and that will be called when the script has been loaded and evaluated by the browser.
+
+var script = document.createElement('script');
+script.onload = function() {
+  alert("Script loaded and ready");
+};
+script.src = "http://whatever.com/the/script.js";
+document.getElementsByTagName('head')[0].appendChild(script);
+
+This isn't pretty, but it works:
+&lt;script type="text/javascript">
+  document.write('&lt;script type="text/javascript" src="other.js">&lt;/script>');
+&lt;/script>
+
+&lt;script type="text/javascript">
+  functionFromOther();
+&lt;/script>
+
+Or
+&lt;script type="text/javascript">
+  document.write('&lt;script type="text/javascript" src="other.js">&lt;/script>');
+  window.onload = function() {
+    functionFromOther();
+  };
+&lt;/script>
+
+<h2>JSON methods, toJSON</h2>
+Let’s say we have a complex object, and we’d like to convert it into a string, to send it over a network, or just to output it for logging purposes.
+
+Naturally, such a string should include all important properties.
+
+We could implement the conversion like this:
+
+let user = {
+  name: "John",
+  age: 30,
+
+  toString() {
+    return `{name: "${this.name}", age: ${this.age}}`;
+  }
+};
+
+alert(user); // {name: "John", age: 30}
+
+…But in the process of development, new properties are added, old properties are renamed and removed. Updating such toString every time can become a pain. We could try to loop over properties in it, but what if the object is complex and has nested objects in properties? We’d need to implement their conversion as well.
+
+Luckily, there’s no need to write the code to handle all this. The task has been solved already.
+
+<h2>JSON.stringify</h2>
+The <a href="http://en.wikipedia.org/wiki/JSON">JSON</a> (JavaScript Object Notation) is a general format to represent values and objects. It is described as in <a href="http://tools.ietf.org/html/rfc4627">RFC 4627</a> standard. Initially it was made for JavaScript, but many other languages have libraries to handle it as well.  
+So it’s easy to use JSON for data exchange when the client uses JavaScript and the server is written on Ruby/PHP/Java/Whatever.
+
+JavaScript provides methods:
+JSON.stringify to convert objects into JSON.
+JSON.parse to convert JSON back into an object.
+
+For instance, here we JSON.stringify a student:
+
+let student = {
+  name: 'John',
+  age: 30,
+  isAdmin: false,
+  courses: ['html', 'css', 'js'],
+  wife: null
+};
+
+let json = JSON.stringify(student);
+
+alert(typeof json); // we've got a string!
+
+alert(json);
+/* JSON-encoded object:
+{
+  "name": "John",
+  "age": 30,
+  "isAdmin": false,
+  "courses": ["html", "css", "js"],
+  "wife": null
+}
+*/
+
+The method JSON.stringify(student) takes the object and converts it into a string.
+
+The resulting json string is called a <em>JSON-encoded</em> or <em>serialized</em> or <em>stringified</em> or <em>marshalled</em> object. We are ready to send it over the wire or put into a plain data store.
+
+Please note that a JSON-encoded object has several important differences from the object literal:
+Strings use double quotes. No single quotes or backticks in JSON. So 'John' becomes "John".
+Object property names are double-quoted also. That’s obligatory. So age:30 becomes "age":30.
+
+JSON.stringify can be applied to primitives as well.
+
+JSON supports following data types:
+Objects { ... }
+Arrays [ ... ]
+Primitives:
+
+strings,
+numbers,
+boolean values true/false,
+null.
+
+For instance:
+
+// a number in JSON is just a number
+alert( JSON.stringify(1) ) // 1
+
+// a string in JSON is still a string, but double-quoted
+alert( JSON.stringify('test') ) // "test"
+
+alert( JSON.stringify(true) ); // true
+
+alert( JSON.stringify([1, 2, 3]) ); // [1,2,3]
+
+JSON is data-only language-independent specification, so some JavaScript-specific object properties are skipped by JSON.stringify.
+
+Namely:
+Function properties (methods).
+Symbolic properties.
+Properties that store undefined.
+
+let user = {
+  sayHi() { // ignored
+    alert("Hello");
+  },
+  [Symbol("id")]: 123, // ignored
+  something: undefined // ignored
+};
+
+alert( JSON.stringify(user) ); // {} (empty object)
+
+Usually that’s fine. If that’s not what we want, then soon we’ll see how to customize the process.
+
+The great thing is that nested objects are supported and converted automatically.
+
+For instance:
+
+let meetup = {
+  title: "Conference",
+  room: {
+    number: 23,
+    participants: ["john", "ann"]
+  }
+};
+
+alert( JSON.stringify(meetup) );
+/* The whole structure is stringified:
+{
+  "title":"Conference",
+  "room":{"number":23,"participants":["john","ann"]},
+}
+*/
+
+The important limitation: there must be no circular references.
+
+For instance:
+
+let room = {
+  number: 23
+};
+
+let meetup = {
+  title: "Conference",
+  participants: ["john", "ann"]
+};
+
+meetup.place = room;       // meetup references room
+room.occupiedBy = meetup; // room references meetup
+
+JSON.stringify(meetup); // Error: Converting circular structure to JSON
+
+Here, the conversion fails, because of circular reference: room.occupiedBy references meetup, and meetup.place references room:
+
+<figure>
+
+<object type="image/svg+xml" data="/article/json/json-meetup.svg" width="188" height="192" class="image__image">
+
+  <img src="https://javascript.info/article/json/json-meetup.svg" alt="" width="188" height="192">
+</object>
+</figure>
+<h2>Excluding and transforming: replacer</h2>
+The full syntax of JSON.stringify is:
+
+  
+  
+let json = JSON.stringify(value[, replacer, space])
+
+<dl>
+<dt>value</dt>
+<dd>A value to encode.</dd>
+<dt>replacer</dt>
+<dd>Array of properties to encode or a mapping function function(key, value).</dd>
+<dt>space</dt>
+<dd>Amount of space to use for formatting</dd>
+</dl>
+Most of the time, JSON.stringify is used with the first argument only. But if we need to fine-tune the replacement process, like to filter out circular references, we can use the second argument of JSON.stringify.
+
+If we pass an array of properties to it, only these properties will be encoded.
+
+For instance:
+
+let room = {
+  number: 23
+};
+
+let meetup = {
+  title: "Conference",
+  participants: [{name: "John"}, {name: "Alice"}],
+  place: room // meetup references room
+};
+
+room.occupiedBy = meetup; // room references meetup
+
+alert( JSON.stringify(meetup, ['title', 'participants']) );
+// {"title":"Conference","participants":[{},{}]}
+
+Here we are probably too strict. The property list is applied to the whole object structure. So the objects in participants are empty, because name is not in the list.
+
+Let’s include in the list every property except room.occupiedBy that would cause the circular reference:
+
+let room = {
+  number: 23
+};
+
+let meetup = {
+  title: "Conference",
+  participants: [{name: "John"}, {name: "Alice"}],
+  place: room // meetup references room
+};
+
+room.occupiedBy = meetup; // room references meetup
+
+alert( JSON.stringify(meetup, ['title', 'participants', 'place', 'name', 'number']) );
+/*
+{
+  "title":"Conference",
+  "participants":[{"name":"John"},{"name":"Alice"}],
+  "place":{"number":23}
+}
+*/
+
+Now everything except occupiedBy is serialized. But the list of properties is quite long.
+
+Fortunately, we can use a function instead of an array as the replacer.
+
+The function will be called for every (key, value) pair and should return the “replaced” value, which will be used instead of the original one. Or undefined if the value is to be skipped.
+
+In our case, we can return value “as is” for everything except occupiedBy. To ignore occupiedBy, the code below returns undefined:
+
+let room = {
+  number: 23
+};
+
+let meetup = {
+  title: "Conference",
+  participants: [{name: "John"}, {name: "Alice"}],
+  place: room // meetup references room
+};
+
+room.occupiedBy = meetup; // room references meetup
+
+alert( JSON.stringify(meetup, function replacer(key, value) {
+  alert(`${key}: ${value}`);
+  return (key == 'occupiedBy') ? undefined : value;
+}));
+
+/* key:value pairs that come to replacer:
+:             [object Object]
+title:        Conference
+participants: [object Object],[object Object]
+0:            [object Object]
+name:         John
+1:            [object Object]
+name:         Alice
+place:        [object Object]
+number:       23
+*/
+
+Please note that replacer function gets every key/value pair including nested objects and array items. It is applied recursively. The value of this inside replacer is the object that contains the current property.
+
+The first call is special. It is made using a special “wrapper object”: {": meetup}. In other words, the first (key, value) pair has an empty key, and the value is the target object as a whole. That’s why the first line is ":[object Object]" in the example above.
+
+The idea is to provide as much power for replacer as possible: it has a chance to analyze and replace/skip even the whole object if necessary.
+
+<h2>Formatting: space</h2>
+The third argument of JSON.stringify(value, replacer, space) is the number of spaces to use for pretty formatting.
+
+Previously, all stringified objects had no indents and extra spaces. That’s fine if we want to send an object over a network. The space argument is used exclusively for a nice output.
+
+Here space = 2 tells JavaScript to show nested objects on multiple lines, with indentation of 2 spaces inside an object:
+
+let user = {
+  name: "John",
+  age: 25,
+  roles: {
+    isAdmin: false,
+    isEditor: true
+  }
+};
+
+alert(JSON.stringify(user, null, 2));
+/* two-space indents:
+{
+  "name": "John",
+  "age": 25,
+  "roles": {
+    "isAdmin": false,
+    "isEditor": true
+  }
+}
+*/
+
+/* for JSON.stringify(user, null, 4) the result would be more indented:
+{
+    "name": "John",
+    "age": 25,
+    "roles": {
+  "isAdmin": false,
+  "isEditor": true
+    }
+}
+*/
+
+The space parameter is used solely for logging and nice-output purposes.
+
+<h2>Custom “toJSON”</h2>
+Like toString for string conversion, an object may provide method toJSON for to-JSON conversion. JSON.stringify automatically calls it if available.
+
+For instance:
+
+let room = {
+  number: 23
+};
+
+let meetup = {
+  title: "Conference",
+  date: new Date(Date.UTC(2017, 0, 1)),
+  room
+};
+
+alert( JSON.stringify(meetup) );
+/*
+  {
+    "title":"Conference",
+    "date":"2017-01-01T00:00:00.000Z",  // (1)
+    "room": {"number":23}               // (2)
+  }
+*/
+
+Here we can see that date (1) became a string. That’s because all dates have a built-in toJSON method which returns such kind of string.
+
+Now let’s add a custom toJSON for our object room (2):
+
+let room = {
+  number: 23,
+  toJSON() {
+    return this.number;
+  }
+};
+
+let meetup = {
+  title: "Conference",
+  room
+};
+
+alert( JSON.stringify(room) ); // 23
+
+alert( JSON.stringify(meetup) );
+/*
+  {
+    "title":"Conference",
+    "room": 23
+  }
+*/
+
+As we can see, toJSON is used both for the direct call JSON.stringify(room) and when room is nested in another encoded object.
+
+<h2>JSON.parse</h2>
+To decode a JSON-string, we need another method named <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse">JSON.parse</a>.
+
+The syntax:
+
+  
+  
+let value = JSON.parse(str, [reviver]);
+
+<dl>
+<dt>str</dt>
+<dd>JSON-string to parse.</dd>
+<dt>reviver</dt>
+<dd>Optional function(key,value) that will be called for each (key, value) pair and can transform the value.</dd>
+</dl>
+For instance:
+
+// stringified array
+let numbers = "[0, 1, 2, 3]";
+
+numbers = JSON.parse(numbers);
+
+alert( numbers[1] ); // 1
+
+Or for nested objects:
+
+let userData = '{ "name": "John", "age": 35, "isAdmin": false, "friends": [0,1,2,3] }';
+
+let user = JSON.parse(userData);
+
+alert( user.friends[1] ); // 1
+
+The JSON may be as complex as necessary, objects and arrays can include other objects and arrays. But they must obey the same JSON format.
+
+Here are typical mistakes in hand-written JSON (sometimes we have to write it for debugging purposes):
+
+  
+  
+let json = `{
+  name: "John",                     // mistake: property name without quotes
+  "surname": 'Smith',               // mistake: single quotes in value (must be double)
+  'isAdmin': false                  // mistake: single quotes in key (must be double)
+  "birthday": new Date(2000, 2, 3), // mistake: no "new" is allowed, only bare values
+  "friends": [0,1,2,3]              // here all fine
+}`;
+
+Besides, JSON does not support comments. Adding a comment to JSON makes it invalid.
+
+There’s another format named <a href="http://json5.org/">JSON5</a>, which allows unquoted keys, comments etc. But this is a standalone library, not in the specification of the language.
+
+The regular JSON is that strict not because its developers are lazy, but to allow easy, reliable and very fast implementations of the parsing algorithm.
+
+<h2>Using reviver</h2>
+Imagine, we got a stringified meetup object from the server.
+
+It looks like this:
+
+  
+  
+// title: (meetup title), date: (meetup date)
+let str = '{"title":"Conference","date":"2017-11-30T12:00:00.000Z"}';
+
+…And now we need to <em>deserialize</em> it, to turn back into JavaScript object.
+
+Let’s do it by calling JSON.parse:
+
+let str = '{"title":"Conference","date":"2017-11-30T12:00:00.000Z"}';
+
+let meetup = JSON.parse(str);
+
+alert( meetup.date.getDate() ); // Error!
+
+Whoops! An error!
+
+The value of meetup.date is a string, not a Date object. How could JSON.parse know that it should transform that string into a Date?
+
+Let’s pass to JSON.parse the reviving function as the second argument, that returns all values “as is”, but date will become a Date:
+
+let str = '{"title":"Conference","date":"2017-11-30T12:00:00.000Z"}';
+
+let meetup = JSON.parse(str, function(key, value) {
+  if (key == 'date') return new Date(value);
+  return value;
+});
+
+alert( meetup.date.getDate() ); // now works!
+
+By the way, that works for nested objects as well:
+
+let schedule = `{
+  "meetups": [
+    {"title":"Conference","date":"2017-11-30T12:00:00.000Z"},
+    {"title":"Birthday","date":"2017-04-18T12:00:00.000Z"}
+  ]
+}`;
+
+schedule = JSON.parse(schedule, function(key, value) {
+  if (key == 'date') return new Date(value);
+  return value;
+});
+
+alert( schedule.meetups[1].date.getDate() ); // works!
+
+<h2>Summary</h2>
+
+JSON is a data format that has its own independent standard and libraries for most programming languages.
+JSON supports plain objects, arrays, strings, numbers, booleans, and null.
+JavaScript provides methods <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify">JSON.stringify</a> to serialize into JSON and <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse">JSON.parse</a> to read from JSON.
+Both methods support transformer functions for smart reading/writing.
+If an object has toJSON, then it is called by JSON.stringify.
+
+<h2 class="tasks__title" id="tasks"><a class="tasks__title-anchor main__anchor main__anchor main__anchor_noicon" href="#tasks">Tasks</h2>
+<h3 class="task__title"><a class="main__anchor" href="#turn-the-object-into-json-and-back" name="turn-the-object-into-json-and-back">Turn the object into JSON and back</a></h3><a class="task__open-link" href="/task/serialize-object" target="_blank"></a>importance: 5Turn the user into JSON and then read it back into another variable.
+
+  
+  
+let user = {
+  name: "John Smith",
+  age: 35
+};
+
+<button class="task__solution" type="button">solution</button>
+
+  
+  
+let user = {
+  name: "John Smith",
+  age: 35
+};
+
+let user2 = JSON.parse(JSON.stringify(user));
+
+<button class="close-button task__answer-close" type="button" title="close"></button><h3 class="task__title"><a class="main__anchor" href="#exclude-backreferences" name="exclude-backreferences">Exclude backreferences</a></h3><a class="task__open-link" href="/task/serialize-event-circular" target="_blank"></a>importance: 5In simple cases of circular references, we can exclude an offending property from serialization by its name.
+
+But sometimes we can’t just use the name, as it may be used both in circular references and normal properties. So we can check the property by its value.
+
+Write replacer function to stringify everything, but remove properties that reference meetup:
+
+let room = {
+  number: 23
+};
+
+let meetup = {
+  title: "Conference",
+  occupiedBy: [{name: "John"}, {name: "Alice"}],
+  place: room
+};
+
+// circular references
+room.occupiedBy = meetup;
+meetup.self = meetup;
+
+alert( JSON.stringify(meetup, function replacer(key, value) {
+  /* your code */
+}));
+
+/* result should be:
+{
+  "title":"Conference",
+  "occupiedBy":[{"name":"John"},{"name":"Alice"}],
+  "place":{"number":23}
+}
+*/
+
+<button class="task__solution" type="button">solution</button>
+
+  
+  
+
+  <a href="#" title="run" data-action="run" class="toolbar__button toolbar__button_run"></a>
+  <a href="#" title="open in sandbox" target="_blank" data-action="edit" class="toolbar__button toolbar__button_edit"></a>
+
+  
+  
+let room = {
+  number: 23
+};
+
+let meetup = {
+  title: "Conference",
+  occupiedBy: [{name: "John"}, {name: "Alice"}],
+  place: room
+};
+
+room.occupiedBy = meetup;
+meetup.self = meetup;
+
+alert( JSON.stringify(meetup, function replacer(key, value) {
+  return (key != " &amp;&amp; value == meetup) ? undefined : value;
+}));
+
+/*
+{
+  "title":"Conference",
+  "occupiedBy":[{"name":"John"},{"name":"Alice"}],
+  "place":{"number":23}
+}
+*/
+
+<h2>show turnover on page</h2>
+function showTO(stkcode) {
+  stkcode = "00000"+stkcode
+  codewidth = stkcode.length
+  stkcode = stkcode.slice(codewidth-5, codewidth)
+
+  urladdr = 'http://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&amp;param=hk' + stkcode + ',day,,,20,qfq';
+  var script = document.createElement('script');
+  script.onload = function() {
+    $("#turnover").html("Turnover: ");
+    theObj = kline_dayqfq.data;
+    newObj = Object.values(theObj)
+    newObj = Object.values(newObj[0])
+    newObj = Object.values(newObj[0])
+    for(i=10;i&lt;newObj.length;i++){
+      thedate = newObj[i][0]  // date
+      theamt = Math.round(Number(newObj[i][8]))  // amt
+      $("#turnover").append( theamt,"w ")
+    }
+  };
+  script.src = urladdr;
+  document.getElementsByTagName('head')[0].appendChild(script);
+}
+
+<h2>get the name of the array in json data</h2>
+let user = { name: "John", age: 30 };
+
+Object.keys(user) = ["name", "age"]
+Object.values(user) = ["John", 30]
+Object.entries(user) = [ ["name","John"], ["age",30] ]
+
+Accessing nested JSON values with unknown names
+https://stackoverflow.com/questions/36031009/access-elements-inside-json-object-without-knowing-names
+
 <br><br><br><br><br>
 
 
