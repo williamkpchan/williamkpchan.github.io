@@ -1,12 +1,12 @@
-
 function chkKey() {
   var testkey = getChar(event);
-  if((testkey == 'b')|(testkey == '1')){ backward();}
-  if((testkey == 'f')|(testkey == ' ')|(testkey == '3')){ foreward();}
+  if((testkey == 'b')||(testkey == '1')){ backward();}
+  if((testkey == 'f')||(testkey == ' ')||(testkey == '3')){ foreward();}
   if(testkey == '4'){ backwardList();}
   if(testkey == '6'){ forewardList();}
   if(testkey == '5'){ zoomin();}
   if(testkey == '2'){ zoomout();}
+  if(testkey == '9'){ rotateImg();}
   if(testkey == 'p'){ pause();}
   if(testkey == 'c'){ continU();}
   if(testkey == 's'){ showMov();}
@@ -17,18 +17,13 @@ function chkKey() {
   if(testkey == '*'){ show_RmvList();}
   if(testkey == '/'){ clr_RmvList();}
 }
-
 function getChar(event) {
   if (event.which!=0 && event.charCode!=0) {
-    return String.fromCharCode(event.which)   // the rest
-  } else {
-    return null // special key
-  }
+    return String.fromCharCode(event.which)   // the rest }
+  else { return null // special key }
 }
-
 var thePointerImg = document.querySelector('.imagearea');
 var listLen = ImgList.length, timer = 15000;
-
 // Generate a number
 function shuffle(array) {
     var i = ImgList.length, j = 0, temp;
@@ -38,11 +33,9 @@ function shuffle(array) {
     }
     return ImgList;
 }
-
 if ( (typeof(showTopicNumber) !== 'undefined') & (shuffleSW == true) ){
     ImgList = shuffle(Array.from(Array(ImgList.length).keys()));
 }
-
 function changeImg() {
     if (listLen > 0) {
         listLen = listLen - 1;
@@ -58,17 +51,13 @@ function backward() {
     };
 }
 function foreward() {
-    if (listLen > 0) {
-        listLen = listLen - 1;
-        showImg();
-    };
+    if (listLen > 0) { listLen = listLen - 1; showImg(); };
 }
 function pause() {
     clearInterval(myVar);
 }
 function continU() {
-    myVar = setInterval(changeImg, timer);
-    foreward();
+    myVar = setInterval(changeImg, timer); foreward();
 }
 function showImg() {
     thePointerImg.innerHTML = ImgList[listLen];
@@ -80,7 +69,6 @@ function nextImg() {
     thePointerImg.innerHTML = theImgAddr;
     console.log(theImgAddr);
 }
-
 function showthumbs() {
     imgNos = 0
     theImgAddr = ""
@@ -90,16 +78,13 @@ function showthumbs() {
     }
     thePointerImg.innerHTML = theImgAddr;
     console.log(theImgAddr);
-
 }
-
 function prevImg() {
     imgNo = imgNo -1;
     if(imgNo < 1){ imgNo = 1;}
     theImgAddr = imgHeader + ImgList[listLen] +  FormatNumberLength(imgNo) + imgTailer;
     thePointerImg.innerHTML = theImgAddr;
 }
-
 
 function FormatNumberLength(num) {
     var r = "" + num;
@@ -115,8 +100,6 @@ function showMov() {
     var list = imgAdr.substring(start+1, end);
     window.open(list);
 }
-
-
 function init_AllList() {
     if (localStorage.getItem("savedPicList") === null) {
       mypicList = [];
@@ -131,7 +114,6 @@ function init_AllList() {
       toBeRmvList = JSON.parse(localStorage.toRmvList);
     }
 }
-
 function addTo_mypicList() {
   mypicList = JSON.parse(localStorage.savedPicList);
   // check if the image already incluede
@@ -143,7 +125,6 @@ function addTo_mypicList() {
     //console.log(mypicList);
   }
 }
-
 function addTo_RmvList() {
   toBeRmvList = JSON.parse(localStorage.toRmvList);
   // check if the image already incluede
@@ -172,13 +153,11 @@ function escapeHtml(text) {
     };
     return text.replace(/[&<>"']/g, function(m) { return map[m]; });
 }
-
 function clr_RmvList() {
   toBeRmvList = [];
   localStorage.toRmvList = JSON.stringify(toBeRmvList);
   alert("toBeRmvList has been cleared")
 }
-
 function copyStringToClipboard (str) {
    var tempElement = document.createElement('textarea');
    tempElement.value = str;
@@ -189,21 +168,23 @@ function copyStringToClipboard (str) {
    document.execCommand('copy');
    document.body.removeChild(tempElement);
 }
-
 function zoomin(){
         var currWidth = thePointerImg.clientWidth;
         thePointerImg.style.width = (currWidth + 100) + "px";
-    }
+}
 function zoomout(){
         var currWidth = thePointerImg.clientWidth;
         if(currWidth > 100){
             thePointerImg.style.width = (currWidth - 100) + "px";
         }
-    }
+}
+function rotateImg(){
+        thePointerImg.style.transform = "rotate(90deg)";
+		alert("transform");
+}
 function showList() {
     thePointerImg.innerHTML = assembleMomAddr(ImgList[listLen]);
 }
-
 function assembleMomAddr(momAddr) {
    var addr = "http://www.picsmaster.net/gallery/" + momAddr + "/"
    var imgaddr = ""
@@ -213,27 +194,16 @@ function assembleMomAddr(momAddr) {
    return imgaddr;
 }
 function changeList() {
-    if (listLen > 0) {
-        listLen = listLen - 1;
-    } else {
-        listLen = ImgList.length;
-    };
+    if (listLen > 0) { listLen = listLen - 1; }
+    else { listLen = ImgList.length; };
     showList();
 };
 function backwardList() {
-    if (listLen < ImgList.length) {
-        listLen = listLen + 1;
-        showList();
-    };
+    if (listLen < ImgList.length) { listLen = listLen + 1; showList(); };
 }
 function forewardList() {
-    if (listLen > 0) {
-        listLen = listLen - 1;
-        showList();
-    };
+    if (listLen > 0) { listLen = listLen - 1; showList(); };
 }
-
-
 init_AllList();
 changeList();
 document.body.style.cursor = "none"

@@ -1,6 +1,7 @@
 var toc = $('#toc');
 var patt1 = /(<h2>).*(<\/h2>)/i;
 var patt2 = /(<h2[^>]*>|<\/h2>)/g;
+var divtoc = document.getElementById("toc");
 
 function makeTOC(theStr, index) {
   var topic = theStr.match(patt1)[0];
@@ -19,8 +20,12 @@ if(testkey == "4"){ backward();}
 if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
 if(testkey == "f"){ foreward();}
 if(testkey == "6"){ foreward();}
-if(testkey == "l"){divtoc = document.getElementById("toc");$('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1); }
-if(testkey == "2"){divtoc = document.getElementById("toc");$('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1); }
+if(testkey == "l"){
+  $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1); }
+if(testkey == "2"){
+  $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1); }
+if(testkey == "7"){
+  $('body,html').animate({scrollTop:(divtoc.clientHeight/2 + divtoc.offsetTop-600)}, 1); } //go to middle
 if(testkey == "m"){ location = '#mustWatch';}
 if(testkey == "p"){ pause();}
 if(testkey == "c"){ continU();}

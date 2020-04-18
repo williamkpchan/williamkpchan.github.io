@@ -7,7 +7,6 @@ $(document).ready(function(){
 
 styleStr = "<script type='text/javascript' src='mainscript.js'></script><style>body { background-color: black; color: green;} a { text-decoration: none; color: #28B8B8;}</style><body onkeypress='chkKey()'><center>";
 
-
 function chkKey() {
   var testkey = getChar(event);
   if(testkey == 'a'){window.open("apptechno.html");}
@@ -81,30 +80,30 @@ function sCt(stkcode) {
   imgHead = "<img src='http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=3&indpara1=3&indpara2=5&indpara3=10&indpara4=15&indpara5=20&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&subChart3=12&ref3para1=0&ref3para2=0&ref3para3=0&scheme=3&com=100&chartwidth=1350&chartheight=690&stockid=";
   imgHead2 = "<img src='http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=9&indpara1=20&indpara2=2&indpara3=0&indpara4=0&indpara5=0&subChart1=3&ref1para1=12&ref1para2=26&ref1para3=9&subChart2=2&ref2para1=14&ref2para2=0&ref2para3=0&scheme=3&com=100&chartwidth=1350&chartheight=600&stockid=";
 
-
   imgPCode= "&period=";
   imgTail="&type=1&logoStyle=1'><br>";
 
   // 5000, 5007, 1, 2, 3, 4, 6, 7, 9, 10, 12, 14, 16, 17, 18
   intv = [7,4, 3, 2, 1, 5012, 5007, 5000, 7, 11, 12, 2060];
   var imgWindow = window.open("");
-  
+
 //change
 //http://www.aastocks.com/tc/stocks/analysis/stock-aafn/2208/0/all/1
 //to
 //newshead = "http://www.aastocks.com/tc/stocks/analysis/stock-aafn/"
 //newstail = "/0/all/1"
 
-  newshead = "http://www.aastocks.com/tc/ltp/rtquote.aspx?symbol="
-  newstail = ".HK"
-  newsStr = newshead + stkcode + newstail
-  imgAdr = "<script type='text/javascript' src='mainscript.js'></script>\n <style>body { background-color: black; color: green} a { text-decoration: none; color: #28B8B8;}</style><body onkeypress='chkKey()'><center>" +"<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>" 
+  newshead = "http://www.aastocks.com/tc/ltp/rtquote.aspx?symbol=";
+  newstail = ".HK";
+  newsStr = newshead + stkcode + newstail;
+  imgAdr = "<script type='text/javascript' src='mainscript.js'></script>\n <style>body { background-color: black; color: green} a { text-decoration: none; color: #28B8B8;}</style><body onkeypress='chkKey()'><center>" +"<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>";
 
   for( imgPeriod = 0; imgPeriod < intv.length; imgPeriod++){
     imgAdr = imgAdr + imgHead + stkcode + imgPCode + intv[imgPeriod] + imgTail + imgHead2 + stkcode + imgPCode + intv[imgPeriod] + imgTail;
-  };
+  }
+
   imgWindow.document.write(imgAdr);
-  //if (stkcode != "HSI") { stkcode = FormatNumberLength5(stkcode);}
+
 }
 function FormatNumberLength5(num) {
     var r = "" + num;
@@ -137,7 +136,7 @@ function sCtmin(stkcode) {
   imgAdr = "<style>body { background-color: black; color: green} a { text-decoration: none; color: #28B8B8;}</style><body><center>" +"<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>";
   for( imgPeriod = 0; imgPeriod < intv.length; imgPeriod++){
     imgAdr = imgAdr + imgHead + stkcode + imgPCode + intv[imgPeriod] + imgTail + imgHead2 + stkcode + imgPCode + intv[imgPeriod] + imgTail;
-  };
+  }
   imgWindow.document.write(imgAdr);
 }
 
@@ -146,7 +145,7 @@ function openLogFile() {
     var curr_date = d.getDate();
     var curr_month = d.getMonth()+1;
     var curr_year = d.getFullYear();
-    dateNum = last2Digit(curr_year) +last2Digit(curr_month) +last2Digit(curr_date)
+    dateNum = last2Digit(curr_year) +last2Digit(curr_month) +last2Digit(curr_date);
     fileHeader = "file:///C:/Users/User/Desktop/" + dateNum;
 
     filenameUp = fileHeader + "/mylist AAURec" + dateNum + ".html";
@@ -174,8 +173,8 @@ function showTime() {
     var secs=d.getSeconds();
     var mins=d.getMinutes();
     var hr=d.getHours();
-    var timemsg = FormatNumberLength(hr) + ":" + FormatNumberLength(mins) + ":" + FormatNumberLength(secs)
-    return(timemsg)
+    var timemsg = FormatNumberLength(hr) + ":" + FormatNumberLength(mins) + ":" + FormatNumberLength(secs);
+    return(timemsg);
 }
 
 function showDateAndTime() {
@@ -184,8 +183,8 @@ function showDateAndTime() {
 }
 
 function last2Digit(aNum) {
-    return(("0" + aNum).slice(-2))
-};
+    return(("0" + aNum).slice(-2));
+}
 
 function FormatNumberLength(num) {
     var r = "" + num;

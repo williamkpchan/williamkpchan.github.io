@@ -1,3 +1,5 @@
+var divtoc = document.getElementById("toc");
+
 $(document).ready(function(){
   $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
   parent.history.back();
@@ -12,8 +14,12 @@ function chkKey() {
   if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
   if(testkey == "f"){ foreward();}
   if(testkey == "6"){ foreward();}
-  if(testkey == "l"){divtoc = document.getElementById("toc");$('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1); }
-  if(testkey == "2"){divtoc = document.getElementById("toc");$('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1); }
+  if(testkey == "l"){
+    $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1); }
+  if(testkey == "2"){
+    $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1); }
+  if(testkey == "7"){
+    $('body,html').animate({scrollTop:(divtoc.clientHeight/2 + divtoc.offsetTop-600)}, 1); } //go to middle
   if(testkey == "m"){ location = '#mustWatch';}
   if(testkey == "p"){ pause();}
   if(testkey == "c"){ continU();}
