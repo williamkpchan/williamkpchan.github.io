@@ -3,6 +3,11 @@ var patt1 = /(<h2>).*(<\/h2>)/i;
 var patt2 = /(<h2[^>]*>|<\/h2>)/g;
 var divtoc = document.getElementById("toc");
 
+  //var script = document.createElement('script');
+  //script.src = 'https://cdn.jsdelivr.net/npm/vanilla-lazyload@13.0.1/dist/lazyload.min.js';
+  //script.onload = function() {lazyLoadInstance.update();}
+  //document.getElementsByTagName('head')[0].appendChild(script);
+
 function makeTOC(theStr, index) {
   var topic = theStr.match(patt1)[0];
   topic = topic.replace(patt2, "");
@@ -65,7 +70,7 @@ function showImg() { var thePointerImg = document.querySelector(".imagearea");
  thePointerImg.innerHTML = ImgList[topicpointer];
  // console.log(thePointerImg.innerHTML);
  scroll(0,0);
- lazyLoadInstance.update();
+ //lazyLoadInstance.update();
 }
 function showMov() { var imgAdr = ImgList[topicpointer];
  var start = imgAdr.indexOf('<a href="');

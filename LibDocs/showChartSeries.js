@@ -1,7 +1,7 @@
 var tocList = $('#tocList');
 var patt1 = /(<h2>).*(<\/h2>)/i;
 var patt2 = /(<h2[^>]*>|<\/h2>)/g;
-var topicpointer = ImgList.length;
+var topicpointer = 0;
 
 ImgList.forEach(maketocList);
 
@@ -16,15 +16,29 @@ function jumpto(index) {
   showstkList();
 }
 
+function forewardList() {
+  if (topicpointer >= ImgList.length -1) { topicpointer = 0;}
+  else if (topicpointer < 0) { topicpointer = 0;} 
+  else { topicpointer = topicpointer + 1;}
+  showstkList();
+}
+
 function showstkList() {
   var theList = ImgList[topicpointer];
-  var topic = theList.match(patt1)[0];
-  if (theList != null && theList != "") {localStorage.setItem("titleBar",topic);};
+  var title = theList.match(patt1)[0];
+  var listDetail = theList.replace(title, "");
 
-  topic = theList.replace(topic, "");
   if (theList != null && theList != "") {
-    localStorage.setItem("stkListArr",topic);
+    localStorage.setItem("stkListArr",listDetail);
+    localStorage.setItem("titleBar",title);
+
     window.scrollTo(0,0);
-    location.reload();
+    _stkChartInit()
+    showAllCharts();
   }
+}
+
+function randomList() {
+  topicpointer = Math.floor(Math.random() * ImgList.length);
+  showstkList();
 }

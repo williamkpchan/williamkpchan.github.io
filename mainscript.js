@@ -22,6 +22,7 @@ function chkKey() {
   if(testkey == 'H'){window.open("LibDocs/monitorHSI.html");}
   if(testkey == 'J'){window.location = '#_jiaoyu';}
   if(testkey == 'l'){window.location = '#dushu';}
+  if(testkey == 'L'){window.open("LibDocs/listofcharts.html");}
   if(testkey == 'm'){window.open("http://williamkpchan.github.io/medical.html");}
   if(testkey == 'M'){window.open("https://www.google.com.hk/maps/");}
   if(testkey == 'n'){window.location = '#xinwen';}
@@ -43,7 +44,7 @@ function chkKey() {
   if(testkey == 'w'){window.location = '#ruanjian';}
   if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
   if(testkey == 'x'){window.open("https://wx.qq.com/");}
-  if(testkey == 'X'){window.open("http://williamkpchan.github.io/LibDocs/Random Charts.html");}
+  if(testkey == 'X'){window.open("LibDocs/Random Charts.html");}
 
   if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
   if(testkey == 'z'){showTenYear();}
@@ -69,10 +70,12 @@ function showBoth(stkcode) {
       stkcode = stkcode.substring(7, 9)+stkcode.substring(0, 6);
       localStorage.setItem("otherACode",stkcode);
       window.open("file:///D:/Dropbox/Public/LibDocs/otherAOHLC.html");
-    }else if (stkcode != "HSI") {
+    }else if (stkcode != "HSI") { // this part handle HK code
       stkcode = FormatNumberLength5(stkcode);
       localStorage.otherCode = stkcode;
       window.open("file:///D:/Dropbox/Public/LibDocs/OHLCOtherCode.html");
+      localStorage.randomcode= stkcode;
+      window.open("file:///D:/Dropbox/Public/LibDocs/Random Charts.html");
       sCt(stkcode);
     }
 }

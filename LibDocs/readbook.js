@@ -69,5 +69,6 @@ $('h2').each(function(i) {
     // toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
     topic.attr('id', 'topic-' + topicNumber);
 });
-var topicpointer = topicLength
+var topicpointer = topicLength;
 
+randomFlip();

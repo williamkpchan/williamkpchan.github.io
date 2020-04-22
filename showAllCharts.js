@@ -46,13 +46,16 @@ function chkKey() { testkey = getChar(event);
   if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
   if(testkey == 's'){window.open("../stkListVH.html");}
   if(testkey == 'f'){window.open("ForexChart.htm");}
+  if(testkey == 'F'){forewardList();} // go forward to next list
   if(testkey == 'h'){window.open("Hmain.html");}
   if(testkey == 'H'){window.open("monitorHSI.html");}
   if(testkey == 'A'){window.open("monitorA.html");}
 //  if(testkey == 'e'){window.scrollTo(0,9999999);}
   if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
   if(testkey == 'l'){askaList();} // input a list of codes and store it
-  if(testkey == 'T'){window.scrollTo(0,0);}
+  if(testkey == 'R'){randomList();} // go forward to next list
+  if(testkey == 't'){window.scrollTo(0,0);}
+  if(testkey == 'x'){window.open("Random Charts.html");}
 }
 
 function getChar(event) {
@@ -76,6 +79,7 @@ function askaList() {
   var theList = prompt("Enter stk list seperated by space:", "");
   if (theList != null && theList != "") {
     localStorage.setItem("stkListArr",theList);
+    localStorage.setItem("titlebar","temp list");
     location.reload();
   }
 }
@@ -89,6 +93,7 @@ function fullStkChartInit() {
     theList = localStorage.getItem("stkListArr");
     theList = theList.split(' ');
     titleBar = localStorage.getItem("titleBar");
+    $("#titlebar").empty();
     $("#titlebar").append(titleBar);
 }
 
