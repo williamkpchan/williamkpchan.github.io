@@ -22,13 +22,13 @@ function showAllCharts(){
   $( "#codelist" ).append("Total: " + theList.length + "<br>");
 
   theList.forEach(function(value) {
-    $( "#codelist" ).append('<span onclick=showBoth("' +value + '")>' + value + '</span>&emsp;');
+    $( "#codelist" ).append('<span onclick=xunbao("' +value + '")>' + value + '</span>&emsp;');
   });
   $( "#codelist" ).append("<br>");
 
   for( codeNo = 0; codeNo < theList.length; codeNo += 1){
     theText = theList[codeNo];
-    theFunccode =  "<div>" + (codeNo+1) + " &emsp; " + theText + "<br>" + thisImgHead + theText + thisImgPCode + thisImgTail + "onclick = \"showBoth('" + theText + "')\">" + "</div>";
+    theFunccode =  "<div>" + (codeNo+1) + " &emsp; " + theText + "<br>" + thisImgHead + theText + thisImgPCode + thisImgTail + "onclick = \"xunbao('" + theText + "')\">" + "</div>";
     $( "#codelist" ).append( theFunccode);
   }
 }
@@ -97,3 +97,8 @@ function fullStkChartInit() {
     $("#titlebar").append(titleBar);
 }
 
+function xunbao(xunbaocode) {
+  localStorage.setItem("randomcode", xunbaocode)
+  window.open("Random Charts.html");
+}
+l
