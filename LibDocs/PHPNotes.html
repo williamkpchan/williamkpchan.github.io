@@ -435,6 +435,18 @@ Requests: Famous for its user-friendly usage.
 Buzz: A lightweight client, ideal for beginners.
 ReactPHP: Async scraper, with comprehensive tutorials & examples
 
+<b class="red">PHP Simple HTML DOM Parser</b> provides a very easy way to find, extract and modify the HTML elements of the dom. 
+
+// Create DOM from URL or file
+$html = file_get_html('http://www.google.com/');
+
+// Find all images
+foreach($html->find('img') as $element)
+       echo $element->src . '&lt;br>';
+
+// Find all links
+foreach($html->find('a') as $element)
+       echo $element->href . '&lt;br>';
 
 <b class="cyanword">file_get_contents</b> will load the response body into a string but 
 <b class="cyanword">file_get_html</b> will load it into simple-html-dom
@@ -1733,6 +1745,277 @@ You may find it difficult to scrape data from a dynamic website
 You may be stuck up dealing with pages scrolling on and on.
 
 Thank heavens, there is a highly efficient and reliable web scraping service like PROWEBSCRAPER to tackle all these challenges and provide you the data you want.
+
+<h2>Socket Programming in PHP</h2>
+
+Sockets are used for interprocess communication. 
+Interprocess communication is generally based on client-server model. 
+In this case, client-server are the applications that interact with each other. 
+Interaction between client and server requires a connection. 
+Socket programming is responsible for establishing that connection between applications to interact.
+
+<h3>Using the Code</h3>
+<strong>Aim</strong>: Develop a client to send a <code>string </code>message to server and server to return reverse of the same message to client.
+
+<h3>PHP SERVER</h3>
+<h4>Step 1: Set variables such as "host" and "port"</h4>
+
+$host = "127.0.0.1";
+$port = 5353;
+// No Timeout 
+set_time_limit(0);
+
+<em>Port number can be any positive integer between 1024 -65535.</em>
+
+<h4>Step 2: Create Socket</h4>
+$socket = socket_create(AF_INET, SOCK_STREAM, 0) or die("Could not create socket\n");
+
+<h4>Step 3: Bind the socket to port and host</h4>
+
+Here the created socket resource is bound to IP address and port number.
+
+$result = socket_bind($socket, $host, $port) or die("Could not bind to socket\n");
+
+<h4>Step 4: Start listening to the socket</h4>
+
+After getting bound with IP and port server waits for the client to connect. 
+Till then it keeps on waiting.
+
+$result = socket_listen($socket, 3) or die("Could not set up socket listener\n");
+
+<h4>Step 5: Accept incoming connection</h4>
+
+This function accepts incoming connection request on the created socket. 
+After accepting the connection from client socket, this function returns another socket resource that is actually responsible for communication with the corresponding client socket. 
+Here “<code>$spawn</code>” is that socket resource which is responsible for communication with client socket.
+
+$spawn = socket_accept($socket) or die("Could not accept incoming connection\n");
+
+So far, we have prepared our server socket but the script doesn't actually do anything. 
+Keeping to our aforesaid aim, we will read message from client socket and then send back reverse of the received message to the client socket again.
+
+<h4>Step 6: Read the message from the Client socket</h4>
+
+$input = socket_read($spawn, 1024) or die("Could not read input\n");
+
+<h4>Step 7: Reverse the message</h4>
+
+$output = strrev($input) . 
+"\n";
+
+<h4>Step 8: Send message to the client socket</h4>
+
+socket_write($spawn, $output, strlen ($output)) or die("Could not write output\n"); 
+
+<h4>Close the socket</h4>
+
+socket_close($spawn);
+socket_close($socket);
+
+This completes with the server. 
+Now we will learn to create PHP client.
+
+<h3>PHP CLIENT</h3>
+
+The first two steps are the same as in the server.
+
+<h4>Step 1: Set variables such as "host" and "port"</h4>
+
+$host = "127.0.0.1";
+$port = 5353;
+// No Timeout 
+set_time_limit(0);
+
+<em>Note: Here the port and host should be same as defined in server.</em>
+
+<h4>Step 2: Create Socket</h4>
+
+$socket = socket_create(AF_INET, SOCK_STREAM, 0) or die("Could not create socket\n");
+
+<h4>Step 3: Connect to the server</h4>
+
+$result = socket_connect($socket, $host, $port) or die("Could not connect toserver\n");
+
+Here unlike server, client socket is not bound with port and host. 
+Instead it connects to server socket, waiting to accept the connection from client socket. 
+Connection of client socket to server socket is established in this step.
+
+<h4>Step 4: Write to server socket</h4>
+
+socket_write($socket, $message, strlen($message)) or die("Could not send data to server\n");
+
+In this step, client socket data is sent to the server socket.
+
+<h4>Step 5: Read the response from the server</h4>
+
+$result = socket_read ($socket, 1024) or die("Could not read server response\n");
+echo "Reply From Server  :".$result;
+
+<h4>Step 6: Close the socket</h4>
+
+socket_close($socket);
+
+<h3>Complete Code</h3>
+
+<h4>SERVER (server.php)</h4>
+
+// set some variables
+$host = "127.0.0.1";
+$port = 25003;
+// don't timeout!
+set_time_limit(0);
+// create socket
+$socket = socket_create(AF_INET, SOCK_STREAM, 0) or die("Could not create socket\n");
+// bind socket to port
+$result = socket_bind($socket, $host, $port) or die("Could not bind to socket\n");
+// start listening for connections
+$result = socket_listen($socket, 3) or die("Could not set up socket listener\n");
+
+// accept incoming connections
+// spawn another socket to handle communication
+$spawn = socket_accept($socket) or die("Could not accept incoming connection\n");
+// read client input
+$input = socket_read($spawn, 1024) or die("Could not read input\n");
+// clean up input string
+$input = trim($input);
+echo "Client Message : ".$input;
+// reverse client input and send back
+$output = strrev($input) . 
+"\n";
+socket_write($spawn, $output, strlen ($output)) or die("Could not write output\n");
+// close sockets
+socket_close($spawn);
+socket_close($socket);
+
+<h4>CLIENT (client.php)</h4>
+
+$host    = "127.0.0.1";
+$port    = 25003;
+$message = "Hello Server";
+echo "Message To server :".$message;
+// create socket
+$socket = socket_create(AF_INET, SOCK_STREAM, 0) or die("Could not create socket\n");
+// connect to server
+$result = socket_connect($socket, $host, $port) or die("Could not connect to server\n");  
+// send string to server
+socket_write($socket, $message, strlen($message)) or die("Could not send data to server\n");
+// get server response
+$result = socket_read ($socket, 1024) or die("Could not read server response\n");
+echo "Reply From Server  :".$result;
+// close socket
+socket_close($socket);
+
+After creating the above files (<em>server.php</em> and <em>client.php</em>), do as follows:
+
+<ol>
+<li>Copy these files in www directory (in case of WAMP), located at <em>C:\wamp</em>. 
+</li><li>Open your web browser and type <code>localhost </code>in the address bar. 
+</li><li>Browse <em>server.php</em> first followed by <em>client.php</em>. 
+</li></ol>
+
+<h2>PHP client server communication</h2>
+usa a form as client and the server is welcome.php:
+
+A Simple HTML Form
+&lt;html>&lt;body>
+&lt;form action="welcome.php" method="post">
+&lt;!--- the replying page is welcome.php--->
+Name: &lt;input type="text" name="name">&lt;br>
+E-mail: &lt;input type="text" name="email">&lt;br>
+&lt;input type="submit">
+&lt;/form>
+&lt;/body>&lt;/html>
+
+welcome.php:
+  Welcome &lt;?php echo $_POST["name"]; ?>&lt;br>
+  Your email address is: &lt;?php echo $_POST["email"]; ?>
+
+The POST Method
+The POST method does not have any restriction on data size to be sent.
+The POST method can be used to send ASCII as well as binary data.
+The data sent by POST method goes through HTTP header so security depends on HTTP protocol. 
+By using Secure HTTP you can make sure that your information is secure.
+The PHP provides $_POST associative array to access all the sent information using GET method.
+
+Try out following example with client and server on same page:
+&lt;html>&lt;body>
+&lt;?php
+  if( $_POST["name"] || $_POST["age"] )
+  {
+     echo "Welcome ". $_POST['name']. "&lt;br>";
+     echo "You are ". $_POST['age']. " years old.". "&lt;br>";
+     echo "and you are ". $_POST['sex']. ".&lt;br>";
+     exit();
+  }
+?>
+&lt;form action="" method="post">
+  &lt;label for="name">Name:&lt;/label>&lt;br>
+  &lt;input type="text" id="name" name="name">&lt;br>
+  &lt;label for="age">age:&lt;/label>&lt;br>
+  &lt;input type="text" id="age" name="age">
+  &lt;label for="sex">sex:&lt;/label>&lt;br>
+  &lt;input type="text" id="sex" name="sex">&lt;br>
+  &lt;input type="submit" value="Submit">
+&lt;/form>
+&lt;/body>&lt;/html>
+
+The $_REQUEST variable
+The PHP $_REQUEST variable contains the contents of both $_GET, $_POST, and $_COOKIE. 
+
+The PHP $_REQUEST variable can be used to get the result from form data sent with both the GET and POST methods.
+
+Try out following example of $_REQUEST
+&lt;?php
+  if( $_REQUEST["name"] || $_REQUEST["age"] )
+  {
+     echo "Welcome ". $_REQUEST['name']. "&lt;br>";
+     echo "You are ". $_REQUEST['age']. " years old.";
+     exit();
+  }
+?>
+
+$_PHP_SELF variable contains the name of self script in which it is being called.
+
+The $_SERVER["PHP_SELF"] is a super global variable that returns the filename of the currently executing script.
+
+So, the $_SERVER["PHP_SELF"] sends the submitted form data to the page itself, instead of jumping to a different page.
+This way, the user will get error messages on the same page as the form.
+
+&lt;form method="post" action="&lt;?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">
+
+The htmlspecialchars() function converts special characters to HTML entities.
+This means that it will replace HTML characters like &lt; and > with &lt; and &gt;.
+This prevents attackers from exploiting the code by injecting HTML or Javascript code (Cross-site Scripting attacks) in forms.
+
+<h2>submit a form</h2>
+&lt;form action="/action_page.php" onsubmit="myFunction()">
+  Enter name: &lt;input type="text" name="fname">
+  &lt;input type="submit" value="Submit">
+&lt;/form>
+
+&lt;script>
+function myFunction() {
+  alert("The form was submitted");
+}
+&lt;/script>
+
+In HTML:
+&lt;element onsubmit="myScript">
+
+In JavaScript:
+object.onsubmit = function(){myScript};
+
+In JavaScript, using the addEventListener() method:
+object.addEventListener("submit", myScript);
+
+submit a form using javascript
+document.getElementById("form1").submit();
+or
+document.forms["name of your form"].submit();
+or
+function placeOrder(form){
+    form.submit();
+}
 
 <br><br><br><br><br><br><br><br>
 
