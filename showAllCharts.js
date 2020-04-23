@@ -101,4 +101,3 @@ function xunbao(xunbaocode) {
   localStorage.setItem("randomcode", xunbaocode)
   window.open("Random Charts.html");
 }
-l
