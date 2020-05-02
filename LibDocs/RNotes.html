@@ -108,8 +108,8 @@ Sys.setenv(FAME="/opt/fame")
 
 <h2># Encoding Problems</h2>
 <code>To write text UTF8 encoding on Windows</code>
-
-The problem is due to using the default system coding / or using some system write functions; I do not know the specifics but the behaviour is actually known
+Firstly, set encoding
+options(encoding = "UTF-8")
 
 To write text UTF8 encoding on Windows one has to use the <b class="gold embossts redbs borRad10">useBytes=T</b> options in functions like writeLines or readLines:
 
@@ -120,6 +120,12 @@ readLines("test.txt", encoding="UTF-8")</code>
 [1] "在"
 
 <code>writeLines(wholePage, theFilename, useBytes=T)</code>
+The UTF-8 BOM is a sequence of bytes at the start of a text stream
+(0xEF, 0xBB, 0xBF) that allows the reader to more reliably guess a file as being encoded in UTF-8.
+
+Normally, the BOM is used to signal the endianness of an encoding, but since endianness is irrelevant to UTF-8, the BOM is unnecessary.
+
+According to the Unicode standard, the BOM for UTF-8 files is not recommended
 
 #=================
 # Encoding Problems
@@ -954,6 +960,9 @@ Thus the line is a parametric curve with the parameter which is the number of th
 format leading zeros
 
 formatC(1, width = 2, format = "d", flag = "0")
+"01"
+formatC(125, width = 5, format = "d", flag = "0")
+"00125"
 
 
 </pre>
@@ -3389,7 +3398,11 @@ copy the thumb address and replace ending 320x300.jpg with 1000x2000
 <h2>cut(x,breaks)</h2>
 x = sort(rnorm(13,5,12))
 x
+-15.0 -11.3  -3.2   1.0   3.8   6.1   7.6   7.8  10.7 13.7  15.4  15.9  23.4
+
 cut(x,5)
+(-15.1,-7.36] (-15.1,-7.36] (-7.36,0.339] (0.339,8.03]  (0.339,8.03]  (0.339,8.03]  (0.339,8.03]  (0.339,8.03]  (8.03,15.7]   (8.03,15.7]   (8.03,15.7]   (15.7,23.5]   (15.7,23.5]  
+Levels: (-15.1,-7.36] (-7.36,0.339] (0.339,8.03] (8.03,15.7] (15.7,23.5]
 
 <h2>R GUI: RGtk or Tcl/Tk, gWidgets</h2>
 <a href="http://www.ggobi.org/rgtk2/">RGtk2</a>
@@ -5383,6 +5396,570 @@ and the function someFunction() will be run in parallel over nCores.
 A default value of half your physical cores may be a good start.
 
 <a href="https://cran.r-project.org/web/views/HighPerformanceComputing.html" class="whitebut ">High Performance Computing</a>
+
+<h2>matrix operation</h2>
+MatA <- matrix(1:9, nrow = 3)  
+MatB <- matrix(9:1, nrow = 3)  
+MatA + MatB
+
+> A <- matrix(c(2,3,-2,1,2,2),3,2)
+> A
+
+     [,1] [,2]
+[1,]    2    1
+[2,]    3    2
+[3,]   -2    2
+Is Something a Matrix
+> <span class="orange">is.matrix(A)</span>
+
+[1] TRUE
+
+> is.vector(A)
+
+[1] FALSE
+<span class="orange">Multiplication by a Scalar</span>
+> c <- 3
+> c*A
+
+     [,1] [,2]
+[1,]    6    3
+[2,]    9    6
+[3,]   -6    6
+<span class="orange">Matrix Addition & Subtraction</span>
+> B <- matrix(c(1,4,-2,1,2,1),3,2)
+> B
+
+     [,1] [,2]
+[1,]    1    1
+[2,]    4    2
+[3,]   -2    1
+
+> C <- A + B
+> C 
+
+     [,1] [,2]
+[1,]    3    2
+[2,]    7    4
+[3,]   -4    3
+
+> D <- A - B
+> D
+
+     [,1] [,2]
+[1,]    1    0
+[2,]   -1    0
+[3,]    0    1
+
+<span class="orange">Matrix Multiplication</span>
+> D <- matrix(c(2,-2,1,2,3,1),2,3)
+> D
+
+     [,1] [,2] [,3]
+[1,]    2    1    3
+[2,]   -2    2    1
+
+> C <- D %*% A
+> C
+
+     [,1] [,2]
+[1,]    1   10
+[2,]    0    4
+
+> C <- A %*% D
+> C
+
+     [,1] [,2] [,3]
+[1,]    2    4    7
+[2,]    2    7   11
+[3,]   -8    2   -4
+
+> D <- matrix(c(2,1,3),1,3)
+> D
+
+     [,1] [,2] [,3]
+[1,]    2    1    3
+
+> C <- D %*% A
+> C
+
+     [,1] [,2]
+[1,]    1   10
+
+> C <- A %*% D
+
+Error in A %*% D : non-conformable arguments
+<span class="orange">Transpose of a Matrix</span>
+> AT <- t(A)
+> AT
+
+     [,1] [,2] [,3]
+[1,]    2    3   -2
+[2,]    1    2    2
+
+> ATT <- t(AT)
+>ATT
+
+     [,1] [,2]
+[1,]    2    1
+[2,]    3    2
+[3,]   -2    2
+Common Vectors
+<span class="orange">Unit Vector</span>
+> U <- matrix(1,3,1)
+> U
+
+     [,1]
+[1,]    1
+[2,]    1
+[3,]    1
+<span class="orange">Zero Vector</span>
+> Z <- matrix(0,3,1)
+> Z
+
+     [,1]
+[1,]    0
+[2,]    0
+[3,]    0
+Common Matrices
+<span class="orange">Unit Matrix</span>
+> U <- matrix(1,3,2)
+> U
+
+     [,1] [,2]
+[1,]    1    1
+[2,]    1    1
+[3,]    1    1
+<span class="orange">Zero Matrix</span>
+> Z <- matrix(0,3,2)
+> Z
+
+     [,1] [,2]
+[1,]    0    0
+[2,]    0    0
+[3,]    0    0
+<span class="orange">Diagonal Matrix</span>
+> S <- matrix(c(2,3,-2,1,2,2,4,2,3),3,3)
+> S
+
+     [,1] [,2] [,3]
+[1,]    2    1    4
+[2,]    3    2    2
+[3,]   -2    2    3
+
+> D <- diag(S)
+> D
+
+[1] 2 2 3
+
+> D <- diag(diag(S))
+> D
+
+     [,1] [,2] [,3]
+[1,]    2    0    0
+[2,]    0    2    0
+[3,]    0    0    3
+<span class="orange">Identity Matrix</span>
+> I <- diag(c(1,1,1))
+> I
+
+     [,1] [,2] [,3]
+[1,]    1    0    0
+[2,]    0    1    0
+[3,]    0    0    1
+<span class="orange">Symmetric Matrix</span>
+> C <- matrix(c(2,1,5,1,3,4,5,4,-2),3,3)
+> C
+
+     [,1] [,2] [,3]
+[1,]    2    1    5
+[2,]    1    3    4
+[3,]    5    4   -2
+
+> CT <- t(C)
+> CT
+
+     [,1] [,2] [,3]
+[1,]    2    1    5
+[2,]    1    3    4
+[3,]    5    4   -2
+<span class="orange">Inverse of a Matrix</span>
+> A <- matrix(c(4,4,-2,2,6,2,2,8,4),3,3)
+> A
+
+     [,1] [,2] [,3]
+[1,]    4    2    2
+[2,]    4    6    8
+[3,]   -2    2    4
+
+
+> AI <- solve(A)
+> AI
+
+     [,1] [,2] [,3]
+[1,]  1.0 -0.5  0.5
+[2,] -4.0  2.5 -3.0
+[3,]  2.5 -1.5  2.0
+
+> A %*% AI
+
+     [,1] [,2] [,3]
+[1,]    1    0    0
+[2,]    0    1    0
+[3,]    0    0    1
+
+> AI %*% A
+
+     [,1] [,2] [,3]
+[1,]    1    0    0
+[2,]    0    1    0
+[3,]    0    0    1
+<span class="orange">Inverse & Determinant of a Matrix</span>
+> C <- matrix(c(2,1,6,1,3,4,6,4,-2),3,3)
+> C
+
+     [,1] [,2] [,3]
+[1,]    2    1    6
+[2,]    1    3    4
+[3,]    6    4   -2
+
+> CI <- solve(C)
+CI
+
+           [,1]        [,2]        [,3]
+[1,]  0.2156863 -0.25490196  0.13725490
+[2,] -0.2549020  0.39215686  0.01960784
+[3,]  0.1372549  0.01960784 -0.04901961
+
+> d <- det(C)
+> d
+
+[1] -102
+<span class="orange">Rank of a Matrix</span>
+> A <- matrix(c(2,3,-2,1,2,2,4,7,0),3,3)
+> A
+
+     [,1] [,2] [,3]
+[1,]    2    1    4
+[2,]    3    2    7
+[3,]   -2    2    0
+
+> matA <- qr(A)
+> matA$rank
+
+[1] 3
+
+> A <- matrix(c(2,3,-2,1,2,2,4,6,-4),3,3)
+> A
+
+     [,1] [,2] [,3]
+[1,]    2    1    4
+[2,]    3    2    6
+[3,]   -2    2   -4
+
+> matA <- qr(A)
+> matA$rank
+
+[1] 2
+
+# note column 3 is 2 times column 1
+Number of Rows & Columns
+> X <- matrix(c(3,2,4,3,2,-2,6,1),4,2)
+> X
+
+     [,1] [,2]
+[1,]    3    2
+[2,]    2   -2
+[3,]    4    6
+[4,]    3    1
+
+> <span class="orange">dim(X)</span>
+
+[1] 4 2
+
+> r <- nrow(X)
+> r
+
+[1] 4
+
+> c <- ncol(X)
+> c
+
+[1] 2
+Computing Column & Row Sums
+# note the uppercase S
+
+> A <- matrix(c(2,3,-2,1,2,2),3,2)
+> A
+
+     [,1] [,2]
+[1,]    2    1
+[2,]    3    2
+[3,]   -2    2
+
+> c <- colSums(A)
+> c
+
+[1] 3 5
+
+> r <- rowSums(A)
+> r
+
+[1] 3 5 0
+
+> a <- sum(A)
+> a
+
+[1] 8
+<span class="orange">Computing Column & Row Means</span>
+# note the uppercase M
+
+> cm <- colMeans(A)
+> cm
+
+[1] 1.000000 1.666667
+
+> rm <- rowMeans(A)
+> rm
+
+[1] 1.5 2.5 0.0
+
+> m <- mean(A)
+> m
+
+[1] 1.333333
+<span class="orange">Horizontal Concatenation</span>
+> A
+
+     [,1] [,2]
+[1,]    2    1
+[2,]    3    2
+[3,]   -2    2
+
+> B <- matrix(c(1,3,2,1,4,2),3,2)
+> B
+
+     [,1] [,2]
+[1,]    1    1
+[2,]    3    4
+[3,]    2    2
+
+> C <- cbind(A,B)
+> C
+
+     [,1] [,2] [,3] [,4]
+[1,]    2    1    1    1
+[2,]    3    2    3    4
+[3,]   -2    2    2    2
+<span class="orange">Vertical Concatenation (Appending)</span>
+> C <- rbind(A,B)
+> C
+
+     [,1] [,2]
+[1,]    2    1
+[2,]    3    2
+[3,]   -2    2
+[4,]    1    1
+[5,]    3    4
+[6,]    2    2
+
+<span class="orange">Matrix Operations in R</span>
+A * B	Element-wise multiplication
+A %*% B	Matrix multiplication
+A %o% B	Outer product. AB'
+crossprod(A,B)
+crossprod(A)	A'B and A'A respectively.
+t(A)	Transpose
+diag(x)	Creates diagonal matrix with elements of x in the principal diagonal
+diag(A)	Returns a vector containing the elements of the principal diagonal
+diag(k)	If k is a scalar, this creates a k x k identity matrix. Go figure.
+solve(A, b)	Returns vector x in the equation b = Ax (i.e., A-1b)
+solve(A)	Inverse of A where A is a square matrix.
+ginv(A)	Moore-Penrose Generalized Inverse of A.
+ginv(A) requires loading the MASS package.
+y<-eigen(A)	y$val are the eigenvalues of A
+y$vec are the eigenvectors of A
+y<-svd(A)	Single value decomposition of A.
+y$d = vector containing the singular values of A
+y$u = matrix with columns contain the left singular vectors of A
+y$v = matrix with columns contain the right singular vectors of A
+R <- chol(A)	Choleski factorization of A. Returns the upper triangular factor, such that R'R = A.
+y <- qr(A)	QR decomposition of A.
+y$qr has an upper triangle that contains the decomposition and a lower triangle that contains information on the Q decomposition.
+y$rank is the rank of A.
+y$qraux a vector which contains additional information on Q.
+y$pivot contains information on the pivoting strategy used.
+cbind(A,B,...)	Combine matrices(vectors) horizontally. Returns a matrix.
+rbind(A,B,...)	Combine matrices(vectors) vertically. Returns a matrix.
+rowMeans(A)	Returns vector of row means.
+rowSums(A)	Returns vector of row sums.
+colMeans(A)	Returns vector of column means.
+colSums(A)	Returns vector of column sums.
+
+<h2>UCLA stat</h2>
+<a href="http://www.philender.com/courses/intro/" class="whitebut ">ucla.edu Introduction to Research Design and Statistics</a>
+<a href="http://www.philender.com/courses/linearmodels/" class="whitebut ">Linear Statistical Models: Regression & Anova, Better Living Through Linear Models</a>
+<a href="http://www.philender.com/courses/multivariate/" class="whitebut ">Multivariate Statistical Analysis</a>
+
+<h2>R Linear Algebra</h2>
+R is especially handy with linear algebra. 
+Its built-in data types like vectors and matrices mesh well with built-in functions like eigenvalue and determinant solvers and dynamic indexing capabilities.
+
+<h3>Vector Assignment</h3>
+x &lt;- c(1, 2, 3, 4)
+In most contexts, <code>&lt;-</code> can be switched with <code>=</code>.
+The function <code>assign()</code> can also be used:
+assign(&#x27;x&#x27;, c(1, 2, 3, 4))
+Assignments can also be made in the other direction:
+c(1, 2, 3, 4) -&gt; x
+
+<h3>Vector Operations</h3>Vectors can also be used in a variety of ways.
+The operation<code> y &lt;- c(x, 0, x)</code> would assign a vector <code>1, 2, 3, 4, 0, 1, 2, 3, 4 </code>to variable <code>y</code>.
+Vectors can be freely multiplied and added by constants:
+v &lt;- 2*x + y + 1
+Note that this operation is valid even when <code>x</code> and <code>y</code> are different lengths. 
+In this case, R will simply recycle x (sometimes fractionally) until it meets the length of y. 
+Since y is 9 numbers long and x is 4 units long, x will be repeated 2.25 times to match the length of y.
+The arithmetic operators <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, and <code>^</code> can all be used. 
+<code>log</code>, <code>exp</code>, <code>sin</code>, <code>cos</code>, <code>tan</code>, <code>sqrt</code>, and more can also be used. 
+<code>max(x)</code> and <code>min(x)</code> represent the largest and smallest elements of a vector <code>x</code>, and <code>length(x)</code> is the number of elements in <code>x</code>. 
+<code>sum(x)</code> gives the total of the elements in <code>x</code>, and <code>prod(x)</code> their product.
+<code>mean(x)</code> calculates the sample mean, and <code>var(x)</code> returns the sample variance. 
+<code>sort(x)</code> returns a vector of the same size as x with elements arranged in increasing order.
+
+<h3>Generating Sequences</h3>R has many methods for generating sequences of numbers. 
+<code>1:30</code> is the same as <code>c(1, 2, …, 29, 30)</code>. 
+The colon as the highest priority in an expression, so<code>2*1:15</code> will return <code>c(2, 4, …, 28, 30)</code> instead of <code>c(2, 3, …, 14, 15)</code>.
+30:1 may be used to generate the sequence backwards.
+The <code>seq()</code> function can also be used to generate sequences. 
+<code>seq(2,10) </code>returns the same vector as <code>2:10</code>. 
+In <code>seq()</code>, one can also specify the length of the step in which to take: <code>seq(1,2,by=0.5)</code> returns <code>c(1, 1.5, 2)</code>.
+A similar function is <code>rep()</code>, which replicates an object in various ways. 
+For example, <code>rep(x, times=5)</code> will return five copies of <code>x</code> end-to-end.
+
+<h3>Logical Vectors</h3>Logical values in R are TRUE, FALSE, and NA. 
+Logical vectors are set by conditions. 
+<code>val &lt;- x &gt; 13</code> sets <code>val</code> as a vector of the same length as <code>x</code> with values <code>TRUE</code> where the condition is met and <code>FALSE</code> where the condition is not.
+The logical operators in r are <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>==</code>, and <code>!=</code>, which mean less than, less than or equal to, greater than, greater than or equal to, equality, and inequality.
+
+<h3>Missing Values</h3>The function <code>is.na(x)</code> returns a logical vector of the same size as <code>x</code> with <code>TRUE</code> if the corresponding element to <code>x</code> is <code>NA</code>.
+<code>x == NA</code> is different from <code>is.na(x)</code> since <code>NA</code> is not a value but a marker for an unavailable quantity.
+A second type of ‘missing value’ is that which is produced by numerical computation, such as <code>0/0</code>. 
+In this case, <code>NaN</code> (Not a Number) values are treated as <code>NA</code> values; that is, <code>is.na(x)</code> will return <code>TRUE</code> for both <code>NA</code> and <code>NaN</code> values. 
+<code>is.nan(x)</code> can be used only for identifying <code>NaN</code> values.
+
+<h3>Indexing Vectors</h3>The first kind of indexing is through a logical vector. 
+<code>y &lt;- x[!is.na(x)]</code> sets <code>y</code> to the values of <code>x</code> that are not equal to <code>NA</code> or <code>NaN</code>.
+<code>(x+1)[(!is.na(x)) &amp; x&gt;0] -&gt; z</code> sets <code>z</code> to the values of <code>x+1</code> that are not <code>Na</code> or <code>NaN</code> and larger than 0.
+A second method is with a vector of positive integral quantities. 
+In this case, the values must be in the set <code>{1, 2, …, length(x)}</code>. 
+The corresponding elements of the vector are selected and concatenated in that order to form a result. 
+It is important to remember that unlike in other languages, the first index in R is 1 and not 0.
+<code>x[1:10]</code> returns the first 10 elements of <code>x</code>, assuming <code>length(x)</code> is not less than 10. 
+<code>c(‘x’, ‘y’)[rep(c(1,2,2,1), times=4)]</code> produces a character vector of length 16, where <code>‘x’, ‘y’, ‘y’, ‘x’</code> is repeated four times.
+A vector of negative integral numbers specifies the values to be excluded rather than included. 
+<code>y &lt;- x[-(1:5)]</code> sets <code>y</code> to all but the first five values of <code>x</code>.
+Lastly, a vector of character strings can be used when an object has a names attribute to identify its components. 
+With fruit <code>&lt;- c(1, 2, 3, 4)</code>, one can set the names of each index of the vector fruit with <code>names(fruit) &lt;- c(‘mango’, ‘apple’, ‘banana’, ‘orange’)</code>. 
+Then, one can call the elements by name with <code>lunch &lt;- fruit[c(‘apple’, ‘orange’)]</code>.
+The advantage of this is that alphanumeric names can sometimes be easier to remember than indices.
+Note that an indexed expression can also appear on the receiving end of an assignment, in which the assignment is only performed on those elements of a vector. 
+For example, <code>x[is.na(x)] &lt;- 0</code> replaces all <code>NA</code> and <code>NaN</code> values in vector <code>x</code> with the value <code>0</code>.
+Another example: <code>y[y&lt;0] &lt;- -y[y&lt;0]</code> has the same effect as <code>y &lt;- abs(y)</code>. 
+The code simply replaces all the values that are less than 0 with the negative of that value.
+<h3>Arrays &amp; Matrices</h3>
+<h3>Arrays</h3>An array is a subscripted collection of data entries, not necessarily numeric.
+A dimension vector is a vector of non-negative integers. 
+If the length is <em>k</em> then the array is <em>k</em>-dimensional. 
+The dimensions are indexed from one up to the values given in the dimension vector.
+A vector can be used by R as an array as its <code>dim </code>attribute. 
+If <code>z</code> were a vector of 1500 elements, the assignment <code>dim(z) &lt;- c(100, 5, 3)</code> would mean <code>z</code> is now treated as a 100 by 5 by 3 array.
+
+<h3>Array Indexing</h3>Individual elements of an array can be referenced by giving the name of the array followed by the subscripts in square brackets, separated by columns.
+A 3 by 4 by 6 vector <code>a</code> could have its first value called via <code>a[1, 1, 1]</code> and its last value called via <code>a[3, 4, 6]</code>.
+<code>a[,,]</code> represents the entire array; hence, <code>a[1,1,]</code> takes the first row of the first 2-dimensional cross-section in <code>a</code>.
+
+<h3>Indexing Matrices</h3>The following code generates a 4 by 5 array: <code>x &lt;- array(1:20, dim = c(4,5))</code>.
+Arrays are specified by a vector of values and the dimensions of the matrix. 
+Values are calculated top-down first, left-right second.
+<code>array(1:4, dim = c(2,2))</code> would return
+1 3
+2 4
+and not
+1 2
+3 4
+Negative indices are not allowed in index matrices. 
+<code>NA</code> and zero values are allowed.
+
+<h3>Outer Product of 2 Arrays</h3>An important operation on arrays is the outer product. 
+If <code>a</code> and <code>b</code> are two numeric arrays, their outer product is an array whose dimension vector is obtained by concatenating the two dimension vectors and whose data vector is achieved by forming all possible products of elements of the data vector of <code>a</code> with those of <code>b</code>. 
+The outer product is calculated with the operator <code>%o%</code>:
+<code>ab &lt;- a %o% b</code>
+Another way to achieve this is
+<code>ab &lt;- outer(a, b, ‘*’)</code>
+In fact, any function can be applied on two arrays using the outer() function. 
+Suppose we define a function <code>f &lt;- function(x, y) cos(y)/(1+x²)</code>. 
+The function could be applied to two vectors <code>x</code> and <code>y</code> via <code>z &lt;- outer(x, y, f)</code>.
+
+<h3>Demonstration: All Possible Determinants of 2x2 Single-Digit Matrices</h3>Consider the determinants of 2 by 2 matrices [a, b; c, d] where each entry is a non-negative integer from 0 to 9. 
+The problem is to find the determinants of all possible matrices in this form and represent the frequency of which the value occurs with a high density plot.
+Rephrased, find the probability distribution of the determinant if each digit is chosen independently and uniformly at random.
+One clever way of doing this uses the outer(0 function twice.
+d &lt;- outer(0:9,0:9)
+fr &lt;- table(outer(d, d, ‘-’))
+plot(fr, xlab = ‘Determinant’, ylab = ‘Frequency’)
+The first line assigns d to this matrix:
+<figure><div><div><div><div><div><img>The second line uses the outer() function again to calculate all possible determinants, and the last line plots it.
+<figure><div><div><div><div><div><img>Generalized Transpose of an Array</h3>The function <code>aperm(a, perm)</code> can be used to permute an array a. 
+The argument perm must be the permutation of the integers {1,…, <em>k</em>} where <em>k</em> is the number of subscripts in <em>a</em>. 
+The result of the function is an array of the same size as a but with the old dimension given by <code>perm[j]</code> becoming the new <code>j-th</code> dimension.
+An easy way to think about it is a generalization of transposition for matrices. 
+If <code>A</code> is a matrix, then <code>B</code> is simply the transpose of <code>A</code>:
+B &lt;- aperm(A, c(2, 1))
+In these special cases the function <code>t()</code> performs a transposition.
+
+<h3>Matrix Multiplication</h3>The operator %*% is used for matrix multiplication. 
+If <code>A</code> and <code>B</code> are square matrices of the same size, <code>A*B</code> is the element-wise product of the two matrices. 
+<code>A %*% B</code> is the dot product (matrix product).
+If x is a vector, then <code>x %*% A %*% x</code> is a quadratic form.
+<code>crossprod()</code> performs cross-products; thus, <code>crossprod(X, y)</code> is the same as the operation <code>t(X) %*% y</code>, but more efficient.
+<code>diag(v)</code>, where <code>v</code> is a vector, gives a diagonal matrix with elements of the vector as the diagonal entries. 
+<code>diag(M)</code>, where <code>m</code> is a matrix, gives the vector of the main diagonal entries of <code>M</code> (the same convention as in Matlab). 
+<code>diag(k)</code>, where <code>k</code> is a single numeric value, returns a <code>k</code> by <code>k</code> identity matrix.
+
+<h3>Linear Equations and Inversion</h3>Solving linear equations is the inverse of matrix multiplication. 
+When
+b &lt;- A %*% x
+with only <code>A</code> and <code>b</code> given, vector <code>x</code> is the solution of the linear equation system. 
+This can be solved quickly in R with
+solve(A, b)
+
+<h3>Eigenvalues and Eigenvectors</h3>The function <code>eigen(Sm)</code> calculates the eigenvalues and eigenvectors of a symmetric matrix Sm. 
+The result is a list, with the first element named values and the second named vectors. 
+<code>ev &lt;- eigen(Sm)</code> assigns this list to <code>ev</code>.
+<code>ev$val</code> is the vector of eigenvalues of <code>Sm</code> and <code>ev$vec</code> the matrix of corresponding eigenvectors.
+For large matrices, it is better to avoid computing the eigenvectors if they are not needed by using the expression
+evals &lt;- eigen(Sm, only.values = TRUE)$values
+
+<h3>Singular Value Decomposition and Determinants</h3>The function <code>svd(m)</code> takes an arbitrary matrix argument, <code>m</code>, and calculates the singular value decomposition of <code>m</code>. 
+This consists of a matrix of orthonormal columns <code>U</code> with the same column space as <code>m</code>, a second matrix of orthonormal columns <code>V</code> whose column space is the row space of <code>m</code> and a diagonal matrix of positive entries <code>D</code> such that
+m = U %*% D %*% t(V)
+<code>det(m)</code> can be used to calculate the determinant of a square matrix <code>m</code>.
+
+<h3>Least Squares Fitting &amp; QR Decomposition</h3>The function <code>lsfit()</code> returns a list giving results of a least squares fitting procedure. 
+An assignment like
+ans &lt;- lsfit(X, y)
+gives results of a least squares fit where y is the vector of observations and X is the design matrix.
+<code>ls.diag()</code> can be used for regression diagnostics.
+A closely related function is qr().
+b &lt;- qr.coef(Xplus,y)
+fit &lt;- qr.fitted(Xplus,y)
+res &lt;- qr.resid(Xplus,y)
+These compute the orthogonal projection of <code>y</code> onto the range of <code>X</code> in <code>fit</code>, the projection onto the orthogonal complement in <code>res</code> and the coefficient vector for the projection in <code>b</code>.
+
+<h3>Forming Partitioned <code>Matrices</code></h3>Matrices can be built up from other vectors and matrices with the functions <code>cbind()</code> and <code>rbind()</code>.
+<code>cbind()</code> forms matrices by binding matrices horizontally (column-wise), and <code>rbind()</code> binds matrices vertically (row-wise).
+In the assignment <code>X &lt;- cbind(arg_1, arg_2, arg_3, …)</code> the arguments to <code>cbind()</code> must be either vectors of any length, or columns with the same column size (the same number of rows).
+<code>rbind()</code> performs a corresponding operation for rows.
 
 <br>
 <br>

@@ -676,6 +676,7 @@ And in your name.php
    }
  ?&gt;
 
+
 <h2>HTTP GET and POST Methods in PHP</h2>
 <a href="https://www.w3schools.in/php/get-post/">php get-post</a>
 
@@ -1154,6 +1155,41 @@ if ($result = $mysqli -> query("SELECT * FROM Persons")) {
 $mysqli -> close();
 ?>
 
+&lt;?php
+$servername = "localhost"; $username = "username";
+$password = "password"; $dbname = "myDB";
+
+// Create connection
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+// Check connection
+if ($conn->connect_error) {die("Connection failed: " . $conn->connect_error);}
+
+$sql = "SELECT id, firstname, lastname FROM MyGuests";
+$result = $conn->query($sql);
+
+if ($result->num_rows > 0) {    // output data of each row
+  while($row = $result->fetch_assoc()) {
+    echo "&lt;br> id: ". $row["id"]. " - Name: ". $row["firstname"]. " " . $row["lastname"] . "&lt;br>";
+  }
+} else {
+  echo "0 results";
+}
+
+// another presentation
+if ($result->num_rows > 0) {
+  echo "&lt;table>&lt;tr>&lt;th>ID&lt;/th>&lt;th>Name&lt;/th>&lt;/tr>";
+  // output data of each row
+  while($row = $result->fetch_assoc()) {
+    echo "&lt;tr>&lt;td>" . $row["id"]. "&lt;/td>&lt;td>" . $row["firstname"]. " " . $row["lastname"]. "&lt;/td>&lt;/tr>";
+  }
+  echo "&lt;/table>";
+} else {
+  echo "0 results";
+}
+
+$conn->close();
+?>
 
 <h2>get and post method</h2>
 &lt;input type="text" name="lname">
@@ -1983,9 +2019,14 @@ This way, the user will get error messages on the same page as the form.
 
 &lt;form method="post" action="&lt;?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">
 
+<h2>$_PHP_SELF</h2>
+$_PHP_SELF variable contains the name of self script in which it is being called.
+
+<h2>htmlspecialchars() function</h2>
 The htmlspecialchars() function converts special characters to HTML entities.
-This means that it will replace HTML characters like &lt; and > with &lt; and &gt;.
+This means that it will replace HTML characters like &lt; and > with &amp;lt; and &amp;gt;.
 This prevents attackers from exploiting the code by injecting HTML or Javascript code (Cross-site Scripting attacks) in forms.
+
 
 <h2>submit a form</h2>
 &lt;form action="/action_page.php" onsubmit="myFunction()">
@@ -2016,6 +2057,139 @@ or
 function placeOrder(form){
     form.submit();
 }
+
+<h2>echo input value in same page</h2>
+&lt;form action="the-same-page.php">
+    ... your code...
+    &lt;input type="submit">
+&lt;/form>
+
+&lt;?php echo $_POST['nameField'] ?>
+
+without submit:
+&lt;input type="text" id="foo" 
+   onchange="document.getElementById('output').innerHTML = this.value"/>
+
+&lt;div id="output">output will be here&lt;/div>
+
+
+&lt;input type="text" 
+       name="idtest"
+       value="&lt;?php echo htmlspecialchars($name); ?>"
+/>
+
+&lt;input type="text" name="idtest" value="&lt;?php echo $idtest; ?>" >
+
+
+&lt;form action="welcome.php" method="get">
+  First name: &lt;input type="text" name="fname">
+&lt;/form>
+
+Welcome &lt;?php echo $_GET["fname"]; ?>
+
+<h2>PHP Form Validation Example</h2>
+&lt;?php
+// define variables and set to empty values
+$nameErr = $emailErr = $genderErr = $websiteErr = "";
+$name = $email = $gender = $comment = $website = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+  if (empty($_POST["name"])) {
+    $nameErr = "Name is required";
+  } else {
+    $name = test_input($_POST["name"]);
+
+    // check if name only contains letters and whitespace
+    if (!preg_match("/^[a-zA-Z ]*$/",$name)) {
+      $nameErr = "Only letters and white space allowed";
+    }
+  }
+  
+  if (empty($_POST["email"])) {
+    $emailErr = "Email is required";
+  } else {
+    $email = test_input($_POST["email"]);
+    // check if e-mail address is well-formed
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+      $emailErr = "Invalid email format";
+    }
+  }
+    
+  if (empty($_POST["website"])) {
+    $website = "";
+  } else {
+    $website = test_input($_POST["website"]);
+    // check if URL address syntax is valid (this regular expression also allows dashes in the URL)
+    if (!preg_match("/\b(?:(?:https?|ftp):\/\/|www\.)[-a-z0-9+&@#\/%?=~_|!:,.;]*[-a-z0-9+&@#\/%=~_|]/i",$website)) {
+      $websiteErr = "Invalid URL";
+    }
+  }
+
+  if (empty($_POST["comment"])) {
+    $comment = "";
+  } else {
+    $comment = test_input($_POST["comment"]);
+  }
+
+  if (empty($_POST["gender"])) {
+    $genderErr = "Gender is required";
+  } else {
+    $gender = test_input($_POST["gender"]);
+  }
+}
+
+function test_input($data) {
+  $data = trim($data);
+  $data = stripslashes($data);
+  $data = htmlspecialchars($data);
+  return $data;
+}
+?>
+
+&lt;h2>PHP Form Validation Example&lt;/h2>
+&lt;p>&lt;span class="error">* required field&lt;/span>&lt;/p>
+&lt;form method="post" action="&lt;?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">  
+  Name: &lt;input type="text" name="name" value="&lt;?php echo $name;?>">
+  &lt;span class="error">* &lt;?php echo $nameErr;?>&lt;/span>
+  &lt;br>&lt;br>
+  E-mail: &lt;input type="text" name="email" value="&lt;?php echo $email;?>">
+  &lt;span class="error">* &lt;?php echo $emailErr;?>&lt;/span>
+  &lt;br>&lt;br>
+  Website: &lt;input type="text" name="website" value="&lt;?php echo $website;?>">
+  &lt;span class="error">&lt;?php echo $websiteErr;?>&lt;/span>
+  &lt;br>&lt;br>
+  Comment: &lt;textarea name="comment" rows="5" cols="40">&lt;?php echo $comment;?>&lt;/textarea>
+  &lt;br>&lt;br>
+  Gender:
+  &lt;input type="radio" name="gender" &lt;?php if (isset($gender) && $gender=="female") echo "checked";?> value="female">Female
+  &lt;input type="radio" name="gender" &lt;?php if (isset($gender) && $gender=="male") echo "checked";?> value="male">Male
+  &lt;input type="radio" name="gender" &lt;?php if (isset($gender) && $gender=="other") echo "checked";?> value="other">Other  
+  &lt;span class="error">* &lt;?php echo $genderErr;?>&lt;/span>
+  &lt;br>&lt;br>
+  &lt;input type="submit" name="submit" value="Submit">  
+&lt;/form>
+
+&lt;?php
+echo "&lt;h2>Your Input:&lt;/h2>";
+echo $name;    echo "&lt;br>";
+echo $email;   echo "&lt;br>";
+echo $website; echo "&lt;br>";
+echo $comment; echo "&lt;br>";
+echo $gender;
+?>
+
+<h2>submit form to itself in the same page</h2>
+
+Use ?:
+<form action="?" method="post">
+It will send the user back to the same page.
+
+Leave action attribute blank. 
+The form will automatically submit itself in the same page.
+<form action="">
+
+Using php be sure to use:
+action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>"
 
 <br><br><br><br><br><br><br><br>
 
