@@ -2191,6 +2191,1227 @@ The form will automatically submit itself in the same page.
 Using php be sure to use:
 action="&lt;?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>"
 
+<h2>PHP 5’s Standard Library</h2>
+Much of the buzz surrounding PHP5 has focused on its new object-oriented syntax and capabilities, and comparisons with Java. 
+While all that was going on, the promisingly named "Standard PHP Library" (SPL) extension quietly made its way into the core PHP 5 distribution.
+
+Although work is still in progress, the Standard PHP Library's current offering significantly increases the chances of getting PHP developers to agree on something (thereby increasing the chances of code re-use). 
+It may also make your cunningly constructed class interface very easy for other people to use, as the SPL extension makes it possible to "overload" basic PHP syntax and make objects look like normal PHP arrays.
+
+In this tutorial, I'll introduce the functionality available with the SPL extension and PHP5 with just enough examples to get you started. 
+Be warned: PHP5's syntax will be used. 
+If you need to catch up, try SitePoint's <a href="http://www.sitepoint.com/article/coming-soon-webserver-near/">PHP5 review</a>. 
+
+<strong><em>Today's iterations:</em></strong>
+<li>Introducing the SPL: what's it all about?</li>
+<li>Looping the Loop: did someone say Iterator?</li>
+<li>Iterations foreach of us: the "wow" factor</li>
+<li>Admiring the Tree: a short tour of SPL classes and interfaces</li>
+<li>Objects as Arrays: easier for your web page designer</li>
+<li>The Big Deal: why you gotta like it</li>
+
+Don't for get to <a href="http://www.sitepoint.com/examples/php5/php5stdlib.zip">download all the code included in this article</a> for your own use.
+
+<h2>Introducing the SPL</h2>
+
+The "Standard PHP Library" is a PHP extension developed by <a href="http://marcus-boerger.de/">Marcus Boerger</a> which (<a href="http://www.php.net/spl">as the manual says</a>) "is a collection of interfaces and classes that are meant to solve standard problems." As part of the core distribution of PHP5, it should be "always on".
+
+If you've been around the block with PHP4, you'll know there are a few areas in which wheels are perpetually re-invented by almost every new PHP project. 
+Standardizing some of the fundamentals is a good way to get PHP developers singing from the same sheet, and increases the chances of our being able to re-use code from Project X in Project Y.
+
+Today the SPL extension addresses a single subset of problems: Iterators. 
+What makes the SPL Iterator implementation interesting is not only that it defines a standard for everyone to use in PHP5, but also that it "overloads" certain parts of PHP syntax such as the <em>foreach</em> construct and basic array syntax, making it easier to work with objects of your classes.
+
+<h2>Looping the Loop</h2>
+
+So, what is an Iterator? In this context, Iterator refers to a software "design pattern", identified by the "Gang of Four" in their ground-breaking <a href="http://www.amazon.com/exec/obidos/ASIN/0201633612/">Design Patterns</a> book.
+
+The <em>intent</em> of an Iterator is to "provide an object which traverses some aggregate structure, abstracting away assumptions about the implementation of that structure."
+
+As with all general definitions, the exact meaning of this statement may be none too clear at first glance.
+
+By "aggregate structure" we're basically talking about anything you might "loop over" in PHP, such as the rows in a database result set, a list of files in a directory or each new line in a text file.
+
+Using "normal" PHP, you might use the following to loop through a MySQL query:
+
+<code>// Fetch the "aggregate structure" 
+$result = mysql_query("SELECT * FROM users"); 
+// Iterate over the structure 
+while ( $row = mysql_fetch_array($result) ) { 
+ &nbsp; &nbsp;// do stuff with the row here 
+}</code>
+
+To read the contents of a directory, you might use:
+
+<code>// Fetch the "aggregate structure" 
+$dh = opendir('/home/harryf/files'); 
+// Iterate over the structure 
+while ( $file = readdir($dh) ) { 
+ &nbsp; &nbsp;// do stuff with the file here 
+}</code>
+
+And to read the contents of a file, you might use:
+
+<code>// Fetch the "aggregate structure" 
+$fh = fopen("/home/hfuecks/files/results.txt", "r"); 
+// Iterate over the structure 
+while (!feof($fh)) { 
+ &nbsp; &nbsp;$line = fgets($fh); 
+ &nbsp; &nbsp;// do stuff with the line here 
+}</code>
+
+A glance at the above examples shows that they're very similar. 
+Although each one works with a different type of <em>resource</em>, and uses PHP functions specific to that resource, the mantra is simple: "fetch resource; loop over contents".
+
+If it was somehow possible to "abstract out" the specific PHP functions from the above examples and use some kind of generic interface instead, it might be possible to make the job of looping over the data look the same, irrespective of the type of resource that was being used. 
+With no requirement to modify the loop for a different data source, it may be possible for the code in which the loop appears (perhaps a function that generated an HTML list) to be reused elsewhere.
+
+That's where an Iterator comes in. 
+The Iterator defines an abstract interface for use by your code. 
+Specific implementations of the Iterator take care of each different type of structure with which you want to work, without the code that uses the Iterator having to care about the details.
+
+That's the basic theory of Iterators. 
+If you're interested to know more, you'll find starting points at the <a href="http://c2.com/cgi/wiki?IteratorPattern">C2 Wiki</a> and <a href="http://en.wikipedia.org/wiki/Iterator">Wikipedia</a>. 
+More thoughts from me can be found at phpPatterns on the <a href="http://www.phppatterns.com/index.php/article/articleview/50/1/1/">Iterator Pattern</a> and in <a href="http://www.sitepoint.com/books/phpant1/">The PHP Anthology &ndash; Volume II, Applications</a>.
+
+<h2>Iterations foreach of Us</h2>
+
+So what's so exciting about the SPL Iterators? Well, if you've written more than a line or two of PHP, you've probably run into the <a href="http://www.php.net/foreach">foreach</a> construct, which is used to make easy work of looping through an array:
+
+<code>// A list of colors 
+$colors = array ( 
+ &nbsp; &nbsp;'red', 
+ &nbsp; &nbsp;'green', 
+ &nbsp; &nbsp;'blue', 
+ &nbsp; &nbsp;); 
+foreach ( $colors as $color ) { 
+ &nbsp; &nbsp;echo $color.'&lt;br&gt;'; 
+}</code>
+
+Wouldn't it be nice if all loops where that easy, irrespective of whatever it was that you were looping over?
+
+How about this?
+
+<code>&lt;?php 
+// A magic class... 
+(explained in a moment) 
+class DirectoryReader extends DirectoryIterator { 
+ &nbsp;function __construct($path) { 
+ &nbsp; &nbsp;parent::__construct($path); 
+ &nbsp;} 
+ &nbsp;function current() { 
+ &nbsp; &nbsp;return parent::getFileName(); 
+ &nbsp;} 
+ &nbsp;function valid() { 
+ &nbsp; &nbsp;if ( parent::valid() ) { 
+ &nbsp; &nbsp; &nbsp;if ( !parent::isFile() ) { 
+ &nbsp; &nbsp; &nbsp; &nbsp;parent::next(); 
+ &nbsp; &nbsp; &nbsp; &nbsp;return $this-&gt;valid(); 
+ &nbsp; &nbsp; &nbsp;} 
+ &nbsp; &nbsp; &nbsp;return TRUE; 
+ &nbsp; &nbsp;} 
+ &nbsp; &nbsp;return FALSE; 
+ &nbsp;} 
+ &nbsp;function rewind() { 
+ &nbsp; &nbsp;parent::rewind(); 
+ &nbsp;} 
+} 
+// Create a directory reader for the current directory 
+$Reader = new DirectoryReader('./'); 
+// Loop through the files in the directory ?!? 
+foreach ( $Reader as $Item ) { 
+ &nbsp;echo $Item.'&lt;br&gt;'; 
+} 
+?&gt;</code>
+
+Filename: directoryreader.php
+
+If you ignore the class itself for a moment and look at the last few lines, you'll see that I've used the DirectoryReader object right there in the foreach loop. 
+I've pulled items from it without having to call any of its methods! So long as you obey certain rules (which I'll get to shortly), the SPL extension allows to iterate over your own classes (where appropriate) in just the same way.
+
+In fact, with the above example, I've jumped in at the deep end! Let's take a few steps back so I can explain what really happened here.
+
+<h2>Iteration with SPL</h2>
+
+Now that your appetite is whet, you first need to be warned that the PHP manual currently lacks the capabilities needed to fully document the SPL extension. 
+It's geared primarily to documenting native functions, and lacks a clear means to fully describe something like an in-built class; interfaces fail even to get a mention. 
+
+Instead, you'll need to look at the <a href="http://www.php.net/~helly/php/ext/spl/">generated documentation</a> Marcus maintains, and trawl the <a href="http://cvs.php.net/pecl/spl/">source under CVS</a>. 
+Be aware also that the SPL extension is a moving target that's being actively developed and expanded. 
+The code in this tutorial was tested under PHP 5.0.1, but if you're reading at a significantly distant point in the future, you may find parts of this code outdated.
+
+
+The SPL extension defines a <a href="http://www.php.net/~helly/php/ext/spl/hierarchy.html">hierarchy of classes and interfaces</a>. 
+Some of these will already be loaded in your PHP5 installation (see what <a href="http://www.php.net/get_declared_classes">get_declared_classes()</a> turns up). 
+They correspond the <a href="http://cvs.php.net/co.php/pecl/spl/spl.php">interface and class definitions defined here</a> and <a href="http://cvs.php.net/pecl/spl/internal/">here</a> (the PHP files found here should disappear eventually, once Marcus has time to implement them in C). 
+Some of classes found in the <a href="http://cvs.php.net/pecl/spl/examples/">examples directory</a> (with the .inc extension) also form part of the hierarchy, but are not loaded by default; if you wish to use them, you'll need to make sure copies for inclusion are located somewhere in your PHP include path. 
+More examples of the classes' use can be found with the <a href="http://cvs.php.net/pecl/spl/tests/">tests</a> while independent examples can be found at <a href="http://www.wiki.cc/php/PHP5#Iterators">http://www.wiki.cc/php/PHP5#Iterators</a>.
+
+Although the number of classes and interfaces in the hierarchy may be daunting at first, don't panic! Basic use of the iterators requires only a single interface. 
+If you're new to the idea of interfaces, have a look at <a href="http://www.sitepoint.com/article/coming-soon-webserver-near/7">this discussion of interfaces</a> on SitePoint.
+
+I'll summarize the purpose of all the pre-loaded classes and interfaces later in this tutorial, for you to browse at your leisure. 
+Once you start to grasp what's on offer, you'll realize that Marcus has done an amazing job of addressing the most common, loop-related problems that recur in PHP. 
+Life will get easier&hellip;
+
+Let's return to the DirectoryReader example. 
+How was it that I was able to iterate over my DirectoryReader object using foreach? The magic comes from the class I extended from, <a href="http://www.php.net/~helly/php/ext/spl/classDirectoryIterator.html">DirectoryIterator</a>, which implements an interface called <a href="http://www.php.net/~helly/php/ext/spl/interfaceIterator.html">Iterator</a> that's defined by the SPL extension.
+
+Any class I write that implements the Iterator interface can be used in a foreach loop (note that <a href="http://lxr.php.net/source/ZendEngine2/zend_iterators.h">this article explains how this works</a> from the point of view of PHP internals). 
+The Iterator interface is defined as follows:
+
+<code>interface Iterator extends Traversable { 
+ &nbsp; &nbsp;/** 
+ &nbsp; &nbsp;* Rewind the Iterator to the first element. 
+
+ &nbsp; &nbsp;* Similar to the reset() function for arrays in PHP 
+ &nbsp; &nbsp;* @return void 
+ &nbsp; &nbsp;*/ 
+ &nbsp; &nbsp;function rewind(); 
+ &nbsp; &nbsp; 
+ &nbsp; &nbsp;/** 
+ &nbsp; &nbsp;* Return the current element. 
+
+ &nbsp; &nbsp;* Similar to the current() function for arrays in PHP 
+ &nbsp; &nbsp;* @return mixed current element from the collection 
+ &nbsp; &nbsp;*/ 
+ &nbsp; &nbsp;function current(); 
+ &nbsp; &nbsp;/** 
+ &nbsp; &nbsp;* Return the identifying key of the current element. 
+
+ &nbsp; &nbsp;* Similar to the key() function for arrays in PHP 
+ &nbsp; &nbsp;* @return mixed either an integer or a string 
+ &nbsp; &nbsp;*/ 
+ &nbsp; &nbsp;function key(); 
+ &nbsp; &nbsp;/** 
+ &nbsp; &nbsp;* Move forward to next element. 
+
+ &nbsp; &nbsp;* Similar to the next() function for arrays in PHP 
+ &nbsp; &nbsp;* @return void 
+ &nbsp; &nbsp;*/ 
+ &nbsp; &nbsp;function next(); 
+ &nbsp; &nbsp; 
+ &nbsp; &nbsp;/** 
+ &nbsp; &nbsp;* Check if there is a current element after calls to rewind() or next(). 
+
+ &nbsp; &nbsp;* Used to check if we've iterated to the end of the collection 
+ &nbsp; &nbsp;* @return boolean FALSE if there's nothing more to iterate over 
+ &nbsp; &nbsp;*/ 
+ &nbsp; &nbsp;function valid(); 
+}</code>
+
+Note that the SPL extension registers the Traversable interface from which Iterator inherits with the Zend Engine to allow the use of foreach. 
+The Traversable interface is <em>not</em> meant to be implemented directly in PHP, but by other built-in PHP classes (currently, the SimpleXML extension does this; the SQLite extension probably should do this but, right now, it talks directly to the Zend API).
+
+To implement this interface, your class must provide all of the methods defined above.
+
+To show you how this works, I'll start by re-inventing the wheel and implementing an Iterator for native PHP arrays. 
+Obviously, this is a pointless exercise, but it helps us understand how it works without getting lost in specific details.
+
+To begin, I define a class to manage the iteration:
+
+<code>/** 
+* An iterator for native PHP arrays, re-inventing the wheel 
+* 
+* Notice the "implements Iterator" - important! 
+*/ 
+class ArrayReloaded implements Iterator { 
+ &nbsp; &nbsp;/** 
+ &nbsp; &nbsp;* A native PHP array to iterate over 
+ &nbsp; &nbsp;*/ 
+ &nbsp;private $array = array(); 
+ &nbsp; &nbsp;/** 
+ &nbsp; &nbsp;* A switch to keep track of the end of the array 
+ &nbsp; &nbsp;*/ 
+ &nbsp;private $valid = FALSE; 
+ &nbsp; &nbsp;/** 
+ &nbsp; &nbsp;* Constructor 
+ &nbsp; &nbsp;* @param array native PHP array to iterate over 
+ &nbsp; &nbsp;*/ 
+ &nbsp;function __construct($array) { 
+ &nbsp; &nbsp;$this-&gt;array = $array; 
+ &nbsp;} 
+ &nbsp; &nbsp;/** 
+ &nbsp; &nbsp;* Return the array "pointer" to the first element 
+ &nbsp; &nbsp;* PHP's reset() returns false if the array has no elements 
+ &nbsp; &nbsp;*/ 
+ &nbsp;function rewind(){ 
+ &nbsp; &nbsp;$this-&gt;valid = (FALSE !== reset($this-&gt;array)); 
+ &nbsp;} 
+ &nbsp; &nbsp;/** 
+ &nbsp; &nbsp;* Return the current array element 
+ &nbsp; &nbsp;*/ 
+ &nbsp;function current(){ 
+ &nbsp; &nbsp;return current($this-&gt;array); 
+ &nbsp;} 
+ &nbsp; &nbsp;/** 
+ &nbsp; &nbsp;* Return the key of the current array element 
+ &nbsp; &nbsp;*/ 
+ &nbsp;function key(){ 
+ &nbsp; &nbsp;return key($this-&gt;array); 
+ &nbsp;} 
+ &nbsp; &nbsp;/** 
+ &nbsp; &nbsp;* Move forward by one 
+ &nbsp; &nbsp;* PHP's next() returns false if there are no more elements 
+ &nbsp; &nbsp;*/ 
+ &nbsp;function next(){ 
+ &nbsp; &nbsp;$this-&gt;valid = (FALSE !== next($this-&gt;array)); 
+ &nbsp;} 
+ &nbsp; &nbsp;/** 
+ &nbsp; &nbsp;* Is the current element valid? 
+ &nbsp; &nbsp;*/ 
+ &nbsp;function valid(){ 
+ &nbsp; &nbsp;return $this-&gt;valid; 
+ &nbsp;} 
+}</code>
+
+Filename: arrayreloaded.php
+
+Notice the "implements Iterator" at the start. 
+This says I'm agreeing to abide by the Iterator "contract" and will provide all the required methods. 
+The class then provides implementations of each method, performing the necessary work using PHP's native array functions (the comments explain the detail).
+
+There are a couple of points of the Iterator's design that are worth being aware of when you write your own. 
+The <code>current()</code> and <code>key()</code> Iterator methods could be called multiple times within a single iteration of the loop, so you need to be careful that calling them doesn't modify the state of the Iterator. 
+That's not a problem in this case, but when working with files, for example, the temptation may be to use <a href="http://www.php.net/fgets">fgets()</a> inside the current() method, which would advance the file pointer.
+
+Otherwise, remember the valid() method should indicate whether the <em>current</em> element is valid, not the <em>next</em> element. 
+What this means is that, when looping over the Iterator, we'll actually advance one element beyond the end of the collection and only discover the fact when <code>valid()</code> is called. 
+Typically, it will be the <code>next()</code> and <code>rewind()</code> methods that actually move the Iterator and take care of tracking whether the current element is valid or not.
+
+I can now use this class as follows:
+
+<code>// Create iterator object 
+$colors = new ArrayReloaded(array ('red','green','blue',)); 
+// Iterate away! 
+foreach ( $colors as $color ) { 
+ &nbsp;echo $color."&lt;br&gt;"; 
+}</code>
+
+It's very easy to use! Behind the scenes, the foreach construct calls the methods I defined, beginning with <code>rewind()</code>. 
+Then, so long as <code>valid()</code> returns <code>TRUE</code>, it calls <code>current()</code> to populate the <code>$color</code> variable, and <code>next()</code> to move the Iterator forward one element.
+
+As is typical with foreach, I can also populate another variable with the value returned from the <code>key()</code> method:
+
+<code>// Display the keys as well 
+foreach ( $colors as $key =&gt; $color ) { 
+ &nbsp;echo "$key: $color&lt;br&gt;"; 
+}</code>
+
+Of course, nothing requires me to use foreach. 
+I could call the methods directly from my code, like so:
+
+<code>// Reset the iterator - foreach does this automatically 
+$colors-&gt;rewind(); 
+// Loop while valid 
+while ( $colors-&gt;valid() ) { 
+ &nbsp; &nbsp;echo $colors-&gt;key().": ".$colors-&gt;current()."&lt;br&gt;"; 
+ &nbsp; &nbsp;$colors-&gt;next(); 
+}</code>
+
+This example should help you see what foreach actually does to your object.
+
+Note that the crude benchmarks I've performed suggest that calling the methods directly is faster than using foreach, because the latter introduces another layer of redirection that must be resolved at runtime by PHP.
+
+
+
+<h2>Admiring the Tree</h2>
+
+Now you've seen how to write a basic Iterator, it's worth summarizing the interfaces and classes offered internally by the SPL extension, so that you know what their jobs are. 
+This list may change in future, but it summarizes what's on offer right now.
+
+<strong><em>Interfaces</em></strong>
+
+<li><a href="http://www.php.net/~helly/php/ext/spl/interfaceTraversable.html">Traversable</a>: as mentioned above, this is an Iterator interface for PHP internals. 
+Unless you're writing an extension, ignore this.</li>
+<li><a href="http://www.php.net/~helly/php/ext/spl/interfaceIterator.html">Iterator</a>: as you've seen, this defines the basic methods to iterate forward through a collection.</li>
+<li><a href="http://www.php.net/~helly/php/ext/spl/interfaceIteratorAggregate.html">IteratorAggregate</a>: if you would rather implement the Iterator separately from your "collection" object, implementing Iterator Aggregate will allow you to delegate the work of iteration to a separate class, while still enabling you to use the collection inside a foreach loop.</li>
+<li><a href="http://www.php.net/~helly/php/ext/spl/interfaceRecursiveIterator.html">RecursiveIterator</a>: this defines methods to allow iteration over hierarchical data structures.</li>
+<li><a href="http://www.php.net/~helly/php/ext/spl/interfaceSeekableIterator.html">SeekableIterator</a>: this defines a method to search the collection that the Iterator is managing.</li>
+<li><a href="http://www.php.net/~helly/php/ext/spl/interfaceArrayAccess.html">ArrayAccess</a>: here's another magic interface with a special meaning for the Zend engine. 
+Implementing this allows you to treat your object like an array with normal PHP array syntax (more on this below).</li>
+
+<strong><em>Classes</em></strong>
+
+<li><a href="http://www.php.net/~helly/php/ext/spl/classArrayIterator.html">ArrayIterator</a>: this Iterator can manage both native PHP arrays and the public properties of an object (more on this shortly).</li>
+<li><a href="http://www.php.net/~helly/php/ext/spl/classArrayObject.html">ArrayObject</a>: this unifies arrays and objects, allowing you to iterate over them and use array syntax to access the contents. 
+See "Objects as Arrays" below (we'll grow our own class with similar behaviour).</li>
+<li><a href="http://www.php.net/~helly/php/ext/spl/classFilterIterator.html">FilterIterator</a>: this is an abstract class that can be extended to filter the elements that are being iterated over (perhaps removing unwanted elements for a search).</li>
+<li><a href="http://www.php.net/~helly/php/ext/spl/classParentIterator.html">ParentIterator</a>: when using a ResursiveIterator, the ParentIterator allows you to filter out elements that do not have children. 
+If, for example, you have a CMS in which documents can be placed anywhere under a tree of categories, the ParentIterator would allow you to recurse the tree but display only the "category nodes", omitting the documents that appear under each category.</li>
+<li><a href="http://www.php.net/~helly/php/ext/spl/classLimitIetrator.html">LimitIterator</a>: this class allows you to specify a range of elements to Iterator over, starting with a key offset and specifying a number of elements to access from that point. 
+The concept is the same as the LIMIT clause in MySQL.</li>
+<li><a href="http://www.php.net/~helly/php/ext/spl/classCachingIterator.html">CachingIterator</a>: this manages another Iterator (which you pass to its constructor). 
+It allows you to check whether the inner Iterator has more elements, using the <code>hasNext()</code> method, before actually advancing with the <code>next()</code> method. 
+Personally, I'm not 100% sure about the name; perhaps LookAheadIterator would be more accurate?</li>
+<li><a href="http://www.php.net/~helly/php/ext/spl/classCachingRecursiveIterator.html">CachingRecursiveIterator</a>: this is largely the same as the CachingIterator, but allows iteration over hierarchical data structures.</li>
+<li><a href="http://www.php.net/~helly/php/ext/spl/classDirectoryIterator.html">DirectoryIterator</a>: to iterate over a directory in a file system, this Iterator provides a bunch of useful methods like <code>isFile()</code> and <code>isDot()</code> that save a lot of hassle.</li>
+<li><a href="http://www.php.net/~helly/php/ext/spl/classRecursiveDirectoryIterator.html">RecursiveDirectoryIterator</a>: this class allows iteration over a directory structure so that you can descend into subdirectories.</li>
+<li><a href="http://www.php.net/~helly/php/ext/spl/classSimpleXMLIterator.html">SimpleXMLIterator</a>: this makes <a href="http://www.php.net/simplexml">SimpleXML</a> even simpler! Currently, the best examples can be found with the SPL <a href="http://cvs.php.net/pecl/spl/tests/">tests</a> &mdash; see the files beginning "sxe_*"</li>
+<li><a href="http://www.php.net/~helly/php/ext/spl/classRecursiveIteratorIterator.html">RecursiveIteratorIterator</a>: this helps you do cool stuff like "flatten" a hierarchical data structure so that you can loop through it with a single foreach statement, while still preserving knowledge of the hierarchy. 
+This class could be very useful for rendering tree menus, for example.</li>
+
+To see it in action, try using the <a href="http://cvs.php.net/co.php/pecl/spl/examples/directorytreeiterator.inc">DirectoryTreeIterator</a> (which extends RecursiveIteratorIterator), like so:
+
+<code>$DirTree = new DirectoryTreeIterator('/some/directory'); &nbsp;
+ &nbsp;
+foreach ($DirTree as $node) { &nbsp;
+ &nbsp; &nbsp;echo "$noden"; &nbsp;
+}</code>
+
+That summarizes the core classes and interfaces that the SPL extension defines today.
+
+<h2>Objects as Arrays</h2>
+
+You've already seen how implementing the Iterator interface allows you to "overload" the foreach construct. 
+The SPL extension has some more surprises in store, though, beginning with the ArrayAccess interface. 
+Implementing this interface with a class allows you treat objects of that class as arrays from the perspective of PHP syntax.
+
+Here's an example:
+
+<code>/** &nbsp;
+* A class that can be used like an array &nbsp;
+*/ &nbsp;
+class Article implements ArrayAccess { &nbsp;
+ &nbsp;
+ &nbsp;public $title; &nbsp;
+ &nbsp;
+ &nbsp;public $author; &nbsp;
+ &nbsp;
+ &nbsp;public $category; &nbsp; 
+ &nbsp;
+ &nbsp;function __construct($title,$author,$category) { &nbsp;
+ &nbsp; &nbsp;$this-&gt;title = $title; &nbsp;
+ &nbsp; &nbsp;$this-&gt;author = $author; &nbsp;
+ &nbsp; &nbsp;$this-&gt;category = $category; &nbsp;
+ &nbsp;} &nbsp;
+ &nbsp;
+ &nbsp;/** &nbsp;
+ &nbsp;* Defined by ArrayAccess interface &nbsp;
+ &nbsp;* Set a value given it's key e.g. 
+$A['title'] = 'foo'; &nbsp;
+ &nbsp;* @param mixed key (string or integer) &nbsp;
+ &nbsp;* @param mixed value &nbsp;
+ &nbsp;* @return void &nbsp;
+ &nbsp;*/ &nbsp;
+ &nbsp;function offsetSet($key, $value) { &nbsp;
+ &nbsp; &nbsp;if ( array_key_exists($key,get_object_vars($this)) ) { &nbsp;
+ &nbsp; &nbsp; &nbsp;$this-&gt;{$key} = $value; &nbsp;
+ &nbsp; &nbsp;} &nbsp;
+ &nbsp;} &nbsp;
+ &nbsp;
+ &nbsp;/** &nbsp;
+ &nbsp;* Defined by ArrayAccess interface &nbsp;
+ &nbsp;* Return a value given it's key e.g. 
+echo $A['title']; &nbsp;
+ &nbsp;* @param mixed key (string or integer) &nbsp;
+ &nbsp;* @return mixed value &nbsp;
+ &nbsp;*/ &nbsp;
+ &nbsp;function offsetGet($key) { &nbsp;
+ &nbsp; &nbsp;if ( array_key_exists($key,get_object_vars($this)) ) { &nbsp;
+ &nbsp; &nbsp; &nbsp;return $this-&gt;{$key}; &nbsp;
+ &nbsp; &nbsp;} &nbsp;
+ &nbsp;} &nbsp;
+ &nbsp;
+ &nbsp;/** &nbsp;
+ &nbsp;* Defined by ArrayAccess interface &nbsp;
+ &nbsp;* Unset a value by it's key e.g. 
+unset($A['title']); &nbsp;
+ &nbsp;* @param mixed key (string or integer) &nbsp;
+ &nbsp;* @return void &nbsp;
+ &nbsp;*/ &nbsp;
+ &nbsp;function offsetUnset($key) { &nbsp;
+ &nbsp; &nbsp;if ( array_key_exists($key,get_object_vars($this)) ) { &nbsp;
+ &nbsp; &nbsp; &nbsp;unset($this-&gt;{$key}); &nbsp;
+ &nbsp; &nbsp;} &nbsp;
+ &nbsp;} &nbsp;
+ &nbsp;
+ &nbsp;/** &nbsp;
+ &nbsp;* Defined by ArrayAccess interface &nbsp;
+ &nbsp;* Check value exists, given it's key e.g. 
+isset($A['title']) &nbsp;
+ &nbsp;* @param mixed key (string or integer) &nbsp;
+ &nbsp;* @return boolean &nbsp;
+ &nbsp;*/ &nbsp;
+ &nbsp;function offsetExists($offset) { &nbsp;
+ &nbsp; &nbsp;return array_key_exists($offset,get_object_vars($this)); &nbsp;
+ &nbsp;} &nbsp;
+ &nbsp;
+}</code>
+
+Filename: arrayaccess1.php
+
+The four methods that begin with "offset" are defined by the <a href="http://www.php.net/~helly/php/ext/spl/interfaceArrayAccess.html">ArrayAccess</a> interface that I'm implementing.
+
+Note that I've used a couple of PHP runtime tricks to make life easier, such as checking that object variables have been defined by introspection:
+
+<code>function offsetSet($key, $value) { &nbsp;
+ &nbsp; &nbsp;if ( array_key_exists($key,get_object_vars($this)) ) {</code>
+
+I've also referenced them indirectly, using a variable that holds their names:
+
+<code>$this-&gt;{$key} = $value;</code>
+
+This example gets interesting when you see how this class can now be used:
+
+<code>// Create the object &nbsp;
+$A = new Article('SPL Rocks','Joe Bloggs', 'PHP'); &nbsp;
+ &nbsp;
+// Check what it looks like &nbsp;
+echo 'Initial State:&lt;pre&gt;'; &nbsp;
+print_r($A); &nbsp;
+echo '&lt;/pre&gt;'; &nbsp;
+ &nbsp;
+// Change the title using array syntax &nbsp;
+$A['title'] = 'SPL _really_ rocks'; &nbsp;
+ &nbsp;
+// Try setting a non existent property (ignored) &nbsp;
+$A['not found'] = 1; &nbsp;
+ &nbsp;
+// Unset the author field &nbsp;
+unset($A['author']); &nbsp;
+ &nbsp;
+// Check what it looks like again &nbsp;
+echo 'Final State:&lt;pre&gt;'; &nbsp;
+print_r($A); &nbsp;
+echo '&lt;/pre&gt;';</code>
+
+Apart from the first line, in which I create the object, the code is valid syntax for a native PHP array. 
+Here's the output:
+
+<code>Initial State: &nbsp;
+ &nbsp;
+Article Object &nbsp;
+( &nbsp;
+ &nbsp; &nbsp;[title] =&gt; SPL Rocks &nbsp;
+ &nbsp; &nbsp;[author] =&gt; Joe Bloggs &nbsp;
+ &nbsp; &nbsp;[category] =&gt; PHP &nbsp;
+) &nbsp;
+ &nbsp;
+Final State: &nbsp;
+ &nbsp;
+Article Object &nbsp;
+( &nbsp;
+ &nbsp; &nbsp;[title] =&gt; SPL _really_ rocks &nbsp;
+ &nbsp; &nbsp;[category] =&gt; PHP &nbsp;
+)</code>
+
+Note that I could add logic to manipulate the data as it's being read by modifying the <code>offsetGet()</code> method as follows:
+
+<code>function offsetGet($key) { &nbsp;
+ &nbsp; &nbsp;if ( array_key_exists($key,get_object_vars($this)) ) { &nbsp;
+ &nbsp; &nbsp; &nbsp;return strtolower($this-&gt;{$key}); &nbsp;
+ &nbsp; &nbsp;} &nbsp;
+ &nbsp;}</code>
+
+This would convert all values to lower-case.
+
+To make the object iterable, using foreach or otherwise, I can now take advantage of the SPL's <a href="http://www.php.net/~helly/php/ext/spl/classArrayIterator.html">ArrayIterator</a> class, combined with the <a href="http://www.php.net/~helly/php/ext/spl/interfaceIteratorAggregate.html">IteratorAggregate</a> interface.
+
+As I mentioned before, the IteratorAggregate interface is used when you don't want to embed the Iterator logic in the object that contains the data over which you want to iterate. 
+This can be a useful way to keep this logic divided but, more interestingly, it allows you to re-use existing iterators.
+
+To begin, I modify the first line of the Article class to declare the interface implementation:
+
+<code>class Article implements ArrayAccess, IteratorAggregate {</code>
+
+Now, I need to add one extra method: <code>getIterator()</code>, which returns the object used for iteration:
+
+<code>/** &nbsp;
+ &nbsp;* Defined by IteratorAggregate interface &nbsp;
+ &nbsp;* Returns an iterator for for this object, for use with foreach &nbsp;
+ &nbsp;* @return ArrayIterator &nbsp;
+ &nbsp;*/ &nbsp;
+ &nbsp;function getIterator() { &nbsp;
+ &nbsp; &nbsp;return new ArrayIterator($this); &nbsp;
+ &nbsp;}</code>
+
+With that done, I can loop through the properties defined in the class:
+
+<code>$A = new Article('SPL Rocks','Joe Bloggs', 'PHP'); &nbsp;
+ &nbsp;
+// Loop (getIterator will be called automatically) &nbsp;
+echo 'Looping with foreach:&lt;pre&gt;'; &nbsp;
+foreach ( $A as $field =&gt; $value ) { &nbsp;
+ &nbsp;echo "$field : $value&lt;br&gt;"; &nbsp;
+} &nbsp;
+echo '&lt;/pre&gt;'; &nbsp;
+ &nbsp;
+// Get the size of the iterator (see how many properties are left) &nbsp;
+echo "Object has ".sizeof($A-&gt;getIterator())." elements";</code>
+
+Filename: arrayaccess2.php
+
+Here's what it displays:
+
+<code>$A = new Article('SPL Rocks','Joe Bloggs', 'PHP'); &nbsp;
+ &nbsp;
+// Loop (getIterator will be called automatically) &nbsp;
+echo 'Looping with foreach:&lt;pre&gt;'; &nbsp;
+foreach ( $A as $field =&gt; $value ) { &nbsp;
+ &nbsp;echo "$field : $value&lt;br&gt;"; &nbsp;
+} &nbsp;
+echo '&lt;/pre&gt;'; &nbsp;
+ &nbsp;
+// Get the size of the iterator (see how many properties are left) &nbsp;
+echo "Object has ".count($A-&gt;getIterator())." elements";</code>
+
+This gives me:
+
+<code>Looping with foreach: &nbsp;
+ &nbsp;
+title : SPL Rocks &nbsp;
+author : Joe Bloggs &nbsp;
+category : PHP &nbsp;
+ &nbsp;
+Object has 3 elements</code>
+
+Notice that I was also able to use the <a href="http://www.php.net/count">count</a> function on the object to find out how many elements it has. 
+This could allow me to use other loop constructs without needing to call the Iterator methods:
+
+<code>$size = count($A); &nbsp;
+for($i = 0; $i &lt; $size; $i++ ) { &nbsp;
+ &nbsp; &nbsp;echo $A[$i]."n"; &nbsp;
+}</code>
+
+What doesn't (yet) work is the application of PHP's <a href="http://www.php.net/array">array functions</a> to the object (you'll get complaints about it not being an array). 
+However, so long as you're not doing type checking with something like <a href="http://www.php.net/is_array">is_array()</a>, you should be able to reuse any part of your own code that was written to expect an array.
+
+<h2>The Big Deal</h2>
+Assuming we all agree to use the classes and interfaces provided by the SPL, projects can begin to converge on them. 
+For example, consider <a href="http://pear.php.net/package/HTML_TreeMenu">HTML_TreeMenu</a>, a PEAR library designed to enable the generation of Javascript-based tree menus in HTML. 
+
+Here's an example of what's required to draw a tree from a directory structure with HTML_TreeMenu today:
+
+<code>require_once 'HTML/TreeMenu.php'; &nbsp;
+$map_dir = 'c:/windows'; &nbsp;
+$menu &nbsp;= new HTML_TreeMenu('menuLayer', 'images', '_self'); &nbsp;
+$menu-&gt;addItem(recurseDir($map_dir)); &nbsp;
+ &nbsp;
+function &amp;recurseDir($path) { &nbsp;
+ &nbsp; &nbsp;if (!$dir = opendir($path)) { &nbsp;
+ &nbsp; &nbsp; &nbsp; &nbsp;return false; &nbsp;
+ &nbsp; &nbsp;} &nbsp;
+ &nbsp; &nbsp;$files = array(); &nbsp;
+ &nbsp; &nbsp;$node = &amp;new HTML_TreeNode(basename($path), basename($path), 'folder.gif'); &nbsp;
+ &nbsp; &nbsp;while (($file = readdir($dir)) !== false) { &nbsp;
+ &nbsp; &nbsp; &nbsp; &nbsp;if ($file != '.' &amp;&amp; $file != '..') { &nbsp;
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;if (@is_dir("$path/$file")) { &nbsp;
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;$addnode = &amp;recurseDir("$path/$file"); &nbsp;
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;} else { &nbsp;
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;$addnode = &amp;new HTML_TreeNode($file, $file, 'document2.png'); &nbsp;
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;} &nbsp;
+ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;$node-&gt;addItem($addnode); &nbsp;
+ &nbsp; &nbsp; &nbsp; &nbsp;} &nbsp;
+ &nbsp; &nbsp;} &nbsp;
+ &nbsp; &nbsp;closedir($dir); &nbsp;
+ &nbsp; &nbsp;return $node; &nbsp;
+} &nbsp;
+ &nbsp;
+echo $menu-&gt;printMenu();</code>
+
+In other words, it's left to us to prepare the data in the correct order and build the tree. 
+Instead, HTML_Treemenu could provide a mechanism by which we could register the data structure, then leave it to do the iterating for us. 
+The above example might be reduced to:
+
+<code>require_once 'HTML/TreeMenu.php'; &nbsp;
+$map_dir = 'c:/windows'; &nbsp;
+$menu &nbsp;= new HTML_TreeMenu('menuLayer', 'images', '_self'); &nbsp;
+ &nbsp;
+// Register the tree data structure &nbsp;
+$menu-&gt;registerTree(new new RecursiveDirectoryIterator($map_dir); &nbsp;
+ &nbsp;
+echo $menu-&gt;printMenu();</code>
+
+If there isn't a RecursiveIterator on hand that suits your problem, you could always implement your own, leaving HTML_Treemenu to take advantage of <a href="http://www.sitepoint.com/article/coming-soon-webserver-near/11">type hints</a> to make sure you're giving it what it needs.
+
+
+<h2>Symfony Console Component</h2>
+<a href="https://packagist.org/packages/symfony/console" target="_blank" rel="nofollow noopener">Symfony Console Component</a>
+Command line interface (CLI) is one of the core elements of major PHP frameworks including Laravel, Symfony, CodeIgniter and others. 
+This library provides easy to understand command line interface in Symfony. 
+Its integration in the application is also quite simple and is precisely made to build testable command line interfaces.
+Composer Command: <code>composer require symfony/console</code>
+<h3>Implementation</h3>
+First you need to create a PHP script and define console like this:
+&lt;?php
+// application.php
+require __DIR__.'/vendor/autoload.php';
+use Symfony\Component\Console\Application;
+$application = new Application();
+$application-&gt;run();
+Now you need to register the commands using add() functions.
+$application-&gt;add(new GenerateAdminCommand());
+<h2>Symfony Finder Component</h2>
+<a href="https://packagist.org/packages/symfony/finder" target="_blank" rel="nofollow noopener">Symfony Finder Component</a>
+Developers often find difficulties while locating desired files and folders within the project. 
+Using this Finder component, developers can easily find files and directories within the project. 
+It provides different attributes (name, file size, modification time, extension etc.) to find the related files or directories. 
+Moreover, it has an intuitive interface which helps users to find the desired resources.
+Composer Command: <code>composer require symfony/finder</code>
+<h3>Implementation</h3>
+Let’s suppose you need to find all files and folders in the root directory. 
+You can do it as:
+You can also find files in FTP and user defined streams
+<h2>Psr/log</h2>
+<a href="https://packagist.org/packages/psr/log" target="_blank" rel="nofollow noopener">Psr/log</a>
+If you want to find all the interfaces, classes, traits etc. 
+related to PS-3, this PHP logging library helps you finding all those resources with just a few clicks. 
+The library isn’t a logger itself, but is an interface that forms a logging system. 
+This PHP logging library comes up with full documentation, so that developers can easily work with it.
+Composer Command: <code>composer require psr/log</code>
+<h3>Implementation</h3>
+You can use the logger for logging like below code snippet:
+&lt;?php
+use Psr\Log\LoggerInterface;
+class Foo
+{
+    private $logger;
+    public function __construct(LoggerInterface $logger = null)
+    {
+        $this-&gt;logger = $logger;
+    }
+    public function doSomething()
+    {
+        if ($this-&gt;logger) {
+            $this-&gt;logger-&gt;info('Doing work');
+        }
+        // do something useful
+    }
+}
+<h2>Monolog</h2>
+<a href="https://packagist.org/packages/monolog/monolog" target="_blank" rel="nofollow noopener">Monolog</a>
+It is necessary to save the logs to particular files or folders. 
+Saving them at a certain place often seems to be a difficult job, but using this PHP logging library you can easily save your logs to the defined locations. 
+Monolog helps you to send you logs to defined files, sockets, inboxes, databases and other web services. 
+It uses a PSR-3 interface which allows you to type-hint logs against your own libraries in order to keep maximum interoperability.
+Composer Command: <code>composer require monolog/monolog</code>
+<h3>Implementation</h3>
+The basic usage to log error and warning with PSR log can be defined as:
+&lt;?php
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+// create a log channel
+$log = new Logger('name');
+$log-&gt;pushHandler(new StreamHandler('path/to/your.log', Logger::WARNING));
+// add records to the log
+$log-&gt;warning('Foo');
+$log-&gt;error('Bar');
+<img class="lazy img-responsive" src="https://www.cloudways.com/blog/wp-content/themes/cloudways/template/img/grey.gif" data-original="https://www.cloudways.com/wp-content/uploads/2019/09/php-deployment-ebook.jpg" alt="" /><noscript><img class="img-responsive" src="https://www.cloudways.com/wp-content/uploads/2019/09/php-deployment-ebook.jpg" alt="" /></noscript>
+<h3>Get Your PHP Deployment Ebook Now</h3>
+Enter your email address below and get the download link.
+<form role="form" class="inline_subs_form">
+                
+                    <input type="email" class="gbl-email form-control" name="inline_subs_email"
+                        placeholder="Email Address" required>
+                    <input type="hidden" value="insert tag" />
+                
+                <label for="inline_subs_checkbox_consent" class="cw-ebk-chkbox checkbox_consent_sidebar">
+                    <input type="checkbox" required name="inline_subs_checkbox_consent" class="">
+                    I agree to the Cloudways
+                    <a href="https://www.cloudways.com/en/terms.php">Terms of Service</a> &
+                    <a href="https://www.cloudways.com/en/terms.php#privacy">Privacy Policy</a>
+                </label>
+                
+                
+                    <a href="javascript:void(0);" class="btn cw-glb-btn">click here</a>
+                
+                
+                
+                
+            </form>
+<h4>Thank You</h4>
+Your Ebook is on its Way to Your Inbox.
+<h2>Guzzle</h2>
+<a href="https://packagist.org/packages/guzzlehttp/guzzle" target="_blank" rel="nofollow noopener">Guzzle</a>
+Guzzle works as a particular PHP client for sending HTTP requests to the web servers. 
+Using this library, developers can easily send HTTP requests to integrate with the web services. 
+The library provides a simple interface for building query strings, POST requests, HTTP cookies and other attributes. 
+It also allows developers to send both synchronous and asynchronous requests from the same interface.
+Composer Command: <code>composer require guzzlehttp/guzzle</code>
+<h3>Implementation</h3>
+Previously we have written some articles consuming Cloudways API in Guzzle. 
+Let me show the example usage of Guzzle api to get authentication and then run different methods to get servers and applications. 
+You can read the complete article <a href="https://www.cloudways.com/blog/how-to-create-and-delete-applications-via-cloudways-api/" target="_blank" rel="nofollow noopener">here</a>. 
+Let’s look at the example:
+&lt;?php 
+Class CloudwaysAPIClient
+{
+  private $client = null;
+  const API_URL = "https://api.cloudways.com/api/v1";
+  var $auth_key;
+  var $auth_email;
+  var $accessToken;
+  public function __construct($email,$key)
+  {
+    $this-&gt;auth_email = $email;
+    $this-&gt;auth_key = $key;
+    $this-&gt;client = new GuzzleHttpClient();
+    $this-&gt;prepare_access_token();
+  }
+  public function prepare_access_token()
+  {
+    try
+    {
+      $url = self::API_URL . 
+"/oauth/access_token";
+      $data = ['email' =&gt; $this-&gt;auth_email,'api_key' =&gt; $this-&gt;auth_key];
+      $response = $this-&gt;client-&gt;post($url, ['query' =&gt; $data]);
+      $result = json_decode($response-&gt;getBody()-&gt;getContents());
+      $this-&gt;accessToken = $result-&gt;access_token;
+    }
+    catch (RequestException $e)
+    {
+      $response = $this-&gt;StatusCodeHandling($e);
+      return $response;
+    }
+  }
+<h2>Assert</h2>
+<a href="https://packagist.org/packages/webmozart/assert" target="_blank" rel="nofollow noopener">Assert</a>
+Using the Assert library, developers can easily test the input and output of the methods within minutes. 
+It’s a simple PHP library that reduces the need of extensive coding in web applications. 
+The integration of the library within the project is also quite easy, as it provides complete documentation for the integration. 
+It features some built-in error messages by default, which you can later change according to custom error requirements.
+Composer Command: <code>composer require webmozart/assert</code>
+<h2>Symfony/translation</h2>
+<a href="https://packagist.org/packages/symfony/translation" target="_blank" rel="nofollow noopener">Symfony/translation</a>
+This translation package is really handy for the developers who want to build multilingual apps supported by various languages. 
+It is the growing demand of the modern world to build a multilingual product, and using this library developers can easily create desired projects with different languages. 
+The library comes up with complete documentation and is easy to work with.
+Composer Command: <code>composer require symfony/translation</code>
+<h3>Implementation</h3>
+You need to define the locale in constructor class to translate pages automatically.
+use Symfony\Component\Translation\Translator;
+$translator = new Translator('fr_FR');
+<h2>PHPUnit</h2>
+<a href="https://packagist.org/packages/phpunit/phpunit" target="_blank" rel="nofollow noopener">PHPUnit</a>
+PHPUnit is perhaps the best PHP library for performing <a href="https://www.cloudways.com/blog/getting-started-with-unit-testing-php/" target="_blank" rel="noopener">unit testing in PHP</a> web applications. 
+It is used to test application’s code for possible errors and bugs. 
+While performing the unit testing with PHPUnit, developers can resolve various application bugs that may arise during the run-time execution. 
+Hence, the library is vital to assess the cores of application and fixing it timely with the required solutions.
+Composer Command: <code>composer require phpunit/phpunit</code>
+<h2>PHP-code-coverage</h2>
+<a href="https://packagist.org/packages/phpunit/php-code-coverage" target="_blank" rel="nofollow noopener">PHP-code-coverage</a>
+If you want to measure how much source code of a program is executed during a particular test, this library helps you out in measuring that degree of code. 
+The library provides you collection and rendering functionality of the executed PHP code, so that you can get a better idea about the tested chunk of code and how to resolve the errors in it.
+Composer Command: <code>composer require phpunit/php-code-coverage</code>
+<h2>Swiftmailer</h2>
+<a href="https://packagist.org/packages/swiftmailer/swiftmailer" target="_blank" rel="nofollow noopener">Swiftmailer</a>
+Swiftmailer is a feature-rich PHP email library primarily built to ease out mailing operation in any web application. 
+The library provides advanced object-oriented-approach combined with multitude of mailing features to send emails over the web. 
+The most significant <a href="https://www.cloudways.com/blog/create-contact-form-symfony-with-swiftmailer/" target="_blank" rel="noopener">feature of Swiftmailer</a> is that it protects the mails from header injection attacks without removing the request data content, which is what makes it a very efficient mailing system.
+Composer Command: <code>composer require swiftmailer/swiftmailer</code>
+<h3>Implementation</h3>
+The basic usage of swiftmailer for sending emails is:
+require_once '/path/to/vendor/autoload.php';
+// Create the Transport
+$transport = (new Swift_SmtpTransport('smtp.example.org', 25))
+  -&gt;setUsername('your username')
+  -&gt;setPassword('your password');
+// Create the Mailer using your created Transport
+$mailer = new Swift_Mailer($transport);
+// Create a message
+$message = (new Swift_Message('Wonderful Subject'))
+  -&gt;setFrom(['john@doe.com' =&gt; 'John Doe'])
+  -&gt;setTo(['receiver@domain.org', 'other@domain.org' =&gt; 'A name'])
+  -&gt;setBody('Here is the message itself');
+// Send the message
+$result = $mailer-&gt;send($message);
+<h2>Email-validator</h2>
+<a href="https://packagist.org/packages/egulias/email-validator" target="_blank" rel="nofollow noopener">Email-validator</a>
+Email-validator is a specialized <a href="https://www.cloudways.com/blog/custom-php-mysql-contact-form/" target="_blank" rel="noopener">PHP validation</a> library used to validate emails via number of chosen validation features. 
+The library provides multiple types of validation for emails including RFC Validation, NoRFCWarningsValidation, SpoofCheckValidation and others. 
+The library also provides DNS validation feature through which you can validate and spam out emails with the DNS verification.
+Composer Command: <code>composer require egulias/email-validator</code>
+<h3>Implementation</h3>
+You need to define the validation strategy or method to follow in the code. 
+Right now you have 6 type of available validations which you can see in official documentation:
+The basic usage is as follows:
+use Egulias\EmailValidator\EmailValidator;
+use Egulias\EmailValidator\Validation\RFCValidation;
+$validator = new EmailValidator();
+$validator-&gt;isValid("example@example.com", new RFCValidation()); //true
+<h2>PHP dotenv</h2>
+<a href="https://packagist.org/packages/vlucas/phpdotenv" target="_blank" rel="nofollow noopener">PHP dotenv</a>
+This library helps developers to export environment variables from .env to getenv(), $_ENV and $_SERVER. 
+The library is recently upgraded to the latest version V3, which now supports multiline variables as well. 
+The library also allows developers to choose which part of the environment they want to read and modify according to the needs of application.
+Composer commands: <code>composer require vlucas/phpdotenv</code>
+<h3>Implementation</h3>
+First you need to create a .env file on the root level of your directory. 
+Next add variable and values in it like this:
+S3_BUCKET="devbucket"
+SECRET_KEY="abc123"
+Now load the .env file in application like this:
+$dotenv = Dotenv\Dotenv::create(__DIR__);
+$dotenv-&gt;load();
+Now you can access the variables created in env file with these three methods. 
+You can use any one of them.
+$s3_bucket = getenv('S3_BUCKET');
+$s3_bucket = $_ENV['S3_BUCKET'];
+$s3_bucket = $_SERVER['S3_BUCKET'];
+<h2>Symfony Filesystem Component</h2>
+<a href="https://packagist.org/packages/symfony/filesystem" target="_blank" rel="nofollow noopener">Symfony Filesystem Component</a>
+This Filesystem library provides basic utilities for the filesystem. 
+Using this library, developers can easily create directories, files and much more in just a few steps. 
+It also allows you to change the edit rights of the file and create a symlink with it. 
+To install the library, you just have to use composer for the installation which is a quite straight forward process.
+Composer Command: <code>composer require symfony/filesystem</code>
+<h2>Twig</h2>
+<a href="https://packagist.org/packages/twig/twig" target="_blank" rel="nofollow noopener">Twig</a>
+Twig is a fast, efficient and secure <a href="https://www.cloudways.com/blog/twig-templates-in-slim/" target="_blank" rel="noopener">templating engine for PHP</a>. 
+It compiles templates to simple PHP code which is easily understandable to the developers. 
+This reduces the overhead of complex backend code, and gives application a boost in performance. 
+Moreover, it is also super-customizable, as it allows you to define your own tags, filters and custom DSL according to the needs of application.
+Composer Command: <code>composer require twig/twig</code>
+<h2>Faker</h2>
+<a href="https://packagist.org/packages/fzaninotto/faker" target="_blank" rel="nofollow noopener">Faker</a>
+Faker is a handy PHP library that allows developers to generate dummy content for the web applications. 
+Whether you want to fill up application database with mock data, or want to create sample XML documents, Faker does the job for you with good looking testing data. 
+It supports all PHP 5+ versions and requires easy composer installation just once.
+Composer  command: <code>composer require fzaninotto/faker</code>
+<h3>Implementation</h3>
+You need to use Faker\Factory::create() to create and initialize fake generator which can generate data by accessing properties.
+&lt;?php
+// require the Faker autoloader
+require_once '/path/to/Faker/src/autoload.php';
+// alternatively, use another PSR-4 compliant autoloader
+// use the factory to create a Faker\Generator instance
+$faker = Faker\Factory::create();
+// generate data by accessing properties
+echo $faker-&gt;name;
+  // 'Lucy Cechtelar';
+echo $faker-&gt;address;
+  // "426 Jordy Lodge
+  // Cartwrightshire, SC 88120-6700"
+echo $faker-&gt;text;
+  // Dolores sit sint laboriosam dolorem culpa et autem. 
+Beatae nam sunt fugit
+  // et sit et mollitia sed.
+  // Fuga deserunt tempora facere magni omnis. 
+Omnis quia temporibus laudantium
+  // sit minima sint.
+<h2>AWS SDK for PHP</h2>
+<a href="https://packagist.org/packages/aws/aws-sdk-php" target="_blank" rel="nofollow noopener">AWS SDK for PHP</a>
+This particular AWS library allows developers to use Amazon Web Services in PHP applications. 
+Using this AWS SDK, you can build desired web applications associated with Amazon S3, Glacier, DynamoDB and other Amazon services. 
+Simply install this SDK using composer or download a zip file, all the Amazon services come pre-configured in it and are ready to be deployed with your PHP application.
+<p style="font-weight: 400;"><span style="font-weight: 400;">But, since you are on Cloudways, you won&#8217;t gonna need this library for your PHP applications. 
+As Cloudways provides <a href="https://www.cloudways.com/en/php-cloud-hosting.php" target="_blank" rel="noopener">PHP website hosting</a> on completely managed AWS services for its deployed applications combined with the integrated stack of optimized web tools. 
+ </span>
+Composer Command: <code>composer require aws/aws-sdk-php</code>
+<h3>Implementation</h3>
+First you need to initialize the sdk by including vendor files and then you can create different use cases like may be you want to upload files. 
+Let’s see how you can do this.
+&lt;?php
+// Require the Composer autoloader.
+require 'vendor/autoload.php';
+use Aws\S3\S3Client;
+// Instantiate an Amazon S3 client.
+$s3 = new S3Client([
+    'version' =&gt; 'latest',
+    'region'  =&gt; 'us-west-2'
+]);
+Now upload the file on the AWS servers like this:
+&lt;?php
+// Upload a publicly accessible file. 
+The file size and type are determined by the SDK.
+try {
+    $s3-&gt;putObject([
+        'Bucket' =&gt; 'my-bucket',
+        'Key'    =&gt; 'my-object',
+        'Body'   =&gt; fopen('/path/to/file', 'r'),
+        'ACL'    =&gt; 'public-read',
+    ]);
+} catch (Aws\S3\Exception\S3Exception $e) {
+    echo "There was an error uploading the file.\n";
+}
+<h2>PHPseclib</h2>
+<a href="https://packagist.org/packages/phpseclib/phpseclib" target="_blank" rel="nofollow noopener">PHPseclib</a>
+Transferring files from one server to another always remains a risky process, because hackers can intervene in between the route and can steal confidential information. 
+To fortify this process, PHPSeclib provides a fully secure data transmission between the servers using SFTP protocol. 
+This <a href="https://www.cloudways.com/blog/connect-sftp-with-phpseclib-symfony/" target="_blank" rel="noopener">PHP SFTP library</a> is compatible with all the latest versions of PHP and is easy to integrate in web applications.
+Composer Command: <code>composer require phpseclib/phpseclib</code>
+<h2>Laravel Tinker</h2>
+<a href="https://packagist.org/packages/laravel/tinker" target="_blank" rel="nofollow noopener">Laravel Tinker</a>
+Laravel Tinker is a powerful Laravel package built to give users the ease to interact with Laravel applications directly from command line. 
+It is perfect to use with Eloquent ORM to manage jobs, events and more. 
+It is a built in artisan tool and can be easily accessed using the Tinker artisan command in composer.
+Composer Command: <code>composer require laravel/tinker</code>
+<h2>Predis</h2>
+<a href="https://packagist.org/packages/predis/predis" target="_blank" rel="nofollow noopener">Predis</a>
+Predis is a <a href="https://www.cloudways.com/blog/setup-redis-as-session-handler-php/" target="_blank" rel="noopener">Redis client for PHP</a> applications. 
+It is a very effective caching tool precisely made to reduce the overhead of caching in web applications. 
+You can use it for clustering, master slave replication setups, transparent key prefixing and many more optimization operations. 
+ It also supports different custom connection classes for providing different network and protocol backends.
+Composer Command: <code>composer require predis/predis</code>
+<h3>Implementation</h3>
+For implementing predis in your PHP project you first need to load the library in the project.
+// Prepend a base path if Predis is not available in your "include_path".
+require 'Predis/Autoloader.php';
+Predis\Autoloader::register();
+Now create a client connection like this:
+$client = new Predis\Client();
+$client-&gt;set('foo', 'bar');
+$value = $client-&gt;get('foo');
+<h2>PHP AMQP Library</h2>
+php-amqplib is a library purely designed for PHP. 
+It is compatible with every framework of PHP and is fully featured for RabbitMQ client.
+A number of OS are being supported by RabbitMQ, and has several official client libraries available, one of them is php-amqplib. 
+It is a message-oriented middleware whose main features are: Queuing and Orientation.
+Composer Command: <code>composer require php-amqplib/php-amqplib</code>
+<h3>Implementation</h3>
+&lt;?php
+Include (__DIR__ . 
+'/config.php');
+use PhpAmqpLib\Connection\AMQPStreamConnection;
+use PhpAmqpLib\Connection\AMQPSocketConnection;
+use PhpAmqpLib\Connection\AMQPSSLConnection;
+define ('CERTS_PATH', '/git/rabbitmqinaction/av_scratchwork/openssl');
+$sslOptions = array (
+$ssl_options = array (
+  'cafile' =&gt; CERTS_PATH . 
+'/rmqca/cacert.pem',
+  'local_cert' =&gt; CERTS_PATH . 
+'/phpcert.pem',
+  'verify_peer' =&gt; true
+);
+<h2>Laravel-Permission Library</h2>
+This library is for Laravel 5.8 and for later versions. 
+This package allows you to manage user’s role and permissions in a database.
+Composer command: composer require spatie/laravel-permission
+<h3>Implementation</h3>
+You can manually add the service provider in your config/app.php file:
+'providers' =&gt; [
+// ...
+    Spatie\Permission\PermissionServiceProvider::class,
+];
+You must publish the migration with:
+php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider" --tag="migrations"
+<h2>Twill Library</h2>
+Twill is an open source CMS toolkit for Laravel. 
+It provides author to create, curate and personalize command in the digital workflows. 
+It also allows publishers to design and take control without restricting anything. 
+It also gives the freedom to produce a powerful admin without undermining developer&#8217;s controls with the configuration.
+Composer command:
+composer global require yanhaoli/create-twill-app:"1.0.*"
+create-twill-app new blog
+<h2>OAuth 2.0</h2>
+OAuth is an open standard for access delegation. 
+It gives access to user information on other websites but without revealing the password. 
+A lightweight and powerful OAuth 2.0 library is built for the users to authenticate and authorize the client of application and protect its API.
+Composer command: <code>composer require league/oauth2-server</code>
+<h3>Implementation</h3>
+The examples here demonstrate its usage with the Slim Framework. 
+Slim is not a requirement to use this library, you just need something that generates PSR7-compatible HTTP requests and responses.
+The client will redirect the user to an authorization endpoint.
+$app-&gt;get('/authorize', function (ServerRequestInterface $request, ResponseInterface $response) use ($server) {
+  
+    try {
+                          	$authRequest = $server-&gt;validateAuthorizationRequest($request);
+           	$authRequest-&gt;setUser(new UserEntity()); // an instance of UserEntityInterface
+           	$authRequest-&gt;setAuthorizationApproved(true);
+           	return $server-&gt;completeAuthorizationRequest($authRequest, $response);
+        }
+ 
+            	catch (OAuthServerException $exception)
+            	{
+           	return $exception-&gt;generateHttpResponse($response);
+            	}
+ 
+                            	catch (\Exception $exception)
+            	{
+                            	$body = new Stream(fopen('php://temp', 'r+'));
+           	$body-&gt;write($exception-&gt;getMessage());
+           	return $response-&gt;withStatus(500)-&gt;withBody($body);
+       
+  }
+});
+<h2>Laravel Backup</h2>
+This package creates a backup of your application. 
+A zip file of backup is created containing all the files in the specified directories. 
+Any file system is supported by the backup package, and it can also create multiple backup in different file systems at once. 
+It also notifies you via mail, slack or other notification provider if something goes wrong.
+Composer command: <code>composer require spatie/laravel-backup</code>
+<h3>Implementation</h3>
+To publish the config file to config/backup.php run:
+php artisan vendor:publish --provider="Spatie\Backup\BackupServiceProvider"
+<h2>PHP Rector</h2>
+This package instantly upgrade and refactor the PHP code. 
+It renames classes, namespaces &amp; constants, and upgrades PHP 5.3 to PHP 7.4 easily. 
+It also migrates projects from Nette to Symfony, and turns static Laravel to Dependency Injection. 
+It is used with almost every PHP framework i.e. 
+Laravel, Symfony, CakePHP, PHPUnit and much more.
+Composer command: <code>composer require rector/rector</code>
+<h3>Implementation</h3>
+When the library is first implemented, you can execute a dry run and then permanently change your code through the following commands.
+#see the diff first
+vendor/bin/rector process src --dry-run
+# if it's ok, apply
+vendor/bin/rector process src
+<h2>Lighthouse</h2>
+GraphQL is a query language for the APIs. 
+It fulfills the queries on your existing data and gives an extensive understanding of the data in APIs. 
+It also gives the client the power to specify the needs, and evolves the API overtime.
+Composer command: <code>composer require nuwave/lighthouse</code>
+<h3>Implementation</h3>
+By the following artisan command, you can get the default Lighthouse Schema:
+php artisan vendor:publish --provider="Nuwave\Lighthouse\LighthouseServiceProvider" --tag=schema
+<h2>Laravel Admin LTE</h2>
+This library provides an easy integration of AdminLTE with Laravel 5 or later versions.
+Composer command: <code>composer require jeroennoten/laravel-adminlte</code>
+<h3>Implementation</h3>
+&lt;?php
+namespace JeroenNoten\LaravelAdminLte;
+use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Contracts\Container\Container;
+use JeroenNoten\LaravelAdminLte\Menu\Builder;
+use JeroenNoten\LaravelAdminLte\Events\BuildingMenu;
+class AdminLte
+{
+  protected $menu;
+  protected $filters;
+  protected $events;
+  protected $container;
+  public function __construct(
+    	array $filters,
+    	Dispatcher $events,
+    	Container $container
+  ) {
+    	$this-&gt;filters = $filters;
+    	$this-&gt;events = $events;
+    	$this-&gt;container = $container;
+  }
+  public function menu()
+  {
+    	if (! $this-&gt;menu) {
+        	$this-&gt;menu = $this-&gt;buildMenu();
+    	}
+    	return $this-&gt;menu;
+  }
+  protected function buildMenu()
+  {
+    	$builder = new Builder($this-&gt;buildFilters());
+    	if (method_exists($this-&gt;events, 'dispatch')) {
+            $this-&gt;events-&gt;dispatch(new BuildingMenu($builder));
+    	} else {
+            $this-&gt;events-&gt;fire(new BuildingMenu($builder));
+    	}
+    	return $builder-&gt;menu;
+  }
+  protected function buildFilters()
+  {
+    	return array_map([$this-&gt;container, 'make'], $this-&gt;filters);
+  }
+}
+<h2>Swagger PHP library</h2>
+Swagger is a library that helps to generate an interactive documentation for restful API using phpdoc annotations. 
+It is compatible with OpenAPI 3.0, as it extracts code &amp; existing annotations using a CLI interface.
+Composer command: <code>composer require zircote/swagger-php</code>
+<h3>Implementation</h3>
+/**
+ * @OA\Info(title="My First API", version="0.1")
+ */
+ 
+/**
+ * @OA\Get(
+ * 	path="/api/resource.json",
+ * 	@OA\Response(response="200", description="An example resource")
+ * )
+ */
+<h2>Laravel/Passport MongoDB</h2>
+It is a service provider that helps to add support for Laravel Passport and MongoDB.
+Composer command: <code>composer require jenssegers/mongodb</code>
+<h2>Stripe-PHP</h2>
+<a href="https://packagist.org/packages/stripe/stripe-php" target="_blank" rel="nofollow noopener">Stripe-PHP</a>
+Stripe is a popular e-payment platform used to conduct online transactions over the web. 
+This package is specially made for PHP ecommerce applications to interact with the Stripe API. 
+This library provides a fast, efficient access to the Stripe API and makes end-to-end connection secure between the platforms. 
+The library includes predefined set of API classes which are compatible with most of Stripe versions.
+Composer Command: <code>composer require stripe/stripe-php</code>
+<h2>Omnipay</h2>
+<a href="https://packagist.org/packages/league/omnipay" target="_blank" rel="nofollow noopener">Omnipay</a>
+This payment processing PHP library allows fast connection to Omnipay web services. 
+It deploys a very smooth web API that is fully unit-tested, advanced and comes with full documentation to ease out the configuration process. 
+The package itself uses the powerful PHP-HTTP library to make HTTP requests, so that all the transactions becomes secure and reliable.
+Composer Command: <code>composer require league/omnipay</code>
+<h2>Laravel Cashier</h2>
+<a href="https://packagist.org/packages/laravel/cashier" target="_blank" rel="nofollow noopener">Laravel Cashier</a>
+Laravel Cashier provides a simple and easy-to-use interface for Stripe’s subscription billing services. 
+All the boilerplate billing services come pre-coded in the library, so that you don’t have to worry for the complex configuration of payment billing. 
+Using Laravel Cashier, you can easily handle coupons, discount codes, swapping subscription, invoices and other operations.
+Composer Command: <code>composer require laravel/cashier</code>
+<h2>Sylius</h2>
+<a href="https://packagist.org/packages/sylius/sylius" target="_blank" rel="nofollow noopener">Sylius</a>
+If you want to <a href="https://www.cloudways.com/blog/install-sylius-ecommerce-framework/" target="_blank" rel="noopener">integrate Sylius</a> with your PHP application, this library will help you in building the secure web connection. 
+It is built with strong API structure to connect web applications safely with the Sylius ecommerce platform. 
+Just navigate to composer and install the Sylius library, all the payment settings come pre configured in it, so that developers aren’t required to do extra work.
+Composer Command: <code>composer create-project sylius/sylius</code>
+<h2>Laravel Aimeos</h2>
+<a href="https://packagist.org/packages/aimeos/aimeos-laravel" target="_blank" rel="nofollow noopener">Laravel Aimeos</a>
+Aimeos is one of the most used <a href="https://www.cloudways.com/blog/laravel-ecommerce-website-with-aimeos-package/" target="_blank" rel="noopener">ecommerce packages for Laravel</a>. 
+It provides advanced ecommerce functionalities to the existing Laravel application. 
+It is a composer based extension having compatibility with all the Laravel 5+ versions. 
+It integrates the core online store components into the Laravel application and provides optimized ecommerce features for the applications.
+Composer Command: <code>composer require aimeos/aimeos-laravel</code>
+<h2>Spatie Image Optimizer</h2>
+<a href="https://packagist.org/packages/spatie/image-optimizer" target="_blank" rel="nofollow noopener">Spatie Image Optimizer</a>
+Image optimization improves application’s performance and holds a great value in the sights of Google Bot. 
+Spatie is a specialized PHP image optimization library for Laravel applications. 
+It can easily optimize PNGs, JPGs, SVGs and GIFs according to the required needs. 
+This PHP image library comes pre-configured with multiple image optimization tools including JpegOptim, Optipng, Pngquant2, SVGO and Gifsicle. 
+The interface is quite simple and is easy to work with even for beginners.
+Composer Command: <code>composer require spatie/image-optimizer</code>
+<h2>Elastica</h2>
+<a href="https://packagist.org/packages/ruflin/elastica" target="_blank" rel="nofollow noopener">Elastica</a>
+Elasticsearch is a popular full-text search system widely used by most of the PHP developers all around the world. 
+It allows fast data searching from the records stored in its database. 
+This package is a PHP client for Elasticsearch, it provides pre-configured settings for Elasticsearch and gives fast data indexing for applications. 
+It is compatible with all PHP 5+ versions and comes up with detailed installation documentation.
+Composer Command: <code>composer require ruflin/elastica</code>
+<h2>Intervention/image</h2>
+<a href="https://packagist.org/packages/intervention/image" target="_blank" rel="nofollow noopener">Intervention/image</a>
+This is another great tool to handle image optimization in PHP applications. 
+Using this PHP image library, you can easily customize images as you wish. 
+It provides you an easy-to-use interface for creating, editing and composing images. 
+To integrate with Laravel applications easily, the PHP image library includes ServiceProviders and Facades as they facilitate hassle-free package installation process.
+Composer Command: <code>composer require predis/predis</code>
+<h2>Minify</h2>
+<a href="https://packagist.org/packages/matthiasmullie/minify" target="_blank" rel="nofollow noopener">Minify</a>
+Minification is one of the most important aspects of optimizing CSS and JavaScript files. 
+It helps reducing the overhead programming patterns of the file and optimizes it according to the standards of web performance. 
+This library helps developers to minify their CSS and JavaScripting files.
+It removes the white spaces, strip comments and other unnoticed attributes from the code, making it light and simple to execute. 
+It combines statements, small assets in CSS files and minifies few coding structures according to best standards.
+Composer Command: <code>composer require matthiasmullie/minify</code>
+<h2>Swap</h2>
+<a href="https://packagist.org/packages/florianv/swap" target="_blank" rel="nofollow noopener">Swap</a>
+Swap is a handy PHP library for working with currency exchange rates. 
+It allows you to retrieve those exchange rates from the popular currency platforms like Fixer, currencylayer and others. 
+It is one of the most used libraries for working with exchange rates, as it is also integrated with other libraries and has simple configuration pattern to work with.
+Composer Command: <code>composer require florianv/swap</code>
+<h2>Tcpdf</h2>
+<a href="https://packagist.org/packages/tecnickcom/tcpdf" target="_blank" rel="nofollow noopener">Tcpdf</a>
+This PHP PDF library helps you generate high quality PDF documents. 
+It supports all standard and custom page formats, making it simple for the users to work with PDF documents. 
+The package provides several advanced formatting features including automatic page header and footer management, annotations, links, multiple columns (if needed), text rendering and various other features. 
+In short, it’s a fine tool to work and manage PDF documents on the go.
+Composer Command: <code>composer require tecnickcom/tcpdf</code>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <br><br><br><br><br><br><br><br>
 
 <script type='text/javascript' src='readbook.js'></script>

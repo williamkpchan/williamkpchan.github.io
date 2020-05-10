@@ -1,0 +1,509 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="./rchart/RGraph.common.core.js" ></script>
+<script src="./rchart/RGraph.common.csv.js" ></script>
+<script src="./rchart/RGraph.line.js" ></script>
+<script src="./rchart/RGraph.bar.js" ></script>
+
+<script type='text/javascript' src='../mainscript.js'></script>
+
+<link rel="stylesheet" href="./rchart/website.css" type="text/css" media="screen" />
+<link rel="stylesheet" href="../maincss.css">
+
+<style>
+body { margin: auto; width: 90%; font-size: 18px; background-color: #000000; color: #20C030;}
+button, input, select {color: gray; background-color: #001010;  font-size: 18px; }
+.redword{color: red;}
+.greenword{color: lightgreen;}
+.goldword{color: gold;}
+.whiteword{color: white;}
+</style>
+
+<script>
+
+let alarmSound = new Audio('./mp3/stringVibrate.mp3'); 
+let stkCode, stkName, stkTime, stkPrice, stkMaxprice, stkMinprice, stkVol, stkChange, mytimer;
+let timerValue = 10;
+let stkChangeArr = [];
+let toFixedLen = 3;
+let theString ="";
+
+let theurlHead = 'http://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk'
+let theurlTail = ',day,,,320,qfq'
+var theCode = localStorage.otherCode;
+var theStartCode = localStorage.otherCode;
+var thestkkey = "";
+//let rawJSON = {};
+let thestkdata = [];
+let thedrawdata = [];
+let period = 150;
+let dateLst = [];
+let openLst = [];
+let highLst = [];
+let lowLst = [];
+let closeLst = [];
+let amtLst = [];
+let amtData = [];
+let theMax = 0, theMin = 0;
+let intv1 = 5
+let intv2 = 10
+let intv3 = 20
+let intv4 = 40
+let intv5 = 80
+stkPointer = 0
+
+function startToRoll(theCode) {
+	theStartCode = theCode;
+	thestkdata = [];
+	thedrawdata = [];
+	dateLst = [];
+	openLst = [];
+	highLst = [];
+	lowLst = [];
+	closeLst = [];
+	amtLst.length = 0;
+	$("#turnover").empty();
+	var theurl = theurlHead + theStartCode + theurlTail
+	RGraph.AJAX.getJSON(theurl, function (rawJSON){
+		var keys = Object.keys(rawJSON); // read the structure keys ["code", "msg", "data"]
+		var insideDatakey = Object.keys(rawJSON)[2] //
+		// myobj[Object.keys(myobj)[0]] this is the extract method
+
+		var thedata = rawJSON[Object.keys(rawJSON)[2]]
+		thestkkey = Object.keys(thedata)[0] // this is the stk key name
+		var tempdata = thedata[Object.keys(thedata)[0]];
+		thestkdata = tempdata[Object.keys(tempdata)[0]]; // real data here, this is global data
+
+		theNameObj = tempdata[Object.keys(tempdata)[1]];
+		theNameObjName  = theNameObj[Object.keys(theNameObj)[0]];
+		stkName = theNameObjName[1]
+
+		/* data is arranged in days array
+		tempdata[320][0]  // date
+		tempdata[320][1]  // open
+		tempdata[320][3]  // high
+		tempdata[320][4]  // low
+		tempdata[320][2]  // close
+		tempdata[320][8]  // amt */
+
+//		starti = thestkdata.length - period;
+		starti = thestkdata.length - 110;
+		if(starti <= 0){
+			alert("not enough data!");
+			return;
+		}
+		for (let i = starti; i < thestkdata.length; i++) {
+			dateLst.push(thestkdata[i][0]);
+			openLst.push(Number(thestkdata[i][1]));
+			highLst.push(Number(thestkdata[i][3]));
+			lowLst.push(Number(thestkdata[i][4]));
+			closeLst.push(Number(thestkdata[i][2]));
+			amtvalue = "&emsp;" + Math.round(Number(thestkdata[i][8])).toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",") +"w ";
+			amtLst.push(amtvalue);
+			amtData.push(Math.round(Number(thestkdata[i][8])));
+		}
+
+		thedrawdata =[highLst, lowLst, closeLst];
+		thedrawdata.push(makeMovAve(thedrawdata[2], intv1));
+		thedrawdata.push(makeMovAve(thedrawdata[2], intv2));
+		thedrawdata.push(makeMovAve(thedrawdata[2], intv3));
+		thedrawdata.push(makeMovAve(thedrawdata[2], intv4));
+		thedrawdata.push(makeMovAve(thedrawdata[2], intv5));
+		thedrawdata[0] = thedrawdata[0].slice(intv5)
+		thedrawdata[1] = thedrawdata[1].slice(intv5)
+		thedrawdata[2] = thedrawdata[2].slice(intv5)
+		thedrawdata[3] = thedrawdata[3].slice(intv5)
+		thedrawdata[4] = thedrawdata[4].slice(intv5)
+		thedrawdata[5] = thedrawdata[5].slice(intv5)
+		thedrawdata[6] = thedrawdata[6].slice(intv5)
+		thedrawdata[7] = thedrawdata[7].slice(intv5)
+		theMax = Math.max(Math.max(...thedrawdata[0]),Math.max(...thedrawdata[1]),Math.max(...thedrawdata[2]),Math.max(...thedrawdata[3]),Math.max(...thedrawdata[4]),Math.max(...thedrawdata[5]),Math.max(...thedrawdata[6]),Math.max(...thedrawdata[7]));
+		theMin = Math.min(Math.min(...thedrawdata[0]),Math.min(...thedrawdata[1]),Math.min(...thedrawdata[2]),Math.min(...thedrawdata[3]),Math.min(...thedrawdata[4]),Math.min(...thedrawdata[5]),Math.min(...thedrawdata[6]),Math.min(...thedrawdata[7]));
+
+//		amtData = amtData.slice(intv5)
+		bMax = Math.max(...amtData);
+		bMin = 0;
+		drawchart('cvs',thedrawdata, theMax, theMin,2);
+//		drawchart('barGraph',amtData, bMax,bMin,0);
+		if(amtData.length<200){drawBarChart(amtData);}
+		$("h3").append(theStartCode + " " + stkName);
+
+		showStatus();
+		detectX();
+		detectTrend();
+
+		statusMsg = '<br><span class="cyanword">淺藍</span> ' + thedrawdata[3][lastPtr].toFixed(3) + "&emsp;" + 
+		'<span class="blueword">深藍</span> ' + thedrawdata[4][lastPtr].toFixed(3) + "&emsp;" + 
+		'<span class="whiteword">白</span> ' + thedrawdata[5][lastPtr].toFixed(3) + "&emsp;" + 
+		'<span class="brownword">橙</span> ' + thedrawdata[6][lastPtr].toFixed(3) + "&emsp;" + 
+		'<span class="darkredword">棕</span> ' + thedrawdata[7][lastPtr].toFixed(3) +
+		"<br>commands: c, v, f, b, r, m, l<br>";
+		$("#msg").append(statusMsg);
+		$("#turnover").append(amtLst.slice(amtLst.length-10,amtLst.length));
+	});
+}
+function makeMovAve(bigArray, intv) {
+     // the intv-1 is correct
+	return bigArray.slice(0, intv-1).concat(calcMovAve(bigArray, intv));
+}
+function calcAve(aveArray) {
+	add = (a, b) =>  a + b;
+	return aveArray.reduce(add) / aveArray.length;
+}
+
+function calcMovAve(bigArray, intv) {
+	var ma = [];
+	for (var i =0 ; i < (bigArray.length-intv+1); i++) {ma[i] = calcWAve(bigArray.slice(i, i+intv));} // points to indicator
+	return ma;
+}
+function calcWAve(aveArray) {
+	var sum = 0
+	for( var i = 1; i <= aveArray.length; i++ ) {
+		sum += aveArray[i-1] * i;
+	}
+	return (sum / ((1 + aveArray.length)*aveArray.length/2))
+}
+
+function detectX(){
+	curS = thedrawdata[2][thedrawdata[2].length-1] // current data is third row, close
+	prevS = thedrawdata[2][thedrawdata[2].length-2]
+
+	curL = thedrawdata[3][thedrawdata[2].length-1] // the 10 minute
+	prevL = thedrawdata[3][thedrawdata[2].length-2]
+	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;上穿 淺藍" ,"yellowword")}
+	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;下破 淺藍", "yellowword")}
+
+	curL = thedrawdata[4][thedrawdata[2].length-1] // the 5th trend, 40minute
+	prevL = thedrawdata[4][thedrawdata[2].length-2]
+	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;上穿 藍綫" ,"blueword")}
+	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;下破 藍綫", "blueword")}
+
+	curL = thedrawdata[5][thedrawdata[2].length-1]
+	prevL = thedrawdata[5][thedrawdata[2].length-2]
+	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;上穿 白綫" ,"orangeword")}
+	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;下破 白綫", "orangeword")}
+
+	curL = thedrawdata[6][thedrawdata[2].length-1]
+	prevL = thedrawdata[6][thedrawdata[2].length-2]
+	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;上穿 橙綫" ,"redword")}
+	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;下破 橙綫", "redword")}
+
+//	curL = thedrawdata[7][thedrawdata[2].length-1]
+//	prevL = thedrawdata[7][thedrawdata[2].length-2]
+//	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;上穿 棕綫" ,"whiteword")}
+//	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;下破 棕綫", "whiteword")}
+
+
+	curS = thedrawdata[3][thedrawdata[2].length-1] // current 40minute
+	prevS = thedrawdata[3][thedrawdata[2].length-2]
+
+	curL = thedrawdata[4][thedrawdata[2].length-1] // the 6th trend, 80minute
+	prevL = thedrawdata[4][thedrawdata[2].length-2]
+	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;淺藍 上穿 藍綫" ,"goldword")}
+	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;淺藍 下破 藍綫", "goldword")}
+
+//	vol changes
+//	
+
+}
+
+function detectTrend(){
+	curValue = thedrawdata[3][thedrawdata[2].length-1] // the 20 minute trend
+	prevValue = thedrawdata[3][thedrawdata[2].length-2]
+	if (curValue >0 &&  prevValue<0){reportIt("&#x25B2;淺藍轉上" ,"redword")}
+	if (curValue <0 &&  prevValue>0){reportIt("&#x25BC;淺藍轉落", "redword")}
+
+	curValue = thedrawdata[4][thedrawdata[0].length-1] // the 20 minute trend
+	prevValue = thedrawdata[4][thedrawdata[0].length-2]
+	if (curValue >0 &&  prevValue<0){reportIt("&#x25B2;藍綫轉上" ,"orangeword")}
+	if (curValue <0 &&  prevValue>0){reportIt("&#x25BC;藍綫轉落", "orangeword")}
+}
+
+//	alarm function:
+function reportIt(alarmMsg, color){
+//	record
+//	set color, on msg div, with time and date, up cross (down cross) trigger value is: , present value
+	alarmM = alarmMsg
+	alarmM = '<span class="' + color + '">' + alarmM + ', </span>'
+	$("#msg").append(alarmM);
+//	alert(alarmMsg);
+//	document.getElementById('alarmPt').play();
+
+	document.getElementById('audioPop').src = 'http://gget.it/u1urz3zh/popsound.mp3';
+	document.getElementById('audioPop').load();
+//	document.getElementById('audioPop').play();
+//	alert(alarmMsg);
+	beep(60,620,200);
+	setTimeout(function(){ beep(60,550,200); }, 50);
+
+//	alarmSound.play();
+//	navigator.vibrate([500]);
+}
+
+a=new AudioContext();
+function beep(vol, freq, duration){
+	v=a.createOscillator();
+	u=a.createGain();
+	v.connect(u);
+	v.frequency.value=freq;
+	v.type="triangle";
+	u.connect(a.destination);
+	u.gain.value=vol*0.01;
+	v.start(a.currentTime);
+	v.stop(a.currentTime+ duration*0.001)
+}
+
+//	comparison:
+//	up cross
+function checkUpX(prevL, prevS, curL, curS){
+	if ((prevL==prevS) || (curS == curL )){return "critical"}
+
+	if ((prevL>prevS) && (curS > curL )){return "UpY"
+	} else {return "UpN"}
+}
+//	down cross
+function checkDnX(prevL, prevS, curL, curS){
+	if ((prevL==prevS) || (curS == curL )){
+		return "critical"
+	}
+
+	if ((prevL<prevS) && (curS < curL )){
+		return "DnY"
+	} else {
+		return "DnN"
+	}
+}
+
+function chkKey() {
+	var testkey = getChar(event);
+	if(testkey == 'c'){askCode();}
+  	if(testkey == 'd'){window.open("otherCode.html");}
+	if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
+	if(testkey == 'v'){sCt(theStartCode);}
+//	if(testkey == 'f'){jpforward();}
+//	if(testkey == 'b'){jpback();}
+//	if(testkey == 'R'){jprandom();}
+	if(testkey == 'm'){openMonchart()}
+	if(testkey == 'l'){askList()}
+	if(testkey == 't'){window.scrollTo(0,0);}
+//	if(testkey == 'w'){askWidth();} 
+//	if(testkey == 'y'){yearWidth();}
+     if(testkey == 'r'){
+       localStorage.setItem("randomcode", theCode);
+       window.open('Random Charts.html');
+     }
+}
+
+function getChar(event) {
+	if (event.which!=0 && event.charCode!=0) {return String.fromCharCode(event.which)} else {
+		return null}
+}
+
+function askWidth() {
+	var theWidth = prompt("Chart Width:", "");
+	if (theWidth != null && theWidth != "") {
+		period = parseInt(theWidth);
+		startToRoll(theCode);
+	}
+}
+
+function yearWidth() {
+		period = 250;
+		startToRoll(theCode);
+}
+
+function newChart() {
+		var thecode = prompt("Code Number:", "");
+		if (thecode != null && thecode != "") {startToRoll(thecode);}
+}
+
+function showTime() {
+	let d = new Date();
+	let secs=d.getSeconds();
+	let mins=d.getMinutes();
+	let hr=d.getHours();
+	let timemsg=FormatNumberLength(hr) +":" + FormatNumberLength(mins) + ":"+ FormatNumberLength(secs)
+	return(timemsg)
+}
+
+function FormatNumberLength(num) {
+		let r = "" + num;
+		while (r.length < 2) { r = "0" + r;}
+		return r;
+}
+
+</script>
+
+</head>
+
+<body onkeypress="chkKey()">
+<center>
+<div id="turnover"></div>
+<h3><span onclick=askCode()>Daily Chart</span> <b onclick=sCt(theStartCode)>&clubs;</b> </h3>
+<div>
+<canvas id="cvs" width="1150" height="450"></canvas>
+</div>
+<div>
+<canvas id="barGraph" width="1150" height="150"></canvas>
+</div>
+<div id="msg"></div>
+
+<audio id="alarmPt" src="stringVibrate.mp3" preload="auto"></audio>
+<audio id="audioPop"></audio>
+
+<script>
+function drawchart(idmark,thedrawdata, cMax,cMin,scaledec) {
+	RGraph.reset(document.getElementById(idmark));
+	line = new RGraph.Line({
+		id:idmark, data:thedrawdata,
+		options: {
+			colors: ['red','green','yellow', 'cyan', 'blue', 'white', 'orange', 'brown', 'grey'], scaleDecimals: scaledec,
+			backgroundGrid: true, axisColor: '#864', textColor: '#ccc', numxticks: 0,
+//			tickmarks: 'circle', 
+			tickmarksDotLinewidth: 0,ticksize: 1, linewidth: 1, 
+			ymax: cMax, ymin: cMin,
+//			labels: dateLst,
+			spline: true, shadow: false,
+			backgroundGridColor: '#001000', backgroundGridVlines: true,
+			gutterLeft: 20, gutterRight: 0, gutterTop: 1, gutterBottom: 1
+		}
+	}).trace();
+};
+function drawBarChart(thebardata) {
+    RGraph.reset(document.getElementById('barGraph'));
+    new RGraph.Bar({
+        id: 'barGraph',
+        data: thebardata,
+        options: {
+            yaxisScaleUnitsPost: 'k',
+            colors: ['white'],
+            backgroundGrid: true, axisColor: '#864', textColor: '#222', 
+            backgroundGridColor: '#001000', backgroundGridVlines: true,
+            xaxis: true, yaxis: true,
+            gutterLeft: 20, gutterRight: 0, gutterTop: 1, gutterBottom: 1
+        }
+    }).draw();
+}
+    
+function askCode() {
+	var thecode = prompt("Code Number (5 digits):", "");
+	if (thecode != null && thecode != "") {
+		if (thecode != "HSI") { thecode = FormatNumberLength5(thecode);}
+		storeCode(thecode);
+		theCode = thecode
+		window.location.reload(true);
+		}
+}
+function askList() {
+	var theList = prompt("CodeList, Number (5 digits) sep by space： ", "");
+	if (theList != null && theList != "") {
+		if (theList != "HSI") { stkList = theList.split(" ");}
+		}
+}
+
+function FormatNumberLength5(num) {
+    var r = "" + num;
+    while (r.length < 5) {
+        r = "0" + r;
+    }
+    return r;
+}
+function storeCode(thecode) {
+	if(typeof(Storage) !== "undefined") {
+		localStorage.otherCode = thecode;
+	}
+	startToRoll(thecode)
+}
+function openMonchart() {
+	storeCode(theCode);
+	//window.open("monitorHSI.html");
+}
+
+
+var stkList = ['00308','03323','03908','01109','01211','02899','00780','00586','00836','00165','03900','02338','00347','03808','01317','01818','00853','00168','02611','01813','00148','01753','00293','02666','01378','00819','02181','00517','00035','01598','00526','06196','02168','00950','01053','02680','01735','00886','00691','03978','00078','01132','00580','06111','02099','06166','00702','00161','03613','00658','00826','00650','01286','06806','01769','01212','01186','01766','00390','02009','03800','01613','00981','02208','01800','03898','02380','03618','00016','01113','00520','02588','01930','00363','00171','02066','03996','00982','01039','00860','03877','03690','00388','00386','00772','00425','02357','03606','01513','00338','01033','00855','01858','00934','06178','01257','00546','03330','01345','02120','01280','06878','06198','00719','00450','00895','00445','02002','00159']
+
+function jpforward() {
+	if (stkPointer < stkList.length-1) {
+		stkPointer = stkPointer + 1;
+	} else {
+		stkPointer = 0;
+	}
+	localStorage.setItem("otherCode", stkList[stkPointer]);
+//	alert(stkPointer, stkList[stkPointer]);
+	window.location.reload(true);
+}
+
+function jpback() {
+	if (stkPointer > 0) {
+		stkPointer = stkPointer - 1;
+	} else {
+		stkPointer = stkList.length-1;
+	}
+	localStorage.setItem("otherCode", stkList[stkPointer]);
+	window.location.reload(true);
+}
+function jprandom() {
+	var newPoint = Math.floor(Math.random() * (stkList.length-1))
+	theCode = stkList[newPoint]
+	startToRoll(theCode);
+	stkPointer = newPoint;
+}
+
+function sCt(stkcode) {
+  if(stkcode == "HSI"){stkcode = "110000"}
+  imgHead = "<img src='http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=9&indpara1=20&indpara2=2&indpara3=0&indpara4=0&indpara5=0&subChart1=3&ref1para1=5&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&subChart3=12&ref3para1=0&ref3para2=0&ref3para3=0&scheme=3&com=100&chartwidth=1050&chartheight=690&stockid=";
+  imgHead2 = "<img src='http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=3&indpara1=3&indpara2=6&indpara3=10&indpara4=15&indpara5=20&subChart1=3&ref1para1=12&ref1para2=26&ref1para3=9&subChart2=2&ref2para1=14&ref2para2=0&ref2para3=0&scheme=3&com=100&chartwidth=1050&chartheight=600&stockid=";
+
+
+  imgPCode= "&period=";
+  imgTail="&type=1&logoStyle=1'><br>";
+
+  // 5000, 5007, 5012, 1, 2, 3, 4, 6, 7, 9, 10, 12, 14, 16, 17, 18
+  intv = [7,4, 3, 2, 1, 5012, 5007, 5000, 11, 12];
+  var imgWindow = window.open("");
+  newshead = "http://www.aastocks.com/tc/stocks/analysis/stock-aafn/"
+  newstail = "/0/all/1"
+  newsStr = newshead + stkcode + newstail
+  imgAdr = "<style>body { background-color: black; color: green} a { text-decoration: none; color: #28B8B8;}</style><body><center>" +"<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>" 
+
+  for( var imgPeriod = 0; imgPeriod < intv.length; imgPeriod++){
+    imgAdr = imgAdr + imgHead + stkcode + imgPCode + intv[imgPeriod] + imgTail + imgHead2 + stkcode + imgPCode + intv[imgPeriod] + imgTail;
+  };
+  imgWindow.document.write(imgAdr);
+}
+
+function showStatus() {
+	lastPtr = thedrawdata[0].length-1
+     closeValue = thedrawdata[2][lastPtr]*100
+     prevPt = lastPtr-1
+	theStr = 
+	"<span class='redword'>H " + thedrawdata[0][lastPtr] + "</span>&emsp;" +
+	"<span class='greenword'>L " + thedrawdata[1][lastPtr] + "</span>&emsp;" +
+	"<span class='yellowword'>C " + thedrawdata[2][lastPtr] + "</span>&emsp;" +
+	"<span class='yellow'>" + 
+     (thedrawdata[2][lastPtr]-thedrawdata[2][lastPtr-1]).toFixed(3) + "&emsp;" + "c% "+
+     ((thedrawdata[2][lastPtr]/thedrawdata[2][lastPtr-1])*100-100).toFixed(1) + "&emsp;" + 
+	"<span class='cyan'>ss " + ((closeValue/thedrawdata[3][lastPtr])-100).toFixed(1) + "&emsp;" + 
+	"(sd " + (100*(thedrawdata[3][lastPtr]-thedrawdata[3][prevPt])/thedrawdata[3][prevPt]).toFixed(1) + ")</span>&emsp;" + 
+
+	"<span class='blue'>sm " + ((closeValue/thedrawdata[4][lastPtr])-100).toFixed(1) + "&emsp;" + 
+	"(md " + (100*(thedrawdata[4][lastPtr]-thedrawdata[4][prevPt])/thedrawdata[4][prevPt]).toFixed(1) + ")</span>&emsp;" + 
+
+	"<span class='brown'>sl " + ((closeValue/thedrawdata[7][lastPtr])-100).toFixed(1) + "&emsp;" + 
+	"(ld " + (100*(thedrawdata[7][lastPtr]-thedrawdata[7][prevPt])/thedrawdata[7][prevPt]).toFixed(1) + ")</span>&emsp;" + 
+
+//	"ma4 " + thedrawdata[6][lastPtr].toFixed(toFixedLen) + 
+	"%<br>";
+ 
+	finalString = "<span class='greyword'>" + showTime() + "</span>&emsp;" + theStr
+	$("#msg").html("");
+	$("#msg").html(finalString);
+}
+
+startToRoll(theCode)
+</script>
+</center>
+</body>
+</html>

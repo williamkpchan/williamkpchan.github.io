@@ -1,0 +1,605 @@
+<!--keep record store in localstorage
+localstorage file with stkno
+with command to show record
+record structure: date, time, alarm msg
+-->
+
+<html>
+<head>
+<meta http-equiv="refresh" content="30">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Other min</title>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="./rchart/RGraph.common.core.js" ></script>
+<script src="./rchart/RGraph.common.csv.js" ></script>
+<script src="./rchart/RGraph.line.js" ></script>
+<script src="./rchart/RGraph.bar.js" ></script>
+<script src="https://williamkpchan.github.io/mainscript.js"></script>
+<script src="../stkcodeMin.js"></script>
+<script src="http://williamkpchan.github.io/showAllCharts.js"></script>
+
+<link rel="stylesheet" href="../maincss.css">
+
+<style>
+body { margin: auto; width: 90%; font-size: 18px; background-color: #000000; color: #20C030;}
+
+button, input, select {color: gray; background-color: #001010;  font-size: 18px; }
+.redword{color: red;}
+.greenword{color: lightgreen;}
+.goldword{color: gold;}
+.blueword{color: blue;}
+.whiteword{color: white;}
+.violetword{color: violet;}
+.yellowword{color: yellow;}
+.orangeword{color: orange;}
+
+</style>
+
+<script>
+var alarmSound = new Audio('stringVibrate.mp3'); 
+// var alarmSound = new Audio('https://freesound.org/data/previews/459/459145_6142149-lq.mp3'); 
+
+let stkCode, stkName, stkTime, stkPrice, stkMaxprice, stkMinprice, stkVol, stkChange, mytimer;
+let timerValue = 10;
+let stkChangeArr = [];
+let toFixedLen = 3;
+let theString ="";
+
+let theurlHead = 'http://web.ifzq.gtimg.cn/appstock/app/day/query?code=hk'
+// let theurlTail = ',day,,,320,qfq'
+
+var theCode = "";
+var theStartCode = theCode; // loaded from the _init()
+var thestkkey = "";
+let rawJSON1 = {};
+let thestkdata = [];
+let thedrawdata = [];
+let period = 150;
+let dateLst = [];
+let openLst = [];
+let highLst = [];
+let lowLst = [];
+let closeLst = [];
+let amtLst = [];
+var theMax, theMin;
+var intv1, intv2, intv3, intv4, intv5, intv6, intv7, showWidth, datawidth;
+
+var stkPointer = 0
+function startToRoll(aCode) {
+	theStartCode = aCode;
+	thestkdata = [];
+	thedrawdata = [];
+	closeLst = [];
+	amtLst = [];
+	var theurl = theurlHead + theStartCode
+	RGraph.AJAX.getJSON(theurl, function (rawJSON){
+		keys = Object.keys(rawJSON); // read the structure keys ["code", "msg", "data"]
+		var insideDatakey = Object.keys(rawJSON)[2] //
+		// myobj[Object.keys(myobj)[0]] this is the extract method
+
+		var thedata = rawJSON[Object.keys(rawJSON)[2]]
+		thestkkey = Object.keys(thedata)[0] // this is the stk key name
+		var tempdata = thedata[Object.keys(thedata)[0]]; // {data: Array(5), qt: {…}, vcm: ""} five sets of data here
+		// old data at the back, new data at 0 location
+		allData = tempdata.data[4].data.concat(tempdata.data[3].data).concat(tempdata.data[2].data).concat(tempdata.data[1].data).concat(tempdata.data[0].data)
+		//(1599) ["0930 26834.15 375023", "0931 26858.43 469321"
+		allData = allData.filter((val) => val != "");
+
+          if(datawidth > allData.length){datawidth = allData.length};
+          // console.log("datawidth "+datawidth)
+		allData = allData.slice(allData.length-datawidth); // get only req data
+
+		allData.forEach(str => { closeLst.push(Number(str.split(' ')[1])); }); // split the string and select only the middle close 
+
+		allData.forEach(str => { amtLst.push(Number(str.split(' ')[2])); }); // select the vol
+		minuteVol = [amtLst[0]];
+		for(var i=1; i<amtLst.length-1; i++){
+		  diff = amtLst[i] - amtLst[i-1]
+		  if (diff<0){diff = amtLst[i]}
+		  minuteVol.push(diff);
+		}
+
+		theNameObj = tempdata[Object.keys(tempdata)[1]];
+		theNameObjName  = theNameObj[Object.keys(theNameObj)[0]];
+		stkName = theNameObjName[1]
+
+		thedrawdata =[closeLst]; //closeLst is already originally an array
+		// should be chop beforehand
+		// calculate different ma lines and stuff inside thedrawdata.
+		thedrawdata.push(makeMovAve(thedrawdata[0], intv1));
+		thedrawdata.push(makeMovAve(thedrawdata[0], intv2));
+		thedrawdata.push(makeMovAve(thedrawdata[0], intv3));
+		thedrawdata.push(makeMovAve(thedrawdata[0], intv4));
+		thedrawdata.push(makeMovAve(thedrawdata[0], intv5));
+		thedrawdata.push(makeMovAve(thedrawdata[0], intv6));
+//		thedrawdata.push(makeMovAve(thedrawdata[0], intv7)); // length is width + intv7
+		// chop and keep the display data only
+		startpos = thedrawdata[0].length-110
+		thedrawdata[0] = thedrawdata[0].slice(startpos);
+		thedrawdata[1] = thedrawdata[1].slice(startpos+1);
+		thedrawdata[2] = thedrawdata[2].slice(startpos+1);
+		thedrawdata[3] = thedrawdata[3].slice(startpos+1);
+		thedrawdata[4] = thedrawdata[4].slice(startpos+1);
+		thedrawdata[5] = thedrawdata[5].slice(startpos+1);
+		thedrawdata[6] = thedrawdata[6].slice(startpos+1);
+//		thedrawdata[7] = thedrawdata[7].slice(intv7+1);
+		theMax = Math.max(Math.max(...thedrawdata[0]),Math.max(...thedrawdata[1]),Math.max(...thedrawdata[2]),Math.max(...thedrawdata[3]),Math.max(...thedrawdata[4]),Math.max(...thedrawdata[5]),Math.max(...thedrawdata[6]),Math.max(...thedrawdata[6]));
+		theMin = Math.min(Math.min(...thedrawdata[0]),Math.min(...thedrawdata[1]),Math.min(...thedrawdata[2]),Math.min(...thedrawdata[3]),Math.min(...thedrawdata[4]),Math.min(...thedrawdata[5]),Math.min(...thedrawdata[6]),Math.min(...thedrawdata[6]));
+
+		drawchart(thedrawdata, ['silver','green','yellow', 'cyan', 'blue', 'orange', 'red', "violet", "gold"]);
+
+		minuteVol = minuteVol.slice(minuteVol.length-110, minuteVol.length);
+		drawBarVol(minuteVol);
+
+		showStatus();
+		detectX();
+		detectTrend();
+		statusMsg = '<br><span class="cyanword">淺藍</span> ' + thedrawdata[3][lastPtr].toFixed(3) + "&emsp;" + 
+		'<span class="blueword">深藍</span> ' + thedrawdata[4][lastPtr].toFixed(3) + "&emsp;" + 
+		'<span class="brownword">橙</span> ' + thedrawdata[5][lastPtr].toFixed(3) + "&emsp;" + 
+		'<span class="redword">red</span> ' + thedrawdata[6][lastPtr].toFixed(3) + "&emsp;" + 
+		"<br>commands: c, v, f, b, r, m<br>";
+		$("#msg").append(statusMsg);
+	});
+}
+function makeMovAve(bigArray, intv) {
+	return bigArray.slice(0, intv).concat(calcMovAve(bigArray, intv));
+}
+function calcAve(aveArray) {
+	add = (a, b) =>  a + b;
+	return aveArray.reduce(add) / aveArray.length;
+}
+
+function calcMovAve(bigArray, intv) {
+	var ma = [];
+	for (var i =0 ; i < (bigArray.length-intv+1); i++) {
+//		ma[i] = calcAve(bigArray.slice(i, i+intv));
+		ma[i] = calcWAve(bigArray.slice(i, i+intv));
+	}
+	return ma;
+}
+function calcWAve(aveArray) {
+	var sum = 0
+	for( var i = 1; i <= aveArray.length; i++ ) {
+		sum += aveArray[i-1] * i;
+	}
+	return (sum / ((1 + aveArray.length)*aveArray.length/2))
+}
+
+function detectX(){
+// var intv1, intv2, intv3, intv4, intv5, intv6, intv7(intv7 disabled)
+// localStorage.stkintv1 = "5"; "10"; "20"; "40"; "80"; "160";
+// thedrawdata[0] current data 白綫
+// thedrawdata[1] 5 minute 綠綫
+// thedrawdata[2] 10 minute 黃綫
+// thedrawdata[3] 20 minute 淺藍
+// thedrawdata[4] 40 minute 藍綫
+// thedrawdata[5] 80 minute 橙綫
+// thedrawdata[6] 160 minute 紅綫
+
+//警報情況：白綫上穿 黃綫, 白綫上穿 藍綫, 白綫上穿 橙綫, 白綫上穿 紅綫, 白綫上穿 紫綫, 綠綫 上穿 黃綫, 綠綫 上穿 淺藍, 藍綫 上穿 橙綫, 紅線轉勢, 橙線轉勢, 
+
+//	處理白綫
+	curS = thedrawdata[0][thedrawdata[0].length-1] // current data
+	prevS = thedrawdata[0][thedrawdata[0].length-2]
+
+	curL = thedrawdata[2][thedrawdata[0].length-1] // the 10 minute
+	prevL = thedrawdata[2][thedrawdata[0].length-2]
+	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;上穿 黃綫" ,"yellowword")}
+	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;下破 黃綫", "yellowword")}
+
+	curL = thedrawdata[4][thedrawdata[0].length-1] // the 5th trend, 40minute
+	prevL = thedrawdata[4][thedrawdata[0].length-2]
+	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;上穿 藍綫" ,"blueword")}
+	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;下破 藍綫", "blueword")}
+
+	curL = thedrawdata[5][thedrawdata[0].length-1]
+	prevL = thedrawdata[5][thedrawdata[0].length-2]
+	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;上穿 橙綫" ,"orangeword")}
+	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;下破 橙綫", "orangeword")}
+
+	curL = thedrawdata[6][thedrawdata[0].length-1]
+	prevL = thedrawdata[6][thedrawdata[0].length-2]
+	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;上穿 紅綫" ,"redword")}
+	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;下破 紅綫", "redword")}
+
+//	curL = thedrawdata[7][thedrawdata[0].length-1]
+//	prevL = thedrawdata[7][thedrawdata[0].length-2]
+//	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;上穿 紫綫" ,"whiteword")}
+//	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;下破 紫綫", "whiteword")}
+
+//	處理綠綫
+	curS = thedrawdata[1][thedrawdata[0].length-1] // current data
+	prevS = thedrawdata[1][thedrawdata[0].length-2]
+
+	curL = thedrawdata[2][thedrawdata[0].length-1] // the 10 minute
+	prevL = thedrawdata[2][thedrawdata[0].length-2]
+	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;綠綫 上穿 黃綫" ,"goldword")}
+	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;綠綫 下破 黃綫", "goldword")}
+
+	curL = thedrawdata[3][thedrawdata[0].length-1] // the 20 minute
+	prevL = thedrawdata[3][thedrawdata[0].length-2]
+	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;綠綫 上穿 淺藍" ,"goldword")}
+	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;綠綫 下破 淺藍", "goldword")}
+
+//	處理藍綫
+	curS = thedrawdata[4][thedrawdata[0].length-1] // current 40minute
+	prevS = thedrawdata[4][thedrawdata[0].length-2]
+
+	curL = thedrawdata[5][thedrawdata[0].length-1] // the 6th trend, 80minute
+	prevL = thedrawdata[5][thedrawdata[0].length-2]
+	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;藍綫 上穿 橙綫" ,"goldword")}
+	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;藍綫 下破 橙綫", "goldword")}
+
+//	vol changes
+//	
+
+}
+
+function detectTrend(){
+	curValue = thedrawdata[6][thedrawdata[0].length-1] // the 20 minute trend
+	prevValue = thedrawdata[6][thedrawdata[0].length-2]
+	if (curValue >0 &&  prevValue<0){reportIt("&#x25B2;紅線轉上" ,"redword")}
+	if (curValue <0 &&  prevValue>0){reportIt("&#x25BC;紅線轉落", "redword")}
+
+	curValue = thedrawdata[5][thedrawdata[0].length-1] // the 20 minute trend
+	prevValue = thedrawdata[5][thedrawdata[0].length-2]
+	if (curValue >0 &&  prevValue<0){reportIt("&#x25B2;橙線轉上" ,"orangeword")}
+	if (curValue <0 &&  prevValue>0){reportIt("&#x25BC;橙線轉落", "orangeword")}
+}
+
+//	alarm function:
+function reportIt(alarmMsg, color){
+//	record
+//	set color, on msg div, with time and date, up cross (down cross) trigger value is: , present value
+	alarmM = alarmMsg
+	alarmM = '<span class="' + color + '">' + alarmM + ', </span>'
+	$("#msg").append(alarmM);
+//	alert(alarmMsg);
+	document.getElementById('alarmPt').play();
+
+	document.getElementById('audioPop').src = 'http://gget.it/u1urz3zh/popsound.mp3';
+	document.getElementById('audioPop').load();
+	document.getElementById('audioPop').play();
+//	alert(alarmMsg);
+	beep(60,620,200);
+	setTimeout(function(){ beep(60,550,200); }, 50);
+
+//	alarmSound.play();
+//	navigator.vibrate([500]);
+}
+
+a=new AudioContext();
+function beep(vol, freq, duration){
+	v=a.createOscillator();
+	u=a.createGain();
+	v.connect(u);
+	v.frequency.value=freq;
+	v.type="triangle";
+	u.connect(a.destination);
+	u.gain.value=vol*0.01;
+	v.start(a.currentTime);
+	v.stop(a.currentTime+ duration*0.001)
+}
+
+//	comparison:
+//	up cross
+function checkUpX(prevL, prevS, curL, curS){
+	if ((prevL==prevS) || (curS == curL )){return "critical"}
+
+	if ((prevL>prevS) && (curS > curL )){return "UpY"
+	} else {return "UpN"}
+}
+//	down cross
+function checkDnX(prevL, prevS, curL, curS){
+	if ((prevL==prevS) || (curS == curL )){
+		return "critical"
+	}
+
+	if ((prevL<prevS) && (curS < curL )){
+		return "DnY"
+	} else {
+		return "DnN"
+	}
+}
+
+function chkKey() {
+	var testkey = getChar(event);
+	if(testkey == 'c'){askCode();}
+  	if(testkey == 'd'){window.open("OHLCOtherCode.html");}
+	if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
+	if(testkey == 'v'){sCt(theStartCode);}
+	//if(testkey == 'f'){jpforward();}
+	if(testkey == 'i'){fullinit();}
+	//if(testkey == 'b'){jpback();}
+	if(testkey == 'R'){jprandom();}
+	if(testkey == 't'){window.scrollTo(0,0);}
+	// if(testkey == 'w'){askWidth();}
+	if(testkey == 'l'){askList()}
+     if(testkey == 'r'){
+       localStorage.setItem("randomcode", theCode);
+       window.open('Random Charts.html');
+     }
+}
+
+function getChar(event) {
+	if (event.which!=0 && event.charCode!=0) {return String.fromCharCode(event.which)} else {
+		return null}
+}
+
+function newChart() {
+		var thecode = prompt("Code Number:", "");
+		if (thecode != null && thecode != "") {startToRoll(thecode);}
+}
+
+function showTime() {
+	let d = new Date();
+	let secs=d.getSeconds();
+	let mins=d.getMinutes();
+	let hr=d.getHours();
+	let timemsg=FormatNumberLength(hr) +":" + FormatNumberLength(mins) + ":"+ FormatNumberLength(secs)
+	return(timemsg)
+}
+
+function FormatNumberLength(num) {
+		let r = "" + num;
+		while (r.length < 2) { r = "0" + r;}
+		return r;
+}
+
+</script>
+
+</head>
+
+<body onkeypress="chkKey()">
+<center>
+<h3>
+<a href="Random Charts.html" target="_blank"><span class="orangebut gold brownblackgrad embossts">尋寶</span></a> 
+<a href="listofcharts.html" target="_blank"><b class="greenbut white blueblackgrad">板块</b></a>
+<a href="Hour STK Charts.html" target="_blank"><span class="but bluebut bluebs"><span class="glare"></span><span class="gold">隨風擺柳</span></span></a>
+<a href="minMACharts.html" target="_blank"><span class="but redbut darkblueback"><span class="glare"></span><b class="gold">追風逐浪</b></span></a>
+
+<a href="OHLCOtherCode.html" target="_blank"><span class="bordwhite1 borRad10 brownblackgrad white blackts"><span class="glare"></span>OtherDaily</span></a>
+<a href="OHLCOtherCode2.html" target="_blank" class="bordred1 borRad10 gold brownblackgrad gold2bs">OD2</a>
+<span onclick=askCode()>Minute Chart 警報器</span> <b onclick=sCt(theStartCode)>&clubs;</b>  <a href="http://finance.sina.com.cn/money/globalindex/" class="bordred1 borRad10 greenblackgrad embossts white" target="_blank">Gblo</a>
+<a href="http://www.stockq.org/" class="bordwhite1 borRad10 blueblackgrad embossts lime">stockq</a>
+
+</h3>
+
+<canvas id="cvs" width="1150" height="480">[No canvas support]</canvas>
+<canvas id="barVol" width="1150" height="120">[No canvas support]</canvas>
+<div id="msg"></div>
+<audio id="alarmPt" src="stringVibrate.mp3" preload="auto"></audio>
+<audio id="audioPop"></audio>
+<br>
+<pre>
+c askCode
+d open("OHLCOtherCode.html")
+e scrollTo end
+v sCt(theStartCode)
+f jpforward
+i fullinit
+b jpback
+r jprandom
+t scrollTo(0,0)
+w askWidth
+l askList()
+r Random Charts
+</pre>
+<script>
+function drawchart(thedrawdata, thecolors) {
+	RGraph.reset(document.getElementById('cvs'));
+	line = new RGraph.Line({
+		id:'cvs', data:thedrawdata,
+		options: {
+			title: theStartCode + " " + stkName,
+			titleColor: 'grey', 
+			titleSize: 16,
+			colors: thecolors, scaleDecimals: 2,
+			backgroundGrid: true, axisColor: '#864', textColor: '#ccc', numxticks: 0,
+//			tickmarks: '', 
+//			xaxis: false, xaxisTickmarks : false, xaxisTickmarksLength: 0,
+			tickmarksDotLinewidth: 0,ticksize: 1, 
+			linewidth: 1,
+			ymax: theMax, ymin: theMin,
+//			labels: dateLst,
+			spline: false, shadow: false,
+			backgroundGridColor: '#002010', backgroundGridVlines: false,
+			gutterLeft: 20, gutterRight: 0, gutterTop: 50, gutterBottom: 50
+		}
+	}).trace();
+};
+
+
+function drawBarVol(thebardata) {
+    RGraph.reset(document.getElementById('barVol'));
+    new RGraph.Bar({
+        id: 'barVol',
+        data: thebardata,
+        options: {
+            // yaxisScaleUnitsPost: 'k',
+            colors: ['white'],
+            backgroundGrid: false, axisColor: '#864', textColor: '#222', 
+            xaxis: true, yaxis: true,
+            gutterLeft: 20, gutterRight: 0, gutterTop: 1, gutterBottom: 1
+        }
+    }).draw();
+}
+
+function askCode() {
+	var thecode = prompt("Code Number (5 digits):", "");
+	if (thecode != null && thecode != "") {
+		if (thecode != "HSI") { thecode = FormatNumberLength5(thecode);}
+		theCode = thecode
+		storeCode(thecode);
+		startToRoll(thecode);
+	}
+}
+function askList() {
+	var theList = prompt("set temp stkList, Number (5 digits) sep by space： ", "");
+	if (theList != null && theList != "") {
+		if (theList != "HSI") { stkList = theList.split(" ");}
+		}
+}
+
+function storeCode(thecode) {
+	if(typeof(Storage) !== "undefined") {
+		localStorage.otherCode = thecode;
+	}
+}
+function _init() {
+	if (localStorage.getItem("otherCodeshowWidth") === null) { fullinit() }
+}
+function fullinit() {
+		localStorage.otherCode = "HSI";
+		localStorage.stkintv1 = "10";
+		localStorage.stkintv2 = "20";
+		localStorage.stkintv3 = "40";
+		localStorage.stkintv4 = "80";
+		localStorage.stkintv5 = "160";
+		localStorage.stkintv6 = "320";
+		localStorage.stkintv7 = "640";
+		localStorage.otherCodeshowWidth = "200";
+
+		localStorage.setItem("otherCode","HSI");
+		localStorage.setItem("stkintv1","10");
+		localStorage.setItem("stkintv2","20");
+		localStorage.setItem("stkintv3","40");
+		localStorage.setItem("stkintv4","80");
+		localStorage.setItem("stkintv5","160");
+		localStorage.setItem("stkintv6","320");
+		localStorage.setItem("stkintv7","640");
+		//localStorage.setItem("otherCodeshowWidth","200");
+		alert("full init: HSI, 10, 20, 40, 80, 160, 320, 640")
+}
+function initdata() {
+	theCode = localStorage.otherCode;
+	intv1 = Number(localStorage.stkintv1);
+	intv2 = Number(localStorage.stkintv2);
+	intv3 = Number(localStorage.stkintv3);
+	intv4 = Number(localStorage.stkintv4);
+	intv5 = Number(localStorage.stkintv5);
+	intv6 = Number(localStorage.stkintv6);
+	intv7 = Number(localStorage.stkintv7);
+	showWidth = 200;
+	datawidth = showWidth + intv6;
+}
+
+function askWidth() {
+	var theWidth = prompt("Chart Width:", "");
+	if (theWidth != null && theWidth != "") {
+		showWidth = parseInt(theWidth);
+		localStorage.otherCodeshowWidth = theWidth;
+		datawidth = showWidth + intv6;
+		startToRoll(theCode);
+	}
+}
+
+function FormatNumberLength5(num) {
+    var r = "" + num;
+    while (r.length < 5) {
+        r = "0" + r;
+    }
+    return r;
+}
+
+var stkList = ["00700","00981","03690","00939","00005","01810","09988","02318","00941","01299","00788","01398","00883","00027","03988","01833","00388","00669","01918","02020","02628","00175","02382","02601","00001","01928","03968","00386","00016","06186","01876","00763","01113","02269","01288","00688","00914","00762","00241","00011","01177","01336","01044","02313","01093","02688","00728","01109","00288","00857","02331","02018","01088","00002","01797","01138","03323","02319","03888","00006","02338","02328","06185","00960","02388","01347","00813","00853","06098","02238","03319","03908","02007","00003","06808","01579","06862","02196","00384","03333","00268","00696","00753","00151","01099","01038","02883","00586","01211","02342","06030","00285","00656","00066","00881","01789","00966","00410","02669","06823","00291","02202","00012","00968","01193","00101","03328","00322","00992","00270","00772","00083","00694","00345","00522","00017","02013","01766","00267","01813","00902","01558","00667","00817","02689","00998","00019","00884","01787","01169","01658","03883","01114","00135","06837","01066","01030","00489","03662","00916","03692","01055","00867","03808","02607","00552","01157","02638","00836","01339","06886","02777","00168","03993","01800","01951","02359","01910","02588","02899","00200","00551","02333","02888","01801","02282","01772","03898","00425","00670","06060","01530","02869","02139","06066","01313","01128","01638","03320","00819","00371","01171","01972","01478","00535","01233","03380","00392","00548","00220","00665","03918","00520","02380","01548","01333","01186","00390","03759","01818","03933","01208","02208","01610","03383","01816","03360","02186","00165","00880","00570","02386","02128","00576","03900","01995","00743","06869","03738","02600","01888","00956","00358","00257","03669","01112","01316","06881","02357","00777","03799","00341","00493","00338","01071","00303","03311","01052","00014","01359","01137","00874","06158","00081","01199","01858","00486","01966","01268","00631","02400","03301","03618","06110","01717","03606","00683","03396","00868","00177","00148","00354","00023","01821","02314","03998","01919","00780","01628","01929","00302","00189","01508","02772","02233","00659","01060","01238","00598","01317","01776","00636","01378","00179","00010","01323","01521","00242","00069","01475","06865","00799","01310","02009","02606","01958","01458","03377","02005","01913","00152","06818","00363","00293","01811","01448","01890","02168","02500","02001","06055","00655","03969","01743","00308","00123","01513","01415","03899","01302","01883","01898","03800","03337","00095","02103","00226","01908","01119","00460","01788","00347","01877","03339","06069","00806","02356","02666","06128","02868","01777","00698","00087","00142","01357","00412","06099","01728","00512","00604","01561","01098","01382","01083","00440","01672","01896","00804","01996","01212","02800","07500","02828","07200","03175","00823","03188","02823","02822","02840","07522","07300","07261","00405","02778","00778","02834","87001","00579","03316","08083","01613","01917","01865","06118","00026","01243","06855","00383","00980","00831","01709","01612","01675","01708","03681","03601","01997","00020","00004","02488","01216","82834","07221","00852","03336","01967","03097","01762","00467","03603","01300","01566","00973","01763","09966","01860","06830","00553","00178","00286","02858","00995","00978","00699","00317","01912","00052","01907","03709","06811","01266","03147","03081","01361","01753","00775","00041","02011","00826","02048","03983","08228","01846","00525","00108","01089","02877","00100","02866","00511","01375","00855","01778","08225","06088","06160","07288","01131","00639","01337","01769","02727","00496","00832","01873","00921","01812","00658","01070","00861","00754","01668","00945","03306","01257","01234","06820","02826","00119","00116","03958","01368","01882","01515","00839","02611","00323","00991","03613","00751","01618","01666","07568","03140","00272","00173","00816","00877","00934","01999","00546",]
+
+function jpforward() {
+	if (stkPointer < stkList.length-1) {
+		stkPointer = stkPointer + 1;
+	} else {
+		stkPointer = 0;
+	}
+	theCode = stkList[stkPointer]
+	storeCode(theCode);
+	startToRoll(stkList[stkPointer]);
+}
+
+function jpback() {
+	if (stkPointer > 0) {
+		stkPointer = stkPointer - 1;
+	} else {
+		stkPointer = stkList.length-1;
+	}
+	theCode = stkList[stkPointer]
+	storeCode(theCode);
+	startToRoll(stkList[stkPointer]);
+}
+function jprandom() {
+	var newPoint = Math.floor(Math.random() * (stkList.length-1))
+	theCode = stkList[newPoint]
+	storeCode(theCode);
+	startToRoll(theCode);
+	stkPointer = newPoint;
+}
+
+function sCt(stkcode) {
+  if(stkcode == "HSI"){stkcode = "110000"}
+  imgHead = "<img src='http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=9&indpara1=20&indpara2=2&indpara3=0&indpara4=0&indpara5=0&subChart1=3&ref1para1=5&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&subChart3=12&ref3para1=0&ref3para2=0&ref3para3=0&scheme=3&com=100&chartwidth=1050&chartheight=690&stockid=";
+  imgHead2 = "<img src='http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=3&indpara1=3&indpara2=6&indpara3=12&indpara4=24&indpara5=48&subChart1=3&ref1para1=12&ref1para2=26&ref1para3=9&subChart2=2&ref2para1=14&ref2para2=0&ref2para3=0&scheme=3&com=100&chartwidth=1050&chartheight=600&stockid=";
+
+
+  imgPCode= "&period=";
+  imgTail="&type=1&logoStyle=1'><br>";
+
+  // 5000, 5007, 5012, 1, 2, 3, 4, 6, 7, 9, 10, 12, 14, 16, 17, 18
+  intv = [2, 3, 4, 1, 5012, 5007, 5000, 7, 11, 12];
+  var imgWindow = window.open("");
+  newshead = "http://www.aastocks.com/tc/stocks/analysis/stock-aafn/"
+  newstail = "/0/all/1"
+  newsStr = newshead + stkcode + newstail
+  imgAdr = "<style>body { background-color: black; color: green} a { text-decoration: none; color: #28B8B8;}</style><body><center>" +"<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>" 
+
+  for( var imgPeriod = 0; imgPeriod < intv.length; imgPeriod++){
+    imgAdr = imgAdr + imgHead + stkcode + imgPCode + intv[imgPeriod] + imgTail + imgHead2 + stkcode + imgPCode + intv[imgPeriod] + imgTail;
+  };
+  imgWindow.document.write(imgAdr);
+}
+
+function showStatus() {
+	lastPtr = thedrawdata[0].length-1
+     closeValue = thedrawdata[2][lastPtr]*100
+     prevPt = lastPtr-1
+	theStr = //thedrawdata[0] is the close value
+	"<span class='yellowword'>C " + thedrawdata[0][lastPtr].toFixed(3) + "</span>&emsp;" +
+	"<span class='yellow'>" + 
+     (thedrawdata[0][lastPtr]-thedrawdata[0][lastPtr-1]).toFixed(3) + "&emsp;" + "c% "+
+     ((thedrawdata[0][lastPtr]/thedrawdata[0][lastPtr-1])*100-100).toFixed(1) + "&emsp;" + 
+	"<span class='cyan'>ss " + ((closeValue/thedrawdata[3][lastPtr])-100).toFixed(1) + "&emsp;" + 
+	"(sd " + (100*(thedrawdata[3][lastPtr]-thedrawdata[3][prevPt])/thedrawdata[3][prevPt]).toFixed(1) + ")</span>&emsp;" + 
+
+	"<span class='blue'>sm " + ((closeValue/thedrawdata[4][lastPtr])-100).toFixed(1) + "&emsp;" + 
+	"(md " + (100*(thedrawdata[4][lastPtr]-thedrawdata[4][prevPt])/thedrawdata[4][prevPt]).toFixed(1) + ")</span>&emsp;" + 
+
+	"<span class='brown'>sl " + ((closeValue/thedrawdata[6][lastPtr])-100).toFixed(1) + "&emsp;" + 
+	"(ld " + (100*(thedrawdata[6][lastPtr]-thedrawdata[6][prevPt])/thedrawdata[6][prevPt]).toFixed(1) + ")</span>&emsp;" + 
+
+//	"ma4 " + thedrawdata[6][lastPtr].toFixed(toFixedLen) + 
+	"%<br>";
+ 
+ 
+	finalString = '<span class="redword">' + '<span onclick=sCt("' + theStartCode + '")>' + showTime()+ '</span>' + "</span>&emsp;" + theStr
+
+	$("#msg").html("");
+	$("#msg").html(finalString);
+}
+
+//for(let i = 0; i<5; i++){
+//	RGraph.reset(document.getElementById('cvs'));
+//	setTimeout(startToRoll(stkList[i]),25000);
+//}
+_init();
+initdata();
+console.log("theCode "+theCode)
+startToRoll(theCode);
+
+// calculate the trend, the previous trend
+// detect the cross
+// renew every minute
+// disable draw, add button to draw
+// show alarm notice in report
+</script>
+</center>
+</body>
+</html>

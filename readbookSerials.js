@@ -90,3 +90,4 @@ function showMov() { var imgAdr = ImgList[topicpointer];
 function randomFlip() { topicpointer = Math.floor(Math.random() * ImgList.length); changeImg();}
 randomFlip();
 changeImg();
+$("#mustWatch").append('<pre><br><span class="silver">keys: <br>t top of table<br>8 top of table<br>l last of table<br>2 last of table<br>7 go to table middle<br><br>T Top of page<br>e end of page<br>m mustWatch<br><br>r random mustWatch<br>5 random mustWatch<br>f foreward<br>6 foreward<br>b backward<br>4 backward<br><br>p pause<br>c continU<br>s showPage<br>0 showPage<br></span></pre>');
