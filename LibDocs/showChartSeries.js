@@ -22,6 +22,11 @@ function forewardList() {
   else { topicpointer = topicpointer + 1;}
   showstkList();
 }
+function backwardList() {
+  if (topicpointer == 0) { topicpointer = ImgList.length - 1;}
+  else { topicpointer = topicpointer - 1;}
+  showstkList();
+}
 
 function showstkList() {
   var theList = ImgList[topicpointer];

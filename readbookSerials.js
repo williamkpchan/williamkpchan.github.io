@@ -19,29 +19,39 @@ function jumpto(index) {
   showImg();
 }
 function chkKey() {
-var testkey = getChar(event);
-if(testkey == "b"){ backward();}
-if(testkey == "4"){ backward();}
-if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
-if(testkey == "f"){ foreward();}
-if(testkey == "6"){ foreward();}
-if(testkey == "l"){
-  $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1); }
-if(testkey == "2"){
-  $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1); }
-if(testkey == "7"){
-  $('body,html').animate({scrollTop:(divtoc.clientHeight/2 + divtoc.offsetTop-600)}, 1); } //go to middle
-if(testkey == "m"){ location = '#mustWatch';}
-if(testkey == "p"){ pause();}
-if(testkey == "c"){ continU();}
-if(testkey == "r"){ randomFlip();}
-if(testkey == "5"){ randomFlip();}
-if(testkey == "s"){ showMov();}
-if(testkey == "0"){ showMov();}
-if(testkey == 't'){window.location = '#toc';}
-if(testkey == '8'){window.location = '#toc';}
-if(testkey == 'T'){window.scrollTo(0,0);}
+  var testkey = getChar(event);
+  if(testkey == "b"){ backward();}
+  if(testkey == "4"){ backward();}
+  if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
+  if(testkey == "f"){ foreward();}
+  if(testkey == "6"){ foreward();}
+  if(testkey == "l"){
+    $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1); }
+  if(testkey == "2"){
+    $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1); }
+  if(testkey == "7"){
+    $('body,html').animate({scrollTop:(divtoc.clientHeight/2 + divtoc.offsetTop-600)}, 1); } //go to middle
+  if(testkey == "m"){ location = '#mustWatch';}
+  if(testkey == "p"){ pause();}
+  if(testkey == "c"){ continU();}
+  if(testkey == "r"){ randomFlip();}
+  if(testkey == "5"){ randomFlip();}
+  if(testkey == "s"){ showMov();}
+  if(testkey == "0"){ showMov();}
+  if(testkey == 't'){window.location = '#toc';}
+  if(testkey == '8'){window.location = '#toc';}
+  if(testkey == 'T'){window.scrollTo(0,0);}
+
+  if(testkey == "K"){ 
+    if(typeof bookid == 'undefined') { bookid = $('title').text() }
+    storeBookmark(bookid, topicpointer.toString());
+  }
+  if(testkey == "k"){
+    if(typeof bookid != 'undefined') {loadBookmark(bookid);}
+    else{alert("No BookId!")}
+  }
 }
+
 function getChar(event){if (event.which!=0 && event.charCode!=0) {return String.fromCharCode(event.which)}
  else {return null}}
 
@@ -70,7 +80,7 @@ function showImg() { var thePointerImg = document.querySelector(".imagearea");
  thePointerImg.innerHTML = ImgList[topicpointer];
  // console.log(thePointerImg.innerHTML);
  scroll(0,0);
- //lazyLoadInstance.update();
+ lazyLoadInstance.update();
 }
 function showMov() { var imgAdr = ImgList[topicpointer];
  var start = imgAdr.indexOf('<a href="');
@@ -88,6 +98,17 @@ function showMov() { var imgAdr = ImgList[topicpointer];
  window.open(list);
 }
 function randomFlip() { topicpointer = Math.floor(Math.random() * ImgList.length); changeImg();}
+
+function storeBookmark(objName, chapterNum) {
+  if(typeof objName != 'undefined') {
+    localStorage.setItem(objName, chapterNum.toString())
+  }else{alert("No BookId!")}
+}
+function loadBookmark(objName) {
+  topicpointer = parseInt(localStorage.getItem(objName))
+  showImg();
+}
+
 randomFlip();
 changeImg();
-$("#mustWatch").append('<pre><br><span class="silver">keys: <br>t top of table<br>8 top of table<br>l last of table<br>2 last of table<br>7 go to table middle<br><br>T Top of page<br>e end of page<br>m mustWatch<br><br>r random mustWatch<br>5 random mustWatch<br>f foreward<br>6 foreward<br>b backward<br>4 backward<br><br>p pause<br>c continU<br>s showPage<br>0 showPage<br></span></pre>');
+$("#mustWatch").append('<pre><br><span class="silver">keys: <br>t top of table<br>8 top of table<br>l last of table<br>2 last of table<br>7 go to table middle<br><br>T Top of page<br>e end of page<br>m mustWatch<br><br>r random mustWatch<br>5 random mustWatch<br>f foreward<br>6 foreward<br>b backward<br>4 backward<br><br>p pause<br>c continU<br>s showPage<br>0 showPage<br><br>K set bookmark<br>k open bookmark</span></pre>');
