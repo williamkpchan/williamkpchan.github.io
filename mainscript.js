@@ -149,15 +149,15 @@ function openLogFile() {
     var curr_month = d.getMonth()+1;
     var curr_year = d.getFullYear();
     dateNum = last2Digit(curr_year) +last2Digit(curr_month) +last2Digit(curr_date);
-    fileHeader = "file:///C:/Users/User/Desktop/" + dateNum;
+    fileHeader = "file:///C:/Users/User/Desktop/mylist" + dateNum;
 
     filenameUp = fileHeader + "/mylist AAURec" + dateNum + ".html";
     window.open(filenameUp);
 
-    filenameDn = fileHeader + "/mylist AADRec" + dateNum + ".html";
-    setTimeout(function(){ window.open(filenameDn, "down"); }, 500);
-    filenameLog = fileHeader + "/mylist APC5UpLog" + dateNum + ".html";
-    setTimeout(function(){ window.open(filenameLog, "Log"); }, 500);
+//    filenameDn = fileHeader + "/mylist AADRec" + dateNum + ".html";
+//    setTimeout(function(){ window.open(filenameDn, "down"); }, 500);
+//    filenameLog = fileHeader + "/mylist APC5UpLog" + dateNum + ".html";
+//    setTimeout(function(){ window.open(filenameLog, "Log"); }, 500);
 }
 
 function showDate() {
