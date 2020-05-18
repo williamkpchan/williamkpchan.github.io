@@ -60,9 +60,19 @@ function changeTopic() {
 }
 function backward() { topicpointer = topicpointer - 2; changeTopic();}
 function foreward() { changeTopic();}
-function showTopic() { window.location = "#topic-" + topicpointer;}
+function showTopic() {
+  window.location = "#topic-" + topicpointer;
+  notvisitedList = notvisitedList.filter(item => item !== topicpointer) // remove topicpointer
+  if(notvisitedList.length==0){
+   notvisitedList = [...Array(ImgList.length).keys()];
+  }
+}
 function jumpto(index) { topicpointer = index; showTopic();}
-function randomFlip() {topicpointer = Math.floor(Math.random() * topicLength); changeTopic();}
+function randomFlip() {
+  topicpointer = notvisitedList[Math.floor(Math.random() * notvisitedList.length)]; // random from not visited list
+  showTopic();
+}
+
 
 var toc = $('#toc');
 $('h2').each(function(i) {
@@ -80,6 +90,8 @@ $('h2').each(function(i) {
     // toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
     topic.attr('id', 'topic-' + topicNumber);
 });
+var totalLength = topicLength
+var notvisitedList = [...Array(totalLength).keys()];
 
 function storeBookmark(objName, pagepos) {
   if(typeof objName != 'undefined') {

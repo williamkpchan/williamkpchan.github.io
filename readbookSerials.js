@@ -2,7 +2,7 @@ var toc = $('#toc');
 var patt1 = /(<h2>).*(<\/h2>)/i;
 var patt2 = /(<h2[^>]*>|<\/h2>)/g;
 var divtoc = document.getElementById("toc");
-
+var notvisitedList = [...Array(ImgList.length).keys()];
   //var script = document.createElement('script');
   //script.src = 'https://cdn.jsdelivr.net/npm/vanilla-lazyload@13.0.1/dist/lazyload.min.js';
   //script.onload = function() {lazyLoadInstance.update();}
@@ -77,10 +77,16 @@ function foreward() { changeImg();}
 function pause() { clearInterval(myVar);}
 function continU() { myVar = setInterval(changeImg, timer); foreward()}
 function showImg() { var thePointerImg = document.querySelector(".imagearea");
+ console.log("cur topicpointer "+topicpointer);
  thePointerImg.innerHTML = ImgList[topicpointer];
  // console.log(thePointerImg.innerHTML);
  scroll(0,0);
  lazyLoadInstance.update();
+ notvisitedList = notvisitedList.filter(item => item !== topicpointer) // remove topicpointer
+ if(notvisitedList.length==0){
+  notvisitedList = [...Array(ImgList.length).keys()];
+ }
+ console.log("now notvisitedList.length "+ notvisitedList.length);
 }
 function showMov() { var imgAdr = ImgList[topicpointer];
  var start = imgAdr.indexOf('<a href="');
@@ -97,7 +103,12 @@ function showMov() { var imgAdr = ImgList[topicpointer];
  console.log(list);
  window.open(list);
 }
-function randomFlip() { topicpointer = Math.floor(Math.random() * ImgList.length); changeImg();}
+function randomFlip() {
+ console.log("notvisitedList.length " + notvisitedList.length)
+ topicpointer = notvisitedList[Math.floor(Math.random() * notvisitedList.length)]; // random from not visited list
+ console.log("topicpointer " + topicpointer);
+ showImg();
+}
 
 function storeBookmark(objName, chapterNum) {
   if(typeof objName != 'undefined') {
