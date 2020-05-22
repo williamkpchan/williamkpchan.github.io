@@ -22,7 +22,7 @@ function chkKey() {
   if(testkey == 'H'){window.open("LibDocs/monitorHSI.html");}
   if(testkey == 'J'){window.location = '#_jiaoyu';}
   if(testkey == 'l'){window.location = '#dushu';}
-  if(testkey == 'L'){window.open("LibDocs/listofcharts.html");}
+  if(testkey == 'L'){openLogFile();}
   if(testkey == 'm'){window.open("http://williamkpchan.github.io/medical.html");}
   if(testkey == 'M'){window.open("https://www.google.com.hk/maps/");}
   if(testkey == 'n'){window.location = '#xinwen';}
