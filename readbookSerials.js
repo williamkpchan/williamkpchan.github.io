@@ -50,6 +50,7 @@ function chkKey() {
     if(typeof bookid != 'undefined') {loadBookmark(bookid);}
     else{alert("No BookId!")}
   }
+  if(testkey == 'd'){window.open("https://www.youdao.com/");}
 }
 
 function getChar(event){if (event.which!=0 && event.charCode!=0) {return String.fromCharCode(event.which)}
