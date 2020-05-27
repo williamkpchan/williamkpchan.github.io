@@ -34,7 +34,7 @@ function showstkList() {
   var listDetail = theList.replace(title, "");
 
   if (theList != null && theList != "") {
-    localStorage.setItem("stkListArr",listDetail);
+    localStorage.setItem("stkListArr",listDetail); // this is used in lostofchart.js
     localStorage.setItem("titleBar",title);
 
     window.scrollTo(0,0);

@@ -81,19 +81,23 @@ function showChart() {
 function askaList() {
   var theList = prompt("Enter stk list seperated by space:", "");
   if (theList != null && theList != "") {
-    localStorage.setItem("stkListArr",theList);
+    localStorage.setItem("stkListArr",theList); // this is the shareList
     localStorage.setItem("titlebar","temp list");
     location.reload();
   }
 }
 
-function _stkChartInit() {
-  if (localStorage.getItem("stkListArr") === null) { theList = "00700";}
+function _stkChartInit() {  // this is the shareList init
+  if (localStorage.getItem("stkListArr") === null) {
+    theList = "00700";
+    $("#titlebar").empty();
+    $('#titlebar').text()= "BigChip"
+  }
   else { fullStkChartInit(); }
 }
 
 function fullStkChartInit() {
-    theList = localStorage.getItem("stkListArr");
+    theList = localStorage.getItem("stkListArr");  // this is the shareList from showstklist.js
     theList = theList.split(' ');
     titleBar = localStorage.getItem("titleBar");
     $("#titlebar").empty();
