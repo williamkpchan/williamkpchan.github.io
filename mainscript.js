@@ -99,7 +99,7 @@ function sCt(stkcode) {
   newshead = "http://www.aastocks.com/tc/ltp/rtquote.aspx?symbol=";
   newstail = ".HK";
   newsStr = newshead + stkcode + newstail;
-  imgAdr = "<script type='text/javascript' src='mainscript.js'></script>\n <style>body { background-color: black; color: green} a { text-decoration: none; color: #28B8B8;}</style><body onkeypress='chkKey()'><center>" +"<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>";
+  imgAdr = "<script type='text/javascript' src='https://williamkpchan.github.io/mainscript.js'></script>\n <style>body { background-color: black; color: green} a { text-decoration: none; color: #28B8B8;}</style><body onkeypress='chkKey()'><center>" +"<a href='" + newsStr + "' target = _blank>" + stkcode + "<br>";
 
   for( imgPeriod = 0; imgPeriod < intv.length; imgPeriod++){
     imgAdr = imgAdr + imgHead + stkcode + imgPCode + intv[imgPeriod] + imgTail + imgHead2 + stkcode + imgPCode + intv[imgPeriod] + imgTail;
