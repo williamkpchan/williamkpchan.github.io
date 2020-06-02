@@ -10,7 +10,6 @@ $(document).ready(function(){
 
 theList = [];
 thisImgPCode= "&period=7";
-tradeDetailStr = "";
 
 function showAllCharts(){
 //    $("#codelist").load("HKCodelist.txt");
@@ -28,9 +27,9 @@ function showAllCharts(){
 
   // this process each chart individually
   for( codeNo = 0; codeNo < theList.length; codeNo += 1){
-    showStkTO(theList[codeNo]); // this show turnover details
-console.log(tradeDetailStr)
-    theText = theList[codeNo] + tradeDetailStr;
+    returnStr = "";
+    showStkTO(theList[codeNo]); // this show more details
+    theText = theList[codeNo] + returnStr;
 
     theFunccode =  "<div>" + (codeNo+1) + " &emsp; " + theText + "<br>" + thisImgHead + theText + thisImgPCode + thisImgTail + "onclick = \"xunbao('" + theText + "')\">" + "</div>";
     $( "#codelist" ).append( theFunccode);
@@ -54,7 +53,7 @@ function showStkTO(stkcode) {
 
       theamt = Math.round(Number(newObj[i][8])).toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",");  // amt
       // $("#turnover").append( theamt,"w ");
-      tradeDetailStr = tradeDetailStr + theamt +"w ";
+      returnStr = returnStr + theamt +"w ";
     }
     theH = Number(newObj[newObj.length-1][3]);  // High
     theL = Number(newObj[newObj.length-1][4]);  // Low
@@ -73,20 +72,18 @@ function showStkTO(stkcode) {
       theCPct = '<span class="green">' + theCPct + '</span>'
     }
 
-    tradeDetailStr = tradeDetailStr + '<br>'+
+    returnStr = returnStr + '<br>'+
                 '<span class="red">H</span> '+ theH+
                 ' <span class="green">L</span> '+theL+
                 ' <span class="yellow">C</span> '+theClose+
                 ' Dif '+ theCDiff + ', ' + theCPct + ' % ';
-   reportIt(tradeDetailStr);
-   tradeDetailStr = "";
   };
   script.src = urladdr;
   document.getElementsByTagName('head')[0].appendChild(script);
 }
 
 function reportIt(someMsg) {
-  tradeDetailStr = someMsg;
+  returnStr = someMsg;
 }
 function chkKey() { testkey = getChar(event);
   if(testkey == 'c'){showChart();}

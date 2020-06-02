@@ -22,7 +22,7 @@ function sCt(stc) {
   nA = ah + nS + "' target = _blank>" + stc + "</a>" ;
   qA = ah + qS + "' target = _blank>" + stc + "</a>" ;
 
-  sS = '<style>body { background-color: black; color: green} a { text-decoration: none; color: #28B8B8;}</style>';
+  sS = '<script src="https://williamkpchan.github.io/mainscript.js"></script>\n<style>body { background-color: black; color: green} a { text-decoration: none; color: #28B8B8;}</style>\n<body onkeypress="chkKey()">';
   iA = sS + "\n<center>News: " + nA + " . quote: " + qA+ "<br>" ;
 
   for( var pd = 0; pd < iV.length; pd++){

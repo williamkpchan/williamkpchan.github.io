@@ -6877,6 +6877,120 @@ str_locate_all a list of integer matrices.
 x <- "This string is moderately long"
 strtrim(x, 20)
 
+<h2>find the max length of string in array</h2>
+setwd("D:/Dropbox/MyDocs/R misc Jobs/Learning Exercise/QuizData")
+WordTableFIle <<- readLines("EnglishWordList.txt", encoding="UTF-8", warn = FALSE)
+WordTable <<- matrix(unlist(strsplit(WordTableFIle, split = "\\t")), ncol=1, byrow=TRUE) # make it one column
+maxNum = max(nchar(WordTable))
+maxNum
+WordTable[which(nchar(WordTable) == maxNum)]
+
+<h2>Convert Character Vector between Encodings</h2>
+iconv(x, from, to, sub=NA)
+
+‘i’ stands for ‘internationalization’.
+
+Usage
+iconv(x, from, to, sub=NA)
+
+Arguments
+x	A character vector.
+from	A character string describing the current encoding.
+
+to	A character string describing the target encoding.
+
+sub	character string. If not NA it is used to replace any non-convertible bytes in the input.
+(This would normally be a single character, but can be more.
+If "byte", the indication is "<xx>" with the hex code of the byte.
+
+Details
+The names of encodings and which ones are available (and indeed, if any are) is platform-dependent. 
+On systems that support R's iconv you can use "" for the encoding of the current locale, as well as "latin1" and "UTF-8".
+
+
+iconvlist()
+On many platforms iconvlist provides an alphabetical list of the supported encodings. 
+On others, the information is on the man page for iconv(5) or elsewhere in the man pages (and beware that the system command iconv may not support the same set of encodings as the C functions R calls). 
+Unfortunately, the names are rarely common across platforms.
+
+Elements of x which cannot be converted (perhaps because they are invalid or because they cannot be represented in the target encoding) will be returned as NA unless sub is specified.
+
+Some versions of iconv will allow transliteration by appending //TRANSLIT to the to encoding: see the examples.
+
+Value
+A character vector of the same length and the same attributes as x.
+
+Note
+Not all platforms support these functions. 
+
+See Also
+localeToCharset, file.
+
+Examples
+## Not run: 
+iconvlist()
+
+## convert from Latin-2 to UTF-8: two of the glibc iconv variants.
+iconv(x, "ISO_8859-2", "UTF-8")
+iconv(x, "LATIN2", "UTF-8")
+
+## Both x below are in latin1 and will only display correctly in a
+## latin1 locale.
+(x <- "fa\xE7ile")
+charToRaw(xx <- iconv(x, "latin1", "UTF-8"))
+## in a UTF-8 locale, print(xx)
+
+iconv(x, "latin1", "ASCII")          #   NA
+iconv(x, "latin1", "ASCII", "?")     # "fa?ile"
+iconv(x, "latin1", "ASCII", "")      # "faile"
+iconv(x, "latin1", "ASCII", "byte")  # "fa<e7>ile"
+
+# Extracts from R help files
+(x <- c("Ekstr\xf8m", "J\xf6reskog", "bi\xdfchen Z\xfcrcher"))
+iconv(x, "latin1", "ASCII//TRANSLIT")
+iconv(x, "latin1", "ASCII", sub="byte")
+## End(Not run)
+
+<h2>encoding error with read_html</h2>
+<a href="https://stackoverflow.com/users/4350463/hodgenovice" class="whitebut ">hodgenovice R expert</a>
+<a href="https://stackoverflow.com/questions/45290452/encoding-error-with-read-html" class="whitebut ">encoding error with read_html</a>
+url = "http://www.chinanews.com/scroll-news/news1.html"
+thekeyword = "新闻"
+read_page = lapply(unique(iconvlist()), function(encoding_attempt) {
+
+  # Optional print statement to show progress since this takes time
+  # print(match(encoding_attempt, iconvlist()) / length(iconvlist()))
+
+  read_attempt = tryCatch(expr=read_html(url, encoding=encoding_attempt),
+                           error=function(condition) NA,
+                           warning=function(condition) message(condition))
+  read_attempt = as.character(read_attempt)
+  fisrtLine = grep(thekeyword, read_attempt)
+  if(length(fisrtLine)>0){
+    cat(encoding_attempt, "\n")
+    cat(read_attempt[fisrtLine], "\n")
+  }
+})
+
+names(read_page) = unique(iconvlist())
+
+
+# 2. See which encodings correctly display some complex characters
+read_phrase = lapply(read_page, function(encoded_page) 
+  if(!is.na(encoded_page))
+    html_text(html_nodes(encoded_page, ".content_right")))
+
+# ended up with encodings which could be sensible...
+encoding_shortlist = names(read_phrase)[read_phrase == "新闻"]
+encoding_shortlist
+
+sink("testResult.txt")
+print(read_page)
+sink()
+
+retriveFile <- as.character(read_html(url, warn=F, encoding = "UTF-16"))
+fisrtLine = grep(thekeyword, retriveFile)
+fisrtLine
 
 
 
