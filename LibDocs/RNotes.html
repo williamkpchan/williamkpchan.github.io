@@ -1195,6 +1195,10 @@ remove all text: D:\Users\Lawht\AppData\Roaming\Microsoft\Excel\
 x <- c("75 to 79", "80 to 84", "85 to 89")
 substr(x, start = 1, stop = 2)
 
+substr(x, start, stop)
+x <- "1234567890"
+substr(x, 5, 7)
+"567"
 
 <br>
 <h2>alter grades</h2>
@@ -6991,6 +6995,893 @@ sink()
 retriveFile <- as.character(read_html(url, warn=F, encoding = "UTF-16"))
 fisrtLine = grep(thekeyword, retriveFile)
 fisrtLine
+
+<h2>Object-oriented programming (OOP)</h2>
+a programming paradigm based on the concept of "objects", 
+
+which can contain data, in the form of fields (often known as attributes or properties), 
+
+and code, in the form of procedures (often known as methods). 
+
+A feature of objects is an object's procedures that can access and often modify the data fields of the object with which they are associated (objects have a notion of "this" or "self"). 
+
+In OOP, computer programs are designed by making them out of objects that interact with one another.
+
+OOP languages are diverse, but the most popular ones are class-based, meaning that objects are instances of classes, which also determine their types.
+
+Many of the most widely used programming languages (such as C++, Java, Python, etc.) are multi-paradigm and they support object-oriented programming to a greater or lesser degree, typically in combination with imperative, procedural programming. 
+
+Significant object-oriented languages include Java, C++, C#, Python, R, PHP, JavaScript, Ruby, Perl, Object Pascal, Objective-C, Dart, Swift, Scala, Kotlin, Common Lisp, MATLAB, and Smalltalk.
+
+
+<h2>Reference classes</h2>
+<!-- http://www.inside-r.org/r-doc/methods/ReferenceClasses -->
+R has three object oriented (OO) systems: [[S3]], [[S4]] and Reference Classes (where the latter were for a while referred to as [[R5]], yet their official name is Reference Classes). 
+This page describes this new reference-based class system.
+
+Reference Classes (or refclasses) are new in R 2.12. 
+They fill a long standing need for mutable objects that had previously been filled by non-core packages like R.oo, proto and mutatr. 
+While the core functionality is solid, reference classes are still under active development and some details will change. 
+The most up-to-date documentation for Reference Classes can always be found in ?ReferenceClasses.
+
+There are two main differences between reference classes and S3 and S4:
+
+Refclass objects use message-passing OO
+Refclass objects are mutable: the usual R copy on modify semantics do not apply
+
+These properties makes this object system behave much more like Java and C#. 
+Surprisingly, the implementation of reference classes is almost entirely in R code - they are a combination of S4 methods and environments. 
+This is a testament to the flexibility of S4.
+
+Particularly suited for: simulations where you’re modelling complex state, GUIs.
+
+Note that when using reference based classes we want to minimise side effects, and use them only where mutable state is absolutely required. 
+The majority of functions should still be “functional”, and side effect free. 
+This makes code easier to reason about (because you don’t need to worry about methods changing things in surprising ways), and easier for other R programmers to understand.
+
+Limitations: can’t use enclosing environment - because that’s used for the object.
+
+<h3>Classes and instances</h3>
+Creating a new reference based class is straightforward: you use setRefClass. 
+Unlike setClass from S4, you want to keep the results of that function around, because that’s what you use to create new objects of that type:
+
+# Or keep reference to class around.
+Person = setRefClass("Person")
+Person$new()
+
+A reference class has three main components, given by three arguments to setRefClass:
+
+contains, the classes which the class inherits from. 
+These should be other reference class objects:
+
+setRefClass("Polygon")
+setRefClass("Regular")
+
+# Specify parent classes
+setRefClass("Triangle", contains = "Polygon")
+setRefClass("EquilateralTriangle", 
+  contains = c("Triangle", "Regular"))
+
+fields are the equivalent of slots in S4. 
+They can be specified as a vector of field names, or a named list of field types:
+
+setRefClass("Polygon", fields = c("sides"))
+setRefClass("Polygon", fields = list(sides = "numeric"))
+
+The most important property of refclass objects is that they are mutable, or equivalently they have reference semantics:
+
+    Polygon = setRefClass("Polygon", fields = c("sides"))
+    square = Polygon$new(sides = 4)
+    
+    triangle = square
+    triangle$sides = 3
+    
+    square$sides        
+
+methods are functions that operate within the context of the object and can modify its fields. 
+These can also be added after object creation, as described below.
+
+setRefClass("Dist")
+setRefClass("DistUniform", c("a", "b"), "Dist", methods = list(
+  mean = function() {
+    (a + b) / 2
+  }
+))
+
+You can also add methods after creation:
+
+# Instead of creating a class all at once:
+Person = setRefClass("Person", methods = list(
+  say_hello = function() message("Hi!")
+))
+
+# You can build it up piece-by-piece
+Person = setRefClass("Person")
+Person$methods(say_hello = function() message("Hi!"))
+
+It’s not currently possible to modify fields because adding fields would invalidate existing objects that didn’t have those fields.
+
+The object returned by setRefClass (or retrieved later by getRefClass) is called a generator object. 
+It has methods:
+
+new for creating new objects of that class. 
+The new method takes named arguments specifying initial values for the fields
+
+methods for modifying existing or adding new methods
+
+help for getting help about methods
+
+fields to get a list of fields defined for class
+
+lock locks the named fields so that their value can only be set once
+
+accessors a convenience method that automatically sets up accessors of the form getXXX and setXXX.
+
+<h3>Methods</h3>
+Refclass methods are associated with objects, not with functions, and are called using the special syntax obj$method(arg1, arg2, ...). 
+(You might recall we’ve seen this construction before when we called functions stored in a named list). 
+Methods are also special because they can modify fields. 
+This is different
+
+We’ve also seen this construct before, when we used closures to create mutable state. 
+Reference classes work in a similar manner but give us some extra functionality:
+
+inheritance
+a way of documenting methods
+a way of specifying fields and their types
+
+Modify fields with &lt;=. 
+Will call accessor functions if defined.
+
+Special fields: .self (Don’t use fields with names starting with . 
+as these may be used for special purposes in future versions.)
+
+initialize
+
+<h3>Common methods</h3>
+Because all refclass classes inherit from the same superclass, envRefClass, they a have common set of methods:
+
+obj$callSuper:
+
+obj$copy: creates a copy of the current object. 
+This is necessary because Reference Classes classes don’t behave like most R objects, which are copied on assignment or modification.
+
+obj$field: named access to fields. 
+Equivalent to slots for S4. 
+obj$field("xxx") the same as obj$xxx. 
+obj$field("xxx", 5) the same as obj$xxx = 5
+
+obj$import(x) coerces into this object, and obj$export(Class) coerces a copy of obj into that class. 
+These should be super classes.
+
+obj$initFields
+
+<h1>R S3 Class</h1>
+In this article, you will learn to work with S3 classes (one of the three class systems in R programming).
+
+S3 class is the most popular and prevalent class in R programming language.
+
+Most of the classes that come predefined in R are of this type. 
+The fact that it is simple and easy to implement is the reason behind this.
+
+<h2>How to define S3 class and create S3 objects?</h2>
+S3 class has no formal, predefined definition.
+
+Basically, a list with its class attribute set to some class name, is an S3 object. 
+The components of the list become the member variables of the object.
+
+Following is a simple example of how an S3 object of class student can be created.
+
+> # create a list with required components
+> s = list(name = "John", age = 21, GPA = 3.5)
+> # name the class appropriately
+> class(s) = "student"
+> # That's it! we now have an object of class "student"
+> s
+$name
+[1] "John"
+$age
+[1] 21
+$GPA
+[1] 3.5
+attr(,"class")
+[1] "student"
+
+This might look awkward for programmers coming from C++, Python etc. 
+where there are formal class definitions and objects have properly defined attributes and methods.
+
+In R S3 system, it's pretty ad hoc. 
+You can convert an object's class according to your will with objects of the same class looking completely different. 
+It's all up to you.
+
+<h2>How to use constructors to create objects?</h2>
+It is a good practice to use a function with the same name as class (not a necessity) to create objects.
+
+This will bring some uniformity in the creation of objects and make them look similar.
+
+We can also add some integrity check on the member attributes. 
+Here is an example. 
+Note that in this example we use the attr() function to set the class attribute of the object.
+
+# a constructor function for the "student" class
+student = function(n,a,g) {
+# we can add our own integrity checks
+if(g>4 || g&lt;0)  stop("GPA must be between 0 and 4")
+value = list(name = n, age = a, GPA = g)
+# class can be set using class() or attr() function
+attr(value, "class") = "student"
+value
+}
+
+Here is a sample run where we create objects using this constructor.
+
+> s = student("Paul", 26, 3.7)
+> s
+$name
+[1] "Paul"
+$age
+[1] 26
+$GPA
+[1] 3.7
+attr(,"class")
+[1] "student"
+> class(s)
+[1] "student"
+> s = student("Paul", 26, 5)
+Error in student("Paul", 26, 5) : GPA must be between 0 and 4
+> # these integrity check only work while creating the object using constructor
+> s = student("Paul", 26, 2.5)
+> # it's up to us to maintain it or not
+> s$GPA = 5
+
+<h2>Methods and Generic Functions</h2>
+In the above example, when we simply write the name of the object, its internals get printed.
+
+In interactive mode, writing the name alone will print it using the print() function.
+
+> s
+$name
+[1] "Paul"
+$age
+[1] 26
+$GPA
+[1] 3.7
+attr(,"class")
+[1] "student"
+
+Furthermore, we can use print() with vectors, matrix, data frames, factors etc. 
+and they get printed differently according to the class they belong to.
+
+How does print() know how to print these variety of dissimilar looking object?
+
+The answer is, print() is a generic function. 
+Actually, it has a collection of a number of methods. 
+You can check all these methods with methods(print).
+
+> methods(print)
+[1] print.acf*                                   
+[2] print.anova*
+...
+[181] print.xngettext*                             
+[182] print.xtabs*                                 
+Non-visible functions are asterisked
+
+We can see methods like print.data.frame and print.factor in the above list.
+
+When we call print() on a data frame, it is dispatched to print.data.frame().
+
+If we had done the same with a factor, the call would dispatch to print.factor(). 
+Here, we can observe that the method names are in the form generic_name.class_name(). 
+This is how R is able to figure out which method to call depending on the class.
+
+Printing our object of class "student" looks for a method of the form print.student(), but there is no method of this form.
+
+So, which method did our object of class "student" call?
+
+It called print.default(). 
+This is the fallback method which is called if no other match is found. 
+Generic functions have a default method.
+
+There are plenty of generic functions like print(). 
+You can list them all with methods(class="default").
+
+> methods(class="default")
+[1] add1.default*            aggregate.default*      
+[3] AIC.default*             all.equal.default
+...
+
+<h2>How to write your own method?</h2>
+Now let us implement a method print.student() ourself.
+
+print.student = function(obj) {
+cat(obj$name, "\n")
+cat(obj$age, "years old\n")
+cat("GPA:", obj$GPA, "\n")
+}
+
+Now this method will be called whenever we print() an object of class "student".
+
+In S3 system, methods do not belong to object or class, they belong to generic functions. 
+This will work as long as the class of the object is set.
+
+> # our above implemented method is called
+> s
+Paul 
+26 years old
+GPA: 3.7 
+> # removing the class attribute will restore as previous
+> unclass(s)
+$name
+[1] "Paul"
+$age
+[1] 26
+$GPA
+[1] 3.7
+
+<h2>Writing Your Own Generic Function</h2>
+It is possible to make our own generic function like print() or plot(). 
+Let us first look at how these functions are implemented.
+
+> print
+function (x, ...) 
+UseMethod("print")
+&lt;bytecode: 0x0674e230>
+&lt;environment: namespace:base>
+> plot
+function (x, y, ...) 
+UseMethod("plot")
+&lt;bytecode: 0x04fe6574>
+&lt;environment: namespace:graphics>
+
+We can see that they have a single call to UseMethod() with the name of the generic function passed to it. 
+This is the dispatcher function which will handle all the background details. 
+It is this simple to implement a generic function.
+
+For the sake of example, we make a new generic function called grade.
+
+grade = function(obj) {
+UseMethod("grade")
+}
+
+A generic function is useless without any method. 
+Let us implement the default method.
+
+grade.default = function(obj) {
+cat("This is a generic function\n")
+}
+
+Now let us make method for our class "student".
+
+grade.student = function(obj) {
+cat("Your grade is", obj$GPA, "\n")
+}
+
+A sample run.
+
+> grade(s)
+Your grade is 3.7
+
+In this way, we implemented a generic function called grade and later a method for our class.
+
+<h1>R Inheritance</h1>
+In this article, you’ll learn everything about inheritance in R. 
+More specifically, how to create inheritance in S3, S4 and Reference classes, and use them efficiently in your program.
+
+Inheritance is one of the key features of object-oriented programming which allows us to define a new class out of existing classes.
+
+This is to say, we can derive new classes from existing base classes and adding new features. 
+We don’t have to write from scratch. 
+Hence, inheritance provides reusability of code.
+
+Inheritance forms a hierarchy of class just like a family tree. 
+Important thing to note is that the attributes define for a base class will automatically be present in the derived class.
+
+Moreover, the methods for the base class will work for the derived.
+
+<img class="alignnone size-full wp-image-79" src="https://cdn.datamentor.io/wp-content/uploads/2017/11/r-inheritance.jpg" alt="Inheritance in R Programming" srcset="https://cdn.datamentor.io/wp-content/uploads/2017/11/r-inheritance.jpg 740w, https://cdn.datamentor.io/wp-content/uploads/2017/11/r-inheritance-300x162.jpg 300w" sizes="(max-width: 740px) 100vw, 740px">
+
+Below, we discuss how inheritance is carried out for the three different class systems in R programming language.
+
+<h2>Inheritance in S3 Class</h2>
+S3 classes do not have any fixed definition. 
+Hence attributes of S3 objects can be arbitrary.
+
+Derived class, however, inherit the methods defined for base class. 
+Let us suppose we have a function that creates new objects of class student as follows.
+
+student = function(n,a,g) {
+value = list(name=n, age=a, GPA=g)
+attr(value, "class") = "student"
+value
+}
+
+Furthermore, we have a method defined for generic function print() as follows.
+
+print.student = function(obj) {
+cat(obj$name, "\n")
+cat(obj$age, "years old\n")
+cat("GPA:", obj$GPA, "\n")
+}
+
+Now we want to create an object of class InternationalStudent which inherits from student.
+
+This is be done by assigning a character vector of class names like class(obj) = c(child, parent).
+
+> # create a list
+> s = list(name="John", age=21, GPA=3.5, country="France")
+> # make it of the class InternationalStudent which is derived from the class student
+> class(s) = c("InternationalStudent","student")
+> # print it out
+> s
+John 
+21 years old
+GPA: 3.5
+
+We can see above that, since we haven’t defined any method of the form print.InternationalStudent(), the method print.student() got called. 
+This method of class student was inherited.
+
+Now let us define print.InternationalStudent().
+
+print.InternationalStudent = function(obj) {
+cat(obj$name, "is from", obj$country, "\n")
+}
+
+This will overwrite the method defined for class student as shown below.
+
+> s
+John is from France
+
+We can check for inheritance with functions like inherits() or is().
+
+> inherits(s,"student")
+[1] TRUE
+> is(s,"student")
+[1] TRUE
+
+<h2>Inheritance in S4 Class</h2>
+Since S4 classes have proper definition, derived classes will inherit both attributes and methods of the parent class.
+
+Let us define a class student with a method for the generic function show().
+
+# define a class called student
+setClass("student",
+slots=list(name="character", age="numeric", GPA="numeric")
+)
+# define class method for the show() generic function
+setMethod("show",
+"student",
+function(object) {
+cat(object@name, "\n")
+cat(object@age, "years old\n")
+cat("GPA:", object@GPA, "\n")
+}
+)
+
+Inheritance is done during the derived class definition with the argument contains as shown below.
+
+# inherit from student
+setClass("InternationalStudent",
+slots=list(country="character"),
+contains="student"
+)
+
+Here we have added an attribute country, rest will be inherited from the parent.
+
+> s = new("InternationalStudent",name="John", age=21, GPA=3.5, country="France")
+> show(s)
+John 
+21 years old
+GPA: 3.5
+
+We see that method define for class student got called when we did show(s).
+
+We can define methods for the derived class which will overwrite methods of the base class, like in the case of S3 systems.
+
+<h2>Inheritance in Reference Class</h2>
+Inheritance in reference class is very much similar to that of the S4 class. 
+We define in the contains argument, from which base class to derive from.
+
+Here is an example of student reference class with two methods inc_age() and dec_age().
+
+student = setRefClass("student",
+fields=list(name="character", age="numeric", GPA="numeric"),
+methods=list(
+inc_age = function(x) {
+age &lt;= age + x
+},
+dec_age = function(x) {
+age &lt;= age - x
+}
+)
+)
+
+Now we will inherit from this class. 
+We also overwrite dec_age() method to add an integrity check to make sure age is never negative.
+
+InternationalStudent = setRefClass("InternationalStudent",
+fields=list(country="character"),
+contains="student",
+methods=list(
+dec_age = function(x) {
+if((age - x)&lt;0)  stop("Age cannot be negative")
+age &lt;= age - x
+}
+)
+)
+
+Let us put it to test.
+
+> s = InternationalStudent(name="John", age=21, GPA=3.5, country="France")
+> s$dec_age(5)
+> s$age
+[1] 16
+> s$dec_age(20)
+Error in s$dec_age(20) : Age cannot be negative
+> s$age
+[1] 16
+
+In this way, we are able to inherit from the parent class.
+
+
+<h2>R Reference Class</h2>
+In this article, you will learn to work with reference classes in R programming which is one of the three class systems (other two are S3 and S4).
+
+Reference class in R programming is similar to the object oriented programming we are used to seeing in common languages like C++, Java, Python etc.
+
+Unlike <a title="R S3 Class" href="/r-programming/S3-class">S3</a> and <a title="R S4 class" href="/r-programming/S4-class">S4 classes</a>, methods belong to class rather than generic functions. 
+Reference class are internally implemented as S4 classes with an environment added to it.
+
+<h3>How to define a reference class?</h3>
+Defining reference class is similar to defining a S4 class. 
+Instead of setClass() we use the setRefClass() function.
+
+> setRefClass("student")
+
+Member variables of a class, if defined, need to be included in the class definition. 
+Member variables of reference class are called fields (analogous to slots in S4 classes).
+
+Following is an example to define a class called student with 3 fields, name, age and GPA.
+
+> setRefClass("student", fields = list(name = "character", age = "numeric", GPA = "numeric"))
+
+<h3>How to create a reference objects?</h3>
+The function setRefClass() returns a generator function which is used to create objects of that class.
+
+> student = setRefClass("student",
+fields = list(name = "character", age = "numeric", GPA = "numeric"))
+> # now student() is our generator function which can be used to create new objects
+> s = student(name = "John", age = 21, GPA = 3.5)
+> s
+Reference class object of class "student"
+Field "name":
+[1] "John"
+Field "age":
+[1] 21
+Field "GPA":
+[1] 3.5
+
+<h3>How to access and modify fields?</h3>
+Fields of the object can be accessed using the $ operator.
+
+> s$name
+[1] "John"
+> s$age
+[1] 21
+> s$GPA
+[1] 3.5
+
+Similarly, it is modified by reassignment.
+
+> s$name = "Paul"
+> s
+Reference class object of class "student"
+Field "name":
+[1] "Paul"
+Field "age":
+[1] 21
+Field "GPA":
+[1] 3.5
+
+<h4>Warning Note</h4>
+
+In R programming, objects are copied when assigned to new variable or passed to a function (pass by value). 
+For example.
+
+> # create list a and assign to b
+> a = list("x" = 1, "y" = 2)
+> b = a
+> # modify b
+> b$y = 3
+> # a remains unaffected
+> a
+$x
+[1] 1
+$y
+[1] 2
+> # only b is modified
+> b
+$x
+[1] 1
+$y
+[1] 3
+
+But this is not the case with reference objects. 
+Only a single copy exist and all variables reference to the same copy. 
+Hence the name, reference.
+
+> # create reference object a and assign to b
+> a = student(name = "John", age = 21, GPA = 3.5)
+> b = a
+> # modify b
+> b$name = "Paul"
+> # a and b both are modified
+> a
+Reference class object of class "student"
+Field "name":
+[1] "Paul"
+Field "age":
+[1] 21
+Field "GPA":
+[1] 3.5
+> b
+Reference class object of class "student"
+Field "name":
+[1] "Paul"
+Field "age":
+[1] 21
+Field "GPA":
+[1] 3.5
+
+This can cause some unwanted change in values and be the source of strange bugs. 
+We need to keep this in mind while working with reference objects. 
+To make a copy, we can use the copy() method made availabe to us.
+
+> # create reference object a and assign a’s copy to b
+> a = student(name = "John", age = 21, GPA = 3.5)
+> b = a$copy()
+> # modify b
+> b$name = "Paul"
+> # a remains unaffected
+> a
+Reference class object of class "student"
+Field "name":
+[1] "John"
+Field "age":
+[1] 21
+Field "GPA":
+[1] 3.5
+> # only b is modified
+> b
+Reference class object of class "student"
+Field "name":
+[1] "Paul"
+Field "age":
+[1] 21
+Field "GPA":
+[1] 3.5
+
+<h3>Reference Methods</h3>
+Methods are defined for a reference class and do not belong to generic functions as in S3 and S4 classes.
+
+All reference class have some methods predefined because they all are inherited from the superclass envRefClass.
+
+> student
+Generator for class "student":
+Class fields:
+Name:       name       age       GPA
+Class: character   numeric   numeric
+Class Methods:  
+"callSuper", "copy", "export", "field", "getClass", "getRefClass", 
+"import", "initFields", "show", "trace", "untrace", "usingMethods"
+Reference Superclasses:  
+"envRefClass"
+
+We can see class methods like copy(), field() and show() in the above list. 
+We can create our own methods for the class.
+
+This can be done during the class definition by passing a list of function definitions to methods argument of setRefClass().
+
+student = setRefClass("student",
+fields = list(name = "character", age = "numeric", GPA = "numeric"),
+methods = list(
+inc_age = function(x) {
+age &lt;= age + x
+},
+dec_age = function(x) {
+age &lt;= age - x
+}
+)
+)
+
+In the above section of our code, we defined two methods called inc_age() and dec_age(). 
+These two method modify the field age.
+
+Note that we have to use the non-local assignment operator &lt;= since age isn’t in the method’s local environment. 
+This is important.
+
+Using the simple assignment operator = would have created a local variable called age, which is not what we want. 
+R will issue a warning in such case.
+
+Here is a sample run where we use the above defined methods.
+
+> s = student(name = "John", age = 21, GPA = 3.5)
+> s$inc_age(5)
+> s$age
+[1] 26
+> s$dec_age(10)
+> s$age
+[1] 16
+
+<h2>R S4 Class</h2>
+In this article, you’ll learn everything about S4 classes in R; how to define them, create them, access their slots, and use them efficiently in your program.
+
+Unlike <a title="R S3 class" href="/r-programming/S3-class">S3 classes</a> and <a title="R object" href="/r-programming/object-class-introduction">objects</a> which lacks formal definition, we look at S4 class which is stricter in the sense that it has a formal definition and a uniform way to create objects.
+
+This adds safety to our code and prevents us from accidentally making naive mistakes.
+
+<h3>How to define S4 Class?</h3>
+S4 class is defined using the setClass() function.
+
+In R terminology, member variables are called slots. 
+While defining a class, we need to set the name and the slots (along with class of the slot) it is going to have.
+
+<h4>Example 1: Definition of S4 class</h4>
+setClass("student", slots=list(name="character", age="numeric", GPA="numeric"))
+
+In the above example, we defined a new class called student along with three slots it’s going to have name, age and GPA.
+
+There are other optional arguments of setClass() which you can explore in the help section with ?setClass.
+
+<h3>How to create S4 objects?</h3>
+S4 objects are created using the new() function.
+
+<h4>Example 2: Creation of S4 object</h4>
+> # create an object using new()
+> # provide the class name and value for slots
+> s = new("student",name="John", age=21, GPA=3.5)
+> s
+An object of class "student"
+Slot "name":
+[1] "John"
+Slot "age":
+[1] 21
+Slot "GPA":
+[1] 3.5
+
+We can check if an object is an S4 object through the function isS4().
+
+> isS4(s)
+[1] TRUE
+
+The function setClass() returns a generator function.
+
+This generator function (usually having same name as the class) can be used to create new objects. 
+It acts as a constructor.
+
+> student = setClass("student", slots=list(name="character", age="numeric", GPA="numeric"))
+> student
+class generator function for class “student” from package ‘.GlobalEnv’
+function (...) 
+new("student", ...)
+
+Now we can use this constructor function to create new objects.
+
+Note above that our constructor in turn uses the new() function to create objects. 
+It is just a wrap around.
+
+<h4>Example 3: Creation of S4 objects using generator function</h4>
+> student(name="John", age=21, GPA=3.5)
+An object of class "student"
+Slot "name":
+[1] "John"
+Slot "age":
+[1] 21
+Slot "GPA":
+[1] 3.5
+
+<h3>How to access and modify slot?</h3>
+Just as components of a <a title="R list" href="/r-programming/list">list</a> are accessed using $, slot of an object are accessed using @.
+
+<h4>Accessing slot</h4>
+> s@name
+[1] "John"
+> s@GPA
+[1] 3.5
+> s@age
+[1] 21
+
+<h4>Modifying slot directly</h4>
+A slot can be modified through reassignment.
+
+> # modify GPA
+> s@GPA = 3.7
+> s
+An object of class "student"
+Slot "name":
+[1] "John"
+Slot "age":
+[1] 21
+Slot "GPA":
+[1] 3.7
+
+<h4>Modifying slots using slot() function</h4>
+Similarly, slots can be access or modified using the slot() function.
+
+> slot(s,"name")
+[1] "John"
+> slot(s,"name") = "Paul"
+> s
+An object of class "student"
+Slot "name":
+[1] "Paul"
+Slot "age":
+[1] 21
+Slot "GPA":
+[1] 3.7
+
+<h3>Methods and Generic Functions</h3>
+As in the case of S3 class, methods for S4 class also belong to generic functions rather than the class itself. 
+Working with S4 generics is pretty much similar to S3 generics.
+
+You can list all the S4 generic functions and methods available, using the function showMethods().
+
+<h4>Example 4: List all generic functions</h4>
+> showMethods()
+Function: - (package base)
+Function: != (package base)
+...
+Function: trigamma (package base)
+Function: trunc (package base)
+
+Writing the name of the object in interactive mode prints it. 
+This is done using the S4 generic function show().
+
+You can see this function in the above list. 
+This function is the S4 analogy of the S3 print() function.
+
+<h4>Example 5: Check if a function is a generic function</h4>
+> isS4(print)
+[1] FALSE
+> isS4(show)
+[1] TRUE
+
+We can list all the methods of show generic function using showMethods(show).
+
+<h4>Example 6: List all methods of a generic function</h4>
+> showMethods(show)
+Function: show (package methods)
+object="ANY"
+object="classGeneratorFunction"
+...
+object="standardGeneric"
+(inherited from: object="genericFunction")
+object="traceable"
+
+<h3>How to write your own method?</h3>
+We can write our own method using setMethod() helper function.
+
+For example, we can implement our class method for the show() generic as follows.
+
+setMethod("show",
+"student",
+function(object) {
+cat(object@name, "\n")
+cat(object@age, "years old\n")
+cat("GPA:", object@GPA, "\n")
+}
+)
+
+Now, if we write out the name of the object in interactive mode as before, the above code is executed.
+
+> s = new("student",name="John", age=21, GPA=3.5)
+> s    # this is same as show(s)
+John 
+21 years old
+GPA: 3.5
+
+In this way we can write our own S4 class methods for generic functions.
+
+
 
 
 

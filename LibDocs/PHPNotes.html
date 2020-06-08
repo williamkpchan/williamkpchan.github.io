@@ -51,6 +51,8 @@ b {color:brown;}
 <a href="https://www.w3schools.com/php/php_filter_advanced.asp" class="whitebut ">PHP Filters Advanced</a>
 
 <a href="https://www.w3schools.com/php/php_json.asp" class="whitebut ">PHP JSON</a>
+<a href="https://www.dyn-web.com/tutorials/forms/select/selected.php" class="whitebut ">JavaScript for Example Form</a>
+
 </div>
 <pre>
 <br>
@@ -677,6 +679,60 @@ new date no top
 <a href="https://www.phptutorial.info/scripts/multiple_choice/index.php">Create PHP script for Multiple Choice Questions</a>
 <a href="https://github.com/dprabin/simple-php-quiz">simple php quiz</a>
 <a href="https://dzone.com/articles/building-simple-quiz-php">building php simple quiz </a>
+
+<h2>multiple choice questions</h2>
+If the questions are numbered in a column other than id
+use that instead e.g.
+
+`SELECT `number`,`
+
+$sql = "SELECT `id`,`content`,`a`,`b`,`c`,`d` FROM quizzes ORDER BY rand() limit 5";   
+mysql_query($sql);
+
+echo '&lt;form action="result.php" method="post">&lt;div>';
+
+while($data = mysql_fetch_array($result,MYSQL_NUM)){
+ echo &lt;&lt;&lt;EOF
+$data[1]
+&lt;input type="radio" name="option$data[0]" value="a">$data[2]
+&lt;input type="radio" name="option$data[0]" value="b">$data[3]
+&lt;input type="radio" name="option$data[0]" value="c">$data[4]
+&lt;input type="radio" name="option$data[0]" value="d">$data[5]
+EOF;
+}
+echo '&lt;input type="submit" value="Submit" />&lt;/div>&lt;/form>';
+
+To get the submitted answers your result.php should start like this:
+
+foreach $_POST as $key => $value){
+  if(substr($key,0,6) == 'option`){
+    $id = intval(substr($key,6));
+    $answers[$id] = $value;
+  }
+}
+var_export($answers);
+
+Then look up question for each answer:
+
+foreach($answers as $id => $answer){
+  $sql = "SELECT .... WHERE `id` = $id"; //If non-numeric, add single quotes '$id'
+}
+
+Update
+This should be how your basic form will look:
+
+&lt;form action="result.php" method="post">&lt;div>
+&lt;input type="radio" name="option1" value="a">Answer A
+ ...
+&lt;input type="radio" name="option5" value="a">Answer D
+&lt;input type="submit" value="Submit" />&lt;/div>&lt;/form>
+The &lt;form> before the &lt;input type="submit" />
+The after the submit
+
+Most likely problem is an unclosed set of double quotes
+Make sure all double quotes are closed especially these: "result.php", including the name and value of each radio button.
+
+right click the form and choose "Inspect Element"
 
 <h2>functions-in-php</h2>
 <a href="https://www.php.net/manual/en/indexes.functions.php">Function and Method listing</a>
@@ -9348,6 +9404,148 @@ while($row = $query->fetch_assoc()) { $fields[] = $row['Field']; }
     &lt;?php endforeach; ?>
     &lt;input type="submit" name="submit" />
 &lt;/form>
+
+<h2>Handling checkbox in a PHP form</h2>
+<a href="https://html.form.guide/php-form/php-form-checkbox.html" class="whitebut ">Handling checkbox in a PHP form processor</a>
+
+Get $_POST from multiple checkboxes
+
+Set the name in the form to check_list[] and you will be able to access all the checkboxes as an array($_POST['check_list'][]).
+
+Here's a little sample as requested:
+
+&lt;form action="test.php" method="post">
+    &lt;input type="checkbox" name="check_list[]" value="value 1">
+    &lt;input type="checkbox" name="check_list[]" value="value 2">
+    &lt;input type="checkbox" name="check_list[]" value="value 3">
+    &lt;input type="checkbox" name="check_list[]" value="value 4">
+    &lt;input type="checkbox" name="check_list[]" value="value 5">
+    &lt;input type="submit" />
+&lt;/form>
+&lt;?php
+if(!empty($_POST['check_list'])) {
+    foreach($_POST['check_list'] as $check) {
+      echo $check; //echoes the value set in the HTML form for each checked checkbox.
+      //so, if I were to check 1, 3, and 5 it would echo value 1, value 3, value 5.
+    }
+}
+?>
+
+<h2>make a PHP session expire upon browser tab close</h2>
+A PHP session is a cookie-based reference to a given user. 
+You store a cookie on the user's computer that identifies them as X, then you save information as that X. 
+This is valuable if, for instance, a user closes their browser or goes to a different IP address. 
+If you want them to lose session without a browser, you can just send information along with the page - once they close the tab or page it will just die with them.
+
+Otherwise, if you want to keep sessions in the mix, just time them and refresh - if a user doesn't navigate anywhere within, say, 10 minutes, you can go from there. 
+Session expiration is easy - something like
+
+if (isset($_SESSION["LAST_ACTIVITY"]) && (time() - $_SESSION["LAST_ACTIVITY"] > [time in seconds you want to expire])) {
+    session_destroy();  
+    session_unset();  
+}
+$_SESSION['LAST_ACTIVITY'] = time(); // update last activity time stamp
+
+at the top of your shared file.
+
+You could also use some javascript to detect them closing the tab - this is a bit tricky since some browsers use "window.onbeforeunload" while others have different indicators - you'd want to test this on your target browsers before you went live with it.
+
+<h2>use logout page to leave</h2>
+&lt;?php 
+session_start();
+session_destroy();
+header ("Location: login.php");
+?>
+
+To remove all global session variables and destroy the session, use session_unset() and session_destroy():
+
+// remove all session variables
+session_unset();
+
+// destroy the session
+session_destroy();
+
+<h2>Unset Session When browser tab is closed</h2>
+
+set an expiration time for the session data, test it with each session_start call and destroy the session if it’s expired:
+
+session_start();
+if (!isset($_SESSION['EXPIRES']) || $_SESSION['EXPIRES'] &lt; time()+3600) {
+    session_destroy();
+    $_SESSION = array();
+}
+
+$_SESSION['EXPIRES'] = time() + 3600;
+
+2) destroy session when broswer tab closed
+
+implement a session timeout with own method. 
+Use a simple time stamp that denotes the time of the last request and update it with every request:
+
+You need to code something similar to this
+
+if (isset($_SESSION['LAST_ACTIVITY']) && (time() - $_SESSION['LAST_ACTIVITY'] > 1800)) {
+    // request 30 minates ago
+    session_destroy();
+    session_unset();
+}
+
+$_SESSION['LAST_ACTIVITY'] = time(); // update last activity time
+
+3) How to change the session timeout in PHP?
+
+session_start(); // ready to go!
+
+$now = time();
+if (isset($_SESSION['discard_after']) && $now > $_SESSION['discard_after']) {
+    // this session has worn out its welcome; kill it and start a brand new one
+    session_unset();
+    session_destroy();
+    session_start();
+}
+
+// either new or old, it should live at most for another hour
+$_SESSION['discard_after'] = $now + 3600;
+
+4) The unload event is sent to the window element when the user navigates away from the page. 
+This could mean one of many things. 
+The user could have clicked on a link to leave the page, or typed in a new URL in the address bar. 
+The forward and back buttons will trigger the event. 
+Closing the browser window will cause the event to be triggered. 
+Even a page reload will first create an unload event.
+
+$( window ).unload(function() {
+  //use ajax to call another page to session_destroy();
+});
+
+Question is: What if the user has two or more tabs open on your site? If they close one tab, the other one would effectively be logged out.
+
+You got my +1 for the great explanation with cases. 
+Generally speaking, I'm negatively surprised that contemporary browsers don't have a mechanism for this: when I close the tab of such website, EVERY SESSION must destroy, like if I had closed the browser. 
+I see bad behaviors on this side, e.g. Paypal, in fact, if you close the tab and you open again paypal, you are still logged in, same in google/gmail, on gmail is even worse though, if you don't logout, you are logged in FOREVER EITHER if you don't ask for that. 
+Try on any third computer either after some days. 
+REMEMBER TO LOGOUT!! :-)
+
+<h2>correct name for <<<</h2>
+It's called a heredoc.
+
+$message = "
+    <<< EOF
+Huge long text here
+EOF;
+    ";
+
+<h2>php short hand</h2>
+&lt;div class="box" style="background-color:&lt;?=$permacolour?>">
+
+&lt;?php ?> is a perfectly acceptable syntax for this
+
+Also, the &lt;?= in this example is a short hand way of writing &lt;?php echo
+And requires short tags be enabled in PHP's ini file!
+
+PHP includes a short echo tag &lt;?= which is a short-hand to the more verbose &lt;?php echo.
+
+PHP also allows for short open tag &lt;? (which is discouraged since it is only available if enabled using the short_open_tag php.ini configuration file directive, or if PHP was configured with the --enable-short-tags option).
 
 
 

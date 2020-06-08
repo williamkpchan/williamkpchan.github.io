@@ -34,6 +34,16 @@ function showAllCharts(){
 }
 
 function chkKey() { testkey = getChar(event);
+  divisionHeight = Math.round(document.body.scrollHeight/9);
+  if(testkey == "2"){ $('body,html').animate({scrollTop:(divisionHeight*2)}, 1); }
+  if(testkey == "3"){ $('body,html').animate({scrollTop:(divisionHeight*3)}, 1); }
+  if(testkey == "4"){ $('body,html').animate({scrollTop:(divisionHeight*4)}, 1); }
+  if(testkey == "5"){ $('body,html').animate({scrollTop:(divisionHeight*5)}, 1); }
+  if(testkey == "6"){ $('body,html').animate({scrollTop:(divisionHeight*6)}, 1); }
+  if(testkey == "7"){ $('body,html').animate({scrollTop:(divisionHeight*7)}, 1); }
+  if(testkey == "8"){ $('body,html').animate({scrollTop:(divisionHeight*8)}, 1); }
+  if(testkey == "9"){ $('body,html').animate({scrollTop:(divisionHeight*9)}, 1); }
+
   if(testkey == 'c'){showChart();}
 //  if(testkey == 'f'){ window.location = '#stkcodeid';  $('#stkcode').value =""; }
 
