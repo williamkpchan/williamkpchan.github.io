@@ -1,0 +1,2672 @@
+<base target="_blank"><html><head><title>RList Turorial</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="../lazyload.min.js"></script>
+<script type='text/javascript' src='../mainscript.js'></script>
+<script src="D:/Dropbox/Public/commonfunctions.js"></script>
+<script>
+  var showTopicNumber = true;
+  var bookid = "RList Turorial" 
+  var markerName = "h2, h3"
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:22px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+code {color:#677;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>RList Turorial</h1>
+<span class="orange">functions on non-tabular data</span>, 
+rlist is a set of tools for working with list objects.
+<br><br>
+<a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a>
+<br><br>
+<div id="toc"></div></center>
+<br><br>
+
+<div id="mustWatch"><center><span class="red">MustWatch</span></center><br>
+</div>
+<pre>
+<br>
+<br>
+<h2><span class="orange">Mapping</span></h2>
+Suppose we load the <a href="https://renkun-ken.github.io/rlist-tutorial/data/sample.json">data</a> which is represented by the following table:
+
+<table>
+<thead>
+<tr><th>Name</th><th>Age</th><th>Interests</th><th>Expertise</th></tr>
+</thead>
+<tbody>
+<tr><td>Ken</td><td>24</td><td>reading, music, movies</td><td>R:2, C#:4, Python:3</td></tr>
+<tr><td>James</td><td>25</td><td>sports, music</td><td>R:3, Java:2, C++:5</td></tr>
+<tr><td>Penny</td><td>24</td><td>movies, reading</td><td>R:1, C++:4, Python:2</td></tr>
+</tbody>
+</table>
+
+<code>list.load()</code> is designed for loading data from given data source. The data source can be either local or remote and the function by default uses the file extension to decide the way to read it.
+
+<code><span class="orange">library</span>(rlist)
+people &lt;- list.load(<span class="blue">"http://renkun.me/rlist-tutorial/data/sample.json"</span>)
+str(people)</code>
+
+<code># List of 3
+#  $ :List of 4
+#   ..$ Name     : chr "Ken"
+#   ..$ Age      : int 24
+#   ..$ Interests: chr [1:3] "reading" "music" "movies"
+#   ..$ Expertise:List of 3
+#   .. ..$ R     : int 2
+#   .. ..$ CSharp: int 4
+#   .. ..$ Python: int 3
+#  $ :List of 4
+#   ..$ Name     : chr "James"
+#   ..$ Age      : int 25
+#   ..$ Interests: chr [1:2] "sports" "music"
+#   ..$ Expertise:List of 3
+#   .. ..$ R   : int 3
+#   .. ..$ Java: int 2
+#   .. ..$ Cpp : int 5
+#  $ :List of 4
+#   ..$ Name     : chr "Penny"
+#   ..$ Age      : int 24
+#   ..$ Interests: chr [1:2] "movies" "reading"
+#   ..$ Expertise:List of 3
+#   .. ..$ R     : int 1
+#   .. ..$ Cpp   : int 4
+#   .. ..$ Python: int 2</code>
+<blockquote>
+
+NOTE: <code>str()</code> previews the structure of an object. We may use this function more often to avoid verbose representation of list objects.
+
+</blockquote>
+
+To extract the name of each people (list element), traditionally we can call <code>lapply()</code> like the following:
+
+<code>lapply(people, <span class="orange">function</span>(x) {
+  x$Name
+})</code>
+
+<code># [[1]]
+# [1] "Ken"
+# 
+# [[2]]
+# [1] "James"
+# 
+# [[3]]
+# [1] "Penny"</code>
+
+Using rlist&apos;s <code>list.map()</code> the task is made extremely easy:
+
+<code>list.map(people, Name)</code>
+
+<code># [[1]]
+# [1] "Ken"
+# 
+# [[2]]
+# [1] "James"
+# 
+# [[3]]
+# [1] "Penny"</code>
+
+List mapping is to evaluate an expression for each list member. It is the fundamental operation in rlist functionality. Almost all functions in this package that work with expressions are using mapping but in different ways. The following examples demonstrate several types of mapping in more details.
+
+<h3> - list.map</h3>
+
+The simplest way of mapping is provided by <code>list.map()</code> as we have just demonstrated. Basically, it evaluates an expression for each list element. 
+
+The function makes it easier to query a list by putting all fields of the list member in mapping to the environment where the expression is evaluated. In other words, the expression is evaluated in the context of one list member each time.
+
+For example, the following code maps each list member in <code>people</code> by expression <code>age</code>. Therefore, it results in a list where each item becomes the value of that expression for each member of <code>people</code>.
+
+<code>list.map(people, Age)</code>
+
+<code># [[1]]
+# [1] 24
+# 
+# [[2]]
+# [1] 25
+# 
+# [[3]]
+# [1] 24</code>
+
+Since the expression does not have to be a field name of the list member, we can evaluate whatever we want in the context of a list member.
+
+The following code maps each list member to the sum of years of the programming languages they use.
+
+<code>list.map(people, sum(as.numeric(Expertise)))</code>
+
+<code># [[1]]
+# [1] 9
+# 
+# [[2]]
+# [1] 10
+# 
+# [[3]]
+# [1] 7</code>
+
+If we need more than one values for each member, we can evaluate a vector or list expression.
+
+The following code maps each list member to a new list of the age and range of number of years using programming languages.
+
+<code>list.map(people, list(age=Age, range=range(as.numeric(Expertise))))</code>
+
+<code># [[1]]
+# [[1]]$age
+# [1] 24
+# 
+# [[1]]$range
+# [1] 2 4
+# 
+# 
+# [[2]]
+# [[2]]$age
+# [1] 25
+# 
+# [[2]]$range
+# [1] 2 5
+# 
+# 
+# [[3]]
+# [[3]]$age
+# [1] 24
+# 
+# [[3]]$range
+# [1] 1 4</code>
+
+In some cases we need to refer to the item itself, or its index in the list, or even its name. In the expression, <code>.</code> represents the item itself, <code>.i</code> represents its index, and <code>.name</code> represents its name.
+
+For example,
+
+<code>nums &lt;- c(a=<span class="hljs-number">3</span>, b=<span class="hljs-number">2</span>, c=<span class="hljs-number">1</span>)
+list.map(nums, . + <span class="hljs-number">1</span>)</code>
+
+<code># $a
+# [1] 4
+# 
+# $b
+# [1] 3
+# 
+# $c
+# [1] 2</code>
+
+<code>list.map(nums, .i)</code>
+
+<code># $a
+# [1] 1
+# 
+# $b
+# [1] 2
+# 
+# $c
+# [1] 3</code>
+
+<code>list.map(nums, paste0(<span class="blue">"name: "</span>, .name))</code>
+
+<code># $a
+# [1] "name: a"
+# 
+# $b
+# [1] "name: b"
+# 
+# $c
+# [1] "name: c"</code>
+
+If the default symbols clash with the data, we can use lambda expression to specify other symbols. We will cover this later.
+
+<blockquote>
+
+NOTE: rlist functions are general enough to work smoothly with vectors. <code>list.map()</code> works very much like <code>lapply()</code> so that the input will be finally transformed to list.
+
+</blockquote>
+<h3> - list.mapv</h3>
+
+If we want to get the mapping results as a vector rather than a list, we can use <code>list.mapv()</code>, which basically calls <code>unlist()</code> to the list resulted from <code>list.map()</code>.
+
+<code>list.mapv(people, Age)</code>
+
+<code># [1] 24 25 24</code>
+
+<code>list.mapv(people, sum(as.numeric(Expertise)))</code>
+
+<code># [1]  9 10  7</code>
+<h3> - list.select</h3>
+
+In contrast to <code>list.map()</code>, <code>list.select()</code> provides an easier way to map each list member to a new list. This functions basically evaluates all given expressions and put the results into a list.
+
+If a field name a list member is selected, its name will automatically preserved. If a list item evaluated from other expression is selected, we may better give it a name, or otherwise it will only have an index.
+
+<code>list.select(people, Name, Age)</code>
+
+<code># [[1]]
+# [[1]]$Name
+# [1] "Ken"
+# 
+# [[1]]$Age
+# [1] 24
+# 
+# 
+# [[2]]
+# [[2]]$Name
+# [1] "James"
+# 
+# [[2]]$Age
+# [1] 25
+# 
+# 
+# [[3]]
+# [[3]]$Name
+# [1] "Penny"
+# 
+# [[3]]$Age
+# [1] 24</code>
+
+<code>list.select(people, Name, Age, nlang=length(Expertise))</code>
+
+<code># [[1]]
+# [[1]]$Name
+# [1] "Ken"
+# 
+# [[1]]$Age
+# [1] 24
+# 
+# [[1]]$nlang
+# [1] 3
+# 
+# 
+# [[2]]
+# [[2]]$Name
+# [1] "James"
+# 
+# [[2]]$Age
+# [1] 25
+# 
+# [[2]]$nlang
+# [1] 3
+# 
+# 
+# [[3]]
+# [[3]]$Name
+# [1] "Penny"
+# 
+# [[3]]$Age
+# [1] 24
+# 
+# [[3]]$nlang
+# [1] 3</code>
+<h3> - list.iter</h3>
+
+Sometimes we don&apos;t really need the result of a mapping but its side effects. For example, if we only need to print out something about each list member, we don&apos;t need to carry on the output of mapping.
+
+<code>list.iter()</code> performs iterations over a list and returns the input data invisibly for further data transformation.
+
+<code>list.iter(people, cat(Name, <span class="blue">":"</span>, Age, <span class="blue">"\n"</span>))</code>
+
+<code># Ken : 24 
+# James : 25 
+# Penny : 24</code>
+<h3> - list.maps</h3>
+
+All the previous functions work with a single list. However, there are scenarios where mapping multiple lists is needed. <code>list.maps()</code> evaluates an expression with multiple lists each of which is represented by a user-defined symbol at the function call.
+
+<code>l1 &lt;- list(p1=list(x=<span class="hljs-number">1</span>,y=<span class="hljs-number">2</span>), p2=list(x=<span class="hljs-number">3</span>,y=<span class="hljs-number">4</span>), p3=list(x=<span class="hljs-number">1</span>,y=<span class="hljs-number">3</span>))
+l2 &lt;- list(<span class="hljs-number">2</span>, <span class="hljs-number">3</span>, <span class="hljs-number">5</span>)
+list.maps(a$x*b+a$y, a=l1, b=l2)</code>
+
+<code># $p1
+# [1] 4
+# 
+# $p2
+# [1] 13
+# 
+# $p3
+# [1] 8</code>
+
+<code>list.maps()</code> does not follow the conventions of many other functions like <code>list.map()</code> and <code>list.iter()</code> where the data comes first and expression comes the second. Since <code>list.maps()</code> supports multi-mapping with a group of lists, only implicit lambda expression is supported to avoid ambiguity. After that the function still allows users to define the symbol that represents each list being mapped in <code>...</code>.
+
+In the example above, <code>...</code> means <code>a = l1, b = l2</code>, so that <code>a</code> and <code>b</code> are meaningful in the first expression <code>a$x*b+a$y</code> where <code>a</code> and <code>b</code> mean the iterating element of each list, respectively.
+
+The function does not require named be supplied with the lists as arguments. In this case, we can use <code>..1</code>, <code>..2</code>, etc. to refer to the first, second or other lists.
+
+<code>list.maps(..1$x*..2 + ..1$y, l1, l2)</code>
+
+<code># $p1
+# [1] 4
+# 
+# $p2
+# [1] 13
+# 
+# $p3
+# [1] 8</code>
+
+                    
+
+<h2><span class="orange">Filtering</span></h2>
+
+List filtering is to select list elements by given criteria. In rlist package, more than ten functions are related with list filtering. Basically, they all perform mapping first but then aggregate the results in different ways.
+
+First, we load the sample data.
+
+<code><span class="orange">library</span>(rlist)
+people &lt;- list.load(<span class="blue">"http://renkun.me/rlist-tutorial/data/sample.json"</span>)</code>
+
+<h3> - list.filter</h3>
+
+<code>list.filter()</code> filters a list by an expression that returns <code>TRUE</code> or <code>FALSE</code>. The results only contain the list elements for which the value of that expression turns out to be <code>TRUE</code>.
+
+Different from list mapping which evaluates an expression given each list element, list filtering evaluates an expression to decide whether to include <em>the entire element</em> in the results.
+
+<code>str(list.filter(people, Age &gt;= <span class="hljs-number">25</span>))</code>
+
+<code># List of 1
+#  $ :List of 4
+#   ..$ Name     : chr "James"
+#   ..$ Age      : int 25
+#   ..$ Interests: chr [1:2] "sports" "music"
+#   ..$ Expertise:List of 3
+#   .. ..$ R   : int 3
+#   .. ..$ Java: int 2
+#   .. ..$ Cpp : int 5</code>
+
+Note that <code>list.filter()</code> filters the data with given conditions and the list elements that satisfy the conditions will be returned. We call <code>str()</code> on the results to shorten the output.
+
+Using pipeline, we can first filter the data and then map the resulted elements by expression. For example, we can get the names of those whose age is no less than 25.
+
+<code><span class="orange">library</span>(pipeR)
+people %&gt;&gt;%
+  list.filter(Age &gt;= <span class="hljs-number">25</span>) %&gt;&gt;%
+  list.mapv(Name)</code>
+
+<code># [1] "James"</code>
+
+If one has to write the code in traditional approach, it can be 
+
+<code>list.mapv(list.filter(people, Age &gt;= <span class="hljs-number">25</span>), Name)</code>
+
+or 
+
+<code>people_filtered &lt;- list.filter(people, Age &gt;= <span class="hljs-number">25</span>)
+list.mapv(people_filtered, Name)</code>
+
+It is obvious that both versions are quite redundant. Therefore, we will heavily use pipeline in the demonstration the features from now on to make the data processing look more elegant, and reduce the amount of information in the output.
+
+Similarly, we can also get the names of those who are interested in music.
+
+<code>people %&gt;&gt;%
+  list.filter(<span class="blue">"music"</span> %<span class="orange">in</span>% Interests) %&gt;&gt;%
+  list.mapv(Name)</code>
+
+<code># [1] "Ken"   "James"</code>
+
+We can get the names of those who have been using programming languages for at least three years on average.
+
+<code>people %&gt;&gt;%
+  list.filter(mean(as.numeric(Expertise)) &gt;= <span class="hljs-number">3</span>) %&gt;&gt;%
+  list.mapv(Name)</code>
+
+<code># [1] "Ken"   "James"</code>
+
+Meta-symbols like <code>.</code>, <code>.i</code>, and <code>.name</code> can also be used. The following code will pick up the list element whose index is even.
+
+<code>people %&gt;&gt;%
+  list.filter(.i %% <span class="hljs-number">2</span> == <span class="hljs-number">0</span>) %&gt;&gt;%
+  list.mapv(Name)</code>
+
+<code># [1] "James"</code>
+<h3> - list.find</h3>
+
+In some cases, we don&apos;t need to find all the instances given the criteria. Rather, we only need to find a few, sometimes only one. <code>list.find()</code> avoids searching across all list element but stops at a specific number of items found.
+
+<code>people %&gt;&gt;%
+  list.find(Age &gt;= <span class="hljs-number">25</span>, <span class="hljs-number">1</span>) %&gt;&gt;%
+  list.mapv(Name)</code>
+
+<code># [1] "James"</code>
+<h3> - list.findi</h3>
+
+Similar with <code>list.find()</code>, <code>list.findi()</code> only returns the index of the elements found.
+
+<code>list.findi(people, Age &gt;= <span class="hljs-number">23</span>, <span class="hljs-number">2</span>)</code>
+
+<code># [1] 1 2</code>
+
+You may verify that if the number of instances to find is greater than the actual number of instances in the data, all qualified instances will be returned.
+
+<h3> - list.first, list.last</h3>
+
+<code>list.first()</code> and <code>list.last()</code> are used to find the first and last element that meets certain condition if specified, respectively.
+
+<code>str(list.first(people, Age &gt;= <span class="hljs-number">23</span>))</code>
+
+<code># List of 4
+#  $ Name     : chr "Ken"
+#  $ Age      : int 24
+#  $ Interests: chr [1:3] "reading" "music" "movies"
+#  $ Expertise:List of 3
+#   ..$ R     : int 2
+#   ..$ CSharp: int 4
+#   ..$ Python: int 3</code>
+
+<code>str(list.last(people, Age &gt;= <span class="hljs-number">23</span>))</code>
+
+<code># List of 4
+#  $ Name     : chr "Penny"
+#  $ Age      : int 24
+#  $ Interests: chr [1:2] "movies" "reading"
+#  $ Expertise:List of 3
+#   ..$ R     : int 1
+#   ..$ Cpp   : int 4
+#   ..$ Python: int 2</code>
+
+These two functions also works when the condition is missing. In this case, they simply take out the first/last element from the list or vector.
+
+<code>list.first(<span class="hljs-number">1</span>:<span class="hljs-number">10</span>)</code>
+
+<code># [1] 1</code>
+
+<code>list.last(<span class="hljs-number">1</span>:<span class="hljs-number">10</span>)</code>
+
+<code># [1] 10</code>
+<h3> - list.take</h3>
+
+<code>list.take()</code> takes at most a given number of elements from a list. If the number is even larger than the length of the list, the function will by default return all elements in the list.
+
+<code>list.take(<span class="hljs-number">1</span>:<span class="hljs-number">10</span>, <span class="hljs-number">3</span>)</code>
+
+<code># [1] 1 2 3</code>
+
+<code>list.take(<span class="hljs-number">1</span>:<span class="hljs-number">5</span>, <span class="hljs-number">8</span>)</code>
+
+<code># [1] 1 2 3 4 5</code>
+<h3> - list.skip</h3>
+
+As opposed to <code>list.take()</code>, <code>list.skip()</code> skips at most a given number of elements in the list and take all the rest as the results. If the number of elements to skip is equal or greater than the length of that list, an empty one will be returned.
+
+<code>list.skip(<span class="hljs-number">1</span>:<span class="hljs-number">10</span>, <span class="hljs-number">3</span>)</code>
+
+<code># [1]  4  5  6  7  8  9 10</code>
+
+<code>list.skip(<span class="hljs-number">1</span>:<span class="hljs-number">5</span>, <span class="hljs-number">8</span>)</code>
+
+<code># integer(0)</code>
+<h3> - list.takeWhile</h3>
+
+Similar to <code>list.take()</code>, <code>list.takeWhile()</code> is also designed to take out some elements from a list but subject to a condition. Basically, it keeps taking elements while a condition holds true.
+
+<code>people %&gt;&gt;%
+  list.takeWhile(Expertise$R &gt;= <span class="hljs-number">2</span>) %&gt;&gt;%
+  list.map(list(Name = Name, R = Expertise$R)) %&gt;&gt;%
+  str</code>
+
+<code># List of 2
+#  $ :List of 2
+#   ..$ Name: chr "Ken"
+#   ..$ R   : int 2
+#  $ :List of 2
+#   ..$ Name: chr "James"
+#   ..$ R   : int 3</code>
+<h3> - list.skipWhile</h3>
+
+<code>list.skipWhile()</code> keeps skipping elements while a condition holds true.
+
+<code>people %&gt;&gt;%
+  list.skipWhile(Expertise$R &lt;= <span class="hljs-number">2</span>) %&gt;&gt;%
+  list.map(list(Name = Name, R = Expertise$R)) %&gt;&gt;%
+  str</code>
+
+<code># List of 2
+#  $ :List of 2
+#   ..$ Name: chr "James"
+#   ..$ R   : int 3
+#  $ :List of 2
+#   ..$ Name: chr "Penny"
+#   ..$ R   : int 1</code>
+<h3> - list.is</h3>
+
+<code>list.is()</code> returns a logical vector that indicates whether a condition holds for each member of a list.
+
+<code>list.is(people, <span class="blue">"music"</span> %<span class="orange">in</span>% Interests)</code>
+
+<code># [1]  TRUE  TRUE FALSE</code>
+
+<code>list.is(people, <span class="blue">"Java"</span> %<span class="orange">in</span>% names(Expertise))</code>
+
+<code># [1] FALSE  TRUE FALSE</code>
+<h3> - list.which</h3>
+
+<code>list.which()</code> returns a integer vector of the indices of the elements of a list that meet a given condition.
+
+<code>list.which(people, <span class="blue">"music"</span> %<span class="orange">in</span>% Interests)</code>
+
+<code># [1] 1 2</code>
+
+<code>list.which(people, <span class="blue">"Java"</span> %<span class="orange">in</span>% names(Expertise))</code>
+
+<code># [1] 2</code>
+<h3> - list.all</h3>
+
+<code>list.all()</code> returns <code>TRUE</code> if all the elements of a list satisfy a given condition, or <code>FALSE</code> otherwise.
+
+<code>list.all(people, mean(as.numeric(Expertise)) &gt;= <span class="hljs-number">3</span>)</code>
+
+<code># [1] FALSE</code>
+
+<code>list.all(people, <span class="blue">"R"</span> %<span class="orange">in</span>% names(Expertise))</code>
+
+<code># [1] TRUE</code>
+<h3> - list.any</h3>
+
+<code>list.any()</code> returns <code>TRUE</code> if at least one of the elements of a list satisfies a given condition, or <code>FALSE</code> otherwise.
+
+<code>list.any(people, mean(as.numeric(Expertise)) &gt;= <span class="hljs-number">3</span>)</code>
+
+<code># [1] TRUE</code>
+
+<code>list.any(people, <span class="blue">"Python"</span> %<span class="orange">in</span>% names(Expertise))</code>
+
+<code># [1] TRUE</code>
+<h3> - list.count</h3>
+
+<code>list.count()</code> return a scalar integer that indicates the number of elements of a list that satisfy a given condition.
+
+<code>list.count(people, mean(as.numeric(Expertise)) &gt;= <span class="hljs-number">3</span>)</code>
+
+<code># [1] 2</code>
+
+<code>list.count(people, <span class="blue">"R"</span> %<span class="orange">in</span>% names(Expertise))</code>
+
+<code># [1] 3</code>
+<h3> - list.match</h3>
+
+<code>list.match()</code> filters a list by matching the names of the list elements by a regular expression pattern.
+
+<code>data &lt;- list(p1 = <span class="hljs-number">1</span>, p2 = <span class="hljs-number">2</span>, a1 = <span class="hljs-number">3</span>, a2 = <span class="hljs-number">4</span>)
+list.match(data, <span class="blue">"p[12]"</span>)</code>
+
+<code># $p1
+# [1] 1
+# 
+# $p2
+# [1] 2</code>
+<h3> - list.remove</h3>
+
+<code>list.remove()</code> removes list elements by index or name.
+
+<code>list.remove(data, c(<span class="blue">"p1"</span>,<span class="blue">"p2"</span>))</code>
+
+<code># $a1
+# [1] 3
+# 
+# $a2
+# [1] 4</code>
+
+<code>list.remove(data, c(<span class="hljs-number">2</span>,<span class="hljs-number">3</span>))</code>
+
+<code># $p1
+# [1] 1
+# 
+# $a2
+# [1] 4</code>
+<h3> - list.exclude</h3>
+
+<code>list.exclude()</code> removes list elements that satisfy given condition.
+
+<code>people %&gt;&gt;%
+  list.exclude(<span class="blue">"sports"</span> %<span class="orange">in</span>% Interests) %&gt;&gt;%
+  list.mapv(Name)</code>
+
+<code># [1] "Ken"   "Penny"</code>
+<h3> - list.clean</h3>
+
+<code>list.clean()</code> is used to clean a list by a function either recursively or not. The function can be built-in function like <code>is.null()</code> to remove all <code>NULL</code> values from the list, or can be user-defined function like <code>function(x) length(x) == 0</code> to remove all empty objects like <code>NULL</code>, <code>character(0L)</code>, etc.
+
+<code>x &lt;- list(a=<span class="hljs-number">1</span>, b=<span class="hljs-literal">NULL</span>, c=list(x=<span class="hljs-number">1</span>,y=<span class="hljs-literal">NULL</span>,z=logical(<span class="hljs-number">0L</span>),w=c(<span class="hljs-literal">NA</span>,<span class="hljs-number">1</span>)))
+str(x)</code>
+
+<code># List of 3
+#  $ a: num 1
+#  $ b: NULL
+#  $ c:List of 4
+#   ..$ x: num 1
+#   ..$ y: NULL
+#   ..$ z: logi(0) 
+#   ..$ w: num [1:2] NA 1</code>
+
+To clear all <code>NULL</code> values in the list recursively, we can call
+
+<code>str(list.clean(x, recursive = <span class="hljs-literal">TRUE</span>))</code>
+
+<code># List of 2
+#  $ a: num 1
+#  $ c:List of 3
+#   ..$ x: num 1
+#   ..$ z: logi(0) 
+#   ..$ w: num [1:2] NA 1</code>
+
+To remove all empty values including <code>NULL</code> and zero-length vectors, we can call
+
+<code>str(list.clean(x, <span class="orange">function</span>(x) length(x) == <span class="hljs-number">0L</span>, recursive = <span class="hljs-literal">TRUE</span>))</code>
+
+<code># List of 2
+#  $ a: num 1
+#  $ c:List of 2
+#   ..$ x: num 1
+#   ..$ w: num [1:2] NA 1</code>
+
+The function can also be related to missing values. For example, exclude all empty values and vectors with at least <code>NA</code>s.
+
+<code>str(list.clean(x, <span class="orange">function</span>(x) length(x) == <span class="hljs-number">0L</span> || anyNA(x), recursive = <span class="hljs-literal">TRUE</span>))</code>
+
+<code># List of 2
+#  $ a: num 1
+#  $ c:List of 1
+#   ..$ x: num 1</code>
+<h3> - subset</h3>
+
+<code>subset()</code> is implemented for list object in a way that combines <code>list.filter()</code> and <code>list.map()</code>. This function basically filters a list while at the same time maps the qualified list elements by an expression.
+
+<code>people %&gt;&gt;%
+  subset(Age &gt;= <span class="hljs-number">24</span>, Name)</code>
+
+<code># [[1]]
+# [1] "Ken"
+# 
+# [[2]]
+# [1] "James"
+# 
+# [[3]]
+# [1] "Penny"</code>
+
+<code>people %&gt;&gt;%
+  subset(<span class="blue">"reading"</span> %<span class="orange">in</span>% Interests, sum(as.numeric(Expertise)))</code>
+
+<code># [[1]]
+# [1] 9
+# 
+# [[2]]
+# [1] 7</code>
+
+                    
+
+<h2><span class="orange">Updating</span></h2>
+
+<code>list.update()</code> partially modifies the given list by a number of lists resulted from expressions.
+
+First, we load the data without any modification.
+
+<code><span class="orange">library</span>(rlist)
+<span class="orange">library</span>(pipeR)
+people &lt;- list.load(<span class="blue">"http://renkun.me/rlist-tutorial/data/sample.json"</span>)
+people %&gt;&gt;%
+  list.select(Name, Age) %&gt;&gt;%
+  list.stack</code>
+
+<code>#    Name Age
+# 1   Ken  24
+# 2 James  25
+# 3 Penny  24</code>
+
+<code>list.stack()</code> converts a list to a data frame with equivalent structure. We will introduce this function later.
+
+Suppose we find that the age of each people is mistakenly recorded, say, 1 year less than their actual ages, respectively, we need to update the original data by refresh the age of each element.
+
+<code>people %&gt;&gt;%
+  list.update(Age = Age + <span class="hljs-number">1</span>) %&gt;&gt;%
+  list.select(Name, Age) %&gt;&gt;%
+  list.stack</code>
+
+<code>#    Name Age
+# 1   Ken  25
+# 2 James  26
+# 3 Penny  25</code>
+
+<code>list.update()</code> can also be used to exclude certain fields of the elements. Once we update the fields we want to exclude to <code>NULL</code>, those fields are removed.
+
+<code>people %&gt;&gt;%
+  list.update(Interests = <span class="hljs-literal">NULL</span>, Expertise = <span class="hljs-literal">NULL</span>, N = length(Expertise)) %&gt;&gt;%
+  list.stack</code>
+
+<code>#    Name Age N
+# 1   Ken  24 3
+# 2 James  25 3
+# 3 Penny  24 3</code>
+
+                    
+
+<h2><span class="orange">Sorting</span></h2>
+
+rlist package provides functions for sorting list elements by a series of criteria.
+
+<code><span class="orange">library</span>(rlist)
+<span class="orange">library</span>(pipeR)
+people &lt;- list.load(<span class="blue">"http://renkun.me/rlist-tutorial/data/sample.json"</span>)</code>
+
+<h3> - list.order</h3>
+
+<code>list.order()</code> evaluates the given lambda expressions and find out the order by default ascending. If the values for some members tie, the next values of the next expression, if any, will count.
+
+To get the order in descending, use <code>()</code> to enclose the expression or simply write a minus operator (<code>-</code>) before the expression if its value is numeric.
+
+Get the order of people by Age in ascending order.
+
+<code>list.order(people, Age)</code>
+
+<code># [1] 1 3 2</code>
+
+Get the order of people by number of interests in ascending order.
+
+<code>list.order(people, length(Interests))</code>
+
+<code># [1] 2 3 1</code>
+
+Get the order of people by the number of years using R in <em>descending</em> order.
+
+<code>list.order(people, (Expertise$R))</code>
+
+<code># [1] 2 1 3</code>
+
+Get the order of people by the maximal number of years using a programming language in ascending order.
+
+<code>list.order(people, max(unlist(Expertise)))</code>
+
+<code># [1] 1 3 2</code>
+
+Get the order of people by the number of interests in descending order. If two people have the same number of interests, then the one who has been using R for more years should rank higher, thus ordering by R descending.
+
+<code>list.order(people, (length(Interests)), (Expertise$R))</code>
+
+<code># [1] 1 2 3</code>
+<h3> - list.sort</h3>
+
+<code>list.sort()</code> produces a sorted list of the original list members. Its usage is exactly the same as <code>list.order()</code>.
+
+<code>people %&gt;&gt;%
+  list.sort(Age) %&gt;&gt;%
+  list.select(Name, Age) %&gt;&gt;%
+  str</code>
+
+<code># List of 3
+#  $ :List of 2
+#   ..$ Name: chr "Ken"
+#   ..$ Age : int 24
+#  $ :List of 2
+#   ..$ Name: chr "Penny"
+#   ..$ Age : int 24
+#  $ :List of 2
+#   ..$ Name: chr "James"
+#   ..$ Age : int 25</code>
+
+<code>people %&gt;&gt;%
+  list.sort(length(Interests)) %&gt;&gt;%
+  list.select(Name, nint = length(Interests)) %&gt;&gt;%
+  str</code>
+
+<code># List of 3
+#  $ :List of 2
+#   ..$ Name: chr "James"
+#   ..$ nint: int 2
+#  $ :List of 2
+#   ..$ Name: chr "Penny"
+#   ..$ nint: int 2
+#  $ :List of 2
+#   ..$ Name: chr "Ken"
+#   ..$ nint: int 3</code>
+
+<code>people %&gt;&gt;%
+  list.sort((Expertise$R)) %&gt;&gt;%
+  list.select(Name, R = Expertise$R) %&gt;&gt;%
+  str</code>
+
+<code># List of 3
+#  $ :List of 2
+#   ..$ Name: chr "James"
+#   ..$ R   : int 3
+#  $ :List of 2
+#   ..$ Name: chr "Ken"
+#   ..$ R   : int 2
+#  $ :List of 2
+#   ..$ Name: chr "Penny"
+#   ..$ R   : int 1</code>
+
+<code>people %&gt;&gt;%
+  list.sort(max(unlist(Expertise))) %&gt;&gt;%
+  list.mapv(Name)</code>
+
+<code># [1] "Ken"   "Penny" "James"</code>
+
+<code>people %&gt;&gt;%
+  list.sort((length(Interests)), (Expertise$R)) %&gt;&gt;%
+  list.select(Name, nint = length(Interests), R = Expertise$R) %&gt;&gt;%
+  str</code>
+
+<code># List of 3
+#  $ :List of 3
+#   ..$ Name: chr "Ken"
+#   ..$ nint: int 3
+#   ..$ R   : int 2
+#  $ :List of 3
+#   ..$ Name: chr "James"
+#   ..$ nint: int 2
+#   ..$ R   : int 3
+#  $ :List of 3
+#   ..$ Name: chr "Penny"
+#   ..$ nint: int 2
+#   ..$ R   : int 1</code>
+
+                    
+
+<h2><span class="orange">Grouping</span></h2>
+
+rlist supports multiple types of grouping. 
+
+First, we load the sample data.
+
+<code><span class="orange">library</span>(rlist)
+<span class="orange">library</span>(pipeR)
+people &lt;- list.load(<span class="blue">"http://renkun.me/rlist-tutorial/data/sample.json"</span>)</code>
+
+<h3> - list.group</h3>
+
+<code>list.group()</code> is used to put list elements into subgroups by evaluating an expression. The expression often produces a scalar value such as a logical value, a character value, or a number. Each group denotes a unique value that expression takes for at least one list element, and all elements are put into one and only one group.
+
+Divide numbers from 1 to 10 into even and odd numbers.
+
+<code>list.group(<span class="hljs-number">1</span>:<span class="hljs-number">10</span>, . %% <span class="hljs-number">2</span> == <span class="hljs-number">0</span>)</code>
+
+<code># $`FALSE`
+# [1] 1 3 5 7 9
+# 
+# $`TRUE`
+# [1]  2  4  6  8 10</code>
+
+The result is a list of two elements, which are the two possible outcome of evaluating <code>. %% 2 == 0L</code> given each number in <code>1:10</code>. <code>FALSE</code> group contains all odd numbers in <code>1:10</code> and <code>TRUE</code> group contains all even numbers in <code>1:10</code>. 
+
+This simple example demonstrates that the result of <code>list.group()</code> is always a list containing sublists with names of all possible outcomes, and the value of each sub-list is a subset of the original data in which each element evaluates the grouping expression to the same value.
+
+With the same logic, we can divide all elements in <code>people</code> into groups by their ages:
+
+<code>str(list.group(people, Age))</code>
+
+<code># List of 2
+#  $ 24:List of 2
+#   ..$ :List of 4
+#   .. ..$ Name     : chr "Ken"
+#   .. ..$ Age      : int 24
+#   .. ..$ Interests: chr [1:3] "reading" "music" "movies"
+#   .. ..$ Expertise:List of 3
+#   .. .. ..$ R     : int 2
+#   .. .. ..$ CSharp: int 4
+#   .. .. ..$ Python: int 3
+#   ..$ :List of 4
+#   .. ..$ Name     : chr "Penny"
+#   .. ..$ Age      : int 24
+#   .. ..$ Interests: chr [1:2] "movies" "reading"
+#   .. ..$ Expertise:List of 3
+#   .. .. ..$ R     : int 1
+#   .. .. ..$ Cpp   : int 4
+#   .. .. ..$ Python: int 2
+#  $ 25:List of 1
+#   ..$ :List of 4
+#   .. ..$ Name     : chr "James"
+#   .. ..$ Age      : int 25
+#   .. ..$ Interests: chr [1:2] "sports" "music"
+#   .. ..$ Expertise:List of 3
+#   .. .. ..$ R   : int 3
+#   .. .. ..$ Java: int 2
+#   .. .. ..$ Cpp : int 5</code>
+
+The result is another list whose first-level elements are the groups and the elements in each group are exactly the elements that belong to the group.
+
+Since the grouped result is also a list, we can always use rlist functions on the sublists as groups. Therefore, to get the names of people in each group, we can map each group to the names in it.
+
+<code>people %&gt;&gt;%
+  list.group(Age) %&gt;&gt;%
+  list.map(. %&gt;&gt;% list.mapv(Name))</code>
+
+<code># $`24`
+# [1] "Ken"   "Penny"
+# 
+# $`25`
+# [1] "James"</code>
+
+The mapping runs at the first-level, that is, for each group. The mapper expression <code>. %&gt;&gt;% list.mapv(Name)</code> means that each people in the group maps to the name.
+
+The same logic allows us to do another grouping by the number of Interests and then to see their names.
+
+<code>people %&gt;&gt;%
+  list.group(length(Interests)) %&gt;&gt;%
+  list.map(. %&gt;&gt;% list.mapv(Name))</code>
+
+<code># $`2`
+# [1] "James" "Penny"
+# 
+# $`3`
+# [1] "Ken"</code>
+<h3> - list.ungroup</h3>
+
+<code>list.group()</code> produces a nested list in which the first level are groups and the second level are the original list elements put into different groups. 
+
+<code>list.ungroup()</code> reverts this process. In other words, the function eradicates the group level of a list.
+
+<code>ageGroups &lt;- list.group(people, Age)
+str(list.ungroup(ageGroups))</code>
+
+<code># List of 3
+#  $ :List of 4
+#   ..$ Name     : chr "Ken"
+#   ..$ Age      : int 24
+#   ..$ Interests: chr [1:3] "reading" "music" "movies"
+#   ..$ Expertise:List of 3
+#   .. ..$ R     : int 2
+#   .. ..$ CSharp: int 4
+#   .. ..$ Python: int 3
+#  $ :List of 4
+#   ..$ Name     : chr "Penny"
+#   ..$ Age      : int 24
+#   ..$ Interests: chr [1:2] "movies" "reading"
+#   ..$ Expertise:List of 3
+#   .. ..$ R     : int 1
+#   .. ..$ Cpp   : int 4
+#   .. ..$ Python: int 2
+#  $ :List of 4
+#   ..$ Name     : chr "James"
+#   ..$ Age      : int 25
+#   ..$ Interests: chr [1:2] "sports" "music"
+#   ..$ Expertise:List of 3
+#   .. ..$ R   : int 3
+#   .. ..$ Java: int 2
+#   .. ..$ Cpp : int 5</code>
+<h3> - list.cases</h3>
+
+In non-relational data structures, a field can be a vector of multiple values. <code>list.cases()</code> is used to find out all possible cases by evaluating a vector-valued expression for each list element.
+
+In data <code>people</code>, field <code>Interests</code> is usually a character vector of multiple values. The following code will find out all possible Interests for all list elements.
+
+<code>list.cases(people, Interests)</code>
+
+<code># [1] "movies"  "music"   "reading" "sports"</code>
+
+Or use similar code to find out all programming Expertise the developers use.
+
+<code>list.cases(people, names(Expertise))</code>
+
+<code># [1] "Cpp"    "CSharp" "Java"   "Python" "R"</code>
+<h3> - list.class</h3>
+
+<code>list.class()</code> groups list elements by cases, that is, it categorizes them by examining if the value of a given expression for each list element <em>inlcudes</em> the case. As a result, the function produces a long and nested list in which the first-level denotes all the cases, and the second-level includes the original list elements.
+
+Since each list element may belong to multiple cases, the classification of the cases for each element is not exclusive. You may find one list element belong to multiple cases in the resulted list.
+
+If the expression is itself single-valued and thus exclusive, then the result is the same with that produced by <code>list.group()</code>. For example,
+
+<code><span class="hljs-number">1</span>:<span class="hljs-number">10</span> %&gt;&gt;%
+  list.class(. %% <span class="hljs-number">2</span> == <span class="hljs-number">0</span>)</code>
+
+<code># $`FALSE`
+# [1] 1 3 5 7 9
+# 
+# $`TRUE`
+# [1]  2  4  6  8 10</code>
+
+If the value of the expression is not single-valued, then <code>list.class()</code> and <code>list.group()</code> behaves differently. For example, we perform case classification by <code>Interests</code>:
+
+<code>str(list.class(people, Interests))</code>
+
+<code># List of 4
+#  $ movies :List of 2
+#   ..$ :List of 4
+#   .. ..$ Name     : chr "Ken"
+#   .. ..$ Age      : int 24
+#   .. ..$ Interests: chr [1:3] "reading" "music" "movies"
+#   .. ..$ Expertise:List of 3
+#   .. .. ..$ R     : int 2
+#   .. .. ..$ CSharp: int 4
+#   .. .. ..$ Python: int 3
+#   ..$ :List of 4
+#   .. ..$ Name     : chr "Penny"
+#   .. ..$ Age      : int 24
+#   .. ..$ Interests: chr [1:2] "movies" "reading"
+#   .. ..$ Expertise:List of 3
+#   .. .. ..$ R     : int 1
+#   .. .. ..$ Cpp   : int 4
+#   .. .. ..$ Python: int 2
+#  $ music  :List of 2
+#   ..$ :List of 4
+#   .. ..$ Name     : chr "Ken"
+#   .. ..$ Age      : int 24
+#   .. ..$ Interests: chr [1:3] "reading" "music" "movies"
+#   .. ..$ Expertise:List of 3
+#   .. .. ..$ R     : int 2
+#   .. .. ..$ CSharp: int 4
+#   .. .. ..$ Python: int 3
+#   ..$ :List of 4
+#   .. ..$ Name     : chr "James"
+#   .. ..$ Age      : int 25
+#   .. ..$ Interests: chr [1:2] "sports" "music"
+#   .. ..$ Expertise:List of 3
+#   .. .. ..$ R   : int 3
+#   .. .. ..$ Java: int 2
+#   .. .. ..$ Cpp : int 5
+#  $ reading:List of 2
+#   ..$ :List of 4
+#   .. ..$ Name     : chr "Ken"
+#   .. ..$ Age      : int 24
+#   .. ..$ Interests: chr [1:3] "reading" "music" "movies"
+#   .. ..$ Expertise:List of 3
+#   .. .. ..$ R     : int 2
+#   .. .. ..$ CSharp: int 4
+#   .. .. ..$ Python: int 3
+#   ..$ :List of 4
+#   .. ..$ Name     : chr "Penny"
+#   .. ..$ Age      : int 24
+#   .. ..$ Interests: chr [1:2] "movies" "reading"
+#   .. ..$ Expertise:List of 3
+#   .. .. ..$ R     : int 1
+#   .. .. ..$ Cpp   : int 4
+#   .. .. ..$ Python: int 2
+#  $ sports :List of 1
+#   ..$ :List of 4
+#   .. ..$ Name     : chr "James"
+#   .. ..$ Age      : int 25
+#   .. ..$ Interests: chr [1:2] "sports" "music"
+#   .. ..$ Expertise:List of 3
+#   .. .. ..$ R   : int 3
+#   .. .. ..$ Java: int 2
+#   .. .. ..$ Cpp : int 5</code>
+
+We get a list containing sub-lists named by all possible interests, and each sub-lists contains all list elements that whose interests <em>include</em> the corresponding interest.
+
+Similar to building nested pipelines in <code>list.group()</code> examples, we can get the people&apos;s names in each class.
+
+<code>people %&gt;&gt;%
+  list.class(Interests) %&gt;&gt;%
+  list.map(. %&gt;&gt;% list.mapv(Name))</code>
+
+<code># $movies
+# [1] "Ken"   "Penny"
+# 
+# $music
+# [1] "Ken"   "James"
+# 
+# $reading
+# [1] "Ken"   "Penny"
+# 
+# $sports
+# [1] "James"</code>
+
+The exactly same logic also applies when we want to know the people&apos;s names classified by the name of programming languages as expertise:
+
+<code>people %&gt;&gt;%
+  list.class(names(Expertise)) %&gt;&gt;%
+  list.map(. %&gt;&gt;% list.mapv(Name))</code>
+
+<code># $Cpp
+# [1] "James" "Penny"
+# 
+# $CSharp
+# [1] "Ken"
+# 
+# $Java
+# [1] "James"
+# 
+# $Python
+# [1] "Ken"   "Penny"
+# 
+# $R
+# [1] "Ken"   "James" "Penny"</code>
+<h3> - list.common</h3>
+
+This function returns the common cases by evaluating a given expression for all list elements.
+
+Get the common Interests of all developers.
+
+<code>list.common(people, Interests)</code>
+
+<code># character(0)</code>
+
+It concludes that no interests are common to every one. Let&apos;s see if there is any common programming language they all use.
+
+<code>list.common(people, names(Expertise))</code>
+
+<code># [1] "R"</code>
+<h3> - list.table</h3>
+
+<code>table()</code> builds a contingency table of the counts at each combination of factor levels using cross-classifying factors. <code>list.table()</code> is a wrapper that creates a table in which each dimension results from the values for an expression.
+
+The function is very handy to serve as a counter. The following examples shows an easy way to know the remainders and the number of integers from 1 to 1000 when each is divided by 3.
+
+<code>list.table(<span class="hljs-number">1</span>:<span class="hljs-number">1000</span>, . %% <span class="hljs-number">3</span>)</code>
+
+<code># 
+#   0   1   2 
+# 333 334 333</code>
+
+For <code>people</code> dataset, we can build a two-dimensional table to show the distribution of number of interests and age.
+
+<code>list.table(people, Interests=length(Interests), Age)</code>
+
+<code>#          Age
+# Interests 24 25
+#         2  1  1
+#         3  1  0</code>
+
+                    
+
+<h2><span class="orange">Joining</span></h2>
+
+<code>list.join()</code> joins two lists by certain expressions and <code>list.merge()</code> merges a series of named lists.
+
+<code><span class="orange">library</span>(rlist)
+<span class="orange">library</span>(pipeR)
+people &lt;- list.load(<span class="blue">"http://renkun.me/rlist-tutorial/data/sample.json"</span>) %&gt;&gt;%
+  list.names(Name)</code>
+
+<h3> - list.join</h3>
+
+<code>list.join()</code> is used to join two lists by a key evaluated from either a common expression for the two lists or two separate expressions for each list.
+
+<code>newinfo &lt;-
+  list(
+    list(Name=<span class="blue">"Ken"</span>, Email=<span class="blue">"ken@xyz.com"</span>),
+    list(Name=<span class="blue">"Penny"</span>, Email=<span class="blue">"penny@xyz.com"</span>),
+    list(Name=<span class="blue">"James"</span>, Email=<span class="blue">"james@xyz.com"</span>))
+str(list.join(people, newinfo, Name))</code>
+
+<code># List of 3
+#  $ Ken  :List of 5
+#   ..$ Name     : chr "Ken"
+#   ..$ Age      : int 24
+#   ..$ Interests: chr [1:3] "reading" "music" "movies"
+#   ..$ Expertise:List of 3
+#   .. ..$ R     : int 2
+#   .. ..$ CSharp: int 4
+#   .. ..$ Python: int 3
+#   ..$ Email    : chr "ken@xyz.com"
+#  $ James:List of 5
+#   ..$ Name     : chr "James"
+#   ..$ Age      : int 25
+#   ..$ Interests: chr [1:2] "sports" "music"
+#   ..$ Expertise:List of 3
+#   .. ..$ R   : int 3
+#   .. ..$ Java: int 2
+#   .. ..$ Cpp : int 5
+#   ..$ Email    : chr "james@xyz.com"
+#  $ Penny:List of 5
+#   ..$ Name     : chr "Penny"
+#   ..$ Age      : int 24
+#   ..$ Interests: chr [1:2] "movies" "reading"
+#   ..$ Expertise:List of 3
+#   .. ..$ R     : int 1
+#   .. ..$ Cpp   : int 4
+#   .. ..$ Python: int 2
+#   ..$ Email    : chr "penny@xyz.com"</code>
+<h3> - list.merge</h3>
+
+<code>list.merge()</code> is used to recursively merge a series of lists with the later always updates the former. It works with two lists, as shown in the example below, in which a revision is merged with the original list.
+
+More specifically, the merge works in a way that lists are partially updated, which allows us to specify only the fields we want to update or add for a list element, or use <code>NULL</code> to remove a field.
+
+<code>rev1 &lt;-
+  list(
+    Ken = list(Age=<span class="hljs-number">25</span>),
+    James = list(Expertise = list(R=<span class="hljs-number">2</span>, Cpp=<span class="hljs-number">4</span>)),
+    Penny = list(Expertise = list(R=<span class="hljs-number">2</span>, Python=<span class="hljs-literal">NULL</span>)))
+str(list.merge(people,rev1))</code>
+
+<code># List of 3
+#  $ Ken  :List of 4
+#   ..$ Name     : chr "Ken"
+#   ..$ Age      : num 25
+#   ..$ Interests: chr [1:3] "reading" "music" "movies"
+#   ..$ Expertise:List of 3
+#   .. ..$ R     : int 2
+#   .. ..$ CSharp: int 4
+#   .. ..$ Python: int 3
+#  $ James:List of 4
+#   ..$ Name     : chr "James"
+#   ..$ Age      : int 25
+#   ..$ Interests: chr [1:2] "sports" "music"
+#   ..$ Expertise:List of 3
+#   .. ..$ R   : num 2
+#   .. ..$ Java: int 2
+#   .. ..$ Cpp : num 4
+#  $ Penny:List of 4
+#   ..$ Name     : chr "Penny"
+#   ..$ Age      : int 24
+#   ..$ Interests: chr [1:2] "movies" "reading"
+#   ..$ Expertise:List of 2
+#   .. ..$ R  : num 2
+#   .. ..$ Cpp: int 4</code>
+
+The function also works with multiple lists. When the second revision is obtained, the three lists can be merged in order.
+
+<code>rev2 &lt;-
+  list(
+    James = list(Expertise=list(CSharp = <span class="hljs-number">5</span>)),
+    Penny = list(Age = <span class="hljs-number">24</span>,Expertise=list(R = <span class="hljs-number">3</span>)))
+str(list.merge(people,rev1, rev2))</code>
+
+<code># List of 3
+#  $ Ken  :List of 4
+#   ..$ Name     : chr "Ken"
+#   ..$ Age      : num 25
+#   ..$ Interests: chr [1:3] "reading" "music" "movies"
+#   ..$ Expertise:List of 3
+#   .. ..$ R     : int 2
+#   .. ..$ CSharp: int 4
+#   .. ..$ Python: int 3
+#  $ James:List of 4
+#   ..$ Name     : chr "James"
+#   ..$ Age      : int 25
+#   ..$ Interests: chr [1:2] "sports" "music"
+#   ..$ Expertise:List of 4
+#   .. ..$ R     : num 2
+#   .. ..$ Java  : int 2
+#   .. ..$ Cpp   : num 4
+#   .. ..$ CSharp: num 5
+#  $ Penny:List of 4
+#   ..$ Name     : chr "Penny"
+#   ..$ Age      : num 24
+#   ..$ Interests: chr [1:2] "movies" "reading"
+#   ..$ Expertise:List of 2
+#   .. ..$ R  : num 3
+#   .. ..$ Cpp: int 4</code>
+
+Note that <code>list.merge()</code> only works with lists with names; otherwise the merging function will not know the correspondence between the list elements to merge.
+
+                    
+
+<h2><span class="orange">Searching</span></h2>
+
+rlist provides searching capabilities, that is, to find values within a list recursively. <code>list.search()</code> handles a variety of search demands. 
+
+<code><span class="orange">library</span>(rlist)
+<span class="orange">library</span>(pipeR)
+friends &lt;- list.load(<span class="blue">"http://renkun.me/rlist-tutorial/data/friends.json"</span>)</code>
+
+If the expression results in a single-valued logical vector and its value is <code>TRUE</code>, the whole vector will be collected. If it results in multi-valued non-logical vector, the non-<code>NA</code> results will be collected. 
+
+Search all elements equal to <em>Ken</em> recursively.
+
+<code>list.search(friends, . == <span class="blue">"Ken"</span>)</code>
+
+<code># $Ken.Name
+# [1] "Ken"
+# 
+# $James.Friends
+# [1]  TRUE FALSE
+# 
+# $Penny.Friends
+# [1] FALSE FALSE</code>
+
+Note that <code>.</code> represents every atomic vector in the list and sublists. For single-valued vector, the search expression results in <code>TRUE</code> or <code>FALSE</code> indicating whether or not to return the text of the character vector. For multi-valued vector, the search expression instead results in mutli-valued logical vector which will be considered invalid as search results.
+
+To find out all vectors that includes <em>Ken</em>, we can use <code>%in%</code>, which always returns <code>TRUE</code> or <code>FALSE</code> for this dataset.
+
+<code>list.search(friends, <span class="blue">"Ken"</span> %<span class="orange">in</span>% .)</code>
+
+<code># $Ken.Name
+# [1] "Ken"
+# 
+# $James.Friends
+# [1] "Ken"   "Penny"</code>
+
+If the search expression returns a non-logical vector with non-<code>NA</code> values, then these values are returned. For example, search all values of <em>Ken</em>.
+
+<code>list.search(friends, .[. == <span class="blue">"Ken"</span>])</code>
+
+<code># $Ken.Name
+# [1] "Ken"
+# 
+# $James.Friends
+# [1] "Ken"</code>
+
+The selector can be very flexible. We can use regular expression in the search expression. For example, search all values that matches the pattern <em>en</em>, that is, includes <em>en</em> in the text.
+
+<code>list.search(friends, .[grepl(<span class="blue">"en"</span>,.)])</code>
+
+<code># $Ken.Name
+# [1] "Ken"
+# 
+# $James.Friends
+# [1] "Ken"   "Penny"
+# 
+# $Penny.Name
+# [1] "Penny"
+# 
+# $David.Friends
+# [1] "Penny"</code>
+
+The above examples demonstrate how searching can be done recursively using <code>list.search()</code>. However, the function by defaults evaluate with all types of sub-elements. For example, if we look for character values of <em>24</em>,
+
+<code>list.search(friends, . == <span class="blue">"24"</span>)</code>
+
+<code># $Ken.Age
+# [1] 24
+# 
+# $James.Friends
+# [1] FALSE FALSE
+# 
+# $Penny.Age
+# [1] 24
+# 
+# $Penny.Friends
+# [1] FALSE FALSE</code>
+
+the integer value will be returned too. It is because when R evaluates the following expression
+
+<code><span class="hljs-number">24</span> == <span class="blue">"24"</span></code>
+
+<code># [1] TRUE</code>
+
+number 24 is coerced to string <em>24</em> which then are equal. This is also known as the result of comparison of atomic vectors. However, this behavior is not always desirable in practice. If we want to limit the search to the range of character vectors rather than any, we have to specify <code>classes =</code> argument for <code>list.search()</code>.
+
+<code>list.search(friends, . == <span class="blue">"24"</span>, classes = <span class="blue">"character"</span>)</code>
+
+<code># $James.Friends
+# [1] FALSE FALSE
+# 
+# $Penny.Friends
+# [1] FALSE FALSE</code>
+
+This time no character value is found to equal <em>24</em>. To improve the search performance and safety, it is always recommended to explicitly specify the classes to search so as to avoid undesired coercion which might lead to unexpected results.
+
+In some cases, the search results are deeply nested. In this case, we need to unlist it so that the results are better viewed. In this case, we can set <code>unlist = TRUE</code> so that an atomic vector will be returned.
+
+<code>list.search(friends, .[grepl(<span class="blue">"en"</span>,.)], <span class="blue">"character"</span>, unlist = <span class="hljs-literal">TRUE</span>)</code>
+
+<code>#       Ken.Name James.Friends1 James.Friends2     Penny.Name  David.Friends 
+#          "Ken"          "Ken"        "Penny"        "Penny"        "Penny"</code>
+
+Sometimes, we don&apos;t need that many results to be found. We can set <code>n =</code> to limit the number of results to show.
+
+<code>list.search(friends, .[grepl(<span class="blue">"en"</span>,.)], <span class="blue">"character"</span>, n = <span class="hljs-number">3</span>, unlist = <span class="hljs-literal">TRUE</span>)</code>
+
+<code>#       Ken.Name James.Friends1 James.Friends2     Penny.Name 
+#          "Ken"          "Ken"        "Penny"        "Penny"</code>
+
+Like other rlist functions, the search expression can be a lambda expression. However, <code>list.search()</code> does not name meta-sybmol in search expression yet. In other words, you cannot use <code>.name</code> to represent the name of the element. You can use <code>.i</code> to represent the number of vectors that has been checked, and <code>.n</code> to represent the number of vectors that satisfy the condition.
+
+                    
+
+<h2><span class="orange">Comparers</span></h2>
+
+<code>list.filter()</code> and <code>list.search()</code> are two major functions to find values that meet certain conditions. The condition is most likely to be a comparison, which can be done by exact comparing, atomic comparing, pattern matching by regular expression, string distance comparing, and so on.
+
+In this page, we will introduce the usage of these comparers with filtering and searching functions and you will know more about how to perform logical and fuzzy data selection.
+
+<code><span class="orange">library</span>(rlist)
+<span class="orange">library</span>(pipeR)
+people &lt;- list.load(<span class="blue">"http://renkun.me/rlist-tutorial/data/sample.json"</span>)
+friends &lt;- list.load(<span class="blue">"http://renkun.me/rlist-tutorial/data/friends.json"</span>)</code>
+
+<h3> - Precise comparers</h3>
+
+Precise comparers include functions that compare the source value and target value precisely and see whether they are equal. The target value represents a certain value.
+
+<h3> - Exact comparer</h3>
+
+Exact comparing can be done with <code>identical()</code> which is built-in function that tells if two objects are exactly the same in terms of type, value, and attributes.
+
+<blockquote>
+
+NOTE: <code>identical()</code> is perhaps the strictest comparer that returns <code>FALSE</code> if any difference is spotted.
+
+</blockquote>
+
+Two vectors that have equal values may not be identical: they may not have the same type or the same attributes. For example, two vectors having equal values
+
+<code>c(<span class="hljs-number">1</span>,<span class="hljs-number">2</span>,<span class="hljs-number">3</span>) == <span class="hljs-number">1</span>:<span class="hljs-number">3</span></code>
+
+<code># [1] TRUE TRUE TRUE</code>
+
+may not be identical.
+
+<code>identical(c(<span class="hljs-number">1</span>,<span class="hljs-number">2</span>,<span class="hljs-number">3</span>), <span class="hljs-number">1</span>:<span class="hljs-number">3</span>)</code>
+
+<code># [1] FALSE</code>
+
+This happens because <code>c(1,2,3)</code> is a numeric vector while <code>1:3</code> produces an integer vector. <code>==</code> first coerce the integer vector to numeric vector and then compare the values but <code>identical()</code> will directly check if they are exactly the same.
+
+In addition, the names of the vector make a difference too. Even if the values are exactly the same, a difference in names will also fails the check in <code>identical()</code>.
+
+<code>c(a=<span class="hljs-number">1</span>,b=<span class="hljs-number">2</span>,c=<span class="hljs-number">3</span>) == c(<span class="hljs-number">1</span>,<span class="hljs-number">2</span>,<span class="hljs-number">3</span>)</code>
+
+<code>#    a    b    c 
+# TRUE TRUE TRUE</code>
+
+<code>identical(c(a=<span class="hljs-number">1</span>,b=<span class="hljs-number">2</span>,c=<span class="hljs-number">3</span>), c(<span class="hljs-number">1</span>,<span class="hljs-number">2</span>,<span class="hljs-number">3</span>))</code>
+
+<code># [1] FALSE</code>
+
+This happens because the names is in fact one of the common attributes of a vector object, which is in the checklist of <code>identical()</code>.
+
+Having known the difference between exact comparing (<code>identical()</code>) and value comparing (<code>==</code>), we filter the people by whether their <code>Name</code> is exactly identical to <em>Ken</em>.
+
+<code>people %&gt;&gt;%
+  list.filter(identical(Name, <span class="blue">"Ken"</span>)) %&gt;&gt;%
+  str</code>
+
+<code># List of 1
+#  $ :List of 4
+#   ..$ Name     : chr "Ken"
+#   ..$ Age      : int 24
+#   ..$ Interests: chr [1:3] "reading" "music" "movies"
+#   ..$ Expertise:List of 3
+#   .. ..$ R     : int 2
+#   .. ..$ CSharp: int 4
+#   .. ..$ Python: int 3</code>
+
+Only people whose <code>Name</code> is exactly the same with character vector <code>"Ken"</code> will be singled out.
+
+We can also use it in searching. For example, search all vectors exactly identical to <code>"Ken"</code>.
+
+<code>list.search(friends, identical(., <span class="blue">"Ken"</span>))</code>
+
+<code># $Ken.Name
+# [1] "Ken"</code>
+
+Only values that are identical to character vector <code>"Ken"</code> will be put in the resulting list. We can also unlist the result.
+
+<code>list.search(friends, identical(., <span class="blue">"Ken"</span>), unlist = <span class="hljs-literal">TRUE</span>)</code>
+
+<code># Ken.Name 
+#    "Ken"</code>
+
+Then, we search all values identical to <code>c("Ken","Penny")</code>.
+
+<code>list.search(friends, identical(., c(<span class="blue">"Ken"</span>,<span class="blue">"Penny"</span>)))</code>
+
+<code># $James.Friends
+# [1] "Ken"   "Penny"</code>
+
+Next, we search values exactly identical to numeric value <code>24</code>.
+
+<code>list.search(friends, identical(., <span class="hljs-number">24</span>))</code>
+
+<code># named list()</code>
+
+The result is none. If you are familiar with how function <code>identical()</code> works as we described, you should not feel surprised. If you take a look at the data,
+
+<code>str(friends)</code>
+
+<code># List of 4
+#  $ Ken  :List of 3
+#   ..$ Name   : chr "Ken"
+#   ..$ Age    : int 24
+#   ..$ Friends: chr "James"
+#  $ James:List of 3
+#   ..$ Name   : chr "James"
+#   ..$ Age    : int 25
+#   ..$ Friends: chr [1:2] "Ken" "Penny"
+#  $ Penny:List of 3
+#   ..$ Name   : chr "Penny"
+#   ..$ Age    : int 24
+#   ..$ Friends: chr [1:2] "James" "David"
+#  $ David:List of 3
+#   ..$ Name   : chr "David"
+#   ..$ Age    : int 25
+#   ..$ Friends: chr "Penny"</code>
+
+you will find that the ages are all stored as integers rather than numerics. Therefore, searching exact integers will work.
+
+<code>list.search(friends, identical(., <span class="hljs-number">24L</span>))</code>
+
+<code># $Ken.Age
+# [1] 24
+# 
+# $Penny.Age
+# [1] 24</code>
+<h3> - Value comparer</h3>
+
+<code>==</code> compares two atomic vectors by value and returns a logical vector indicating whether each pair of value coerced to a common type equal to each other. This comparison mechanism allows for more flexibility and can be useful in a wide range of situations.
+
+For example, we search all values at least include one of <code>"Ken"</code> and <code>"Penny"</code>.
+
+<code>list.search(friends, any(c(<span class="blue">"Ken"</span>,<span class="blue">"Penny"</span>) %<span class="orange">in</span>% .), unlist = <span class="hljs-literal">TRUE</span>)</code>
+
+<code>#       Ken.Name James.Friends1 James.Friends2     Penny.Name  David.Friends 
+#          "Ken"          "Ken"        "Penny"        "Penny"        "Penny"</code>
+
+Similarly, we search all numeric and integer values equal to <code>24</code>.
+
+<code>list.search(friends, . == <span class="hljs-number">24</span>, c(<span class="blue">"numeric"</span>,<span class="blue">"integer"</span>), unlist = <span class="hljs-literal">TRUE</span>)</code>
+
+<code>#   Ken.Age Penny.Age 
+#        24        24</code>
+
+When the code above is being evaluated, all numeric vectors and integer vectors are evaluated by <code>. == 24</code> recursively in <code>friends</code> where <code>.</code> represents the vector.
+
+<h3> - Fuzzy comparers</h3>
+
+Fuzzy comparers can be useful in a wide range of situations. In many cases, the filtering of data, mainly string data, is not clear-cut, that is, we don&apos;t know exactly the value or range to select. We will cover two main types of fuzzy comparers.
+
+<h3> - Regular expression</h3>
+
+One type of fuzzy filtering device is string pattern. It uses meta-symbols to represent a range of possible strings. Then all values that match this pattern can be selected.
+
+For example, if we need to find all companies in a list with a domain name that ends up with <code>.com</code> or <code>.org</code>, we can use regular expression to tell whether a string matches a specific pattern. 
+
+For <code>people</code> dataset, we can find out the names and ages of all those who have a name that includes <code>"en"</code> using <code>grepl()</code> which returns <code>TRUE</code> or <code>FALSE</code> indicating whether the string matches a given pattern.
+
+<code>people %&gt;&gt;%
+  list.filter(grepl(<span class="blue">"en"</span>, Name)) %&gt;&gt;%
+  list.select(Name, Age) %&gt;&gt;%
+  list.stack</code>
+
+<code>#    Name Age
+# 1   Ken  24
+# 2 Penny  24</code>
+
+Regular expression is flexible enough to represent a wide range of string patterns. There are plentiful websites introducing regular expressions:
+
+<ol>
+<li><a href="http://regexone.com/" target="_blank">RegexOne</a>: An interative tutorial</li>
+<li><a href="http://www.regexr.com/" target="_blank">RegExr</a>: An online string pattern tester</li>
+</ol>
+
+If you get to know more about it, it would certainly be rewarding in string-related data manipulation.
+
+<h3> - String distance</h3>
+
+The other type of fuzzy comparer is string distance measure. It is particularly useful if the quality of the data source is not high enough to only contain consistent texts. For example, if an object has a rich variants of names with very close spellings but slight differences or mis-spellings, a string-distance comparer can be useful.
+
+<a href="https://github.com/markvanderloo/stringdist" target="_blank">stringdist</a> is an R package that implements a rich collection of string distance measures. Basically, a string distance measure can tell you if two strings are close or not.
+
+<code><span class="orange">library</span>(stringdist)
+stringdist(<span class="blue">"a"</span>,<span class="blue">"b"</span>)</code>
+
+<code># [1] 1</code>
+
+The distance between <code>"a"</code> and <code>"b"</code> is 1 because, basically speaking, "a" can be transformed to "b" in no more than 1 elementary steps in terms of <a href="http://en.wikipedia.org/wiki/Damerau%E2%80%93Levenshtein_distance" target="_blank">restricted Damerau-Levenshtein distance</a> which is the default string distance meausres chosen by <code>stringdist()</code> function.
+
+<code>stringdist(<span class="blue">"helo"</span>,<span class="blue">"hello"</span>)</code>
+
+<code># [1] 1</code>
+
+The distance between <code>"helo"</code> and <code>"hello"</code> is also 1 because one only needs to add a letter to transform the first string to the second, or vice versa. The string distance measure largely tolerates minor mis-spellings or slight variants between strings.
+
+If you prefer other distance measure, you can specify <code>method=</code> argument. All possible values are listed in the documentation of <code>stringdist</code> package.
+
+<code>stringdist(<span class="blue">"hao"</span>,<span class="blue">"hello"</span>,method = <span class="blue">"dl"</span>)</code>
+
+<code># [1] 3</code>
+
+The string distance functions work with filtering functions in rlist. Consider the following data.
+
+<code>people1 &lt;- list(
+    p1 = list(name=<span class="blue">"Ken"</span>,age=<span class="hljs-number">24</span>),
+    p2 = list(name=<span class="blue">"Kent"</span>,age=<span class="hljs-number">26</span>),
+    p3 = list(name=<span class="blue">"Sam"</span>,age=<span class="hljs-number">24</span>),
+    p4 = list(name=<span class="blue">"Keynes"</span>,age=<span class="hljs-number">30</span>),
+    p5 = list(name=<span class="blue">"Kwen"</span>,age=<span class="hljs-number">31</span>))</code>
+
+We can use <code>stringdist()</code> in <code>stringdist</code> with <code>list.filter()</code>. For example, find all list elements whose <code>name</code> is like <code>"Ken"</code> with maximum distance 1, and output their pasted names as a named character vector.
+
+<code>people1 %&gt;&gt;%
+  list.filter(stringdist(name,<span class="blue">"Ken"</span>) &lt;= <span class="hljs-number">1</span>) %&gt;&gt;%
+  list.mapv(name)</code>
+
+<code>#     p1     p2     p5 
+#  "Ken" "Kent" "Kwen"</code>
+
+Consider the following list.
+
+<code>people2 &lt;- list(
+    p1 = list(name=c(<span class="blue">"Ken"</span>, <span class="blue">"Ren"</span>),age=<span class="hljs-number">24</span>),
+    p2 = list(name=c(<span class="blue">"Kent"</span>, <span class="blue">"Potter"</span>),age=<span class="hljs-number">26</span>),
+    p3 = list(name=c(<span class="blue">"Sam"</span>, <span class="blue">"Lee"</span>),age=<span class="hljs-number">24</span>),
+    p4 = list(name=c(<span class="blue">"Keynes"</span>, <span class="blue">"Bond"</span>),age=<span class="hljs-number">30</span>),
+    p5 = list(name=c(<span class="blue">"Kwen"</span>, <span class="blue">"Hu"</span>),age=<span class="hljs-number">31</span>))</code>
+
+If we want to find out names either is similar with <code>"ken"</code> with maximum distance 2, we can run
+
+<code>people2 %&gt;&gt;%
+  list.search(any(stringdist(., <span class="blue">"ken"</span>) &lt;= <span class="hljs-number">2</span>), <span class="blue">"character"</span>) %&gt;&gt;%
+  str</code>
+
+<code># List of 4
+#  $ p1.name: chr [1:2] "Ken" "Ren"
+#  $ p2.name: chr [1:2] "Kent" "Potter"
+#  $ p3.name: chr [1:2] "Sam" "Lee"
+#  $ p5.name: chr [1:2] "Kwen" "Hu"</code>
+
+We can also search the terms in the character vectors like <code>"Ken"</code> with distance 1 and single out the values alike.
+
+<code>people2 %&gt;&gt;%
+  list.search(.[stringdist(., <span class="blue">"Ken"</span>) &lt;= <span class="hljs-number">1</span>], <span class="blue">"character"</span>) %&gt;&gt;%
+  str</code>
+
+<code># List of 3
+#  $ p1.name: chr [1:2] "Ken" "Ren"
+#  $ p2.name: chr "Kent"
+#  $ p5.name: chr "Kwen"</code>
+
+<code>stringdist</code> even provides a Soundex-based string distance measure. We can use use it to find texts that sounds alike. For example, we can find out all people whose first name or last name sounds like Li.
+
+<code>people2 %&gt;&gt;%
+  list.filter(any(stringdist(name, <span class="blue">"Li"</span>, method = <span class="blue">"soundex"</span>) == <span class="hljs-number">0</span>)) %&gt;&gt;%
+  list.mapv(name %&gt;&gt;% paste0(collapse = <span class="blue">" "</span>))</code>
+
+<code>#        p3 
+# "Sam Lee"</code>
+
+                    
+
+<h2><span class="orange">Input/Output</span></h2>
+
+rlist provides various mechanisms for list data input and output. 
+
+<h3> - list.parse</h3>
+
+<code>list.parse()</code> is used to convert an object to list. For example, this function can convert <code>data.frame</code>, <code>matrix</code> to a list with identical structure.
+
+<code><span class="orange">library</span>(rlist)
+df1 &lt;- data.frame(name=c(<span class="blue">"Ken"</span>,<span class="blue">"Ashley"</span>,<span class="blue">"James"</span>),
+  age=c(<span class="hljs-number">24</span>,<span class="hljs-number">25</span>,<span class="hljs-number">23</span>), stringsAsFactors = <span class="hljs-literal">FALSE</span>)
+str(list.parse(df1))</code>
+
+<code># List of 3
+#  $ 1:List of 2
+#   ..$ name: chr "Ken"
+#   ..$ age : num 24
+#  $ 2:List of 2
+#   ..$ name: chr "Ashley"
+#   ..$ age : num 25
+#  $ 3:List of 2
+#   ..$ name: chr "James"
+#   ..$ age : num 23</code>
+
+This function also parses JSON or YAML format text.
+
+<code>jsontext &lt;- <span class="blue">&apos;
+[{ "name": "Ken", "age": 24 },
+ { "name": "Ashley", "age": 25},
+ { "name": "James", "age": 23 }]&apos;</span>
+str(list.parse(jsontext, <span class="blue">"json"</span>))</code>
+
+<code># List of 3
+#  $ :List of 2
+#   ..$ name: chr "Ken"
+#   ..$ age : int 24
+#  $ :List of 2
+#   ..$ name: chr "Ashley"
+#   ..$ age : int 25
+#  $ :List of 2
+#   ..$ name: chr "James"
+#   ..$ age : int 23</code>
+
+<code>yamltext &lt;- <span class="blue">"
+p1:
+  name: Ken
+  age: 24
+p2:
+  name: Ashley
+  age: 25
+p3:
+  name: James
+  age: 23
+"</span>
+str(list.parse(yamltext, <span class="blue">"yaml"</span>))</code>
+
+<code># List of 3
+#  $ p1:List of 2
+#   ..$ name: chr "Ken"
+#   ..$ age : int 24
+#  $ p2:List of 2
+#   ..$ name: chr "Ashley"
+#   ..$ age : int 25
+#  $ p3:List of 2
+#   ..$ name: chr "James"
+#   ..$ age : int 23</code>
+<h3> - list.stack</h3>
+
+<code>list.stack()</code> reverses <code>list.parse()</code> on a data frame, that is, it converts a list of homogeneous elements to a data frame with corresponding columns. In other words, the function stacks all list elements together, resulting in a data frame.
+
+<code>jsontext &lt;- <span class="blue">&apos;
+[{ "name": "Ken", "age": 24 },
+ { "name": "Ashley", "age": 25},
+ { "name": "James", "age": 23 }]&apos;</span>
+data &lt;- list.parse(jsontext, <span class="blue">"json"</span>)
+list.stack(data)</code>
+
+<code>#     name age
+# 1    Ken  24
+# 2 Ashley  25
+# 3  James  23</code>
+
+Note that data frame is much more efficient to store tabular data that has different columns, each of which is a vector storing values of the same type. In R, a data frame is in essence a list of vectors. However, the data rlist functions are designed to deal with can be non-tabular to allow more flexible and more loose data structure.
+
+If we are sure about the data structure of the resulted list and want to convert it to a data frame with equivalent structure, <code>list.stack()</code> does the work.
+
+<h3> - list.load, list.save</h3>
+
+<code>list.load()</code> loads data from a JSON, YAML, RData, or RDS file. Its default behavior is to first look at file extension and then determine which data loader is used. If the file extension does not match JSON or YAML, it will use RData loader.
+
+<code>list.save()</code> saves a list to a JSON, YAML, RData, or RDS file. Its default behavior is similar with that of <code>list.load()</code>.
+
+If the data are read or written by these two functions in JSON or YAML format, the data will be text-based and thus friendly for human reader. However, if a list contains complex objects such as S4 objects and language objects, the text-based format may not be appropriate to store such objects. You should consider storing them in binary format, i.e. RData or RDS file.
+
+<blockquote>
+
+NOTE: RData file is created by <code>save()</code> and can be loaded by <code>load()</code>. It usually stores an environment in which multiple objects are binded. RDS file is created by <code>saveRDS()</code> and can be loaded by <code>readRDS()</code>. It usually stores an R object directly.
+
+</blockquote>
+
+<code>list.load()</code> in the latest version supports loading files specified by a character vector. It also supports loading files without file extensions by iteratively loading files by JSON and YAML loader.
+
+<h3> - list.serialize, list.unserialize</h3>
+
+Serialization is the process that stores an object into fully-recoverable data format. <code>list.serialize()</code> and <code>list.deserialize()</code> provides the mechanism to capitalize the R native serializer/unserializer and JSON serializer/unserializer provided by <code>jsonlite</code>.
+
+                    
+
+<h2><span class="orange">Misc functions</span></h2>
+
+rlist provides miscellaneous functions to assist data manipulation. These functions are mainly designed to alter the structure of an list object.
+
+<h3> - list.append, list.prepend</h3>
+
+<code>list.append()</code> appends an element to a list and <code>list.prepend()</code> prepends an element to a list.
+
+<code><span class="orange">library</span>(rlist)
+list.append(list(a=<span class="hljs-number">1</span>, b=<span class="hljs-number">1</span>), c=<span class="hljs-number">1</span>)</code>
+
+<code># $a
+# [1] 1
+# 
+# $b
+# [1] 1
+# 
+# $c
+# [1] 1</code>
+
+<code>list.prepend(list(b=<span class="hljs-number">1</span>, c=<span class="hljs-number">2</span>), a=<span class="hljs-number">0</span>)</code>
+
+<code># $a
+# [1] 0
+# 
+# $b
+# [1] 1
+# 
+# $c
+# [1] 2</code>
+
+The function also works with vector.
+
+<code>list.append(<span class="hljs-number">1</span>:<span class="hljs-number">3</span>, <span class="hljs-number">4</span>)</code>
+
+<code># [1] 1 2 3 4</code>
+
+<code>list.prepend(<span class="hljs-number">1</span>:<span class="hljs-number">3</span>, <span class="hljs-number">0</span>)</code>
+
+<code># [1] 0 1 2 3</code>
+
+The names of the vector can be well handled.
+
+<code>list.append(c(a=<span class="hljs-number">1</span>,b=<span class="hljs-number">2</span>), c=<span class="hljs-number">3</span>)</code>
+
+<code># a b c 
+# 1 2 3</code>
+
+<code>list.prepend(c(b=<span class="hljs-number">2</span>,c=<span class="hljs-number">3</span>), a=<span class="hljs-number">1</span>)</code>
+
+<code># a b c 
+# 1 2 3</code>
+<h3> - list.reverse</h3>
+
+<code>list.reverse()</code> simply reverses a list or vector.
+
+<code>list.reverse(<span class="hljs-number">1</span>:<span class="hljs-number">10</span>)</code>
+
+<code>#  [1] 10  9  8  7  6  5  4  3  2  1</code>
+<h3> - list.zip</h3>
+
+<code>list.zip()</code> combines multiple lists element-wisely. In other words, the function takes the first element from all parameters, and then the second, and so on.
+
+<code>str(list.zip(a=c(<span class="hljs-number">1</span>,<span class="hljs-number">2</span>,<span class="hljs-number">3</span>), b=c(<span class="hljs-number">4</span>,<span class="hljs-number">5</span>,<span class="hljs-number">6</span>)))</code>
+
+<code># List of 3
+#  $ :List of 2
+#   ..$ a: num 1
+#   ..$ b: num 4
+#  $ :List of 2
+#   ..$ a: num 2
+#   ..$ b: num 5
+#  $ :List of 2
+#   ..$ a: num 3
+#   ..$ b: num 6</code>
+
+The list elements need not be atomic vectors. They can be any lists.
+
+<code>str(list.zip(x=list(<span class="hljs-number">1</span>,<span class="blue">"x"</span>), y=list(<span class="blue">"y"</span>,<span class="hljs-number">2</span>)))</code>
+
+<code># List of 2
+#  $ :List of 2
+#   ..$ x: num 1
+#   ..$ y: chr "y"
+#  $ :List of 2
+#   ..$ x: chr "x"
+#   ..$ y: num 2</code>
+
+The parameters do not have to be the same type.
+
+<code>str(list.zip(x=c(<span class="hljs-number">1</span>,<span class="hljs-number">2</span>), y=list(<span class="blue">"x"</span>,<span class="blue">"y"</span>)))</code>
+
+<code># List of 2
+#  $ :List of 2
+#   ..$ x: num 1
+#   ..$ y: chr "x"
+#  $ :List of 2
+#   ..$ x: num 2
+#   ..$ y: chr "y"</code>
+<h3> - list.rbind, list.cbind</h3>
+
+<code>list.rbind()</code> binds atomic vectors by row and <code>list.cbind()</code> by column.
+
+<code>scores &lt;- list(score1=c(<span class="hljs-number">10</span>,<span class="hljs-number">9</span>,<span class="hljs-number">10</span>),score2=c(<span class="hljs-number">8</span>,<span class="hljs-number">9</span>,<span class="hljs-number">6</span>),score3=c(<span class="hljs-number">9</span>,<span class="hljs-number">8</span>,<span class="hljs-number">10</span>))
+list.rbind(scores)</code>
+
+<code>#        [,1] [,2] [,3]
+# score1   10    9   10
+# score2    8    9    6
+# score3    9    8   10</code>
+
+<code>list.cbind(scores)</code>
+
+<code>#      score1 score2 score3
+# [1,]     10      8      9
+# [2,]      9      9      8
+# [3,]     10      6     10</code>
+
+Note that the two functions finally call <code>rbind()</code> and <code>cbind()</code>, respectively, which result in matrix or data frame.
+
+If a list of lists are supplied, then a matrix of <code>list</code> will be created.
+
+<code>scores2 &lt;- list(score1=list(<span class="hljs-number">10</span>,<span class="hljs-number">9</span>,<span class="hljs-number">10</span>),
+  score2=list(<span class="hljs-number">8</span>,<span class="hljs-number">9</span>,<span class="hljs-number">6</span>),type=list(<span class="blue">"a"</span>,<span class="blue">"b"</span>,<span class="blue">"a"</span>))
+rscores2 &lt;- list.rbind(scores2)
+rscores2</code>
+
+<code>#        [,1] [,2] [,3]
+# score1 10   9    10  
+# score2 8    9    6   
+# type   "a"  "b"  "a"</code>
+
+<code>rscores2</code> is a matrix of <em>lists</em> rather than atomic values.
+
+<code>rscores2[<span class="hljs-number">1</span>,<span class="hljs-number">1</span>]</code>
+
+<code># $score1
+# [1] 10</code>
+
+<code>rscores2[,<span class="hljs-number">1</span>]</code>
+
+<code># $score1
+# [1] 10
+# 
+# $score2
+# [1] 8
+# 
+# $type
+# [1] "a"</code>
+
+This is not a common practice and may lead to unexpected mistakes if one is not fully aware of it and take for granted that the extracted value should be an atomic value like a number or string. Therefore, it is not recommended to either <code>list.rbind()</code> or <code>list.cbind()</code> a list of lists.
+
+<h3> - list.stack</h3>
+
+To create a <code>data.frame</code> from a list of lists, use <code>list.stack()</code>. It is particularly useful when we want to transform a non-tabular data to a stage where it actually fits a tabular form.
+
+For example, a list of lists with the same single-entry fields can be transformed to a equivalent data frame.
+
+<code>nontab &lt;- list(list(type=<span class="blue">"A"</span>,score=<span class="hljs-number">10</span>),list(type=<span class="blue">"B"</span>,score=<span class="hljs-number">9</span>))
+list.stack(nontab)</code>
+
+<code>#   type score
+# 1    A    10
+# 2    B     9</code>
+
+For non-tabular data, we can select fields or columns in the data and <em>stack</em> the records together to create a data frame.
+
+<code><span class="orange">library</span>(pipeR)
+list.load(<span class="blue">"http://renkun.me/rlist-tutorial/data/sample.json"</span>) %&gt;&gt;%
+  list.select(Name, Age) %&gt;&gt;%
+  list.stack</code>
+
+<code>#    Name Age
+# 1   Ken  24
+# 2 James  25
+# 3 Penny  24</code>
+<h3> - list.flatten</h3>
+
+<code>list</code> is powerful in its recursive nature. Sometimes, however, we don&apos;t need its recursive feature but want to <em>flatten</em> it so that all its child elements are put to the first level. 
+
+<code>list.flatten()</code> recursively extract all elements at all levels and put them to the first level.
+
+<code>data &lt;- list(list(a=<span class="hljs-number">1</span>,b=<span class="hljs-number">2</span>),list(c=<span class="hljs-number">1</span>,d=list(x=<span class="hljs-number">1</span>,y=<span class="hljs-number">2</span>)))
+str(data)</code>
+
+<code># List of 2
+#  $ :List of 2
+#   ..$ a: num 1
+#   ..$ b: num 2
+#  $ :List of 2
+#   ..$ c: num 1
+#   ..$ d:List of 2
+#   .. ..$ x: num 1
+#   .. ..$ y: num 2</code>
+
+<code>list.flatten(data)</code>
+
+<code># $a
+# [1] 1
+# 
+# $b
+# [1] 2
+# 
+# $c
+# [1] 1
+# 
+# $d.x
+# [1] 1
+# 
+# $d.y
+# [1] 2</code>
+<h3> - list.names</h3>
+
+<code>list.names()</code> can be used to set names of list elements by expression.
+
+<code>people &lt;- list.load(<span class="blue">"http://renkun.me/rlist-tutorial/data/sample.json"</span>) %&gt;&gt;%
+  list.select(Name, Age)
+str(people)</code>
+
+<code># List of 3
+#  $ :List of 2
+#   ..$ Name: chr "Ken"
+#   ..$ Age : int 24
+#  $ :List of 2
+#   ..$ Name: chr "James"
+#   ..$ Age : int 25
+#  $ :List of 2
+#   ..$ Name: chr "Penny"
+#   ..$ Age : int 24</code>
+
+Note that the elements in <code>people</code> currently do not have names. In some cases, it would be nice to assign appropriate names to those elements so that the distinctive information can be preserved in list transformations.
+
+<code>npeople &lt;- people %&gt;&gt;% 
+  list.names(Name)
+str(npeople)</code>
+
+<code># List of 3
+#  $ Ken  :List of 2
+#   ..$ Name: chr "Ken"
+#   ..$ Age : int 24
+#  $ James:List of 2
+#   ..$ Name: chr "James"
+#   ..$ Age : int 25
+#  $ Penny:List of 2
+#   ..$ Name: chr "Penny"
+#   ..$ Age : int 24</code>
+
+The names of the list elements can be preserved in various types of data manipulation. For example,
+
+<code>npeople %&gt;&gt;%
+  list.mapv(Age)</code>
+
+<code>#   Ken James Penny 
+#    24    25    24</code>
+
+The names of the resulted vector exactly come from the names of the list elements.
+
+<h3> - list.sample</h3>
+
+Sometimes it is useful to take a sample from a list. If it is a weighted sampling, the weights are in most cases related with individual subjects. <code>list.sample()</code> is a wrapper function of the built-in <code>sample()</code> but provides <code>weight</code> argument as an expression to evaluate for each list element to determine the weight of that element.
+
+The following example shows a simple sampling from integers 1-10 by weight of squares.
+
+<code>set.seed(<span class="hljs-number">0</span>)
+list.sample(<span class="hljs-number">1</span>:<span class="hljs-number">10</span>, size = <span class="hljs-number">3</span>, weight = .^<span class="hljs-number">2</span>)</code>
+
+<code># [1]  5 10  8</code>
+
+                    
+
+<h2><span class="orange">Lambda expression</span></h2>
+
+Although the fields of each list element are directly accessible in the expression, sometimes we still need to access the list element itself, usually for its meta-information. Lambda expressions provide a mechanism that allows you to use default or customized meta-symbols to access the meta-information of the list element.
+
+In rlist package, all functions that work with expressions support implicit lambda expressions, that is, an ordinary expression with no special syntax yet the fields of elements are directly accessible. All functions working with expressions except <code>list.select()</code> also support explicit lambda expression including
+
+<ul>
+<li>Univariate lambda expression: In contrast to implicit lambda expression, the symbol that refers to the element is customized in the following formats:<ul>
+<li><code>x ~ expression</code></li>
+<li><code>f(x) ~ expression</code></li>
+</ul>
+</li>
+<li>Multivariate lambda expression: In contrast to univariate lambda expression, the symbols of element, index, and member name are customized in the following formats:<ul>
+<li><code>f(x,i) ~ expression</code></li>
+<li><code>f(x,i,name) ~ expression</code></li>
+</ul>
+</li>
+</ul>
+
+<code><span class="orange">library</span>(rlist)</code>
+
+<h3> - Implicit lambda expression</h3>
+
+Implicit lambda expression is an ordinary expression with no special syntax like <code>~</code>. In this case, meta symbols are implicitly defined in default, that is, <code>.</code> represents the element, <code>.i</code> represents the index, and <code>.name</code> represents the name of the element.
+
+For example,
+
+<code>x &lt;- list(a=list(x=<span class="hljs-number">1</span>,y=<span class="hljs-number">2</span>),b=list(x=<span class="hljs-number">2</span>,y=<span class="hljs-number">3</span>))
+list.map(x,y)</code>
+
+<code># $a
+# [1] 2
+# 
+# $b
+# [1] 3</code>
+
+<code>list.map(x,sum(as.numeric(.)))</code>
+
+<code># $a
+# [1] 3
+# 
+# $b
+# [1] 5</code>
+
+In the second mapping above, <code>.</code> represents each element. For the first member, the meta-symbols take the following values:
+
+<code>. = x[[<span class="hljs-number">1</span>]] = list(x=<span class="hljs-number">1</span>,y=<span class="hljs-number">2</span>)
+.i = <span class="hljs-number">1</span>
+.name = <span class="blue">"a"</span></code>
+
+<h3> - Explicit lambda expression</h3>
+
+To use other symbols to represent the metadata of a element, we can use explicit lambda expressions.
+
+<code>x &lt;- list(a=list(x=<span class="hljs-number">1</span>,y=<span class="hljs-number">2</span>),b=list(x=<span class="hljs-number">2</span>,y=<span class="hljs-number">3</span>))
+list.map(x, f(item,index) ~ unlist(item) * index)</code>
+
+<code># $a
+# x y 
+# 1 2 
+# 
+# $b
+# x y 
+# 4 6</code>
+
+<code>list.map(x, f(item,index,name) ~ list(name=name,sum=sum(unlist(item))))</code>
+
+<code># $a
+# $a$name
+# [1] "a"
+# 
+# $a$sum
+# [1] 3
+# 
+# 
+# $b
+# $b$name
+# [1] "b"
+# 
+# $b$sum
+# [1] 5</code>
+
+For unnamed vector members, it is almost necessary to use lambda expressions.
+
+<code>x &lt;- list(a=c(<span class="hljs-number">1</span>,<span class="hljs-number">2</span>),b=c(<span class="hljs-number">3</span>,<span class="hljs-number">4</span>))
+list.map(x,sum(.))</code>
+
+<code># $a
+# [1] 3
+# 
+# $b
+# [1] 7</code>
+
+<code>list.map(x,item ~ sum(item))</code>
+
+<code># $a
+# [1] 3
+# 
+# $b
+# [1] 7</code>
+
+<code>list.map(x,f(m,i) ~ m+i)</code>
+
+<code># $a
+# [1] 2 3
+# 
+# $b
+# [1] 5 6</code>
+
+For named vector members, their name can also be directly used in the expression.
+
+<code>x &lt;- list(a=c(x=<span class="hljs-number">1</span>,y=<span class="hljs-number">2</span>),b=c(x=<span class="hljs-number">3</span>,y=<span class="hljs-number">4</span>))
+list.map(x,sum(y))</code>
+
+<code># $a
+# [1] 2
+# 
+# $b
+# [1] 4</code>
+
+<code>list.map(x,x*y)</code>
+
+<code># $a
+# [1] 2
+# 
+# $b
+# [1] 12</code>
+
+<code>list.map(x,.i)</code>
+
+<code># $a
+# [1] 1
+# 
+# $b
+# [1] 2</code>
+
+<code>list.map(x,x+.i)</code>
+
+<code># $a
+# [1] 2
+# 
+# $b
+# [1] 5</code>
+
+<code>list.map(x,f(.,i) ~ . + i)</code>
+
+<code># $a
+# x y 
+# 2 3 
+# 
+# $b
+# x y 
+# 5 6</code>
+
+<code>list.map(x,.name)</code>
+
+<code># $a
+# [1] "a"
+# 
+# $b
+# [1] "b"</code>
+<blockquote>
+
+NOTE: <code>list.select</code> does not support explicit lambda expressions.
+
+</blockquote>
+
+                    
+
+<h2><span class="orange">List environment</span></h2>
+
+List environment is an alternative construct designed for easier command chaining. <code>List()</code> function wraps a list within an environment where almost all functions in this package are defined but result in the next List environment for further operations.
+
+Suppose we work with the following list.
+
+<code><span class="orange">library</span>(rlist)
+<span class="orange">library</span>(pipeR)
+people &lt;- list.load(<span class="blue">"http://renkun.me/rlist-tutorial/data/sample.json"</span>)</code>
+
+To create a <code>List environment</code>, run
+
+<code>m &lt;- List(people)</code>
+
+then we can operate the environment-based object <code>m</code> with <code>map()</code>, <code>filter()</code> and other functions, or extract the inner data with <code>m$data</code>. All inner functions return <code>List environment</code>, which facilities command chaining.
+
+For example, map each member to their name.
+
+<code>m$map(Name)</code>
+
+<code># $data : list 
+# ------
+# [[1]]
+# [1] "Ken"
+# 
+# [[2]]
+# [1] "James"
+# 
+# [[3]]
+# [1] "Penny"</code>
+
+Note that the resulted object is also a <code>List environment</code> although its printed results include the inner data. To use the result with external functions, we need to extract the inner data by calling <code>m$data</code>.
+
+Get all the possible cases of interests for those whose R experience is longer than 1 year.
+
+<code>m$filter(Expertise$R &gt; <span class="hljs-number">1</span>)$
+  cases(Interests)$
+  data</code>
+
+<code># [1] "movies"  "music"   "reading" "sports"</code>
+
+Calculate an integer vector of the average number of years using R for each interest class.
+
+<code>m$class(Interests)$
+  map(case ~ length(case))$
+  call(unlist)$
+  data</code>
+
+<code>#  movies   music reading  sports 
+#       2       2       2       1</code>
+
+A more handy way to extract <code>data</code> from the List environment is to use <code>[]</code>.
+
+<code>m$class(Interests)$
+  map(case ~ length(case))$
+  call(unlist) []</code>
+
+<code>#  movies   music reading  sports 
+#       2       2       2       1</code>
+
+                    
+
+<h2><span class="orange">Examples</span></h2>
+
+The power of rlist functionality does not lie in a single function but in the combination of functions in a chain, which makes non-tabular data manipulation much easier. 
+
+This chapter contains a few examples to demonstrate comprehensive uses of rlist functionality. The examples use real-world non-tabular data sources from <a href="http://api.github.com" target="_blank">GitHub API</a> and <a href="http://openweathermap.org" target="_blank">OpenWeatherMap</a>.
+
+                    
+
+<h2><span class="orange">GitHub API</span></h2>
+
+<a href="https://github.com/" target="_blank">GitHub</a> is the most famous web-based source code hosting service in the world. Millions of developers choose GitHub to host their public code repositories. Many R packages are hosted by GitHub too.
+
+In addition to the rich features it provides in project development and collaboration, GitHub also opens its <a href="https://api.github.com/" target="_blank">API</a> for developers to query the meta-data of users and repos. For example, we can directly get the following data:
+
+<ul>
+<li><a href="https://api.github.com/users/renkun-ken" target="_blank">My public profile on GitHub</a></li>
+<li><a href="https://api.github.com/repos/renkun-ken/rlist" target="_blank">Profile of rlist package</a></li>
+<li><a href="https://api.github.com/users/renkun-ken/repos" target="_blank">All my repos on GitHub</a></li>
+</ul>
+
+If you visit the links in your web browser, you will see the data presented in JSON format.
+
+To make the data exploration more interesting, in the following examples we will explore <a href="https://github.com/hadley" target="_blank">Hadley Wickham</a>&apos;s GitHub data with functions provided in rlist and see how rlist makes it easier to work with such non-tabular data structures.
+
+We load rlist and pipeR packages first and then retrieve the repos.
+
+<code><span class="orange">library</span>(rlist)
+<span class="orange">library</span>(pipeR)
+repos &lt;- <span class="blue">"https://api.github.com/users/hadley/repos?per_page=100&amp;page=%d"</span> %&gt;&gt;%
+  sprintf(<span class="hljs-number">1</span>:<span class="hljs-number">2</span>) %&gt;&gt;%
+  list.load(<span class="blue">"json"</span>) %&gt;&gt;%
+  list.ungroup</code>
+
+Since GitHub API limits the amount of data an ordinary user can retrieve at a time, we use <code>page=%d</code> to specify the page of data and we take the first several pages that are non-empty. Finally we turn the list of pages to a list of repos by <code>list.ungroup()</code>.
+
+Before walking into details, we review some figures and statistics first. First, the number of repos:
+
+<code>list.count(repos)</code>
+
+<code># [1] 150</code>
+
+Then the structure of repos in terms of forks and non-forks:
+
+<code>repos %&gt;&gt;%
+  list.table(fork)</code>
+
+<code># fork
+# FALSE  TRUE 
+#   114    36</code>
+
+GitHub shows the language structure of each individual repo. Here we summarize the language structure of Hadley&apos;s all projects.
+
+<code>repos %&gt;&gt;% 
+  list.filter(!is.null(language)) %&gt;&gt;%
+  list.table(language) %&gt;&gt;%
+  list.sort(-.)</code>
+
+<code># language
+#          R        C++ JavaScript          C        TeX       Ruby 
+#         95          9          8          6          5          3 
+#      Shell       HTML     Python      Rebol        CSS     Turing 
+#          3          2          2          2          1          1</code>
+
+or show the table of language by fork:
+
+<code>repos %&gt;&gt;%
+  list.table(language, fork)</code>
+
+<code>#             fork
+# language     FALSE TRUE
+#   C              3    3
+#   C++            7    2
+#   CSS            0    1
+#   HTML           1    1
+#   JavaScript     5    3
+#   Python         0    2
+#   R             79   16
+#   Rebol          2    0
+#   Ruby           2    1
+#   Shell          1    2
+#   TeX            5    0
+#   Turing         0    1
+#   &lt;NA&gt;           9    4</code>
+
+Hadley has created several top-ranked popular packages. Let&apos;s build a bar chart to show the top 10 R repos with most stargazers.
+
+<code>repos %&gt;&gt;%
+  list.filter(!fork, language == <span class="blue">"R"</span>) %&gt;&gt;%
+  list.names(name) %&gt;&gt;%
+  list.mapv(stargazers_count) %&gt;&gt;%
+  list.sort(-.) %&gt;&gt;%
+  list.take(<span class="hljs-number">10</span>) %&gt;&gt;%
+  print %&gt;&gt;%
+  barplot(main = <span class="blue">"Hadley&apos;s top 10 R repos with most stargazers"</span>)</code>
+
+<code>#   ggplot2  devtools      plyr     rvest      httr  testthat     tidyr 
+#      1223       976       368       308       285       204       167 
+# lubridate   reshape     purrr 
+#       148       108        94</code>
+
+<img src="figure/top-10-repos-with-most-stargazers-1.png" title="plot of chunk top-10-repos-with-most-stargazers" alt="plot of chunk top-10-repos-with-most-stargazers" style="display: block; margin: auto;">
+
+The pipeline itself is clear enough to show what happens in each step. We first filter the repos and pick out the non-fork R repos. Then we give names to the repo elements by their name field. Next we map each element to the count of stargazers, sort them in descending order, and take the top 10 elements. Finally, we build a bar chart from the named integer vector we created.
+
+Hadley is famous for his great contribution of <a href="http://ggplot2.org/" target="_blank">ggplot2</a> so there should not be surprise as the bar chart shows that the package with most stargazers is ggplot2. 
+
+Using exactly the same method, we can see the the repos with most open issues.
+
+<code>repos %&gt;&gt;%
+  list.filter(has_issues, !fork, language == <span class="blue">"R"</span>) %&gt;&gt;%
+  list.names(name) %&gt;&gt;%
+  list.mapv(open_issues) %&gt;&gt;%
+  list.sort(-.) %&gt;&gt;%
+  list.take(<span class="hljs-number">10</span>) %&gt;&gt;%
+  print %&gt;&gt;%
+  barplot(main = <span class="blue">"Hadley&apos;s top 10 R repos with most open issues"</span>)</code>
+
+<code>#    ggplot2   devtools staticdocs  lubridate       plyr      tidyr 
+#        113         62         41         37         34         32 
+#     scales     gtable   testthat   roxygen3 
+#         26         24         23         22</code>
+
+<img src="figure/top-10-repos-with-most-open-issues-1.png" title="plot of chunk top-10-repos-with-most-open-issues" alt="plot of chunk top-10-repos-with-most-open-issues" style="display: block; margin: auto;">
+
+This time you should be able to figure out what is done in each step.
+
+In addition to ggplot2, Hadley&apos;s has some other visualization-related repos too. To find out, we can filter the repo names and description by <em>plot</em> and <em>vis</em> with regular expression.
+
+<code>repos %&gt;&gt;%
+  list.filter(any(grepl(<span class="blue">"plot|vis"</span>, c(name, description)))) %&gt;&gt;%
+  list.sort(-stargazers_count) %&gt;&gt;%
+  list.mapv(name)</code>
+
+<code>#  [1] "ggplot2"         "bigvis"          "r2d3"           
+#  [4] "ggplot2-book"    "gg2v"            "productplots"   
+#  [7] "boxplots-paper"  "clusterfly"      "lvplot"         
+# [10] "bigvis-infovis"  "densityvis"      "ggplot2-bayarea"
+# [13] "layers"          "r-travis"        "toc-vis"        
+# [16] "lvplot-paper"    "prodplotpaper"   "rblocks"        
+# [19] "rminds"          "spatialVis"      "classifly"      
+# [22] "fortify"         "ggplot"          "ggplot2-docs"   
+# [25] "vis-migration"   "ggmap"           "imvisoned"      
+# [28] "syuzhet"         "vega"</code>
+
+The quality of data filtering depends on your conditions. Not every repo shown above is related to data visualization. For example, <em>r-travis</em> has nothing to do with visualization although it contains <em>vis</em>. To do better data analysis, we would have to think hard about the data. rlist functions attempt to release the big burden from our shoulders so that we won&apos;t be easily stuck by such data processing problems.
+
+To compute the sums of the stargazers, watchers and forks of all repos, we can first select the fiedls, stack them, and sum by column.
+
+<code>repos %&gt;&gt;%
+  list.select(stargazers_count, watchers_count, forks_count) %&gt;&gt;%
+  list.stack %&gt;&gt;%
+  colSums</code>
+
+<code># stargazers_count   watchers_count      forks_count 
+#             7402             7402             3375</code>
+
+We can also use fuzzy matching devices when we are not exactly sure about the term we need to find. For example, if you hear from a friend that Hadley&apos;s <em>dplayer</em> package is awesome but you cannot find the package by its name. To find out the exact name of the that package we can use soundex measurement in stringdist package.
+
+<code>repos %&gt;&gt;%
+  list.filter(stringdist::stringdist(<span class="blue">"dplayer"</span>, name, method = <span class="blue">"soundex"</span>) == <span class="hljs-number">0</span>) %&gt;&gt;%
+  list.mapv(name)</code>
+
+<code># [1] "dplyr"         "dplyrimpaladb"</code>
+
+Cheers! Now we know the package that sounds like <em>dplayer</em> is actually named <em>dplyr</em>.
+
+                    
+
+<h2><span class="orange">Weather API</span></h2>
+
+<a href="http://openweathermap.org/" target="_blank">OpenWeatherMap</a> provides a set of <a href="http://openweathermap.org/api" target="_blank">weather API</a> that is simple, clear and free. Using the API, we get access to not only the current weather data, forecasts, historical data, and so on. The returned data is by default presented in JSON format, which can be easily loaded and processed by rlist functions.
+
+<h3> - Current weather data</h3>
+
+The following code downloads the latest weather data of New York and London.
+
+<code><span class="orange">library</span>(rlist)
+<span class="orange">library</span>(pipeR)
+weather &lt;- <span class="blue">"http://api.openweathermap.org/data/2.5/weather?q=%s"</span> %&gt;&gt;%
+  sprintf(c(<span class="blue">"New York,us"</span>, <span class="blue">"London,uk"</span>)) %&gt;&gt;%
+  list.load(<span class="blue">"json"</span>) %&gt;&gt;%
+  list.names(name)</code>
+
+<code>list.load()</code> in the latest development version of rlist supports loading multiple files given by a character vector. Here we use <code>sprintf()</code> to construct a character vector provided the URL template of a weather data query.
+
+<code>str(weather)</code>
+
+<code># List of 2
+#  $ New York:List of 12
+#   ..$ coord  :List of 2
+#   .. ..$ lon: num -75.5
+#   .. ..$ lat: int 43
+#   ..$ sys    :List of 6
+#   .. ..$ type   : int 3
+#   .. ..$ id     : int 54023
+#   .. ..$ message: num 0.361
+#   .. ..$ country: chr "US"
+#   .. ..$ sunrise: int 1427626102
+#   .. ..$ sunset : int 1427671495
+#   ..$ weather:List of 1
+#   .. ..$ :List of 4
+#   .. .. ..$ id         : int 800
+#   .. .. ..$ main       : chr "Clear"
+#   .. .. ..$ description: chr "sky is clear"
+#   .. .. ..$ icon       : chr "02n"
+#   ..$ base   : chr "stations"
+#   ..$ main   :List of 5
+#   .. ..$ temp    : num 266
+#   .. ..$ pressure: int 1022
+#   .. ..$ temp_min: num 264
+#   .. ..$ temp_max: num 266
+#   .. ..$ humidity: int 46
+#   ..$ wind   :List of 3
+#   .. ..$ speed: num 3.08
+#   .. ..$ gust : num 4.11
+#   .. ..$ deg  : int 293
+#   ..$ snow   :List of 1
+#   .. ..$ 3h: int 0
+#   ..$ clouds :List of 1
+#   .. ..$ all: int 8
+#   ..$ dt     : int 1427590591
+#   ..$ id     : int 5128638
+#   ..$ name   : chr "New York"
+#   ..$ cod    : int 200
+#  $ London  :List of 12
+#   ..$ coord  :List of 2
+#   .. ..$ lon: num -0.13
+#   .. ..$ lat: num 51.5
+#   ..$ sys    :List of 6
+#   .. ..$ type   : int 3
+#   .. ..$ id     : int 40047
+#   .. ..$ message: num 0.556
+#   .. ..$ country: chr "GB"
+#   .. ..$ sunrise: int 1427607706
+#   .. ..$ sunset : int 1427653719
+#   ..$ weather:List of 1
+#   .. ..$ :List of 4
+#   .. .. ..$ id         : int 802
+#   .. .. ..$ main       : chr "Clouds"
+#   .. .. ..$ description: chr "scattered clouds"
+#   .. .. ..$ icon       : chr "03n"
+#   ..$ base   : chr "stations"
+#   ..$ main   :List of 5
+#   .. ..$ temp    : num 283
+#   .. ..$ humidity: int 68
+#   .. ..$ pressure: num 1006
+#   .. ..$ temp_min: num 282
+#   .. ..$ temp_max: num 284
+#   ..$ wind   :List of 3
+#   .. ..$ speed: num 3.7
+#   .. ..$ gust : num 6.5
+#   .. ..$ deg  : int 181
+#   ..$ rain   :List of 1
+#   .. ..$ 3h: int 0
+#   ..$ clouds :List of 1
+#   .. ..$ all: int 48
+#   ..$ dt     : int 1427590573
+#   ..$ id     : int 2643743
+#   ..$ name   : chr "London"
+#   ..$ cod    : int 200</code>
+
+We can see that <code>weather</code> includes the the information of the city as well as the weather.
+
+The weather API also supports box searching, that is, search data from cities within the defined rectangle specified by the geographic coordinates. <code>bbox</code> indicates the bounding box of the following parameters: lat of the top left point, lon of the top left point, lat of the bottom right point, lon of the bottom right point, map zoom.
+
+<code>zone &lt;- <span class="blue">"http://api.openweathermap.org/data/2.5/box/city?bbox=%s&amp;cluster=yes"</span> %&gt;&gt;%
+  sprintf(<span class="blue">"12,32,15,37,10"</span>) %&gt;&gt;%
+  list.load(<span class="blue">"json"</span>)</code>
+
+<code># Error in open.connection(con, "rb"): HTTP error 510.</code>
+
+Once we get the data, we can see the names of the cities in the zone.
+
+<code>zone$list %&gt;&gt;% 
+  list.mapv(name)</code>
+
+<code># Error in zone$list %&gt;&gt;% list.mapv(name): object &apos;zone&apos; not found</code>
+
+We can also build a table that shows the weather condition of these cities.
+
+<code>zone$list %&gt;&gt;% 
+  list.table(weather[[<span class="hljs-number">1L</span>]]$main)</code>
+
+<code># Error in zone$list %&gt;&gt;% list.table(weather[[1L]]$main): object &apos;zone&apos; not found</code>
+
+For more details, we can group the data by weather condition and see the name list for each type of weather.
+
+<code>zone$list %&gt;&gt;%
+  list.group(weather[[<span class="hljs-number">1L</span>]]$main) %&gt;&gt;%
+  list.map(. %&gt;&gt;% list.mapv(name))</code>
+
+<code># Error in zone$list %&gt;&gt;% list.group(weather[[1L]]$main): object &apos;zone&apos; not found</code>
+
+Sometimes it is easier to work with data frame for vectorization and model research. For example, we can build a data frame from the non-tabular data by <em>stacking</em> the list elements with selected fields.
+
+<code>zonedf &lt;- zone$list %&gt;&gt;%
+  list.select(id, name, 
+    coord_lon = coord$lon, coord_lat = coord$lat, 
+    temp = main$temp, weather = weather[[<span class="hljs-number">1L</span>]]$main) %&gt;&gt;%
+  list.stack %&gt;&gt;%
+  print</code>
+
+<code># Error in zone$list %&gt;&gt;% list.select(id, name, coord_lon = coord$lon, coord_lat = coord$lat, : object &apos;zone&apos; not found</code>
+
+The data frame well fits the input of most models.
+
+<code>zonedf %&gt;&gt;%
+  lm(formula = temp ~ coord_lon + coord_lat) %&gt;&gt;%
+  summary</code>
+
+<code># Error in zonedf %&gt;&gt;% lm(formula = temp ~ coord_lon + coord_lat): object &apos;zonedf&apos; not found</code>
+<h3> - Forecast data</h3>
+
+The weather API provides give access to the forecast data. Here we get the forecast data of the London city.
+
+<code>forecast &lt;- <span class="blue">"http://api.openweathermap.org/data/2.5/forecast?q=London,uk"</span> %&gt;&gt;%
+  list.load(<span class="blue">"json"</span>)</code>
+
+The forecast incorporates some meta-information such as the city data and message retrieval data. We can easily transform the forecast points to an <code>xts</code> object as a time series.
+
+<code>fxts &lt;- forecast$list %&gt;&gt;%
+  list.select(dt = as.POSIXct(dt_txt), 
+    temp = main$temp, humidity = main$humidity) %&gt;&gt;%
+  list.stack %&gt;&gt;%
+  (xts::xts(x = .[-<span class="hljs-number">1L</span>], order.by = .$dt))
+head(fxts)</code>
+
+<code>#                        temp humidity
+# 2015-03-29 00:00:00 283.100       71
+# 2015-03-29 03:00:00 283.590       76
+# 2015-03-29 06:00:00 282.810       73
+# 2015-03-29 09:00:00 282.280       86
+# 2015-03-29 12:00:00 283.600       96
+# 2015-03-29 15:00:00 283.708       91</code>
+
+As long as the data we are interested in is converted to a time series, we can easily create graphics from it.
+
+<code>par(mfrow=c(<span class="hljs-number">2</span>,<span class="hljs-number">1</span>))
+plot(fxts$temp, main = <span class="blue">"Forecast temperature of London"</span>)
+plot(fxts$humidity, main = <span class="blue">"Forecast humidity of London"</span>)</code>
+
+<img src="figure/weather-forecast-1.png" title="plot of chunk weather-forecast" alt="plot of chunk weather-forecast" style="display: block; margin: auto;">
+
+<h3> - Historical data</h3>
+
+The weather API allows us to access the historical weather database. The database adopts UNIX Date/Time standard for which we define <code>unixdt()</code> to better transform human-readable date/time to numbers included in the data query.
+
+<code>unixdt &lt;- <span class="orange">function</span>(date) {
+  as.integer(as.POSIXct(date, tz = <span class="blue">"UTC"</span>))
+}</code>
+
+The following code queries the hourly historical data of New York from <code>2014-10-01 00:00:00</code> and get the maximal number of records a free account is allowed.
+
+<code>history &lt;- <span class="blue">"http://api.openweathermap.org/data/2.5/history/city?&amp;q=%s&amp;start=%d&amp;cnt=200"</span> %&gt;&gt;%
+  sprintf(<span class="blue">"New York,us"</span>, unixdt(<span class="blue">"2014-10-01 00:00:00"</span>)) %&gt;&gt;%
+  list.load(<span class="blue">"json"</span>)</code>
+
+Once the historical data is ready, we can get some simple impression on it. For example, we can see the weather distribution.
+
+<code>history$list %&gt;&gt;%
+  list.table(weather = weather[[<span class="hljs-number">1L</span>]]$main) %&gt;&gt;%
+  list.sort(-.)</code>
+
+<code># integer(0)</code>
+
+We can also inspect the location statistics of humidity data for each weather condition.
+
+<code>history$list %&gt;&gt;%
+  list.group(weather[[<span class="hljs-number">1L</span>]]$main) %&gt;&gt;%
+  list.map(. %&gt;&gt;% 
+      list.mapv(main$humidity) %&gt;&gt;% 
+      summary)</code>
+
+<code># Warning in is.na(x): is.na() applied to non-(list or vector) of type
+# &apos;NULL&apos;</code>
+
+<code># list()</code>
+
+Or we can create an <code>xts</code> object from it.
+
+<code>nyxts &lt;- history$list %&gt;&gt;%
+  list.select(dt = as.POSIXct(dt, origin = <span class="blue">"1970-01-01"</span>), 
+    temp = main$temp, humidity = main$humidity) %&gt;&gt;%
+  list.stack %&gt;&gt;%
+  (xts::xts(x = .[-<span class="hljs-number">1L</span>], order.by = .$dt))</code>
+
+<code># Error in xts::xts(x = .[-1L], order.by = .$dt): order.by requires an appropriate time-based object</code>
+
+<code>head(nyxts)</code>
+
+<code># Error in head(nyxts): object &apos;nyxts&apos; not found</code>
+
+The object facilitates time series operations but also can be used in time series model fitting.
+
+<code>forecast::auto.arima(nyxts$temp)</code>
+
+<code># Error in as.ts(x): object &apos;nyxts&apos; not found</code>
+
+<script type='text/javascript' src='readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+    // ... more custom settings?
+});
+</script>
+</pre></body></html>

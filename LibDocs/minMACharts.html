@@ -90,6 +90,10 @@ img { margin-left: auto; margin-right: auto; border-radius:5px;}
 <span id="dateAndTime" onclick="showDateAndTime()"><script>showDateAndTime();</script></span>
 
 <script>
+var stkChartList = localStorage.getItem("stkListArr").split(' ');
+
+var remainChtNo = stkChartList.length;
+var thecode = localStorage.stkCode;
 
 $(document).ready(function(){
     $('.keys').click(function(){
@@ -156,13 +160,25 @@ function sCt(stkcode) {
   return theListDom;
 }
 
-function chkKey() {var testkey = getChar(event);
-  if(testkey == '9'){sCt(992);}
-  if(testkey == 'h'){sCt(110000);}
-  if(testkey == 'a'){sCt("000001.sh");}
+function chkKey() {
+  var testkey = getChar(event);
+  if(testkey == '1'){changeCode('1157');}
+  if(testkey == '9'){changeCode('939');}
+  if(testkey == '7'){changeCode('700');}
+  if(testkey == '3'){changeCode('388');}
+  if(testkey == '2'){changeCode('2318');}
+  if(testkey == 'h'){changeCode('110000');}
+  if(testkey == 'a'){changeCode('000001.sh');}
   if(testkey == 'c'){askCode();}
-  if(testkey == 'm'){window.open("myMonList.html");}
-  if(testkey == 'S'){showMMA();}
+  if(testkey == 'm'){window.open('myMonList.html');}
+  if(testkey == 'g'){window.open('heedChart.html');}
+  if(testkey == 'r'){
+    localStorage.setItem("randomcode", thecode);
+    window.open('Random Charts.html');}
+  if(testkey == 'f'){jpButClick();}
+  if(testkey == 'b'){jpback();}
+  if(testkey == '6'){jpButClick();}
+  if(testkey == '4'){jpback();}
 }
 
 function getChar(event) {
@@ -202,6 +218,71 @@ window.onclick = function(event) {
 function changeCode(thecode) {
 	storeCode(thecode);
 	window.location.reload(true);
+}
+
+function jpback() {
+  remainChtNo = stkChartList.indexOf(thecode) - 1;
+  if (remainChtNo >= 0) {
+    thecode = stkChartList[remainChtNo]
+  } else{
+    remainChtNo = stkChartList.length - 1;
+    thecode = stkChartList[remainChtNo]
+  }
+  storeCode(thecode);
+  window.location.reload(true);
+}
+
+function jpButClick() {
+  remainChtNo = stkChartList.indexOf(thecode) + 1;
+  if (remainChtNo < stkChartList.length) {
+    thecode = stkChartList[remainChtNo]
+  } else{
+    remainChtNo = 0;
+    thecode = stkChartList[remainChtNo]
+  }
+  storeCode(thecode);
+  window.location.reload(true);
+}
+
+function showTO(stkcode) {
+  stkcode = "00000"+stkcode
+  codewidth = stkcode.length
+  stkcode = stkcode.slice(codewidth-5, codewidth)
+
+  urladdr = 'http://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + stkcode + ',day,,,20,qfq';
+  var script = document.createElement('script');
+  script.onload = function() {
+    $("#turnover").html("Turnover: ");
+    theObj = kline_dayqfq.data;
+    newObj = Object.values(theObj);
+    newObj = Object.values(newObj[0]);
+    newObj = Object.values(newObj[0]);
+    for(i=9;i<newObj.length;i++){
+      thedate = newObj[i][0];  // date
+      theamt = Math.round(Number(newObj[i][8])).toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",");  // amt
+      $("#turnover").append( theamt,"w ");
+    }
+    theH = Number(newObj[newObj.length-1][3]);  // High
+    theL = Number(newObj[newObj.length-1][4]);  // Low
+
+    theClose = Number(newObj[newObj.length-1][2]);  // Close
+    thePrevClose = Number(newObj[newObj.length-2][2]);  // PrevClose
+    theCDiff = Math.round((theClose - thePrevClose)*10000)/10000;
+    theCPct = Math.round((theCDiff / theClose)*1000)/10;
+    if(theCDiff>0){
+      theCDiff = '<span class="red">' + theCDiff + '</span>'
+      theCPct = '<span class="red">' + theCPct + '</span>'
+    }
+    if(theCDiff<0){
+      theCDiff = '<span class="green">' + theCDiff + '</span>'
+      theCPct = '<span class="green">' + theCPct + '</span>'
+    }
+
+    $("#turnover").append( '<br>','<span class="red">H</span> ',theH,' <span class="green">L</span> ',theL,' <span class="yellow">C</span> ',theClose,' Dif ',theCDiff, ', ',theCPct, ' % ');
+
+  };
+  script.src = urladdr;
+  document.getElementsByTagName('head')[0].appendChild(script);
 }
 
 </script>

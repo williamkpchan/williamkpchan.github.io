@@ -77,7 +77,7 @@ function randomFlip() {
 
 
 var toc = $('#toc');
-$('h2').each(function(i) {
+$(markerName).each(function(i) {
     var topic = $(this), topicNumber = i + 1; topicLength = topicNumber;
 
     if (typeof(showTopicNumber) !== 'undefined'){
