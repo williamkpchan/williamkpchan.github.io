@@ -29,6 +29,7 @@ function showAllCharts(){
   // this process each chart individually
   for( codeNo = 0; codeNo < theList.length; codeNo += 1){
     showStkTO(theList[codeNo]); // this show turnover details
+
 console.log(tradeDetailStr)
     theText = theList[codeNo] + tradeDetailStr;
 
@@ -40,6 +41,21 @@ console.log(tradeDetailStr)
 function showStkTO(stkcode) {
   codewidth = stkcode.length
   stkcode = stkcode.slice(codewidth-5, codewidth)
+
+  // add filter to check stkcode for a stock
+  // http://qt.gtimg.cn/q=s_sz000001
+  // http://qt.gtimg.cn/q=s_sh600000
+  // http://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=sh000001,day,,,320,qfq
+
+//http://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=sh600000,day,,,5,qfq
+//http://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk00700,day,,,5,qfq
+
+//[2] Close [3] High [4] Low
+//kline_dayqfq={"code":0,"msg":"","data":{"sh600000":{"qfqday":
+//["2020-06-24","10.540","10.600","10.610","10.500","228739.000"]],"qt":{"sh600000":
+
+//kline_dayqfq={"code":0,"msg":"","data":{"hk00700":{"qfqday":
+//["2020-06-24","502.000","490.800","505.000","490.800","23063468.00",{},"0","1148518.40"]],"qt":{"hk00700":
 
   urladdr = 'http://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + stkcode + ',day,,,5,qfq';
   var script = document.createElement('script');
@@ -114,6 +130,9 @@ function chkKey() { testkey = getChar(event);
   if(testkey == 't'){window.scrollTo(0,0);}
   if(testkey == 'x'){window.open("Random Charts.html");}
   if(testkey == 'z'){topicpointer = 12; showstkList();}
+
+  if(testkey == '.'){showNextPage();}
+  if(testkey == ','){showPrevPage();}
 }
 
 function getChar(event) {
@@ -165,3 +184,38 @@ function xunbao(xunbaocode) {
   window.open("D:/Dropbox/Public/LibDocs/Random Charts.html");
 }
 
+function toACode(thecode) {
+	if (thecode[0]=="6"){ thecode = thecode+".sh" }
+	else { thecode = thecode+".sz" }
+	return(thecode);
+}
+
+
+function showNextPage(){
+    // pageLen is total pages, ALongListPage is page pointer
+    if(ALongListPage < (pageLen-1)){ ALongListPage = ALongListPage + 1; }
+    else { ALongListPage = 0; }
+    showOnePage();
+}
+function showPrevPage(){
+    if(ALongListPage > 0){ ALongListPage = ALongListPage - 1; }
+    else {ALongListPage = pageLen-1;}
+    showOnePage();
+}
+function showOnePage(){
+    pageStart = ALongListPage * 40;
+    pageEnd = (ALongListPage + 1) * 40;
+    if (pageEnd >= listLen) {  // listLen is total list length
+        pageEnd = listLen;
+    }
+console.log(ALongListPage, pageStart, pageEnd);
+
+    theAPage = ALongList.slice(pageStart, pageEnd).join(" ");
+
+    localStorage.setItem("stkListArr", theAPage); // this is used in lostofchart.js
+    localStorage.setItem("titleBar","A股 Page: " + (ALongListPage +1));
+console.log(theAPage);
+    window.scrollTo(0,0);
+    _stkChartInit()
+    showAllCharts();
+}

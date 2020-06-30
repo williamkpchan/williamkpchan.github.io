@@ -1,0 +1,2587 @@
+<base target="_blank"><html><head><title>MySQL stored procedures</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="../lazyload.min.js"></script>
+<script type='text/javascript' src='../mainscript.js'></script>
+<script src="D:/Dropbox/Public/commonfunctions.js"></script>
+<script>
+  var showTopicNumber = true;
+  var bookid = "MySQL stored procedures"
+  var markerName = "h2"
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:22px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>MySQL stored procedures</h1>
+<a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a>
+<br><br>
+<div id="toc"></div></center>
+<br><br>
+<div id="mustWatch"><center><span class="red">MustWatch</span></center><br>
+</div>
+<pre>
+<br>
+<br>
+<strong>Summary</strong>: MySQL stored procedures, their advantages, and disadvantages.
+
+<h2>Getting started with stored procedures</h2>
+The following <code><a href="https://www.mysqltutorial.org/mysql-select-statement-query-data.aspx">SELECT</a></code> statement returns all rows in the table <code>customers</code> from the <a href="https://www.mysqltutorial.org/mysql-sample-database.aspx">sample database</a>:
+
+<code>SELECT 
+    customerName, 
+    city, 
+    state, 
+    postalCode, 
+    country
+FROM
+    customers
+ORDER BY customerName;</code>
+This picture shows the partial output of the query:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-Stored-Procedure-Sample-Query.png">
+When you use MySQL Workbench or mysql shell to issue the query to MySQL Server, MySQL processes the query and returns the result set.
+
+If you want to save this query on the database server for execution later, one way to do it is to use a stored procedure.
+
+The following <code><a href="https://www.mysqltutorial.org/getting-started-with-mysql-stored-procedures.aspx">CREATE PROCEDURE</a></code> statement creates a new stored procedure that wraps the query above:
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE GetCustomers()
+BEGIN
+	SELECT 
+		customerName, 
+		city, 
+		state, 
+		postalCode, 
+		country
+	FROM
+		customers
+	ORDER BY customerName;    
+END$$
+DELIMITER ;
+</code>
+By definition, a stored procedure is a segment of declarative SQL statements stored inside the MySQL Server. 
+In this example, we have just created a stored procedure with the name <code>GetCustomers()</code>.
+
+Once you save the stored procedure, you can invoke it by using the <code>CALL</code> statement:
+
+<code>CALL GetCustomers();</code>
+And the statement returns the same result as the query.
+
+The first time you invoke a stored procedure, MySQL looks up for the name in the database catalog, compiles the stored procedure’s code, place it in a memory area known as a cache, and execute the stored procedure.
+
+If you invoke the same stored procedure in the same session again, MySQL just executes the stored procedure from the cache without having to recompile it.
+
+A stored procedure can have <a href="https://www.mysqltutorial.org/stored-procedures-parameters.aspx">parameters</a> so you can pass values to it and get the result back. 
+For example, you can have a stored procedure that returns customers by country and city. 
+In this case, the country and city are parameters of the stored procedure.
+
+A stored procedure may contain control flow statements such as <code><a href="https://www.mysqltutorial.org/mysql-if-statement/">IF</a></code>, <code><a href="https://www.mysqltutorial.org/mysql-case-statement/">CASE</a></code>, and <code>LOOP</code> that allow you to implement the code in the procedural way.
+
+A stored procedure can call other stored procedures or <a href="https://www.mysqltutorial.org/mysql-stored-function/">stored functions</a>, which allows you to modulize your code.
+
+Note that you will learn step by step how to <a href="https://www.mysqltutorial.org/getting-started-with-mysql-stored-procedures.aspx">create a new stored procedure</a> in the next tutorial.
+
+<h2>stored procedures advantages</h2>
+The following are the advantages of stored procedures.
+
+<h3>Reduce network traffic</h3>
+Stored procedures help reduce the network traffic between applications and MySQL Server. 
+Because instead of sending multiple lengthy SQL statements, applications have to send only the name and parameters of stored procedures.
+
+<h3>Centralize business logic in the database</h3>
+You can use the stored procedures to implement business logic that is reusable by multiple applications. 
+The stored procedures help reduce the efforts of duplicating the same logic in many applications and make your database more consistent.
+
+<h3>Make database more secure</h3>
+The database administrator can grant appropriate privileges to applications that only access specific stored procedures without giving any privileges on the underlying tables.
+
+<h2>stored procedures disadvantages</h2>
+Besides those advantages, stored procedures also have disadvantages:
+
+<h3>Resource usages</h3>
+If you use many stored procedures, the memory usage of every connection will increase substantially.
+
+Besides, overusing a large number of logical operations in the stored procedures will increase the CPU usage because the MySQL is not well-designed for logical operations.
+
+<h3>Troubleshooting</h3>
+It’s difficult to debug stored procedures. 
+Unfortunately, MySQL does not provide any facilities to debug stored procedures like other enterprise database products such as Oracle and SQL Server.
+
+<h3>Maintenances</h3>
+Developing and maintaining stored procedures often requires a specialized skill set that not all application developers possess. 
+This may lead to problems in both application development and maintenance.
+
+In this tutorial, you have learned about the MySQL stored procedures, their advantages, and disadvantages. 
+Let’s move on to learn how to create a new stored procedure in MySQL.
+
+
+<strong>Summary</strong>: how to change the default MySQL delimiter by using the <code>DELIMITER</code> command.
+
+When you write SQL statements, you use the semicolon (;) to separate two statements like the following example:
+
+<code>SELECT * FROM products;
+
+SELECT * FROM customers;</code>
+A MySQL client program such as MySQL Workbench or mysql program uses the (;) delimiter to separate statements and executes each statement separately.
+
+A stored procedure, however, consists of multiple statements separated by a semicolon (;).
+
+If you use a MySQL client program to define a stored procedure that contains semicolon characters, the MySQL client program will not treat the whole stored procedure as a single statement, but many statements.
+
+Therefore, you must redefine the delimiter temporarily so that you can pass the whole stored procedure to the server as a single statement.
+
+To redefine the default delimiter, you use the <code>DELIMITER</code> command:
+
+<code>DELIMITER delimiter_character</code>
+The <code>delimiter_character</code> may consist of a single character or multiple characters e.g., // or $$. 
+However, you should avoid using the backslash (<code>\</code>) because this is the escape character in MySQL.
+
+For example, this statement changes the delimiter to //:
+
+<code>DELIMITER //</code>
+Once change the delimiter, you can use the new delimiter to end a statement as follows:
+
+<code>DELIMITER //
+
+SELECT * FROM customers //
+
+SELECT * FROM products //</code>
+To change the delimiter back to semicolon, you use this statement:
+
+<code>DELIMITER ;</code>
+<h2>Using MySQL <code>DELIMITER</code> for stored procedures</h2>
+A stored procedure typically contains multiple statements separated by semicolon (;).
+ To use compile the whole stored procedure as a single compound statement, you need to temporarily change the delimiter from the semicolon (;) to anther delimiters such as <code>$$</code> or <code>//</code>:
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE sp_name()
+BEGIN
+  -- statements
+END $$
+
+DELIMITER ;</code>
+Note that you will learn the syntax of <a href="https://www.mysqltutorial.org/getting-started-with-mysql-stored-procedures.aspx">creating a stored procedure</a> in the next tutorial.
+
+In this code:
+
+<ul>
+<li>First, change the default delimiter to $$</li>
+<li>Second, use (;) in the body of the stored procedure and <code>$$</code> after the <code>END</code> keyword to end the stored procedure.</li>
+<li>Third, change the default delimiter back to a semicolon (;)</li>
+</ul>
+In this tutorial, you have learned how to use the MySQL <code>DELIMITER</code> command to change the default delimiter (;) to another.
+
+
+<strong>Summary</strong><em>: </em>step by step how to the MySQL <code>CREATE PROCEDURE</code> statement to create new stored procedures.<em><br></em>
+
+<h2><code>CREATE PROCEDURE</code> statement</h2>
+This query returns all products in the <code>products</code> table from the <a href="https://www.mysqltutorial.org/mysql-sample-database.aspx">sample database</a>.
+
+<code>SELECT * FROM products;</code>
+The following statement creates a new stored procedure that wraps the query:
+
+<code>DELIMITER //
+
+CREATE PROCEDURE GetAllProducts()
+BEGIN
+	SELECT *  FROM products;
+END //
+
+DELIMITER ;</code>
+To execute these statements:
+
+First, launch MySQL Workbench.
+
+Second, create a new SQL tab for executing queries:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-CREATE-PROCEDURE-example-step-1.png">
+Third, enter the statements in the SQL tab:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-CREATE-PROCEDURE-example-step-2.png">
+Fouth, execute the statements. 
+Note that you can select all statements in the SQL tab (or nothing) and click the <strong>Execute</strong> button. 
+If everything is fine, MySQL will create the stored procedure and save it in the server.
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-CREATE-PROCEDURE-example-step-3.png">
+Fifth, check the stored procedure by opening the <strong>Stored Procedures</strong> node. 
+If you don’t see the stored procedure, you can click the Refresh button next to the <strong>SCHEMAS</strong> title:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-CREATE-PROCEDURE-example-step-4.png">
+Congratulation! you have successfully created the first stored procedure in MySQL.
+
+Let’s examine the syntax of the stored procedure.
+
+The first and last <code>DELIMITER</code> commands are not a part of the stored procedure. 
+The first <code>DELIMITER</code> command changes the default delimiter to <code>//</code> and the last <code>DELIMITER</code> command changes the delimiter back to the default one which is semicolon (;).
+
+To create a new stored procedure, you use the <code>CREATE PROCEDURE</code> statement.
+
+Here is the basic syntax of the <code>CREATE PROCEDURE</code> statement:
+
+<code>CREATE PROCEDURE procedure_name(parameter_list)
+BEGIN
+   statements;
+END //</code>
+In this syntax
+
+<ul>
+<li>First, specify the name of the stored procedure that you want to create after the <code>CREATE PROCEDURE</code> keywords.</li>
+<li>Second, specify a list of comma-separated parameters for the stored procedure in parentheses after the procedure name.</li>
+<li>Third, write the code between the <code>BEGIN END</code> block. 
+The above example just has a simple <code><a href="https://www.mysqltutorial.org/mysql-select-statement-query-data.aspx">SELECT</a></code> statement. 
+After the <code>END</code> keyword, you place the delimiter character to end the procedure statement.</li>
+</ul>
+<h2>Executing a stored procedure</h2>
+To execute a stored procedure, you use the <code>CALL</code> statement:
+
+<code>CALL stored_procedure_name(argument_list);</code>
+In this syntax, you specify the name of the stored procedure after the <code>CALL</code> keyword. 
+If the stored procedure has parameters, you need to pass arguments inside parentheses following the stored procedure name.
+
+This example illustrates how to call the <code>GetAllProducts()</code> stored procedure:
+
+<code>CALL GetAllProducts();</code>
+Executing this statement is the same as executing an SQL statement:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-CALL-a-stored-procedure.png">
+Here is the partial output:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-CREATE-PROCEDURE-output.png">
+<h2>Creating a stored procedure using the MySQL Workbench wizard</h2>
+By using the MySQL Workbench wizard, you don’t have to take are of many things like delimiters or executing the command to create stored procedures.
+
+First, right-click on the <strong>Stored Procedures </strong>from
+the <strong>Navigator</strong> and select the <strong>Create Stored Procedure…</strong>
+menu item.
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-Workbench-create-stored-procedure-step-1.png">
+The following tab will open:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-Workbench-create-stored-procedure-step-1-1.png">
+Second, change the stored procedure’s name and add the code between the <code>BEGIN END</code> block:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-Workbench-create-stored-procedure-step-2.png">
+The stored procedure name is <code>GetAllCustomers()</code> which returns all rows in the <code>customers</code> table from the <a href="https://www.mysqltutorial.org/mysql-sample-database.aspx">sample database</a>.
+
+Third, Click the <strong>Apply</strong> button, MySQL Workbench will open a new window for reviewing SQL script before applying it on the database:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-Workbench-create-stored-procedure-step-3.png">
+Fourth, Click the <strong>Apply</strong> button to confirm. 
+MySQL Workbench will create the stored procedure:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-Workbench-create-stored-procedure-step-4.png">
+Fifth, click the <strong>Finish</strong> button to close the window.
+
+Finally, view the stored procedure in the <strong>Stored Procedures</strong> list:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-Workbench-create-stored-procedure-step-5.png">
+In this tutorial, you have learned how to use the MySQL <code>CREATE PROCEDURE</code> statement to create new stored procedures in the database.
+
+
+<strong>Summary</strong>: how to use the MySQL <code>DROP PROCEDURE</code> statement to drop a stored procedure.
+
+<h2>Introduction to the MySQL <code>DROP PROCEDURE</code> statement</h2>
+The <code>DROP PROCEDURE</code> deletes a stored procedure from the database.
+
+The following shows the syntax of the <code>DROP PROCEDURE</code> statement:
+
+<code>DROP PROCEDURE [IF EXISTS] stored_procedure_name;
+</code>
+In this syntax:
+
+<ul>
+<li>First, specify the name of of the stored procedure that you want to remove after the <code>DROP PROCEDURE</code> keywords.</li>
+<li>Second, use <code>IF EXISTS</code> option to conditionally drop the stored procedure if it exists only.</li>
+</ul>
+When you drop a procedure that does not exist without using the <code>IF EXISTS</code> option, MySQL issues an error. 
+In this case, if you use the <code>IF EXISTS</code> option, MySQL issues a warning instead.
+
+Note that you must have the <code>ALTER ROUTINE</code> privilege for the stored procedure to remove it.
+
+<h2><code>DROP PROCEDURE</code> examples</h2>
+Let’s take some examples of using the <code>DROP PROCEDURE</code> statement.
+
+<h3>1) Using MySQL <code>DROP PROCEDURE</code> example</h3>
+First, <a href="https://www.mysqltutorial.org/getting-started-with-mysql-stored-procedures.aspx">create a new stored procedure</a> that returns employee and office information:
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE GetEmployees()
+BEGIN
+    SELECT 
+        firstName, 
+        lastName, 
+        city, 
+        state, 
+        country
+    FROM employees
+    INNER JOIN offices using (officeCode);
+    
+END$$
+
+DELIMITER ;
+</code>
+Second, use the <code>DROP PROCEDURE</code> to delete the <code>GetEmployees()</code> stored procedure:
+
+<code>DROP PROCEDURE GetEmployees;
+</code>
+<h3>2) Using MySQL <code>DROP PROCEDURE</code> with <code>IF EXISTS</code> example</h3>
+The following example drops a stored procedure that does not exist:
+
+<code>DROP PROCEDURE abc;
+</code>
+MySQL issued the following error:
+
+<code>Error Code: 1305. 
+PROCEDURE classicmodels.abc does not exist
+</code>
+This statement drops the same non-existing stored procedure, but with <code>IF EXISTS</code> option:
+
+<code>DROP PROCEDURE IF EXISTS abc;
+</code>
+This time, MySQL issued a warning.
+
+<code>0 row(s) affected, 1 warning(s): 1305 PROCEDURE classicmodels.abc does not exist
+</code>
+The statement <code>SHOW WARNINGS</code> shows the warning:
+
+<code>SHOW WARNINGS;
+</code>
+Here is the output:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-Drop-Procedure-show-warnings.png">
+<h2>Dropping a stored procedure using MySQL Workbench</h2>
+This statement creates a new stored procedure named <code>GetPayments()</code>:
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE GetPayments()
+BEGIN
+    SELECT 
+        customerName, 
+        checkNumber, 
+        paymentDate, 
+        amount
+    FROM payments
+    INNER JOIN customers 
+        using (customerNumber);
+END$$
+
+DELIMITER ;
+</code>
+To drop the stored procedure using MySQL Workbench, you follow these steps:
+
+First, right-click the name of the stored procedure that you want to remove and choose <strong>Drop Stored Procedure…</strong> option.
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-Drop-Procdure-using-MySQL-Workbench.png">
+MySQL Workbench will display a confirmation window.
+
+Second, click Review SQL to review the SQL statement that MySQL Workbench will apply to the database or Drop Now if you want to remove the stored procedure immediately.
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-Drop-Procedure-using-MySQL-Workbench-step-2.png">
+Third, review the SQL code to be executed and click the <strong>Execute</strong> button to drop the stored procedure.
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-Drop-Procedure-using-MySQL-Workbench-step-3.png">
+In this tutorial, you have learned how to use the MySQL <code>DROP PROCEDURE</code> statement to drop a stored procedure.
+
+
+<strong>Summary</strong>: how to alter an existing stored procedure in the database using MySQL Workbench.
+
+Sometimes, you may want to alter a stored procedure by adding or removing <a href="https://www.mysqltutorial.org/stored-procedures-parameters.aspx">parameters</a> or even changing its body.
+
+Fortunately, MySQL does not have any statement that allows you to directly modify the parameters and body of the stored procedure.
+
+To make such changes, you must drop ad re-create the stored procedure using the <code><a href="https://www.mysqltutorial.org/mysql-stored-procedure/mysql-drop-procedure/">DROP PROCEDURE</a></code> and <code><a href="https://www.mysqltutorial.org/getting-started-with-mysql-stored-procedures.aspx">CREATE PROCEDURE</a></code> statements.
+
+<h2>Altering a stored procedure using MySQL Workbench</h2>
+MySQL Workbench provides you with a good tool that allows you to change a stored procedure quickly.
+
+First, <a href="https://www.mysqltutorial.org/getting-started-with-mysql-stored-procedures.aspx">create a stored procedure</a> that returns the total amount of all sales orders:
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE GetOrderAmount()
+BEGIN
+    SELECT 
+        SUM(quantityOrdered * priceEach) 
+    FROM orderDetails;
+END$$
+
+DELIMITER ;
+</code>
+Suppose that you want to get the total amount by a given sales order. 
+So you need to add a parameter and change the code in the stored procedure.
+
+Second, right-click the stored procedure that you want to change and select <strong>Alter Stored Procedure…</strong>
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-alter-stored-procedure-step-2.png">
+MySQL Workbench will open a new tab that contains the definition of the stored procedure.
+
+Third, make the changes and click the <strong>Apply</strong> button.
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-alter-stored-procedure-step-3.png">
+MySQL Workbench will display a SQL Script review window.
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-alter-stored-procedure-step-4.png">
+As you can see, it uses a sequence of <code>DROP PROCEDURE</code> and <code>CREATE PROCEDURE</code> statements to carry the modification.
+
+Fourth, click the <strong>Apply</strong> button to execute the script.
+
+MySQL Workbench will display a window that shows the status of the script execution.
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-modify-stored-procedure-step-5.png">
+Finally, click the <strong>Finish</strong> button to complete the change.
+
+In this tutorial, you have learned how to alter a stored procedure using MySQL Workbench.
+
+
+<strong>Summary</strong>: how to list stored procedures from databases in a MySQL Server.
+
+<h2>Listing stored procedures using <code>SHOW PROCEDURE STATUS</code> statement</h2>
+Here is the basic syntax of the <code>SHOW PROCEDURE STATUS</code> statement:
+
+<code>SHOW PROCEDURE STATUS [LIKE 'pattern' | WHERE search_condition]</code>
+The <code>SHOW PROCEDURE STATUS</code> statement shows all characteristic of stored procedures including stored procedure names. 
+It returns stored procedures that you have a privilege to access.
+
+The following statement shows all stored procedure in the current MySQL server:
+
+<code>SHOW PROCEDURE STATUS;</code>
+Here is the partial output:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/mysql-show-procedure-status.png">
+If you just want to show stored procedures in a particular database, you can use a <code>WHERE</code> clause in the
+ <code>SHOW PROCEDURE STATUS</code> as shown in the following statement:
+
+<code>SHOW PROCEDURE STATUS WHERE search_condition;</code>
+For example, this statement lists all stored procedures in the <a href="https://www.mysqltutorial.org/mysql-sample-database.aspx">sample database</a> <code>classicmodels</code>:
+
+<code>SHOW PROCEDURE STATUS WHERE db = 'classicmodels';</code>
+In case you want to find stored procedures whose names contain a specific word, you can use the <code>LIKE</code> clause as follows:
+
+<code>SHOW PROCEDURE STATUS LIKE '%pattern%'</code>
+The following statement shows all stored procedure whose names contain the word<code>Order</code>:
+
+<code>SHOW PROCEDURE STATUS LIKE '%Order%'</code>
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/mysql-show-procedure-status-like.png">
+<h2>Listing stored procedures using the data dictionary</h2>
+The <code>routines</code> table in the <code>information_schema</code> database contains all information on the stored procedures and stored functions of all databases in the current MySQL server.
+
+To show all stored procedures of a particular database, you use the following query:
+
+<code>SELECT 
+    routine_name
+FROM
+    information_schema.routines
+WHERE
+    routine_type = 'PROCEDURE'
+        AND routine_schema = '&lt;database_name&gt;';</code>
+For example, this statement lists all stored procedures in the <code>classicmodels</code> database:
+
+<code>SELECT 
+    routine_name
+FROM
+    information_schema.routines
+WHERE
+    routine_type = 'PROCEDURE'
+        AND routine_schema = 'classicmodels';</code>
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/mysql-list-stored-procedures.png">
+<h2>Showing stored procedures using MySQL Workbench</h2>
+In MySQL Workbench, you can view all stored procedures from a database.
+
+Step 1. 
+Access the database that you want to view the stored procedures.
+
+Step 2. 
+Open the <strong>Stored Procedures</strong> menu. 
+You will see a list of stored procedures that belong to the current database.
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/mysql-show-stored-procedures.png">
+In this tutorial, you have learned how to list the stored procedures in a database by querying them from the data dictionary.
+
+
+<strong>Summary</strong>: variables in the stored procedure, how to declare, and use variables. 
+In addition, you will learn about the scopes of variables.
+
+A variable is a named data object whose value can change during the <a href="https://www.mysqltutorial.org/mysql-stored-procedure-tutorial.aspx">stored procedure</a> execution. 
+You typically use variables in stored procedures to hold immediate results. 
+These variables are local to the stored procedure.
+
+Before using a variable, you must declare it.
+
+<h2>Declaring variables</h2>
+To declare a variable inside a stored procedure, you use the <code>DECLARE</code> 
+statement as follows:
+
+<code>DECLARE variable_name datatype(size) [DEFAULT default_value];</code>
+In this syntax:
+
+<ul>
+<li>First, specify the name of the variable after the <code>DECLARE</code> keyword. 
+The variable name must follow the naming rules of MySQL table column names.</li>
+<li>Second, specify the data type and length of the variable. 
+A variable can have any <a href="https://www.mysqltutorial.org/mysql-data-types.aspx">MySQL data types</a> such as <code>INT</code>, <code>VARCHAR</code> , and
+<code>DATETIME</code>.</li>
+<li>Third, assign a variable a default value using the <code>DEFAULT</code> option.
+ If you declare a variable without specifying a default value, its value is <code>NULL</code>.</li>
+</ul>
+The following example declares a variable named <code>totalSale</code> with the data type <code>DEC(10,2)</code> and default value <code>0.0</code> 
+as follows:
+
+<code>DECLARE totalSale DEC(10,2) DEFAULT 0.0;</code>
+MySQL allows you to declare two or more variables that share the same data type using a single <code>DECLARE</code> statement. 
+The following example declares two integer variables
+ <code>x</code> and
+ <code>y</code>, and set their default values to zero.
+
+<code>DECLARE x, y INT DEFAULT 0;</code>
+<h2>Assigning variables</h2>
+Once a variable is declared, it is ready to use. 
+To assign a variable a value, you use the <code>SET</code> statement:
+
+<code>SET variable_name = value;</code>
+For example:
+
+<code>DECLARE total INT DEFAULT 0;
+SET total = 10;</code>
+The value of the <code>total</code> variable is <code>10</code> 
+after the assignment.
+
+In addition to the <code>SET</code>
+statement, you can use the
+<code>SELECT INTO</code> statement to assign the result of a query to a variable as shown in the following example:
+
+<code>DECLARE productCount INT DEFAULT 0;
+
+SELECT COUNT(*) 
+INTO productCount
+FROM products;</code>
+In this example:
+
+<ul>
+<li>First, declare a variable named <code>productCount</code> 
+and initialize its value to <code>0</code>.</li>
+<li>Then, use the <code>SELECT INTO</code> 
+statement to assign the <code>productCount</code> 
+variable the number of products selected from the <code>products</code> 
+table.</li>
+</ul>
+<h2>Variable scopes</h2>
+A variable has its own scope that defines its lifetime. 
+If you declare a variable inside a stored procedure, it will be out of scope when the <code>END</code> statement of stored procedure reaches.
+
+When you declare a variable inside the block <code>BEGIN END</code>, it will be out of scope if the <code>END</code> is reached.
+
+MySQL allows you to declare two or more variables that share the same name in different scopes. 
+Because a variable is only effective in its scope. 
+However, declaring variables with the same name in different scopes is not good programming practice.
+
+A variable whose name begins with the <code>@</code> sign is a <a href="https://www.mysqltutorial.org/mysql-variables/">session variable</a>. 
+It is available and accessible until the session ends.
+
+<h2>Putting it all together</h2>
+The following example illustrates how to declare and use a variable in a stored procedure:
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE GetTotalOrder()
+BEGIN
+	DECLARE totalOrder INT DEFAULT 0;
+    
+    SELECT COUNT(*) 
+    INTO totalOrder
+    FROM orders;
+    
+    SELECT totalOrder;
+END$$
+
+DELIMITER ;
+</code>
+How it works.
+
+First, declare a variable <code>totalOrder</code> with a default value of zero. 
+This variable will hold the number of orders from the <code>orders</code> table.
+
+<code>DECLARE totalOrder INT DEFAULT 0;</code>
+Second, use the <code>SELECT INTO</code>
+ statement to assign the variable <code>totalOrder</code> the number of orders selected from the <code>orders</code> table:
+
+<code>SELECT COUNT(*) 
+INTO totalOrder 
+FROM orders;</code>
+Third, select the value of the
+variable <code>totalOrder</code>.
+
+<code>SELECT totalOrder;</code>
+Note that you will learn how to use variables practically in the subsequent tutorials. 
+The example in this tutorial is just an illustration so that you understand the concept.
+
+This statement calls the stored procedure <code>GetTotalOrder()</code>:
+
+<code>CALL GetTotalOrder();</code>
+Here is the output:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-Stored-Procedure-Variable-Output.png">
+In this tutorial, you have learned how you how to declare and use variables inside stored procedures.
+
+
+<strong>Summary</strong>: how to create stored procedures with parameters including <code>IN</code>, <code>OUT</code>, and <code>INTOUT</code> parameters.
+
+<h2>Introduction to MySQL stored procedure parameters</h2>
+Almost stored procedures that you develop require parameters. 
+The parameters make the stored procedure more flexible and useful.
+
+In MySQL, a parameter has one of three modes: <code>IN,</code><code>OUT</code>,
+or <code>INOUT</code>.
+
+<h3>
+<code>IN</code> parameters</h3>
+<code>IN</code> is the default mode. 
+When you define an <code>IN</code> parameter in a stored procedure, the calling program has to pass an argument to the stored procedure. 
+In addition, the value of an <code>IN</code> parameter is protected. 
+It means that even the value of the <code>IN</code> parameter is changed inside the stored procedure, its original value is retained after the stored procedure ends. 
+In other words, the stored procedure only works on the copy of the <code>IN</code> parameter.
+
+<h3>
+<code>OUT</code> parameters</h3>
+The value of an <code>OUT</code> parameter can be changed inside the stored procedure and its new value is passed back to the calling program. 
+Notice that the stored procedure cannot access the initial value of the <code>OUT</code> parameter when it starts.
+
+<h3>
+<code>INOUT</code> parameters</h3>
+An <code>INOUT</code> 
+parameter is a combination of <code>IN</code>
+ and <code>OUT</code> 
+parameters. 
+It means that the calling program may pass the argument, and the stored procedure can modify the <code>INOUT</code> parameter, and pass the new value back to the calling program.
+
+<h3>Defining a parameter</h3>
+Here is the basic syntax of defining a parameter in stored procedures:
+
+<code>[IN | OUT | INOUT] parameter_name datatype[(length)]</code>
+In this syntax,
+
+<ul>
+<li>First, specify the parameter mode, which can be <code>IN</code> , <code>OUT</code>or <code>INOUT</code> , depending on the purpose of the parameter in the stored procedure.</li>
+<li>Second, specify the name of the parameter. 
+The parameter name must follow the naming rules of the column name in MySQL.</li>
+<li>Third, specify the data type and maximum length of the parameter.</li>
+</ul>
+<h2>stored procedure parameter examples</h2>
+Let’s take some examples of using stored procedure parameters.
+
+<h3>The <code>IN</code> parameter example</h3>
+The following example creates a stored procedure that finds all offices that locate in a country specified by the input parameter <code>countryName</code>:
+
+<code>DELIMITER //
+
+CREATE PROCEDURE GetOfficeByCountry(
+	IN countryName VARCHAR(255)
+)
+BEGIN
+	SELECT * 
+ 	FROM offices
+	WHERE country = countryName;
+END //
+
+DELIMITER ;</code>
+In this example, the <code>countryName</code> is the <code>IN</code> parameter of the stored procedure.
+
+Suppose that you want to find offices locating in the USA, you need to pass an argument (<code>USA</code>) to the stored procedure as shown in the following query:
+
+<code>CALL GetOfficeByCountry('USA');</code>
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2009/12/MySQL-Stored-Procedure-Param.png">
+To find offices in <code>France</code>, you pass the literal string <code>France</code> to the <code>GetOfficeByCountry</code>
+stored procedure as follows:
+
+<code>CALL GetOfficeByCountry('France')</code>
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2009/12/MySQL-IN-parameter-offices-in-France.png">
+Because the countryName is the IN parameter, you must pass an argument. 
+Fail to do so will result in an error:
+
+<code>CALL GetOfficeByCountry();</code>
+Here is the error:
+
+Error Code: 1318. 
+Incorrect number of arguments for PROCEDURE classicmodels.GetOfficeByCountry; expected 1, got 0
+
+<h3>The <code>OUT</code> parameter example</h3>
+The following stored procedure returns the number of orders by order status.
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE GetOrderCountByStatus (
+	IN  orderStatus VARCHAR(25),
+	OUT total INT
+)
+BEGIN
+	SELECT COUNT(orderNumber)
+	INTO total
+	FROM orders
+	WHERE status = orderStatus;
+END$$
+
+DELIMITER ;</code>
+The stored procedure <code>GetOrderCountByStatus()</code>
+has two parameters:
+
+<ul>
+<li> <code>orderStatus</code> : is the <code>IN</code> parameter specifies the status of orders to return.</li>
+<li>
+<code>total</code> : is the <code>OUT</code> parameter that stores the number of orders in a specific status.</li>
+</ul>
+To find the number of orders that already shipped, you call <code>GetOrderCountByStatus</code>
+ and pass the order status as of <code>Shipped</code>, and also pass a session variable ( <code>@total</code> ) to receive the return value.
+
+<code>CALL GetOrderCountByStatus('Shipped',@total);
+SELECT @total;</code>
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2009/12/MySQL-OUT-parameter-order-shipped.png">
+To get the number of orders that are in-process, you call the stored procedure <code>GetOrderCountByStatus</code>
+as follows:
+
+<code>CALL GetOrderCountByStatus('in process',@total);
+SELECT @total AS  total_in_process;</code>
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2009/12/MySQL-OUT-parameter-orders-in-process.png">
+<h3>The <code>INOUT</code> parameter example</h3>
+The following example demonstrates how to use an
+<code>INOUT</code> parameter in the stored procedure.
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE SetCounter(
+	INOUT counter INT,
+    IN inc INT
+)
+BEGIN
+	SET counter = counter + inc;
+END$$
+
+DELIMITER ;</code>
+In this example, the stored procedure <code>SetCounter()</code>
+ accepts one <code>INOUT</code> 
+parameter ( <code>counter</code> ) and one <code>IN</code> parameter ( <code>inc</code> ). 
+It increases the counter ( <code>counter</code> ) by the value of specified by the <code>inc</code> parameter.
+
+These statements illustrate how to call the <code>SetSounter</code> 
+stored procedure:
+
+<code>SET @counter = 1;
+CALL SetCounter(@counter,1); -- 2
+CALL SetCounter(@counter,1); -- 3
+CALL SetCounter(@counter,5); -- 8
+SELECT @counter; -- 8</code>
+Here is the output:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-Stored-Procedure-Parameter-INOUT.png">
+In this tutorial, you have learned how create stored procedures with parameters including <code>IN</code>, <code>OUT</code>, and <code>INOUT</code> parameters.
+
+
+<strong>Summary</strong><em>: </em>how to use <strong>MySQL IF statement</strong> to execute a block of SQL code based on a specified condition.
+
+Note that MySQL has an <a href="https://www.mysqltutorial.org/mysql-if-function.aspx">IF()</a> function that is different from the <code>IF</code> statement described in this tutorial.
+
+The <code>IF</code> statement has three forms: simple <code>IF-THEN</code>
+statement, <code>IF-THEN-ELSE</code> statement, and <code>IF-THEN-ELSEIF- ELSE</code> statement.
+
+<h2>simple <code>IF-THEN</code> statement</h2>
+The <code>IF-THEN</code> statement allows you to execute a set of SQL statements based on a specified condition. 
+The following illustrates the syntax of the <code>IF-THEN</code> statement:
+
+<code>IF condition THEN 
+   statements;
+END IF;</code>
+In this syntax:
+
+<ul>
+<li>First, specify a condition to execute the code between the <code>IF-THEN</code> and <code>END IF</code> . 
+If the <code>condition</code> evaluates to <code>TRUE</code>, the statements between <code>IF-THEN</code> and <code>END IF</code> will execute. 
+Otherwise, the control is passed to the next statement following the <code>END IF</code>.</li>
+<li>Second, specify the code that will execute if the <code>condition</code> evaluates to <code>TRUE</code>.</li>
+</ul>
+We’ll use the <code>customers</code> table from the sample database for the demonstration:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/08/customers.png">
+See the following <code>GetCustomerLevel()</code> stored procedure.
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE GetCustomerLevel(
+    IN  pCustomerNumber INT, 
+    OUT pCustomerLevel  VARCHAR(20))
+BEGIN
+    DECLARE credit DECIMAL(10,2) DEFAULT 0;
+
+    SELECT creditLimit 
+    INTO credit
+    FROM customers
+    WHERE customerNumber = pCustomerNumber;
+
+    IF credit &gt; 50000 THEN
+        SET pCustomerLevel = 'PLATINUM';
+    END IF;
+END$$
+
+DELIMITER ;</code>
+The stored procedure <code>GetCustomerLevel()</code> accepts two parameters: <code>pCustomerNumber</code> and <code>pCustomerLevel</code>.
+
+<ul>
+<li>First, select <code>creditLimit</code> of the customer specified by the <code>pCustomerNumber</code> from the <code>customers</code> table and store it in the local variable <code>credit</code>.</li>
+<li>Then, set value for the <code>OUT</code> parameter <code>pCustomerLevel</code> to <code>PLATINUM</code> if the credit limit of the customer is greater than <code>50,000</code>.</li>
+</ul>
+This statement finds all customers that have a credit limit greater than <code>50,000</code>:
+
+<code>SELECT 
+    customerNumber, 
+    creditLimit
+FROM 
+    customers
+WHERE 
+    creditLimit &gt; 50000
+ORDER BY 
+    creditLimit DESC;</code>
+Here is the partial output:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/mysql-if-statement-customers-data.png">
+These statements call the <code>GetCustomerLevel()</code> stored procedure for customer 141 and show the value of the <code>OUT</code> parameter <code>pCustomerLevel</code>:
+
+<code>CALL GetCustomerLevel(141, @level);
+SELECT @level;</code>
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/mysql-if-statement-if-output.png">
+Because the customer 141 has a credit limit greater than <code>50,000</code>, its level is set to <code>PLATINUM</code> as expected.
+
+<h2><code>IF-THEN-ELSE</code> statement</h2>
+In case you want to execute other statements when the <code>condition</code> in the <code>IF</code> branch does not evaluate to <code>TRUE</code>, you can use the <code>IF-THEN-ELSE</code> statement as follows:
+
+<code>IF condition THEN
+   statements;
+ELSE
+   else-statements;
+END IF;</code>
+In this syntax, if the <code>condition</code> evaluates to <code>TRUE</code>, the <code>statements</code> between <code>IF-THEN</code> and <code>ELSE</code> execute. 
+Otherwise, the <code>else-statements</code> between the <code>ELSE</code> and <code>END IF</code> execute.
+
+Let’s modify the <code>GetCustomerLevel()</code> stored procedure.
+
+First, drop the <code>GetCustomerLevel()</code> stored procedure:
+
+<code>DROP PROCEDURE GetCustomerLevel;</code>
+Then, create the <code>GetCustomerLevel()</code> stored procedure with the new code:
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE GetCustomerLevel(
+    IN  pCustomerNumber INT, 
+    OUT pCustomerLevel  VARCHAR(20))
+BEGIN
+    DECLARE credit DECIMAL DEFAULT 0;
+
+    SELECT creditLimit 
+    INTO credit
+    FROM customers
+    WHERE customerNumber = pCustomerNumber;
+
+    IF credit &gt; 50000 THEN
+        SET pCustomerLevel = 'PLATINUM';
+    ELSE
+        SET pCustomerLevel = 'NOT PLATINUM';
+    END IF;
+END$$
+
+DELIMITER ;
+</code>
+In this new stored procedure, we include the <code>ELSE</code> branch. 
+If the <code>credit</code> is not greater than <code>50,000</code>, we set the customer level to <code>NOT PLATINUM</code> in the block between <code>ELSE</code> and <code>END IF</code>.
+
+This query finds customers that have credit limit less than or equal <code>50,000</code>:
+
+<code>SELECT 
+    customerNumber, 
+    creditLimit
+FROM 
+    customers
+WHERE 
+    creditLimit &lt;= 50000
+ORDER BY 
+    creditLimit DESC;</code>
+This picture shows the partial output:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/mysql-if-else-statement-customers-data.png">
+The following statements call the stored procedure for customer number <code>447</code> 
+and show the value of the <code>OUT</code> parameter <code>pCustomerLevel</code>:
+
+<code>CALL GetCustomerLevel(447, @level);
+SELECT @level;</code>
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/mysql-if-else-statement-output.png">
+The credit limit of the customer <code>447</code> is less than <code>50,000</code>, therefore, the statement in the <code>ELSE</code> branch executes and sets the value of the <code>OUT</code> parameter <code>pCustomerLevel</code> to <code>NOT PLATINUM</code>.
+
+<h2><code>IF-THEN-ELSEIF-ELSE</code> statement</h2>
+If you want to execute statements conditionally based on multiple conditions, you use the following <code>IF-THEN-ELSEIF-ELSE</code> statement:
+
+<code>IF condition THEN
+   statements;
+ELSEIF elseif-condition THEN
+   elseif-statements;
+...
+ELSE
+   else-statements;
+END IF;</code>
+In this syntax, if the <code>condition</code> evaluates to <code>TRUE</code> ,
+the <code>statements</code> in the <code>IF-THEN</code> branch executes; otherwise, the next <code>elseif-condition</code> is evaluated.
+
+If the <code>elseif-condition</code> evaluates to <code>TRUE</code>, the <code>elseif-statement</code> executes; otherwise, the next <code>elseif-condition</code> is evaluated.
+
+The <code>IF-THEN-ELSEIF-ELSE</code> statement can have multiple <code>ELSEIF</code> branches.
+
+If no condition in the <code>IF</code> and <code>ELSE IF</code> evaluates to <code>TRUE</code>, the <code>else-statements</code> in the <code>ELSE</code> branch will execute.
+
+We will modify the <code>GetCustomerLevel()</code>
+stored procedure to use the <code>IF-THEN-ELSEIF-ELSE</code> statement.
+
+First, drop the <code>GetCustomerLevel()</code> stored procedure:
+
+<code>DROP PROCEDURE GetCustomerLevel;
+</code>
+Then, create the new <code>GetCustomerLevel()</code>
+stored procedure that uses the the <code>IF-THEN-ELSEIF-ELSE</code> statement.
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE GetCustomerLevel(
+    IN  pCustomerNumber INT, 
+    OUT pCustomerLevel  VARCHAR(20))
+BEGIN
+    DECLARE credit DECIMAL DEFAULT 0;
+
+    SELECT creditLimit 
+    INTO credit
+    FROM customers
+    WHERE customerNumber = pCustomerNumber;
+
+    IF credit &gt; 50000 THEN
+        SET pCustomerLevel = 'PLATINUM';
+    ELSEIF credit &lt;= 50000 AND credit &gt; 10000 THEN
+        SET pCustomerLevel = 'GOLD';
+    ELSE
+        SET pCustomerLevel = 'SILVER';
+    END IF;
+END $$
+
+DELIMITER ;
+</code>
+In this stored procedure:
+
+<ul>
+<li>If the credit is greater than <code>50,000</code>, the level of the customer is <code>PLATINUM</code>.</li>
+<li>If the credit is less than or equal <code>50,000</code> and greater than <code>10,000</code>, then the level of customer is <code>GOLD</code>.</li>
+<li>Otherwise, the level of the customer is <code>SILVER</code>.</li>
+</ul>
+These statements call the stored procedure <code>GetCustomerLevel()</code> and show the level of the customer <code>447</code>:
+
+<code>CALL GetCustomerLevel(447, @level); 
+SELECT @level;</code>
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/mysql-if-elseif-else-statement-output-2.png">
+If you test the stored procedure with the customer that has a credit limit of 10000 or less, you will get the output as <code>SILVER</code>.
+
+In this tutorial, you have learned how to use MySQL <code>IF</code> statement to conditionally execute a block of code based on specified conditions.
+
+
+<strong>Summary</strong>:
+how to use
+MySQL <code>CASE</code> statements to construct complex conditional statements inside stored procedures.
+
+Besides the <a href="https://www.mysqltutorial.org/mysql-if-statement/"><code>IF</code></a> statement, MySQL provides an
+alternative
+conditional
+statement called the <code>CASE</code> statement for constructing conditional statements in stored procedures. 
+The <code>CASE</code> statements make the code more readable and efficient.
+
+The <code>CASE</code> statement has two forms: simple<code>CASE</code> and searched <code>CASE</code> statements.
+
+Note that if you want to add the if-else logic to an SQL statement, you use the <a href="https://www.mysqltutorial.org/mysql-case-function/"><code>CASE</code> expression</a> which is different from the <code>CASE</code> statement described in this tutorial.
+
+<h2>Simple <code>CASE</code> statement</h2>
+The following is the basic syntax of the simple <code>CASE</code> statement:
+
+<code>CASE case_value
+   WHEN when_value1 THEN statements
+   WHEN when_value2 THEN statements
+   ...
+   [ELSE else-statements]
+END CASE;</code>
+In this syntax, the simple <code>CASE</code> statement sequentially compares the <code>case_value</code> is with the <code>when_value1</code>, <code>when_value2</code>, … until it finds one is equal. 
+When the <code>CASE</code> finds a <code>case_value</code> equal to a <code>when_value</code>, it executes <code>statements</code> in the corresponding <code>THEN</code> clause.
+
+If <code>CASE</code> cannot find any <code>when_value</code> equal to the <code>case_value</code>, it executes the <code>else-statements</code> in the <code>ELSE</code> clause if the <code>ELSE</code> clause is available.
+
+When the <code>ELSE</code> clause does not exist and the <code>CASE</code> cannot find any <code>when_value</code> equal to the <code>case_value</code>, it issues an error:
+
+Case not found for CASE statement
+Note that the <code>case_value</code> can be a literal value or an expression. 
+The <code>statements</code> can be one or more SQL statements, and cannot have zero statement.
+
+To avoid the error when the
+ <code>case_value</code> does not equal any <code>when_value</code>, you can use an empty <code>BEGIN END</code> block in the <code>ELSE</code> clause as follows:
+
+<code>CASE case_value
+    WHEN when_value1 THEN ...
+    WHEN when_value2 THEN ...
+    ELSE 
+        BEGIN
+        END;
+END CASE;</code>
+The simple <code>CASE</code> statement tests for equality ( <code>=</code>), you cannot use it to test equality with <code><a href="https://www.mysqltutorial.org/mysql-null/">NULL</a></code>; because <code>NULL</code> = <code>NULL</code> returns <code>FALSE</code>.
+
+<h3>Simple <code>CASE</code> statement example</h3>
+The following stored procedure illustrates how to use the simple <code>CASE</code> statement:
+
+DELIMITER $$
+
+CREATE PROCEDURE GetCustomerShipping(
+	IN  pCustomerNUmber INT, 
+	OUT pShipping       VARCHAR(50)
+)
+BEGIN
+    DECLARE customerCountry VARCHAR(100);
+
+SELECT 
+    country
+INTO customerCountry FROM
+    customers
+WHERE
+    customerNumber = pCustomerNUmber;
+
+    CASE customerCountry
+		WHEN  'USA' THEN
+		   SET pShipping = '2-day Shipping';
+		WHEN 'Canada' THEN
+		   SET pShipping = '3-day Shipping';
+		ELSE
+		   SET pShipping = '5-day Shipping';
+	END CASE;
+END$$
+
+DELIMITER ;
+How it works.
+
+The <code>GetCustomerShipping()</code> stored procedure accepts two parameters: <code>pCustomerNumber</code> as an <code>IN</code> parameter and <code>pShipping</code> as an <code>OUT</code> parameter.
+
+In the stored procedure:
+
+First, select the country of the customer from the <code>customers</code> table by the input customer number.
+
+Second, use the simple <code>CASE</code> statement to determine the shipping time based on the country of the customer. 
+If the customer locates in <code>USA</code> , the shipping time is <code>2-day shipping</code> . 
+If the customer locates in <code>Canada</code> , the shipping time is <code>3-day shipping</code> . 
+The customers from other countries have <code>5-day shipping</code> .
+
+The following flowchart demonstrates the logic of the
+ CASE statement for determining the shipping time:
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2013/01/mysql-case-statement.png">
+This statement calls the stored procedure and passes the customer number 112:
+
+<code>CALL GetCustomerShipping(112,@shipping);</code>
+The following statement returns the shipping time of the customer 112:
+
+<code>SELECT @shipping;</code>
+Here is the output:
+
+<code>+----------------+
+| @shipping      |
++----------------+
+| 2-day Shipping |
++----------------+
+1 row in set (0.00 sec)</code>
+<h2>Searched <code>CASE</code> statement</h2>
+The simple <code>CASE</code> statement only allows you to compare a value with a set of distinct values.
+
+To perform more complex matches such as ranges, you use the searched <code>CASE</code> statement. 
+The searched <code>CASE</code> statement is equivalent to the <code>IF</code> 
+statement, however, it’s much more readable than the <code>IF</code> statement.
+
+Here is the basic syntax of the searched <code>CASE</code> statement:
+
+<code>CASE
+    WHEN search_condition1 THEN statements
+    WHEN search_condition1 THEN statements
+    ...
+    [ELSE else-statements]
+END CASE;</code>
+In this syntax, searched <code>CASE</code> evaluates each <code>search_condition</code> in the <code>WHEN</code> clause until it finds a condition that evaluates to <code>TRUE</code> , then it executes the corresponding <code>THEN</code> clause <code>statements</code>.
+
+If no <code>search_condition</code> evaluates to <code>TRUE</code>, the <code>CASE</code> will execute <code>else-statements</code> in the <code>ELSE</code> clause if an <code>ELSE</code> clause is available.
+
+Similar to the simple <code>CASE</code> statement, if you don’t specify an <code>ELSE</code> clause and no condition is <code>TRUE</code>, MySQL raises the same error:
+
+Case not found for CASE statement
+MySQL also does not allow you to have empty <code>statements</code> in the <code>THEN</code> or <code>ELSE</code> clause. 
+If you don’t want to handle the logic in the <code>ELSE</code> clause while preventing MySQL from raising an error in case no <code>search_condition</code> is true, you can use an empty <code>BEGIN END</code> 
+block in the <code>ELSE</code> clause.
+
+<h3>Searched <code>CASE</code> statement example</h3>
+The following example demonstrates how to use a searched <code>CASE</code> statement to find customer level <code>SILVER</code> , <code>GOLD</code> or <code>PLATINUM</code> based on customer’s credit limit.
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE GetDeliveryStatus(
+	IN pOrderNumber INT,
+    OUT pDeliveryStatus VARCHAR(100)
+)
+BEGIN
+	DECLARE waitingDay INT DEFAULT 0;
+    SELECT 
+		DATEDIFF(requiredDate, shippedDate)
+	INTO waitingDay
+	FROM orders
+    WHERE orderNumber = pOrderNumber;
+    
+    CASE 
+		WHEN waitingDay = 0 THEN 
+			SET pDeliveryStatus = 'On Time';
+        WHEN waitingDay &gt;= 1 AND waitingDay &lt; 5 THEN
+			SET pDeliveryStatus = 'Late';
+		WHEN waitingDay &gt;= 5 THEN
+			SET pDeliveryStatus = 'Very Late';
+		ELSE
+			SET pDeliveryStatus = 'No Information';
+	END CASE;	
+END$$
+DELIMITER ;</code>
+How it works.
+
+The stored procedure <code>GetDeliveryStatus()</code> accepts an order number as an <code>IN</code> parameter and returns the delivery status as an <code>OUT</code> parameter.
+
+First, calculate the number of days between the required date and shipped date.
+
+Second, determine the delivery status based on the number of waiting days using the searched <code>CASE</code> statement:
+
+<ul>
+<li>If the number of waiting days is zero, then the delivery is on time.</li>
+<li>When the number of waiting days is between 1 and 5, the delivery is late.</li>
+<li>When the number of waiting days is more than 5 days, then the delivery is very late.</li>
+<li>If the number of waiting days is NULL or else, the delivery has the status of no information specified in the <code>ELSE</code> clause.</li>
+</ul>
+This statement uses the stored procedure <code>GetDeliveryStatus()</code> to get the delivery status of the order <code>10100</code> :
+
+<code>CALL GetDeliveryStatus(10100,@delivery);</code>
+Here is the result:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/mysql-searched-case-statement-example.png">
+<h2><code>CASE</code> vs. 
+<code>IF</code>
+</h2>
+Both <code><a href="https://www.mysqltutorial.org/mysql-if-statement/">IF</a></code> and <code>CASE</code> statements allow you to execute a block of code based on a specific condition. 
+Choosing between <code>IF</code> or <code>CASE</code> sometimes is just a matter of personal preference. 
+Here are some guidelines:
+
+<ul>
+<li>A simple <code>CASE</code> statement is more readable and efficient than an <code>IF</code> statement when you compare a single expression against a range of unique values.</li>
+<li>When you check complex expressions based on multiple values, the <code>IF</code> statement is easier to understand.</li>
+<li>If you use the <code>CASE</code> statement, you have to make sure that at least one of the <code>CASE</code> condition is matched. 
+Otherwise, you need to define an <a href="https://www.mysqltutorial.org/mysql-error-handling-in-stored-procedures/">error handler</a> to catch the error. 
+Note that you do not have to do this with the <code>IF</code> statement.</li>
+<li>In some situations, you can use both <code>IF</code> and <code>CASE</code> to make the code more readable and efficient.</li>
+</ul>
+In this tutorial, you have learned how to use two forms of the MySQL <code>CASE</code> statements including simple <code>CASE</code> statement and searched <code>CASE</code> statement.
+
+
+<strong>Summary</strong>: how to use MySQL <code>LOOP</code> statement to run a block of code repeatedly based on a condition.
+
+<h2>Introduction to MySQL <code>LOOP</code> statement</h2>
+The <code>LOOP</code> statement allows you to execute one or more statements repeatedly.
+
+Here is the basic syntax of the <code>LOOP</code> statement:
+
+<code>[begin_label:] LOOP
+    statement_list
+END LOOP [end_label]
+</code>
+The <code>LOOP</code> can have optional labels at the beginning and end of the block.
+
+The <code>LOOP</code> executes the <code>statement_list</code> repeatedly. 
+The <code>statement_list</code> may have one or more statements, each terminated by a semicolon (;) statement delimiter.
+
+Typically, you terminate the loop when a condition is satisfied by using the <code><a href="https://www.mysqltutorial.org/mysql-stored-procedure/mysql-leave/">LEAVE</a></code> statement.
+
+This is the typical syntax of the <code>LOOP</code> statement used with <code>LEAVE</code> statement:
+
+<code>[label]: LOOP
+    ...
+    -- terminate the loop
+    IF condition THEN
+        LEAVE [label];
+    END IF;
+    ...
+END LOOP;
+</code>
+The <code>LEAVE</code> statement immediately exits the loop. 
+It works like the <code>break</code> statement in other programming languages like PHP, C/C++, and Java.
+
+In addition to the <code>LEAVE</code> statement, you can use the <code>ITERATE</code> statement to skip the current loop iteration and start a new iteration. 
+The <code>ITERATE</code> is similar to the <code>continue</code> statement in PHP, C/C++, and Java.
+
+<h2><code>LOOP</code> statement example</h2>
+The following statement <a href="https://www.mysqltutorial.org/getting-started-with-mysql-stored-procedures.aspx">creates a stored procedure</a> that uses a <code>LOOP</code>
+loop statement:
+
+<code>DROP PROCEDURE LoopDemo;
+
+DELIMITER $$
+CREATE PROCEDURE LoopDemo()
+BEGIN
+	DECLARE x  INT;
+	DECLARE str  VARCHAR(255);
+        
+	SET x = 1;
+	SET str =  '';
+        
+	loop_label:  LOOP
+		IF  x &gt; 10 THEN 
+			LEAVE  loop_label;
+		END  IF;
+            
+		SET  x = x + 1;
+		IF  (x mod 2) THEN
+			ITERATE  loop_label;
+		ELSE
+			SET  str = CONCAT(str,x,',');
+		END  IF;
+	END LOOP;
+	SELECT str;
+END$$
+
+DELIMITER ;</code>
+In this example:
+
+<ul>
+<li>The stored procedure constructs a string from the even numbers e.g., 2, 4, and 6.</li>
+<li>The <code>loop_label</code><em>
+ </em>before the <code>LOOP</code>statement for using with the <code>ITERATE</code> and <code>LEAVE</code> statements.</li>
+<li>If the value of
+ <code>x</code>
+is greater than <code>10</code>, the loop is terminated because of the <code>LEAVE</code>statement.</li>
+<li>If the value of the <code>x</code>
+is an odd number, the <code>ITERATE</code> ignores everything below it and starts a new loop iteration.</li>
+<li>If the value of the <code>x</code>
+is an even number, the block in the <code>ELSE</code>statement will build the result string from even numbers.</li>
+</ul>
+The following statement calls the stored procedure:
+
+<code>CALL LoopDemo();</code>
+Here is the output:
+
++-------------+
+| str         |
++-------------+
+| 2,4,6,8,10, |
++-------------+
+1 row in set (0.01 sec)
+
+Query OK, 0 rows affected (0.02 sec)
+In this tutorial, you have learned how to use the MySQL <code>LOOP</code> statement to execute a block of code repeatedly based on a condition.
+
+
+<strong>Summary</strong>: how to use the MySQL <code>WHILE</code> loop statement to execute one or more statements repeatedly as long as a condition is true.
+
+<h2>Introduction to MySQL <code>WHILE</code> loop statement</h2>
+The <code>WHILE</code> loop is a loop statement that executes a block of code repeatedly as long as a condition is true.
+
+Here is the basic syntax of the <code>WHILE</code> statement:
+
+<code>[begin_label:] WHILE search_condition DO
+    statement_list
+END WHILE [end_label]
+</code>
+In this syntax:
+
+First, specify a search condition after the <code>WHILE</code> keyword.
+
+The <code>WHILE</code> checks the <code>search_condition</code> at the beginning of each iteration.
+
+If the <code>search_condition</code> evaluates to <code>TRUE</code>, the <code>WHILE</code> executes the <code>statement_list</code> as long as the <code>search_condition</code> is <code>TRUE</code>.
+
+The <code>WHILE</code> loop is called a pretest loop because it checks the <code>search_condition</code> before the <code>statement_list</code> executes.
+
+Second, specify one or more statements that will execute between the <code>DO</code> and <code>END WHILE</code> keywords.
+
+Third, specify optional labels for the <code>WHILE</code> statement at the beginning and end of the loop construct.
+
+The following flowchart illustrates the MySQL <code>WHILE</code> loop statement:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-WHILE-Loop.png">
+<h2><code>WHILE</code> loop statement example</h2>
+First, <a href="https://www.mysqltutorial.org/mysql-create-table/">create a table</a> named<code>calendars</code> which stores dates and derived date information such as day, month, quarter, and year:
+
+<code>CREATE TABLE calendars(
+    id INT AUTO_INCREMENT,
+    fulldate DATE UNIQUE,
+    day TINYINT NOT NULL,
+    month TINYINT NOT NULL,
+    quarter TINYINT NOT NULL,
+    year INT NOT NULL,
+    PRIMARY KEY(id)
+);
+</code>
+Second, <a href="https://www.mysqltutorial.org/getting-started-with-mysql-stored-procedures.aspx">create a new stored procedure</a> to <a href="https://www.mysqltutorial.org/mysql-insert-statement.aspx">insert</a> a date into the <code>calendars</code> table:
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE InsertCalendar(dt DATE)
+BEGIN
+    INSERT INTO calendars(
+        fulldate,
+        day,
+        month,
+        quarter,
+        year
+    )
+    VALUES(
+        dt, 
+        EXTRACT(DAY FROM dt),
+        EXTRACT(MONTH FROM dt),
+        EXTRACT(QUARTER FROM dt),
+        EXTRACT(YEAR FROM dt)
+    );
+END$$
+
+DELIMITER ;
+</code>
+Third, create a new stored procedure <code>LoadCalendars()</code> that loads a number of days starting from a start date into the <code>calendars</code> table.
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE LoadCalendars(
+    startDate DATE, 
+    day INT
+)
+BEGIN
+    
+    DECLARE counter INT DEFAULT 1;
+    DECLARE dt DATE DEFAULT startDate;
+
+    WHILE counter &lt;= day DO
+        CALL InsertCalendar(dt);
+        SET counter = counter + 1;
+        SET dt = DATE_ADD(dt,INTERVAL 1 day);
+    END WHILE;
+
+END$$
+
+DELIMITER ;
+</code>
+The stored procedure <code>LoadCalendars()</code> accepts two arguments:
+
+<ul>
+<li>
+<code>startDate</code> is the start date inserted into the <code>calendars</code> table.</li>
+<li>
+<code>day</code> is the number of days that will be loaded starting from the <code>startDate</code>.</li>
+</ul>
+In the <code>LoadCalendars()</code> stored procedure:
+
+First, declare a <code>counter</code> and <code>dt</code> variables for keeping immediate values. 
+The default values of <code>counter</code> and <code>dt</code> are <code>1</code> and <code>startDate</code> respectively.
+
+Then, check if the <code>counter</code> is less than or equal <code>day</code>, if yes:
+
+<ul>
+<li>Call the stored procedure <code>InsertCalendar()</code> to insert a row into the <code>calendars</code> table.</li>
+<li>Increase the <code>counter</code> by one. 
+Also, increase the <code>dt</code> by one day using the <code>DATE_ADD()</code> function.</li>
+</ul>
+The <code>WHILE</code> loop repeatedly inserts dates into the <code>calendars</code> table until the <code>counter</code> is equal to <code>day</code>.
+
+The following statement calls the stored procedure <code>LoadCalendars()</code> to load 31 days into the <code>calendars</code> table starting from <code>January 1st 2019</code>.
+
+<code>CALL LoadCalendars('2019-01-01',31);
+</code>
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/mysql-while-loop-example.png">
+In this tutorial, you have learned how to use the MySQL <code>WHILE</code> loop to execute one or more statements repeatedly as long as a condition is true.
+
+
+<strong>Summary</strong>: how to use the MySQL <code>REPEAT</code> statement to execute one or more statements until a search condition is true.
+
+The <code>REPEAT</code> statement executes one or more statements until a search condition is true.
+
+Here is the basic syntax of the <code>REPEAT</code> loop statement:
+
+<code>[begin_label:] REPEAT
+    statement
+UNTIL search_condition
+END REPEAT [end_label]
+</code>
+The <code>REPEAT</code> executes the <code>statement</code> until the <code>search_condition</code> evaluates to true.
+
+The <code>REPEAT</code> checks the <code>search_condition</code> after the execution of <code>statement</code>, therefore, the <code>statement</code> always executes at least once. 
+This is why the <code>REPEAT</code> is also known as a post-test loop.
+
+The <code>REPEAT</code> statement can have labels at the beginning and at the end. 
+These labels are optional.
+
+The following flowchart illustrates the <code>REPEAT</code> loop:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-REPEAT-Loop.png">
+<h2><code>REPEAT</code> loop example</h2>
+This statement <a href="https://www.mysqltutorial.org/getting-started-with-mysql-stored-procedures.aspx">creates a stored procedure</a> called <code>RepeatDemo</code>
+ that uses the <code>REPEAT</code> statement to concatenate numbers from 1 to 9:
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE RepeatDemo()
+BEGIN
+    DECLARE counter INT DEFAULT 1;
+    DECLARE result VARCHAR(100) DEFAULT '';
+    
+    REPEAT
+        SET result = CONCAT(result,counter,',');
+        SET counter = counter + 1;
+    UNTIL counter &gt;= 10
+    END REPEAT;
+    
+    -- display result
+    SELECT result;
+END$$
+
+DELIMITER ;
+</code>
+In this stored procedure:
+
+First, declare two <a href="https://www.mysqltutorial.org/mysql-variables/">variables</a> <code>counter</code> and <code>result</code> and set their initial values to 1 and blank.
+
+The <code>counter</code> variable is used for counting from 1 to 9 in the loop. 
+And the <code>result</code> variable is used for storing the concatenated string after each loop iteration.
+
+Second, append <code>counter</code> value to the <code>result</code> variable using the <code><a href="https://www.mysqltutorial.org/sql-concat-in-mysql.aspx">CONCAT()</a></code> function until the <code>counter</code> is greater than or equal to 10.
+
+The following statement calls the <code>RepeatDemo()</code> stored procedure:
+
+<code>CALL RepeatDemo();
+</code>
+Here is the output:
+
+<code>+--------------------+
+| result             |
++--------------------+
+| 1,2,3,4,5,6,7,8,9, |
++--------------------+
+1 row in set (0.02 sec)
+
+Query OK, 0 rows affected (0.02 sec)
+</code>
+how to use the MySQL <code>REPEAT</code> statement to execute one or more statement until a search condition is true.
+
+
+<strong>Summary</strong>: how to the MySQL <code>LEAVE</code> statement to exit a stored program or terminate a loop.
+
+<h2>Introduction to MySQL <code>LEAVE</code> statement</h2>
+The <code>LEAVE</code> statement exits the flow control that has a given label.
+
+The following shows the basic syntax of the <code>LEAVE</code> statement:
+
+<code>LEAVE label;
+</code>
+In this syntax, you specify the label of the block that you want to exit after the <code>LEAVE</code> keyword.
+
+<h2>Using the <code>LEAVE</code> statement to exit a stored procedure</h2>
+If the <code>label</code> is the outermost of the <a href="https://www.mysqltutorial.org/mysql-stored-procedure-tutorial.aspx">stored procedure</a>
+ or <a href="https://www.mysqltutorial.org/mysql-stored-function/">function</a> block, <code>LEAVE</code> terminates the stored procedure or function.
+
+The following statement shows how to use the <code>LEAVE</code> statement to exit a stored procedure:
+
+<code>CREATE PROCEDURE sp_name()
+sp: BEGIN
+    IF condition THEN
+        LEAVE sp;
+    END IF;
+    -- other statement
+END$$
+</code>
+For example, this statement creates a new stored procedure that checks the credit of a given customer in the <code>customers</code> table from the <a href="https://www.mysqltutorial.org/mysql-sample-database.aspx">sample database</a>:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/08/customers.png">
+<code>DELIMITER $$
+
+CREATE PROCEDURE CheckCredit(
+    inCustomerNumber int
+)
+sp: BEGIN
+    
+    DECLARE customerCount INT;
+
+    -- check if the customer exists
+    SELECT 
+        COUNT(*)
+    INTO customerCount 
+    FROM
+        customers
+    WHERE
+        customerNumber = inCustomerNumber;
+    
+    -- if the customer does not exist, terminate
+    -- the stored procedure
+    IF customerCount = 0 THEN
+        LEAVE sp;
+    END IF;
+    
+    -- other logic
+    -- ...
+END$$
+
+DELIMITER ;
+</code>
+<h2>Using <code>LEAVE</code> statement in loops</h2>
+The <code>LEAVE</code> statement allows you to terminate a loop. 
+The general syntax for the <code>LEAVE</code> statement when using in the <code><a href="https://www.mysqltutorial.org/stored-procedures-loop.aspx">LOOP</a></code>, <code>REPEAT</code> and <code><a href="https://www.mysqltutorial.org/mysql-stored-procedure/mysql-while-loop/">WHILE</a></code> statements.
+
+Using <code>LEAVE</code> with the <code>LOOP</code> statement:
+
+<code>[label]: LOOP
+    IF condition THEN
+        LEAVE [label];
+    END IF;
+    -- statements
+END LOOP [label];
+</code>
+Using <code>LEAVE</code> with the <code>REPEAT</code> statement:
+
+<code>[label:] REPEAT
+    IF condition THEN
+        LEAVE [label];
+    END IF;
+    -- statements
+UNTIL search_condition
+END REPEAT [label];
+</code>
+Using <code>LEAVE</code> with the <code>WHILE</code> statement:
+
+<code>[label:] WHILE search_condition DO
+    IF condition THEN
+        LEAVE [label];
+    END IF;
+    -- statements
+END WHILE [label];
+</code>
+The <code>LEAVE</code> causes the current loop specified by the <code>label</code> to be terminated. 
+If a loop is enclosed within another loop, you can break out of both loops with a single <code>LEAVE</code> statement.
+
+<h3>Using <code>LEAVE</code> statement in a loop example</h3>
+The following stored procedure generates a string of integer with the number from 1 to a random number between 4 and 10:
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE LeaveDemo(OUT result VARCHAR(100))
+BEGIN
+    DECLARE counter INT DEFAULT 1;
+    DECLARE times INT;
+    -- generate a random integer between 4 and 10
+    SET times  = FLOOR(RAND()*(10-4+1)+4);
+    SET result = '';
+    disp: LOOP
+        -- concatenate counters into the result
+        SET result = concat(result,counter,',');
+        
+        -- exit the loop if counter equals times
+        IF counter = times THEN
+            LEAVE disp; 
+        END IF;
+        SET counter = counter + 1;
+    END LOOP;
+END$$
+
+DELIMITER ;
+</code>
+This statement calls the <code>LeaveDemo</code> procedure:
+
+<code>CALL LeaveDemo(@result);
+SELECT @result;
+</code>
+Here is one of the outputs:
+
+<code>+------------------+
+| @result          |
++------------------+
+| 1,2,3,4,5,6,7,8, |
++------------------+
+1 row in set (0.00 sec)
+</code>
+In this tutorial, you have learned how to the MySQL <code>LEAVE</code> statement to exit a stored program or terminate a loop.
+
+
+<strong>Summary</strong>: how to use <strong>MySQL cursor</strong> in stored procedures to iterate through a result set returned by a <code>SELECT</code> statement.
+
+<h2>Introduction to MySQL cursor</h2>
+To handle a result set inside a <a title="MySQL Stored Procedure" href="https://www.mysqltutorial.org/mysql-stored-procedure-tutorial.aspx">stored procedure</a>, you use a cursor. 
+A cursor allows you to <a title="How to use loop in stored procedure" href="https://www.mysqltutorial.org/stored-procedures-loop.aspx">iterate </a>a set of rows returned by a query and process each row individually.
+
+MySQL cursor is read-only, non-scrollable and asensitive.
+
+<ul>
+<li><strong>Read-only</strong>: you cannot update data in the underlying table through the cursor.</li>
+<li>
+<strong>Non-scrollable</strong>: you can only fetch rows in the order determined by the <code><a href="https://www.mysqltutorial.org/mysql-select-statement-query-data.aspx">SELECT</a></code> statement. 
+You cannot fetch rows in the reversed order. 
+In addition, you cannot skip rows or jump to a specific row in the result set.</li>
+<li>
+<strong>Asensitive</strong>: there are two kinds of cursors: asensitive cursor and insensitive cursor. 
+An asensitive cursor points to the actual data, whereas an insensitive cursor uses a temporary copy of the data. 
+An asensitive cursor performs faster than an insensitive cursor because it does not have to make a temporary copy of data. 
+However, any change that made to the data from other connections will affect the data that is being used by an asensitive cursor, therefore, it is safer if you do not update the data that is being used by an asensitive cursor. 
+MySQL cursor is asensitive.</li>
+</ul>
+You can use MySQL cursors in <a href="https://www.mysqltutorial.org/getting-started-with-mysql-stored-procedures.aspx">stored procedures</a>, <a href="https://www.mysqltutorial.org/mysql-stored-function/">stored functions</a>, and <a title="MySQL Triggers" href="https://www.mysqltutorial.org/mysql-triggers.aspx">triggers</a>.
+
+<h2>Working with MySQL cursor</h2>
+First, declare a cursor by using the <code>DECLARE</code> statement:
+
+<code>DECLARE cursor_name CURSOR FOR SELECT_statement;</code>
+The cursor declaration must be after any <a title="MySQL Variables in Stored Procedures" href="https://www.mysqltutorial.org/variables-in-stored-procedures.aspx">variable </a>declaration. 
+If you declare a cursor before the variable declarations, MySQL will issue an error. 
+A cursor must always associate with a <code>SELECT</code> statement.
+
+Next, open the cursor by using the <code>OPEN</code> statement. 
+The <code>OPEN</code> statement initializes the result set for the cursor, therefore, you must call the <code>OPEN</code> statement before fetching rows from the result set.
+
+<code>OPEN cursor_name;</code>
+Then, use the <code>FETCH</code> statement to retrieve the next row pointed by the cursor and move the cursor to the next row in the result set.
+
+<code>FETCH cursor_name INTO variables list;</code>
+After that, check if there is any row available before fetching it.
+
+Finally, deactivate the cursor and release the memory associated with it
+ using the <code>CLOSE</code> statement:
+
+<code>CLOSE cursor_name;</code>
+It is a good practice to always close a cursor when it is no longer used.
+
+When working with MySQL cursor, you must also declare a <code>NOT FOUND</code> handler to handle the situation when the cursor could not find any row.
+
+Because each time you call the <code>FETCH</code> statement, the cursor attempts to read the next row in the result set. 
+When the cursor reaches the end of the result set, it will not be able to get the data, and a condition is raised. 
+The handler is used to handle this condition.
+
+To declare a <code>NOT FOUND</code> handler, you use the following syntax:
+
+<code>DECLARE CONTINUE HANDLER FOR NOT FOUND SET finished = 1;</code>
+The
+<code>finished</code> is a variable to indicate that the cursor has reached the end of the result set. 
+Notice that the handler declaration must appear after variable and cursor declaration inside the stored procedures.
+
+The following diagram illustrates how MySQL cursor works.
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2009/12/mysql-cursor.png">
+<h2>Cursor Example</h2>
+We’ll develop a stored procedure that creates an email list of all employees in the <code>employees</code> table in the
+<a title="MySQL Sample Database" href="https://www.mysqltutorial.org/mysql-sample-database.aspx">sample database</a>.
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/08/employees.png">
+First, declare some variables, a cursor for looping over the emails of employees, and a <code>NOT FOUND</code> handler:
+
+<code>	DECLARE finished INTEGER DEFAULT 0;
+	DECLARE emailAddress varchar(100) DEFAULT "";
+
+	-- declare cursor for employee email
+	DEClARE curEmail 
+		CURSOR FOR 
+			SELECT email FROM employees;
+
+	-- declare NOT FOUND handler
+	DECLARE CONTINUE HANDLER 
+        FOR NOT FOUND SET finished = 1;
+</code>
+Next, open the cursor by using the <code>OPEN</code> statement:
+
+<code>OPEN curEmail;</code>
+Then, iterate the email list, and <a href="https://www.mysqltutorial.org/sql-concat-in-mysql.aspx">concatenate</a> all emails where each email is separated by a semicolon(;):
+
+<code>       getEmail: LOOP
+		FETCH curEmail INTO emailAddress;
+		IF finished = 1 THEN 
+			LEAVE getEmail;
+		END IF;
+		-- build email list
+		SET emailList = CONCAT(emailAddress,";",emailList);
+	END LOOP getEmail;</code>
+After that, inside the loop, we used the <code>finished</code> variable to check if there is an email in the list to terminate the loop.
+
+Finally, close the cursor using the <code>CLOSE</code> statement:
+
+<code>CLOSE email_cursor;</code>
+The <code>createEmailList</code> stored procedure is as follows:
+
+<code>DELIMITER $$
+CREATE PROCEDURE createEmailList (
+	INOUT emailList varchar(4000)
+)
+BEGIN
+	DECLARE finished INTEGER DEFAULT 0;
+	DECLARE emailAddress varchar(100) DEFAULT "";
+
+	-- declare cursor for employee email
+	DEClARE curEmail 
+		CURSOR FOR 
+			SELECT email FROM employees;
+
+	-- declare NOT FOUND handler
+	DECLARE CONTINUE HANDLER 
+        FOR NOT FOUND SET finished = 1;
+
+	OPEN curEmail;
+
+	getEmail: LOOP
+		FETCH curEmail INTO emailAddress;
+		IF finished = 1 THEN 
+			LEAVE getEmail;
+		END IF;
+		-- build email list
+		SET emailList = CONCAT(emailAddress,";",emailList);
+	END LOOP getEmail;
+	CLOSE curEmail;
+
+END$$
+DELIMITER ;</code>
+You can test the <code>createEmailList</code> stored procedure using the following script:
+
+<code>SET @emailList = ""; 
+CALL createEmailList(@emailList); 
+SELECT @emailList;</code>
+In this tutorial, we have shown you how to use MySQL cursor to iterate a result set and process each row accordingly.
+
+
+<strong>Summary</strong>: how to use MySQL handler to handle errors encountered in stored procedures.
+
+When an error occurs inside a stored procedure, it is important to handle it appropriately, such as continuing or exiting the current code block’s execution, and issuing a meaningful error message.
+
+MySQL provides an easy way to define handlers that handle from general conditions such as warnings or exceptions to specific conditions e.g., specific error codes.
+
+<h2>Declaring a handler</h2>
+To declare a handler, you use the
+ <code>DECLARE HANDLER</code> statement as follows:
+
+<code>DECLARE action HANDLER FOR condition_value statement;</code>
+If a condition whose value matches the
+ <code>condition_value</code> , MySQL will execute the <code>statement</code> and continue or exit the current code block based on the <code>action</code> .<b><br></b>
+
+The <code>action</code> accepts one of the following values:
+
+<ul>
+<li>
+<code>CONTINUE</code> :
+ the execution of the enclosing code block ( <code>BEGIN</code> … <code>END</code> ) continues.</li>
+<li>
+<code>EXIT</code> : the execution of the enclosing code block, where the handler is declared, terminates.</li>
+</ul>
+The
+ <code>condition_value</code> specifies a particular condition or a class of conditions that activate the handler. 
+The
+ <code>condition_value</code> accepts one of the following values:
+
+<ul>
+<li>A MySQL error code.</li>
+<li>A standard <code>SQLSTATE</code> value. 
+Or it can be an <code>SQLWARNING</code> , <code>NOTFOUND</code> or <code>SQLEXCEPTION</code> condition, which is shorthand for the class of <code>SQLSTATE</code> values. 
+The <code>NOTFOUND</code> condition is used for a <a title="MySQL Cursor" href="https://www.mysqltutorial.org/mysql-cursor/">cursor </a>or
+ <code>SELECT INTO variable_list</code> statement.</li>
+<li>A named condition associated with either a MySQL error code or <code>SQLSTATE</code> value.</li>
+</ul>
+The <code>statement</code> could be a simple statement or a compound statement enclosing by the <code>BEGIN</code> and <code>END</code> keywords.
+
+<h2>error handling examples</h2>
+Let’s take some examples of declaring handlers.
+
+The following handler set the value of the
+ <code>hasError</code> variable to 1 and continue the execution if an <code>SQLEXCEPTION</code> occurs
+
+<code>DECLARE CONTINUE HANDLER FOR SQLEXCEPTION 
+SET hasError = 1;</code>
+The following handler rolls back the previous operations, issues an error message, and exit the current code block in case an error occurs. 
+If you declare it inside the <code>BEGIN END</code> block of a stored procedure, it will terminate the stored procedure immediately.
+
+<code>DECLARE EXIT HANDLER FOR SQLEXCEPTION
+BEGIN
+    ROLLBACK;
+    SELECT 'An error has occurred, operation rollbacked and the stored procedure was terminated';
+END;</code>
+The following handler sets the value of the
+ <code>RowNotFound</code> variable to 1 and continues execution if there is no more row to fetch in case of a <a title="MySQL Cursor" href="https://www.mysqltutorial.org/mysql-cursor/">cursor </a>or <code>SELECT INTO</code> statement:
+
+<code>DECLARE CONTINUE HANDLER FOR NOT FOUND 
+SET RowNotFound = 1;</code>
+If a duplicate key error occurs, the following handler issues an error message and continues execution.
+
+<code>DECLARE CONTINUE HANDLER FOR 1062
+SELECT 'Error, duplicate key occurred';</code>
+<h2>handler example in stored procedures</h2>
+First, <a href="https://www.mysqltutorial.org/mysql-create-table/">create a new table</a> named <code>SupplierProducts</code>for the demonstration:
+
+<code>CREATE TABLE SupplierProducts (
+    supplierId INT,
+    productId INT,
+    PRIMARY KEY (supplierId , productId)
+);</code>
+The table <code>SupplierProducts</code> stores the relationships between the table suppliers and products. 
+Each supplier may provide many products and each product can be provided by many suppliers. 
+For the sake of simplicity, we don’t create <code>Products</code> and <code>Suppliers</code> tables, as well as the <a title="MySQL Foreign Key" href="https://www.mysqltutorial.org/mysql-foreign-key/">foreign keys</a> in the
+ <code>SupplierProducts</code> table.
+
+Second, <a href="https://www.mysqltutorial.org/getting-started-with-mysql-stored-procedures.aspx">create a stored procedure</a> that inserts product id and supplier id into the <code>SupplierProducts</code> table:
+
+<code>CREATE PROCEDURE InsertSupplierProduct(
+    IN inSupplierId INT, 
+    IN inProductId INT
+)
+BEGIN
+    -- exit if the duplicate key occurs
+    DECLARE EXIT HANDLER FOR 1062
+    BEGIN
+ 	SELECT CONCAT('Duplicate key (',inSupplierId,',',inProductId,') occurred') AS message;
+    END;
+    
+    -- insert a new row into the SupplierProducts
+    INSERT INTO SupplierProducts(supplierId,productId)
+    VALUES(inSupplierId,inProductId);
+    
+    -- return the products supplied by the supplier id
+    SELECT COUNT(*) 
+    FROM SupplierProducts
+    WHERE supplierId = inSupplierId;
+    
+END$$
+
+DELIMITER ;</code>
+How it works.
+
+The following exit handler terminates the stored procedure whenever a duplicate key occurs (with code 1062). 
+In addition, it returns an error message.
+
+<code>DECLARE EXIT HANDLER FOR 1062
+BEGIN
+    SELECT CONCAT('Duplicate key (',supplierId,',',productId,') occurred') AS message;
+END;</code>
+This statement <a href="https://www.mysqltutorial.org/mysql-insert-statement.aspx">inserts a row</a> into the <code>SupplierProducts</code> table. 
+If a duplicate key occurs, the code in the handler section will execute.
+
+<code>INSERT INTO SupplierProducts(supplierId,productId) 
+VALUES(supplierId,productId);</code>
+Third, call the <code>InsertSupplierProduct()</code> to insert some rows into the <code>SupplierProducts</code> table:
+
+<code>CALL InsertSupplierProduct(1,1);
+CALL InsertSupplierProduct(1,2);
+CALL InsertSupplierProduct(1,3);</code>
+Fourth, attempt to insert a row whose values already exist in the <code>SupplierProducts</code> table:
+
+<code>CALL InsertSupplierProduct(1,3);</code>
+Here is the error message:
+
++------------------------------+
+| message                      |
++------------------------------+
+| Duplicate key (1,3) occurred |
++------------------------------+
+1 row in set (0.01 sec)
+Because the handler is an <code>EXIT</code> handler, the last statement does not execute:
+
+<code>SELECT COUNT(*) 
+FROM SupplierProducts
+WHERE supplierId = inSupplierId;</code>
+If
+ you change the <code>EXIT</code> in the handler declaration to <code>CONTINUE</code> , you will also get the number of products provided by the supplier:
+
+<code>DROP PROCEDURE IF EXISTS InsertSupplierProduct;
+
+DELIMITER $$
+
+CREATE PROCEDURE InsertSupplierProduct(
+    IN inSupplierId INT, 
+    IN inProductId INT
+)
+BEGIN
+    -- exit if the duplicate key occurs
+    DECLARE CONTINUE HANDLER FOR 1062
+    BEGIN
+	SELECT CONCAT('Duplicate key (',inSupplierId,',',inProductId,') occurred') AS message;
+    END;
+    
+    -- insert a new row into the SupplierProducts
+    INSERT INTO SupplierProducts(supplierId,productId)
+    VALUES(inSupplierId,inProductId);
+    
+    -- return the products supplied by the supplier id
+    SELECT COUNT(*) 
+    FROM SupplierProducts
+    WHERE supplierId = inSupplierId;
+    
+END$$
+
+DELIMITER ;</code>
+Finally, call the stored procedure again to see the effect of the <code>CONTINUE</code> handler:
+
+<code>CALL InsertSupplierProduct(1,3);</code>
+Here is the output:
+
+<code>+----------+
+| COUNT(*) |
++----------+
+|        3 |
++----------+
+1 row in set (0.01 sec)
+
+Query OK, 0 rows affected (0.02 sec)</code>
+<h2>handler precedence</h2>
+In case you have multiple handlers that handle the same error, MySQL will call the most specific handler to handle the error first based on the following rules:
+
+<ul>
+<li>An error always maps to a MySQL error code because in MySQL it is the most specific.</li>
+<li>An <code>SQLSTATE</code> may map to many MySQL error codes, therefore, it is less specific.</li>
+<li>An <code>SQLEXCPETION</code> or an <code>SQLWARNING</code> is the shorthand for a class of <code>SQLSTATES</code> values so it is the most generic.</li>
+</ul>
+Based on the handler precedence rules, 
+MySQL error code handler, <code>SQLSTATE</code> handler and <code>SQLEXCEPTION</code> takes the first, second and third precedence.
+
+Suppose that we have three handlers in the handlers in the stored procedure <code>insert_article_tags_3</code> :
+
+<code>DROP PROCEDURE IF EXISTS InsertSupplierProduct;
+
+DELIMITER $$
+
+CREATE PROCEDURE InsertSupplierProduct(
+    IN inSupplierId INT, 
+    IN inProductId INT
+)
+BEGIN
+    -- exit if the duplicate key occurs
+    DECLARE EXIT HANDLER FOR 1062 SELECT 'Duplicate keys error encountered' Message; 
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION SELECT 'SQLException encountered' Message; 
+    DECLARE EXIT HANDLER FOR SQLSTATE '23000' SELECT 'SQLSTATE 23000' ErrorCode;
+    
+    -- insert a new row into the SupplierProducts
+    INSERT INTO SupplierProducts(supplierId,productId)
+    VALUES(inSupplierId,inProductId);
+    
+    -- return the products supplied by the supplier id
+    SELECT COUNT(*) 
+    FROM SupplierProducts
+    WHERE supplierId = inSupplierId;
+    
+END$$
+
+DELIMITER ;</code>
+Call the stored procedure to insert a duplicate key:
+
+<code>CALL InsertSupplierProduct(1,3);</code>
+Here is the output:
+
++----------------------------------+
+| Message                          |
++----------------------------------+
+| Duplicate keys error encountered |
++----------------------------------+
+1 row in set (0.00 sec)
+
+Query OK, 0 rows affected (0.01 sec)
+As you see the MySQL error code handler is called.
+
+<h2>Using a named error condition</h2>
+Let’s start with an error handler declaration.
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE TestProc()
+BEGIN
+
+    DECLARE EXIT HANDLER FOR 1146 
+    SELECT 'Please create table abc first' Message; 
+        
+    SELECT * FROM abc;
+END$$
+
+DELIMITER ;</code>
+What does the number <code>1146</code> really mean? Imagine you have stored procedures polluted with these numbers all over places; it will be difficult to understand and maintain the code.
+
+Fortunately, MySQL provides you with the <code>DECLARE CONDITION</code> statement that declares a named error condition, which associates with a condition.
+
+Here is the syntax of the <code>DECLARE CONDITION</code> statement:
+
+<code>DECLARE condition_name CONDITION FOR condition_value;</code>
+The <code>condition_value</code> 
+can be a MySQL error code such as <code>1146</code>
+or a <code>SQLSTATE</code> value. 
+The <code>condition_value</code> is represented by the <code>condition_name</code> .
+
+After the declaration, you can refer to <code>condition_name</code>
+instead of <code>condition_value</code> .
+
+So you can rewrite the code above as follows:
+
+<code>DROP PROCEDURE IF EXISTS TestProc;
+
+DELIMITER $$
+
+CREATE PROCEDURE TestProc()
+BEGIN
+    DECLARE TableNotFound CONDITION for 1146 ; 
+
+    DECLARE EXIT HANDLER FOR TableNotFound 
+	SELECT 'Please create table abc first' Message; 
+    SELECT * FROM abc;
+END$$
+
+DELIMITER ;</code>
+As you can see, the code is more obviously and readable than the previous one. 
+Notice that the condition declaration must appear before handler or cursor declarations.
+
+In this tutorial, you have learned how to use MySQL handlers to handle exception or errors occurred in stored procedures.
+
+
+<strong>Summary</strong>: how to use <code>SIGNAL</code> 
+and <code>RESIGNAL</code>
+statements to raise error conditions inside stored procedures.
+
+<h2>SIGNAL statement</h2>
+You use the <code>SIGNAL</code>
+statement to return an error or warning condition to the caller from a stored program e.g., stored procedure, <a href="https://www.mysqltutorial.org/mysql-stored-function/">stored function</a>,
+<a title="MySQL Trigger" href="https://www.mysqltutorial.org/mysql-triggers.aspx">trigger </a>or <a title="MySQL Event" href="https://www.mysqltutorial.org/mysql-triggers/modifying-mysql-events/">event</a>. 
+The <code>SIGNAL</code> 
+statement provides you with control over which information for returning such as value and message<code>SQLSTATE</code>.
+
+The following illustrates syntax of the <code>SIGNAL</code> statement:
+
+<code>SIGNAL SQLSTATE | condition_name;
+SET condition_information_item_name_1 = value_1,
+    condition_information_item_name_1 = value_2, etc;</code>
+Following the <code>SIGNAL</code> keyword is a
+<code>SQLSTATE</code> value or a condition name declared by the
+ <code>DECLARE CONDITION</code> statement. 
+Notice that the <code>SIGNAL</code> statement must always specify a
+<code>SQLSTATE</code> value or a named condition that defined with an
+ <code>SQLSTATE</code> value.
+
+To provide the caller with information, you use the <code>SET</code> clause. 
+If you want to return multiple condition information item names with values, you need to separate each name/value pair by a comma.
+
+The
+ <code>condition_information_item_name</code> can be <code>MESSAGE_TEXT</code>, <code>MYSQL_ERRORNO</code>, <code>CURSOR_NAME</code> , etc.
+
+The following stored procedure adds an order line item into an existing sales order. 
+It issues an error message if the order number does not exist.
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE AddOrderItem(
+		         in orderNo int,
+			 in productCode varchar(45),
+			 in qty int, 
+                         in price double, 
+                         in lineNo int )
+BEGIN
+	DECLARE C INT;
+
+	SELECT COUNT(orderNumber) INTO C
+	FROM orders 
+	WHERE orderNumber = orderNo;
+
+	-- check if orderNumber exists
+	IF(C != 1) THEN 
+		SIGNAL SQLSTATE '45000'
+			SET MESSAGE_TEXT = 'Order No not found in orders table';
+	END IF;
+	-- more code below
+	-- ...
+END</code>
+First, it counts the orders with the input order number that we pass to the stored procedure.
+
+Second, if the number of order is not 1, it raises an error with
+ <code>SQLSTATE 45000</code> along with an error message saying that order number does not exist in the orders table.
+
+Notice that <code>45000</code> is a generic <code>SQLSTATE</code> value that illustrates an unhandled user-defined exception.
+
+If we call the stored procedure
+ <code>AddOrderItem()</code> and pass a nonexistent order number, we will get an error message.
+
+CALL AddOrderItem(10,'S10_1678',1,95.7,1);
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2014/02/mysql-signal.jpg">
+<h2>RESIGNAL statement</h2>
+Besides the <code>SIGNAL</code> 
+statement, MySQL also provides the <code>RESIGNAL</code> 
+statement used to raise a warning or error condition.
+
+The <code>RESIGNAL</code> 
+statement is similar to <code>SIGNAL</code> 
+statement in term of functionality and syntax, except that:
+
+<ul>
+<li>You must use the <code>RESIGNAL</code> 
+statement within an error or warning handler, otherwise, you will get an error message saying that “RESIGNAL when handler is not active”. 
+Notice that you can use <code>SIGNAL</code> 
+statement anywhere inside a stored procedure.</li>
+<li>You can omit all attributes of the <code>RESIGNAL</code> statement, even the <code>SQLSTATE</code> value.</li>
+</ul>
+If you use the <code>RESIGNAL</code>
+statement alone, all attributes are the same as the ones passed to the condition handler.
+
+The following stored procedure changes the error message before issuing it to the caller.
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE Divide(IN numerator INT, IN denominator INT, OUT result double)
+BEGIN
+	DECLARE division_by_zero CONDITION FOR SQLSTATE '22012';
+
+	DECLARE CONTINUE HANDLER FOR division_by_zero 
+	RESIGNAL SET MESSAGE_TEXT = 'Division by zero / Denominator cannot be zero';
+	-- 
+	IF denominator = 0 THEN
+		SIGNAL division_by_zero;
+	ELSE
+		SET result := numerator / denominator;
+	END IF;
+END</code>
+Let’s call the
+ <code>Divide()</code> stored procedure.
+
+CALL Divide(10,0,@result);
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2014/02/mysql-resignal.jpg">
+In this tutorial, we have shown you how to raise error conditions inside stored programs
+using <code>SIGNAL</code> 
+and
+ <code>RESIGNAL</code> statements.
+
+
+<strong>
+Summary</strong>: how to develop stored procedures that return multiple values.
+
+<a title="MySQL Stored Function" href="https://www.mysqltutorial.org/mysql-stored-function/">MySQL stored function</a> returns only one value. 
+To develop stored programs that return multiple values, you need to use stored procedures with <code>INOUT</code> or <code>OUT</code> parameters.
+
+If you are not familiar with <code>INOUT</code> or <code>OUT</code> parameters, check it out the <a title="MySQL Stored Procedure Parameters" href="https://www.mysqltutorial.org/stored-procedures-parameters.aspx">stored procedure’s parameters tutorial</a> for the detailed information.
+
+<h2>Stored procedures that return multiple values example</h2>
+Let’s take a look at the <code>orders</code> table in the <a title="MySQL Sample Database" href="http://wwww.mysqltutorial.org/mysql-sample-database.aspx">sample database</a>.
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2009/12/orders_table.png">
+The following stored procedure accepts
+customer number and returns the total number of orders that were shipped, canceled, resolved, and disputed.
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE get_order_by_cust(
+	IN cust_no INT,
+	OUT shipped INT,
+	OUT canceled INT,
+	OUT resolved INT,
+	OUT disputed INT)
+BEGIN
+		-- shipped
+		SELECT
+            count(*) INTO shipped
+        FROM
+            orders
+        WHERE
+            customerNumber = cust_no
+                AND status = 'Shipped';
+
+		-- canceled
+		SELECT
+            count(*) INTO canceled
+        FROM
+            orders
+        WHERE
+            customerNumber = cust_no
+                AND status = 'Canceled';
+
+		-- resolved
+		SELECT
+            count(*) INTO resolved
+        FROM
+            orders
+        WHERE
+            customerNumber = cust_no
+                AND status = 'Resolved';
+
+		-- disputed
+		SELECT
+            count(*) INTO disputed
+        FROM
+            orders
+        WHERE
+            customerNumber = cust_no
+                AND status = 'Disputed';
+
+END</code>
+In addition to the <code>IN</code> parameter, the stored procedure takes four additional <code>OUT</code> parameters: shipped, canceled, resolved, and disputed. 
+Inside the stored procedure, you use a <code><a href="https://www.mysqltutorial.org/mysql-select-statement-query-data.aspx">SELECT</a></code> statement with the <code><a href="https://www.mysqltutorial.org/mysql-count/">COUNT</a></code> function to get the corresponding total of orders based on the order’s status and assign it to the respective parameter.
+
+To use the <code>get_order_by_cust</code> stored procedure, you pass customer number and four user-defined variables to get the out values.
+
+After executing the stored procedure, you use the <code>SELECT</code> statement to output the variable values.
+
+<code>CALL get_order_by_cust(141,@shipped,@canceled,@resolved,@disputed);
+SELECT @shipped,@canceled,@resolved,@disputed;</code>
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2014/10/MySQL-Stored-Procedures-That-Return-Multiple-Values.png">
+<h2>Calling stored procedures that return multiple values from PHP</h2>
+The following code snippet shows you how to call the stored procedure that returns multiple values from PHP.
+
+<code>&lt;?php
+/**
+ * Call stored procedure that return multiple values
+ * @param $customerNumber
+ */
+function call_sp($customerNumber)
+{
+    try {
+        $pdo = new PDO("mysql:host=localhost;dbname=classicmodels", 'root', '');
+
+        // execute the stored procedure
+        $sql = 'CALL get_order_by_cust(:no,@shipped,@canceled,@resolved,@disputed)';
+        $stmt = $pdo-&gt;prepare($sql);
+
+        $stmt-&gt;bindParam(':no', $customerNumber, PDO::PARAM_INT);
+        $stmt-&gt;execute();
+        $stmt-&gt;closeCursor();
+
+        // execute the second query to get values from OUT parameter
+        $r = $pdo-&gt;query("SELECT @shipped,@canceled,@resolved,@disputed")
+                  -&gt;fetch(PDO::FETCH_ASSOC);
+        if ($r) {
+            printf('Shipped: %d, Canceled: %d, Resolved: %d, Disputed: %d',
+                $r['@shipped'],
+                $r['@canceled'],
+                $r['@resolved'],
+                $r['@disputed']);
+        }
+    } catch (PDOException $pe) {
+        die("Error occurred:" . 
+$pe-&gt;getMessage());
+    }
+}
+
+call_sp(141);</code>
+The user-defined variables, which are
+preceded
+by the <code>@</code> sign, are associated with the database connection, therefore, they are available for access between the calls.
+
+In this tutorial, we have shown you how to develop a stored procedure that returns multiple values and how to call it from PHP.
+
+
+<strong>Summary</strong>: how to create stored functions using the <code>CREATE FUNCTION</code> statement.
+
+A stored function is a special kind stored program that returns a single value. 
+Typically, you use stored functions to encapsulate common formulas or business rules that are reusable among SQL statements or stored programs.
+
+Different from a <a title="MySQL Stored Procedure" href="https://www.mysqltutorial.org/mysql-stored-procedure-tutorial.aspx">stored procedure</a>, you can use a stored function in SQL statements wherever an expression is used. 
+This helps improve the readability and maintainability of the procedural code.
+
+To create a stored function, you use the <code>CREATE FUNCTION</code> statement.
+
+<h2><code>CREATE FUNCTION</code> syntax</h2>
+The following illustrates the basic syntax for creating a new stored function:
+
+<code>DELIMITER $$
+
+CREATE FUNCTION function_name(
+    param1,
+    param2,…
+)
+RETURNS datatype
+[NOT] DETERMINISTIC
+BEGIN
+ -- statements
+END $$
+
+DELIMITER ;</code>
+In this syntax:
+
+First, specify the name of the stored function that you want to create after <code>CREATE FUNCTION</code> 
+keywords.
+
+Second, list all <a href="https://www.mysqltutorial.org/stored-procedures-parameters.aspx">parameters</a> of the stored function inside the parentheses followed by the function name. 
+By default, all parameters are the <code>IN</code> parameters. 
+You cannot specify <code>IN</code> , <code>OUT</code> or <code>INOUT</code> modifiers to parameters
+
+Third, specify the data type of the return value in the <code>RETURNS</code> statement, which can be any valid <a title="MySQL Data Types" href="https://www.mysqltutorial.org/mysql-data-types.aspx">MySQL data types</a>.
+
+Fourth, specify if a function is deterministic or not using the <code>DETERMINISTIC</code> keyword.
+
+A deterministic function always returns the same result for the same input parameters whereas a non-deterministic function returns different results for the same input parameters.
+
+If you don’t use <code>DETERMINISTIC</code> or <code>NOT DETERMINISTIC</code>, MySQL uses the <code>NOT DETERMINISTIC</code> option by default.
+
+Fifth, write the code in the body of the stored function in the <code>BEGIN END</code> block. 
+Inside the body section, you need to specify at least one <code>RETURN</code> statement.
+The <code>RETURN</code> statement returns a value to the calling programs. 
+Whenever the <code>RETURN</code> statement is reached, the execution of the stored function is terminated immediately.
+
+<h2><code>CREATE FUNCTION</code> example</h2>
+Let’s take the example of creating a stored function. 
+We will use the <code>customers</code> table in the <a href="https://www.mysqltutorial.org/mysql-sample-database.aspx">sample database</a> for the demonstration.
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/08/customers.png">
+The following <code>CREATE FUNCTION</code> statement creates a function that returns the customer level based on credit:
+
+<code>DELIMITER $$
+
+CREATE FUNCTION CustomerLevel(
+	credit DECIMAL(10,2)
+) 
+RETURNS VARCHAR(20)
+DETERMINISTIC
+BEGIN
+    DECLARE customerLevel VARCHAR(20);
+
+    IF credit &gt; 50000 THEN
+		SET customerLevel = 'PLATINUM';
+    ELSEIF (credit &gt;= 50000 AND 
+			credit &lt;= 10000) THEN
+        SET customerLevel = 'GOLD';
+    ELSEIF credit &lt; 10000 THEN
+        SET customerLevel = 'SILVER';
+    END IF;
+	-- return the customer level
+	RETURN (customerLevel);
+END$$
+DELIMITER ;</code>
+Once the function is created, you can view it in MySQL Workbench under the <strong>Functions</strong> section:
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/mysql-stored-function-create-function.png">
+Or you can view all stored functions in the current <code>classicmodels</code> database by using the <code>SHOW FUNCTION STATUS</code> as follows:
+
+<code>SHOW FUNCTION STATUS 
+WHERE db = 'classicmodels';</code>
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/mysql-stored-function-show-function-status.png">
+<h3>Calling a stored function in an SQL statement</h3>
+The following statement uses the <code>CustomerLevel</code> stored function:
+
+<code>SELECT 
+    customerName, 
+    CustomerLevel(creditLimit)
+FROM
+    customers
+ORDER BY 
+    customerName;</code>
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2014/02/mysql-stored-function.png">
+<h3>Calling a stored function in a stored procedure</h3>
+The following statement <a href="https://www.mysqltutorial.org/getting-started-with-mysql-stored-procedures.aspx">creates a new stored procedure</a> that calls the <code>CustomerLevel()</code>
+stored function:
+
+<code>DELIMITER $$
+
+CREATE PROCEDURE GetCustomerLevel(
+    IN  customerNo INT,  
+    OUT customerLevel VARCHAR(20)
+)
+BEGIN
+
+	DECLARE credit DEC(10,2) DEFAULT 0;
+    
+    -- get credit limit of a customer
+    SELECT 
+		creditLimit 
+	INTO credit
+    FROM customers
+    WHERE 
+		customerNumber = customerNo;
+    
+    -- call the function 
+    SET customerLevel = CustomerLevel(credit);
+END$$
+
+DELIMITER ;</code>
+The following illustrates how to call the <code>GetCustomerLevel()</code>
+stored procedure:
+
+<code>CALL GetCustomerLevel(-131,@customerLevel);
+SELECT @customerLevel;</code>
+It’s important to notice that if a stored function contains SQL statements that query data from tables, then you should not use it in other SQL statements; otherwise, the stored function will slow down the speed of the query.
+
+In this tutorial, you have learned how to create a stored function to encapsulate the common formula or business rules.
+
+
+<strong>Summary</strong>: how to use the MySQL <code>DROP FUNCTION</code> statement to drop a stored function.
+
+<h2>Introduction to MySQL <code>DROP FUNCTION</code> statement</h2>
+The <code>DROP FUNCTION</code> statement drops a <a href="https://www.mysqltutorial.org/mysql-stored-function/">stored function</a>. 
+Here is the syntax of the <code>DROP FUNCTION</code> statement:
+
+<code>DROP FUNCTION [IF EXISTS] function_name;
+</code>
+In this syntax, you specify the name of the stored function that you want to drop after the <code>DROP FUNCTION</code> keywords.
+
+The <code>IF EXISTS</code> option allows you to conditionally drop a stored function if it exists. 
+It prevents an error from arising if the function does not exist.
+
+<h2><code>DROP FUNCTION</code> example</h2>
+We’ll use the <code>orders</code> table in the <a href="https://www.mysqltutorial.org/mysql-sample-database.aspx">sample database</a> for the demonstration.
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/08/orders.png">
+First, <a href="https://www.mysqltutorial.org/mysql-stored-function/">create a new function</a> called <code>OrderLeadTime</code> that calculates the number of days between ordered date and required date:
+
+<code>DELIMITER $$
+
+CREATE FUNCTION OrderLeadTime (
+    orderDate DATE,
+    requiredDate DATE
+) 
+RETURNS INT
+DETERMINISTIC
+BEGIN
+    RETURN requiredDate - orderDate;
+END$$
+
+DELIMITER ;
+</code>
+Second, use the <code>DROP FUNCTION</code> statement to drop the function <code>OrderLeadTime</code>:
+
+<code>DROP FUNCTION OrderLeadTime;
+</code>
+Third, use the <code>DROP FUNCTION</code> to drop a non-existing function:
+
+<code>DROP FUNCTION IF EXISTS NonExistingFunction;
+</code>
+MySQL issued a warning:
+
+0 row(s) affected, 1 warning(s): 1305 FUNCTION classicmodels.NonExistingFunction does not exist
+
+If you want to view the warning in detail, use the <code>SHOW WARNINGS</code> statement:
+
+<code>SHOW WARNINGS;
+</code>
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-DROP-FUNCTION-example.png">
+how to use the <code>DROP FUNCTION</code> statement to drop a stored function.
+
+
+<strong>Summary</strong>: how to show stored functions from databases by using the <code>SHOW FUNCTION STATUS</code> or querying the data dictionary.
+
+<h2>Listing stored functions using <code>SHOW FUNCTION STATUS</code> statement</h2>
+The <code>SHOW FUNCTION STATUS</code> is like the <code><a href="https://www.mysqltutorial.org/listing-stored-procedures-in-mysql-database.aspx">SHOW PROCEDURE STATUS</a></code> but for the stored functions.
+
+Here is the basic syntax of the <code>SHOW FUNCTION STATUS</code> statement:
+
+<code>SHOW FUNCTION STATUS 
+[LIKE 'pattern' | WHERE search_condition];</code>
+The <code>SHOW FUNCTION STATUS</code> statement returns all characteristics of stored functions. 
+The following statement shows all stored functions in the current MySQL server:
+
+<code>SHOW FUNCTION STATUS;</code>
+Note that the <code>SHOW FUNCTION STATUS</code> only shows the function that you have a privilege to access.
+
+If you just want to show stored functions in a particular database, you can use a <code><a href="https://www.mysqltutorial.org/mysql-where/">WHERE</a></code> clause in the
+ <code>SHOW FUNCTION STATUS</code> as shown in the following statement:
+
+<code>SHOW FUNCTION STATUS 
+WHERE search_condition;</code>
+For example, this statement shows all stored functions in the <a href="https://www.mysqltutorial.org/mysql-sample-database.aspx">sample database</a> <code>classicmodels</code>:
+
+<code>SHOW FUNCTION STATUS 
+WHERE db = 'classicmodels';</code>
+If you want to find the stored functions whose names contain a specific word, you can use the <code><a href="https://www.mysqltutorial.org/mysql-like/">LIKE</a></code> clause:
+
+<code>SHOW FUNCTION STATUS 
+LIKE '%pattern%';</code>
+The following statement shows all stored functions whose names contain the word <code>Customer</code>:
+
+<code>SHOW FUNCTION STATUS LIKE '%Customer%';</code>
+<h2>Listing stored functions using the data dictionary</h2>
+MySQL data dictionary has a <code>routines</code> table that stores information about the stored functions of all databases in the current MySQL server.
+
+This query finds all stored functions in a particular database:
+
+<code>SELECT 
+    routine_name
+FROM
+    information_schema.routines
+WHERE
+    routine_type = 'FUNCTION'
+        AND routine_schema = '&lt;database_name&gt;';</code>
+For example, the following statement returns all stored functions in the <code>classicmodels</code> database:
+
+<code>SELECT 
+    routine_name
+FROM
+    information_schema.routines
+WHERE
+    routine_type = 'FUNCTION'
+        AND routine_schema = 'classicmodels';</code>
+<h2>Showing stored functions using MySQL Workbench</h2>
+If you use MySQL Workbench, you can view all stored functions from a database.
+
+Step 1. 
+Connect to the database that you want to show the stored functions.
+
+Step 2. 
+Open the <b>Functions </b>menu, you will see a list of functions which belong to the database.
+
+
+<img class="lazy" data-src="https://sp.mysqltutorial.org/wp-content/uploads/2019/09/MySQL-SHOW-FUNCTIONS.png">
+In this tutorial, you have learned how to show stored functions in a database by using the <code>SHOW FUNCTION STATUS</code> statement and querying from the data dictionary.
+
+
+<script type='text/javascript' src='readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+    // ... more custom settings?
+});
+</script>
+
+</pre></body></html>

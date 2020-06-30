@@ -65,7 +65,7 @@ function foreward() { changeTopic();}
 function showTopic() {
   window.location = "#topic-" + topicpointer;
   notvisitedList = notvisitedList.filter(item => item !== topicpointer) // remove topicpointer
-  if(notvisitedList.length==0){
+  if(notvisitedList.length == 0){
    notvisitedList = [...Array(totalLength).keys()];
   }
 }
