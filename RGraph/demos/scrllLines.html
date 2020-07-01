@@ -1,0 +1,185 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <title>How to make a scrolling Line chart | RGraph</title>
+    <script src="../libraries/RGraph.common.core.js" ></script>
+    <script src="../libraries/RGraph.common.dynamic.js" ></script>
+    <script src="../libraries/RGraph.line.js" ></script>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<style>
+body{width:80%;margin-left: 10%; font-size:22px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style>
+
+</head>
+<body  >
+    <canvas id="cvs" width="1200" height="500"></canvas>
+<br>
+<pre>
+<a href="/canvas/howto-update.html">http://www.rgraph.net/canvas/howto-update.html</a>
+
+Another option is to use WebSockets  to spawn a separate process - which again could update a queue. Though is adding needless complexity to the whole thing.
+<h2 >Using colors to indicate a threshold</h2>    
+
+In the demos there's a demo of a scrolling chart that shows different colors above/below a threshold. 
+The method used in this demo is quite involved and requires two charts to be created along with the clipping feature of canvas. 
+A <b>much</b> simpler option is to use gradients with (for example) 10 instances of the first color and then 10 instances of the second color. 
+With this many colors the vertical space allocated to each individual color is small - and the change from on color to the next will be small too. 
+The more colors that you use the smaller the graduation will be. 
+It comes across as a bit of a kludge, but because it's <b>much</b> simpler than using two charts/canvas tags and clipping it's worthy of trying first.
+
+obj.set({
+    colorsFill: 'Gradient(green:green:green:green:green:green:green:green:green:green:rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75))'
+});
+</pre>
+
+    <p>
+        Use the button below to set the color of the chart above to an example of this.
+    </p>
+    
+    <button onclick="state.object.set('fillstyle', 'Gradient(#0f0:#0f0:#0f0:#0f0:#0f0:#0f0:#0f0:#0f0:#0f0:#0f0:#0f0:#0f0:#0f0:#0f0:#0f0:#0f0:#0f0:#0f0:#0f0:#0f0:rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75):rgba(255,0,0,0.75))'); state.object.parseColors(); $('html, body').animate({scrollTop: 0}, 500);">Set color to gradient</button>
+
+<h2 >Another way by creating the gradient manually</h2>    
+<pre> An alternative is to create the gradient manually - using the canvas gradient functionality directly. 
+Similarly to CSS gradients it allows you to set the color-stop positions precisely - affording you a little extra control. 
+By using this method the change from red to green is a little more defined. 
+As an aside - with this method you don't need to call the RGraph internal function <code>parseGradients()</code>. 
+
+var gradient = obj.context.createLinearGradient(0,0,0,250);
+gradient.addColorStop(0,'red');
+gradient.addColorStop(0.5,'red');
+gradient.addColorStop(0.5,'rgb(0,255,0)');
+gradient.addColorStop(1,'rgb(0,255,0)');
+ 
+obj.set('fillstyle', gradient);
+</pre>
+
+<button onclick="var gradient = state.object.context.createLinearGradient(0,0,0,250); gradient.addColorStop(0,'red'); gradient.addColorStop(0.5,'red'); gradient.addColorStop(0.5,'rgb(0,255,0)'); gradient.addColorStop(1,'rgb(0,255,0)'); state.object.set('fillstyle', gradient); $('html, body').animate({scrollTop: 0}, 500);">Set color to gradient</button>
+
+
+    <script>
+        // A global used by the button the changes the color
+        state = {};
+
+        window.onload = (function ()
+        {
+            /**
+            * Define the varibles that we're going to use
+            */
+
+            // Refresh rate (in milliseconds - 1000 per second)
+            var delay = 40;
+            
+            // Number of points shown on the chart
+            var points = 1200;
+            
+            // Create the array with all the slows set to null
+            for (var data=[],i=0; i<points; ++i) {
+                data[i] = null;
+            }
+
+
+            // A shortcut reference to the global RGraph object
+            var RG = RGraph;
+            
+            // A shortcut reference to the global Math object
+            var ma = Math;
+            
+            // Max Y value on the chart
+            var max = 100;
+            
+            // min Y value on the chart
+            var min = 0;
+            
+            // Halfway between the min and max
+            var num = (( (max - min) / 2) + min);
+
+            // Generate the labels that are across the X axis. Hard-coded sadly... :-(
+            var labels = ['60s', '55s','50s', '45s','40s','35s','30s','25s','20s','15s','10s','5s','0s'];
+            
+            // The increase/decrease of each iteration
+            var delta = 2;
+
+            /**
+            * Create the chart. The data used is the empty array from
+            * above - so nothing gets drawn on the chart yet.
+            */
+            var obj = new RGraph.Line({
+                id: 'cvs',
+                data: data,
+                options: {
+                    yaxisScaleMax: max,
+                    tickmarksStyle: 'circle',
+                    // tickmarksStyle: null,
+				// tickmarks: 'circle',  this makes all marks appear
+				// tickmarks: null, 
+
+                    linewidth: 1,
+                    shadow: null,
+                    backgroundGridVlines: false,
+                    backgroundGridBorder: false,
+                    backgroundGridColor: '#020',
+                    xaxisTickmarksCount: 5,
+                    axesColor: '#666',
+                    textColor: '#666',
+                    xaxisLabels: labels,
+                    yaxis: false,
+                    colors: ['#083'],
+                    // filled: true,
+                    filled: false,
+                    // filledColors: 'Gradient(white:red)',
+                    marginLeft: 5,
+                    textSize: 12
+                }
+            }).draw();
+            
+            state.object = obj;
+
+            /**
+            * This is the main draw function that is called multiple times per
+            * second to update the chart with new data. It:
+            * 
+            * 1. Clears the canvas so that it's ready to be drawn on again
+            * 2. Shifts a piece of data off of the rear of the Line chart internal data
+            *    variable
+            * 3. Pushes  a new piece of data on to the end of the same array
+            * 4. Draws the chart again
+            */
+            function draw()
+            {
+                // Clear (NOT reset) the canvas
+                RG.clear(obj.canvas);
+
+                // Generate a random number between -5 and 5 and add it to the num
+                // variable. Adding a small change instead of generating a whole new
+                // number result in a gentler change.
+                num += RG.random(-1 * delta, delta);
+
+                // Limit the num variable to min - max
+                num = ma.max(min, num);
+                num = ma.min(max, num);
+
+                // Remove a number from the front of the data array
+                obj.original_data[0].shift();
+
+                // Add the new number on to end of the data array
+                obj.original_data[0].push(num);
+                
+                // Draw the chart
+                obj.draw();
+                
+                // Call this function again after the delay (using setTimeout NOT setInterval)
+                setTimeout(draw, delay);
+            }
+
+            draw();
+        });
+    </script>
+
+
+</body>
+</html>
