@@ -26,11 +26,10 @@ function showAllCharts(){
   });
   $( "#codelist" ).append("<br>");
 
-  // this process each chart individually
+  // this process add turnover detail to each chart individually
   for( codeNo = 0; codeNo < theList.length; codeNo += 1){
     showStkTO(theList[codeNo]); // this show turnover details
-
-console.log(tradeDetailStr)
+console.log(tradeDetailStr);
     theText = theList[codeNo] + tradeDetailStr;
 
     theFunccode =  "<div>" + (codeNo+1) + " &emsp; " + theText + "<br>" + thisImgHead + theText + thisImgPCode + thisImgTail + "onclick = \"xunbao('" + theText + "')\">" + "</div>";
@@ -38,17 +37,18 @@ console.log(tradeDetailStr)
   }
 }
 
+// this process add turnover detail to each chart individually
 function showStkTO(stkcode) {
   codewidth = stkcode.length
-  stkcode = stkcode.slice(codewidth-5, codewidth)
-
-  // add filter to check stkcode for a stock
-  // http://qt.gtimg.cn/q=s_sz000001
-  // http://qt.gtimg.cn/q=s_sh600000
-  // http://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=sh000001,day,,,320,qfq
-
-//http://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=sh600000,day,,,5,qfq
-//http://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk00700,day,,,5,qfq
+  if(codewidth == 5){
+    stkcode = stkcode.slice(codewidth-5, codewidth);
+    urladdr = 'http://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + stkcode + ',day,,,5,qfq';
+  }else{
+    stkcode = stkcode.slice(codewidth-9, codewidth)
+    stkcode = stkcode.slice(7, 9) + stkcode.slice(0, 6);
+    urladdr = 'http://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + stkcode + ',day,,,5,qfq';
+  }
+  //console.log(stkcode);
 
 //[2] Close [3] High [4] Low
 //kline_dayqfq={"code":0,"msg":"","data":{"sh600000":{"qfqday":
@@ -57,7 +57,6 @@ function showStkTO(stkcode) {
 //kline_dayqfq={"code":0,"msg":"","data":{"hk00700":{"qfqday":
 //["2020-06-24","502.000","490.800","505.000","490.800","23063468.00",{},"0","1148518.40"]],"qt":{"hk00700":
 
-  urladdr = 'http://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + stkcode + ',day,,,5,qfq';
   var script = document.createElement('script');
   script.onload = function() {
     theObj = kline_dayqfq.data;
@@ -102,7 +101,7 @@ function showStkTO(stkcode) {
 }
 
 function reportIt(someMsg) {
-  tradeDetailStr = someMsg;
+  return tradeDetailStr;
 }
 function chkKey() { testkey = getChar(event);
   if(testkey == 'c'){showChart();}

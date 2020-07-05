@@ -133,7 +133,7 @@ v,m scrollTo month
 
 <script>
 var stkChartList = localStorage.getItem("stkListArr").split(' ');
-
+console.log(stkChartList);
 var remainChtNo = stkChartList.length;
 //var remainChtNo = 1;
 var thecode ="";
@@ -258,11 +258,21 @@ function showSmallChart() {
 }
 
 function showTO(stkcode) {
-  stkcode = "00000"+stkcode
   codewidth = stkcode.length
-  stkcode = stkcode.slice(codewidth-5, codewidth)
 
-  urladdr = 'http://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + stkcode + ',day,,,20,qfq';
+  if(codewidth <= 5){
+    stkcode = "00000"+stkcode;
+    codewidth = stkcode.length;
+    stkcode = stkcode.slice(codewidth-5, codewidth);
+    codewidth = stkcode.length; //update to be used later
+    urladdr = 'http://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + stkcode + ',day,,,20,qfq';
+  }else{
+    codewidth = stkcode.length
+    stkcode = stkcode.slice(codewidth-9, codewidth)
+    stkcode = stkcode.slice(7, 9) + stkcode.slice(0, 6);
+    codewidth = stkcode.length; //update to be used later
+    urladdr = 'http://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + stkcode + ',day,,,20,qfq';
+  }
   var script = document.createElement('script');
   script.onload = function() {
     $("#turnover").html("Turnover: ");
@@ -270,16 +280,26 @@ function showTO(stkcode) {
     newObj = Object.values(theObj);
     newObj = Object.values(newObj[0]);
     newObj = Object.values(newObj[0]);
-
-    for(i=7;i<newObj.length;i++){
+    for(i=9;i<newObj.length;i++){
       thedate = newObj[i][0];  // date
-      theamt = Math.round(Number(newObj[i][8])).toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",");  // amt
+      if(codewidth == 5){
+        theAmtIdx = 8;
+      }else{
+        theAmtIdx = 5;
+      }
+      theamt = Math.round(Number(newObj[i][theAmtIdx]));
+      if(codewidth != 5){
+        if(stkcode.slice(0, 5) == "sh688"){
+          theamt = Math.round(theamt * Number(newObj[i][2])/10000);
+        }else{
+          theamt = Math.round(theamt * Number(newObj[i][2])/100);
+        }
+      }
+      theamt = theamt.toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",");
       $("#turnover").append( theamt,"w ");
     }
-
     theH = Number(newObj[newObj.length-1][3]);  // High
     theL = Number(newObj[newObj.length-1][4]);  // Low
-
     theClose = Number(newObj[newObj.length-1][2]);  // Close
     thePrevClose = Number(newObj[newObj.length-2][2]);  // PrevClose
     theCDiff = Math.round((theClose - thePrevClose)*10000)/10000;
@@ -440,7 +460,7 @@ function changeCode(thecode) {
 	window.location.reload(true);
 }
 
-shuffle();
+//shuffle();
 showSTKChart();
 
 </script>
