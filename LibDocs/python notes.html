@@ -6971,6 +6971,173 @@ plt.show()    # 显示图像</code>
 
 [1] WordCloud生成卡卡西忍术词云: https://blog.csdn.net/ZackSock/article/details/103517841
 
+<h2>Density and Contour Plots</h2>
+Sometimes it is useful to display three-dimensional data in two dimensions using contours or color-coded regions.
+There are three Matplotlib functions that can be helpful for this task: <code>plt.contour</code> for contour plots, <code>plt.contourf</code> for filled contour plots, and <code>plt.imshow</code> for showing images.
+This section looks at several examples of using these. 
+We'll start by setting up the notebook for plotting and importing the functions we will use:
+
+In [1]:
+
+%matplotlib inline
+import matplotlib.pyplot as plt
+plt.style.use('seaborn-white')
+import numpy as np
+
+<h2>Visualizing a Three-Dimensional Function</h2>
+
+We'll start by demonstrating a contour plot using a function $z = f(x, y)$, using the following particular choice for $f$ (we've seen this before in <a href="02.05-computation-on-arrays-broadcasting.html">Computation on Arrays: Broadcasting</a>, when we used it as a motivating example for array broadcasting):
+
+In [2]:
+
+def f(x, y):
+    return np.sin(x) ** 10 + np.cos(10 + y * x) * np.cos(x)
+
+A contour plot can be created with the <code>plt.contour</code> function.
+It takes three arguments: a grid of <em>x</em> values, a grid of <em>y</em> values, and a grid of <em>z</em> values.
+The <em>x</em> and <em>y</em> values represent positions on the plot, and the <em>z</em> values will be represented by the contour levels.
+Perhaps the most straightforward way to prepare such data is to use the <code>np.meshgrid</code> function, which builds two-dimensional grids from one-dimensional arrays:
+
+In [3]:
+
+x = np.linspace(0, 5, 50)
+y = np.linspace(0, 5, 40)
+
+X, Y = np.meshgrid(x, y)
+Z = f(X, Y)
+
+Now let's look at this with a standard line-only contour plot:
+
+In [4]:
+
+plt.contour(X, Y, Z, colors='black');
+
+Notice that by default when a single color is used, negative values are represented by dashed lines, and positive values by solid lines.
+Alternatively, the lines can be color-coded by specifying a colormap with the <code>cmap</code> argument.
+Here, we'll also specify that we want more lines to be drawn—20 equally spaced intervals within the data range:
+
+In [5]:
+
+plt.contour(X, Y, Z, 20, cmap='RdGy');
+
+Here we chose the <code>RdGy</code> (short for <em>Red-Gray</em>) colormap, which is a good choice for centered data.
+Matplotlib has a wide range of colormaps available, which you can easily browse in IPython by doing a tab completion on the <code>plt.cm</code> module:
+
+<code>plt.cm.&lt;TAB&gt;</code>
+Our plot is looking nicer, but the spaces between the lines may be a bit distracting.
+We can change this by switching to a filled contour plot using the <code>plt.contourf()</code> function (notice the <code>f</code> at the end), which uses largely the same syntax as <code>plt.contour()</code>.
+
+Additionally, we'll add a <code>plt.colorbar()</code> command, which automatically creates an additional axis with labeled color information for the plot:
+
+In [6]:
+
+plt.contourf(X, Y, Z, 20, cmap='RdGy')
+plt.colorbar();
+
+The colorbar makes it clear that the black regions are "peaks," while the red regions are "valleys."
+
+One potential issue with this plot is that it is a bit "splotchy." That is, the color steps are discrete rather than continuous, which is not always what is desired.
+This could be remedied by setting the number of contours to a very high number, but this results in a rather inefficient plot: Matplotlib must render a new polygon for each step in the level.
+A better way to handle this is to use the <code>plt.imshow()</code> function, which interprets a two-dimensional grid of data as an image.
+
+The following code shows this:
+
+In [7]:
+
+plt.imshow(Z, extent=[0, 5, 0, 5], origin='lower',
+           cmap='RdGy')
+plt.colorbar()
+plt.axis(aspect='image');
+
+There are a few potential gotchas with <code>imshow()</code>, however:
+
+<ul>
+<li><code>plt.imshow()</code> doesn't accept an <em>x</em> and <em>y</em> grid, so you must manually specify the <em>extent</em> [<em>xmin</em>, <em>xmax</em>, <em>ymin</em>, <em>ymax</em>] of the image on the plot.</li>
+<li><code>plt.imshow()</code> by default follows the standard image array definition where the origin is in the upper left, not in the lower left as in most contour plots. 
+This must be changed when showing gridded data.</li>
+<li><code>plt.imshow()</code> will automatically adjust the axis aspect ratio to match the input data; this can be changed by setting, for example, <code>plt.axis(aspect='image')</code> to make <em>x</em> and <em>y</em> units match.</li>
+</ul>
+
+Finally, it can sometimes be useful to combine contour plots and image plots.
+For example, here we'll use a partially transparent background image (with transparency set via the <code>alpha</code> parameter) and overplot contours with labels on the contours themselves (using the <code>plt.clabel()</code> function):
+
+In [8]:
+
+contours = plt.contour(X, Y, Z, 3, colors='black')
+plt.clabel(contours, inline=True, fontsize=8)
+
+plt.imshow(Z, extent=[0, 5, 0, 5], origin='lower',
+           cmap='RdGy', alpha=0.5)
+plt.colorbar();
+
+The combination of these three functions—<code>plt.contour</code>, <code>plt.contourf</code>, and <code>plt.imshow</code>—gives nearly limitless possibilities for displaying this sort of three-dimensional data within a two-dimensional plot.
+For more information on the options available in these functions, refer to their docstrings.
+If you are interested in three-dimensional visualizations of this type of data, see <a href="04.12-three-dimensional-plotting.html">Three-dimensional Plotting in Matplotlib</a>.
+
+<a href="https://observablehq.com/@d3/density-contours" class="whitebut ">Density Contours</a>
+
+Example simple contour plot
+
+<code>import numpy as np
+from matplotlib.colors import LogNorm
+from matplotlib import pyplot as plt
+
+plt.interactive(True)
+fig=plt.figure(1)
+plt.clf()
+
+# generate input data; you already have that
+x1 = np.random.normal(0,10,100000)
+y1 = np.random.normal(0,7,100000)/10.
+x2 = np.random.normal(-15,7,100000)
+y2 = np.random.normal(-10,10,100000)/10.
+x=np.concatenate([x1,x2])
+y=np.concatenate([y1,y2])
+
+# calculate the 2D density of the data given
+counts,xbins,ybins=np.histogram2d(x,y,bins=100,normed=LogNorm())
+# make the contour plot
+plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),
+    ybins.min(),ybins.max()],linewidths=3,colors='black',
+    linestyles='solid')
+plt.show()
+</code>
+
+produces a nice contour plot. 
+
+The contour function offers a lot of fancy adjustments, for example let's set the levels by hand:
+
+<code>plt.clf()
+mylevels=[1.e-4, 1.e-3, 1.e-2]
+plt.contour(counts.transpose(),mylevels,extent=[xbins.min(),xbins.max(),
+    ybins.min(),ybins.max()],linewidths=3,colors='black',
+    linestyles='solid')
+plt.show()
+</code>
+
+producing this plot:
+<img src="https://i.stack.imgur.com/sMch8.png" alt="contour plot with adjusted levels">
+
+And finally, in SM one can do contour plots on linear and log scales, so I spent a little time trying to figure out how to do this in matplotlib. 
+Here is an example when the y points need to be plotted on the log scale and the x points still on the linear scale:
+
+<code>plt.clf()
+# this is our new data which ought to be plotted on the log scale
+ynew=10**y
+# but the binning needs to be done in linear space
+counts,xbins,ybins=np.histogram2d(x,y,bins=100,normed=LogNorm())
+mylevels=[1.e-4,1.e-3,1.e-2]
+# and the plotting needs to be done in the data (i.e., exponential) space
+plt.contour(xbins[:-1],10**ybins[:-1],counts.transpose(),mylevels,
+    extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
+    linewidths=3,colors='black',linestyles='solid')
+plt.yscale('log')
+plt.show()
+</code>
+
+This produces a plot which looks very similar to the linear one, but with a nice vertical log axis, which is what was intended: 
+<img src="https://i.stack.imgur.com/Vu5MB.png" alt="contour plot with log axis">
+
 
 
 

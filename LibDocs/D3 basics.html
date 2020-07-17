@@ -1,0 +1,2749 @@
+<base target="_blank"><html><head><title>D3 Guide</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="https://williamkpchan.github.io/lazyload.min.js"></script>
+<script type='text/javascript' src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="D:/Dropbox/Public/commonfunctions.js"></script>
+<script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script>
+<script type="text/javascript" src="https://website.education.wisc.edu/~swu28/d3t/js/toggle.js"></script>
+
+
+<script>
+  var showTopicNumber = true;
+  var bookid = "D3 Guide"
+  var markerName = "h2"
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:22px;background-color: #000808;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+pre{background-color:  inherit;}
+code{background-color: inherit;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>A Beginner's Guide to Using D3</h1>
+<a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a>
+<br><br>
+<div id="toc"></div></center>
+<br><br>
+<div id="mustWatch"><center><span class="red">MustWatch</span></center><br>
+<a href="http://objjob.phrogz.net/d3/methods" class="whitebut ">Methods in D3.js</a>
+<a href="https://www.tutorialsteacher.com/d3js/function-of-data-in-d3js" class="whitebut ">D3.js Tutorials</a>
+<a href="https://website.education.wisc.edu/~swu28/d3t/concept.html" class="whitebut ">D3 Basics</a>
+
+</div>
+<pre>
+<br>
+<br>
+
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+<!-- specific plugin -->
+<script src="https://d3js.org/d3-contour.v1.min.js"></script>
+
+
+<!-- Create a div where the graph will take place -->
+<div id="my_dataviz"></div>
+
+<script>
+// set the dimensions and margins of the graph
+// the top left corner has the coordinate x=0 and y=0.
+// The bottom left corner has the coordinate x=0 and y=height.
+// The top right corner has the coordinate x=width and height=0
+
+var margin = {top: 0, right: 0, bottom: 0, left: 0},
+    width = 700 - margin.left - margin.right,
+    height = 700 - margin.top - margin.bottom;
+
+// append the svg object to the body of the page
+var svg = d3.select("#my_dataviz")
+  .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+// read data
+d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/data_for_density2d.csv", function(data) {
+
+  // Add X axis
+  var x = d3.scaleLinear()
+    .domain([5, 20])
+    .range([ 0, width ]);
+  svg.append("g")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x));
+
+  // Add Y axis
+  var y = d3.scaleLinear()
+    .domain([5, 22])
+    .range([ height, 0 ]);
+  svg.append("g")
+    .call(d3.axisLeft(y));
+
+  // compute the density data
+  var densityData = d3.contourDensity()
+    .x(function(d) { return x(d.x); })   // x and y = column name in .csv input data
+    .y(function(d) { return y(d.y); })
+    .size([width, height])
+    .bandwidth(20)    // smaller = more precision in lines = more lines
+    (data)
+
+  // Add the contour: several "path"
+  svg
+    .selectAll("path")
+    .data(densityData)
+    .enter()
+    .append("path")
+      .attr("d", d3.geoPath())
+      .attr("fill", "none")
+      .attr("stroke", "#69b3a2")
+      .attr("stroke-linejoin", "round")
+})
+</script>
+
+<h2>Technical principles</h2>
+<h3>Selections</h3>
+The central principle of D3.js design is to enable the programmer to first use a CSS-style selector to select a given set of Document Object Model (DOM) nodes, then use operators to manipulate them in a similar manner to jQuery. 
+For example, one may select all HTML <code class="nowrap" style="">&lt;p>...&lt;&#47;p></code> elements, and then change their text color, e.g. 
+to lavender:
+
+ d3.selectAll("p")                 // select all &lt;p> elements
+   .style("color", "lavender")     // set style "color" to value "lavender"
+   .attr("class", "squares")       // set attribute "class" to value "squares"
+   .attr("x", 50);                 // set attribute "x" (horizontal position) to value 50px
+
+The selection can be based on an HTML tag, class, identifier, attribute, or place in the hierarchy. 
+Once elements are selected, one can apply operations to them. 
+This includes getting and setting attributes, display texts, and styles (as in the above example). 
+Elements may also be added and removed. 
+This process of modifying, creating and removing HTML elements can be made dependent on data, which is the basic concept of D3.js.
+
+<h3>Transitions</h3>
+By declaring a transition, values for attributes and styles can be smoothly interpolated over a certain time. 
+The following code will make all HTML <code class="nowrap" style="">&lt;p>...&lt;&#47;p></code> elements on a page gradually change their text color to pink:
+
+ d3.selectAll("p")             // select all &lt;p> elements
+   .transition("trans_1")      // transition with name "trans_1"
+     .delay(0)                 // transition starting 0ms after trigger
+     .duration(500)            // transitioning for 500ms
+     .ease(d3.easeLinear)           // transition easing progression is linear...
+   .style("color", "pink");    // ... 
+to color:pink
+
+<h3>Data-binding</h3>
+For more advanced uses, loaded data drives the creation of elements. 
+D3.js loads a given dataset, then, for each of its elements, creates an SVG object with associated properties (shape, colors, values) and behaviors (transitions, events).
+
+// Data
+  var countriesData = [
+     { name:"Ireland",  income:53000, life: 78, pop:6378, color: "black"},
+     { name:"Norway",   income:73000, life: 87, pop:5084, color: "blue" },
+     { name:"Tanzania", income:27000, life: 50, pop:3407, color: "grey" }
+  ];
+// Create SVG container
+  var svg = d3.select("#hook").append("svg")
+        .attr("width", 120)
+        .attr("height", 120)
+        .style("background-color", "#D0D0D0");
+// Create SVG elements from data 
+    svg.selectAll("circle")                  // create virtual circle template
+      .data(countriesData)                   // bind data
+       .join("circle")                                 // joins data to the selection and creates circle elements for each individual data
+        .attr("id", function(d) { return d.name })            // set the circle&#39;s id according to the country name
+        .attr("cx", function(d) { return d.income / 1000  })  // set the circle&#39;s horizontal position according to income 
+        .attr("cy", function(d) { return d.life })            // set the circle&#39;s vertical position according to life expectancy 
+        .attr("r",  function(d) { return d.pop / 1000 *2 })   // set the circle&#39;s radius according to country&#39;s population 
+        .attr("fill", function(d) { return d.color });        // set the circle&#39;s color according to country&#39;s color
+
+Generated SVG graphics are designed according to the provided data.
+
+<h3>Appending nodes using data</h3>
+Once a dataset is bound to a document, use of D3.js typically follows a pattern wherein an explicit <code>.enter()</code> function, an implicit "update," and an explicit <code>.exit()</code> function is invoked for each item in the bound dataset. 
+Any methods chained after the <code>.enter()</code> command will be called for each item in the dataset not already represented by a DOM node in the selection (the previous <code>selectAll()</code>). 
+Likewise, the implicit update function is called on all existing selected nodes for which there is a corresponding item in the dataset, and <code>.exit()</code> is called on all existing selected nodes that do not have an item in the dataset to bind to them. 
+The D3.js documentation provides several examples of how this works.
+
+<h2>API structure</h2>
+D3.js API contains several hundred functions, and they can be grouped into following logical units:
+
+Selections
+Transitions
+Arrays
+Math
+Color
+Scales
+SVG
+Time
+Layouts
+Geography
+Geometry
+Behaviors
+<h3>Maths</h3>
+Generation of pseudorandom numbers with normal, log-normal, Bates, and Irwin-Hall distributions.
+Transformations in 2D: translation, rotation, skew, and scaling.
+<h3>Arrays</h3>
+D3.js array operations are built to complement existing array support in JavaScript (mutator methods: sort, reverse, splice, shift and unshift; accessor methods: concat, join, slice, indexOf and lastIndexOf; iteration methods: filter, every, forEach, map, some, reduce and reduceRight). 
+D3.js extends this functionality with:
+
+Functions for finding minimum, maximum, extent, sum, mean, median, and quantile of an array.
+Functions for ordering, shuffling, permuting, merging, and bisecting arrays.
+Functions for nesting arrays.
+Functions for manipulating associative arrays.
+Support for map and set collections.
+<h3>Geometry</h3>
+Computing convex hull of a set of points.
+Computing Voronoi tesselation of a set of points.
+Support for point quadtree data structure.
+Support for basic operations on polygon.
+<h3>Color</h3>
+Support for RGB, HSL, HCL, and L*a*b* color representation.
+Brightening, darkening, and interpolation of colors.
+
+<h2>Begin: Selections</h2>
+This can be done using either d3.select(this) or d3.selectAll(this) where “this” is the specific element(s) you are trying to select. 
+.select() will just select the first element that matches to the criteria specified, if you are selecting one of several objects that have this criteria then be sure to remember that this will select the first one in document traversal order. 
+.selectAll() will simply select all the elements that match the criteria specified and return them as an array of elements. 
+You can select elements in the following ways:
+
+<h3>Tag </h3>
+<code>d3.select(“div”)</code>
+
+<h3>Class </h3>
+<code>d3.select(“.classname”)</code>
+
+<h3>Unique identifier </h3>
+<code>d3.select(“#line”)</code>
+
+<h3>Attribute </h3>
+<code>d3.select(“[color=orange]”)</code>
+
+<h3>Containment </h3>
+<code>d3.select(“parent child”)</code>
+
+Selectors can also utalize AND and OR operators as well. 
+To make a selection of the intersection of two selectors simply place them side by side, while for the union you just put a comma in between them as illustrated below:
+
+<h3>AND: </h3>
+<code>d3.select(“this that”)</code>
+
+<h3>OR: </h3>
+<code>d3.select(“this, that”)</code>
+
+It is also possible to use Subselections to restrict your selections to the descendants of other elements. 
+For example, say you want to select the very first bold element in every paragraph, you would use the following code:
+
+<code>d3.selectAll(“p”).select(“b”)</code>
+
+After you have an element selected you can then call any number of operators on them to change them, such as attributes and styles, and then use the method chaining syntax of jQuery. 
+<a href="http://api.jquery.com/attr/">jQuery attributes</a>
+
+<h2>Attributes/Styles</h2>  <br />
+<h3>Changing Attributes and Styles</h3>
+D3 provides methods for changing attributes and styles of elements. 
+We'll look at the basics of .attr() and .style() so you can begin using these to adjust SVG attributes and styles. 
+
+While .attr() and .style() can be used to style non-SVG elements, for the purposes of this tutorial, we'll only be using these methods in the context of SVG. 
+
+In order to use .attr() and .style() they have to called on a selection. 
+
+In the code below, we use D3 methods to select a circle element, change its radius and color. 
+<code>
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;script type=&quot;text/javascript&quot; src=&quot;http://mbostock.github.com/d3/d3.js&quot;&gt;&lt;/script&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id=&quot;example&quot;&gt;
+      &lt;svg width=&quot;100&quot; height=&quot;100&quot;&gt;
+        &lt;circle id = &quot;myCircle&quot; cx=&quot;50&quot; cy=&quot;50&quot; r=&quot;30&quot; &gt;&lt;/circle&gt;
+      &lt;/svg&gt;
+    &lt;/div&gt;
+    &lt;script type=&quot;text/javascript&quot;&gt;
+      var circleDemo = d3.select(&quot;#myCircle&quot;);
+        circleDemo.attr(&quot;r&quot;, 40);
+        circleDemo.style(&quot;stroke&quot;, &quot;orange&quot;);
+        circleDemo.style(&quot;fill&quot;, &quot;orange&quot;);    
+    &lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code>
+
+Because CSS styling isn't specified, the circle would be filled orange, if we didn't change the styles. 
+
+<code>&lt;circle id = &quot;myCircle&quot; cx=&quot;50&quot; cy=&quot;50&quot; r=&quot;30&quot; &gt;&lt;/circle&gt;</code>
+
+To begin modifying the circle, we first need to create a selection. 
+We'll select myCircle and assign it to a D3 variable called circleDemo. 
+
+
+circleDemo contains our selection pointing to the SVG circle element myCircle within the DOM. 
+
+<code>var circleDemo = d3.select(&quot;#myCircle&quot;);&nbsp;</code>
+
+Now that we have the circle element assigned to a D3 variable, we can begin change the attributes and styles. 
+
+<h3>.attr() Method</h3>
+
+<a href="https://github.com/mbostock/d3/wiki/Selections#wiki-attr">.attr()</a> is used to change an element's attributes. 
+Attributes that are used to initially define an element can be passed through .attr() This lets you modify existing elements and set new attribute values. 
+Attributes such as an SVG element's size or position can be changed with .attr()
+
+<a href="https://github.com/mbostock/d3/wiki/Selections#wiki-attr">.attr()</a> requires it be given two values:  The attribute to be changed, and the new value for the specified attribute. 
+
+In order to use .attr() is must called on a selection. 
+
+<code>selection.attr("attribute string", new value)</code>
+
+To change the circle's size, we'll call the .attr() method on our circleDemo selection. 
+
+We call .attr() and pass the  attribute we want to change ("r") with its new value (40).<br>
+
+<code>circleDemo.attr(&quot;r&quot;, 40);</code>
+
+Now when the circle is drawn in the browser, the radius is set to 40. 
+
+<blockquote>NOTE: It's important to keep in mind that D3 has not created  a new element. 
+Instead, D3 is modifying the existing circle. 
+
+</blockquote>
+
+<h3>.style() Method</h3>
+
+<a href="https://github.com/mbostock/d3/wiki/Selections#wiki-style">.style()</a> changes the CSS styling of the selected element. 
+You can change how an element looks as long as it can be specified through CSS. 
+This allows for styling changes to exist outside D3. 
+As CSS changes and evolves, D3 can utilize these new changes without the need of a patch.
+
+<a href="https://github.com/mbostock/d3/wiki/Selections#wiki-style">.style()</a> requires it passed two values -- the CSS style that's going to be modified and the new value. 
+
+.style() requires that it be called on a selection. 
+
+
+<code>selection.style("CSS Style string", new value)</code>
+
+Here we have changed two CSS styles --The color of the stroke (line used to draw the element) and the fill color. 
+
+<code>circleDemo.style(&quot;stroke&quot;, &quot;orange&quot;);
+circleDemo.style(&quot;fill&quot;, &quot;white&quot;);</code>
+
+<blockquote>NOTE: The CSS changes D3 makes are done directly to the document. 
+The changes are not being done to the circleDemo variable. 
+Instead circleDemo is a pointer to the circle element in the document which is being changed. 
+
+</blockquote>
+
+<h3>Recap of .attr() and .style()</h3>
+
+While these simple examples only demonstrate the most basic usage of .attr() and .style(), more functionally can be gained by combining these methods with data-binding and mouse events. 
+In the later examples, we'll explore how these two methods can be used in combination with data. 
+
+As a review, copy the code at the very top of the page and try changing different attributes and styles for the <a href="http://www.w3.org/TR/SVG/shapes.html#CircleElement">circle</a> element. 
+
+
+<blockquote>Note: Outside of D3, attribute and styling terminology can be confusing. 
+For example, what D3 calls <em>styles</em>, the SVG standard calls <em>presentation attributes</em>. 
+
+</blockquote>
+
+</div>
+
+<h2>Data Binding, append, enter()</h2>  <br />
+<h3>Binding Data with .data()</h3>
+
+Normally when you you store a value in programming languages, it's done by assigning a value to a variable. 
+
+In JavaScript if we wanted to store values (1, 2, 3, and 4) in an array we would intialize a variable and assign the values as follows: 
+
+<code>var myArray = [1, 2, 3, 4]; </code>
+
+D3 does not store data within variables. 
+Instead, D3 stores data within the DOM selectors by calling the <a href="https://github.com/mbostock/d3/wiki/Selections#wiki-data">selection.data()</a> method. 
+
+In order to use the .data() method, it has to be called from a selector, and passed an array of values. 
+
+
+<code>selection.data([array])</code>
+
+When .data() is called it joins the array of values with the array of selections that called it. 
+
+<blockquote>NOTE: A selection will always be an array of document elements. 
+This is true for both select() and selectAll(). 
+
+</blockquote>
+
+If we wanted to assign the values (10, 15, 20, 25) to selection containing 4 circle elements, in D3 this would be done by calling .data() on the selection circleSelections and passing the array [10, 15, 20, 25] . 
+
+<code>myCircle.data([10, 15, 20, 25]) </code>
+
+when .data() executes it takes the array [10, 15, 20, 25] and joins it with the selection array circleSelections. 
+
+<code>              data[    5      ,      10      ,      15      ,      20    ]
+                       |              |              |              |
+                       |              |              |              |
+                       |              |              |              |
+                       v              v              v              v
+circleSelections [  &lt;circle&gt;,     &lt;circle&gt;,      &lt;circle&gt;,       &lt;circle&gt; ]</code>
+
+.data() takes the first value in the array and joins it with the first selection from circleSelections. 
+
+
+<blockquote>NOTE: When .data() is called it iterates over the array and passes each value down the method chain. 
+
+</blockquote>
+
+5 gets joined with the first &lt;circle&gt; and stored within the DOM.<br />
+5 is then passed down the method chain, until the chain completes. 
+<br />
+10 is joined with the second &lt;circle&gt; and stored within the DOM<br />
+10 is then passed down the method chain, until the chain completes.<br />
+... 
+and so on
+
+<br />
+
+<h3>A Data Binding Example</h3>
+
+Since .data() returns the values from the array it's been passed, we can use these values to change attributes and styles for SVG elements with a method chain. 
+
+<blockquote>NOTE:  It's possible to use .data() for changing other elements, but we'll focus on SVG. 
+
+</blockquote>
+
+If we had 5 circle elements 
+
+<div>
+<svg width="375" height="100">
+<circle id = "myCircle" cx="30" cy="50" r="30" ></circle>
+<circle id = "myCircle" cx="100" cy="50" r="30" ></circle>
+<circle id = "myCircle" cx="170" cy="50" r="30" ></circle>
+<circle id = "myCircle" cx="240" cy="50" r="30" ></circle>
+<circle id = "myCircle" cx="310" cy="50" r="30" ></circle>
+</svg>
+</div>
+
+created from the following code: 
+
+<code>&lt;div id=&quot;data_example1&quot;&gt;
+  &lt;svg width=&quot;375&quot; height=&quot;100&quot;&gt;
+    &lt;circle id = &quot;myCircle&quot; cx=&quot;30&quot; cy=&quot;50&quot; r=&quot;30&quot; &gt;&lt;/circle&gt;
+    &lt;circle id = &quot;myCircle&quot; cx=&quot;100&quot; cy=&quot;50&quot; r=&quot;30&quot; &gt;&lt;/circle&gt;
+    &lt;circle id = &quot;myCircle&quot; cx=&quot;170&quot; cy=&quot;50&quot; r=&quot;30&quot; &gt;&lt;/circle&gt;
+    &lt;circle id = &quot;myCircle&quot; cx=&quot;240&quot; cy=&quot;50&quot; r=&quot;30&quot; &gt;&lt;/circle&gt;
+    &lt;circle id = &quot;myCircle&quot; cx=&quot;310&quot; cy=&quot;50&quot; r=&quot;30&quot; &gt;&lt;/circle&gt;
+  &lt;/svg&gt;
+&lt;/div&gt;</code>
+
+D3 can change the radius by using values from from an array radiusData. 
+
+<code> 
+radiusData = [10, 15, 20, 25, 30];</code>
+
+.data() will join the data to the selection <br />
+.attr() will take the joined data, and be used to change the radius. 
+<br />
+
+<code>
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+  &lt;head&gt;
+  &lt;script type=&quot;text/javascript&quot; src=&quot;http://mbostock.github.com/d3/d3.js&quot;&gt;
+  &lt;/script&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id=&quot;data_example1&quot;&gt;
+      &lt;svg width=&quot;375&quot; height=&quot;100&quot;&gt;
+        &lt;circle id = &quot;myCircle&quot; cx=&quot;30&quot; cy=&quot;50&quot; r=&quot;30&quot; &gt;&lt;/circle&gt;
+        &lt;circle id = &quot;myCircle&quot; cx=&quot;100&quot; cy=&quot;50&quot; r=&quot;30&quot; &gt;&lt;/circle&gt;
+        &lt;circle id = &quot;myCircle&quot; cx=&quot;170&quot; cy=&quot;50&quot; r=&quot;30&quot; &gt;&lt;/circle&gt;
+        &lt;circle id = &quot;myCircle&quot; cx=&quot;240&quot; cy=&quot;50&quot; r=&quot;30&quot; &gt;&lt;/circle&gt;
+        &lt;circle id = &quot;myCircle&quot; cx=&quot;310&quot; cy=&quot;50&quot; r=&quot;30&quot; &gt;&lt;/circle&gt;
+      &lt;/svg&gt;
+    &lt;/div&gt;
+    &lt;script type=&quot;text/javascript&quot;&gt;
+    //radiusData is an array containing the new radius 
+    //for the circle elements
+      radiusData = [10, 15, 20, 25, 30];
+
+    //Select the div element
+      selectExample = d3.select(&quot;#data_example1&quot;);
+
+    //We&#39;ll select all the circle from within the selected &lt;div&gt; element
+      selectExample.selectAll(&quot;circle&quot;)
+        .data(radiusData)
+        .attr(&quot;r&quot;, function(d){return d});
+    &lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code>
+
+Initially we select the &lt;div&gt; element containing all the circle elements. 
+
+<code> 
+selectExample = d3.select(&quot;#data_example1&quot;);</code>
+
+We can then select all the circle elements within selectExample. 
+<br />
+This will return an array of circle element selections. 
+
+<code>selectExample.selectAll(&quot;circle&quot;)</code>
+
+When we call .data() it will join the values from radiusData with the circle elements. 
+ <br />
+As .data() iterates across the array of circle selections, it returns the current radiusData value. 
+
+<code> 
+.data(radiusData)</code>
+
+By calling .data() in a method chain, D3 iterates over the data array (radiusData) and returns the present value to methods down the chain. 
+This allows us to use values in radiusData with other methods, like .attr().
+
+This functionality can be used to change radius using values from from the array radiusData. 
+<br />
+This  results in .attr() being called 5x. 
+One for each value within the radiusData array. 
+<br />
+Each time .attr() is called, it will receive a different value from radiusData. 
+
+In our example, a each value from radiusData called d is being passed down the chain. 
+
+<blockquote>NOTE:  The value being returned from .data() and passed down the chain could have been given any non-conflicting name. 
+
+</blockquote>
+
+Now that .attr() is being passed a value, we can set the attribute we want to change ("r") and pass the new value through an anonymous function. 
+
+
+<code>.attr(&quot;r&quot;, function(d){return d});</code>
+
+The resulting circles look like 
+
+<div id="data_example1">
+<svg width="375" height="100">
+<circle id = "myCircle" cx="30" cy="50" r="30" ></circle>
+<circle id = "myCircle" cx="100" cy="50" r="30" ></circle>   
+<circle id = "myCircle" cx="170" cy="50" r="30" ></circle>
+<circle id = "myCircle" cx="240" cy="50" r="30" ></circle>
+<circle id = "myCircle" cx="310" cy="50" r="30" ></circle>
+</svg>
+</div>
+
+<script type="text/javascript">
+//radiusData is an array containing the new radius for the circle elements
+radiusData = [10, 15, 20, 25, 30];
+
+//Select the div element
+selectExample = d3.select("#data_example1");
+
+//We'll select all the circle from within the selected <div> element
+selectExample.selectAll("circle")
+.data(radiusData)
+.attr("r", function(d){return d});   
+
+</script>
+
+<h3>Joining Multiple Values with .data()</h3>
+
+.data() can be used to join multiple values to a single selection.<br />
+It's possible to pass an array of array to .data()
+
+The array of arrays can contain multidimensional information that can be applied to each selection. 
+
+
+In this example circleData contains the radius and color for each circle element.<br />
+circle[0] contains the array [10, "rgb(246, 239, 247)"]
+
+<code>circleData = [[10, &quot;rgb(246, 239, 247)&quot;], [15, &quot;rgb(189,201,225)&quot;],
+[20, &quot;rgb(103,169,207)&quot;], [25, &quot;rgb(28,144,153)&quot;], [30, &quot;rgb(1,108,89)&quot;]];</code>
+
+When selection.data(circleData) is called, it will return an array of values ["radius", "color"] for each selection. 
+
+In order to change  colors and radius we chain .attr() method calls and index the array that's returned by .data(). 
+
+<code>selectExample.selectAll(&quot;circle&quot;)
+  .data(circleData)
+  .attr(&quot;r&quot;, function(d){return d[0]})
+  .style(&quot;fill&quot;, function(d){return d[1]});</code>
+
+We use an anonymous function and pass .attr() the array d. 
+To set the radius value, we use an anonymous function which returns the first element (d[0]) in the array. 
+
+
+To set the style we use the similar code, but instead access the second element of d. 
+
+for the first circle selection, the equivalent code would look like 
+
+<code>.attr(&quot;r&quot;, 10)
+.style(&quot;fill&quot;, &quot;rgb(246, 239, 247)&quot;);</code>
+
+The final code follows:  
+
+<code>
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+  &lt;head&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;http://mbostock.github.com/d3/d3.js&quot; &gt;
+    &lt;/script&gt;
+&lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id=&quot;data_example2&quot;&gt;
+    &lt;svg width=&quot;375&quot; height=&quot;100&quot;&gt;
+      &lt;circle id = &quot;myCircle&quot; cx=&quot;30&quot; cy=&quot;50&quot; r=&quot;30&quot; &gt;&lt;/circle&gt;
+      &lt;circle id = &quot;myCircle&quot; cx=&quot;100&quot; cy=&quot;50&quot; r=&quot;30&quot; &gt;&lt;/circle&gt;
+      &lt;circle id = &quot;myCircle&quot; cx=&quot;170&quot; cy=&quot;50&quot; r=&quot;30&quot; &gt;&lt;/circle&gt;
+      &lt;circle id = &quot;myCircle&quot; cx=&quot;240&quot; cy=&quot;50&quot; r=&quot;30&quot; &gt;&lt;/circle&gt;
+      &lt;circle id = &quot;myCircle&quot; cx=&quot;310&quot; cy=&quot;50&quot; r=&quot;30&quot;  &gt;&lt;/circle&gt;
+    &lt;/svg&gt;
+    &lt;/div&gt;
+    &lt;script type=&quot;text/javascript&quot;&gt;
+
+//radiusData is an array containing the new radius for the circle elements
+    circleData = [[10, &quot;rgb(246, 239, 247)&quot;], [15, &quot;rgb(189,201,225)&quot;],
+
+    [20, &quot;rgb(103,169,207)&quot;], [25, &quot;rgb(28,144,153)&quot;], [30, &quot;rgb(1,108,89)&quot;]];
+
+    //Select the div element
+    selectExample = d3.select(&quot;#data_example2&quot;);
+
+    //We&#39;ll select all the circle from within the selected &lt;div&gt; element
+    selectExample.selectAll(&quot;circle&quot;)
+      .data(circleData)
+      .attr(&quot;r&quot;, function(d){return d[0]})
+      .style(&quot;fill&quot;, function(d){return d[1]});
+    &lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code>
+
+The code above results in these circles. 
+
+<div id="data_example2">
+<svg width="375" height="100">
+<circle id = "myCircle" cx="30" cy="50" r="30" ></circle>
+<circle id = "myCircle" cx="100" cy="50" r="30" ></circle>
+<circle id = "myCircle" cx="170" cy="50" r="30" ></circle>
+<circle id = "myCircle" cx="240" cy="50" r="30" ></circle>
+<circle id = "myCircle" cx="310" cy="50" r="30" ></circle>
+</svg>
+</div>
+
+<script type="text/javascript">
+//radiusData is an array containing the new radius for the circle elements
+circleData = [[10, "rgb(246, 239, 247)"], [15, "rgb(189,201,225)"],
+[20, "rgb(103,169,207)"], [25, "rgb(28,144,153)"], [30, "rgb(1,108,89)"]];
+//Select the div element
+selectExample = d3.select("#data_example2");
+
+//We'll select all the circle from within the selected <div> element
+selectExample.selectAll("circle")
+.data(circleData)
+.attr("r", function(d){return d[0]})
+.style("fill", function(d){return d[1]});
+
+</script>
+
+<br />
+
+<h3>.enter() and .append()</h3>
+
+In the previous example we hard coded the circle elements. 
+While this was useful for explaining D3, it's not amendable to making changings to the code. 
+If we wanted to change the circles to a different svg element, it would have to be done line by line. 
+
+We can improve the code by using D3 generate and append elements into the DOM. 
+By doing this, changes can be made by editing a few lines of code. 
+
+In this example, we'll use .enter() and .append() to manipulate the DOM and add circle elements. 
+
+
+<blockquote>NOTE:  .append() can be used to add any valid selection, tag, container or element into the DOM. 
+It can be used to add &lt;p&gt;, &lt;div&gt;, <em>text</em>, &lt;svg&gt; elements, etc. 
+But we'll focus on using .append() to add SVG elements. 
+
+</blockquote>
+
+<blockquote>NOTE: <a href="https://github.com/mbostock/d3/wiki/Selections#wiki-enter">.enter()</a> can only be used after a .data() method call. 
+.<br />
+enter() is used to indicate that new elements will be added to the current selection. 
+<br>An .append() or .insert() follows an .enter() call. 
+
+</blockquote>
+
+The condensed version of the previous examples looks like this:
+
+<code>
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+  &lt;head&gt;
+   &lt;script type=&quot;text/javascript&quot; src=&quot;http://mbostock.github.com/d3/d3.js&quot; &gt;
+   &lt;/script&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+   &lt;div id=&quot;data_example3&quot;&gt;&lt;/div&gt;
+   &lt;script type=&quot;text/javascript&quot;&gt;
+   circleData = [[10, &quot;rgb(246, 239, 247)&quot;], [15, &quot;rgb(189,201,225)&quot;],
+    [20, &quot;rgb(103,169,207)&quot;], [25, &quot;rgb(28,144,153)&quot;], 
+    [30, &quot;rgb(1,108,89)&quot;]];
+
+   var selectDiv = d3.select(&quot;#data_example3&quot;)
+    .append(&quot;svg:svg&quot;)
+    .attr(&quot;width&quot;, circleData.length * 100)
+    .attr(&quot;height&quot;, 100);
+
+   selectDiv.selectAll(&quot;circle&quot;)
+    .data(circleData)
+    .enter()
+    .append(&quot;circle&quot;)
+    .attr(&quot;cx&quot;, function(d){return d[0]*14})
+    .attr(&quot;cy&quot;, 50)
+    .attr(&quot;r&quot;, function(d){return d[0]})
+    .style(&quot;fill&quot;, function(d){return d[1]});
+
+   &lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</code>
+
+d3.select returns the &lt;div id="data_example3"&gt; selection and passes it the next method in the chain.
+
+<code>var selectDiv = d3.select(&quot;#data_example3&quot;)</code>
+
+.append() takes the &lt;div id="data_example3"&gt; selection and adds a svg container.
+
+<blockquote>NOTE: When .append() adds items, the added item is a child of the current selection. 
+
+</blockquote>
+
+After adding the svg:svg container .append() completes by returning the current selection. 
+<br> The current selection will always be the element that was added. 
+
+.append() returns the &lt;svg&gt; container as the selection. 
+
+<code>.append(&quot;svg:svg&quot;)</code>
+
+The width is specified for the current selection (svg container). 
+
+<code>.attr(&quot;width&quot;, circleData.length * 100)</code>
+
+The height is set.<br />
+When the method chain ends, selectDiv points to the &lt;svg&gt; container selection inside the &lt;div&gt; element. 
+
+<code>.attr(&quot;height&quot;, 100);</code>
+
+At this point in the code, selectDiv points to the &lt;svg&gt; container.<br />
+Calling .selectAll.("circle") selects all the circle elements inside the &lt;svg&gt; selection. 
+<br />
+Because &lt;svg&gt; does not contain any circle elements, .selectAll.("circle") returns an empty array.
+
+<code>selectDiv.selectAll(&quot;circle&quot;)</code>
+
+Now when .data(circleData) is called, its binding data to an empty selection array. 
+
+<code>.data(circleData)</code>
+
+To append elements, we first must call .enter() 
+
+<blockquote>NOTE: .enter() can only be called after on a data selection <br />
+.enter() takes the selection returned by .data() and prepares it for adding elements.<br />
+Elements can be added using .append() and .insert().
+</blockquote>
+
+<code>.enter()</code>
+
+.append() adds a child circle element below the &lt;svg&gt; parent node. 
+
+<blockquote>NOTE: After after the circle is added .append() returns the circle element as the current selection. 
+</blockquote>
+
+<code>.append(&quot;circle&quot;)</code>
+
+Now that a circle element exists, we can use the data array returned by .data(circleData) and use it to set attributes and styles for the current circle. 
+
+<code>.attr(&quot;cx&quot;, function(d){return d[0]*14})
+.attr(&quot;cy&quot;, 50)
+.attr(&quot;r&quot;, function(d){return d[0]})
+.style(&quot;fill&quot;, function(d){return d[1]});</code>
+
+<div id="data_example3"></div>
+
+This condense condensed code gives the same results. 
+
+<script type="text/javascript">
+circleData = [[10, "rgb(246, 239, 247)"], [15, "rgb(189,201,225)"],
+[20, "rgb(103,169,207)"], [25, "rgb(28,144,153)"], [30, "rgb(1,108,89)"]];
+
+var selectDiv = d3.select("#data_example3")
+.append("svg:svg")
+.attr("width", circleData.length * 100)
+.attr("height", 100);
+
+selectDiv.selectAll("circle")
+.data(circleData)
+.enter()
+.append("circle")
+.attr("cx", function(d){return d[0]*14})
+.attr("cy", 50)
+.attr("r", function(d){return d[0]})
+.style("fill", function(d){return d[1]});
+
+</script>
+
+<h2>Recap of .enter() and .append()</h2>
+
+<a href="https://github.com/mbostock/d3/wiki/Selections#wiki-enter">.enter()</a> must follow a <a href="https://github.com/mbostock/d3/wiki/Selections#wiki-data">.data()</a> method call. 
+<br />
+<a href="https://github.com/mbostock/d3/wiki/Selections#wiki-enter">.enter()</a> uses the current selection as the parent node for the elements added with <a href="https://github.com/mbostock/d3/wiki/Selections#wiki-append">.append()</a>. 
+<br />
+<a href="https://github.com/mbostock/d3/wiki/Selections#wiki-append">.append()</a> can be used to add more than svg elements. 
+
+</div>
+<div class="clear"></div>
+
+<div id="c005">
+<h2>Mouse Events</h2>  <br />
+D3 uses the syntax selection.on(type[,listener]) to add or remove event listeners for interaction. 
+The <i>type</i> is an event type name like "click", "mouseover", or "submit". 
+The <i>listener</i> is triggered by the mouse event to do something about the current DOM element. 
+For example:
+
+<code>.on("mouseover", function(){d3.select(this).style("fill", "green");})
+.on("mouseout", function(){d3.select(this).style("fill", "white");});</code>
+The example uses anonymouse functions to modify elements from an existing DOM. 
+The styles are altered according to a function. 
+So this code snippet "listens" to the mouse event and do changes accordingly. 
+
+<div id="mouseEvent_example"></div>
+<script type="text/javascript">
+var sampleSVG = d3.select("#mouseEvent_example")
+.append("svg:svg")
+.attr("width", 200)
+.attr("height", 200);    
+
+sampleSVG.append("svg:rect")
+.style("stroke", "gray")
+.style("fill", "white")
+.attr("x", 50)
+.attr("y", 50)
+.attr("width", 100)
+.attr("height", 100)
+.on("mouseover", function(){d3.select(this).style("fill", "green");})
+.on("mouseout", function(){d3.select(this).style("fill", "white");});
+  
+</script>
+
+<code>&lt;div id="mouseEvent_example"&gt;&lt;/div&gt;
+  &lt;script type="text/javascript"&gt;
+    var sampleSVG = d3.select("#mouseEvent_example")
+      .append("svg:svg")
+      .attr("width", 200)
+      .attr("height", 200);    
+
+    sampleSVG.append("svg:rect")
+      .style("stroke", "gray")
+      .style("fill", "white")
+      .attr("x", 50)
+      .attr("y", 50)
+      .attr("width", 100)
+      .attr("height", 100)
+      .on("mouseover", function(){d3.select(this).style("fill", "green");})
+      .on("mouseout", function(){d3.select(this).style("fill", "white");});
+  &lt;/script&gt;</code>
+
+The above is the source code of the example. 
+Let's see another example on mouse events: 
+<div id="mouseEvent_example2"></div>
+<script type="text/javascript">
+var source = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
+var color = source[Math.floor(Math.random()*source.length)];
+
+var sampleSVG = d3.select("#mouseEvent_example2")
+.append("svg:svg")
+.attr("width", 200)
+.attr("height", 200);    
+
+sampleSVG.append("svg:rect")
+.style("stroke", "gray")
+.style("fill", "white")
+.attr("x", 50)
+.attr("y", 50)
+.attr("width", 100)
+.attr("height", 100)
+.on("click", function(){d3.select(this).style("fill", function(){return source[Math.floor(Math.random()*source.length)];});})
+.on("mouseout", function(){d3.select(this).style("fill", "white");});
+
+</script>
+This time if you click on the square, it will be randomly assigned a rainbow color. 
+We can do that by assigning an array of colors to the pool with these 2 lines of code:
+<code>var source = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"]; 
+var color = source[Math.floor(Math.random()*source.length)];</code>
+
+<blockquote>
+Note: On mouseout, the square is refilled with the default white color. 
+If you click on the square again, it could be filled with another rainbow color because of the following code:  
+<!--<button onClick="refresh()">Refresh the page</button>-->
+</blockquote>
+<!--<script type="text/javascript">
+function refresh(){
+//window.location.href = "concept.html#c005";
+window.location.reload(true);
+}
+</script>-->
+<code>.on("click", function(){d3.select(this).style("fill", function()
+  {return source[Math.floor(Math.random()*source.length)];});})
+.on("mouseout", function(){d3.select(this).style("fill", "white");});</code>
+</div>
+
+<div id="c006">
+<h2>Buttons</h2>  <br />
+
+Buttons are useful for building visulizations. 
+The <a href="http://www.w3schools.com/tags/tag_button.asp">&lt;button&gt;&nbsp;</a> is an HTML tag. 
+It's not exclusive to D3. 
+
+By combining buttons and mouse events, D3 can provide interactivity. 
+
+
+In this example, we'll use the HTML button tag to execute D3 code that changes the attributes of 2 circles. 
+
+<code>
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;script type=&quot;text/javascript&quot; src=&quot;http://mbostock.github.com/d3/d3.js&quot;&gt;&lt;/script&gt;
+    &lt;style = type=&#39;text/css&#39;&gt;
+      .buttonex button {
+        left: 220px;
+        position: absolute;
+        top: 320px;
+        width: 80px;
+      }
+    &lt;/style&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div class = &quot;buttonex&quot; id=&quot;example99&quot;&gt;
+      &lt;button&gt;Randomize&lt;/button&gt;
+    &lt;/div&gt;
+    
+    &lt;script type=&quot;text/javascript&quot;&gt; 
+    //data = [[radius, cx, cy, color]]
+      data = [[10, 20, 20, &quot;rgb(224, 236, 244)&quot;], 
+  [30, 50, 50, &quot;rgb(136, 86, 167)&quot;]]
+
+      var w = 300, h = 300;
+      var myExample = d3.select(&quot;#example99&quot;)
+        .append(&quot;svg:svg&quot;)
+        .attr(&quot;width&quot;, w)
+        .attr(&quot;height&quot;, h)
+
+      myExample.selectAll(&quot;circle&quot;)
+        .data(data)
+        .enter()
+        .append(&quot;circle&quot;)
+        .attr(&quot;r&quot;, function(d){return d[0]})
+        .attr(&quot;cx&quot;, function(d){return d[1]})
+        .attr(&quot;cy&quot;, function(d){return d[2]})
+        .style(&quot;stroke&quot;, &quot;orange&quot;)
+        .style(&quot;fill&quot;, function(d){return d[3]});
+
+      d3.select(&quot;#example99 button&quot;).on(&quot;click&quot;, function() {
+        myExample.selectAll(&quot;circle&quot;)
+          .attr(&quot;cx&quot;, function(){return Math.random() * w})
+          .attr(&quot;cy&quot;, function(){return Math.random() * h});
+
+    &lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code>
+
+We start by setting the position of the button using CSS styles and class. 
+
+<code>&lt;style = type=&#39;text/css&#39;&gt;
+.buttonex button {
+  left: 220px;
+  position: absolute;
+  top: 320px;
+  width: 80px;
+  }</code>
+
+Creating a button is simple. 
+Here we've created a button with the text Randomize. 
+The button in this example is created inside a &lt;div&gt; element. 
+
+<code>&lt;button&gt;Randomize&lt;/button&gt;</code>
+
+Using what we've learned from selections and mouse events, we can define an anonymous function that executes when the button is clicked.<br>  The anonymous function will change the cx and cy positions to random values. 
+
+<code>d3.select(&quot;#example99 button&quot;)
+    .on(&quot;click&quot;, function() {
+      myExample.selectAll(&quot;circle&quot;)
+        .attr(&quot;cx&quot;, function(){return Math.random() * w})
+        .attr(&quot;cy&quot;, function(){return Math.random() * h});
+    });</code>
+
+We start by selecting the button from the div element. 
+
+<code>  d3.select(&quot;#example99 button)</code>
+
+Next we define the on-click mouse event for the selection (which is the button). 
+<br />
+We'll define an anonymous function that executes when the button is clicked. 
+
+<code>.on(&quot;click&quot;, function() {</code>
+
+When the Randomize is clicked, the anonymous function selects all the circles and changes the cx and cy attributes to random values. 
+
+<code>function() {myExample.selectAll(&quot;circle&quot;)
+  .attr(&quot;cx&quot;, function(){return Math.random() * w})
+  .attr(&quot;cy&quot;, function(){return Math.random() * h});
+}</code>
+
+The final result looks like 
+
+<div class = "buttonex" id="example99"><button>Randomize</button></div>
+
+ <script type="text/javascript">
+//data = [[radius, cx, cy, color]]
+data = [[10, 20, 20, "rgb(224, 236, 244)"], [30, 50, 50, "rgb(136, 86, 167)"]]
+var w = 300, h = 300; 
+
+var myExample = d3.select("#example99")
+.append("svg:svg")
+.attr("width", w)
+.attr("height", h)
+
+myExample.selectAll("circle")
+.data(data)
+.enter()
+.append("circle")
+.attr("r", function(d){return d[0]})
+.attr("cx", function(d){return d[1]})
+.attr("cy", function(d){return d[2]})
+.style("stroke", "orange")
+.style("fill", function(d){return d[3]});
+
+d3.select("#example99 button")
+.on("click", function() {
+myExample.selectAll("circle")
+.attr("cx", function(){return Math.random() * w})
+.attr("cy", function(){return Math.random() * h});
+}); 
+
+</script>
+</div>
+
+<div id="c007">
+<h2>Transitions</h2>  <br />
+
+A transition is used on a selection to allow it&#39;s operators to apply smoothly over time, this allows for an eye pleasing effect when updating visual elements on the display. 
+All that is needed to add a transition to your selection is simply to add the “transition()” operator to your selection as demonstrated below:
+
+<code>d3.select(“this”).transition()</code>
+
+Many of the operators supported for selection are also supported for transitions, such as attributes and styles, however there are some that are not supported, such as append.
+
+<h3>Delay and Duration</h3>
+
+By default the transition will start immediately and will last for a duration of 250ms, this can be changed using the .delay() and .duration() operators. 
+These can be called with a specified constant in milliseconds such as .delay(3000) for 3 seconds, or they can be called with a function that will evaluate for each element in the current selection. 
+These functions are called with 2 parameters, d for the current datum and i for the current index. 
+So in the below example say our selection contains 2 elements, then the first element will transition after a delay of 1s while the second element will transition after a delay of 2 seconds, remember that index i starts at 0 for the first element.
+
+<code>d3.select(“this”) 
+  .transition()
+  .delay(function (d,i) { return 1000*(i + 1);})
+  .attr(“stroke”, “blue”)</code>
+
+<h3>Ease</h3>
+
+As you can imagine there is more than one way to make a smooth transition when changing an element, and that&#39;s where the .ease() operator comes in. 
+By default a transition will use a cubic easing function, so the change will occur on a cubic scale. 
+There are several other types including linear (changes at a linear pace) and bounce (simulates a bouncy collision). 
+For a complete list of available ease functions see <a href="https://github.com/mbostock/d3/wiki/Transitions#wiki-d3_ease" target="_blank">here</a>. 
+Below is an example of using the bounce ease function. 
+Just click anywhere on the graph to see it in action.
+
+<code>d3.select(“this)
+  .transition()
+  .ease(“bounce”)</code>
+
+<div id="transition_example"></div>
+<br />
+<blockquote>Note: Click on the graph above to see the transition.</blockquote>
+<script type="text/javascript">
+
+var data = [3, 6, 2, 7, 5, 2, 1, 3, 8, 9, 2, 5, 7],
+
+w = 400,
+h = 200,
+margin = 20,
+y = d3.scale.linear().domain([0, d3.max(data)]).range([0 + margin, h - margin]),
+x = d3.scale.linear().domain([0, data.length]).range([0 + margin, w - margin])
+
+var data2 = [1, 3, 4, 3, 6, 1, 8, 2, 4, 1, 3, 4, 1],
+w = 400,
+h = 200,
+margin = 20,
+y = d3.scale.linear().domain([0, d3.max(data2)]).range([0 + margin, h - margin]),
+x = d3.scale.linear().domain([0, data.length]).range([0 + margin, w - margin])
+
+var vis = d3.select("#transition_example")
+.append("svg:svg")
+.attr("width", w)
+.attr("height", h)
+
+var g = vis.append("svg:g")
+.attr("transform", "translate(0, 200)");
+
+var line = d3.svg.line()
+
+.x(function(d,i) { return x(i); })
+.y(function(d) { return -1 * y(d); })
+
+var change=new Boolean();
+change = true;
+
+g.append("svg:path")
+.attr("d", line(data))
+.style("stroke-width", 3)
+
+vis.on("mousedown" , function(){
+if(change){
+g.select("path")
+.transition()
+.ease("bounce")
+.duration(function(d, i){ return 2000*(1+i)})
+.attr("d", line(data2))
+//.style("stroke", "steelblue");
+change = false;
+}
+else {
+g.select("path")
+.transition()
+.ease("bounce")
+.duration(function(d, i){ return 2000*(1+i)})
+.attr("d", line(data))
+//.style("stroke", "indianred");
+change = true;
+}
+})
+
+//X axis
+g.append("svg:line")
+.attr("x1", x(0))
+.attr("y1", -1 * y(0))
+.attr("x2", x(w))
+.attr("y2", -1 * y(0))
+//Y axis
+g.append("svg:line")
+.attr("x1", x(0))
+.attr("y1", -1 * y(0))
+.attr("x2", x(0))
+.attr("y2", -1 * y(d3.max(data)))
+
+//x Axis labels
+g.selectAll(".xLabel")
+.data(x.ticks(5))
+.enter().append("svg:text")
+.attr("class", "xLabel")
+.text(String)
+.attr("x", function(d) { return x(d) })
+.attr("y", 0)
+.attr("text-anchor", "middle")
+//Y axis labels
+g.selectAll(".yLabel")
+.data(y.ticks(4))
+.enter().append("svg:text")
+.attr("class", "yLabel")
+.text(String)
+.attr("x", 0)
+.attr("y", function(d) { return -1 * y(d) })
+.attr("text-anchor", "right")
+.attr("dy", 4)
+
+g.selectAll(".xTicks")
+.data(x.ticks(5))
+.enter().append("svg:line")
+.attr("class", "xTicks")
+.attr("x1", function(d) { return x(d); })
+.attr("y1", -1 * y(0))
+.attr("x2", function(d) { return x(d); })
+.attr("y2", -1 * y(-0.3))
+
+g.selectAll(".yTicks")
+.data(y.ticks(4))
+.enter().append("svg:line")
+.attr("class", "yTicks")
+.attr("y1", function(d) { return -1 * y(d); })
+.attr("x1", x(-0.3))
+.attr("y2", function(d) { return -1 * y(d); })
+.attr("x2", x(0));
+
+</script>
+
+
+<style>  
+.axis path, .axis line {fill: none;  stroke: black;  shape-rendering: crispEdges;  }
+.axis text {font-family: sans-serif;  font-size: 11px;  }
+path { stroke: indianred; stroke-width: 3; fill: none;}
+line { stroke: black;}
+text { font-family: Arial; font-size: 9pt;}
+</style>
+
+<h2>Scales, Axes, and Scatterplots</h2>
+In this section, we'll take what we've learned to create a scatterplot that displays 4 variables.
+Along the way we'll discuss .scales() and .axis()
+<code>
+&lt;!DOCTYPE html&gt;
+  &lt;html&gt;
+    &lt;head&gt;
+    &lt;script src="http://mbostock.github.com/d3/d3.js"&gt;&lt;/script&gt;
+
+    &lt;style type="text/css"&gt;
+      .axis path,
+      .axis line {
+fill: none;
+stroke: black;
+shape-rendering: crispEdges;
+      }
+      .axis text {
+font-family: sans-serif;
+font-size: 11px;
+      }
+    &lt;/style&gt;
+    &lt;/head&gt;
+    
+    &lt;body&gt;
+      &lt;div id="scatterplot"&gt;
+      &lt;h2 style = "text-align:center"&gt;M/F Life Expectancy &amp; Median Income By Country&lt;/h2&gt;
+      &lt;/div&gt;
+  
+      &lt;script type="text/javascript"&gt;
+var xMaleLE = [55, 70, 65, 60, 70, 67, 70, 80];
+var yFemaleLE = [57, 58, 55, 57, 62, 75, 83, 85];
+var rMedianIncome =[4800, 4900, 5200, 10000, 15000, 20000, 25000, 27000 ];
+var tCountry = ["North Korea", "Ethiopia", "Vietnam", 
+  "South Africa", "Italy", "France","United Kingdom", "United States"];
+var cCountry = ["rgb(127, 201, 127)","rgb(190, 174, 212)","rgb(253, 192, 134)",
+  "rgb(255, 255, 153)", "rgb(56, 108, 176)", "rgb(240, 2, 127)",
+  "rgb(191, 91, 23)", "rgb(102, 102, 102)"]
+var margin = {top: 20, right: 15, bottom: 60, left: 60}
+  , width = 730 - margin.left - margin.right
+  , height = 730 - margin.top - margin.bottom;
+var x = d3.scale.linear()
+  .domain([d3.min(xMaleLE) - 20, d3.max(xMaleLE) + 20 ]) 
+  .range([ 0, width ]); 
+var y = d3.scale.linear()
+  .domain([d3.min(xMaleLE) - 20, d3.max(yFemaleLE) + 20])
+  .range([ height, 0 ]);
+var r = d3.scale.linear()
+  .domain([d3.min(rMedianIncome), d3.max(rMedianIncome)])
+  .range([5, 35]);
+  
+var chart = d3.select("#scatterplot")
+  .append("svg:svg")
+  .attr("width", width + margin.right + margin.left)
+  .attr("height", height + margin.top + margin.bottom)
+  .attr("class", "chart");
+  
+var main = chart.append("g")
+  .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+  .attr("width", width)
+  .attr("height", height)
+  .attr("class", "main")
+var xAxis = d3.svg.axis()
+  .scale(x)
+  .orient("bottom");
+
+main.append("g")
+  .attr("transform", "translate(0," + height + ")")
+  .attr("class", "main axis date")
+  .call(xAxis);
+var yAxis = d3.svg.axis()
+  .scale(y)
+  .orient("left");
+  
+main.append("g")
+  .attr("transform", "translate(0,0)")
+  .attr("class", "main axis date")
+  .call(yAxis);
+  
+var g = main.append("svg:g");
+
+g.selectAll("scatterplot")
+  .data(yFemaleLE) // using the values in the yFemaleLE array
+  .enter().append("svg:circle") 
+  .attr("cy", function (d) { return y(d); } )
+  .attr("cx", function (d,i) { return x(xMaleLE[i]); } )
+  .attr("r", function(d,i){ return r(rMedianIncome[i]);})
+  .style("fill", function(d, i){return cCountry[i];});
+  
+g.selectAll("scatterplot")
+  .data(yFemaleLE)
+  .enter().append("text") //Add a text element
+  .attr("y", function (d) { return y(d); })
+  .attr("x", function (d,i) { return x(xMaleLE[i]); })
+  .attr("dx", function(d,i){ return -r(rMedianIncome[i]);})
+  .text(function(d, i){return tCountry[i];});
+      &lt;/script&gt;
+  
+      &lt;h3 style="text-align:center"&gt;Male Life Expectancy&lt;/h3&gt;
+    &lt;/body&gt;
+  &lt;/html&gt;
+</code>
+
+<h3>Explaining .scales() with a dataset</h3>
+
+We'll use a fabricated dataset to help explain .scales(). The dataset contains the male / female life expectancy and median income for 8 different countries.
+There are 8 different data points, with each data point encoding 4 variables.
+The dataset is stored in 5 different arrays
+
+<code>
+  var xMaleLE = [55, 70, 65, 60, 70, 67, 70, 80];
+  var yFemaleLE = [57, 58, 55, 57, 62, 75, 83, 85];
+  var rMedianIncome =[4800, 4900, 5200, 10000, 15000, 20000, 25000, 27000 ];
+  var tCountry = ["North Korea", "Ethiopia", "Vietnam", 
+    "South Africa", "Italy", "France","United Kingdom", 
+    "United States"];
+  var cCountry = ["rgb(127, 201, 127)","rgb(190, 174, 212)","rgb(253, 192, 134)",
+    "rgb(255, 255, 153)", "rgb(56, 108, 176)", "rgb(240, 2, 127)",
+    "rgb(191, 91, 23)", "rgb(102, 102, 102)"]
+</code>
+
+<h3>Variable Encoding</h3>
+
+Circles will be used for each data point.
+
+We'll encode male life expectancy (xMaleLE) on the x-position. <br />
+Female life expectancy (yFemaleLE) will be encoded on the y-position. 
+
+Median Income will be encoded using circle size. Larger circles indicate higher median incomes. 
+
+Countries will have their own unique color and the name overlayed each data point. 
+
+<h3>Explaining .scales()</h3>
+
+Now that we have a data set to work with, explaining .scales() is easier. 
+
+Imagine, if we only have a 730 x 730 pixel area in which to draw a graph, where should we position the data point for the "United States" in relations to other countries?  
+Since we're using male/female life expectancy as the (x,y) positions, how would we translate United States(80,85) into a (x,y) position within a 730 x 730 area? 
+
+To do this, we would need a function that takes the values (life expectancy) we want to plot, and converts (map) those values into pixel positions. The function would need to return  meaninful values so that position could tell us something about the data.
+
+
+In other words, the position a data point has to tell us something itself (male life expectancy, female life expectancy) and how it relates to the other data points. 
+Data points with similar male &amp; female life expectancy would need to be close together. 
+Data points with wide differences in life expectancy would need to be further apart.
+
+
+This function would need to take the domain of the values (life expectancy) and the range of the pixel on which to plot, and create a meaninful map so that the information is preserved.
+
+
+Luckily, d3.scale() does all this for us.
+
+
+The <a href="https://github.com/mbostock/d3/wiki/Quantitative-Scales">d3.scale()</a> handles the math involved with mapping data values onto a given range.
+It makes positioning data points on a graph, relatively painless.
+
+
+With d3.scale() there's no need to code functions (technically map) our x, y variables into positions.
+
+
+In order to use the d3.scale() it needs to be given the domain and range. 
+
+The domain is the set of values that will be mapped. In our example, this is male &amp; female life expectancy. 
+
+ The range is the set of values it will return -- which will be the (x,y) pixel position.
+
+
+<blockquote>NOTE: In order to get the (x,y) position, we'll use two scales.
+One for each position (x,y). 
+</blockquote>
+
+We start by calling <a href="https://github.com/mbostock/d3/wiki/Quantitative-Scales#wiki-linear">d3.scale.linear()</a>.
+This creates a linear scale.
+ D3 supports other scales: <a href="https://github.com/mbostock/d3/wiki/Quantitative-Scales#wiki-log">log scales</a>, <a href="https://github.com/mbostock/d3/wiki/Quantitative-Scales#wiki-pow">power scales</a>, and <a href="https://github.com/mbostock/d3/wiki/Quantitative-Scales#wiki-sqrt">square root scales</a>. 
+
+The next method in the chain is .domain()
+
+.domain() is given the minimum and maximum values we will use to map.<br />
+We want to create a graph that with an axis 20 years below the min life expectancy and 20 years above the max life expectancy. 
+
+Next we indicated the range the function should return. In this case we want it to range from 0 to the width of the graph.
+ 
+
+This results in x which is a function that provide the x-position for any life expectancy value we pass.
+ 
+
+<blockquote>NOTE:  Keep in mind that x() is a function.
+If we call x(85)  it will return the x-position for 85.
+
+</blockquote>
+
+<code>
+  var x = d3.scale.linear()
+    .domain([d3.min(xMaleLE) - 20, d3.max(xMaleLE) + 20 ])
+    .range([ 0, width ]); 
+</code>
+
+We follow the same process for mapping female life expectancy onto the y-position.<br />
+Since we want to maintain a 1:1 aspect ratio in our graph, we use male life expectancy to set the domain. Since male and female life expectancies are similar, we don't run the risk of having data being drawn outside the graph.
+
+
+<code>
+  var y = d3.scale.linear()
+    .domain([d3.min(xMaleLE) - 20, d3.max(yFemaleLE) + 20])
+    .range([ height, 0 ]);
+</code>
+
+We also need to create a scale for Median Income.
+We'll use this scale to set the radius for the data points (circles).
+  The radius will range from 5 to 35 px.
+This results in the country with the highest median income having a radius = 35 and the country with the lowest median income being drawn with a circle having radius = 5.
+
+
+<code>
+  var r = d3.scale.linear()
+    .domain([d3.min(rMedianIncome), d3.max(rMedianIncome)])
+    .range([5, 35]);
+</code>
+
+<h3>Axis</h3>
+
+Now that we have .scale() functions defined, we can use them to create the x and y axis for our graph.
+ <br />D3 makes creating axis easy with <a href="https://github.com/mbostock/d3/wiki/SVG-Axes">d3.svg.axis()</a> 
+
+To create an SVG axis, we call d3.svg.axis.scale() and pass the scale function we created -- x. 
+
+.orient() is used to specify the layout, such as whether the axis will be read at the top, bottom, left or right of the graph.
+ The actual position is specified when the axis is drawn in later code. 
+
+<code>
+  var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+  var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left");
+</code>
+
+With the svg axis elements created, they can be added to the chart. 
+.call() is used to call outside selections.
+ xAxis / yAxis are selections that exist outside the method chain, they can be called into the current selection using .call().
+ 
+
+.call() lets us separate the code for generating the axis from code that adds the axis to the graph. 
+
+Here we've added the axis to the main drawing area.
+ 
+
+<code>
+  main.append("g")
+    .attr("transform", "translate(0," + height + ")")
+    .attr("class", "main axis date")
+    .call(xAxis);
+
+  main.append("g")
+    .attr("transform", "translate(0,0)")
+    .attr("class", "main axis date")
+    .call(yAxis);
+</code>
+
+<h3>Finishing the Scatterplot</h3>
+
+<code>
+  var g = main.append("svg:g");
+  
+  g.selectAll("scatterplot")
+    .data(yFemaleLE)  // using the values in the yFemaleLE array
+    .enter().append("svg:circle") 
+    .attr("cy", function (d) { return y(d); } )
+    .attr("cx", function (d,i) { return x(xMaleLE[i]); } )
+    .attr("r", function(d,i){ return r(rMedianIncome[i]);})
+    .style("fill", function(d, i){return cCountry[i];});
+</code>
+
+Now that we have the axis and scales set, we can begin to draw the data points. 
+We begin by creating an svg &lt;g&gt; element to the drawing area.
+ 
+
+<code>
+  var g = main.append("svg:g");
+</code>
+
+Next we bind the female life expectancy data (yFemaleLE). 
+
+<code>
+  g.selectAll("scatterplot")
+    .data(yFemaleLE) // using the values in the yFemaleLE array
+</code>
+
+Each data point is drawn as a circle.
+  
+
+<code>
+  .enter().append("svg:circle") 
+</code>
+
+The (cx,cy) positions are set using the scales we defined earlier.
+
+
+The position for cy is set using the y scale() and yFemaleLE
+<br />Here yFemaleLE is d. 
+
+<code>
+  .attr("cy", function (d) { return y(d); } )
+</code>
+
+The cx position is set using the x scale() and xMaleLE. 
+
+<code>
+  .attr("cx", function (d,i) { return x(xMaleLE[i]); } )
+</code>
+
+The radius is set using the r scale() and rMedianIncome. 
+
+<code>
+  .attr("r", function(d,i){ return r(rMedianIncome[i]);})
+</code>
+
+Finally we will the circle with the country's assigned color. 
+
+<code>
+  .style("fill", function(d, i){return cCountry[i];});
+</code>
+
+To overlay the countries name on the data points. We use similar code, except that we use an svg:text element. 
+
+<code>
+  g.selectAll("scatterplot")
+    .data(yFemaleLE)
+    .enter().append("text") //Add a text element
+    .attr("y", function (d) { return y(d); })
+    .attr("x", function (d,i) { return x(xMaleLE[i]); })
+    .attr("dx", function(d,i){ return -r(rMedianIncome[i]);})
+    .text(function(d, i){return tCountry[i];});
+</code>
+
+The resulting scatter plot looks like
+
+<div id="scatterplot">
+<h2 style = "text-align:center">M/F Life Expectancy & Median Income By Country</h2>
+</div>
+
+<script type="text/javascript">
+var xMaleLE = [55, 70, 65, 60, 70, 67, 70, 80]; 
+var yFemaleLE = [57, 58, 55, 57, 62, 75, 83, 85];
+var rMedianIncome =[4800, 4900, 5200, 10000, 15000, 20000, 25000, 27000 ];
+var tCountry = ["North Korea", "Ethiopia", "Vietnam", "South Africa", "Italy", "France","United Kingdom", "United States"]; 
+var cCountry = ["rgb(127, 201, 127)","rgb(190, 174, 212)","rgb(253, 192, 134)",
+"rgb(255, 255, 153)", "rgb(56, 108, 176)", "rgb(240, 2, 127)",
+"rgb(191, 91, 23)", "rgb(102, 102, 102)"]
+var margin = {top: 20, right: 15, bottom: 60, left: 30}
+, width = 730 - margin.left - margin.right
+, height = 730 - margin.top - margin.bottom;
+var x = d3.scale.linear()
+  .domain([d3.min(xMaleLE) - 20, d3.max(xMaleLE) + 20 ])  
+  .range([ 0, width ]);       
+var y = d3.scale.linear()
+  .domain([d3.min(xMaleLE) - 20, d3.max(yFemaleLE) + 20])
+  .range([ height, 0 ]);
+var r = d3.scale.linear()
+  .domain([d3.min(rMedianIncome), d3.max(rMedianIncome)])
+  .range([5, 35]);
+
+var chart = d3.select('#scatterplot')
+.append('svg:svg')
+.attr('width', width + margin.right + margin.left)
+.attr('height', height + margin.top + margin.bottom)
+.attr('class', 'chart');
+
+var main = chart.append('g')
+.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+.attr('width', width)
+.attr('height', height)
+.attr('class', 'main')   
+var xAxis = d3.svg.axis()
+.scale(x)
+.orient('bottom');
+
+main.append('g')
+.attr('transform', 'translate(0,' + height + ')')
+.attr('class', 'main axis date')
+.call(xAxis);
+var yAxis = d3.svg.axis()
+.scale(y)
+.orient('left');
+
+main.append('g')
+.attr('transform', 'translate(0,0)')
+.attr('class', 'main axis date')
+.call(yAxis);
+
+var g = main.append("svg:g"); 
+
+g.selectAll('scatterplot')
+.data(yFemaleLE)  // using the values in the yFemaleLE array
+.enter().append("svg:circle")  
+.attr("cy", function (d) { return y(d); } ) 
+.attr("cx", function (d,i) { return x(xMaleLE[i]); } ) 
+.attr("r", function(d,i){ return r(rMedianIncome[i]);})
+.style("fill", function(d, i){return cCountry[i];}); 
+
+g.selectAll('scatterplot')
+.data(yFemaleLE)
+.enter().append("text") //Add a text element
+.attr("y", function (d) { return y(d); }) 
+.attr("x", function (d,i) { return x(xMaleLE[i]); })
+.attr("dx", function(d,i){ return -r(rMedianIncome[i]);})
+.text(function(d, i){return tCountry[i];});
+ </script>
+
+<h3 style = "text-align:center">Male Life Expectancy</h3>
+
+</div>
+<div class="clear"></div>
+
+<h2>Line Graph Tutorial</h2>
+
+<h3>1) Import d3 library -</h3>
+
+Make sure to include this text so that you can access the d3 library.
+This is typically placed in the main Head of the HTML file.
+
+<code>
+  &lt;script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"&gt;&lt;/script&gt;
+</code>
+
+<h3>2) Insert the div container -</h3>
+
+This code will specify where your d3 visualization will be placed in the HTML page
+
+<code>
+  &lt;div id="viz"&gt;&lt;/div&gt;
+</code>
+
+<h3>3) Declare Variables -</h3>
+
+Here we first specify the data we will be using in our line graph as the arrays data1 and data2.
+The height and width of our graph will be determined by w and h.
+The margin will be the blank space between our x and y axis and the edge of our graph which we will use to display the number scale.
+Finally we have our x and y linear scale functions which we will need to convert our data values to x and y positions on the screen
+
+<code>
+  &lt;script type="text/javascript"&gt;
+    var data2 = [1, 3, 4, 3, 6, 1, 8, 2, 4, 1, 3, 4, 1]
+    var data1 = [3, 6, 2, 7, 5, 2, 1, 3, 8, 9, 2, 5, 7],
+
+    w = 500,
+    h = 200,
+    margin = 20,
+
+    y = d3.scale.linear().domain([0, d3.max(data1)]).range([0 + margin, h - margin]),
+    x = d3.scale.linear().domain([0, data1.length]).range([0 + margin, w &#8211; margin])
+</code>
+
+<h3>4) Create our SVG -</h3>
+
+Here we first select our viz container and add an SVG element to it, and then specify the height and width.
+We then append a g element to our SVG element so that everything added to the g element will be grouped together.
+The transformation is used to move our coordinate grid down by 200 pixels.
+
+<code>
+  var vis = d3.select("#viz") 
+    .append("svg:svg")
+    .attr("width", w)
+    .attr("height", h)
+
+  var g = vis.append("svg:g") 
+    .attr("transform", "translate(0, 200)") 
+</code>
+
+<h3>5) Draw the axis -</h3>
+
+We start by appending a SVG line element to our g element from earlier, and to give it some visual appeal we add a transition operator which will make it look as if the line is drawn when the visualization is first loaded.
+We then specify the color of the line by declaring it's stroke as black.
+To actually draw the line we need to specify a starting point (x1, y1) and an end point (x2, y2).
+Remember that the 0,0 coordinate is in the top left corner, so that is why our y values are negative.
+Drawing the Y axis is very similar, the only difference is that we call d3.max(data1) so that we know what the maximum value is and draw the scale accordingly.
+
+<code>
+  //Lets draw the X axis
+  g.append("svg:line")
+    .transition()
+    .duration(1000)
+    .style("stroke", "black")
+    .attr("x1", x(0))
+    .attr("y1", -1 * y(0))
+    .attr("x2", x(w))
+    .attr("y2", -1 * y(0))
+
+  //Lets draw the Y axis
+  g.append("svg:line")
+    .transition()
+    .duration(1000)
+    .style("stroke", "black")
+    .attr("x1", x(0))
+    .attr("y1", -1 * y(0))
+    .attr("x2", x(0))
+    .attr("y2", -1 * y(d3.max(data1)))
+</code>
+
+As you can see from the example below we are making progress and now have our axis displayed.
+
+<div id="viz1"></div>
+<br />
+
+<h3>6) Add axis labels -</h3>
+
+Here we will add in our numerical labels for both the x and y axis.
+First we start by selecting the x labels, then we use the scalar function x.ticks(5) which will return the proper tickmarks for where the numbers should go.
+Naturally we will add another transition here so that when the page is loaded our labels will smoothly slide into place.
+We then add the text element to our g element, and we define our x values by simply calling a function with the parameter I for index and just return it.
+Since this is for the x axis we leave the y value set to 0, and vice verse for the y labels.
+Finally we set the text-anchor so that the numbers will appear directly below the tick marks we will draw in the next step. 
+
+<code>
+  //X Axis labels 
+  g.selectAll(".xLabel")
+    .data(x.ticks(5))
+    .style("font-size","9pt")
+    .enter()
+    .append("svg:text")
+    .transition()
+    .duration(1000)
+    .attr("class", "xLabel")
+    .text(String)
+    .attr("x", function(i) { return x(i) })
+    .attr("y", 0)
+    .attr("text-anchor", "middle")
+
+  //Y axis labels
+  g.selectAll(".yLabel")
+    .data(y.ticks(4))
+    .style("font-size","9pt")
+    .enter().append("svg:text")
+    .transition()
+    .duration(1000)
+    .attr("class", "yLabel")
+    .text(String)
+    .attr("x", 0)
+    .attr("y", function(i) { return -1 * y(i) })
+    .attr("text-anchor", "right")
+    .attr("dy", 4)
+</code>
+
+<h3>7) Add tick marks -</h3>
+
+This step is very similar to the last.
+We now will select the xTicks and add the data points using the scalar function x.ticks(5).
+However, this time instead of adding a text element we will just add a line element.
+Again we use another transition to help animate the visualization.
+Similar to when we where drawing the lines for the axis here we must also specify the start and end points for each tick mark.
+Remember that we are using SelectAll here, so this will evaluate for each individual tick mark.
+
+<code>
+  //X axis tick marks
+  g.selectAll(".xTicks")
+    .data(x.ticks(5))
+    .enter().append("svg:line")
+    .transition()
+    .duration(1000)
+    .style("stroke", "black")
+    .attr("class", "xTicks")
+    .attr("x1", function(i) { return x(i); })
+    .attr("y1", -1 * y(0))
+    .attr("x2", function(i) { return x(i); })
+    .attr("y2", -1 * y(-0.3))
+
+  //Y axis tick marks
+  g.selectAll(".yTicks")
+    .data(y.ticks(4))
+    .enter().append("svg:line")
+    .transition()
+    .duration(1000)
+    .style("stroke", "black")
+    .attr("class", "yTicks")
+    .attr("y1", function(d) { return -1 * y(d); })
+    .attr("x1", x(-0.3))
+    .attr("y2", function(d) { return -1 * y(d); })
+    .attr("x2", x(0));
+</code>
+
+Now we can see that both our labels and tick marks have been added to the axis we drew earlier.
+
+<div id="viz2"></div>
+<br />
+
+<h3>8)  Draw the line -</h3>
+
+Now that we have our axis down lets add a line to represent our values in data1.
+We begin by defining a variable/function line that will allow us to draw this line, we use the helper function d3.svg.line() to define our d attribute which we will need to actually store our datapoints.
+Note how we use the x and y functions from earlier to find exactly where the place these points.
+We then load the data to this line by appending the path to the g elecment and passing the d attribute our data1 values.
+We also add a transition operation to the line as well, mainly to add the delay of 1.1s so that the line graph will only appear once the axis and labels have moved into place.
+
+<code>
+  var line = d3.svg.line() 
+    .x(function(d,i) { return x(i); })
+    .y(function(d) { return -1 * y(d); })
+
+  g.append("svg:path")
+    .transition()
+    .delay(1100)
+    .attr("d", line(data1))
+    .style("stroke", "indianred")
+    .style("stroke-width", 3)
+    .style("fill", "none")
+</code>
+
+You can now see our static graph loaded here:
+
+<div id="viz3"></div>
+<br />
+
+<h3>9) Adding interactivity -</h3>
+
+Now we will demonstrate how you can add a simple mouse event to this graph to allow us to load in the values in data2 by clicking anywhere on the graph.
+We start by declaring a boolean variable change which will be either true or false depending on which data set we are trying to load.
+We start with our vis element, which if you remember is the main parent element for our whole graph, and call the on operator and specify that on a mouse click (mousedown) we will launch a function.
+In this function we will use the change variable to determine which dataset we are currently displaying, and then through an if-else statement we will select the path element of our g element, use a transition of course, and then change the d attribute of this path element to the opposing dataset, and change the color of our line for added effect.
+When loading back in data1 we also specify the .ease function of back which will make our transition effect “simulate backing into a parking space.”
+
+<code>
+  var change=new Boolean()
+    change = true
+
+  vis.on("mousedown" , function(){
+    if(change){
+      g.select("path")
+.transition()
+.duration(2000)
+.attr("d", line(data2))
+.style("stroke", "steelblue")
+
+change = false
+    }
+    else {
+      g.select("path")
+.transition()
+.ease("back")
+.duration(2000)
+.attr("d", line(data1))
+.style("stroke", "indianred")
+    
+change = true
+    }
+  })
+</code>
+
+Here is the final product, a line graph with several transition effects.
+
+<div id="viz4"></div>
+<br />
+
+<script type="text/javascript">
+
+//Bars only
+
+var data2 = [1, 3, 4, 3, 6, 1, 8, 2, 4, 1, 3, 4, 1]
+
+var data1 = [3, 6, 2, 7, 5, 2, 1, 3, 8, 9, 2, 5, 7],
+
+w = 500,
+
+h = 200,
+
+margin = 20,
+
+//hank: trying to scale up on y-axis and down on x-axis
+//var margin = {top: 20, right: 15, bottom: 60, left: 60}
+//, w = 730 - margin.left - margin.right
+//, h = 730 - margin.top - margin.bottom;
+
+y = d3.scale.linear().domain([0, d3.max(data1)]).range([0 + margin, h - margin]),
+
+x = d3.scale.linear().domain([0, data1.length]).range([0 + margin, w - margin])
+
+var vis = d3.select("#viz1")
+
+.append("svg:svg")
+
+.attr("width", w)
+
+.attr("height", h)
+ 
+
+var g = vis.append("svg:g")
+
+.attr("transform", "translate(0, 200)");
+
+//Lets draw the X axis
+
+g.append("svg:line").transition().duration(1000)
+
+.style("stroke", "black")
+
+.attr("x1", x(0))
+
+.attr("y1", -1 * y(0))
+
+.attr("x2", x(w))
+
+.attr("y2", -1 * y(0))
+
+ //Lets draw the Y axis
+
+g.append("svg:line").transition().duration(1000)
+
+.style("stroke", "black")
+
+.attr("x1", x(0))
+
+.attr("y1", -1 * y(0))
+
+.attr("x2", x(0))
+
+.attr("y2", -1 * y(d3.max(data1)))
+
+</script>
+
+<script type="text/javascript">
+
+//Complete Axis
+
+var data2 = [1, 3, 4, 3, 6, 1, 8, 2, 4, 1, 3, 4, 1]
+
+var data1 = [3, 6, 2, 7, 5, 2, 1, 3, 8, 9, 2, 5, 7],
+
+w = 500,
+
+h = 200,
+
+margin = 20,
+
+y = d3.scale.linear().domain([0, d3.max(data1)]).range([0 + margin, h - margin]),
+
+x = d3.scale.linear().domain([0, data1.length]).range([0 + margin, w - margin])
+
+var vis = d3.select("#viz2")
+
+.append("svg:svg")
+
+.attr("width", w)
+
+.attr("height", h)
+
+ 
+var g = vis.append("svg:g")
+
+.attr("transform", "translate(0, 200)");
+
+//Lets draw the X axis
+
+g.append("svg:line").transition().duration(1000)
+
+.style("stroke", "black")
+
+.attr("x1", x(0))
+
+.attr("y1", -1 * y(0))
+
+.attr("x2", x(w))
+
+.attr("y2", -1 * y(0))
+
+//Lets draw the Y axis
+
+g.append("svg:line").transition().duration(1000)
+
+.style("stroke", "black")
+
+.attr("x1", x(0))
+
+.attr("y1", -1 * y(0))
+
+.attr("x2", x(0))
+
+.attr("y2", -1 * y(d3.max(data1)))
+
+//X Axis labels
+
+g.selectAll(".xLabel")
+
+.data(x.ticks(5)).style("font-size","9pt")
+
+.enter().append("svg:text").transition().duration(1000)
+
+.attr("class", "xLabel")
+
+.text(String)
+
+.attr("x", function(i) { return x(i) })
+
+.attr("y", 0)
+
+.attr("text-anchor", "middle")
+
+ //Y axis labels
+
+g.selectAll(".yLabel")
+
+.data(y.ticks(4)).style("font-size","9pt")
+
+.enter().append("svg:text").transition().duration(1000)
+
+.attr("class", "yLabel")
+
+.text(String)
+
+.attr("x", 0)
+
+.attr("y", function(i) { return -1 * y(i) })
+
+.attr("text-anchor", "right")
+
+.attr("dy", 4)
+
+//X axis tick marks
+
+g.selectAll(".xTicks")
+
+.data(x.ticks(5))
+
+.enter().append("svg:line")
+
+.transition()
+
+.duration(1000)
+
+.style("stroke", "black")
+
+.attr("class", "xTicks")
+
+.attr("x1", function(i) { return x(i); })
+
+.attr("y1", -1 * y(0))
+
+.attr("x2", function(i) { return x(i); })
+
+.attr("y2", -1 * y(-0.3))
+
+ 
+
+ //Y axis tick marks
+
+g.selectAll(".yTicks")
+
+.data(y.ticks(4))
+
+.enter().append("svg:line").transition().duration(1000)
+
+.style("stroke", "black")
+
+.attr("class", "yTicks")
+
+.attr("y1", function(d) { return -1 * y(d); })
+
+.attr("x1", x(-0.3))
+
+.attr("y2", function(d) { return -1 * y(d); })
+
+.attr("x2", x(0));
+
+</script>
+
+<script type="text/javascript">
+
+// Static graph
+
+var data2 = [1, 3, 4, 3, 6, 1, 8, 2, 4, 1, 3, 4, 1]
+
+var data1 = [3, 6, 2, 7, 5, 2, 1, 3, 8, 9, 2, 5, 7],
+
+w = 500,
+
+h = 200,
+
+margin = 20,
+
+y = d3.scale.linear().domain([0, d3.max(data1)]).range([0 + margin, h - margin]),
+
+x = d3.scale.linear().domain([0, data1.length]).range([0 + margin, w - margin])
+
+var vis = d3.select("#viz3")
+
+.append("svg:svg")
+
+.attr("width", w)
+
+.attr("height", h)
+
+var g = vis.append("svg:g")
+
+.attr("transform", "translate(0, 200)");
+
+var line = d3.svg.line()
+
+.x(function(d,i) { return x(i); })
+
+.y(function(d) { return -1 * y(d); })
+
+g.append("svg:path")
+
+.transition()
+
+.delay(1100)
+
+.attr("d", line(data1))
+
+.style("stroke", "indianred")
+
+.style("stroke-width", 3)
+
+.style("fill", "none")
+
+//Lets draw the X axis
+
+g.append("svg:line").transition().duration(1000)
+
+.style("stroke", "black")
+
+.attr("x1", x(0))
+
+.attr("y1", -1 * y(0))
+
+.attr("x2", x(w))
+
+.attr("y2", -1 * y(0))
+
+ //Lets draw the Y axis
+
+g.append("svg:line").transition().duration(1000)
+
+.style("stroke", "black")
+
+.attr("x1", x(0))
+
+.attr("y1", -1 * y(0))
+
+.attr("x2", x(0))
+
+.attr("y2", -1 * y(d3.max(data1)))
+
+//X Axis labels
+
+g.selectAll(".xLabel")
+
+.data(x.ticks(5)).style("font-size","9pt")
+
+.enter().append("svg:text").transition().duration(1000)
+
+.attr("class", "xLabel")
+
+.text(String)
+
+.attr("x", function(i) { return x(i) })
+
+.attr("y", 0)
+
+.attr("text-anchor", "middle")
+
+ //Y axis labels
+
+g.selectAll(".yLabel")
+
+.data(y.ticks(4)).style("font-size","9pt")
+
+.enter().append("svg:text").transition().duration(1000)
+
+.attr("class", "yLabel")
+
+.text(String)
+
+.attr("x", 0)
+
+.attr("y", function(i) { return -1 * y(i) })
+
+.attr("text-anchor", "right")
+
+.attr("dy", 4)
+
+//X axis tick marks
+
+g.selectAll(".xTicks")
+
+.data(x.ticks(5))
+
+.enter().append("svg:line")
+
+.transition()
+
+.duration(1000)
+
+.style("stroke", "black")
+
+.attr("class", "xTicks")
+
+.attr("x1", function(i) { return x(i); })
+
+.attr("y1", -1 * y(0))
+
+.attr("x2", function(i) { return x(i); })
+
+.attr("y2", -1 * y(-0.3))
+
+ 
+
+ //Y axis tick marks
+
+g.selectAll(".yTicks")
+
+.data(y.ticks(4))
+
+.enter().append("svg:line").transition().duration(1000)
+
+.style("stroke", "black")
+
+.attr("class", "yTicks")
+
+.attr("y1", function(d) { return -1 * y(d); })
+
+.attr("x1", x(-0.3))
+
+.attr("y2", function(d) { return -1 * y(d); })
+
+.attr("x2", x(0));
+
+</script>
+
+<script type="text/javascript">
+
+//Final product
+
+var data2 = [1, 3, 4, 3, 6, 1, 8, 2, 4, 1, 3, 4, 1]
+
+var data1 = [3, 6, 2, 7, 5, 2, 1, 3, 8, 9, 2, 5, 7],
+
+w = 500,
+
+h = 200,
+
+margin = 20,
+
+y = d3.scale.linear().domain([0, d3.max(data1)]).range([0 + margin, h - margin]),
+
+x = d3.scale.linear().domain([0, data1.length]).range([0 + margin, w - margin])
+
+var vis = d3.select("#viz4")
+
+.append("svg:svg")
+
+.attr("width", w)
+
+.attr("height", h)
+
+ 
+
+var g = vis.append("svg:g")
+
+.attr("transform", "translate(0, 200)");
+
+var line = d3.svg.line()
+
+.x(function(d,i) { return x(i); })
+
+.y(function(d) { return -1 * y(d); })
+
+g.append("svg:path")
+
+.transition()
+
+.delay(1100)
+
+.attr("d", line(data1))
+
+.style("stroke", "indianred")
+
+.style("stroke-width", 3)
+
+.style("fill", "none")
+
+var change=new Boolean()
+
+change = true
+
+vis.on("mousedown" , function(){
+
+if(change){
+
+g.select("path")
+
+.transition()
+
+.duration(2000)
+
+.attr("d", line(data2))
+
+.style("stroke", "steelblue")
+
+change = false
+
+}
+
+else {
+
+g.select("path")
+
+.transition()
+
+.ease("back")
+
+.duration(2000)
+
+.attr("d", line(data1))
+
+.style("stroke", "indianred")
+
+change = true
+
+}
+
+})
+
+//Lets draw the X axis
+
+g.append("svg:line").transition().duration(1000)
+
+.style("stroke", "black")
+
+.attr("x1", x(0))
+
+.attr("y1", -1 * y(0))
+
+.attr("x2", x(w))
+
+.attr("y2", -1 * y(0))
+
+ //Lets draw the Y axis
+
+g.append("svg:line").transition().duration(1000)
+
+.style("stroke", "black")
+
+.attr("x1", x(0))
+
+.attr("y1", -1 * y(0))
+
+.attr("x2", x(0))
+
+.attr("y2", -1 * y(d3.max(data1)))
+
+//X Axis labels
+
+g.selectAll(".xLabel")
+
+.data(x.ticks(5)).style("font-size","9pt")
+
+.enter().append("svg:text").transition().duration(1000)
+
+.attr("class", "xLabel")
+
+.text(String)
+
+.attr("x", function(i) { return x(i) })
+
+.attr("y", 0)
+
+.attr("text-anchor", "middle")
+
+ //Y axis labels
+
+g.selectAll(".yLabel")
+
+.data(y.ticks(4)).style("font-size","9pt")
+
+.enter().append("svg:text").transition().duration(1000)
+
+.attr("class", "yLabel")
+
+.text(String)
+
+.attr("x", 0)
+
+.attr("y", function(i) { return -1 * y(i) })
+
+.attr("text-anchor", "right")
+
+.attr("dy", 4)
+
+//X axis tick marks
+
+g.selectAll(".xTicks")
+
+.data(x.ticks(5))
+
+.enter().append("svg:line")
+
+.transition()
+
+.duration(1000)
+
+  .style("stroke", "black")
+
+  .attr("class", "xTicks")
+
+  .attr("x1", function(i) { return x(i); })
+
+  .attr("y1", -1 * y(0))
+
+  .attr("x2", function(i) { return x(i); })
+
+  .attr("y2", -1 * y(-0.3))
+
+ 
+
+//Y axis tick marks
+
+g.selectAll(".yTicks")
+
+.data(y.ticks(4))
+
+.enter().append("svg:line")
+
+.transition()
+
+.duration(1000)
+
+  .style("stroke", "black")
+
+  .attr("class", "yTicks")
+
+  .attr("y1", function(d) { return -1 * y(d); })
+
+  .attr("x1", x(-0.3))
+
+  .attr("y2", function(d) { return -1 * y(d); })
+
+  .attr("x2", x(0));
+
+</script>
+<blockquote>
+Note: <a href="http://website.education.wisc.edu/swu28/d3t/linegraph.html">Here</a> is an independent page for the line graph tutorial. We have noticed some browser issues on rendering D3 charts correctly. The line graphs are displayed correctly on the redirected page from major browsers like Firefox, Chrome, Safari, and Opera (with recently updated versions). But on updated IE 9 all the 4 line graphs are missing from the tutorial.
+We are not exactly sure why, but the same code might have the same browser issues or CSS conflicts on this page for showing squished ticks on the y-axis and the wrong animation. On IE 9 the x-axis extends all the way to the right-hand side. 
+</blockquote>
+</div>
+
+<div id="v003">
+<h2>Bar Chart</h2>
+This section will guide you through the process of implementing a D3 bar chart in your HTML file.
+
+    <h3>Preparation</h3>
+<h4>1) Use the D3 library - </h4>
+Make sure you have this piece of information attached to the &lt;head&gt; section of your HTML file: 
+<code>
+  &lt;head&gt;
+  &lt;script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"&gt;&lt;/script&gt;
+  &lt;/head&gt;
+</code>
+
+<h4>2) Insert a placeholder - </h4>
+Insert a &lt;div&gt; tag to wherever you want to display the chart on your page. Assign an ID to it. Example:
+
+<code>
+  &lt;div id="rect1"&gt;&lt;/div&gt;
+</code>
+
+<h4>3) Select the div and use D3 code to draw - </h4>
+Draw a simple shape (golden rectangle) with the following D3 code. This JavaScript snippet can go anywhere in your HTML file. Example:
+
+<div id="rect1"></div>
+
+<code>
+  &lt;div id="rect1"&gt;&lt;/div&gt;
+  
+  &lt;script type="text/javascript"&gt;
+    var rectDemo = d3.select("#rect1").
+      append("svg:svg").
+      attr("width", 400).
+      attr("height", 300);
+
+    rectDemo.append("svg:rect").
+      attr("x", 100).
+      attr("y", 100).
+      attr("height", 100).
+      attr("width", 200).
+      style("fill", "gold");
+  &lt;/script&gt;
+</code>
+
+<script type="text/javascript">
+var rectDemo = d3.select("#rect1").
+append("svg:svg").
+attr("width", 400).
+attr("height", 300);
+
+rectDemo.append("svg:rect").
+attr("x", 100).
+attr("y", 100).
+attr("height", 100).
+attr("width", 200).
+style("fill", "gold");
+</script>
+
+    <blockquote>
+Note: From this code snippet, we are informed of some basic D3 syntax. First we define a variable "rectDemo" and select a div named "rect1" to place the chart. Then we assign a 400*300 canvas to this visualization, and draw a 200*100 golden rectangle. This rectangle has the starting point (100, 100) at its upper-left corner. The point (0, 0) is at the farther upper-left side, so we are drawing in the 4th dimension on this plane.
+</blockquote>
+
+<h3>Draw a bar chart</h3>
+After knowing the basics of how to draw a rectangle with D3, we can move on to creating a bar chart.
+
+<h4>4) The skeleton - </h4>
+Bar chart is a graph consisting of parallel, generally vertical bars. Bar lengths are proportional to the quantities or frequencies specified in a set of data. So first we draw a bar for the chart:
+
+<div id="bar-basic"></div>
+<br />
+
+<code>
+  var data = [{year: 2012, deaths: 96}];
+  
+  var barWidth = 40; 
+  var width = (barWidth + 10) * data.length;
+  var height = 200;
+  
+  var x = d3.scale.linear().domain([0, data.length]).range([0, width]);
+  var y = d3.scale.linear().domain([0, d3.max(data, function(datum) 
+    {return datum.deaths;})]).rangeRound([0, height]);
+  
+  // add the canvas to the DOM
+  
+  var barBasic = d3.select("#bar-basic").
+    append("svg:svg").
+    attr("width", width).
+    attr("height", height);
+
+  barBasic.selectAll("rect").
+    data(data).
+    enter().
+    append("svg:rect").
+    attr("x", function(datum, index) { return x(index); }).
+    attr("y", function(datum) { return height - y(datum.deaths); }).
+    attr("height", function(datum) { return y(datum.deaths); }).
+    attr("width", barWidth).
+    attr("fill", "purple");
+</code>
+
+The code above demonstrates how to set up a skeleton for bar charts: <br />
+a) Define data variables in the form of an array; <br />
+b) Define bar width and the overall canvas width and height;<br />
+c) Define position variables x and y as the starting point; <br />
+
+<code>
+var xScale = d3.scale.linear()  //.scale.linear() translates between the data 
+//    input and the display (x, y) on the canvas
+  .domain([0, 20])      //.domain() specifies your data maximum and minimum
+  .range([0,100]);      //.range() specifies the width of the chart by 
+//    pixels to the map
+</code>
+
+d) Select the div and append SVG shapes to the canvas; <br />
+e) Use anonymous functions for additional calculations to adjust the position; <br />
+
+<code>
+  attr("x", function(datum, index){
+    return xScale(datum.foobar) + whatever
+  }) 
+</code>
+
+<blockquote>
+Note: If the data is complicated, you can pass a function to attr. It takes two arguments: datum (d) and index (i). Inside the function you can call the scale function, manipulate the results, and return them.
+</blockquote>
+
+<script type="text/javascript" id="bar-basic-js">
+var data = [{year: 2012, deaths: 96}];
+var barWidth = 40;
+var width = (barWidth + 10) * data.length;
+var height = 200;
+
+var x = d3.scale.linear().domain([0, data.length]).range([0, width]);
+var y = d3.scale.linear().domain([0, d3.max(data, function(datum) { return datum.deaths; })]).
+  rangeRound([0, height]);
+
+// add the canvas to the DOM
+var barBasic = d3.select("#bar-basic").
+  append("svg:svg").
+  attr("width", width).
+  attr("height", height);
+
+barBasic.selectAll("rect").
+  data(data).
+  enter().
+  append("svg:rect").
+  attr("x", function(datum, index) { return x(index); }).
+  attr("y", function(datum) { return height - y(datum.deaths); }).
+  attr("height", function(datum) { return y(datum.deaths); }).
+  attr("width", barWidth).
+  attr("fill", "purple");
+</script>
+<div class="clear"></div>
+<br /><br />
+
+<h4>5) Data binding - </h4>
+In D3, data is stored in the form of arrays. In the following example, we add more data to the variable "data" and display the parallel bars:  
+<code>
+  var data = [{year: 2006, deaths: 55},
+{year: 2007, deaths: 63},
+{year: 2008, deaths: 69},
+{year: 2009, deaths: 81},
+{year: 2010, deaths: 74},
+{year: 2011, deaths: 79},
+{year: 2012, deaths: 93}];
+</code>
+<div id="bar-demo"></div>
+
+<script type="text/javascript" id="bar-demo-js">
+var data = [{year: 2006, deaths: 55},
+{year: 2007, deaths: 63},
+{year: 2008, deaths: 69},
+{year: 2009, deaths: 81},
+{year: 2010, deaths: 74},
+{year: 2011, deaths: 79},
+{year: 2012, deaths: 93}];
+
+var barWidth = 40;
+var width = (barWidth + 10) * data.length;
+var height = 200;
+
+var x = d3.scale.linear().domain([0, data.length]).range([0, width]);
+var y = d3.scale.linear().domain([0, d3.max(data, function(datum) { return datum.deaths; })]).
+  rangeRound([0, height]);
+
+// add the canvas to the DOM
+var barDemo = d3.select("#bar-demo").
+  append("svg:svg").
+  attr("width", width).
+  attr("height", height);
+
+barDemo.selectAll("rect").
+  data(data).
+  enter().
+  append("svg:rect").
+  attr("x", function(datum, index) { return x(index); }).
+  attr("y", function(datum) { return height - y(datum.deaths); }).
+  attr("height", function(datum) { return y(datum.deaths); }).
+  attr("width", barWidth).
+  attr("fill", "#2d578b");
+</script>
+<div class="clear"></div>
+<br /><br />
+
+<h4>6) Adding text - </h4>
+Now the bar chart shows the amount of changes, but it is also important to add more texts to specify the quantitiy of each data point on x- and y- axes.
+
+<div id="bar-final"></div>
+<br /><br />
+Here is the code for adding text to the bars:
+<code>
+  barFinal.selectAll("text").
+    data(data).
+    enter().
+    append("svg:text").
+    attr("x", function(datum, index) { return x(index) + barWidth; }).
+    attr("y", function(datum) { return height - y(datum.deaths); }).
+    attr("dx", -barWidth/2).
+    attr("dy", "1.2em").
+    attr("text-anchor", "middle").
+    text(function(datum) { return datum.deaths;}).
+    attr("fill", "white");
+  
+  barFinal.selectAll("text.yAxis").
+    data(data).
+    enter().append("svg:text").
+    attr("x", function(datum, index) { return x(index) + barWidth; }).
+    attr("y", height).
+    attr("dx", -barWidth/2).
+    attr("text-anchor", "middle").
+    attr("style", "font-size: 12; font-family: Helvetica, sans-serif").
+    text(function(datum) { return datum.year;}).
+    attr("transform", "translate(0, 18)").
+    attr("class", "yAxis");
+</code>
+
+<blockquote>
+Note: If you add the above code snippet to where you have the JavaScript code about drawing the bars, you would see the datum and index/year information added to the chart.
+</blockquote>
+<script type="text/javascript" id="bar-final-js">
+var data = [{year: 2006, deaths: 55},
+{year: 2007, deaths: 63},
+{year: 2008, deaths: 69},
+{year: 2009, deaths: 81},
+{year: 2010, deaths: 74},
+{year: 2011, deaths: 79},
+{year: 2012, deaths: 93}];
+
+var barWidth = 40;
+var width = (barWidth + 10) * data.length;
+var height = 200;
+
+var x = d3.scale.linear().domain([0, data.length]).range([0, width]);
+var y = d3.scale.linear().domain([0, d3.max(data, function(datum) { return datum.deaths; })]).
+  rangeRound([0, height]);
+
+// add the canvas to the DOM
+var barFinal = d3.select("#bar-final").
+  append("svg:svg").
+  attr("width", width).
+  attr("height", height);
+
+barFinal.selectAll("rect").
+  data(data).
+  enter().
+  append("svg:rect").
+  attr("x", function(datum, index) { return x(index); }).
+  attr("y", function(datum) { return height - y(datum.deaths); }).
+  attr("height", function(datum) { return y(datum.deaths); }).
+  attr("width", barWidth).
+  attr("fill", "orange");
+
+barFinal.selectAll("text").
+  data(data).
+  enter().
+  append("svg:text").
+  attr("x", function(datum, index) { return x(index) + barWidth; }).
+  attr("y", function(datum) { return height - y(datum.deaths); }).
+  attr("dx", -barWidth/2).
+  attr("dy", "1.2em").
+  attr("text-anchor", "middle").
+  text(function(datum) { return datum.deaths;}).
+  attr("fill", "white");
+  
+barFinal.selectAll("text.yAxis").
+  data(data).
+  enter().append("svg:text").
+  attr("x", function(datum, index) { return x(index) + barWidth; }).
+  attr("y", height).
+  attr("dx", -barWidth/2).
+  attr("text-anchor", "middle").
+  attr("style", "font-size: 12; font-family: Helvetica, sans-serif").
+  text(function(datum) { return datum.year;}).
+  attr("transform", "translate(0, 18)").
+  attr("class", "yAxis");
+
+</script>
+<div class="clear"></div>
+<br /><br />
+  
+To add numbers inside the bars, the elements must be positioned in the same place as the top of the bar. Then add padding to make it look right. First, selectAll() is used to get a selection of elements, and data() is bound to them. And then enter() is used to add the elements to the chart.
+To add an x-axis, the height of the chart must be increased to make room for it. By keeping the old height variable and increasing the height of the <i>svg:svg</i> canvas by padding, the rest of the code does not need to change.
+
+
+<script type='text/javascript' src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+    // ... more custom settings?
+});
+</script>
+
+</body></html>

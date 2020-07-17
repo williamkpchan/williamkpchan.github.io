@@ -26,13 +26,23 @@ function showAllCharts(){
   });
   $( "#codelist" ).append("<br>");
 
+  CommentListNames = Object.keys(theCommentList); // extract the names from comments
+
   // this process add turnover detail to each chart individually
   for( codeNo = 0; codeNo < theList.length; codeNo += 1){
     showStkTO(theList[codeNo]); // this show turnover details
 console.log(tradeDetailStr);
     theText = theList[codeNo] + tradeDetailStr;
 
-    theFunccode =  "<div>" + (codeNo+1) + " &emsp; " + theText + "<br>" + thisImgHead + theText + thisImgPCode + thisImgTail + "onclick = \"xunbao('" + theText + "')\">" + "</div>";
+    // to show comments
+    commentName = "j" + theList[codeNo]
+    if(CommentListNames.includes(commentName)){
+      cmtLocation = CommentListNames.indexOf(commentName);
+      commentTxt = theCommentList[Object.keys(theCommentList)[cmtLocation]]
+    }else{commentTxt = "";}
+
+    // this is the key line to show K line charts
+    theFunccode =  "<div>" + (codeNo+1) + " &emsp; " + theText + "<br>" + thisImgHead + theText + thisImgPCode + thisImgTail + "onclick = \"xunbao('" + theText + "')\">" + "<br><span class='orange'>" + commentTxt + "</span></div>";
     $( "#codelist" ).append( theFunccode);
   }
 }
