@@ -11,7 +11,7 @@ $(document).ready(function(){
 theList = [];
 thisImgPCode= "&period=7";
 screenWidth = Math.round(window.screen.width * window.devicePixelRatio)/2 -184;
-console.log(screenWidth)
+console.log(window.screen.width + " " + window.devicePixelRatio +" " + screenWidth);
 function showAllCharts(){
 //    $("#codelist").load("HKCodelist.txt");
   thisImgHead = "<img src='http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=3&indpara1=3&indpara2=6&indpara3=9&indpara4=12&indpara5=15&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&subChart3=12&ref3para1=0&ref3para2=0&ref3para3=0&scheme=3&com=100&chartwidth=" + screenWidth + "&chartheight=400&stockid=";
