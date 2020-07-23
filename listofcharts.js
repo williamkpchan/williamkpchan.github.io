@@ -10,7 +10,7 @@ $(document).ready(function(){
 
 theList = [];
 thisImgPCode= "&period=7";
-screenWidth = Math.round((window.screen.width * window.devicePixelRatio)/2*0.78);
+screenWidth = Math.round(window.screen.width * window.devicePixelRatio)/2 -184;
 console.log(screenWidth)
 function showAllCharts(){
 //    $("#codelist").load("HKCodelist.txt");
