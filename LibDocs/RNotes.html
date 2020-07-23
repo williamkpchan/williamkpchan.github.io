@@ -14,7 +14,7 @@
 body{width:80%;margin-left: 10%; font-size:22px;}
 h1, h2 {color: gold;}
 strong {color: orange;}
-img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px; background-color:#044;}
 </style></head><body onkeypress="chkKey()"><center>
 <h1>R Notes</h1>
 <a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a>
@@ -26,6 +26,8 @@ img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; bor
 <li>data manipulation (dplyr, lubridate, tidyr, stringr, readr, & forcats)</li>
 <li>data analysis (combine ggplot2, dplyr to explore data and find insights)</li>
 <pre>
+<a href="R4DataScience.html" class="whitebut ">R4DataScience</a>
+
 <a href="https://statisticsglobe.com/r-functions-list/" class="whitebut ">R Basic Commands of the</a>
 
 <a href="Non-standard evaluation.html" class="whitebut ">Non-standard evaluation</a>
@@ -8340,8 +8342,497 @@ h2o.predict( gbmModel, airlinesTrainData) # predict
 
 <a href="https://www.h2o.ai/download/" class="whitebut ">Downloads</a>
 
+<h2>Print Strings without Quotes</h2>
+   print(resultTable, quote = FALSE, row.names = FALSE, col.names = FALSE)
+   write.table(resultTable,quote = FALSE,  row.names = FALSE, sep = "\t")
 
+<h2>The apply family</h2>
+<a href="https://nicercode.github.io/guides/repeating-things/" class="whitebut ">repeating-things</a>
 
+There are several related function in R which allow you to apply some function to a series of objects (eg. vectors, matrices, dataframes or files). They include:
+lapply
+sapply
+tapply
+aggregate
+mapply
+apply
+
+Each repeats a function or operation on a series of elements, but they differ in the data types they accept and return. What they all in common is that <strong>order of iteration is not important</strong>.  This is crucial. If each each iteration is independent, then you can cycle through them in whatever order you like. Generally, we argue that you should only use the generic looping functions <code>for</code>, <code>while</code>, and <code>repeat</code> when the order or operations <strong>is</strong> important. Otherwise reach for one of the apply tools.
+
+<h2>lapply and sapply</h2>
+
+<code>lapply</code> applies a function to each element of a list (or vector), collecting results in a list.  <code>sapply</code> does the same, but will try to <em>simplify</em> the output if possible.
+
+Lists are a very powerful and flexible data structure that few people seem to know about. Moreover, they are the building block for other data structures, like <code>data.frame</code> and <code>matrix</code>. To access elements of a list, you use the double square bracket, for example <code>X[[4]]</code> returns the fourth element of the list <code>X</code>. If you don’t know what a list is, we suggest you <a href="http://cran.r-project.org/doc/manuals/R-intro.html#Lists-and-data-frames">read more about them</a>, before you proceed.
+<h3>Basic syntax</h3>
+<code>result &lt;- lapply(a list or vector, a function, ...)</code>
+
+This code will also return a list, stored in <code>result</code>, with same number of elements as <code>X</code>.
+
+<h3>Usage</h3>
+lapply is great for building analysis pipelines, where you want to repeat a series of steps on a large number of similar objects.  The way to do this is to have a series of lapply statements, with the output of one providing the input to another:
+<code>first.step &lt;- lapply(X, first.function) second.step &lt;- lapply(first.step, next.function)</code>
+
+The challenge is to identify the parts of your analysis that stay the same and those that differ for each call of the function. The trick to using <code>lapply</code> is to recognise that only one item can differ between different function calls.
+
+It is possible to pass in a bunch of additional arguments to your function, but these must be the same for each call of your function. For example, let’s say we have a function <code>test</code> which takes the path of a file, loads the data, and tests it against some hypothesised value H0. We can run the function on the file
+“myfile.csv” as follows.
+
+<code>result &lt;- test(&quot;myfile.csv&quot;, H0=1)</code>
+
+We could then run the test on a bunch of files using lapply:
+
+<code>files &lt;- c(&quot;myfile1.csv&quot;, &quot;myfile2.csv&quot;, &quot;myfile3.csv&quot;) result &lt;- lapply(files, test, H0=1)</code>
+
+But notice, that in this example, the <strong>only this that differs</strong> between the runs is a single number in the file name. So we could save ourselves typing these by adding an extra step to generate the file names
+
+<code>files &lt;- lapply(1:10, function(x){paste0(&quot;myfile&quot;, x, &quot;.csv&quot;)}) result &lt;- lapply(files, test, H0=1)</code>
+
+The nice things about that piece of code is that it would extend as long as we wanted, to 10000000 files, if needed.
+
+<h3>Example - plotting temperature for many sites using open weather data</h3>
+
+Let’s look at the weather in some eastern Australian cities over the last couple of days.  The website
+<a href="http://openweathermap.org">openweathermap.com</a> provides access to all sorts of neat data, lots of it essentially real time.  We’ve parcelled up some on the nicercode website to use.  In theory, this sort of analysis script could use the weather data directly, but we don’t want to hammer their website too badly.  The code used to generate these files is <a href="https://gist.github.com/richfitz/5795029">here</a>.
+
+We want to look at the temperatures over the last few days for the cities
+
+<code>cities &lt;- c(&quot;Melbourne&quot;, &quot;Sydney&quot;, &quot;Brisbane&quot;, &quot;Cairns&quot;)</code>
+
+The data are stored in a url scheme where the Sydney data is at
+<a href="http://nicercode.github.io/guides/repeating-things/data/Sydney.csv">http://nicercode.github.io/guides/repeating-things/data/Sydney.csv</a> and so on.  
+
+The URLs that we need are therefore:
+
+<code>urls &lt;-
+ sprintf(&quot;http://nicercode.github.io/guides/repeating-things/data/%s.csv&quot;,
+         cities) urls</code>
+
+<code>[1] "http://nicercode.github.io/guides/repeating-things/data/Melbourne.csv"
+[2] "http://nicercode.github.io/guides/repeating-things/data/Sydney.csv"   
+[3] "http://nicercode.github.io/guides/repeating-things/data/Brisbane.csv" 
+[4] "http://nicercode.github.io/guides/repeating-things/data/Cairns.csv"   </code>
+
+We can write a function to download a file if it does not exist:
+
+<code>download.maybe &lt;- function(url, refetch=FALSE, path=&quot;.&quot;) {
+ dest &lt;- file.path(path, basename(url))
+ if (refetch || !file.exists(dest))
+   download.file(url, dest)
+ dest
+}</code>
+and then run that over the urls:
+
+<code>path &lt;- &quot;data&quot; dir.create(path, showWarnings=FALSE) files &lt;- sapply(urls, download.maybe, path=path) names(files) &lt;- cities</code>
+
+Notice that we never specify the order of which file is downloaded in which order; we just say “apply this function (<code>download.maybe</code>) to this list of urls.  We also pass the <code>path</code> argument to every function call.  So it was as if we’d written
+
+<code>download.maybe(urls[[1]], path=path) download.maybe(urls[[2]], path=path) download.maybe(urls[[3]], path=path) download.maybe(urls[[4]], path=path)</code>
+but much less boring, and scalable to more files.
+
+The first column, <code>time</code> of each file is a string representing date and time, which needs processing into R’s native time format (dealing with times in R (or frankly, in any language) is a complete pain).  In a real case, there might be many steps involved in processing each file.  We can make a function like this:
+
+<code>load.file &lt;- function(filename) {
+ d &lt;- read.csv(filename, stringsAsFactors=FALSE)
+ d$time &lt;- as.POSIXlt(d$time)
+ d
+}</code>
+that reads in a file given a filename, and then apply that function to each filename using <code>lapply</code>:
+
+<code>data &lt;- lapply(files, load.file) names(data) &lt;- cities</code>
+
+We now have a <strong>list</strong>, where each element is a <code>data.frame</code> of weather data:
+
+<code>head(data$Sydney)</code>
+
+<code>             time  temp temp.min temp.max
+1 2013-06-13 23:00:00 12.66     8.89    16.11
+2 2013-06-14 00:00:00 15.90    12.22    20.00
+3 2013-06-14 02:00:00 18.44    16.11    20.00
+4 2013-06-14 03:00:00 18.68    16.67    20.56
+5 2013-06-14 04:00:00 19.41    17.78    22.22
+6 2013-06-14 05:00:00 19.10    17.78    22.22</code>
+
+We can use <code>lapply</code> or <code>sapply</code> to easy ask the same question to each element of this list.  For example, how many rows of data are there?
+
+<code>sapply(data, nrow)</code>
+
+<code>Melbourne    Sydney  Brisbane    Cairns 
+      97        99        99        80 </code>
+
+What is the hottest temperature recorded by city?
+
+<code>sapply(data, function(x) max(x$temp))</code>
+
+<code>Melbourne    Sydney  Brisbane    Cairns 
+   12.85     19.41     22.00     31.67 </code>
+or, estimate the autocorrelation function for each set:
+
+<code>autocor &lt;- lapply(data, function(x) acf(x$temp, lag.max=24))</code>
+
+<img class="lazy" data-src="https://nicercode.github.io/guides/repeating-things/img/unnamed-chunk-221.png" alt="plot of chunk unnamed-chunk-22" /> <img class="lazy" data-src="https://nicercode.github.io/guides/repeating-things/img/unnamed-chunk-222.png" alt="plot of chunk unnamed-chunk-22" /> <img class="lazy" data-src="https://nicercode.github.io/guides/repeating-things/img/unnamed-chunk-223.png" alt="plot of chunk unnamed-chunk-22" /> <img class="lazy" data-src="https://nicercode.github.io/guides/repeating-things/img/unnamed-chunk-224.png" alt="plot of chunk unnamed-chunk-22" />
+
+<code>plot(autocor$Sydney, main=&quot;Sydney&quot;)</code>
+
+<img class="lazy" data-src="https://nicercode.github.io/guides/repeating-things/img/unnamed-chunk-225.png" alt="plot of chunk unnamed-chunk-22" />
+
+<code>plot(autocor$Cairns, main=&quot;Cairns&quot;)</code>
+
+<img class="lazy" data-src="https://nicercode.github.io/guides/repeating-things/img/unnamed-chunk-226.png" alt="plot of chunk unnamed-chunk-22" />
+
+I find that for loops can be easier to plot data, partly because there is nothing to <em>collect</em> (or combine) at each iteration.
+
+<code>xlim &lt;- range(sapply(data, function(x) range(x$time))) ylim &lt;- range(sapply(data, function(x) range(x[-1]))) plot(data[[1]]$time, data[[1]]$temp, ylim=ylim, type=&quot;n&quot;,
+    xlab=&quot;Time&quot;, ylab=&quot;Temperature&quot;) cols &lt;- 1:4 for (i in seq_along(data))
+ lines(data[[i]]$time, data[[i]]$temp, col=cols[i])</code>
+
+<img class="lazy" data-src="https://nicercode.github.io/guides/repeating-things/img/unnamed-chunk-23.png" alt="plot of chunk unnamed-chunk-23" />
+
+<code>plot(data[[1]]$time, data[[1]]$temp, ylim=ylim, type=&quot;n&quot;,
+    xlab=&quot;Time&quot;, ylab=&quot;Temperature&quot;) mapply(function(x, col) lines(x$time, x$temp, col=col),
+      data, cols)</code>
+
+<img class="lazy" data-src="https://nicercode.github.io/guides/repeating-things/img/unnamed-chunk-24.png" alt="plot of chunk unnamed-chunk-24" />
+
+<code>$Melbourne
+NULL
+
+$Sydney
+NULL
+
+$Brisbane
+NULL
+
+$Cairns
+NULL</code>
+
+<h3>Parallelising your code</h3>
+
+Another great feature of lapply is that is <strong>makes it really easy to parallelise your code</strong>. All computers now contain multiple CPUs, and these can all be put to work using the great <a href="http://www.rforge.net/multicore/">multicore package</a>.
+
+<code>result &lt;- lapply(x, f)   #apply f to x using a single core and lapply
+library(multicore) result &lt;- mclapply(x, f) #same thing using all the cores in your machine</code>
+
+<h2>tapply and aggregate</h2>
+
+In the case above, we had naturally “split” data; we had a vector of city names that led to a list of different data.frames of weather data.  Sometimes the “split” operation depends on a factor.  For example, you might have an experiment where you measured the size of plants at different levels of added fertiliser - you then want to know the mean height as a function of this treatment.
+
+However, we’re actiually going to use some data on <a href="https://github.com/audy/smalldata">ratings of seinfeld episodes</a>, taken from the [Internet movie Database]
+(http://www.reddit.com/r/dataisbeautiful/comments/1g7jw2/seinfeld_imdb_episode_ratings_oc/).
+
+<code>library(downloader) if (!file.exists(&quot;seinfeld.csv&quot;))
+ download(&quot;https://raw.github.com/audy/smalldata/master/seinfeld.csv&quot;,
+          &quot;seinfeld.csv&quot;) dat &lt;- read.csv(&quot;seinfeld.csv&quot;, stringsAsFactors=FALSE)</code>
+
+Columns are Season (number), Episode (number), Title (of the episode), Rating (according to IMDb) and Votes (to construct the rating).
+
+<code>head(dat)</code>
+
+<code>  Season Episode             Title Rating Votes
+1      1       2      The Stakeout    7.8   649
+2      1       3       The Robbery    7.7   565
+3      1       4    Male Unbonding    7.6   561
+4      1       5     The Stock Tip    7.8   541
+5      2       1 The Ex-Girlfriend    7.7   529
+6      2       1        The Statue    8.1   509</code>
+
+Make sure it’s sorted sensibly
+
+<code>dat &lt;- dat[order(dat$Season, dat$Episode),]</code>
+
+Biologically, this could be Site / Individual / ID / Mean size /
+Things measured.
+
+Hypothesis: Seinfeld used to be funny, but got progressively less good as it became too mainstream.  Or, does the mean episode rating per season decrease?
+
+Now, we want to calculate the average rating per season:
+
+<code>mean(dat$Rating[dat$Season == 1])</code>
+
+<code>[1] 7.725</code>
+
+<code>mean(dat$Rating[dat$Season == 2])</code>
+
+<code>[1] 8.158</code>
+and so on until:
+
+<code>mean(dat$Rating[dat$Season == 9])</code>
+
+<code>[1] 8.323</code>
+
+As with most things, we <em>could</em> automate this with a for loop:
+
+<code>seasons &lt;- sort(unique(dat$Season)) rating  &lt;- numeric(length(seasons)) for (i in seq_along(seasons))
+ rating[i] &lt;- mean(dat$Rating[dat$Season == seasons[i]])</code>
+
+That’s actually not that horrible to do.  But we it could be nicer.  We first <strong>split</strong> the ratings by season:
+
+<code>ratings.split &lt;- split(dat$Rating, dat$Season) head(ratings.split)</code>
+
+<code>$`1`
+[1] 7.8 7.7 7.6 7.8
+
+$`2`
+[1] 7.7 8.1 8.0 7.9 7.8 8.5 8.7 8.5 8.0 8.0 8.4 8.3
+
+$`3`
+[1] 8.3 7.5 7.8 8.1 8.3 7.3 8.7 8.5 8.5 8.6 8.1 8.4 8.5 8.7 8.6 7.8 8.3
+[18] 8.6 8.7 8.6 8.0 8.5 8.6
+
+$`4`
+[1] 8.4 8.3 8.6 8.5 8.7 8.6 8.1 8.2 8.7 8.4 8.3 8.7 8.5 8.6 8.3 8.2 8.4
+[18] 8.5 8.4 8.7 8.7 8.4 8.5
+
+$`5`
+[1] 8.6 8.4 8.4 8.4 8.3 8.2 8.1 8.5 8.5 8.3 8.0 8.1 8.6 8.3 8.4 8.5 7.9
+[18] 8.0 8.5 8.7 8.5
+
+$`6`
+[1] 8.1 8.4 8.3 8.4 8.2 8.3 8.5 8.4 8.3 8.2 8.1 8.4 8.6 8.2 7.5 8.4 8.2
+[18] 8.5 8.3 8.4 8.1 8.5 8.2</code>
+
+Then use sapply to loop over this list, computing the mean
+
+<code>rating &lt;- sapply(ratings.split, mean)</code>
+
+Then if we wanted to apply a different function (say, compute the per-season standard error) we could just do:
+
+<code>se &lt;- function(x)
+ sqrt(var(x) / length(x)) rating.se &lt;- sapply(ratings.split, se)
+plot(rating ~ seasons, ylim=c(7, 9), pch=19) arrows(seasons, rating - rating.se, seasons, rating + rating.se,
+      code=3, angle=90, length=0.02)</code>
+
+<img class="lazy" data-src="https://nicercode.github.io/guides/repeating-things/img/unnamed-chunk-34.png" alt="plot of chunk unnamed-chunk-34" />
+
+But there’s still repetition there.  Let’s abstract that away a bit.
+
+Suppose we want a:
+ 1. response variable (like Rating was)
+ 2. grouping variable (like Season was)
+ 3. function to apply to each level
+
+This just writes out <em>exactly</em> what we had before
+
+<code>summarise.by.group &lt;- function(response, group, func) {
+ response.split &lt;- split(response, group)
+ sapply(response.split, func)
+}</code>
+
+We can compute the mean rating by season again:
+
+<code>rating.new &lt;- summarise.by.group(dat$Rating, dat$Season, mean)</code>
+which is the same as what we got before:
+
+<code>identical(rating.new, rating)</code>
+
+<code>[1] TRUE</code>
+
+Of course, we’re not the first people to try this.  This is <strong>exactly</strong> what the <code>tapply</code> function does (but with a few bells and whistles, especially around missing values, factor levels, additional arguments and multiple grouping factors at once).
+
+<code>tapply(dat$Rating, dat$Season, mean)</code>
+
+<code>1     2     3     4     5     6     7     8     9 
+7.725 8.158 8.304 8.465 8.343 8.283 8.441 8.423 8.323 </code>
+
+So using <code>tapply</code>, you can do all the above manipulation in a single line.
+
+There are a couple of limitations of <code>tapply</code>.
+
+The first is that getting the season out of <code>tapply</code> is quite hard.  We could do:
+
+<code>as.numeric(names(rating))</code>
+
+<code>[1] 1 2 3 4 5 6 7 8 9</code>
+
+But that’s quite ugly, not least because it involves the conversion numeric -&gt; string -&gt; numeric.
+
+Better could be to use
+
+<code>sort(unique(dat$Season))</code>
+
+<code>[1] 1 2 3 4 5 6 7 8 9</code>
+
+But that requires knowing what is going on inside of <code>tapply</code> (that unique levels are sorted and data are returned in that order).
+
+I suspect that this approach:
+
+<code>first &lt;- function(x) x[[1]] tapply(dat$Season, dat$Season, first)</code>
+
+<code>1 2 3 4 5 6 7 8 9 
+1 2 3 4 5 6 7 8 9 </code>
+is probably the most fool-proof, but it’s certainly not pretty.
+
+However, the returned format is extremely flexible.  If you do:
+
+The <code>aggregate</code> function provides a simplfied interface to <code>tapply</code> that avoids this issue.  It has two interfaces: the first is similar to what we used before, but the grouping variable now must be a list or data frame:
+
+<code>aggregate(dat$Rating, dat[&quot;Season&quot;], mean)</code>
+
+<code>  Season     x
+1      1 7.725
+2      2 8.158
+3      3 8.304
+4      4 8.465
+5      5 8.343
+6      6 8.283
+7      7 8.441
+8      8 8.423
+9      9 8.323</code>
+
+(note that <code>dat["Season"]</code> returns a one-column data frame).  The column ‘x’ is our response variable, Rating, grouped by season.  We can get its name included in the column names here by specifying the first argument as a <code>data.frame</code> too:
+
+<code>aggregate(dat[&quot;Rating&quot;], dat[&quot;Season&quot;], mean)</code>
+
+<code>  Season Rating
+1      1  7.725
+2      2  8.158
+3      3  8.304
+4      4  8.465
+5      5  8.343
+6      6  8.283
+7      7  8.441
+8      8  8.423
+9      9  8.323</code>
+
+The other interface is the formula interface, that will be familiar from fitting linear models:
+
+<code>aggregate(Rating ~ Season, dat, mean)</code>
+
+<code>  Season Rating
+1      1  7.725
+2      2  8.158
+3      3  8.304
+4      4  8.465
+5      5  8.343
+6      6  8.283
+7      7  8.441
+8      8  8.423
+9      9  8.323</code>
+
+This interface is really nice; we can get the number of votes here too.
+
+<code>aggregate(cbind(Rating, Votes) ~ Season, dat, mean)</code>
+
+<code>  Season Rating Votes
+1      1  7.725 579.0
+2      2  8.158 533.0
+3      3  8.304 496.7
+4      4  8.465 497.0
+5      5  8.343 452.5
+6      6  8.283 385.7
+7      7  8.441 408.0
+8      8  8.423 391.4
+9      9  8.323 415.0</code>
+
+If you have multiple grouping variables, you can write things like:
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;&lt;figcaption&gt;&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;1
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code>aggregate(response ~ factor1 + factor2, dat, function)</code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+
+to apply a function to each pair of levels of <code>factor1</code> and <code>factor2</code>.
+
+<h2>replicate</h2>
+
+This is great in Monte Carlo simulation situations.  For example.
+Suppose that you flip a fair coin n times and count the number of heads:
+
+<code>trial &lt;- function(n)
+ sum(runif(n) &lt; 0.5) # could have done a binomial draw...</code>
+
+You can run the trial a bunch of times:
+
+<code>trial(10)</code>
+
+<code>[1] 4</code>
+
+<code>trial(10)</code>
+
+<code>[1] 4</code>
+
+<code>trial(10)</code>
+
+<code>[1] 6</code>
+and get a feel for the results.  If you want to replicate the trial
+100 times and look at the distribution of results, you could do:
+
+<code>replicate(100, trial(10))</code>
+
+<code>  [1] 4 4 5 6 8 5 5 7 3 5 6 4 4 3 5 3 6 7 2 6 6 4 5 4 4 4 4 5 6 5 4 2 6 5 6
+[36] 5 6 8 5 6 4 5 4 5 5 5 4 7 3 5 5 6 4 6 4 6 4 4 4 6 3 5 5 7 6 7 5 3 4 4
+[71] 5 6 8 5 6 2 5 7 6 3 5 9 3 7 6 4 5 3 7 3 3 7 6 8 5 4 6 7 4 3</code>
+and then you could plot these:
+
+<code>plot(table(replicate(10000, trial(50))))</code>
+
+<img class="lazy" data-src="https://nicercode.github.io/guides/repeating-things/img/unnamed-chunk-49.png" alt="plot of chunk unnamed-chunk-49" />
+
+<h3>for loops</h3>
+
+“<code>for</code>” loops shine where the output of one iteration depends on the result of the previous iteration.
+
+Suppose you wanted to model random walk.  Every time step, with 50% probability move left or right.
+
+Start at position 0
+
+<code>x &lt;- 0</code>
+
+Move left or right with probability p (0.5 = unbiased)
+
+<code>p &lt;- 0.5</code>
+
+Update the position
+
+<code>x &lt;- x + if (runif(1) &lt; p) -1 else 1</code>
+
+Let’s abstract the update into a function:
+
+<code>step &lt;- function(x, p=0.5)
+ x + if (runif(1) &lt; p) -1 else 1</code>
+
+Repeat a bunch of times:
+
+<code>x &lt;- step(x) x &lt;- step(x)</code>
+
+To find out where we got to after 20 steps:
+
+<code>for (i in 1:20)
+ x &lt;- step(x)</code>
+
+If we want to collect where we’re up to at the same time:
+
+<code>nsteps &lt;- 200 x &lt;- numeric(nsteps + 1) x[1] &lt;- 0 # start at 0 for (i in seq_len(nsteps))
+ x[i+1] &lt;- step(x[i]) plot(x, type=&quot;l&quot;)</code>
+
+<img class="lazy" data-src="https://nicercode.github.io/guides/repeating-things/img/unnamed-chunk-56.png" alt="plot of chunk unnamed-chunk-56" />
+
+Pulling <em>that</em> into a function:
+
+<code>random.walk &lt;- function(nsteps, x0=0, p=0.5) {
+ x &lt;- numeric(nsteps + 1)
+ x[1] &lt;- x0
+ for (i in seq_len(nsteps))
+   x[i+1] &lt;- step(x[i])
+ x
+}</code>
+
+We can then do 30 random walks:
+
+<code>walks &lt;- replicate(30, random.walk(100)) matplot(walks, type=&quot;l&quot;, lty=1, col=rainbow(nrow(walks)))</code>
+
+<img class="lazy" data-src="https://nicercode.github.io/guides/repeating-things/img/unnamed-chunk-58.png" alt="plot of chunk unnamed-chunk-58" />
+
+Of course, in this case, if we think in terms of vectors we can actually implement random walk using implicit vectorisation:
+
+<code>random.walk &lt;- function(nsteps, x0=0, p=0.5)
+ cumsum(c(x0, ifelse(runif(nsteps) &lt; p, -1, 1)))
+walks &lt;- replicate(30, random.walk(100)) matplot(walks, type=&quot;l&quot;, lty=1, col=rainbow(nrow(walks)))</code>
+
+<img class="lazy" data-src="https://nicercode.github.io/guides/repeating-things/img/unnamed-chunk-59.png" alt="plot of chunk unnamed-chunk-59" />
+
+Which reinforces one of the advantages of thinking in terms of functions: you can change the implementation detail without the rest of the program changing.
+
+<h2>increase the max print rows limit</h2>
+getOption("max.print")
+options(max.print=999999)
 
 
 
@@ -8354,5 +8845,11 @@ h2o.predict( gbmModel, airlinesTrainData) # predict
 <br>
 
 <script type='text/javascript' src='readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+    // ... more custom settings?
+});
+</script>
 </body>
 </html>

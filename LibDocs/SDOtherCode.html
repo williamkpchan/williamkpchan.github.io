@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>othercode day</title>
+<title>SD day</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 <script src="./rchart/RGraph.common.core.js" ></script>
@@ -85,6 +85,7 @@ let thedrawdata = [];
 if(localStorage.chartWidth !== undefined) {
   period = localStorage.getItem("chartWidth");
 }else{period = 150;}
+
 let dateLst = [];
 let openLst = [];
 let highLst = [];
@@ -92,6 +93,7 @@ let lowLst = [];
 let closeLst = [];
 let amtLst = [];
 let theMax = 0, theMin = 0;
+
   let intv1 = 5;
   let intv2 = 10;
   let intv3 = 20;
@@ -106,6 +108,25 @@ if(localStorage.trendSteps !== undefined) {
   intv4 = parseInt(trendSteps[3]);
   intv5 = parseInt(trendSteps[4]);
 }
+
+if(localStorage.SD2 !== undefined) {
+  var SD2 = JSON.parse(localStorage.getItem("SD2"));
+  SD1period = parseInt(SD2[0]);
+  SD2period = parseInt(SD2[1]);
+}else{
+  SD1period = 10;
+  SD2period = 20;
+}
+
+if(localStorage.SDTrench !== undefined) {
+  SDTrench = parseInt(localStorage.getItem("SDTrench"));
+  intv5 = SDTrench
+}else{
+  SDTrench = 20;
+  intv5 = 20;
+}
+
+
 var stkList = localStorage.getItem("stkListArr").split(' ');
 var stkPointer = stkList.length;
 
@@ -180,11 +201,20 @@ function startToRoll(theCode) {
 		}
 
 		thedrawdata =[highLst, lowLst, closeLst];
-		thedrawdata.push(makeMovAve(thedrawdata[2], intv1));
-		thedrawdata.push(makeMovAve(thedrawdata[2], intv2));
-		thedrawdata.push(makeMovAve(thedrawdata[2], intv3));
-		thedrawdata.push(makeMovAve(thedrawdata[2], intv4));
-		thedrawdata.push(makeMovAve(thedrawdata[2], intv5));
+		thedrawdata.push(makeMovAve(thedrawdata[2], SDTrench)); // this is 4th row data, ie 0 1 2 3
+		SDdata1 = makeMovSD(thedrawdata[2], SD1period);
+		addSDdata1 = arrayAdd(thedrawdata[3], SDdata1);
+		subSDdata1 = arraySubtract(thedrawdata[3], SDdata1);
+
+		SDdata2 = makeMovSD(thedrawdata[2], SD2period);
+		addSDdata2 = arrayAdd(thedrawdata[3], SDdata2);
+		subSDdata2 = arraySubtract(thedrawdata[3], SDdata2);
+
+		thedrawdata.push(addSDdata1);
+		thedrawdata.push(subSDdata1);
+		thedrawdata.push(addSDdata2);
+		thedrawdata.push(subSDdata2);
+
 		startpoint = thedrawdata[0].length-period
 		thedrawdata[0] = thedrawdata[0].slice(startpoint)
 		thedrawdata[1] = thedrawdata[1].slice(startpoint)
@@ -197,29 +227,8 @@ function startToRoll(theCode) {
 		theMax = Math.max(Math.max(...thedrawdata[0]),Math.max(...thedrawdata[1]),Math.max(...thedrawdata[2]),Math.max(...thedrawdata[3]),Math.max(...thedrawdata[4]),Math.max(...thedrawdata[5]),Math.max(...thedrawdata[6]),Math.max(...thedrawdata[7]));
 		theMin = Math.min(Math.min(...thedrawdata[0]),Math.min(...thedrawdata[1]),Math.min(...thedrawdata[2]),Math.min(...thedrawdata[3]),Math.min(...thedrawdata[4]),Math.min(...thedrawdata[5]),Math.min(...thedrawdata[6]),Math.min(...thedrawdata[7]));
 
-		// create datalog table
-		 transp = transpose(thedrawdata);
-            wAveTrendRange = [];
-		  for (var row=0; row < transp.length; row++) {
-		    var rowRange = transp[row].slice(3, 8);
-      	    rowMax = Math.max(...rowRange);
-      	    rowMin = Math.min(...rowRange);
-      	    var rowDiff = rowMax - rowMin;
-      	    wAveTrendRange.push(rowDiff);
-      	  }
 
-		wAvemax = Math.max(...wAveTrendRange);
-		wAvemin = Math.min(...wAveTrendRange);
-		drawTrend(wAveTrendRange, wAvemax, wAvemin, 'trend', 'red');
-
-		// find derivative
-		derivative = diff(wAveTrendRange);
-		derivative.unshift(0);
-		derivmax = Math.max(...derivative);
-		derivmin = Math.min(...derivative);
-		drawTrend(derivative, derivmax, derivmin, 'deriv', 'green');
-
-		drawchart(thedrawdata, ['red','green','yellow', 'cyan', 'blue', 'white', 'orange', 'brown', 'grey']);
+		drawchart(thedrawdata, ['red','green','yellow', 'cyan', '#533', '#533', '#333', '#333', 'grey']);
 		showStatus();
 		detectX();
 		detectTrend();
@@ -229,7 +238,7 @@ function startToRoll(theCode) {
 		'<span class="whiteword">白</span> ' + thedrawdata[5][lastPtr].toFixed(3) + "&emsp;" + 
 		'<span class="brownword">橙</span> ' + thedrawdata[6][lastPtr].toFixed(3) + "&emsp;" + 
 		'<span class="darkredword">棕</span> ' + thedrawdata[7][lastPtr].toFixed(3) +
-		"<br>commands: c, v, f, b, r, m, l<br>" + "trends: " + trendSteps + "<br>" + "data width " + thedrawdata[0].length + " max period "+ intv5;
+		"<br>commands: c, v, f, b, r, m, l<br>" + "trends: " + trendSteps + "<br>" + "data width " + thedrawdata[0].length + " max period "+ intv5 + " SD1 "+ SD1period+" SD2 "+ SD2period;
 		$("#msg").append(statusMsg);
 		$("#turnover").append(amtLst.slice(amtLst.length-10,amtLst.length));
 	});
@@ -254,6 +263,33 @@ function calcWAve(aveArray) {
 		sum += aveArray[i-1] * i;
 	}
 	return (sum / ((1 + aveArray.length)*aveArray.length/2))
+}
+
+function makeMovSD(bigArray, intv) {
+	return bigArray.slice(0, intv-1).concat(calcMovSD(bigArray, intv));
+}
+function calcMovSD(bigArray, intv) {
+	var sd = [];
+	for (var i =0 ; i < (bigArray.length-intv+1); i++) {sd[i] = calcSD(bigArray.slice(i, i+intv));
+     }
+	return sd;
+}
+function calcSD(SDArray) {
+    var n = SDArray.length;
+    var mean = SDArray.reduce((a,b) => a+b)/n;
+    return Math.sqrt(SDArray.map(x => Math.pow(x-mean,2)).reduce((a,b) => a+b)/n);
+}
+function arrayAdd(a, b) {
+	return a.map((x, index)=> b[index] + x );
+}
+function arraySubtract(b, a) {
+	return a.map((x, index)=> b[index] - x );
+}
+function arrayMul(a, b) {
+	return a.map((x, index)=> b[index] * x );
+}
+function arrayDiv(b, a) {
+	return a.map((x, index)=> b[index] / x );
 }
 
 function transpose(thisArr) { // Swap rows with columns of a matrix
@@ -387,6 +423,8 @@ function chkKey() {
 	if(testkey == 'l'){askList()}
 	if(testkey == 't'){window.scrollTo(0,0);}
 	if(testkey == 'w'){askWidth();}
+	if(testkey == 's'){askSDTrench();}
+	if(testkey == 'S'){askSD2();}
 	if(testkey == 'y'){yearWidth();}
 	if(testkey == 'z'){togglePeriod();}
      if(testkey == 'r'){
@@ -410,6 +448,23 @@ function askWidth() {
 		startToRoll(theCode);
 	}
 }
+function askSDTrench() {
+	var SDTrench = prompt("SD Trench:", "");
+	if (SDTrench != null && SDTrench != "") {
+		SDTrench = parseInt(SDTrench);
+          localStorage.setItem("SDTrench", SDTrench);
+	     window.location.reload(true);
+	}
+}
+function askSD2() {
+	var SD2 = prompt("enter 2 SD periods:", "");
+	if (SD2 != null && SD2 != "") {
+          SD2 = SD2.split(' ');
+          localStorage.setItem("SD2", JSON.stringify(SD2));
+		window.location.reload(true);
+		}
+}
+
 
 function yearWidth() {
 		period = 250;
@@ -456,8 +511,6 @@ function FormatNumberLength(num) {
         <span onclick=changeCode("7500")>7500</span><br>
         <span onclick=changeCode("7200")>7200</span><br>
         <span onclick=changeCode("981")>981</span><br>
-        <span onclick=changeCode("09988")>9988</span><br>
-        <span onclick=changeCode("03690")>3690</span><br>
   </div>
 </div>
 
@@ -465,9 +518,6 @@ function FormatNumberLength(num) {
 
 <canvas id="cvs" width="1150" height="600">[No canvas support]</canvas>
 <br>
-<canvas id="trend" width="1150" height="240">[No canvas support]</canvas>
-<br>
-<canvas id="deriv" width="1150" height="240">[No canvas support]</canvas>
 <div id="msg"></div>
 
 <audio id="alarmPt" src="stringVibrate.mp3" preload="auto"></audio>
@@ -694,6 +744,8 @@ w askWidth
 y yearWidth
 r xunbao
 p chgPeriod
+s SDTrend
+S SD Period
 z toggle period
 </pre>
 </body>
