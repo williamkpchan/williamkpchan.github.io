@@ -25,6 +25,8 @@ img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; bor
 <li>data visualization (ggplot2)</li>
 <li>data manipulation (dplyr, lubridate, tidyr, stringr, readr, & forcats)</li>
 <li>data analysis (combine ggplot2, dplyr to explore data and find insights)</li>
+<a href="https://beckmw.wordpress.com/" class="whitebut ">R is my friend</a>
+
 <pre>
 <a href="R4DataScience.html" class="whitebut ">R4DataScience</a>
 
@@ -8834,6 +8836,336 @@ Which reinforces one of the advantages of thinking in terms of functions: you ca
 getOption("max.print")
 options(max.print=999999)
 
+<h2>parallel processing: foreach package</h2>
+loops are incredibly inefficient at processing data in R.
+
+iters&lt;-10  #number of iterations in the loop
+ls&lt;-vector('list',length=iters)  #vector for appending output
+strt&lt;-Sys.time()   #start time
+for(i in 1:iters){   #loop
+    cat(i,'\n')    #counter
+    to.ls&lt;-rnorm(1e6)
+    to.ls&lt;-summary(to.ls)
+    ls[[i]]&lt;-to.ls    #export
+}
+
+print(Sys.time()-strt)   #end time
+# Time difference of 2.944168 secs
+
+repeated the above code with an increasing number of iterations, 10 to 100 at intervals of 10.
+
+iters&lt;-seq(10,100,by=10)   #iterations to time
+times&lt;-numeric(length(iters))  #output time vector for  iteration sets
+for(val in 1:length(iters)){   #loop over iteration sets
+    cat(val,' of ', length(iters),'\n')
+    to.iter&lt;-iters[val]
+    ls&lt;-vector('list',length=to.iter)    #vector for appending output
+    strt&lt;-Sys.time()    #start time
+    for(i in 1:to.iter){    #same for loop as before
+        cat(i,'\n')
+        to.ls&lt;-rnorm(1e6)
+        to.ls&lt;-summary(to.ls)
+        ls[[i]]&lt;-to.ls          #export
+    }
+    times[val]&lt;-Sys.time()-strt    #end time
+}
+
+library(ggplot2)   #plot the times
+to.plo&lt;-data.frame(iters,times)
+ggplot(to.plo,aes(x=iters,y=times)) + 
+    geom_point() +
+    geom_smooth() + 
+    theme_bw() + 
+    scale_x_continuous('No. of loop iterations') + 
+    scale_y_continuous ('Time in seconds')
+
+<img src="https://beckmw.files.wordpress.com/2014/01/seq_time1.jpg">
+Fig: Processing time as a function of number of iterations for a simple loop.
+
+The processing time increases linearly with the number of iterations.  
+Again, processing time is not extensive for the above example.  
+Suppose we wanted to run the example with ten thousand iterations.  
+We can predict how long that would take based on the linear relationship between time and iterations.
+
+mod&lt;-lm(times~iters)    #predict times
+predict(mod,newdata=data.frame(iters=1e4))/60
+# 45.75964
+
+
+This is all well and good if we want to wait around for 45 minutes.  
+Running the loop in parallel would greatly decrease this time.  
+I want to first illustrate the problem of running loops in sequence before I show how this can done using the foreach package.  
+If the above code is run with <code>1e4</code> iterations, a quick look at the performance metrics in the task manager (Windows 7 OS) gives you an idea of how hard your computer is working to process the code.  
+My machine has eight processors and you can see that only a fraction of them are working while the script is running.
+
+<img src="https://beckmw.files.wordpress.com/2014/01/proc1.jpg">
+Fig: Resources used during sequential processing of a <code>for</code> loop.
+
+Running the code using foreach will make full use of the computer&#8217;s processors.
+Individual chunks of the loop are sent to each processor so that the entire process can be run in parallel rather than in sequence.  
+Here&#8217;s how to run the code with <code>1e4</code> iterations in parallel.
+That is, each processor gets a finite set of the total number of iterations, i.e., iterations 1&#8211;100 goes to processor one, iterations 101&#8211;200 go to processor two, etc. The output from each processor is then comiled after the iterations are completed.  
+
+#import packages
+library(foreach)
+library(doParallel)
+iters&lt;-1e4   #number of iterations
+
+#setup parallel backend to use 8 processors
+cl&lt;-makeCluster(8)
+registerDoParallel(cl)
+
+#start time
+strt&lt;-Sys.time()
+
+#loop
+ls&lt;-foreach(icount(iters)) %dopar% {
+    to.ls&lt;-rnorm(1e6)
+    to.ls&lt;-summary(to.ls)
+    to.ls
+    }
+
+print(Sys.time()-strt)
+stopCluster(cl)
+
+#Time difference of 10.00242 mins
+
+Running the loop in parallel decreased the processing time about four-fold.  
+Although the loop generally looks the same as the sequential version, several parts of the code have changed.  
+First, we are using the <code>foreach</code> function rather than <code>for</code> to define our loop.  
+The syntax for specifying the iterator is slightly different with <code>foreach</code> as well, i.e., <code>icount(iters)</code> tells the function to repeat the loop a given number of times based on the value assigned to <code>iters</code>.  
+Additionally, the convention <code>%dopar%</code> specifies that the code is to be processed in parallel if a backend has been registered (using <code>%do%</code> will run the loop sequentially).  
+The functions <code>makeCluster</code> and <code>registerDoParallel</code> from the <a href="http://cran.r-project.org/web/packages/doParallel/index.html" title="doParallel">doParallel</a> package are used to create the parallel backend.  
+Another important issue is the method for recombining the data after the chunks are processed. By default, <code>foreach</code> will append the output to a list which we&#8217;ve saved to an object.  
+The default method for recombining output can be changed using the <code>.combine</code> argument.  
+Also be aware that packages used in the evaluated expression must be included with the <code>.packages</code> argument.
+The processors should be working at full capacity if the the loop is executed properly.  
+Note the difference here compared to the first loop that was run in sequence.
+
+<img src="https://beckmw.files.wordpress.com/2014/01/proc2.jpg">
+Fig: Resources used during parallel processing of a <code>for</code> loop.
+
+A few other issues are worth noting when using the foreach package.  
+These are mainly issues I&#8217;ve encountered and I&#8217;m sure others could contribute to this list.  
+The foreach package does not work with all types of loops.  
+For example, I chose the above example to use a large number (<code>1e6</code>) of observations with the <code>rnorm</code> function.  
+I can&#8217;t say for certain the exact type of data that works best, but I have found that functions     hat take a long time when run individually are generally handled very well.  
+Interestingly, decreasing the number of observations and increasing the number of iterations may cause the processors to not run at maximum efficiency (try <code>rnorm(100)</code> with <code>1e5</code> iterations). I also haven&#8217;t had much success running repeated models in parallel.  
+The functions work but the processors never seem to reach max efficiency.  
+The system statistics should cue you off as to whether or not the functions are working.
+I also find it bothersome that monitoring progress seems is an issue with parallel loops.  
+A simple call using <code>cat</code> to return the iteration in the console does not work with parallel loops.  
+The most practical solution I&#8217;ve found is described <a href="http://vikparuchuri.com/blog/monitoring-progress-inside-foreach-loop/" title="here">here</a>, which involves exporting information to a separate file that tells you how far the loop has progressed.  
+Also, be very aware of your RAM when running processes in parallel.  
+I&#8217;ve found that it&#8217;s incredibly easy to max out the memory, which not only causes the function to stop working correctly, but also makes your computer run like garbage.  
+Finally, I&#8217;m a little concerned that I might be destroying my processors by running them at maximum capacity.  
+The fan always runs at full blast leading me to believe that critical meltdown is imminent.  
+I&#8217;d be pleased to know if this is an issue or not.
+That&#8217;s it for now.  
+I have to give credit to <a href="http://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf" title="this tutorial">this tutorial</a> for a lot of the information in this post.  
+<h3>Vectorised</h3>
+E = sapply(1:10000, function(n) {max.eig(5, 1)})
+summary(E)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+ 0.7615  1.9150  2.2610  2.3160  2.6470  5.2800
+
+Here eigenvalues are calculated from 10000 function calls, all of which use the same parameters. 
+The distribution of the resulting eigenvalues is plotted in the histogram below. 
+Generating these data took a couple of seconds on my middle-of-the-range laptop. 
+Not a big wait. 
+But it was only using one of the four cores on the machine, so in principle it could have gone faster.
+
+We can make things more interesting by varying the dimensions of the matrix.
+sapply(1:5, function(n) {max.eig(n, 1)})
+
+Or changing both the dimensions (taking on integral values between 1 and 5) and the standard deviation (running through 1, 2 and 3).
+sapply(1:5, function(n) {sapply(1:3, function(m) {max.eig(n, m)})})
+
+The results are presented in an intuitive matrix. Everything up to this point is being done serially.
+<h3>Enter foreach</h3>
+
+library(foreach)
+
+At first sight, the foreach library provides a slightly different interface for vectorisation. We’ll start off with simple repetition.
+times(10) %do% max.eig(5, 1)
+
+That just executes the function with the same arguments 10 times over. If we want to systematically vary the parameters, then instead of times() we use foreach().
+foreach(n = 1:5) %do% max.eig(n, 1)
+
+The results are returned as a list, which is actually more reminiscent of the behaviour of lapply() than sapply(). But we can get something more compact by using the .combine option.
+foreach(n = 1:5, .combine = c) %do% max.eig(n, 1)
+
+
+That’s better. Now, what about varying both the dimensions and standard deviation? We can string together multiple calls to foreach() using the %:% nesting operator.
+foreach(n = 1:5) %:% foreach(m = 1:3) %do% max.eig(n, m)
+
+I have omitted the output because it consists of nested lists: it’s long and somewhat ugly. But again we can use the .combine option to make it more compact.
+foreach(n = 1:5, .combine = rbind) %:% foreach(m = 1:3) %do% max.eig(n, m)
+
+foreach(n = 1:5, .combine = cbind) %:% foreach(m = 1:3) %do% max.eig(n, m)
+
+You can choose between combining using cbind() or rbind() depending on whether you want the output from the inner loop to form the columns or rows of the output. 
+There’s lots more magic to be done with .combine. 
+You can find the details in the informative article <a href="http://r.adu.org.za/web/packages/foreach/vignettes/foreach.pdf" rel="nofollow" target="_blank">Using The foreach Package</a> by Steve Weston.
+
+You can also use foreach() to loop over multiple variables simultaneously.
+foreach(n = 1:5, m = 1:5) %do% max.eig(n, m)
+
+But this is still all serial…
+
+<h3>Filtering</h3>
+One final capability before we move on to parallel execution, is the ability to add in a filter within the foreach() statement.
+
+library(numbers)
+foreach(n = 1:100, .combine = c) %:% when (isPrime(n)) %do% n
+
+Here we identify the prime numbers between 1 and 100 by simply looping through the entire sequence of values and selecting only those that satisfy the condition in the when() clause. Of course, there are more efficient ways to do this, but this notation is rather neat.
+<h3>Going Parallel</h3>
+Making the transition from serial to parallel is as simple as changing %do% to %dopar%.
+foreach(n = 1:5) %dopar% max.eig(n, 1)
+
+Warning message:
+executing %dopar% sequentially: no parallel backend registered
+
+The warning gives us pause for thought: maybe it was not quite that simple? Yes, indeed, there are additional requirements. You need first to choose a parallel backend. And here, again, there are a few options. We will start with the most accessible, which is the multicore backend.
+<h3>Multicore</h3>
+Multicore processing is provided by the doMC library. You need to load the library and tell it how many cores you want to use.
+library(doMC)
+registerDoMC(cores=4)
+
+Let’s make a comparison between serial and parallel execution times.
+
+library(rbenchmark)
+
+benchmark(
++     foreach(n = 1:50) %do% max.eig(n, 1),
++     foreach(n = 1:50) %dopar% max.eig(n, 1)
++ )
+
+The overall execution time is reduced, but not by the factor of 4 that one might expect. 
+This is due to the additional burden of having to distribute the job over the multiple cores. 
+The tradeoff between communication and computation is one of the major limitations of parallel computing, but if computations are lengthy and there is not too much data to move around then the gains can be excellent.
+
+On a single machine you are limited by the number of cores. But if you have access to a cluster then you can truly take things to another level.
+<h3>Cluster</h3>
+The foreach() functionality can be applied to a cluster using the doSNOW library. We will start by using doSNOW to create a collection of R instances on a single machine using a SOCK cluster.
+
+library(doSNOW)
+cluster = makeCluster(4, type = "SOCK")
+registerDoSNOW(cluster)
+
+benchmark(
++     foreach(n = 1:50) %do% max.eig(n, 1),
++     foreach(n = 1:50) %dopar% max.eig(n, 1)
++ )
+
+stopCluster(cluster)
+
+There is an improvement in execution time which is roughly comparable to what we got with the multicore implementation. Note that when you are done, you need to shut down the cluster.
+
+Next we will create an <a href="https://en.wikipedia.org/wiki/Message_Passing_Interface" rel="nofollow" target="_blank">MPI</a> cluster consisting of 20 threads.
+cluster = makeCluster(20, type = "MPI")
+#
+registerDoSNOW(cluster)
+#
+benchmark(
++     foreach(n = 1:100) %do% max.eig(n, 1),
++     foreach(n = 1:100) %dopar% max.eig(n, 1)
++ )
+
+
+There is an improvement in performance, with the parallel job running roughly 3 times as quickly.
+
+How about a slightly more complicated example? We will try running some bootstrap calculations. We start out with the serial implementation.
+random.data <- matrix(rnorm(1000000), ncol = 1000)
+
+bmed <- function(d, n) median(d[n])
+
+library(boot)
+#
+sapply(1:100, function(n) {sd(boot(random.data[, n], bmed, R = 10000)$t)})
+
+First we generated a big array of normally distributed random numbers. Then we used sapply to calculate bootstrap estimates for the standard deviation of the median for each columns of the matrix.
+
+The parallel implementation requires a little more work: first we need to make the global data (the random matrix and the bootstrap function) available across the cluster.
+clusterExport(cluster, c("random.data", "bmed"))
+
+Then we spread the jobs out over the cluster nodes. We will do this first using clusterApply(), which is part of the snow library and is the cluster analogue of sapply(). It returns a list, so to get a nice compact representation we use unlist().
+results = clusterApply(cluster, 1:100, function(n) {
++     library(boot)
++     sd(boot(random.data[, n], bmed, R = 10000)$t)
++ })
+head(unlist(results))
+
+
+The foreach implementation is a little neater.
+results = foreach(n = 1:100, .combine = c) %dopar% {
+    library(boot); sd(boot(random.data[, n], bmed, R = 10000)$t)
+}
+head(results)
+
+stopCluster(cluster)
+
+The key in both cases is that the boot library must be loaded on each of the cluster nodes as well so that its functionality is available. Simply loading the library on the root node is not enough!
+
+<h2>repeating timer by r asynchronously</h2>
+The future package:
+
+library("future")
+plan(multiprocess)
+
+myfun <- function() {
+  future(fun2())
+
+  return(1+1)
+}
+Unless fun2() is function used purely for its side effects, you typically want to retrieve the value of that future expression, which you do as:
+
+f <- future(fun2())
+y <- fun3()
+v <- value(f)
+z <- v + y
+An alternative is to use the %<-% operator as in:
+
+v %<-% fun2()
+y <- fun3()
+z <- v + y
+FYI, if you use
+
+plan(cluster, workers = c("n1", "n3", "remote.server.org"))
+then the future expression is resolved on one of those machines. Using
+
+plan(future.BatchJobs::batchjobs_slurm)
+will cause it to be resolved via a Slurm job scheduler queue.
+
+<a href="https://rstudio.github.io/promises/articles/futures.html" class="whitebut ">Launching tasks with future</a>
+<a href="https://cran.r-project.org/web/packages/future/vignettes/future-1-overview.html" class="whitebut ">A Future for R</a>
+<a href="https://appsilon.com/an-example-of-how-to-use-the-new-r-promises-package/" class="whitebut ">example of new R promises package</a>
+
+<h2>Set a timer in R to execute a program</h2>
+executing same code block every 15 seconds:
+
+interval = 15
+x = data.frame()
+
+repeat {
+  startTime = Sys.time()
+  x = rbind.data.frame(x, sum(data)) #replace this line with your code/functions
+  sleepTime = startTime + interval - Sys.time()
+  if (sleepTime > 0)
+    Sys.sleep(sleepTime)
+}
+
+Or:
+print_test<-function(x){
+    if(condition)
+    {
+        Sys.sleep(x);
+        cat("hello world");
+        print_test(x);
+    }
+}
+print_test(15)
 
 
 
