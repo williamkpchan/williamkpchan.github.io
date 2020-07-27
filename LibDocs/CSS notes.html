@@ -2305,6 +2305,320 @@ li.important:nth-child(-n+3)
 
 <h3><span class="orange">最后</span></h3><h3>总结</h3>以上便是CSS选择器 Level 4 里新出的所有选择器，其实都是非常有用的，虽然有些选择器的浏览器支持度并不乐观的。
 
+<h2>妙用 CSS变量</h2>
+CSS Variables
+The var() Function
+Variables in CSS should be declared within a CSS selector that defines its scope.
+For a global scope you can use either the :root or the body selector.
+
+The variable name must begin with two dashes (--) and is case sensitive!
+
+The syntax of the var() function is as follows:
+var(custom-name, value)
+
+custom-name	Required. The custom property's name (must start with two dashes)
+value	Optional. The fallback value (used if the custom property is invalid)
+
+The following example first defines a global custom property named "--main-bg-color", then it uses the var() function to insert the value of the custom property later in the style sheet:
+
+Example
+:root { --main-bg-color: coral;}
+#div1 { background-color: var(--main-bg-color);}
+#div2 { background-color: var(--main-bg-color);}
+
+Values in JavaScript
+To use the values of custom properties in JavaScript, it is just like standard properties.
+
+// get variable from inline style
+element.style.getPropertyValue("--my-var");
+
+// get variable from wherever
+getComputedStyle(element).getPropertyValue("--my-var");
+
+// set variable on inline style
+element.style.setProperty("--my-var", jsVar + 4);
+
+「CSS变量」又叫「CSS自定义属性」，为什么会突然提起这个很少人用到的东西呢？
+因为最近在重构个人官网，不知道为什么突然喜欢用上「CSS变量」，可能其自身隐藏的魅力，让笔者对它刮目相看。
+
+谈到为什么会在CSS中使用变量，下面举个栗子，估计大家一看就会明白。
+
+<code>/* 不使用CSS变量 */
+.title { background-color: red;}
+.desc { background-color: red;}
+
+/* 使用CSS变量 */
+:root { --bg-color: red;}
+.title { background-color: var(--bg-color);}
+.desc { background-color: var(--bg-color);}
+</code>
+看完可能会觉得使用「CSS变量」的代码量多了一点，但是有没有想到突然某天万恶的策划小哥哥和设计小姐姐说要做一个换肤功能。
+按照平常的思路，估计有些同学就会按照<code>默认颜色主题</code>增加一份对照的<code>新颜色主题</code>CSS文件。
+这样每次新增需求都同时维护几套主题颜色多麻烦啊。
+
+此时「CSS变量」就派上用场了，提前跟设计小姐姐规范好各种需要变换的颜色并通过「CSS变量」进行定义，通过JS批量操作这些定义好的「CSS变量」即可。
+这也是「变换主题颜色」的一种解决方案之一，好处在于只需写一套CSS代码。
+
+<code>["red", "blue", "green"].forEach(v =&gt; {
+  const btn = document.getElementById(`${v}-theme-btn`);
+  btn.addEventListener(
+   "click", () =&gt; document.body.style.setProperty("--bg-color", v));
+});
+</code>
+在此总结下CSS使用变量的好处：
+
+减少样式代码的重复性
+增加样式代码的扩展性
+提高样式代码的灵活性
+增多一种CSS与JS的通讯方式
+不用深层遍历DOM改变某个样式
+可能有些同学会问，Sass和Less早就实现了变量这个特性，何必再多此一举呢。
+可是细想一下，「CSS变量」对比Sass和Less的变量，又有它的过人之处。
+
+浏览器原生特性，无需经过任何转译就可直接运行
+DOM对象一员，极大便利了CSS与JS之间的联系
+<h3>认识</h3>本来打算用一半篇幅讲述「CSS变量」的规范和用法，但是网上一搜一大把就感觉没必要了，贴上阮一峰老师写的教程《CSS变量教程》。
+同时笔者也对「CSS变量」的细节地方进行一个整理，方便大家记忆。
+
+声明：<code>--变量名</code>
+读取：<code>var(--变量名, 默认值)</code>
+类型
+普通：只能用作<code>属性值</code>不能用作<code>属性名</code>
+字符：与字符串拼接 <code>"Hello, "var(--name)</code>
+数值：使用<code>calc()</code>与数值单位连用 <code>var(--width) * 10px</code>
+
+作用域
+范围：在<code>当前元素块作用域</code>及其<code>子元素块作用域</code>下有效
+优先级别：<code>内联样式 &gt; ID选择器 &gt; 类选择器 = 属性选择器 = 伪类选择器 &gt; 标签选择器 = 伪元素选择器</code>
+
+接下来使用几个特别的场景展示「CSS变量」的魅力。
+还是那句话，「一样东西有使用的场景，那自然就会有它的价值」，那么用的人也会越来越多。
+
+<h3>使用场景</h3>其实「CSS变量」有一个特别好用的场景，那就是结合List元素集合使用。
+如果不明白这是什么，请继续往下看。
+
+<code>以下所有演示代码基于Vue文件，但HTML、CSS和JS分开书写，为了简化CSS的书写而使用Sass进行预处理，方便代码演示
+</code>
+<h5>条形加载条</h5>一个条形加载条通常由几条线条组成，并且每条线条对应一个存在不同时延的相同动画，通过时间差运行相同的动画，从而产生加载效果。
+估计大部分的同学可能会把CSS代码写成以下这样。
+
+<code>&lt;ul class="strip-loading flex-ct-x"&gt; &lt;li v-for="v in 6" :key="v"&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</code>
+<code>.loading { width: 200px; height: 200px;
+ li {
+     border-radius: 3px; width: 6px;
+     height: 30px; background-color: #f66;
+     animation: beat 1s ease-in-out infinite;
+     &amp; + li { margin-left: 5px;}
+     &amp;:nth-child(2) { animation-delay: 200ms;}
+     &amp;:nth-child(3) { animation-delay: 400ms;}
+     &amp;:nth-child(4) { animation-delay: 600ms;}
+     &amp;:nth-child(5) { animation-delay: 800ms;}
+     &amp;:nth-child(6) { animation-delay: 1s;} }}
+</code>
+分析代码发现，每个<code>&lt;li&gt;</code>只是存在<code>animation-delay</code>不同，而其余代码则完全相同，换成其他类似的List元素集合场景，那岂不是有10个<code>&lt;li&gt;</code>就写10个<code>:nth-child</code>。
+
+显然这种方法不灵活也不容易封装成组件，如果能像JS那样封装成一个函数，并根据参数输出不同的样式效果，那就更棒了。
+说到这里，很明显就是为了铺垫「CSS变量」的开发技巧了。
+
+对于HTML部分的修改，让每个<code>&lt;li&gt;</code>拥有一个自己作用域下的「CSS变量」。
+对于CSS部分的修改，就需要分析哪些属性是随着<code>index</code>递增而发生规律变化的，对规律变化的部分使用「CSS变量」表达式代替即可。
+
+<code>&lt;ul class="strip-loading flex-ct-x"&gt; &lt;li v-for="v in 6" :key="v" :style="`--line-index: ${v}`"&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</code>
+<code>.strip-loading { width: 200px; height: 200px; li {
+     --time: calc((var(--line-index) - 1) * 200ms);
+     border-radius: 3px;
+     width: 6px;
+     height: 30px;
+     background-color: #f66;
+     animation: beat 1.5s ease-in-out var(--time) infinite;
+     &amp; + li { margin-left: 5px; }
+ }}
+</code>
+<code>源码链接可在文章结尾处获取
+</code>
+代码中的变量<code>--line-index</code>和<code>--time</code>使每个<code>&lt;li&gt;</code>拥有一个属于自己的作用域。
+例如第2个<code>&lt;li&gt;</code>，<code>--line-index</code>的值为2，<code>--time</code>的计算值为<code>200ms</code>，换成第3个<code>&lt;li&gt;</code>后这两个值又会不同了。
+
+这就是「CSS变量」的作用范围所致(<code>在当前元素块作用域及其子元素块作用域下有效</code>)，因此在<code>.strip-loading</code>的块作用域下调用<code>--line-index</code>是无效的。
+
+<code>/* flex属性无效 */
+.loading { display: flex; align-items: center; flex: var(--line-index);}
+</code>
+通过妙用「CSS变量」，也把CSS代码从<code>29行</code>缩减到<code>15行</code>，对于那些含有List元素集合越多的场景，效果就更明显。
+而且这样写也更加美观更加容易维护，某天说加载效果的时间差不明显，直接将<code>calc((var(--line-index) - 1) * 200ms)</code>里的<code>200ms</code>调整成<code>400ms</code>即可。
+就无需对每个<code>:nth-child(n)</code>进行修改了。
+
+<h5>心形加载条</h5>前段时间刷掘金看到<code>陈大鱼头兄</code>的心形加载条，觉得挺漂亮的，很带感觉。
+
+<img class="lazy" data-src="https://mmbiz.qpic.cn/mmbiz_gif/v735W8ZTLWkdq6dsibyI1ianFE0iaCVmiaIicMq7LKu9CoibDTWicG2qg6cTJCxvlVRqouhx5nb6AZcD8xhBxiaIyxytnQ/640">
+通过动图分析，发现每条线条的背景色和动画时延不一致，另外动画运行时的高度也不一致。
+细心的你可能还会发现，第1条和第9条的高度一致，第2条和第8条的高度一致，依次类推，得到<code>高度变换相同类</code>的公式：<code>对称index = 总数 + 1 - index</code>。
+
+背景色使用了滤镜的色相旋转<code>hue-rotate</code>函数，目的是为了使颜色过渡得更加自然；动画时延的设置和上面<code>条形加载条</code>的设置一致。
+下面就用「CSS变量」根据看到的动图实现一番。
+
+<code>&lt;div class="heart-loading flex-ct-x"&gt; &lt;ul style="--line-count: 9"&gt;
+     &lt;li v-for="v in 9" :key="v" :class="`line-${v}`" :style="`--line-index: ${v}`"&gt;&lt;/li&gt; &lt;/ul&gt;
+&lt;/div&gt;
+</code>
+<code>.heart-loading { width: 200px; height: 200px; ul {
+     display: flex;
+     justify-content: space-between;
+     width: 150px;
+     height: 10px; } li {
+     --Θ: calc(var(--line-index) / var(--line-count) * .5turn);
+     --time: calc((var(--line-index) - 1) * 40ms);
+     border-radius: 5px;
+     width: 10px;
+     height: 10px;
+     background-color: #3c9;
+     filter: hue-rotate(var(--Θ));
+     animation-duration: 1s;
+     animation-delay: var(--time);
+     animation-iteration-count: infinite; } .line-1, .line-9 {
+     animation-name: line-move-1; } .line-2, .line-8 {
+     animation-name: line-move-2; } .line-3, .line-7 {
+     animation-name: line-move-3; } .line-4, .line-6 {
+     animation-name: line-move-4; } .line-5 {
+     animation-name: line-move-5; }}
+</code>
+<code>源码链接可在文章结尾处获取
+</code>
+一波操作后就有了下面的效果。
+和<code>陈大鱼头兄</code>的心形加载条对比一下，颜色、波动曲线和跳动频率有点不一样，在暖色调的蔓延和肾上腺素的飙升下，这是一种心动的感觉。
+想起自己曾经写的一首诗：<code>我见犹怜，爱不释手，雅俗共赏，君子好逑</code>。
+
+<img class="lazy" data-src="https://mmbiz.qpic.cn/mmbiz_gif/v735W8ZTLWkdq6dsibyI1ianFE0iaCVmiaIic8uyyVw7xeERWCZI60ytkOnPibqUohqhRf7P8VA4Ztq8xiaKPHCSvXUeA/640">
+<h5>标签导航栏</h5>上面通过两个加载条演示了「CSS变量」在CSS中的运用以及一些妙用技巧，现在通过标签导航栏演示「CSS变量」在JS中的运用。
+
+JS中主要有3个操作「CSS变量」的API，看上去简单易记，分别如下：
+
+读取变量：<code>elem.style.getPropertyValue()</code>
+设置变量：<code>elem.style.setProperty()</code>
+删除变量：<code>elem.style.removeProperty()</code>
+先上效果图，效果中主要是使用「CSS变量」标记每个Tab的背景色和切换Tab的显示状态。
+
+<img class="lazy" data-src="https://mmbiz.qpic.cn/mmbiz_gif/v735W8ZTLWkdq6dsibyI1ianFE0iaCVmiaIiccC3Vyzr84zffgMicKrpMh1zwmKddP5cWKpJjPFn72bc52rVUrTwOiaIw/640">
+<code>&lt;div class="tab-navbar"&gt; &lt;nav&gt;
+     &lt;a v-for="(v, i) in list" :key="v" :class="{ active: index === i }" @click="select(i)"&gt;标题{{i + 1}}&lt;/a&gt; &lt;/nav&gt; &lt;div&gt;
+     &lt;ul ref="tabs" :style="`--tab-count: ${list.length}`"&gt;
+         &lt;li v-for="(v, i) in list" :key="v" :style="`--bg-color: ${v}`"&gt;内容{{i + 1}}&lt;/li&gt;
+     &lt;/ul&gt; &lt;/div&gt;
+&lt;/div&gt;
+</code>
+<code>.tab-navbar { display: flex; overflow: hidden; flex-direction: column-reverse; border-radius: 10px; width: 300px; height: 400px; nav {
+     display: flex;
+     height: 40px;
+     background-color: #f0f0f0;
+     line-height: 40px;
+     text-align: center;
+     a {
+         flex: 1;
+         cursor: pointer;
+         transition: all 300ms;
+         &amp;.active {
+        background-color: #66f;
+        font-weight: bold;
+        color: #fff;
+         }
+     } } div {
+     flex: 1;
+     ul {
+         --tab-index: 0;
+         --tab-width: calc(var(--tab-count) * 100%);
+         --tab-move: calc(var(--tab-index) / var(--tab-count) * -100%);
+         display: flex;
+         flex-wrap: nowrap;
+         width: var(--tab-width);
+         height: 100%;
+         transform: translate3d(var(--tab-move), 0, 0);
+         transition: all 300ms;
+     }
+     li {
+         display: flex;
+         justify-content: center;
+         align-items: center;
+         flex: 1;
+         background-color: var(--bg-color);
+         font-weight: bold;
+         font-size: 20px;
+         color: #fff;
+     } }}
+</code>
+<code>exportdefault { data() {
+     return {
+         index: 0,
+         list: ["#f66", "#09f", "#3c9"]
+     }; }, methods: {
+     select(i) {
+         this.index = i;
+         this.$refs.tabs.style.setProperty("--tab-index", i);
+     } }};
+</code>
+<code>源码链接可在文章结尾处获取
+</code>
+在<code>&lt;ul&gt;</code>上定义<code>--tab-index</code>表示Tab当前的索引，当点击按钮时重置<code>--tab-index</code>的值，就可实现不操作DOM来移动<code>&lt;ul&gt;</code>的位置显示指定的Tab。
+不操作DOM而可移动<code>&lt;ul&gt;</code>是因为定义了<code>--tab-move</code>，通过<code>calc()</code>计算<code>--tab-index</code>与<code>--tab-move</code>的关系，从而操控<code>transform: translate3d()</code>来移动<code>&lt;ul&gt;</code>。
+
+另外在<code>&lt;li&gt;</code>上定义<code>--bg-color</code>表示Tab的背景色，也是一种比较简洁的模板赋值方式，总比写<code>&lt;li :style="backgroundColor: ${color}"&gt;</code>要好看。
+如果多个CSS属性依赖一个变量赋值，那么使用「CSS变量」赋值到style上就更方便了，那些CSS属性可在CSS文件里进行计算与赋值，这样可帮助JS分担一些属性计算工作。
+
+当然，这个标签导航栏也可通过纯CSS实现，有兴趣的同学可看看笔者之前一篇文章里的纯CSS标签导航栏。
+
+<h5>悬浮跟踪按钮</h5>通过几个栗子实践了「CSS变量」在CSS和JS上的运用，相信大家已经掌握了其用法和技巧。
+之前在某个网站看过一个比较酷炫的鼠标悬浮特效，好像也是使用「CSS变量」实现的。
+笔者凭着记忆也使用「CSS变量」实现一番。
+
+其实思路也比较简单，先对按钮进行布局和着色，然后使用伪元素标记鼠标的位置，定义<code>--x</code>和<code>--y</code>表示伪元素在按钮里的坐标，通过JS获取鼠标在按钮上的<code>offsetLeft</code>和<code>offsetLeft</code>分别赋值给<code>--x</code>和<code>--y</code>，再对伪元素添加径向渐变的背景色，大功告成，一个酷炫的鼠标悬浮跟踪特效就这样诞生了。
+
+<img class="lazy" data-src="https://mmbiz.qpic.cn/mmbiz_gif/v735W8ZTLWkdq6dsibyI1ianFE0iaCVmiaIic8N0Kmj3Tk4wJuAjgxEcKhd5pDYod7CRnJGmuHEyWnFCoyV2D3rCjicA/640">
+<code>&lt;a class="track-btn pr tac" @mousemove="move"&gt; &lt;span&gt;妙用CSS变量，让你的CSS变得更心动&lt;/span&gt;
+&lt;/a&gt;
+</code>
+<code>.track-btn { display: block; overflow: hidden; border-radius: 100px; width: 400px; height: 50px; background-color: #66f; line-height: 50px; cursor: pointer; font-weight: bold; font-size: 18px; color: #fff; span {
+     position: relative; } &amp;::before {
+     --size: 0;
+     position: absolute;
+     left: var(--x);
+     top: var(--y);
+     width: var(--size);
+     height: var(--size);
+     background-image: radial-gradient(circle closest-side, #09f, transparent);
+     content: "";
+     transform: translate3d(-50%, -50%, 0);
+     transition: all 200ms ease; } &amp;:hover::before {
+     --size: 400px; }}
+</code>
+<code>exportdefault { name: "track-btn", methods: {
+     move(e) {
+         const x = e.pageX - e.target.offsetLeft;
+         const y = e.pageY - e.target.offsetTop;
+         e.target.style.setProperty("--x", `${x}px`);
+         e.target.style.setProperty("--y", `${y}px`);
+     } }};
+</code>
+<code>源码链接可在文章结尾处获取
+</code>
+其实可结合鼠标事件来完成更多的酷炫效果，例如<code>动画关联</code>、<code>事件响应</code>等操作。
+没有做不到，只有想不到，尽情发挥你的想象力啦。
+
+之前在CodePen上还看到一个挺不错的栗子，一个悬浮视差按钮，具体代码涉及到一些3D变换的知识。
+看完源码后，按照其思路自己也实现一番，顺便对代码稍加改良并封装成Vue组件，存放到本课件示例代码中。
+感觉录制的GIF有点别扭，显示效果不太好，有兴趣的同学可下载本课件示例代码，自己运行看看效果。
+
+<img class="lazy" data-src="https://mmbiz.qpic.cn/mmbiz_gif/v735W8ZTLWkdq6dsibyI1ianFE0iaCVmiaIicaibG3zsXTVagGYkZCnxD8Q0JvgGeicjBk8K9X1P9vKocCIuR2I43Dialw/640">
+<h3>兼容</h3>对于现代浏览器来说，「CSS变量」的兼容性其实还是蛮好的，所以大家可放心使用。
+毕竟现在都是各大浏览器厂商快速迭代的时刻，产品对于用户体验来说是占了很大比重，因此在条件允许的情况下还是大胆尝新，不要被一些过去的所谓的规范所约束着。
+
+<img class="lazy" data-src="https://mmbiz.qpic.cn/mmbiz_png/v735W8ZTLWkdq6dsibyI1ianFE0iaCVmiaIiciatYC929RXgq42NcSSEpyBDQ9XDVPSNAC3Tzs628MfYBxPnGxjWY1og/640">
+
+
+
+
 
 
 

@@ -30,7 +30,8 @@ $(document).ready(function () {
 	}
 
 	function alarm() {
-		alarmSound.play();
+		//alarmSound.play();
+		beep(300,1200,2)
 		clockBody.
 		addClass('animated shake').
 		one('webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend', function () {
@@ -38,6 +39,24 @@ $(document).ready(function () {
 		});
 		showDateAndTime();
 	}
+
+var audioCtx = new (window.AudioContext || window.webkitAudioContext || window.audioContext);
+
+function beep(duration, frequency, volume, type, callback) {
+    var oscillator = audioCtx.createOscillator();
+    var gainNode = audioCtx.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    if (volume){gainNode.gain.value = volume;}
+    if (frequency){oscillator.frequency.value = frequency;}
+    if (type){oscillator.type = 'square';}
+    if (callback){oscillator.onended = callback;}
+
+    oscillator.start(audioCtx.currentTime);
+    oscillator.stop(audioCtx.currentTime + ((duration || 500) / 1000));
+};
 
 	function makeRed() {
 		status.removeClass('green');
@@ -123,6 +142,23 @@ $(document).ready(function () {
 	});
 
 	reset.on('click', initialise);
+
+     function chkKey() {
+       console.log("start")
+       var testkey = getChar(event);
+       if(testkey == '9'){sessionPlus.click();}
+       if(testkey == '7'){sessionMinus.click();}
+       if(testkey == '7'){breakPlus.click();}
+       if(testkey == '1'){breakMinus.click(); console.log("breakMinus.click")}
+     }
+
+     function getChar(event) {
+       if (event.which!=0 && event.charCode!=0) {
+         return String.fromCharCode(event.which);   // the rest
+       } else {
+         return null; // special key
+       }
+     }
 
 	function initialise() {
 		clearTimeout(timer);
