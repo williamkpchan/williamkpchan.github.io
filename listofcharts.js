@@ -138,7 +138,7 @@ function chkKey() { testkey = getChar(event);
   if(testkey == 'H'){window.open("monitorHSI.html");}
   if(testkey == 'A'){window.open("monitorA.html");}
 //  if(testkey == 'e'){window.scrollTo(0,9999999);}
-  if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
+  if(testkey == 'e'){window.location = '#tocList';}
   if(testkey == 'l'){askaList();} // input a list of codes and store it
   if(testkey == 'R'){randomList();} // go forward to next list
   if(testkey == 't'){window.scrollTo(0,0);}

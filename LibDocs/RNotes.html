@@ -8329,6 +8329,238 @@ h2o.predict( gbmModel, airlinesTrainData) # predict
 # http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/gbm.html#defining-a-gbm-model
 # https://dzone.com/articles/how-do-you-measure-if-your-customer-churn-predicti
 
+<h2>Gradient Boosting Machine</h2>
+Gradient boosting is a machine learning technique for regression and classification problems, which produces a prediction model in the form of an ensemble of weak prediction models, typically decision trees. 
+
+H2O's Gradient Boosting Machine (GBM) offers a Stochastic GBM, which can increase performance quite a bit compared to the original GBM implementation.
+
+Now we will train a basic GBM model
+
+The GBM model will infer the response distribution from the response encoding if not specified explicitly through the "distribution" argument.
+A seed is required for reproducibility.
+
+gbm_fit1 <- h2o.gbm(
+  x = x, y = y, training_frame = train, model_id = "gbm_fit1", seed = 1)
+
+Next we will increase the number of trees used in the GBM by setting "ntrees=500".
+
+The default number of trees in an H2O GBM is 50, so this GBM will trained using ten times the default.
+
+Increasing the number of trees in a GBM is one way to increase performance of the model, however, you have to be careful not to overfit your model to the training data by using too many trees.
+
+To automatically find the optimal number of trees, you must use H2O's early stopping functionality.
+
+This example will not do that, however, the following example will.
+
+gbm_fit2 <- h2o.gbm(
+  x = x, y = y, training_frame = train, model_id = "gbm_fit2",
+    #validation_frame = valid, only used if stopping_rounds > 0
+  ntrees = 500, seed = 1)
+
+We will again set "ntrees = 500", however, this time we will use early stopping in order to prevent overfitting (from too many trees).
+
+All of H2O's algorithms have early stopping available, however early stopping is not enabled by default (with the exception of Deep Learning).
+
+There are several parameters that should be used to control early stopping.
+
+The three that are common to all the algorithms are: "stopping_rounds", "stopping_metric" and "stopping_tolerance".
+
+The stopping metric is the metric by which you'd like to measure performance, and so we will choose AUC here.
+
+The "score_tree_interval" is a parameter specific to the Random Forest model and the GBM.
+
+Setting "score_tree_interval = 5" will score the model after every five trees.
+
+The parameters we have set below specify that the model will stop training after there have been three scoring intervals where the AUC has not increased more than 0.0005.
+
+Since we have specified a validation frame, the stopping tolerance will be computed on validation AUC rather than training AUC. 
+
+gbm_fit3 <- h2o.gbm(
+  x = x, y = y, training_frame = train, model_id = "gbm_fit3",
+  validation_frame = valid,  #only used if stopping_rounds > 0
+  ntrees = 500, score_tree_interval = 5,      #used for early stopping
+                stopping_rounds = 3,          #used for early stopping
+                stopping_metric = "AUC",      #used for early stopping
+                stopping_tolerance = 0.0005,  #used for early stopping
+                seed = 1)
+
+Let's compare the performance of the two GBMs
+
+gbm_perf1 <- h2o.performance(model = gbm_fit1, newdata = test)
+gbm_perf2 <- h2o.performance(model = gbm_fit2, newdata = test)
+gbm_perf3 <- h2o.performance(model = gbm_fit3, newdata = test)
+
+# Print model performance
+gbm_perf1
+gbm_perf2
+gbm_perf3
+
+# Retreive test set AUC
+h2o.auc(gbm_perf1)  # 0.682765594191
+h2o.auc(gbm_perf2)  # 0.671854616713
+h2o.auc(gbm_perf3)  # 0.68309902855
+
+
+To examine the scoring history, use the "scoring_history" method on a trained model.
+If "score_tree_interval" is not specified, it will score at various intervals, as we can see for "h2o.scoreHistory()" below.
+However, regular 5-tree intervals are used for "h2o.scoreHistory()".
+The "gbm_fit2" was trained only using a training set (no validation set), so the scoring history is calculated for training set performance metrics only.
+
+h2o.scoreHistory(gbm_fit2)
+
+
+When early stopping is used, we see that training stopped at 105 trees instead of the full 500.
+Since we used a validation set in "gbm_fit3", both training and validation performance metrics are stored in the scoring history object.
+Take a look at the validation AUC to observe that the correct stopping tolerance was enforced.
+
+h2o.scoreHistory(gbm_fit3)
+
+Look at scoring history for third GBM model
+
+plot(gbm_fit3, timestep = "number_of_trees", metric = "AUC")
+plot(gbm_fit3, timestep = "number_of_trees", metric = "logloss")
+
+4. Deep Learning
+H2O's Deep Learning algorithm is a multilayer feed-forward artificial neural network.
+It can also be used to train an autoencoder.
+In this example we will train a standard supervised prediction model.
+
+Train a default DL
+First we will train a basic DL model with default parameters.
+The DL model will infer the response distribution from the response encoding if it is not specified explicitly through the "distribution" argument.
+H2O's DL will not be reproducible if it is run on more than a single core, so in this example, the performance metrics below may vary slightly from what you see on your machine.
+In H2O's DL, early stopping is enabled by default, so below, it will use the training set and default stopping parameters to perform early stopping.
+
+dl_fit1 <- h2o.deeplearning(x = x,
+     y = y,
+     training_frame = train,
+     model_id = "dl_fit1",
+     seed = 1)
+
+Train a DL with new architecture and more epochs.
+
+Next we will increase the number of epochs used in the GBM by setting "epochs=20" (the default is 10).
+Increasing the number of epochs in a deep neural net may increase performance of the model, however, you have to be careful not to overfit your model to your training data.
+To automatically find the optimal number of epochs, you must use H2O's early stopping functionality.
+Unlike the rest of the H2O algorithms, H2O's DL will use early stopping by default, so for comparison we will first turn off early stopping.
+We do this in the next example by setting "stopping_rounds=0".
+
+dl_fit2 <- h2o.deeplearning(
+  x = x, y = y, training_frame = train, model_id = "dl_fit2",
+     #validation_frame = valid, only used if stopping_rounds > 0
+     epochs = 20, hidden= c(10,10),
+     stopping_rounds = 0,  # disable early stopping
+     seed = 1)
+Train a DL with early stopping This example will use the same model parameters as "dl_fit2".
+This time, we will turn on  early stopping and specify the stopping criterion.
+We will also pass a validation set, as is recommended for early stopping.
+
+dl_fit3 <- h2o.deeplearning(
+  x = x, y = y, training_frame = train, model_id = "dl_fit3",
+     validation_frame = valid,  #in DL, early stopping is on by default
+     epochs = 20, hidden = c(10,10),
+     score_interval = 1,           #used for early stopping
+     stopping_rounds = 3,          #used for early stopping
+     stopping_metric = "AUC",      #used for early stopping
+     stopping_tolerance = 0.0005,  #used for early stopping
+     seed = 1)
+
+
+Let's compare the performance of the three DL models
+dl_perf1 <- h2o.performance(model = dl_fit1, newdata = test)
+dl_perf2 <- h2o.performance(model = dl_fit2, newdata = test)
+dl_perf3 <- h2o.performance(model = dl_fit3, newdata = test)
+
+Print model performance
+dl_perf1
+dl_perf2
+dl_perf3
+
+# Retreive test set AUC
+h2o.auc(dl_perf1)  # 0.6774335
+h2o.auc(dl_perf2)  # 0.678446
+h2o.auc(dl_perf3)  # 0.6770498
+
+# Scoring history
+h2o.scoreHistory(dl_fit3)
+# Scoring History: 
+  timestamp   duration  training_speed   epochs
+1 2016-05-03 10:33:29  0.000 sec                  0.00000
+2 2016-05-03 10:33:29  0.347 sec 424697 rows/sec  0.86851
+3 2016-05-03 10:33:30  1.356 sec 601925 rows/sec  6.09185
+4 2016-05-03 10:33:31  2.348 sec 717617 rows/sec 13.05168
+5 2016-05-03 10:33:32  3.281 sec 777538 rows/sec 20.00783
+6 2016-05-03 10:33:32  3.345 sec 777275 rows/sec 20.00783
+
+# iterations        samples training_MSE training_r2
+1          0       0.000000  
+2          1   99804.000000      0.14402     0.03691
+3          7  700039.000000      0.14157     0.05333
+4         15 1499821.000000      0.14033     0.06159
+5         23 2299180.000000      0.14079     0.05853
+6         23 2299180.000000      0.14157     0.05333
+# training_logloss training_AUC training_lift
+1                     
+2          0.45930      0.66685       2.20727
+3          0.45220      0.68133       2.59354
+4          0.44710      0.67993       2.70390
+5          0.45100      0.68192       2.81426
+6          0.45220      0.68133       2.59354
+# training_classification_error validation_MSE validation_r2
+1             
+2                       0.36145        0.14682       0.03426
+3                       0.33647        0.14500       0.04619
+4                       0.37126        0.14411       0.05204
+5                       0.32868        0.14474       0.04793
+6                       0.33647        0.14500       0.04619
+# validation_logloss validation_AUC validation_lift
+1    
+2            0.46692        0.66582         2.53209
+3            0.46256        0.67354         2.64124
+4            0.45789        0.66986         2.44478
+5            0.46292        0.67117         2.70672
+6            0.46256        0.67354         2.64124
+# validation_classification_error
+1         
+2  0.37197
+3  0.34716
+4  0.34385
+5  0.36544
+6  0.34716
+
+# Look at scoring history for third DL model
+plot(dl_fit3, timestep = "epochs", metric = "AUC")
+
+
+5. Naive Bayes model
+The Naive Bayes (NB) algorithm does not usually beat an algorithm like a Random Forest or GBM, however it is still a popular algorithm, especially in the text domain (when your input is text encoded as "Bag of Words", for example).
+The Naive Bayes algorithm is for binary or multiclass classification problems only, not regression.
+Therefore, your response must be a factor instead of a numeric.
+
+First we will train a basic NB model with default parameters. 
+
+nb_fit1 <- h2o.naiveBayes(
+  x = x, y = y, training_frame = train, model_id = "nb_fit1")
+
+Train a NB model with Laplace Smoothing
+One of the few tunable model parameters for the Naive Bayes algorithm is the amount of Laplace smoothing. 
+The H2O Naive Bayes model will not use any Laplace smoothing by default.
+
+nb_fit2 <- h2o.naiveBayes(
+  x = x, y = y, training_frame = train, model_id = "nb_fit2", laplace = 6)
+
+Let's compare the performance of the two NB models
+nb_perf1 <- h2o.performance(model = nb_fit1, newdata = test)
+nb_perf2 <- h2o.performance(model = nb_fit2, newdata = test)
+
+# Print model performance
+nb_perf1
+nb_perf2
+
+# Retreive test set AUC
+h2o.auc(nb_perf1)  # 0.6488014
+h2o.auc(nb_perf2)  # 0.6490678
+
 <h2>Confusion Matrix</h2>
 <a href="http://www.dataschool.io/simple-guide-to-confusion-matrix-terminology/" class="whitebut ">the basic yes/no confusion matrix</a>
 
@@ -9399,6 +9631,44 @@ res
 <a href="http://www.viznetwork.com/" class="whitebut ">vizNetwork</a>
 <a href="https://christophergandrud.github.io/networkD3/" class="whitebut ">networkD3</a>
 
+<h3>Basic Managerial Applications of Network Analysis</h3>
+Plans the projects by analyzing the project activities.
+
+Projects are broken down to individual tasks or activities, which are arranged in logical sequence. 
+
+It is also decided that which tasks will be performed simultaneously and which other sequentially.
+
+A network diagram is prepared, which presents visually the relationship between all the activities involved and the cost for different activities. 
+
+Network analysis helps designing, planning, coordi­nating, controlling and in decision-making in order to accom­plish the project economically in the minimum available time with the limited available resources. 
+
+The network analysis fulfills the objectives of reducing total time, cost, idle resources, interruptions and conflicts. 
+
+Managerial applications of network analysis are as follows:
+Assembly line scheduling,
+Research and development,
+Inventory planning and control,
+Shifting of manufacturing plant from one site to another,
+Launching of new products and advertising campaigns,
+Control of traffic flow in cities,
+Budget and audit procedures,
+Launching space programmes,
+Installation of new equipments,
+Long-range planning and developing staffing plans, etc.
+
+Network techniques:
+A number of network techniques:
+PERT- Programme Evaluation and Review Technique
+CPM- Critical Path Method
+RAMS- Resource Allocation and Multi-project Scheduling
+PEP- Programme Evolution Procedure
+COPAC- Critical Operating Production Allocation Control
+MAP- Manpower Allocation Procedure
+RPSM- Resource Planning and Scheduling Method
+LCS- Least Cost Scheduling
+MOSS- Multi-Operation Scheduling System
+PCS- Project Control System
+GERT- Graphical Evaluation Review Technique.
 
 
 
