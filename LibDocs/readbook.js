@@ -3,6 +3,7 @@ var divtoc = document.getElementById("toc");
 $(document).ready(function(){
   $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
   parent.history.back();
+  $('#mustWatch').prepend("<br><br>=======================================================================<br>");
   return false;
   });
 });

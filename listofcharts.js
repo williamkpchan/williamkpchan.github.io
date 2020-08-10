@@ -195,6 +195,7 @@ function fullStkChartInit() {
 function xunbao(xunbaocode) {
   localStorage.setItem("randomcode", xunbaocode)
   localStorage.setItem("otherCode", xunbaocode)
+  localStorage.setItem("stkCode", xunbaocode)
   window.open("Random Charts.html");
 }
 
