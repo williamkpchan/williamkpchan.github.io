@@ -22,6 +22,8 @@ img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; bor
 <div id="toc"></div></center>
 <br><br>
 <div id="mustWatch"><center><span class="red">MustWatch</span></center><br>
+<a href="https://cran.r-project.org/web/packages/" class="whitebut ">Available Packages</a>
+
 <a href="https://www.listendata.com/2016/10/r-data-table.html" class="whitebut ">datatable</a>
 <a href="https://www.listendata.com/2016/08/dplyr-tutorial.html" class="whitebut ">DPLYR</a>
 <a href="https://www.listendata.com/" class="whitebut ">listendata</a>
@@ -10083,6 +10085,405 @@ In each case, you can modify the entry called desktop.renderingEngine and set it
 [General]
 desktop.renderingEngine=software
 
+<h2>Introduction to V8 for R</h2>
+V8 is Google’s open source, high performance JavaScript engine. It is written in C++ and implements ECMAScript as specified in ECMA-262, 5th edition. The V8 R package builds on the C++ library to provide a completely standalone JavaScript engine within R:
+
+<code># Create a new context
+ct &lt;- v8()
+
+# Evaluate some code
+ct$eval("var foo = 123")
+ct$eval("var bar = 456")
+ct$eval("foo + bar")</code>
+
+<code>[1] "579"</code>
+
+A major advantage over the other foreign language interfaces is that V8 requires no compilers, external executables or other run-time dependencies. The entire engine is contained within a 6MB package (2MB zipped) and works on all major platforms.
+
+<code># Create some JSON
+cat(ct$eval("JSON.stringify({x:Math.random()})"))</code>
+
+<code>{"x":0.5580623043314792}</code>
+
+<code># Simple closure
+ct$eval("(function(x){return x+1;})(123)")</code>
+
+<code>[1] "124"</code>
+
+However note that V8 by itself is just the naked JavaScript engine. Currently, there is no DOM (i.e. no <em>window</em> object), no network or disk IO, not even an event loop. Which is fine because we already have all of those in R. In this sense V8 resembles other foreign language interfaces such as Rcpp or rJava, but then for JavaScript.
+
+<h3>Loading JavaScript Libraries</h3>
+The <code>ct$source</code> method is a convenience function for loading JavaScript libraries from a file or url.
+
+<code>ct$source(system.file("js/underscore.js", package="V8"))
+ct$source("https://cdnjs.cloudflare.com/ajax/libs/crossfilter/1.3.11/crossfilter.min.js")</code>
+
+<h3>Data Interchange</h3>
+By default all data interchange between R and JavaScript happens via JSON using the bidirectional mapping implemented in the <a href="http://arxiv.org/abs/1403.2805">jsonlite</a> package.
+
+<code>ct$assign("mydata", mtcars)
+ct$get("mydata")</code>
+
+<code>                     mpg cyl  disp  hp drat    wt  qsec vs am gear carb
+Mazda RX4           21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4
+Mazda RX4 Wag       21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4
+Datsun 710          22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
+...
+Volvo 142E          21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2</code>
+
+Alternatively use <code>JS()</code> to assign the value of a JavaScript expression (without converting to JSON):
+
+<code>ct$assign("foo", JS("function(x){return x*x}"))
+ct$assign("bar", JS("foo(9)"))
+ct$get("bar")</code>
+
+<code>[1] 81</code>
+
+<h3>Function Calls</h3>
+The <code>ct$call</code> method calls a JavaScript function, automatically converting objects (arguments and return value) between R and JavaScript:
+
+<code>ct$call("_.filter", mtcars, JS("function(x){return x.mpg &lt; 15}"))</code>
+
+<code>                     mpg cyl disp  hp drat    wt  qsec vs am gear carb
+Duster 360          14.3   8  360 245 3.21 3.570 15.84  0  0    3    4
+Cadillac Fleetwood  10.4   8  472 205 2.93 5.250 17.98  0  0    3    4
+Lincoln Continental 10.4   8  460 215 3.00 5.424 17.82  0  0    3    4
+Chrysler Imperial   14.7   8  440 230 3.23 5.345 17.42  0  0    3    4
+Camaro Z28          13.3   8  350 245 3.73 3.840 15.41  0  0    3    4</code>
+
+It looks a bit like <code>.Call</code> but then for JavaScript instead of C.
+
+<h3>Interactive JavaScript Console</h3>
+A fun way to learn JavaScript or debug a session is by entering the interactive console:
+
+<code># Load some data
+data(diamonds, package = "ggplot2")
+ct$assign("diamonds", diamonds)
+ct$console()</code>
+
+From here you can interactively work in JavaScript without typing <code>ct$eval</code> every time:
+
+<code>var cf = crossfilter(diamonds)
+var price = cf.dimension(function(x){return x.price})
+var depth = cf.dimension(function(x){return x.depth})
+price.filter([2000, 3000])
+output = depth.top(10)</code>
+
+To exit the console, either press <code>ESC</code> or type <code>exit</code>. Afterwards you can retrieve the objects back into R:
+
+<code>output &lt;- ct$get("output")
+print(output)</code>
+
+<h3>warnings, errors and console.log</h3>
+Evaluating invalid JavaScript code results in a SyntaxError:
+
+<code># A common typo
+ct$eval('var foo &lt;- 123;')</code>
+
+<code>Error in context_eval(join(src), private$context, serialize): SyntaxError: Unexpected token '&lt;'</code>
+
+JavaScript runtime exceptions are automatically propagated into R errors:
+
+<code># Runtime errors
+ct$eval("123 + doesnotexit")</code>
+
+<code>Error in context_eval(join(src), private$context, serialize): ReferenceError: doesnotexit is not defined</code>
+
+Within JavaScript we can also call back to the R console manually using <code>console.log</code>, <code>console.warn</code> and <code>console.error</code>. This allows for explicitly generating output, warnings or errors from within a JavaScript application.
+
+<code>ct$eval('console.log("this is a message")')</code>
+
+<code>this is a message</code>
+
+<code>ct$eval('console.warn("Heads up!")')</code>
+
+<code>Warning: Heads up!</code>
+
+<code>ct$eval('console.error("Oh no! An error!")')</code>
+
+<code>Error in context_eval(join(src), private$context, serialize): Oh no! An error!</code>
+
+A example of using <code>console.error</code> is to verify that external resources were loaded:
+
+<code>ct &lt;- v8()
+ct$source("https://cdnjs.cloudflare.com/ajax/libs/crossfilter/1.3.11/crossfilter.min.js")
+ct$eval('var cf = crossfilter || console.error("failed to load crossfilter!")')</code>
+
+<h3>The Global Namespace</h3>
+Unlike what you might be used to from Node or your browser, the global namespace for a new context if very minimal. By default it contains only a few objects: <code>global</code> (a reference to itself), <code>console</code> (for <code>console.log</code> and friends) and <code>print</code> (an alias of console.log needed by some JavaScript libraries)
+
+<code>ct &lt;- v8(typed_arrays = FALSE);
+ct$get(JS("Object.keys(global)"))</code>
+
+<code>[1] "print"   "console" "global" </code>
+
+If typed arrays are enabled it contains some additional functions:
+
+<code>ct &lt;- v8(typed_arrays = TRUE);
+ct$get(JS("Object.keys(global)"))</code>
+
+<code>[1] "print"   "console" "global" </code>
+
+A context always has a global scope, even when no name is set. When a context is initiated with <code>global = NULL</code>, it can still be reached by evaluating the <code>this</code> keyword within the global scope:
+
+<code>ct2 &lt;- v8(global = NULL, console = FALSE)
+ct2$get(JS("Object.keys(this).length"))</code>
+
+<code>[1] 1</code>
+
+<code>ct2$assign("cars", cars)
+ct2$eval("var foo = 123")
+ct2$eval("function test(x){x+1}")
+ct2$get(JS("Object.keys(this).length"))</code>
+
+<code>[1] 4</code>
+
+<code>ct2$get(JS("Object.keys(this)"))</code>
+
+<code>[1] "print" "cars"  "foo"   "test" </code>
+
+To create your own global you could use something like:
+
+<code>ct2$eval("var __global__ = this")
+ct2$eval("(function(){var bar = [1,2,3,4]; __global__.bar = bar; })()")
+ct2$get("bar")</code>
+
+<code>[1] 1 2 3 4</code>
+
+<h3>Syntax Validation</h3>
+V8 also allows for validating JavaScript syntax, without actually evaluating it.
+
+<code>ct$validate("function foo(x){2*x}")</code>
+
+<code>[1] TRUE</code>
+
+<code>ct$validate("foo = function(x){2*x}")</code>
+
+<code>[1] TRUE</code>
+
+This might be useful for all those R libraries that generate browser graphics via templated JavaScript. Note that JavaScript does not allow for defining anonymous functions in the global scope:
+
+<code>ct$validate("function(x){2*x}")</code>
+
+<code>[1] FALSE</code>
+
+To check if an anonymous function is syntactically valid, prefix it with <code>!</code> or wrap in <code>()</code>. These are OK:
+
+<code>ct$validate("(function(x){2*x})")</code>
+
+<code>[1] TRUE</code>
+
+<code>ct$validate("!function(x){2*x}")</code>
+
+<code>[1] TRUE</code>
+
+<h3>Callback To R</h3>
+A recently added feature is to interact with R from within JavaScript using the <code>console.r</code> API`. This is most easily demonstrated via the interactive console.
+
+<code>ctx &lt;- v8()
+ctx$console()</code>
+
+From JavaScript we can read/write R objects via <code>console.r.get</code> and <code>console.r.assign</code>. The final argument is an optional list specifying arguments passed to <code>toJSON</code> or <code>fromJSON</code>.
+
+<code>// read the iris object into JS
+var iris = console.r.get("iris")
+var iris_col = console.r.get("iris", {dataframe : "col"})
+
+//write an object back to the R session
+console.r.assign("iris2", iris)
+console.r.assign("iris3", iris, {simplifyVector : false})</code>
+
+To call R functions use <code>console.r.call</code>. The first argument should be a string which evaluates to a function. The second argument contains a list of arguments passed to the function, similar to <code>do.call</code> in R. Both named and unnamed lists are supported. The return object is returned to JavaScript via JSON.
+
+<code>//calls rnorm(n=2, mean=10, sd=5)
+var out = console.r.call('rnorm', {n: 2,mean:10, sd:5})
+var out = console.r.call('rnorm', [2, 20, 5])
+
+//anonymous function
+var out = console.r.call('function(x){x^2}', {x:12})</code>
+
+There is also an <code>console.r.eval</code> function, which evaluates some code. It takes only a single argument (the string to evaluate) and does not return anything. Output is printed to the console.
+
+<code>console.r.eval('sessionInfo()')</code>
+
+Besides automatically converting objects, V8 also propagates exceptions between R, C++ and JavaScript up and down the stack. Hence you can catch R errors as JavaScript exceptions when calling an R function from JavaScript or vice versa. If nothing gets caught, exceptions bubble all the way up as R errors in your top-level R session.
+
+<code>//raise an error in R
+console.r.call('stop("ouch!")')
+
+//catch error from JavaScript
+try {
+  console.r.call('stop("ouch!")')
+} catch (e) {
+  console.log("Uhoh R had an error: " + e)
+}
+//# Uhoh R had an error: ouch!</code>
+
+<h2>sprintf Function</h2>
+<strong>Basic R Syntax of sprintf:</strong>
+sprintf("%f", x)
+
+<strong>Definition of sprintf:</strong>
+
+The sprintf function returns character objects containing a formatted combination of input values.
+
+<h3>Example 1: Format Decimal Places with sprintf Function in R</h3>
+x &lt;- 123.456               # Create example data
+
+The default number of decimal places is six digits after the decimal point
+
+sprintf("%f", x)           # sprintf with default specification
+#  "123.456000"
+
+We can control the number of decimal places by adding a point and a number between the percentage sign and the f. 
+For instance, we can print ten digits after the decimal point…
+
+sprintf("%.10f", x)        # sprintf with ten decimal places
+# "123.4560000000"
+
+…or we can round our numeric input value to only two digits after the decimal point:
+
+sprintf("%.2f", x)         # sprintf with two rounded decimal places
+# "123.46"
+
+<strong>Note:</strong> The output of sprintf is a <a href="http://www.r-tutor.com/r-introduction/basic-data-types/character" rel="noopener noreferrer" target="_blank">character string</a> and not a numeric value as the input was.
+
+<h3>Example 2: Format Places Before Decimal Point</h3>
+sprintf also enables the formatting of the number of digits before the decimal separator. 
+We can tell sprintf to print all digits before the decimal point, but no digits after the decimal point…
+
+sprintf("%1.0f", x)        # sprintf without decimal places
+# "123"
+
+…or we can print a certain amount of leading blanks before our number without decimal places (as illustrated by the quotes below)…
+
+sprintf("%10.0f", x)       # sprintf with space before number
+# "       123"
+
+…or with decimal places…
+
+sprintf("%10.1f", x)       # Space before number &amp; decimal places
+# "     123.5"
+
+…or we can print blanks at the right side of our output by writing a minus sign in front of the number within the sprintf function:
+
+sprintf("%-15f", x)        # Space on right side
+# "123.456000     "
+
+<h3>Example 3: Print Non-Numeric Values with sprintf (e.g. 
++ or %)</h3>
+It is also possible to combine numeric with non-numeric inputs. 
+The following R code returns a plus sign in front of our example number…
+
+sprintf("%+f", x)          # Print plus sign before number
+# "+123.456000"
+
+…and the following R code prints a percentage sign at the end of our number:
+
+paste0(sprintf("%f", x),   # Print %-sign at the end of number
+       "%")
+# "123.456000%"
+
+<h3>Example 4: Control Scientific Notation</h3>
+The sprintf R function is also used to <a href="https://statisticsglobe.com/disable-exponential-scientific-notation-in-r">control exponential notation in R</a>. 
+The following syntax returns our number as scientific notation with a lower case e…
+
+sprintf("%e", x)           # Exponential notation
+# "1.234560e+02"
+
+…and the following code returns an upper case E to the RStudio console:
+
+sprintf("%E", x)           # Exponential with upper case E
+# "1.234560e+02"
+
+<h3>Example 5: Control Amount of Decimal Zeros</h3>
+We can also control the amount of decimal zeros that we want to print to the RStudio console. 
+The following R code prints our example number without any decimal zeros…
+
+sprintf("%g", x)           # sprintf without decimal zeros
+# "123.456"
+
+…the following R code returns our example number * 1e10 in scientific notation…
+
+sprintf("%g", 1e10 * x)    # Scientific notation
+# "1.23456e+12"
+
+…and by adding a number before the g within the sprintf function we can control the amount of decimal zeros that we want to print:
+
+sprintf("%.13g", 1e10 * x) # Fixed decimal zeros
+# "1234560000000"
+
+<h3>Example 6: Several Input Values for sprintf Function</h3>
+So far, we have only used a single numeric value (i.e. our example data object x) as input for sprintf. 
+However, the sprintf command allows as many input values as we want.
+
+Furthermore, we can print these input values within more complex character strings. 
+Have a look at the following sprintf example:
+
+sprintf("Let's create %1.0f more complex example %1.0f you.", 1, 4)
+# "Let's create 1 more complex example 4 you."
+
+The first specification (i.e. %1.0f) within the previous R code corresponds to the input value 1 and the second specification corresponds to the input value 4.
+
+Of cause we could use sprintf in even more complex settings. 
+Have a look at the sprintf examples of the R help documentation, if you are interested in more complex examples:
+
+<img src="https://statisticsglobe.com/wp-content/uploads/2019/04/sprintf-r-help-documentation-more-sophisticated-examples.png">
+
+<em><strong>Figure 1: Complex sprintf Examples in R Help Documentation.</strong></em>
+
+Examples
+## be careful with the format: most things in R are floats
+## only integer-valued reals get coerced to integer.
+
+sprintf("%s is %f feet tall\n", "Sven", 7.1)      # OK
+try(sprintf("%s is %i feet tall\n", "Sven", 7.1)) # not OK
+try(sprintf("%s is %i feet tall\n", "Sven", 7))   # OK
+
+## use a literal % :
+sprintf("%.0f%% said yes (out of a sample of size %.0f)", 66.666, 3)
+
+## no truncation:
+sprintf("%1.f",101)
+## re-use one argument three times, show difference between %x and %X
+xx <- sprintf("%1$d %1$x %1$X", 0:15)
+xx <- matrix(xx, dimnames=list(rep("", 16), "%d%x%X"))
+noquote(format(xx, justify="right"))
+
+## More sophisticated:
+
+sprintf("min 10-char string '%10s'",
+        c("a", "ABC", "and an even longer one"))
+
+n <- 1:18
+sprintf(paste("e with %2d digits = %.",n,"g",sep=""), n, exp(1))
+
+## Using arguments out of order
+sprintf("second %2$1.0f, first %1$5.2f, third %3$1.0f", pi, 2, 3)
+
+## Using asterisk for width or precision
+sprintf("precision %.*f, width '%*.3f'", 3, pi, 8, pi)
+
+## Asterisk and argument re-use, 'e' example reiterated:
+sprintf("e with %1$2d digits = %2$.*1$g", n, exp(1))
+
+## re-cycle arguments 
+sprintf("%s %d", "test", 1:3)
+
+sprintf(fmt, …)
+Create a character string that contains values from R objects. 
+
+fmt – A character string with some occurrences of %s, which will be places that object values are inserted.
+… – The R objects to be inserted. 
+The number of items should correspond to the number of %s occurrences in fmt.
+
+Example. 
+x <- 2349
+sprintf("Substitute in a string or number: %s", x)
+"Substitute in a string or number: 2349"
+
+sprintf("Can have multiple %s occurrences %s", x, "- got it?")
+"Can have multiple 2349 occurrences - got it?"
 
 
 
