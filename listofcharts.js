@@ -119,7 +119,8 @@ function reportIt(someMsg) { // show it on screen
   tradeDetailStr = someMsg;
 }
 function chkKey() { testkey = getChar(event);
-  if(testkey == 'c'){showChart();}
+  //if(testkey == 'c'){showChart();}
+  if(testkey == 'c'){window.open("Random Charts.html");}
 //  if(testkey == 'f'){ window.location = '#stkcodeid';  $('#stkcode').value =""; }
 
   if(testkey == 'r'){thisImgPCode= "&period=3"; showAllCharts();}
