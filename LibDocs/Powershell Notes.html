@@ -993,6 +993,356 @@ Since the script uses WMI it is Windows-only.</td></tr>
 </tbody>
 </table>
 
+<h2>Invoke-Command to run scripts on remote computers</h2>
+The <i>Invoke-Command</i> cmdlet is one way to leverage PowerShell Remoting. 
+In today’s post, I will give you an overview of <i>Invoke-Command</i>. 
+Note: To follow this guide, you have first have to enable PowerShell remoting. 
+Read our guide that describes all the different ways of how you can enable remoting locally and remotely. 
+You will learn how to enable remoting remotely with various tools, how to allow non-admins to use remoting, and to configure remoting in workgroup environments.
+
+<h3>Introducing PowerShell Remoting ^</h3>When it comes to managing remote computers with PowerShell, you have essentially three options. 
+You can open an interactive session with the <i>Enter-PSSession</i> cmdlet (One-to-One Remoting). 
+An alternative is the <i>Invoke-Command</i> cmdlet, which allows you to run remote commands on multiple computers (which is why it is called One-to-Many Remoting). 
+The third option is to use one of those cmdlets that offer a <i>ComputerName</i> parameter. 
+In most cases, PowerShell Remoting isn’t involved then. 
+To list those cmdlets, you can use this command:
+
+Get-Command -ParameterName ComputerName
+
+<img loading="lazy" data-src="https://4sysops.com/wp-content/uploads/2015/06/Cmdlets-with-the-ComputerName-parameter_thumb.png">
+
+<i>Cmdlets with the ComputerName parameter</i>
+In addition to the built-in cmdlets, quite a few PowerShell modules exist that support remote management. 
+For instance, you can manage Active Directory from your workstation after installing the Active Directory module. 
+Whenever one of these options exists, I would avoid enabling PowerShell Remoting on the remote machine.
+Because PowerShell Remoting presents a security risk, it has to be enabled even within an Active Directory domain. 
+You can also use Remoting on workgroup computers, but you will have to take care of a few extra configurations. 
+If you don’t configure Remoting properly, you will run into errors such as <i>WinRM cannot process the request</i> or <i>Access denied</i>. 
+In the latter case, you probably failed to provide admin credentials.
+PowerShell Remoting depends on Windows Remote Management (WinRM), which is Microsoft’s implementation of the WS-Management (WS-Man) protocol. 
+The protocol relies on HTTP or HTTPS and uses the TCP ports 5985 and 5986, respectively.
+WS-Management encrypts all PowerShell communication even if you only work with HTTP. 
+However, this kind of encryption is vulnerable to man-in-the middle attacks. 
+I therefore recommended to use HTTPS instead of HTTP in insecure networks. 
+I will say more about this topic in a follow-up post.
+<h3>Executing cmdlets with Invoke-Command ^</h3>Perhaps the most interesting form of PowerShell remote management is One-to-Many Remoting with the <i>Invoke-Command</i> cmdlet. 
+This cmdlet allows you to execute PowerShell commands on multiple remote computers that contain cmdlets that don’t feature the <i>-ComputerName</i> parameter.
+Two ways exist to connect to remote computers with <i>Invoke-Command</i>. 
+You usually use the <i>‑ComputerName</i> parameter to manage Windows machines. 
+Alternatively, you can pass the <i>‑ConnectionUri </i>parameter to manage backend applications, such as Exchange, or cloud services such as Azure.
+In the remainder of this article, I will focus on managing remote Windows machines that are Active Directory domain members. 
+The command below executes the <i>Get-ChildItem</i> cmdlet on the machine whose computer name is stored in the $RemoteComputer variable:
+
+Invoke-Command -Computername $RemoteComputer -ScriptBlock { Get-ChildItem "C:\Program Files" }
+
+PowerShell automatically creates a so-called PSSession on the remote computer, which essentially is a user-created PowerShell session as opposed to a session that a PowerShell host such as the PowerShell console or PowerShell ISE creates. 
+The output of the executed commands in the script block is automatically relayed to your local session. 
+As usual, you can interrupt the displaying of the output with CTRL+C.
+As with the <i>Enter-PSSession</i> cmdlet, you have to be an administrator on the remote machine. 
+Otherwise, you will receive an <i>Access denied</i> error message. 
+If you are not logged on as domain administrator on your local machine, you have to provide sufficient credentials with the <i>-Credential</i> parameter.
+You can pass multiple computers to the <i>-ComputerName </i>parameter by separating their names with commas. 
+If you also want to include the local computer, you add “localhost” or simply “.” to the list.
+To run multiple commands, you can separate them with semicolons in the script block. 
+However, a better option is to use the <i>-FilePath</i> parameter instead of the -<i>ScriptBlock</i> parameter, which allows you to execute an entire PowerShell script:
+
+Invoke-Command -ComputerName PC1,PC2,PC3 -FilePath C:\myFolder\myScript.ps1
+
+By default, PowerShell will send the script immediately to all computers if 32 or fewer computer names are passed. 
+If more than 32 computer names are passed, PowerShell will queue the surplus computers until the script completes in one of the first 32 <i>PSSessions</i>. 
+You can change this default behavior with the <i>-ThrottleLimit</i> parameter. 
+However, you should be aware of the implications on the load of your computer and the network when the results come pouring in.
+<h3>Testing if Remoting is enabled ^</h3>In particular, if you plan to execute commands on many machines, you might want to test their availability with the <i>Test-Connection</i> cmdlet first. 
+This cmdlet sends ICMP echo request packets (pings, that is) to the remote computers:
+
+If (Test-Connection -ComputerName $RemoteComputers -Quiet)
+{
+    Invoke-Command -ComputerName $RemoteComputers -ScriptBlock {Get-ChildItem “C:\Program Files”}
+}
+The <i>-Quiet</i> parameter suppresses the output of the cmdlet and returns <i>$True</i> if the remote machine answers the pings.
+This method is fine if you can be sure that Remoting is enabled on the remote machines. 
+If you want a more bullet-proof test, you could use the <i>Test-WSMan</i> cmdlet to check whether the WinRM service can be accessed on the remote machine. 
+However, a downside of this method is that the cmdlet’s timeout can be several seconds and can’t be configured. 
+If you have many computers in your list, this can slow down your control script on the local machine significantly.
+An alternative is to work with a try-catch block:
+
+$RemoteComputers = @("PC1","PC2")
+ForEach ($Computer in $RemoteComputers)
+{
+    Try
+        {
+            Invoke-Command -ComputerName $Computer -ScriptBlock {Get-ChildItem "C:\Program Files"} -ErrorAction Stop
+        }
+    Catch
+        {
+            Add-Content Unavailable-Computers.txt $Computer
+        }
+}
+If <i>Invoke-Command</i> fails to execute the command on the computer, the corresponding computer name is added to a text file (line 10). 
+This enables you to repeat the command later.
+<h3>Passing local variables to the remote session ^</h3>If you want to pass variables from your control script on the local computer to the commands that run on the remote computers, you can work with the <i>-ArgumentList </i>parameter:
+
+$Name = "svchost"
+$CPU = 100
+Invoke-Command –ComputerName $RemoteComputer –ScriptBlock { param($RName,$RCPU) Get-Process -Name $RName | Where -Property CPU -gt $RCPU } -ArgumentList $Name,$CPU
+
+In the example, the values of the $Name and $CPU variables are passed to the $RName and $RCPU variables, which the <i>Get-Process</i> cmdlet will use on the remote computer to determine all processes with the name “svchost” where the CPU usage (CPU property of <i>Get-Process</i>) is greater than 100.
+By the way, this example also demonstrates that PowerShell Remoting is sometimes your only option even if the cmdlet you want to use offers a <i>-ComputerName</i> parameter. 
+The <i>Get-Process</i> cmdlet cannot retrieve the CPU usage from a remote computer if you run it in a local session. 
+However, if you use the <i>Invoke-Command</i> cmdlet, <i>Get-Process</i> runs in a remote session and you can then read the CPU usage.
+<h3>Accessing methods in PowerShell Remoting ^</h3>Using <i>Invoke-Command</i> also has a downside. 
+The objects that PowerShell returns as output differ depending on whether you run the command in a <i>PSSession</i> or in a session that the PowerShell host creates. 
+The objects even differ if you run <i>Invoke-Command</i> on the local computer.
+The first thing you notice is that the returned objects have an additional property: the <i>PSComputerName</i> property. 
+You guessed it—it contains the name of the computer where the corresponding <i>PSSession</i> ran.
+
+Invoke-Command -ComputerName . 
+-Scriptblock {Get-Process}
+
+<img loading="lazy" data-src="https://4sysops.com/wp-content/uploads/2015/06/The-PSComputerName-property_thumb.png">
+
+<i>The PSComputerName property</i>
+You need this additional property to ascribe the results to computers if you executed commands on multiple machines. 
+Okay, an additional property is not really a downside, but the result objects also lack a crucial feature. 
+Try this:
+
+Get-Process | Get-Member -MemberType Method
+
+<img loading="lazy" data-src="https://4sysops.com/wp-content/uploads/2015/06/The-methods-of-the-Process-object_thumb.png">
+
+<i>The methods of the Process object</i>
+And then this:
+
+Invoke-Command -ComputerName localhost -Scriptblock {Get-Process} | Get-Member -MemberType Method
+
+<img loading="lazy" data-src="https://4sysops.com/wp-content/uploads/2015/06/The-methods-of-a-deserialized-object_thumb.png">
+
+<i>The methods of a deserialized object</i>
+Obviously, PowerShell stripped off all the interesting methods. 
+In this case, this means that you can’t use the object that <i>Invoke-Command</i> returns to kill a remote process because the <i>Kill()</i> method is unavailable.
+Another thing you notice is that the <i>TypeNames</i> are different. 
+In the first case, it is <i>System.Diagnostics.Process</i>, and the second command returns <b><i>Deserialized</i></b><i>.System.Diagnostics.Process</i>. 
+If you execute a command with <i>Invoke-Command</i>, it packs the result object in XML, transmits it to the calling session, and creates a so-called static object that lacks all methods except <i>GetType()</i> and <i>ToString()</i>.
+The conversion to XML is called serialization; the opposite process is deserialization. 
+This is why <i>TypeName</i> is “Deserialized.” The lack of methods makes sense because the objects to which you could apply the methods (in our example, the processes) are only available in the remote session, and you therefore can’t manipulate them in the local session.
+The one remaining question is how you can use methods of objects on remote machines. 
+Let’s stay with our example from above. 
+Because the <i>Kill()</i> method is unavailable in the deserialized static object, you have to kill the process in the remote session before the result object is transmitted to your local session. 
+The following command kills Notepad on the remote computer:
+
+Invoke-Command -ComputerName $RemoteComputer -ScriptBlock {(Get-Process | Where -Property ProcessName -eq notepad).Kill()}
+Thus, you can access methods of <i>PSSessions</i> objects. 
+All you have to do is build the logic that needs the methods, not in your control script on the local computer but in the script that runs on the remote machine.
+In one of my next posts, I will talk about running PowerShell commands remotely in disconnected sessions.
+
+PowerShell Remoting
+
+<a href="https://4sysops.com/archives/enable-powershell-remoting/">Enable PowerShell Remoting</a>
+<a href="https://4sysops.com/archives/enable-powershell-remoting-on-a-standalone-workgroup-computer/">Enable PowerShell Remoting on a standalone (workgroup) computer</a>
+Use PowerShell Invoke-Command to run scripts on remote computers
+<a href="https://4sysops.com/archives/powershell-remote-jobs-indisconnectedsession-asjob-and-start-job/">PowerShell remote jobs - InDisconnectedSession, AsJob, and Start-Job</a>
+<a href="https://4sysops.com/archives/powershell-remoting-over-https-with-a-self-signed-ssl-certificate/">PowerShell Remoting over HTTPS with a self-signed SSL certificate</a>
+<a href="https://4sysops.com/archives/powershell-disconnected-remote-sessions/">PowerShell disconnected remote sessions</a>
+<a href="https://4sysops.com/archives/powershell-remoting-without-administrator-rights/">PowerShell Remoting without administrator rights</a>
+<a href="https://4sysops.com/archives/restricting-the-rights-of-powershell-users-with-a-constrained-session-configuration/">Restricting the rights of PowerShell users with a constrained session configuration</a>
+<a href="https://4sysops.com/archives/constrained-powershell-endpoints-visible-cmdlets-session-types-and-language-modes/">Constrained PowerShell endpoints - Visible cmdlets, session types, and language modes</a>
+<a href="https://4sysops.com/archives/enabling-powershell-remoting-fails-due-to-public-network-connection-type/">Enabling PowerShell remoting fails due to Public network connection type</a>
+
+<h2>How to Run PowerShell Commands on Remote Computers</a></h2>
+PowerShell Remoting lets you run PowerShell commands or access full PowerShell sessions on remote Windows systems. 
+It’s similar to SSH for accessing remote terminals on other operating systems.
+
+PowerShell is locked-down by default, so you’ll have to enable PowerShell Remoting before using it. 
+This setup process is a bit more complex if you’re using a workgroup instead of a domain - for example, on a home network - but we'll walk you through it.
+
+<h3>Enable PowerShell Remoting on the PC You Want to Access Remotely</h3>
+
+Your first step is to enable PowerShell Remoting on the PC to which you want to make remote connections. 
+On that PC, you'll need to open PowerShell with administrative privileges.
+
+In Windows 10, press Windows+X and then choose PowerShell (Admin) from the Power User menu.
+
+<img class="lazy" data-src="https://www.howtogeek.com/wp-content/uploads/2017/07/xpsr_1.png.pagespeed.gp+jp+jw+pj+ws+js+rj+rp+rw+ri+cp+md.ic.ivGy33W5C4.png">
+
+In Windows 7 or 8, hit Start, and then type "powershell." Right-click the result and choose "Run as administrator."
+
+<img class="lazy" data-src="https://www.howtogeek.com/wp-content/uploads/2017/07/xpsr_2.png.pagespeed.gp+jp+jw+pj+ws+js+rj+rp+rw+ri+cp+md.ic.ZxTRxWSqdL.png">
+
+In the PowerShell window, type the following cmdlet (PowerShell's name for a command), and then hit Enter:
+
+Enable-PSRemoting -Force
+
+<img class="lazy" data-src="https://www.howtogeek.com/wp-content/uploads/2017/07/psr_3.png">
+
+This command starts the WinRM service, sets it to start automatically with your system, and creates a firewall rule that allows incoming connections. 
+The <code>-Force</code> part of the cmdlet tells PowerShell to perform these actions without prompting you for each step.
+
+If your PCs are part of a domain, that's all the setup you have to do. 
+You can skip on ahead to testing your connection. 
+If your computers are part of a workgroup - which they probably are on a home or small business network - you have a bit more setup work to do.
+
+Note: Your success in setting up remoting in a domain environment depends entirely on your network's setup. 
+Remoting might be disabled - or even enabled - automatically by group policy configured by an admin. 
+You might also not have the permissions you need to run PowerShell as an administrator. 
+As always, check with your admins before you try anything like this. 
+They might have good reasons for not allowing the practice, or they might be willing to set it up for you.
+
+<h3>Set Up Your Workgroup</h3>
+
+If your computers aren’t on a domain, you need to perform a few more steps to get things set up. 
+You should have already enabled Remoting on the PC to which you want to connect, as we described in the previous section.
+
+Note: For PowerShell Remoting to work in a workgroup environment, you must configure your network as a private, not public, network. 
+For more on the difference - and how to change to a private network if you already have a public network set up - check out our <a href="https://www.howtogeek.com/245982/whats-the-difference-between-private-and-public-networks-in-windows/">guide on private vs. 
+public networks</a>.
+
+Next, you need to configure the TrustedHosts setting on both the PC to which you want to connect <em>and</em> the PC (or PCs) you want to connect from, so the computers will trust each other. 
+You can do this in one of two ways.
+
+If you're on a home network where you want to go ahead and trust any PC to connect remotely, you can type the following cmdlet in PowerShell (again, you'll need to run it as Administrator).
+
+Set-Item wsman:\localhost\client\trustedhosts *
+
+The asterisk is a wildcard symbol for all PCs. 
+If instead you want to restrict computers that can connect, you can replace the asterisk with a comma-separated list of IP addresses or computer names for approved PCs.
+
+After running that command, you'll need to restart the WinRM service so your new settings take effect. 
+Type the following cmdlet and then hit Enter:
+
+Restart-Service WinRM
+
+<img class="lazy" data-src="https://www.howtogeek.com/wp-content/uploads/2017/07/psr_4.png">
+
+And remember, you'll need to run those two cmdlets on the PC to which you want to connect, as well as on any PCs you want to connect from.
+
+<h3>Test the Connection</h3>
+
+Now that you've got your PCs set up for PowerShell Remoting, it's time to test the connection. 
+On the PC you want to access the remote system from, type the following cmdlet into PowerShell (replacing "COMPUTER" with the name or IP address of the remote PC), and then hit Enter:
+
+Test-WsMan COMPUTER
+
+This simple command tests whether the WinRM service is running on the remote PC. 
+If it completes successfully, you'll see information about the remote computer’s WinRM service in the window - signifying that WinRM is enabled and your PC can communicate. 
+If the command fails, you’ll see an error message instead.
+
+<img class="lazy" data-src="https://www.howtogeek.com/wp-content/uploads/2017/07/xpsr_5.png.pagespeed.gp+jp+jw+pj+ws+js+rj+rp+rw+ri+cp+md.ic.9txRSzmpG6.png">
+
+<h3>Execute a Single Remote Command</h3>
+
+To run a command on the remote system, use the <code>Invoke-Command</code> cmdlet using the following syntax:
+
+Invoke-Command -ComputerName COMPUTER -ScriptBlock { COMMAND } -credential USERNAME
+
+"COMPUTER" represents the remote PC's name or IP address. 
+"COMMAND" is the command you want to run. 
+"USERNAME" is the username you want to run the command as on the remote computer. 
+You’ll be prompted to enter a password for the username.
+
+Here's an example. 
+I want to view the contents of the C:\ directory on a remote computer with the IP address 10.0.0.22. 
+I want to use the username "wjgle," so I would use the following command:
+
+Invoke-Command -ComputerName 10.0.0.22 -ScriptBlock { Get-ChildItem C:\ } -credential wjgle
+
+<img class="lazy" data-src="https://www.howtogeek.com/wp-content/uploads/2017/07/psr_6.png">
+
+<h3>Start a Remote Session</h3>
+
+If you have several cmdlets you want to run on the remote PC, instead of repeatedly typing the Invoke-Command cmdlet and the remote IP address, you can start a remote session instead. 
+Just type the following cmdlet and then hit Enter:
+
+Enter-PSSession -ComputerName COMPUTER -Credential USER
+
+Again, replace "COMPUTER" with the name or IP address of the remote PC and replace "USER" with the name of the user account you want to invoke.
+
+<img class="lazy" data-src="https://www.howtogeek.com/wp-content/uploads/2017/07/xpsr_7.png.pagespeed.gp+jp+jw+pj+ws+js+rj+rp+rw+ri+cp+md.ic.z_5m6FpAmx.png">
+
+Your prompt changes to indicate the remote computer to which you're connected, and you can execute any number of PowerShell cmdlets directly on the remote system.
+
+<h2>Difference Between Private and Public Networks in Windows</h2>
+Windows lets you set each network you connect to as either a "Private" or "Public" network. 
+When you connect to a network the first time, Windows 10 asks if you want your computer to be discoverable or not by other computers.
+
+This option helps Windows understand the type of network you're connecting to so it can select the correct settings. 
+For example, Windows will behave much more conservatively on public networks than it will on your home network, boosting your security.
+
+<h3>Public vs. 
+Private</h3>
+
+You can customize how Windows treats Private and Public networks, but here's how it works by default.
+
+On Private networks, Windows enables network discovery features. 
+Other devices can see your Windows computer on the network, allowing for easy file sharing and other networked features. 
+Windows will also <a href="https://www.howtogeek.com/school/windows-network-sharing/lesson5/all/">use the Homegroup feature</a> to share files and media between your PCs.
+
+On Public networks - like those in coffee shops - you don't want your computer to be seen by others, though, or share your files with them. 
+So Windows turns off these discovery features. 
+it won't appear to other devices on the network and won't try to discover them. 
+Even if you've set up a Homegroup on your PC, it won't be enabled on a public network.
+
+It's simple, really. 
+Windows assumes that your private networks - like your home or work networks - are trusted networks full of other devices you may want to connect to. 
+Windows assumes that public networks are full of other people's devices you don't want to connect to, so it uses different settings.
+
+<h3>How to Switch a Network From Public to Private or Private to Public</h3>
+
+You normally make this decision the first time you connect to a network. 
+Windows will ask whether you want your PC to be discoverable on that network. 
+if you select Yes, Windows sets the network as Private. 
+If you select No, Windows sets the network as public. 
+You can see whether a network is private or public from the Network and Sharing Center window in the Control Panel.
+
+On Windows 7, you can click the link right below the network's name here and set the network to either "Home Network," "Work Network," or "Public Network." A Home network is a Private network, while a Work network is like a Private network where discovery is enabled but Homegroup sharing isn't.
+
+<img class="lazy" data-src="https://www.howtogeek.com/wp-content/uploads/2016/03/img_56ea05695c096.png">
+
+To switch a network to public or private on Windows 10, you'll need to use the Settings app.
+
+If you're using a Wi-Fi connection, first connect to the Wi-Fi network you want to change. 
+Launch the Settings app, select "Network &amp; Internet," select "Wi-Fi," scroll down, and click "Advanced options."
+
+If you're using a wired Ethernet connection, connect to that network. 
+Launch the Settings app, select "Network &amp; Internet," select "Ethernet," and click the name of your Ethernet connection.
+
+<img class="lazy" data-src="https://www.howtogeek.com/wp-content/uploads/2016/03/img_56ea06256ed41.png">
+
+You'll see a few options for whichever Wi-Fi or Ethernet network you're currently connected to. 
+The "Make this PC discoverable" option controls whether a network is public or private. 
+Set it to "On" and Windows will treat the network as a private one. 
+Set it to "Off" and Windows will treat the network as a public one.
+
+It's a bit confusing because the Control Panel still refers to "Public" and "Private" networks, while the Settings app just refers to whether a PC is "discoverable". 
+However, these are the same setting - it's just worded and exposed in a different way. 
+Toggling this switch in the Settings app will switch a network between Public and Private in the Control Panel.
+
+<img class="lazy" data-src="https://www.howtogeek.com/wp-content/uploads/2016/03/img_56ea0651bd116.png">
+
+<h3>How to Customize Discovery and Firewall Settings</h3>
+
+Windows 10 is clearly trying to simplify things by omitting any further options from the Settings app and just referring to whether a network is "discoverable" or not. 
+However, there are still a variety of options in the Control Panel that take effect differently on public and private networks.
+
+To adjust discovery settings, open the Control Panel, select "View network status and tasks" under Network and Internet, and click "Change advanced sharing settings." From here, you can control network discovery, file sharing, and Homegroup settings for public and private networks. 
+You could even enable discovery on public networks, if you wanted to do this for some reason. 
+Or, you could disable discovery on private networks. 
+By default, older-style Windows "file and printer sharing" is disabled on both types of networks, but you can enable it on either or both.
+
+<img class="lazy" data-src="https://www.howtogeek.com/wp-content/uploads/2016/03/img_56ea05adf0ca3.png">
+
+<a href="https://www.howtogeek.com/school/windows-network-security/lesson4/all/">The Windows Firewall</a> also has different settings for private and public networks. 
+In the Control Panel, you can click "System and Security" and then click "Windows Firewall" configure the built-in firewall's options. 
+For example, you could have Windows disable the firewall on private networks but enable it on public ones, if you liked - but we definitely don't recommend this. 
+You can also click "Allow an app or feature through Windows Firewall" and you'll be able to adjust firewall rules to behave differently on public networks or private ones.
+
+<img class="lazy" data-src="https://www.howtogeek.com/wp-content/uploads/2016/03/img_56ea05ee440d9.png">
+
+Set publicly accessible networks to public and ones at your home or workplace to private. 
+if you're not sure which - for example, if you're at a friend's house - you can always just set the network to public. 
+You'd only need to set a network to private if you planned on using network discovery and file-sharing features.
+
+
+
 
 
 
