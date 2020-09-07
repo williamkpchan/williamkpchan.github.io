@@ -141,7 +141,7 @@ function chkKey() { testkey = getChar(event);
   if(testkey == 'e'){window.location = '#tocList';}
   if(testkey == 'l'){askaList();} // input a list of codes and store it
   if(testkey == 'R'){randomList();} // go forward to next list
-  if(testkey == 'r'){randomChartinList();} # not implemented, jmp to random chart
+  //if(testkey == 'r'){randomChartinList();} # not implemented, jmp to random chart
   if(testkey == 't'){window.scrollTo(0,0);}
   if(testkey == 'x'){window.open("Random Charts.html");}
   if(testkey == 'z'){topicpointer = 12; showstkList();}
