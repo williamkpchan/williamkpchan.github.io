@@ -123,7 +123,7 @@ function chkKey() { testkey = getChar(event);
   if(testkey == 'c'){window.open("Random Charts.html");}
 //  if(testkey == 'f'){ window.location = '#stkcodeid';  $('#stkcode').value =""; }
 
-  if(testkey == 'r'){thisImgPCode= "&period=3"; showAllCharts();}
+  if(testkey == 'h'){thisImgPCode= "&period=3"; showAllCharts();}
   if(testkey == 'd'){thisImgPCode= "&period=7"; showAllCharts();}
   if(testkey == 'w'){thisImgPCode= "&period=11"; showAllCharts();}
   if(testkey == '5'){thisImgPCode= "&period=5012"; showAllCharts();}
@@ -135,13 +135,13 @@ function chkKey() { testkey = getChar(event);
   if(testkey == 'f'){forewardList();} // go forward to next list
   if(testkey == 'b'){backwardList();}
 
-  if(testkey == 'h'){window.open("Hmain.html");}
   if(testkey == 'H'){window.open("monitorHSI.html");}
   if(testkey == 'A'){window.open("monitorA.html");}
 //  if(testkey == 'e'){window.scrollTo(0,9999999);}
   if(testkey == 'e'){window.location = '#tocList';}
   if(testkey == 'l'){askaList();} // input a list of codes and store it
   if(testkey == 'R'){randomList();} // go forward to next list
+  if(testkey == 'r'){randomChartinList();} # not implemented, jmp to random chart
   if(testkey == 't'){window.scrollTo(0,0);}
   if(testkey == 'x'){window.open("Random Charts.html");}
   if(testkey == 'z'){topicpointer = 12; showstkList();}
