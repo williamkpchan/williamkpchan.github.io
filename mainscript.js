@@ -57,13 +57,14 @@ function chkOtherKeys(testkey) {
   if(testkey == 'm'){window.open("http://williamkpchan.github.io/medical.html");}
   if(testkey == 'M'){window.open("https://www.google.com.hk/maps/");}
   if(testkey == 'q'){window.open('https://www.quora.com/');}
-  if(testkey == 's'){window.open("stkListVH.html");}
+
+  if(testkey == 's'){window.open("D:/Dropbox/Public/stkListVH.html");}
   if(testkey == 't'){window.open("https://my.weather.gov.hk/tc/myindex.htm");}
   if(testkey == 'T'){window.open("https://translate.google.com/#en/zh-CN");}
   if(testkey == 'u'){window.open("https://www.worldometers.info/coronavirus/");}
   if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
   if(testkey == 'x'){window.open("https://wx.qq.com/");}
-  if(testkey == 'X'){window.open("LibDocs/Random Charts.html");}
+  if(testkey == 'X'){window.open("D:/Dropbox/Public/LibDocs/Random Charts.html");}
   if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
 }
 function getChar(event) {

@@ -11,37 +11,38 @@ $(document).ready(function(){
 function chkKey() {
   var testkey = getChar(event);
   if(testkey == "b"){ backward();}
-  if(testkey == "4"){ backward();}
-  if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
-  if(testkey == "f"){ foreward();}
-  if(testkey == "6"){ foreward();}
-  if(testkey == "l"){
+  else if(testkey == "4"){ backward();}
+  else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
+  else if(testkey == "f"){ foreward();}
+  else if(testkey == "6"){ foreward();}
+  else if(testkey == "l"){
     $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1); }
-  if(testkey == "2"){
+  else if(testkey == "2"){
     $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1); }
-  if(testkey == "7"){
+  else if(testkey == "7"){
     $('body,html').animate({scrollTop:(divtoc.clientHeight/2 + divtoc.offsetTop-600)}, 1); } //go to middle
-  if(testkey == "m"){ location = '#mustWatch';}
-  if(testkey == "p"){ pause();}
-  if(testkey == "c"){ continU();}
-  if(testkey == "r"){ randomFlip();}
-  if(testkey == "5"){ randomFlip();}
-  if(testkey == "s"){ showMov();}
-  if(testkey == 't'){window.location = '#toc';}
-  if(testkey == '8'){window.location = '#toc';}
-  if(testkey == 'T'){window.scrollTo(0,0);}
+  else if(testkey == "m"){ location = '#mustWatch';}
+  else if(testkey == "p"){ pause();}
+  else if(testkey == "c"){ continU();}
+  else if(testkey == "r"){ randomFlip();}
+  else if(testkey == "5"){ randomFlip();}
+  else if(testkey == "s"){ showMov();}
+  else if(testkey == 't'){window.location = '#toc';}
+  else if(testkey == '8'){window.location = '#toc';}
+  else if(testkey == 'T'){window.scrollTo(0,0);}
 
-  if(testkey == "K"){ 
+  else if(testkey == "K"){ 
     pos = document.getElementsByTagName("body")[0].scrollTop;
     if(typeof bookid == 'undefined') { bookid = $('title').text() }
     storeBookmark(bookid, pos.toString());
   }
-  if(testkey == "k"){
+  else if(testkey == "k"){
     if(typeof bookid != 'undefined') {loadBookmark(bookid);}
     else{alert("No BookId!")}
   }
-  if(testkey == 'd'){window.open("https://www.youdao.com/");}
-  if(testkey == 'u'){window.open("https://www.worldometers.info/coronavirus/");}
+  else if(testkey == 'd'){window.open("https://www.youdao.com/");}
+  else if(testkey == 'u'){window.open("https://www.worldometers.info/coronavirus/");}
+  else{chkOtherKeys(testkey)} 
 }
 function getChar(event){
   if (event.which!=0 && event.charCode!=0) {
