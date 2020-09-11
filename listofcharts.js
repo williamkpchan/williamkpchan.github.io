@@ -14,7 +14,7 @@ screenWidth = Math.round(window.screen.width * window.devicePixelRatio);
 console.log(window.screen.width + " " + window.devicePixelRatio +" " + screenWidth);
 function showAllCharts(){
 //    $("#codelist").load("HKCodelist.txt");
-  thisImgHead = "<img class='lazy' data-src='http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=3&indpara1=3&indpara2=6&indpara3=9&indpara4=12&indpara5=15&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&subChart3=12&ref3para1=0&ref3para2=0&ref3para3=0&scheme=3&com=100&chartwidth=680&chartheight=400&stockid=";
+  thisImgHead = "<img class='lazy' data-src='http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=3&indpara1=3&indpara2=6&indpara3=9&indpara4=12&indpara5=15&subChart1=3&ref1para1=5&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=7&ref2para2=13&ref2para3=9&subChart3=7&ref3para1=6&ref3para2=4&ref3para3=0&subChart5=1&ref4para1=0&ref4para2=0&ref4para3=0&scheme=3&com=100&chartwidth=680&chartheight=700&stockid=";
 
   thisImgTail="&type=1&logoStyle=1' ";
 
