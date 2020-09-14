@@ -130,7 +130,6 @@ function chkKey() { testkey = getChar(event);
   if(testkey == '1'){thisImgPCode= "&period=5000"; showAllCharts();}
 
   if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
-  if(testkey == 's'){window.open("../stkListVH.html");}
   if(testkey == 'F'){window.open("ForexChart.htm");}
   if(testkey == 'f'){forewardList();} // go forward to next list
   if(testkey == 'b'){backwardList();}
@@ -142,6 +141,7 @@ function chkKey() { testkey = getChar(event);
   if(testkey == 'l'){askaList();} // input a list of codes and store it
   if(testkey == 'R'){randomList();} // go forward to next list
   if(testkey == 'r'){randomChartinList();} // random jmp to a chart
+  if(testkey == 's'){xunbao(chartPtCode);}
   if(testkey == 't'){window.scrollTo(0,0);}
   if(testkey == 'x'){window.open("Random Charts.html");}
   if(testkey == 'z'){topicpointer = 12; showstkList();}

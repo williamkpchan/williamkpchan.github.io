@@ -15731,6 +15731,640 @@ legend(x="bottomleft", cex=0.8, bty="n",
        col=c("blue", "red", "red", "lightGray"),
        legend=c("IIP", "AR(2) forecasts", "95% C.I.", "Mean IIP growth"))
 
+<h2>Web Scrapping</h2><a href="https://aidenloe.github.io/webscrapping.html#scrape_from_discussion_forums" class="whitebut ">Web Scrapping</a>
+<h3>Scrape content (Wiki)</h3>
+We will be using the <code>RCurl</code> and <code>XML</code> package to help us with the scrapping.
+
+Let’s use the Eurovision_Song_Contest as an example.
+
+The <code>XML</code> package has plenty functions that can allow us to scrape the data.
+
+Usually we are extracting information based on the tags of the web pages.
+
+<code>##### SCRAPPING CONTENT OFF WEBSITES ######
+require(RCurl)
+require(XML)
+# XPath is a language for querying XML 
+# //Select anywhere in the document
+# /Select from root
+# @select attributes. Used in [] brackets
+
+#### Wikipedia Example ####
+url &lt;- "https://en.wikipedia.org/wiki/Eurovision_Song_Contest"
+txt = getURL(url) # get the URL html code
+
+# parsing html code into readable format
+PARSED &lt;- htmlParse(txt)
+
+# Parsing code using tags
+xpathSApply(PARSED, "//h1")
+
+# strops code and return content of the tag
+xpathSApply(PARSED, "//h1", xmlValue) # h1 tag
+xpathSApply(PARSED, "//h3", xmlValue) # h3 tag
+xpathSApply(PARSED, "//a[@href]") # a tag with href attribute
+
+# Go to url 
+# Highlight references
+# right click, inspect element
+# Search for tags
+xpathSApply(PARSED, "//span[@class='reference-text']",xmlValue) # parse notes and citations
+xpathSApply(PARSED, "//cite[@class='citation news']",xmlValue) # parse citation news
+xpathSApply(PARSED, "//span[@class='mw-headline']",xmlValue) # parse headlines
+xpathSApply(PARSED, "//p",xmlValue) # parsing contents in p tag
+xpathSApply(PARSED, "//cite[@class='citation news']/a/@href") # parse links under citation. xmlValue not needed. 
+xpathSApply(PARSED, "//p/a/@href") # parse href links under all p tags
+xpathSApply(PARSED, "//p/a/@*") # parse all atributes under all p tags
+
+# Partial matches - subtle variations within or between pages. 
+xpathSApply(PARSED, "//cite[starts-with(@class, 'citation news')]",xmlValue) # parse citataion news that starts with..
+xpathSApply(PARSED, "//cite[contains(@class, 'citation news')]",xmlValue) # parse citataion news that contains.
+
+# Parsing tree like structure
+parsed&lt;-   htmlTreeParse(txt, asText = TRUE)</code>
+
+<h3>Scrape content (BBC)</h3>
+When you know the structure of the data.
+
+All you need to do is to find the correct function to scrape.
+
+<code>##### BBC Example ####
+url &lt;- "https://www.bbc.co.uk/news/uk-england-london-46387998"
+url &lt;- "https://www.bbc.co.uk/news/education-46382919"
+txt = getURL(url) # get the URL html code
+
+# parsing html code into readable format
+PARSED &lt;- htmlParse(txt)
+xpathSApply(PARSED, "//h1", xmlValue) # h1 tag
+xpathSApply(PARSED, "//p", xmlValue) # p tag
+xpathSApply(PARSED, "//p[@class='story-body__introduction']", xmlValue) # p tag body
+xpathSApply(PARSED, "//div[@class='date date--v2']",xmlValue) # date, only the first is enough
+xpathSApply(PARSED, "//meta[@name='OriginalPublicationDate']/@content") # sometimes there is meta data. </code>
+
+<h3>Create simple BBC scrapper</h3>
+Sometimes, creating a function will make your life better and make your script look simpler.
+
+<code>##### Create simple BBC scrapper #####
+# scrape title, date and content
+BBCscrapper1&lt;- function(url){
+  txt = getURL(url) # get the URL html code
+  PARSED &lt;- htmlParse(txt) # Parse code into readable format
+  title &lt;- xpathSApply(PARSED, "//h1", xmlValue) # h1 tag
+  paragraph &lt;- xpathSApply(PARSED, "//p", xmlValue) # p tag
+  date &lt;- xpathSApply(PARSED, "//div[@class='date date--v2']",xmlValue) # date, only the first is enough
+  date &lt;- date[1]
+  return(cbind(title,date))
+  #return(as.matrix(c(title,date)))
+}
+
+# Use function that was just created. 
+BBCscrapper1("https://www.bbc.co.uk/news/education-46382919")</code>
+
+<code>##      title                                                         
+## [1,] "Ed Farmer: Expel students who defy initiations ban, says dad"
+##      date              
+## [1,] "29 November 2018"</code>
+
+<h3>Keeping it neat</h3>
+Using the <code>plyr</code> package helps to arrange the data in an organised way.
+
+<code>## Putting the title and date into a dataframe
+require(plyr)
+#url
+url&lt;- c("https://www.bbc.co.uk/news/uk-england-london-46387998", "https://www.bbc.co.uk/news/education-46382919")
+## ldply: For each element of a list, apply function then combine results into a data frame
+#put into a dataframe
+ldply(url,BBCscrapper1)</code>
+
+<code>##                                                          title
+## 1              Man murdered widow, 80, in London allotment row
+## 2 Ed Farmer: Expel students who defy initiations ban, says dad
+##               date
+## 1 29 November 2018
+## 2 29 November 2018</code>
+
+<h1>Web Scrapping (Part 2)</h1>
+This example below is taken from code kindly written by David stillwell.
+
+Some editing has been made to the original code.
+
+<h3>Scrape from Wiki tables</h3>
+You have learned how to scrape viewership on wikipedia and content on web pages.
+
+This section is about scrapping data tables online.
+
+<code># Install the packages that you don't have first. 
+library("RCurl") # Good package for getting things from URLs, including https
+library("XML") # Has a good function for parsing HTML data
+library("rvest") #another package that is good for web scraping. We use it in the Wikipedia example
+
+#####################
+### Get a table of data from Wikipedia
+## all of this happens because of the read_html function in the rvest package
+# First, grab the page source
+us_states = read_html("https://en.wikipedia.org/wiki/List_of_U.S._states_and_territories_by_population") %&gt;% # piping
+  # then extract the first node with class of wikitable
+  html_node(".wikitable") %&gt;% 
+  # then convert the HTML table into a data frame
+  html_table()</code>
+
+<h3>Scrape from online tables</h3>
+If we can have two data tables that have at least one column with the same name, then we can merge them together.
+
+The main idea is to link the data together to run simple analysis.
+
+In this case we can get data about <a href="http://apps.saferoutesinfo.org/legislation_funding/state_apportionment.cfm">funding</a> given to various US states to support building infrastructure to improve students’ ability to walk and bike to school.
+
+<code>######################
+url &lt;- "http://apps.saferoutesinfo.org/legislation_funding/state_apportionment.cfm"
+funding&lt;-htmlParse(url) #get the data
+
+# find the table on the page and read it into a list object
+funding&lt;- XML::readHTMLTable(funding,stringsAsFactors = FALSE)
+
+funding.df &lt;- do.call("rbind", funding) #flatten data
+# Contain empty spaces previously.
+colnames(funding.df)[1]&lt;- c("State") # shorten colname to just State. 
+
+# Match up the tables by State/Territory names
+# so we have two data frames, x and y, and we're setting the columns we want to do the matching on by setting by.x and by.y
+mydata = merge(us_states, funding.df, by.x="State, federal district, or territory", by.y="State")
+# it looks pretty good, but note that we're down to 50 US States, because the others didn't match up by name
+# e.g. "District of Columbia" in the us_states data, doesn't match "Dist. of Col." in the funding data
+
+#Replace the total spend column name with a name that's easier to use.
+colnames(mydata)[18] = "total_spend"
+
+#  We need to remove commas so that R can treat it as a number.
+mydata[,"Population estimate, July 1, 2017[4]"] = gsub(",", ", mydata[,"Population estimate, July 1, 2017[4]"]) 
+mydata[,"Population estimate, July 1, 2017[4]"] = as.numeric(mydata[,"Population estimate, July 1, 2017[4]"]) #this converts it to a number data type
+
+# Now we have to do the same thing with the funding totals, which are in a format like this: $17,309,568
+mydata[,"total_spend"] = gsub(",", ", mydata[,"total_spend"]) #this removes all commas
+mydata[,"total_spend"] = gsub("\\$", ", mydata[,"total_spend"]) #this removes all dollar signs. We have a \\ because the dollar sign is a special character.
+mydata[,"total_spend"] = as.numeric(mydata[,"total_spend"]) #this converts it to a number data type
+
+# Now we can do the plotting
+options(scipen=9999) #stop it showing scientific notation
+plot(mydata[,"Population estimate, July 1, 2017[4]"], mydata[,"total_spend"])</code>
+
+<img src="webscrapping_files/figure-html/Scrape%20Table%20(non-wiki)-1.png" width="672" />
+
+<code>## What's does the correlation between state funding and state population look like?
+cor(mydata[,"Population estimate, July 1, 2017[4]"], mydata[,"total_spend"]) # 0.9924265 - big correlation!</code>
+
+<code>## [1] 0.9885666</code>
+
+<h3>Plot funding data on map</h3>
+Perhaps it might be more interesting to see how the data is like on a map.
+
+We can utilise <code>map_data</code> function in the <code>ggplot</code> package to help us with that.
+
+Again, with a bit of data manipulation, we can merge the data table that contains the longitude and latitude information together with the funding data across different states.
+
+<code>require(ggplot2)
+all_states &lt;- map_data("state") # states
+colnames(mydata)[1] &lt;- "state" # rename to states
+mydata$state &lt;- tolower(mydata$state) #set all to lower case
+Total &lt;- merge(all_states, mydata, by.x="region", by.y = 'state') # merge data
+# we have data for delaware but not lat, long data in the maps
+i &lt;- which(!unique(all_states$region) %in% mydata$state) 
+
+# Plot data
+ggplot() + 
+  geom_polygon(data=Total, aes(x=long, y=lat, group = group, fill=Total$total_spend),colour="white") + 
+  scale_fill_continuous(low = "thistle2", high = "darkred", guide="colorbar") + 
+  theme_bw()  + 
+  labs(fill = "Funding for School" ,title = "Funding for School between 2005 to 2012", x=", y=") + 
+  scale_y_continuous(breaks=c()) +
+  scale_x_continuous(breaks=c()) +
+  theme(panel.border =  element_blank(),
+        text = element_text(size=20))</code>
+
+
+<h2>XPath for Web Scraping</h2>
+<a href="https://www.opencodez.com/how-to-guide/how-to-use-xpath-for-web-scraping-with-r.htm" class="whitebut ">XPath for Web Scraping</a>
+
+We have already learned about Web Scraping Technology in our previous post <a href="https://www.opencodez.com/web-development/web-scraping-using-beautiful-soup-part-1.htm" target="_blank">Web Scraping Using Beautiful Soup in Python.</a> In addition to that, a learner/developer might also be interested in fetching nodes/elements from the HTML or XML document using XPaths.
+
+<h3>XPath For Web Scraping with R:</h3>
+This article essentially elaborates on XPath and explains how to use XPath for web scraping with <a href="https://en.wikipedia.org/wiki/R_(programming_language)" target="_blank">R Programming language</a>.
+
+<h3>What is XPath</h3>
+XPath stands for XML Path Language. 
+It is a query language to extract nodes from HTML or XML documents.
+
+<h3>Required Tools and Knowledge</h3>
+
+R Programming Language
+XML Package
+HTML/XML
+
+<h3>How to get XPath in Mozilla Firefox Browser</h3>
+Let us see how to find out XPath of any element on <a href="https://www.opencodez.com/" target="_blank">www.opencodez.com</a> using the Mozilla Firefox browser. 
+We want to identify the XPath for the heading text of the first article on the home page. 
+When we right-click on the highlighted element, we can find the Inspect Element option. 
+A screenshot is attached below.
+
+<img class="lazy" src="https://www.opencodez.com/wp-content/uploads/2020/02/Title-Tag-Inspect-Element-1024x511.png">
+
+Observing the element HTML Code, we can identify that our target text is contained in the &#8216;a&#8217; tag. 
+(highlighted in blue at the lower section of the screenshot). 
+Next, we need to right-click on the blue highlight. 
+Another box with several options opens up. 
+Click on &#8220;Copy&#8221; which will show us new options. 
+There will be an XPath option also. 
+Click on that. 
+Have a look at it in the below screenshot.
+
+<img class="lazy" src="https://www.opencodez.com/wp-content/uploads/2020/02/XPath-option-1024x526.png">
+
+Copy this XPath in any text file and check how does it look like. 
+The XPath copied is /html/body/div[2]/div/div/div/div[1]/div[1]/article[1]/header/h2/a.
+
+<h3>Absolute and Relative XPath</h3>
+<h3>Absolute Path &#8211;</h3>
+The XPath provided above is called the absolute path. 
+It starts with &#8216;/&#8217; and traverses from the root node to the target node. 
+Let us take a look if this XPath is correctly identified by Firefox. 
+The set of commands is provided below.
+
+Absolute Path
+
+library(XML)
+url &lt;- "https://www.opencodez.com/"
+source &lt;- readLines(url, encoding = "UTF-8")
+parsed_doc &lt;- htmlParse(source, encoding = "UTF-8")
+xpathSApply(parsed_doc, path = '/html/body/div[2]/div/div/div/div[1]/div[1]/article[1]/header/h2/a', xmlValue)
+
+12345
+
+library(XML)url &lt;- "https://www.opencodez.com/"source &lt;- readLines(url, encoding = "UTF-8")parsed_doc &lt;- htmlParse(source, encoding = "UTF-8")xpathSApply(parsed_doc, path = '/html/body/div[2]/div/div/div/div[1]/div[1]/article[1]/header/h2/a', xmlValue)
+
+When we run the commands in R Studio, we find that the result is a NULL. 
+The corrected XPath is provided below.
+
+Absolute XPath
+
+xpathSApply(parsed_doc, path = '/html/body/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/article[1]/header/h2/a', xmlValue)
+
+xpathSApply(parsed_doc, path = '/html/body/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/article[1]/header/h2/a', xmlValue)
+
+xpathSApply is a function available in the XML library in R. 
+xmlValue is the argument we need to pass so that we get the value of the target node. 
+In our case its the heading of the article.
+
+<h3>Relative Path &#8211;</h3>
+We can create a short and concise path to our target node by using &#8216;//&#8217; to jump between nodes. 
+For example, the above absolute path can also be written as //h2/a. 
+This path also points to our target &#8216;a&#8217; tag. 
+There can be other ways to represent this path as well. 
+Now let us take a look at the command to extract the heading text.
+
+Relative XPath
+
+xpathSApply(doc = parsed_doc, path ="//h2/a", xmlValue)[1]
+
+xpathSApply(doc = parsed_doc, path ="//h2/a", xmlValue)[1]
+
+The output is a character vector with 22 values in it. 
+A snapshot of the output is provided below. 
+Hence we need to fetch the first text by using [1] in the command.
+
+<img class="lazy" src="https://www.opencodez.com/wp-content/uploads/2020/02/Character-output-1024x598.png">
+
+<h3>Other ways to represent XPaths</h3>
+<h3>Wildcard Operator * &#8211;</h3>
+The wildcard operator * matches any (single) node with an arbitrary name at its position. 
+In our case, a wildcard operated XPath will look like below.
+
+Wildcard XPath
+
+(xpathSApply(doc = parsed_doc, path ="//h2/*", xmlValue))[1]
+
+(xpathSApply(doc = parsed_doc, path ="//h2/*", xmlValue))[1]
+
+<h3>Wildcard Operator . 
+and .. 
+&#8211;</h3>
+Here we are going to explain two more operators &#8216;.&#8217; and &#8216;..&#8217; and its usage in the XPath command. 
+The . 
+operator selects the current nodes (or self-axis) in a selected node-set. 
+The .. 
+operator selects the node one level up the hierarchy from the current node. 
+Let us all try this for ourselves. 
+Do share the commands or scenarios in the comments where any difficulty is faced.
+
+<h3>Numerical Predicate &#8211;</h3>
+Some predicates or functions can also be used to pinpoint nodes using position, last or count in the command. 
+Our target node XPath will change in the below manner.
+
+Numerical Predicates
+
+#Position
+xpathSApply(doc = parsed_doc, path ="//h2[position()=1]", xmlValue)[1]
+
+#Last
+xpathSApply(doc = parsed_doc, path ="//h2[last()]", xmlValue)[1]
+
+#Count
+xpathSApply(parsed_doc,"//h2[count(.//a)&gt;0]", xmlValue)[1]
+
+#PositionxpathSApply(doc = parsed_doc, path ="//h2[position()=1]", xmlValue)[1] #LastxpathSApply(doc = parsed_doc, path ="//h2[last()]", xmlValue)[1] #CountxpathSApply(parsed_doc,"//h2[count(.//a)&gt;0]", xmlValue)[1]
+
+<h4>Position &#8211;</h4>
+We are trying to locate all the h2 tags which have got the first position in the node tree structure. 
+As explained earlier, this will generate a character of 22 values. 
+Our &#8216;position&#8217; command extracts the first value because of [1] in the command.
+
+<h4>Last &#8211;</h4>
+Similar to the above, all the h2 tags which are last in the tree structure will be extracted. 
+The first value can be fetched using [1]. 
+We can experiment to fetch other article headings by changing the value inside the box bracket.
+
+<h4>Count &#8211;</h4>
+The command looks a bit scary!! But don&#8217;t be. 
+It simply extracts all the h2 nodes which have got &#8216;a&#8217; tag present. 
+If we observe the &#8216;h2&#8217; tags in the HTML code, we will notice that all the &#8216;h2&#8217; tags do have a child tag &#821#8216;a&#8217; and so this command is the same as the one we saw in the relative path section. 
+With the presence of [1], it allows us to fetch the first article heading text.
+
+If you were facing issues working with the . 
+operator command as suggested earlier, this example should provide you with some understanding.
+
+<h3>Text Predicate &#8211;</h3>
+We can also locate some nodes with the manipulation of text related predicates. 
+Explaining this will require a change in our target node. 
+Text predicates help us in cases where we want to extract text which contains a specific word or characters or let say has a length condition on characters. 
+Let us see some commands.
+
+<h4>Contains &#8211;</h4>
+
+Text Predicate
+
+library(stringr)
+xpathSApply(parsed_doc,"//a[contains(text(), '10')]", xmlValue)
+
+library(stringr)xpathSApply(parsed_doc,"//a[contains(text(), '10')]", xmlValue)
+
+The above command will throw a list of headings that have got 10 in its text. 
+The output snapshot is provided below.
+
+<img class="lazy" src="https://www.opencodez.com/wp-content/uploads/2020/02/10.png">
+
+<h4>Starts-with &#8211;</h4>
+When we want to fetch text of any attribute which starts with a particular string pattern, we can use starts-with predicate in the command. 
+Attributes in any tag are addressed using &#8216;@&#8217; symbol. 
+Have a look at the command. 
+Do try to understand the output for this and let us know if you face any difficulty.
+
+starts-with
+
+xpathSApply(parsed_doc,"//a[starts-with(./@title, '10')]", xmlValue)
+
+xpathSApply(parsed_doc,"//a[starts-with(./@title, '10')]", xmlValue)
+
+<h3>XPath Node Relations &#8211;</h3>
+A very interesting way to prepare XPaths is by understanding the tree analogy of the nodes in the HTML code structure. 
+As is usual in describing tree-structured data formats, we employ notation based on family relationships (child, parent, grandparent, …) to describe the between-node relations. 
+The construction of a proper XPath statement that employs this feature follows the pattern node1/<i>relation</i>::node2, where node2 has a specific <i>relation</i> to node1. 
+ Let us see some examples.
+
+<h3>Ancestor &#8211;</h3>
+
+Ancestor
+
+xpathSApply(parsed_doc,"//a/ancestor::article", xmlValue)
+
+xpathSApply(parsed_doc,"//a/ancestor::article", xmlValue)
+
+The command locates and fetches all the article tags which are an ancestor to a tag.
+
+<h4>Child &#8211;</h4>
+
+Child
+
+xpathSApply(parsed_doc,"//div[position()=1]/child::article", xmlValue)
+
+xpathSApply(parsed_doc,"//div[position()=1]/child::article", xmlValue)
+
+The command locates and fetches all article tags which is a child of div tag in the first position in the tree structure.
+
+There are many other such relations that we can utilize like a sibling, preceding-sibling, descendant, following, etc.
+
+<h3>Conclusion &#8211;</h3>
+I hope you found this step by step detailed guide on XPath for Web Scraping with R useful. 
+There are many more options with which we can create XPaths apart from the ones we have explained in this article.
+
+It is encouraged that the reader tries these commands themselves to practice and gain a deeper understanding of a faster smoother experience with Web Scraping. 
+Do comment if you want to understand any specific XPath command, if you face any error or you want to know about any other concept related to Web Scraping.
+
+<h2>web scraping</h2>
+url &lt;- 'http://www.r-datacollection.com/materials/html/fortunes.html'
+
+install.packages('XML')
+library(XML)
+parsed_doc &lt;- htmlParse(url)
+parsed_doc &lt;- htmlParse(getURL(apple.news.url, .encoding = 'utf8'))
+
+分析 html
+這邊用絕對路徑抓取 Tag 裡的文字
+
+xpathApply : 會多加 Tag 屬性
+
+xpathSApply : 只抓取文字
+xpathSApply(doc = parsed_doc, path = '/html/body/div/p/i')
+
+
+相對路徑 ( 推薦 ) : 兩條斜線
+xpathSApply(doc = parsed_doc, path = '//div/p/i')
+
+/* 簡化 */
+xpathSApply(parsed_doc, '//div/p/i')
+
+萬用字元
+&lt;div>底下所有 i
+xpathSApply(parsed_doc, '//html/body/div/*/i')
+[[1]]
+&lt;i>'What we have is nice, but we need something very different'&lt;/i>
+[[2]]
+&lt;i>'R is wonderful, but it cannot work magic'&lt;/i>
+
+抓取條件
+
+.. : 上一層
+xpathSApply(parsed_doc, '//title/..')
+&lt;head>
+  &lt;title>Collected R wisdoms&lt;/title>
+&lt;/head>
+
+
+| : 或
+xpathSApply(parsed_doc, '//address | //title')
+[[1]]
+&lt;title>Collected R wisdoms&lt;/title>
+[[2]]
+&lt;address>
+  &lt;a href="www.r-datacollectionbook.com">
+    &lt;i>The book homepage&lt;/i>
+  &lt;/a>
+  &lt;a/>
+&lt;/address>
+
+利用變數 text2 節省時間，下次要用就直接呼叫
+text2 &lt;- c(address = '//address', title = '//title')
+xpathSApply(parsed_doc, text2)
+
+節點關係
+
+ancestor : 由當前節點向上，從父節點至根節點
+xpathSApply(parsed_doc, '//a/ancestor::div')
+xpathSApply(parsed_doc, '//a/ancestor::div//i')
+/* 說明 */
+a 節點以上是 div 的
+a 節點以上是 div 的 i
+
+節點底下有 title 的都抓下來，title 上面有兩層，所以會有兩組結果
+xpathSApply(parsed_doc, '//title/ancestor::*')
+
+ancestor-or-self : 由當前節點向上，從當前節點 到父節點直至根節點，就是多一組包含自己
+xpathSApply(parsed_doc, '//title/ancestor-or-self::*')
+
+
+attribute : 抓出屬性
+xpathSApply(parsed_doc, '//a/attribute::*')
+/* 結果 */
+href 
+"https://stat.ethz.ch/mailman/listinfo/r-help" 
+href 
+"www.r-datacollectionbook.com"
+xpathSApply(parsed_doc, '//div/attribute::*')
+/* 結果 */
+id           lang           date           lang           date 
+  "R Inventor"      "english"    "June/2003"      "english" "October/2011"
+
+
+child : 子節點
+xpathSApply(parsed_doc, '//div/child::h1')
+/* 說明 */
+div 底下是 h1 的
+
+descendant : 底下所有子節點，不管第幾層
+
+descendant-or-self : 多一個自己
+xpathSApply(parsed_doc, '//div/descendant::*')
+
+following : 當前節點的後續節點(子節點除外)
+xpathSApply(parsed_doc, "//div/following::*")
+
+following-sibling : 同一層兄弟底下
+xpathSApply(parsed_doc, "//div/following-sibling::*")
+
+namespace : 命名空間搜尋
+xpathSApply(parsed_doc, "*[name() = 'div']")
+
+
+parent : 父節點
+xpathSApply(parsed_doc, "//i/parent::a")
+/* 說明 */
+i 的上一層是 a
+
+preceding : 上一個兄弟節點
+xpathSApply(parsed_doc, "//i/preceding::a")
+/* 說明 */
+i 上一個兄弟是 a
+
+preceding-sibling : 同一層兄弟
+xpathSApply(parsed_doc, "//body/preceding-sibling::*")
+
+self : 自己
+xpathSApply(parsed_doc, "//body/self::*")
+屬性抓值
+
+text() : 第一個結果包含文字
+xpathSApply(parsed_doc,"//*[text()='The book homepage']")
+
+attribute : 屬性，用 @ 表示
+xpathSApply(parsed_doc,"//div[@id='R Inventor']")
+xpathSApply(parsed_doc,"//div[@date='October/2011']")
+
+string-length() : 字串的長度
+xpathSApply(parsed_doc, '//h1[string-length() > 5]')
+/* 說明 */
+字串長度大於5
+
+contains(str1,str2) : 包含屬性
+xpathSApply(parsed_doc, "//*[contains(text(),'Source')]")
+/* 說明 */
+文字包含 Source
+
+starts-with(str1,str2) : 字串開頭
+xpathSApply(parsed_doc,"//i[starts-with(text(),'The')]")
+/* 說明 */
+開頭是 The
+
+substring-before : 篩選條件之前
+
+substring-after : 篩選條件之後
+xpathSApply(parsed_doc,"//div[substring-before(@date,'/')='June']")
+/* 說明 */
+屬性是 date 裡面 / 之前是 June 的
+xpathSApply(parsed_doc, "//a[substring-after(@href,'k.') = 'com']")
+
+not() : 不包含的
+xpathSApply(parsed_doc,"//div[not(contains(@id,'Inventor'))]")
+
+local-name() : 網頁名稱
+xpathSApply(parsed_doc,"//*[local-name()='address']")
+[[1]]
+&lt;address>
+  &lt;a href="www.r-datacollectionbook.com">
+    &lt;i>The book homepage&lt;/i>
+  &lt;/a>
+  &lt;a/>
+&lt;/address>
+
+count() : 節點個數
+xpathSApply(parsed_doc,"//div[count(.//a)>0]")
+/* 說明 */
+.就是div自己，數字可改
+
+position() : 位置
+xpathSApply(parsed_doc,"//div/p[position()=1]")
+/* 說明 */
+div 底下第一個 p，數字可改
+
+last() : 最後一個節點
+xpathSApply(parsed_doc,"//div/p[last()]")
+
+萃取函式
+
+|  Function   |  回傳值  
+
+| xmlValue    | 節點內容
+| xmlName     | Tag名稱
+| xmlAttrs    | 所有屬性
+| xmlGetAttr  | 指定屬性
+| xmlChildren | 子節點  
+| xmlSize     | 節點數量
+
+範例
+xpathSApply(parsed_doc,"//title", xmlValue)
+xpathSApply(parsed_doc,"//div",xmlAttrs)
+xpathSApply(parsed_doc,"//div",xmlGetAttr,"lang")
+xpathSApply(parsed_doc,"//div/*",xmlName)
+xpathSApply(parsed_doc,"//div",xmlChildren)
+xpathSApply(parsed_doc,"//body",xmlSize) => 7
+自己寫函示
+
+return : 回傳值
+
+require() : 引用， 比如說 require ( stringr )
+my-lower &lt;- function(x) {
+  x &lt;- tolower(xmlName(x))
+  x
+}
+xpathSApply(parsed_doc,"//div//i",fun = my-lower)
+
 
 
 

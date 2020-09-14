@@ -2,6 +2,7 @@ var tocList = $('#tocList');
 var patt1 = /(<h2>).*(<\/h2>)/i;
 var patt2 = /(<h2[^>]*>|<\/h2>)/g;
 var topicpointer = 0;
+chartPtCode = "00700";
 
 ImgList.forEach(maketocList);
 
@@ -50,8 +51,9 @@ function randomList() {
 
 function randomChartinList() {
   chartrtpointer = Math.floor(Math.random() * theList.length);
-  chartrtpointer = "#imgp" + chartrtpointer;
-  window.location = chartrtpointer;
+  chartrtpointerImg = "#imgp" + chartrtpointer;
+  chartPtCode = theList[chartrtpointer]
+  window.location = chartrtpointerImg;
 }
 
 
