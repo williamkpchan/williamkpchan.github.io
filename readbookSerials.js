@@ -122,6 +122,23 @@ function loadBookmark(objName) {
   topicpointer = parseInt(localStorage.getItem(objName))
   showImg();
 }
+function LoadJs(src, callback) {
+    var script = document.createElement('script');
+    script.setAttribute('src', src);
+    script.addEventListener('load', callback);
+    document.head.appendChild(script);
+}
+
+function reTOC() {
+  document.getElementById("toc").innerHTML = ""; // clear old TOC
+  notvisitedList = [...Array(ImgList.length).keys()];
+  topicpointer = ImgList.length
+  ImgList.forEach(makeTOC);
+  randomFlip();
+  changeImg();
+    return false;
+}
+
 
 randomFlip();
 changeImg();

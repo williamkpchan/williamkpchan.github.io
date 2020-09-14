@@ -47,3 +47,11 @@ function randomList() {
   topicpointer = Math.floor(Math.random() * ImgList.length);
   showstkList();
 }
+
+function randomChartinList() {
+  chartrtpointer = Math.floor(Math.random() * theList.length);
+  chartrtpointer = "#imgp" + chartrtpointer;
+  window.location = chartrtpointer;
+}
+
+

@@ -43,7 +43,7 @@ function showAllCharts(){
     }else{commentTxt = "";}
 
     // this is the key line to show K line charts
-    theFunccode =  "<div>" + (codeNo+1) + " &emsp; " + theText  + "<br>" + thisImgHead + theText + thisImgPCode + thisImgTail + "onclick = \"xunbao('" + theText + "')\">" + "<br><span class='orange'>" + commentTxt + "</span></div>";
+    theFunccode =  "<div id=imgp" + codeNo + ">" + (codeNo+1) + " &emsp; " + theText  + "<br>" + thisImgHead + theText + thisImgPCode + thisImgTail + "onclick = \"xunbao('" + theText + "')\">" + "<br><span class='orange'>" + commentTxt + "</span></div>";
     $( "#codelist" ).append( theFunccode);
     tradeDetailStr = ""; // clean the tradeDetailStr
 
@@ -141,7 +141,7 @@ function chkKey() { testkey = getChar(event);
   if(testkey == 'e'){window.location = '#tocList';}
   if(testkey == 'l'){askaList();} // input a list of codes and store it
   if(testkey == 'R'){randomList();} // go forward to next list
-  //if(testkey == 'r'){randomChartinList();} # not implemented, jmp to random chart
+  if(testkey == 'r'){randomChartinList();} // random jmp to a chart
   if(testkey == 't'){window.scrollTo(0,0);}
   if(testkey == 'x'){window.open("Random Charts.html");}
   if(testkey == 'z'){topicpointer = 12; showstkList();}
