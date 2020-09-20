@@ -126,6 +126,7 @@ function chkKey() { testkey = getChar(event);
   if(testkey == 'h'){thisImgPCode= "&period=3"; showAllCharts();}
   if(testkey == 'd'){thisImgPCode= "&period=7"; showAllCharts();}
   if(testkey == 'w'){thisImgPCode= "&period=10"; showAllCharts();}
+  if(testkey == 'm'){thisImgPCode= "&period=2062"; showAllCharts();}
   if(testkey == '5'){thisImgPCode= "&period=5012"; showAllCharts();}
   if(testkey == '1'){thisImgPCode= "&period=5000"; showAllCharts();}
 
