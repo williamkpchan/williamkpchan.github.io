@@ -79,21 +79,24 @@ function randomFlip() {
 
 
 var toc = $('#toc');
-$(markerName).each(function(i) {
-    var topic = $(this), topicNumber = i + 1; topicLength = topicNumber;
-
-    if (typeof(showTopicNumber) !== 'undefined'){
-      if (showTopicNumber == true){
-        toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
+if(markerName != "h0"){
+  $(markerName).each(function(i) {
+      var topic = $(this), topicNumber = i + 1; topicLength = topicNumber;
+  
+      if (typeof(showTopicNumber) !== 'undefined'){
+        if (showTopicNumber == true){
+          toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
+        }else{
+          toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
+        }
       }else{
         toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
       }
-    }else{
-      toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
-    }
-    // toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
-    topic.attr('id', 'topic-' + topicNumber);
-});
+      // toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
+      topic.attr('id', 'topic-' + topicNumber);
+  });
+}
+
 var totalLength = topicLength
 var notvisitedList = [...Array(totalLength).keys()];
 
