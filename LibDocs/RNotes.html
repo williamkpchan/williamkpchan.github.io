@@ -16731,6 +16731,239 @@ manager_plot = ggplot() +
 
 <a href="https://www.youtube.com/watch?v=r0n_p7POzDE" class="whitebut ">ggplot youtube</a>
 
+<h2>download YouTube data in R using tuber and purrr</h2>
+<a href="https://www.storybench.org/how-to-download-youtube-data-in-r-using-tuber-and-purrr/" class="whitebut ">download YouTube data</a>
+
+Accessing YouTube's metadata such as views, likes, dislikes and comments is simple in R thanks to the<code><a href="https://soodoku.github.io/tuber/articles/tuber-ex.html">tuber</a></code>
+
+<code>install.packages("tuber")
+library(tuber) # youtube API
+library(magrittr) # Pipes %>%, %T>% and equals(), extract().
+library(tidyverse) # all tidyverse packages
+library(purrr) # package for iterating/extracting data</code>
+
+<h3>1) Enable the APIs</h3>
+
+First head over to your <a href="https://console.developers.google.com/apis/dashboard">Google APIs dashboard</a> (you’ll need an account for this). 
+Click on “ENABLE APIS AND SERVICES”.
+
+<img class="lazy" data-src="https://www.storybench.org/wp-content/uploads/2019/09/32-00-google-api-2-1200x419.png">
+
+This will bring up a laundry list of APIs, but we only need the four pertaining to YouTube (see below) and the Freebase API.
+
+Click on the search bar and type in YouTube and you should see four options. 
+Enable all of them.
+
+<img class="lazy" data-src="https://www.storybench.org/wp-content/uploads/2019/09/32-01-youtube-api-1-1200x642.png">
+
+<strong>IMPORTANT</strong> you’ll also have to search for and enable the Freebase API.
+
+<h3>2) Create your credentials</h3>
+
+After these have been enabled, you’ll need to create credentials for the API. 
+Click on the Credentials label on the left side of your Google dashboard (there should be a little key icon next to it).
+
+<img class="lazy" data-src="https://www.storybench.org/wp-content/uploads/2019/09/32-02-google-api-credentials-1-1200x373.png">
+
+After clicking on the Credentials icon, you’ll need to select the OAuth client ID option.
+
+<img class="lazy" data-src="https://www.storybench.org/wp-content/uploads/2019/09/32-03-create-credentials-1.png">
+
+<h3>Create your OAuth</h3>
+
+Here is where we name our app and indicate it’s an “Other” Application type.
+
+<img class="lazy" data-src="https://www.storybench.org/wp-content/uploads/2019/09/32-04-create-youtube-api-r-1-1200x673.png">
+
+We’re told we’re limited to 100 sensitive scope logins until the OAuth consent screen is published. 
+That’s not a problem for us, so we can copy the client ID and client secret
+
+<img class="lazy" data-src="https://www.storybench.org/wp-content/uploads/2019/09/32-05-oauth-cred-google-1.png">
+
+After clicking on the copy icons, we save them into two objects in RStudio (<code>client_id</code> and <code>client_secret</code>).
+
+<code>client_id &lt;- "XXXXXXXXX"
+client_secret &lt;- "XXXXXXXXX"</code>
+
+<h3>3) Authenticate the application</h3>
+
+Now you can run <code>tuber</code>’s <code>yt_oauth()</code> function to authenticate your application. 
+I included the token as a blank string (<code>token = ''</code>) because it kept looking for the <code>.httr-oauth</code> in my local directory (and I didn’t create one).
+
+<code># use the youtube oauth 
+yt_oauth(app_id = client_id,
+         app_secret = client_secret,
+         token = '')</code>
+
+Provided you did everything correct, this <em>should</em> open your browser and ask you to sign into the Google account you set everything up with (see the images below). 
+You’ll see the name of your application in place of “<em>Your application name</em>”.
+
+<img class="lazy" data-src="https://www.storybench.org/wp-content/uploads/2019/09/32-06-sign-in-with-youtube.png">
+
+After signing in, you’ll be asked if the YouTube application you created can access your Google account. 
+If you approve, click “Allow.”
+
+<img class="lazy" data-src="https://www.storybench.org/wp-content/uploads/2019/09/32-07-google-credentials-allow-1-878x1200.png">
+
+This should give you a blank page with a cryptic, <code>Authentication
+complete. 
+Please close this page and return to R.</code> message.
+
+<hr class="wp-block-separator"/>
+
+<h3>Accessing YouTube data</h3>
+
+Great! Now that we’re all set up, we will download some data into RStudio. 
+Be sure to check out the <a href="https://soodoku.github.io/tuber/reference/index.html">reference page</a> and the <a href="https://developers.google.com/youtube/v3/docs/">YouTube API reference doc</a> on how to access various meta data from YouTube videos.
+
+We’ll download some example data from <a href="https://www.youtube.com/playlist?list=PLG6HoeSC3raE-EB8r_vVDOs-59kg3Spvd">Dave Chappelle’s comedy central playlist</a>, which is a collection of 200 of his most popular skits.
+
+<h3>Downloading the playlist data</h3>
+
+We will be using the <code>playlistId</code> from the url to access the content from the videos. 
+Here is some information on the <code>playlistId</code> parameter:
+
+<blockquote class="wp-block-quote">The <code>playlistId</code> parameter specifies the unique ID of the playlist for<br>
+  which you want to retrieve playlist items. 
+Note that even though this<br>
+  is an optional parameter, every request to retrieve playlist items<br>
+  must specify a value for either the <code>id</code> parameter or the <code>playlistId</code><br>
+  parameter.
+</blockquote>
+
+Dave Chappelle’s playlist is in the url below. 
+We pass it to the<br>
+<code>stringr::str_split()</code> function to get the <code>playlistId</code> out of it.
+
+<code>dave_chappelle_playlist_id &lt;- stringr::str_split(
+    string = "https://www.youtube.com/playlist?list=PLG6HoeSC3raE-EB8r_vVDOs-59kg3Spvd", 
+    pattern = "=", 
+    n = 2,
+    simplify = TRUE)[ , 2]
+dave_chappelle_playlist_id
+
+[1] "PLG6HoeSC3raE-EB8r_vVDOs-59kg3Spvd"</code>
+
+Ok–we have a vector for Dave Chappelle’s <code>playlistId</code> named <code>dave_chappelle_playlist_id</code>, now we can use the <code>tuber::get_playlist_items()</code> to collect the videos into a <code>data.frame</code>.
+
+<code>DaveChappelleRaw &lt;- tuber::get_playlist_items(filter = 
+             c(playlist_id = "PLG6HoeSC3raE-EB8r_vVDOs-59kg3Spvd"), 
+                                           part = "contentDetails",
+                                  # set this to the number of videos
+                                              max_results = 200) </code>
+
+We should check these data to see if there is one row per video from the playlist (recall that Dave Chappelle had 200 videos).
+
+# check the data for Dave Chappelle
+DaveChappelleRaw %&gt;% dplyr::glimpse(78)
+    Observations: 200
+    Variables: 6
+    $ .id                             <chr> "items1", "items2", "items3", "item…
+    $ kind                            <fct> youtube#playlistItem, youtube#playl…
+    $ etag                            <fct> "p4VTdlkQv3HQeTEaXgvLePAydmU/G-gTM9…
+    $ id                              <fct> UExHNkhvZVNDM3JhRS1FQjhyX3ZWRE9zLTU…
+    $ contentDetails.videoId          <fct> oO3wTulizvg, ZX5MHNvjw7o, MvZ-clcMC…
+    $ contentDetails.videoPublishedAt <fct> 2019-04-28T16:00:07.000Z, 2017-12-3…
+
+<h3>Collecting statistics from a YouTube playlist</h3>
+
+Now that we have all of the video <code>ids</code> (not <code>.id</code>), we can create a function that extracts the statistics for each video on the playlist. 
+We’ll start by putting the video ids in a vector and call it <code>dave_chap_ids</code>.
+
+dave_chap_ids <- base::as.vector(DaveChappelleRaw$contentDetails.videoId)
+dplyr::glimpse(dave_chap_ids)
+chr [1:200] "oO3wTulizvg" "ZX5MHNvjw7o" "MvZ-clcMCec" "4trBQseIkkc" ...
+
+<code>tuber</code> has a <code>get_stats()</code> function we will use with the vector we just created for the show ids.
+
+<code># Function to scrape stats for all vids
+get_all_stats &lt;- function(id) {
+  tuber::get_stats(video_id = id)
+} </code>
+
+<h3>Using purrr to iterate and extract metadata </h3>
+
+Now we introduce a bit of iteration from <a href="https://purrr.tidyverse.org/">the <code>purrr</code> package</a>. 
+The <code>purrr</code> package provides tools for ‘functional programming,’ but that is a much bigger topic for a later post.
+
+For now, just know that the <code>purrr::map_df()</code> function takes an object as .<code>x</code>, and whatever function is listed in <code>.f</code> gets applied over the <code>.x</code> object. 
+Check out the code below:
+
+# Get stats and convert results to data frame 
+DaveChappelleAllStatsRaw <- purrr::map_df(.x = dave_chap_ids, 
+                                          .f = get_all_stats)
+
+DaveChappelleAllStatsRaw %>% dplyr::glimpse(78)
+
+Observations: 200
+Variables: 6
+$ id            <chr> "oO3wTulizvg", "ZX5MHNvjw7o", "MvZ-clcMCec", "4trBQse…
+$ viewCount     <chr> "4446789", "19266680", "6233018", "8867404", "7860341…
+$ likeCount     <chr> "48699", "150691", "65272", "92259", "56584", "144625…
+$ dislikeCount  <chr> "1396", "6878", "1530", "2189", "1405", "3172", "1779…
+$ favoriteCount <chr> "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"…
+$ commentCount  <chr> "2098", "8345", "5130", "5337", "2878", "9071", "4613…
+
+Fantastic! We have the <code>DaveChappelleRaw</code> and <code>DaveChappelleAllStatsRaw</code> in two <code>data.frame</code>s we can export (and timestamp!)
+
+# export DaveChappelleRaw
+readr::write_csv(x = as.data.frame(DaveChappelleRaw), 
+                 path = paste0("data/", 
+                               base::noquote(lubridate::today()),
+                               "-DaveChappelleRaw.csv"))
+
+# export DaveChappelleRaw
+readr::write_csv(x = as.data.frame(DaveChappelleAllStatsRaw), 
+                 path = paste0("data/", 
+                               base::noquote(lubridate::today()),
+                               "-DaveChappelleAllStatsRaw.csv"))
+
+# verify
+fs::dir_ls("data", regexp = "Dave")
+
+Be sure to go through the following <code>purrr</code> tutorials if you want to learn more about functional programming:
+
+<a href="http://r4ds.had.co.nz/iteration.html#the-map-functions">R for Data Science by H. Wickham &amp; G.
+Grolemund</a>
+<a href="https://jennybc.github.io/purrr-tutorial/">purrr Tutorial by J.
+Bryan</a>
+<a href="https://github.com/cwickham/purrr-tutorial">A purrr tutorial - useR! 2017 by C.
+Wickham</a>
+<a href="https://colinfay.me/happy-dev-purrr/">Happy dev with {purrr} - by C. Fay</a>
+
+Also check out the <a href="https://www.storybench.org/how-to-access-apis-in-r/">previous post on using
+APIs</a>.
+
+<h2>R package library</h2>
+to remove package: may not work!
+remove.packages('dplyr')
+
+to install dplyr, first install Rcpp, one by one
+install.packages("Rcpp")
+
+install.packages("dplyr")
+
+this is the c compiler"
+C:/RBuildTools/3.4/mingw_64/bin/g++  -I"D:/R-3.4.3/include" -DNDEBUG          -O2 -Wall  -mtune=generic -c slice.cpp -o slice.o
+
+The downloaded source packages are in
+‘C:\Users\User\AppData\Local\Temp\Rtmp0sfeZ8\downloaded_packages’
+
+to manually deleting the dplyr folder
+find the folder
+
+Change the Default Library in Rstudio
+view the current library path:
+
+.libPaths gets/sets the library trees within which packages are looked for.
+
+.libPaths()                 # all library trees R knows about
+"<span class="red">D:/R-3.4.3/library</span>"
+
+https://stackoverflow.com/questions/31707941/how-do-i-change-the-default-library-path-for-r-packages/42643674
+
+
+
 
 <br>
 <br>
