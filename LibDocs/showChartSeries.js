@@ -6,6 +6,9 @@ chartPtCode = "00700";
 
 ImgList.forEach(maketocList);
 
+var totalLength = ImgList.length - 1
+var notvisitedList = [...Array(totalLength).keys()];
+
 function maketocList(theStr, index) {
   var topic = theStr.match(patt1)[0];
   topic = topic.replace(patt2, "");
@@ -53,6 +56,10 @@ function randomChartinList() {
   chartrtpointer = Math.floor(Math.random() * theList.length);
   chartrtpointerImg = "#imgp" + chartrtpointer;
   chartPtCode = theList[chartrtpointer]
+
+  var index = notvisitedList.indexOf(topicpointer);
+  notvisitedList.splice(index, 1);
+
   window.location = chartrtpointerImg;
 }
 
