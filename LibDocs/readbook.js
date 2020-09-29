@@ -74,6 +74,7 @@ function showTopic() {
 function jumpto(index) { topicpointer = index; showTopic();}
 function randomFlip() {
   topicpointer = notvisitedList[Math.floor(Math.random() * notvisitedList.length)]; // random from not visited list
+  // console.log(notvisitedList.length, topicpointer)
   showTopic();
 }
 

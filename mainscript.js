@@ -7,6 +7,7 @@ $(document).ready(function(){
 
 styleStr = "<script type='text/javascript' src='mainscript.js'></script><style>body { background-color: black; color: green;} a { text-decoration: none; color: #28B8B8;}</style><body onkeypress='chkKey()'><center>";
 
+
 function chkKey() {
   var testkey = getChar(event);
   if(testkey == 'a'){window.open("apptechno.html");}
@@ -32,6 +33,8 @@ function chkKey() {
 
   if(testkey == 'q'){window.open('https://www.quora.com/');}
   if(testkey == 'Q'){window.open('https://news.qq.com/zt2020/page/feiyan.htm');}
+
+  if(testkey == 'r'){randomLinkTo();}
 
   if(testkey == 's'){window.open("stkListVH.html");}
   if(testkey == 'S'){window.open("LibDocs/Hour STK Charts.html");}
@@ -237,4 +240,15 @@ function showTY(stkcode) {
   imgTail= "&period=2060&type=1&logoStyle=1";
 
   var imgWindow = window.open(imgHead + stkcode + imgTail);
+}
+
+
+function randomLinkTo() {
+  linkpointer = Math.floor(Math.random() * notvisitedList.length);
+  linkToAddr = LibDocsList[linkpointer]
+
+  var index = notvisitedList.indexOf(linkpointer);
+  notvisitedList.splice(index, 1);
+
+  window.open(linkToAddr, "_blank");
 }
