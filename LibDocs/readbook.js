@@ -15,6 +15,7 @@ function chkKey() {
   else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
   else if(testkey == "f"){ foreward();}
   else if(testkey == "6"){ foreward();}
+  else if(testkey == "j"){ jumpTo();}
   else if(testkey == "l"){
     $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1); }
   else if(testkey == "2"){
@@ -82,6 +83,13 @@ function randomFlip() {
   showTopic();
 }
 
+function jumpTo() {
+  var thecode = prompt("Jump to item number:", "");
+  if (thecode != null && thecode != "") {
+    topicpointer = notvisitedList[Math.floor(Math.random() * notvisitedList.length)]; // random from not visited list
+    showTopic();
+  }
+}
 
 var toc = $('#toc');
 if(markerName != "h0"){
