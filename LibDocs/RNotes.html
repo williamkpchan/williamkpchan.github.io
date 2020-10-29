@@ -17665,6 +17665,572 @@ itemList = as.character(itemList)
 <h2>Rvest Limitations and CasperJS for R</h2>
 <a href="https://www.r-bloggers.com/2019/11/when-rvest-is-not-enough/" class="whitebut ">When rvest is not enough</a>
 
+<h2>find repeated characters on same line</h2>
+    for(i in 1:length(jsPrep)){
+      MultiBracket = length(unlist(gregexpr("\\(", jsPrep[i])))
+    }
+
+<h2>Parallel Computing</h2>
+<h3>Terminology</h3>
+Let’s just nail down some terminology.
+
+A <em>core</em> is a general term for either a single processor on your own computer (technically you only have one processor, but a modern processor like the i7 can have multiple cores - hence the term) or a single machine in a cluster network.
+
+A <em>cluster</em> is a collection of objecting capable of hosting cores, either a network or just the collection of cores on your personal computer.
+
+A <em>process</em> is a single running version of R (or more generally any program). 
+Each core runs a single process.
+
+<h3>The <code>parallel</code> package</h3>
+There are a number of packages which can be used for parallel processing in R. 
+Two of the earliest and strongest were <code>multicore</code> and <code>snow</code>. 
+However, both were adopted in the base R installation and merged into the <code>parallel</code> package.
+
+<code>library(parallel)</code>
+
+You can easily check the number of cores you have access to with <code>detectCores</code>:
+
+<code>detectCores()</code>
+
+<code>## [1] 4</code>
+
+The number of cores represented is not neccessarily correlated with the number of processors you actually have thanks to the concept of "logical CPUs". 
+For the most part, you can use this number as accurate. 
+Trying to use more cores than you have available won’t provide any benefit.
+
+<h3>Methods of Paralleization</h3>
+There are two main ways in which code can be parallelized, via <em>sockets</em> or via <em>forking</em>. 
+These function slightly differently:
+
+The <em>socket</em> approach launches a new version of R on each core. 
+Technically this connection is done via networking (e.g.&nbsp;the same as if you connected to a remote server), but the connection is happening all on your own computer<a href="#fn3" id="fnref3"><sup>3</sup></a> I mention this because you may get a warning from your computer asking whether to allow R to accept incoming connections, you should allow it.
+
+The <em>forking</em> approach copies the entire current version of R and moves it to a new core.
+
+There are various pro’s and con’s to the two approaches:
+
+Socket:
+
+Pro: Works on any system (including Windows).
+
+Pro: Each process on each node is unique so it can’t cross-contaminate.
+
+Con: Each process is unique so it will be slower
+
+Con: Things such as package loading need to be done in each process separately. 
+Variables defined on your main version of R don’t exist on each core unless explicitly placed there.
+
+Con: More complicated to implement.
+
+Forking:
+
+Con: Only works on POSIX systems (Mac, Linux, Unix, BSD) and not Windows.
+
+Con: Because processes are duplicates, it can cause issues specifically with random number generation (which should usually be handled by <code>parallel</code> in the background) or when running in a GUI (such as RStudio). 
+This doesn’t come up often, but if you get odd behavior, this may be the case.
+
+Pro: Faster than sockets.
+
+Pro: Because it copies the existing version of R, your entire workspace exists in each process.
+
+Pro: Trivially easy to implement.
+
+In general, I’d recommend using forking if you’re not on Windows.
+
+<em>Note</em>: These notes were compiled on OS X.
+
+<h3>Forking with <code>mclapply</code></h3>
+The most straightforward way to enable parallel processing is by switching from using <code>lapply</code> to <code>mclapply</code>. 
+(Note I’m using <code>system.time</code> instead of <code>profvis</code> here because I only care about running time, not profiling.)
+
+<code>library(lme4)</code>
+
+<code>## Loading required package: Matrix</code>
+
+<code>f &lt;- function(i) {
+  lmer(Petal.Width ~ . 
+- Species + (1 | Species), data = iris)
+}
+ 
+system.time(save1 &lt;- lapply(1:100, f))</code>
+
+<code>##    user  system elapsed 
+##   2.048   0.019   2.084</code>
+
+<code>system.time(save2 &lt;- mclapply(1:100, f))</code>
+
+<code>##    user  system elapsed 
+##   1.295   0.150   1.471</code>
+
+If you were to run this code on Windows, <code>mclapply</code> would simply call <code>lapply</code>, so the code works but sees no speed gain.
+
+<code>mclapply</code> takes an argument, <code>mc.cores</code>. 
+By default, <code>mclapply</code> will use all cores available to it. 
+If you don’t want to (either becaues you’re on a shared system or you just want to save processing power for other purposes) you can set this to a value lower than the number of cores you have. 
+Setting it to 1 disables parallel processing, and setting it higher than the number of available cores has no effect.
+
+<h3>Using sockets with <code>parLapply</code></h3>
+As promised, the sockets approach to parallel processing is more complicated and a bit slower, but works on Windows systems. 
+The general process we’ll follow is
+
+<ol style="list-style-type: decimal">
+Start a cluster with <mi>n</mi></math>" role="presentation" style="position: relative;"><nobr aria-hidden="true">n</nobr><math xmlns="http://www.w3.org/1998/Math/MathML"><mi>n</mi></math><script type="math/tex" id="MathJax-Element-3">n</script> nodes.
+
+Execute any pre-processing code necessary in each node (e.g.&nbsp;loading a package)
+
+Use <code>par*apply</code> as a replacement for <code>*apply</code>. 
+Note that unlike <code>mcapply</code>, this is <em>not</em> a drop-in replacement.
+
+Destroy the cluster (not necessary, but best practices).
+
+</ol>
+
+<h4>Starting a cluster</h4>
+The function to start a cluster is <code>makeCluster</code> which takes in as an argument the number of cores:
+
+<code>numCores &lt;- detectCores()
+numCores</code>
+
+<code>## [1] 4</code>
+
+<code>cl &lt;- makeCluster(numCores)</code>
+
+The function takes an argument <code>type</code> which can be either <code>PSOCK</code> (the socket version) or <code>FORK</code> (the fork version). 
+Generally, <code>mclapply</code> should be used for the forking approach, so there’s no need to change this.
+
+If you were running this on a network of multiple computers as opposed to on your local machine, there are additional argumnts you may wish to run, but generally the other defaults should be specific.
+
+<h4>Pre-processing code</h4>
+When using the socket approach to parallel processing, each process is started fresh, so things like loaded packages and any variables existing in your current session do not exist. 
+We must instead move those into each process.
+
+The most generic way to do this is the <code>clusterEvalQ</code> function, which takes a cluster and any expression, and executes the expression on each process.
+
+<code>clusterEvalQ(cl, 2 + 2)</code>
+
+<code>## [[1]]
+## [1] 4
+## 
+## [[2]]
+## [1] 4
+## 
+## [[3]]
+## [1] 4
+## 
+## [[4]]
+## [1] 4</code>
+
+Note the lack of inheritance:
+
+<code>x &lt;- 1
+clusterEvalQ(cl, x)</code>
+
+<code>## Error in checkForRemoteErrors(lapply(cl, recvResult)): 4 nodes produced errors; first error: object 'x' not found</code>
+
+We could fix this by wrapping the assignment in a <code>clusterEvalQ</code> call:
+
+<code>clusterEvalQ(cl, y &lt;- 1)</code>
+
+<code>## [[1]]
+## [1] 1
+## 
+## [[2]]
+## [1] 1
+## 
+## [[3]]
+## [1] 1
+## 
+## [[4]]
+## [1] 1</code>
+
+<code>clusterEvalQ(cl, y)</code>
+
+<code>## [[1]]
+## [1] 1
+## 
+## [[2]]
+## [1] 1
+## 
+## [[3]]
+## [1] 1
+## 
+## [[4]]
+## [1] 1</code>
+
+<code>y</code>
+
+<code>## Error in eval(expr, envir, enclos): object 'y' not found</code>
+
+However, now <code>y</code> doesn’t exist in the main process. 
+We can instead use <code>clusterExport</code> to pass objects to the processes:
+
+<code>clusterExport(cl, "x")
+clusterEvalQ(cl, x)</code>
+
+<code>## [[1]]
+## [1] 1
+## 
+## [[2]]
+## [1] 1
+## 
+## [[3]]
+## [1] 1
+## 
+## [[4]]
+## [1] 1</code>
+
+The second argument is a vector of strings naming the variables to pass.
+
+Finally, we can use <code>clusterEvalQ</code> to load packages:
+
+<code>clusterEvalQ(cl, {
+  library(ggplot2)
+  library(stringr)
+})</code>
+
+<code>## [[1]]
+## [1] "stringr"   "ggplot2"   "stats"     "graphics"  "grDevices" "utils"    
+## [7] "datasets"  "methods"   "base"     
+## 
+## [[2]]
+## [1] "stringr"   "ggplot2"   "stats"     "graphics"  "grDevices" "utils"    
+## [7] "datasets"  "methods"   "base"     
+## 
+## [[3]]
+## [1] "stringr"   "ggplot2"   "stats"     "graphics"  "grDevices" "utils"    
+## [7] "datasets"  "methods"   "base"     
+## 
+## [[4]]
+## [1] "stringr"   "ggplot2"   "stats"     "graphics"  "grDevices" "utils"    
+## [7] "datasets"  "methods"   "base"</code>
+
+Note that this helpfully returns a list of the packages loaded in each process.
+
+<h4>Using <code>par*apply</code></h4>
+There are parallel versions of the three main <code>apply</code> statements: <code>parApply</code>, <code>parLapply</code> and <code>parSapply</code> for <code>apply</code>, <code>lapply</code> and <code>sapply</code> respectively. 
+They take an additional argument for the cluster to operate on.
+
+<code>parSapply(cl, Orange, mean, na.rm = TRUE)</code>
+
+<code>##          Tree           age circumference 
+##            NA      922.1429      115.8571</code>
+
+All the general advice and rules about <code>par*apply</code> apply as with the normal <code>*apply</code> functions.
+
+<h4>Close the cluster</h4>
+<code>stopCluster(cl)</code>
+
+This is not fully necessary, but is best practices. 
+If not stopped, the processes continue to run in the background, consuming resources, and any new processes can be slowed or delayed. 
+If you exit R, it should automatically close all processes also. 
+This <em>does not</em> delete the <code>cl</code> object, just the cluster it refers to in the background.
+
+Keep in mind that closing a cluster is equivalent to quitting R in each; anything saved there is lost and packages will need to be re-loaded.
+
+<h4>Continuing the example</h4>
+<code>cl &lt;- makeCluster(detectCores())
+clusterEvalQ(cl, library(lme4))</code>
+
+<code>## [[1]]
+## [1] "lme4"      "Matrix"    "stats"     "graphics"  "grDevices" "utils"    
+## [7] "datasets"  "methods"   "base"     
+## 
+## [[2]]
+## [1] "lme4"      "Matrix"    "stats"     "graphics"  "grDevices" "utils"    
+## [7] "datasets"  "methods"   "base"     
+## 
+## [[3]]
+## [1] "lme4"      "Matrix"    "stats"     "graphics"  "grDevices" "utils"    
+## [7] "datasets"  "methods"   "base"     
+## 
+## [[4]]
+## [1] "lme4"      "Matrix"    "stats"     "graphics"  "grDevices" "utils"    
+## [7] "datasets"  "methods"   "base"</code>
+
+<code>system.time(save3 &lt;- parLapply(cl, 1:100, f))</code>
+
+<code>##    user  system elapsed 
+##   0.095   0.017   1.145</code>
+
+<code>stopCluster(cl)</code>
+
+Timing this is tricky - if we just time the <code>parLapply</code> call we’re not capturing the time to open and close the cluster, and if we time the whole thing, we’re including the call to lme4. 
+To be completely fair, we need to include loading <code>lme4</code> in all three cases. 
+I do this outside of this Markdown file to ensure no added complications. 
+The three pieces of code were, with a complete restart of R after each:
+
+<code>### lapply
+library(parallel)
+f &lt;- function(i) {
+  lmer(Petal.Width ~ . 
+- Species + (1 | Species), data = iris)
+}
+
+system.time({
+  library(lme4)
+  save1 &lt;- lapply(1:100, f)
+})
+
+### mclapply
+library(parallel)
+f &lt;- function(i) {
+  lmer(Petal.Width ~ . 
+- Species + (1 | Species), data = iris)
+}
+
+system.time({
+  library(lme4)
+  save2 &lt;- mclapply(1:100, f)
+})
+
+### mclapply
+library(parallel)
+f &lt;- function(i) {
+  lmer(Petal.Width ~ . 
+- Species + (1 | Species), data = iris)
+}
+
+system.time({
+  cl &lt;- makeCluster(detectCores())
+  clusterEvalQ(cl, library(lme4))
+  save3 &lt;- parLapply(cl, 1:100, f)
+  stopCluster(cl)
+})</code>
+
+<table>
+<thead>
+<tr>
+<th align="center">lapply</th>
+<th align="center">mclapply</th>
+<th align="center">parLapply</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">4.237</td>
+<td align="center">4.087</td>
+<td align="center">6.954</td>
+</tr>
+</tbody>
+</table>
+
+This shows the additional overhead that can occur with the socket approach - it can definitely be faster, but in this case the overhead which is added slows it down. 
+The individual running time of the single <code>parLapply</code> call is faster.
+
+Also known as "embarrassingly parallel" though I don’t like that term.<a href="#fnref1">↩</a>
+
+In this situation, we would actually run <em>slower</em> because of the overhead!<a href="#fnref2">↩</a>
+
+The flexibility of this to work across computers is what allows massive servers made up of many computers to work in parallel.<a href="#fnref3">↩</a>
+
+<h3>Loops and repetitive tasks using lapply</h3>
+Let’s build a simple loop that uses sample with replacement to do a bootstrap analysis. 
+In this case, we select <code>Sepal.Length</code> and <code>Species</code> from the <code>iris</code> dataset, subset it to 100 observations, and then iterate across 10,000 trials, each time resampling the observations with replacement. 
+We then run a logistic regression fitting species as a function of length, and record the coefficients for each trial to be returned.
+
+<code class="r">x &lt;- iris[which(iris[,5] != "setosa"), c(1,5)]
+trials &lt;- 10000
+res &lt;- data.frame()
+system.time({
+  trial &lt;- 1
+  while(trial &lt;= trials) {
+    ind &lt;- sample(100, 100, replace=TRUE)
+    result1 &lt;- glm(x[ind,2]~x[ind,1], family=binomial(logit))
+    r &lt;- coefficients(result1)
+    res &lt;- rbind(res, r)
+    trial &lt;- trial + 1
+  }
+})</code>
+
+<code>##    user  system elapsed 
+##  20.031   0.458  21.220</code>
+
+The issue with this loop is that we execute each trial sequentially, which means that only one of our 8 processors on this machine are in use. 
+In order to exploit parallelism, we need to be able to dispatch our tasks as functions, with one task going to each processor. 
+To do that, we need to convert our task to a function, and then use the <code>*apply()</code> family of R functions to apply that function to all of the members of a set. 
+In R, using <code>apply</code> is often significantly faster than the equivalent code in a loop. 
+Here’s the same code rewritten to use <code>lapply()</code>, which applies a function to each of the members of a list (in this case the trials we want to run):
+
+<code class="r">x &lt;- iris[which(iris[,5] != "setosa"), c(1,5)]
+trials &lt;- seq(1, 10000)
+boot_fx &lt;- function(trial) {
+  ind &lt;- sample(100, 100, replace=TRUE)
+  result1 &lt;- glm(x[ind,2]~x[ind,1], family=binomial(logit))
+  r &lt;- coefficients(result1)
+  res &lt;- rbind(data.frame(), r)
+}
+system.time({
+  results &lt;- lapply(trials, boot_fx)
+})</code>
+
+<code>##    user  system elapsed 
+##  19.340   0.553  20.315</code>
+
+<h3>Approaches to parallelization</h3>
+
+When parallelizing jobs, one can:
+
+<ul>
+Use the multiple cores on a local computer through <code>mclapply</code></li>
+
+Use multiple processors on local (and remote) machines using <code>makeCluster</code> and <code>clusterApply</code>
+
+<ul>
+In this approach, one has to manually copy data and code to each cluster member using <code>clusterExport</code></li>
+This is extra work, but sometimes gaining access to a large cluster is worth it</li>
+</ul></li>
+</ul>
+
+<h3>Parallelize using: mclapply</h3>
+
+The <code>parallel</code> library can be used to send tasks (encoded as function calls) to each of the processing cores on your machine in parallel. 
+This is done by using the <code>parallel::mclapply</code> function, which is analogous to <code>lapply</code>, but distributes the tasks to multiple processors. 
+<code>mclapply</code> gathers up the responses from each of these function calls, and returns a list of responses that is the same length as the list or vector of input data (one return per input item).
+
+<code class="r">library(parallel)
+library(MASS)
+
+starts &lt;- rep(100, 40)
+fx &lt;- function(nstart) kmeans(Boston, 4, nstart=nstart)
+numCores &lt;- detectCores()
+numCores</code>
+
+<code>## [1] 8</code>
+
+<code class="r">system.time(
+  results &lt;- lapply(starts, fx)
+)</code>
+
+<code>##    user  system elapsed 
+##   1.346   0.024   1.372</code>
+
+<code class="r">system.time(
+  results &lt;- mclapply(starts, fx, mc.cores = numCores)
+)</code>
+
+<code>##    user  system elapsed 
+##   0.801   0.178   0.367</code>
+
+Now let’s demonstrate with our bootstrap example:
+
+<code class="r">x &lt;- iris[which(iris[,5] != "setosa"), c(1,5)]
+trials &lt;- seq(1, 10000)
+boot_fx &lt;- function(trial) {
+  ind &lt;- sample(100, 100, replace=TRUE)
+  result1 &lt;- glm(x[ind,2]~x[ind,1], family=binomial(logit))
+  r &lt;- coefficients(result1)
+  res &lt;- rbind(data.frame(), r)
+}
+system.time({
+  results &lt;- mclapply(trials, boot_fx, mc.cores = numCores)
+})</code>
+
+<code>##    user  system elapsed 
+##  25.672   1.343   5.003</code>
+
+<h3>Parallelize using: foreach and doParallel</h3>
+
+The normal <code>for</code> loop in R looks like:
+
+<code class="r">for (i in 1:3) {
+  print(sqrt(i))
+}</code>
+
+<code>## [1] 1
+## [1] 1.414214
+## [1] 1.732051</code>
+
+The <code>foreach</code> method is similar, but uses the sequential <code>%do%</code> operator to indicate an expression to run. 
+Note the difference in the returned data structure.
+
+<code class="r">library(foreach)
+foreach (i=1:3) %do% {
+  sqrt(i)
+}</code>
+
+<code>## [[1]]
+## [1] 1
+## 
+## [[2]]
+## [1] 1.414214
+## 
+## [[3]]
+## [1] 1.732051</code>
+
+In addition, <code>foreach</code> supports a parallelizable operator <code>%dopar%</code> from the <code>doParallel</code> package. 
+This allows each iteration through the loop to use different cores or different machines in a cluster. 
+Here, we demonstrate with using all the cores on the current machine:
+
+<code class="r">library(foreach)
+library(doParallel)</code>
+
+<code>## Loading required package: iterators</code>
+
+<code class="r">registerDoParallel(numCores)  # use multicore, set to the number of our cores
+foreach (i=1:3) %dopar% {
+  sqrt(i)
+}</code>
+
+<code>## [[1]]
+## [1] 1
+## 
+## [[2]]
+## [1] 1.414214
+## 
+## [[3]]
+## [1] 1.732051</code>
+
+<code class="r"># To simplify output, foreach has the .combine parameter that can simplify return values
+
+# Return a vector
+foreach (i=1:3, .combine=c) %dopar% {
+  sqrt(i)
+}</code>
+
+<code>## [1] 1.000000 1.414214 1.732051</code>
+
+<code class="r"># Return a data frame
+foreach (i=1:3, .combine=rbind) %dopar% {
+  sqrt(i)
+}</code>
+
+<code>##              [,1]
+## result.1 1.000000
+## result.2 1.414214
+## result.3 1.732051</code>
+
+The <a href="https://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf">doParallel vignette</a> on CRAN shows a much more realistic example, where one can use `%dopar% to parallelize a bootstrap analysis where a data set is resampled 10,000 times and the analysis is rerun on each sample, and then the results combined:
+
+<code class="r"># Let's use the iris data set to do a parallel bootstrap
+# From the doParallel vignette, but slightly modified
+x &lt;- iris[which(iris[,5] != "setosa"), c(1,5)]
+trials &lt;- 10000
+system.time({
+  r &lt;- foreach(icount(trials), .combine=rbind) %dopar% {
+    ind &lt;- sample(100, 100, replace=TRUE)
+    result1 &lt;- glm(x[ind,2]~x[ind,1], family=binomial(logit))
+    coefficients(result1)
+  }
+})</code>
+
+<code>##    user  system elapsed 
+##  24.117   1.303   4.944</code>
+
+<code class="r"># And compare that to what it takes to do the same analysis in serial
+system.time({
+  r &lt;- foreach(icount(trials), .combine=rbind) %do% {
+    ind &lt;- sample(100, 100, replace=TRUE)
+    result1 &lt;- glm(x[ind,2]~x[ind,1], family=binomial(logit))
+    coefficients(result1)
+  }
+})</code>
+
+<code>##    user  system elapsed 
+##  19.445   0.571  20.302</code>
+
+<code class="r"># When you're done, clean up the cluster
+stopImplicitCluster()</code>
+
 
 
 
