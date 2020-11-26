@@ -3,9 +3,11 @@
 <head>
 <title>Multi Line chart</title>
 <link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
-<script src="libraries/RGraph.common.core.js"></script>
-<script src="libraries/RGraph.line.js"></script>
-<script src="libraries/RGraph.svg.bar.js" ></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="./rchart/RGraph.common.core.js" ></script>
+<script src="./rchart/RGraph.line.js"></script>
+<script src="./rchart/RGraph.svg.bar.js" ></script>
+
 
 <style>
 body {
@@ -19,10 +21,17 @@ body {
 
 </head>
 <body onkeypress="chkKey()">
-<canvas id="cvs" width="1200" height="600">[No canvas support]</canvas>
-<pre>
-command: l, paste data array to redraw chart with std dev
-3 lines: data, 5 WAve, 10 WAve
+<canvas id="cvs" width="1200" height="600">[No canvas support]</canvas><pre>
+<center><p id="msg"></p></center>
+commands:
+ l loadLineData, paste data array to redraw chart with std dev
+ c askforCode
+ C open Random Charts.html
+ f jpforward
+ b jpback
+ r jprandom
+ L askList
+5 lines: data, WAve5, WAve10, sd+, sd-
 
 </pre>
 <script>
@@ -37,13 +46,17 @@ command: l, paste data array to redraw chart with std dev
       let amtLst = [];
       intv5 = 5
       intv10 = 10
-      stkpriceDataArr = [74.07,74.87,75.08,76.17,76.05,76.67,77.03,77.26,77.96,77.01,77.24,78.63,78.69,78.64,78.48,79.39,78.77,80.68,79.86,80.06,80.32,79.16,79.48,79.68,79.12,80.12,80.15,80.90,81.18,81.88,82.14,83.51,83.36,83.57,83.61,84.54,84.16,83.99,85.34,84.85,85.09,85.13,85.62,86.87,87.55,87.41,88.24,88.58,89.41,88.27,87.48,88.40,88.38,90.05,90.01,91.21,90.83,91.45,93.41,93.99,94.81,96.44,96.51,98.15,97.41,96.98,96.55,97.13,97.60,97.59,97.45,97.44,98.16,99.43,100.72,99.70,98.73,99.23,100.29,98.89,99.08,99.00,99.11,99.53,99.31,99.15,99.41,98.60,98.24,98.18,99.21,99.80,99.07];
+      stkpriceDataArr = [];
+      stkList = localStorage.getItem("stkListArr").split(' ');
+      stkPointer = 0;
+      theCode = "HSI";
 
-
-      function collectStkData() {
+      function askforCode() {
         var theCode = prompt("Code Number:", "");
-        if (theCode != null && theCode != ""){
-          // to check A stk or HK stk
+        if (theCode != null && theCode != ""){collectStkData(theCode)}
+      }
+
+      function collectStkData(theCode) {
           codewidth = theCode.length
           if(theCode == "HSI"){
               theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,90,qfq';
@@ -111,16 +124,21 @@ command: l, paste data array to redraw chart with std dev
                   amtLst.push(amtvalue);
               }
               stkpriceDataArr = closeLst
+              $("#msg").text(theStartCode + " " + stkName);
               redraw();  // this line must be inside the AJAX because AJAX run last
               // return  thedrawdata =[highLst, lowLst, closeLst];
            });
-        }
       }
 
      function chkKey() {
        var testkey = getChar(event);
        if(testkey == 'l'){loadLineData();}
-       if(testkey == 'c'){collectStkData();}
+       if(testkey == 'c'){askforCode();}
+       if(testkey == 'C'){storeCode(theCode); window.open("Random Charts.html");}
+       if(testkey == 'f'){jpforward();}
+       if(testkey == 'b'){jpback();}
+       if(testkey == 'r'){jprandom();}
+       if(testkey == 'L'){askList()}
      }
      function getChar(event) {
        if (event.which!=0 && event.charCode!=0) {
@@ -200,7 +218,49 @@ command: l, paste data array to redraw chart with std dev
 	}
 
 
-    
+    function askList() {
+        var theList = prompt("CodeList, Number (5 digits) sep by space： ", "");
+        if (theList != null && theList != "HSI" && theList != "") {
+            stkList = theList.split(" ");
+        }
+    }
+
+    function FormatNumberLength5(num) {
+        var r = "" + num;
+        while (r.length < 5) { r = "0" + r; }
+        return r;
+    }
+
+    function jpforward() {
+        if (stkPointer < stkList.length-1) {
+            stkPointer = stkPointer + 1;
+        } else {
+            stkPointer = 0;
+        }
+        theCode = stkList[stkPointer];
+         collectStkData(theCode)
+    }
+
+    function jpback() {
+        if (stkPointer > 0) {
+            stkPointer = stkPointer - 1;
+        } else {
+            stkPointer = stkList.length-1;
+        }
+        theCode = stkList[stkPointer];
+         collectStkData(theCode)
+    }
+    function jprandom() {
+        stkPointer = Math.floor(Math.random() * (stkList.length-1))
+        theCode = stkList[stkPointer]
+         collectStkData(theCode)
+    }
+    function storeCode(theCode) {
+        if(typeof(Storage) !== "undefined") {
+            localStorage.randomcode = theCode;
+        }
+    }
+
     function drawchart() {
 
       var line = new RGraph.Line({
@@ -229,7 +289,8 @@ command: l, paste data array to redraw chart with std dev
             }
           }).trace();
     };
-    redraw();
+
+    collectStkData(theCode);
 </script>
 </body>
 </html>

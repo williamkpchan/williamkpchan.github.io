@@ -24,9 +24,10 @@ function chkKey() {
   if(testkey == 'H'){window.open("LibDocs/monitorHSI.html");}
   if(testkey == 'J'){window.location = '#_jiaoyu';}
   if(testkey == 'l'){window.location = '#dushu';}
-  if(testkey == 'L'){openLogFile();}
+  //if(testkey == 'L'){openLogFile();}
+  if(testkey == 'L'){window.open("LibDocs/mlinechart.html");}
   if(testkey == 'm'){window.open("medical.html");}
-  if(testkey == 'M'){window.open("https://www.google.com.hk/maps/");}
+  if(testkey == 'M'){window.open("https://www.google.com/maps");}
   if(testkey == 'n'){window.location = '#xinwen';}
   if(testkey == 'N'){window.location = '#Notes';}
   if(testkey == 'p'){window.location = '#Programming';}
