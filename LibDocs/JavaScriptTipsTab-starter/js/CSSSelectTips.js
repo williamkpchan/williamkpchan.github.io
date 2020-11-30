@@ -1,3 +1,18 @@
+
+function chkKey() {
+  var testkey = getChar(event);
+  if(testkey == 'f'){generateTip();}
+  else{chkOtherKeys(testkey)} 
+}
+function getChar(event) {
+  if (event.which!=0 && event.charCode!=0) {
+    return String.fromCharCode(event.which)   // the rest
+  } else {
+    return null // special key
+  }
+}
+
+
 // List of JavaScript tips
 var tipsList = [
 "first to assign the targeted object and then run the .each loop",
@@ -306,8 +321,6 @@ function onTipButtonClick() {
     }
   });
 }
-
-
 onTipButtonClick();
 // Get the first tip
 generateTip();
