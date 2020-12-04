@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Plot Multi Lines</title>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="./rchart/RGraph.common.core.js" ></script>
+<script src="./rchart/RGraph.line.js"></script>
+<!--script src="./rchart/RGraph.svg.bar.js" ></script-->
+
+
+<style>
+</style>
+
+</head>
+<body onkeypress="chkKey()">
+<center>
+<canvas id="cvs" width="1300" height="600">[No canvas support]</canvas>
+</center><pre>
+commands:
+ l enterData, paste data array to redrawLines chart with std dev
+
+</pre>
+<script>
+
+      let thestkdata = [];
+      period = 60;
+      let dateLst = [];
+      let openLst = [];
+      let highLst = [];
+      let lowLst = [];
+      let closeLst = [];
+      let amtLst = [];
+      let mydata = [];
+dataSets = "15.080 15.260 15.060 14.980 15.360 15.400 15.120 15.080 14.800 14.420 14.480 14.780 14.860 14.720 14.320,2.86 4.53 3.87 4.60 2.87 1.91 1.83 2.75 3.41 2.99 3.09 1.26 1.34 4.16 3.00,4.32 6.90 5.86 7.12 4.37 2.93 2.78 4.16 5.01 4.31 4.52 1.86 1.99 6.11 4.30"
+      intv5 = 5
+      stkpriceDataArr = [];
+      stkList = localStorage.getItem("stkListArr").split(' ');
+      stkPointer = 0;
+      theCode = localStorage.randomcode;
+      titleText = "";
+      function askforCode() {
+        var theCode = prompt("Code Number:", "");
+        if (theCode != null && theCode != ""){
+           storeCode(theCode)
+           collectStkData(theCode)
+        }
+      }
+
+      function collectStkData(theCode) {
+          codewidth = theCode.length
+          if(theCode == "HSI"){
+              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,180,qfq';
+          }else{
+            if(codewidth <= 5){
+              theCode = "00000"+theCode;
+              codewidth = theCode.length;
+              theCode = theCode.slice(codewidth-5, codewidth);
+              codewidth = theCode.length; //update to be used later
+              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,180,qfq';
+            }else{
+              codewidth = theCode.length
+              theCode = theCode.slice(codewidth-9, codewidth)
+              theCode = theCode.slice(7, 9) + theCode.slice(0, 6);
+              codewidth = theCode.length; //update to be used later
+              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,180,qfq';
+            }
+          }
+      
+          theStartCode = theCode;
+          thestkdata = [];
+          thedrawdata = [];
+          dateLst = [];
+          openLst = [];
+          highLst = [];
+          lowLst = [];
+          closeLst = [];
+          amtLst.length = 0;
+      
+          RGraph.AJAX.getJSON(theurl, function (rawJSON){
+              var keys = Object.keys(rawJSON); // read the structure keys ["code", "msg", "data"]
+              var insideDatakey = Object.keys(rawJSON)[2] //
+              // myobj[Object.keys(myobj)[0]] this is the extract method
+      
+              var thedata = rawJSON[Object.keys(rawJSON)[2]]
+              thestkkey = Object.keys(thedata)[0] // this is the stk key name
+              var tempdata = thedata[Object.keys(thedata)[0]];
+              thestkdata = tempdata[Object.keys(tempdata)[0]]; // real data here, this is whole dataset
+      
+              theNameObj = tempdata[Object.keys(tempdata)[1]];
+              theNameObjName  = theNameObj[Object.keys(theNameObj)[0]];
+              stkName = theNameObjName[1]
+      
+              /* data is arranged in days array, tempdata[320] is last set
+              tempdata[320][0]  // date
+              tempdata[320][1]  // open
+              tempdata[320][3]  // high
+              tempdata[320][4]  // low
+              tempdata[320][2]  // close */
+      
+                //period + intv5, the chartwidth + max trend interval
+              starti = thestkdata.length - (parseInt(period) + parseInt(intv5)) -5; 
+              if(starti <= 0){
+                  alert("not enough data! Selet short chartwidth and trend period!");
+                  return;
+              }
+
+              for (let i = starti; i < thestkdata.length; i++) {
+                  dateLst.push(thestkdata[i][0]);
+                  openLst.push(Number(thestkdata[i][1]));
+                  highLst.push(Number(thestkdata[i][3]));
+                  lowLst.push(Number(thestkdata[i][4]));
+                  closeLst.push(Number(thestkdata[i][2]));
+                  amtvalue = "&emsp;" + Math.round(Number(thestkdata[i][8])).toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",") +"w ";
+                  amtLst.push(amtvalue);
+              }
+              stkpriceDataArr = closeLst
+              //titleText = theStartCode + " " + stkName;
+              redrawLines();  // this line must be inside the AJAX because AJAX run last
+              // return  thedrawdata =[highLst, lowLst, closeLst];
+           });
+      }
+
+     function chkKey() {
+       var testkey = getChar(event);
+       if(testkey == 'l'){enterData();}
+     }
+     function getChar(event) {
+       if (event.which!=0 && event.charCode!=0) {
+         return String.fromCharCode(event.which)   // the rest
+       } else {
+         return null // special key
+       }
+     }
+	function enterData() {
+      var dataSets = prompt("Enter data sets seperated by comma and space:", "");
+      seperateDataSets(dataSets)
+     }
+
+	function seperateDataSets(dataArr) {
+       if (dataArr != null && dataArr != "") {
+         dataArrArr = dataArr.split(',');
+         mydata =[]
+         for (var i =0 ; i < (dataArrArr.length); i++) {
+           mydata.push(dataArrArr[i].split(' '))
+         }
+         redrawLines()
+       }
+     }
+
+     function redrawLines() {
+        RGraph.reset(document.getElementById('cvs'));
+        theMax = Math.max(...[].concat(...mydata));
+        theMin = Math.min(...[].concat(...mydata));
+
+       drawchart()
+     }
+
+    function drawchart() {
+      var line = new RGraph.Line({
+        id:'cvs',
+        data:mydata,
+        options: {
+			title: titleText,
+			titleColor: 'grey',
+			titleSize: 20,
+            // colors: ['darkgreen','blue','grey'],
+            backgroundGrid: false,
+            axisColor: '#864',  scaleDecimals: 2,
+            textColor: '#ccc',
+            tickmarks: 'plus',
+            ticksize: 1,
+            linewidth:1,
+			ymax: theMax, ymin: theMin,
+            key: ['1st','2nd','3rd'],
+            keyPosition: 'margin',
+            keyLabelsSize: 14,
+            keyLabelsColor: 'rgb(248,248,248)',
+            keyPositionY: 425,
+
+      // labels control the number of grids
+            // labels: ['2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018'],
+            spline: false,
+            backgroundGrid: false,
+            backgroundGridColor: '#002010',
+            shadow: false,
+            gutterLeft: 50,
+            gutterRight: 50,
+            gutterTop: 50,
+            gutterBottom: 50
+            }
+          }).trace();
+    };
+
+    redrawLines(theCode);
+</script>
+</body>
+</html>
