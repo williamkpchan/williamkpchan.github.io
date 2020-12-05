@@ -1,187 +1,1512 @@
-<head>
+<base target="_blank"><html><head><title>Web Scraper using JavaScript</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="viewport" content="width=device-width"/>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="https://williamkpchan.github.io/lazyload.min.js"></script>
+<script src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/commonfunctions.js"></script>
 <script>
-$(document).ready(function(){
-    $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
-    parent.history.back();
-    return false;
-    });
-});
+  var showTopicNumber = true;
+  var bookid = "Web Scraper using JavaScript"
+  var markerName = "h2"
 </script>
 <style>
-body{width:80%;margin-left: 10%}
-strong, h1, h2 {color: gold;}
-</style>
-</head><body>
-<center><h1>JavaScript Client-side web scraping</h1>
+body{width:80%;margin-left: 10%; font-size:24px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>Web Scraper using JavaScript</h1>
+<a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a>
+<br><br>
 <div id="toc"></div></center>
-<a href="https://medium.com/data-scraper-tips-tricks/scraping-data-with-javascript-in-3-minutes-8a7cf8275b31">scraping-data-with-javascript</a>
-<br>
-<a href="https://medium.freecodecamp.org/client-side-web-scraping-with-javascript-using-jquery-and-regex-5b57a271cb86">client-side-web-scraping-with-javascript</a>
-<br>
-<p>
-When I was building my first open-source project, codeBadges, I thought it would be easy to get user profile data from all the main code learning websites.</p>
-<p>
-I was familiar with API calls and get requests. I thought I could just use jQuery to fetch the data from the various API's and use it.</p>
+<br><br>
+<div id="mustWatch"><center><span class="red">MustWatch</span></center><br>
+</div>
 <pre>
+<br>
+<br>
+
+
+<h2>Node.js, Async/Await and Headless Browsers</h2>
+
+If you want to collect data from the web, you’ll come across a lot of resources teaching you how to do this using more established back-end tools like Python or PHP. 
+But there’s a lot less guidance out there for the new kid on the block, Node.js.
+
+Thanks to Node.js, JavaScript is a great language to use for a web scraper: not only is Node fast, but you’ll likely end up using a lot of the same methods you’re used to from querying the DOM with front-end JavaScript. 
+Node.js has tools for querying both static and dynamic web pages, and it is well-integrated with lots of useful APIs, node modules and more.
+
+In this article, I’ll walk through a powerful way to use JavaScript to build a web scraper. 
+We’ll also explore one of the key concepts useful for writing robust data-fetching code: asynchronous code.
+<h1>Asynchronous Code</h1>
+Fetching data is often one of the first times beginners encounter asynchronous code. 
+By default, JavaScript is synchronous, meaning that events are executed line-by-line. 
+Whenever a function is called, the program waits until the function is returned before moving on to the next line of code.
+
+But fetching data generally involves asynchronous code. 
+Such code is removed from the regular stream of synchronous events, allowing the synchronous code to execute while the asynchronous code waits for something to occur: fetching data from a website, for example.
+
+Combining these two types of execution — synchronous and asynchronous — involves some syntax which can be confusing for beginners. 
+We’ll be using the <code>async</code> and <code>await</code> keywords, introduced in ES7. 
+They’re syntactic sugar on top of ES6’s Promise syntax, and this — in turn — is syntactic sugar on top of the previous system of callbacks.
+<h2>Passed-in Callbacks</h2>
+In the days of callbacks, we were reliant on placing every asynchronous function within another function, leading to what’s sometimes known as the ‘pyramid of doom’ or ‘callback hell’. 
+The example below is on the simple side!
+
+<strong>/* Passed-in Callbacks */</strong>
+doSomething(function(result) {
+  doSomethingElse(result, function(newResult) {
+    doThirdThing(newResult, function(finalResult) {
+      console.log(finalResult);
+    }, failureCallback);
+  }, failureCallback);
+}, failureCallback);
+<h2>Promise, Then and Catch</h2>
+In ES6, a new syntax was introduced, making it much simpler and easier-to-debug asynchronous code. 
+It is characterised by the <code>Promise</code> object and the <code>then</code> and <code>catch</code> methods:
+
+<strong>/* &quot;Vanilla&quot; Promise Syntax */
+</strong>doSomething()
+.then(result =&gt; doSomethingElse(result))
+.then(newResult =&gt; doThirdThing(newResult))
+.then(finalResult =&gt; {
+  console.log(finalResult);
+})
+.catch(failureCallback);
+<h2>Async and Await</h2>
+Finally, ES7 brought <code>async</code> and <code>await</code> , two keywords which allow asynchronous code to look much closer to synchronous JavaScript, as in the example below. 
+This most recent development is generally considered the most readable way to do asynchronous tasks in Javascript — and <a href="https://blog.pusher.com/promises-async-await/" rel="noopener nofollow">may even boost memory efficiency</a> in comparison to regular Promise syntax.
+
+<strong>/* Async/Await Syntax */</strong>
+(async () =&gt; {
+  try {
+    const result = await doSomething();
+    const newResult = await doSomethingElse(result);
+    const finalResult = await doThirdThing(newResult);
+    console.log(finalResult); 
+  } catch(err) {
+    console.log(err);
+  }
+})();
+<h1>Static Websites</h1>
+In the past, retrieving data from another domain involved the <code>XMLHttpRequest</code> or XHR object. 
+Nowadays, we can use JavaScript’s Fetch API. 
+The <code>fetch()</code> method. 
+It takes one mandatory argument — the path to the resource you want to fetch (usually a URL) — and returns a <code>Promise</code> .
+
+To use fetch in Node.js, you’ll want to import an implementation of fetch. 
+<a href="https://www.npmjs.com/package/isomorphic-fetch" rel="noopener nofollow">Isomorphic Fetch</a> is a popular choice. 
+Install it by typing <code>npm install isomorphic-fetch es6-promise</code> into the terminal, and then require it at the top of your document like so: <code>const fetch = require(&#x27;isomorphic-fetch&#x27;)</code> .
+<h2><strong>JSON</strong></h2>
+If you’re fetching JSON data, then you should use the <code>json()</code> method on your response before processing it:
+
+(async () =&gt; {
+  const response = await fetch(&#x27;https://wordpress.org/wp-json&#x27;);
+  const json = await response.json();
+  console.log(<em>JSON</em>.stringify(json));
+})()
+
+JSON makes it relatively straightforward to grab the data you want from the and process it. 
+But what if JSON data isn’t available?
+<h2>HTML</h2>
+For most websites, you’ll need to extract the data you want from the HTML. 
+With regards to static websites, there are two main ways to go about this.
+
+<strong>Option A: Regular Expressions</strong>
+
+If your needs are simple or you’re comfortable writing regex, you can simply use the <code>text()</code> method, and then extract the data you need using the <code>match</code> method. 
+For example, here’s is some code to extract the contents of the first <code>h1</code> tag on a page:
+
+(async () =&gt; {
+  const response = await fetch(&#x27;https://example.com&#x27;);
+  const text = await response.text();
+  console.log(text.match(/(?&lt;=\&lt;h1&gt;).*(?=\&lt;\/h1&gt;)/));
+})()
+
+<strong>Option B: A DOM Parser</strong>
+
+If you’re dealing with a more complicated document, it can be helpful to make use of JavaScript’s array of in-built methods for querying the DOM: methods like <code>getElementById</code> , <code>querySelector</code> and so on.
+
+If we were writing front-end code, we could use the <a href="https://developer.mozilla.org/en-US/docs/Web/API/DOMParser" rel="noopener nofollow">DOMParser interface</a>. 
+As we’re using Node.js, we can grab a node module instead. 
+A popular option is <a href="https://www.npmjs.com/package/jsdom" rel="noopener nofollow">jsdom</a>, which you can install by typing <code>npm i jsdom</code> into the terminal and requiring like this:
+
+const jsdom <strong>=</strong> require(&quot;jsdom&quot;);
+const { JSDOM } <strong>=</strong> jsdom;
+
+With jsdom, we can query our imported HTML as its own DOM object using <code>querySelector</code> and related methods:
+
+(async () =&gt; {
+  const response = await fetch(&#x27;https://example.com&#x27;);
+  const text = await response.text();
+  const dom = await new JSDOM(text);
+  console.log(dom.window.document.querySelector(&quot;h1&quot;).textContent);
+})()
+<h1>Dynamic Websites</h1>
+What if you want to grab data from a dynamic website, where content is generated in real-time, such as on a social media site? Performing a <code>fetch</code> request won’t work because it will return the site’s static code, and not the dynamic content that you probably want to get access to.
+
+If that’s what you’re looking for, the best node module for the job is <a href="https://www.npmjs.com/package/puppeteer" rel="noopener nofollow">puppeteer</a> — not least because the main alternative, PhantomJS, <a href="http://phantomjs.org/" rel="noopener nofollow">is no longer being developed</a>.
+
+Puppeteer allows you to run Chrome or Chromium over the DevTools Protocol, with features such as automatic page navigation and screen capture. 
+By default, it runs as a headless browser, but changing this setting can be helpful for debugging.
+<h2>Getting Started</h2>
+To install, navigate to your project directory in the terminal and type <code>npm i puppeteer</code> . 
+Here’s some boilerplate code to get you started:
+
+const puppeteer = require(&#x27;puppeteer&#x27;);const browser = await puppeteer.launch({
+  headless: false,
+});const page = await browser.newPage();
+await page.setRequestInterception(true);await page.goto(&#x27;http://www.example.com/&#x27;);
+
+First, we launch puppeteer (disabling headless mode, so we can see what we’re doing). 
+Then we open a new tab. 
+The method <code>page.setRequestInterception(true)</code> is optional, allowing us to use <code>abort</code> , <code>continue</code> and <code>respond</code> methods later on. 
+Lastly, we go to our chosen page.
+
+As in the “DOM Parser” example above, we can now query elements using <code>document.querySelector</code> and the related methods.
+<h2>Logging In</h2>
+If we need to log in, we can do so easily using the <code>type</code> and <code>click</code> methods, which identify DOM elements using the same syntax as <code>querySelector</code> :
+
+await page.type(&#x27;#username&#x27;, &#x27;UsernameGoesHere&#x27;);
+await page.type(&#x27;#password&#x27;, &#x27;PasswordGoesHere&#x27;);
+await page.click(&#x27;button&#x27;);
+await page.waitForNavigation();
+<h2>Handling Infinite Scroll</h2>
+It is increasingly common for dynamic sites to display content via an infinite scrolling mechanism. 
+To cope with that, you can set puppeteer to scroll down based on certain criteria.
+
+Here’s a simple example that will scroll down 5 times, waiting for 1 second between each scroll to account for loading content.
+
+for (let j = 0; j &lt; 5; j++) {
+  await page.evaluate(&#x27;window.scrollTo(0, document.body.scrollHeight)&#x27;);
+  await page.waitFor(1000);
+}
+
+Because load times will differ, the above code will not necessarily load the same number of results every time. 
+If that’s a problem, you may want to scroll until a certain number of elements is found, or some other criteria.
+<h2>Making Optimisations</h2>
+Lastly, there are several ways that you can make optimisations to your code, so that is runs as quickly and smoothly as possible. 
+As an example, here’s a way to get puppeteer to avoid loading fonts or images.
+
+await page.setRequestInterception(true);page.on(&#x27;request&#x27;, (req) =&gt; {
+ if (req.resourceType() == &#x27;font&#x27; || req.resourceType() == &#x27;image&#x27;){
+   req.abort();
+ }
+ else {
+   req.continue();
+ }
+});
+
+You could also disable CSS in a similar way, although sometimes the CSS is integral to the dynamic data you want — so I’d err on the side of caution with this one!
+
+And that’s pretty much all you need to know to make a functioning web scraper in JavaScript! Once you’ve stored the data in memory, you can then add it to a local document (using the <code>fs</code> module), upload it to a database, or use an API (such as the Google Sheets API ) to send the data directly to a document.
+
+If you’re new to web scraping — or you know about web scraping but you’re new to Node.js — I hope this article has made you aware of some of the powerful tools that make Node.js a very capable scraping tool. 
+I’d be happy to answer any questions in the comments!
+
+<h2>JavaScript Client-side web scraping</h2>
+<a href="https://medium.com/data-scraper-tips-tricks/scraping-data-with-javascript-in-3-minutes-8a7cf8275b31">scraping-data-with-javascript</a>
+<a href="https://medium.freecodecamp.org/client-side-web-scraping-with-javascript-using-jquery-and-regex-5b57a271cb86">client-side-web-scraping-with-javascript</a>
+
+When I was building my first open-source project, codeBadges, I thought it would be easy to get user profile data from all the main code learning websites.
+
+I was familiar with API calls and get requests. I thought I could just use jQuery to fetch the data from the various API's and use it.
+
 var name = &#39;codemzy&#39;;
 $.get(&#39;https://api.github.com/users/&#39; + name, function(response) {
 var followers = response.followers;
-});</pre>
-<p>
-Well, that was easy. But it turns out that not every website has a public API that you can just grab the data you want from.</p>
+});
 
+Well, that was easy. But it turns out that not every website has a public API that you can just grab the data you want from.
 
-<p>
-But just because there is no public API doesn't mean you need to give up! You can use web scraping to grab the data, with only <strong class="markup--strong markup--p-strong">
-a little extra work</strong>
-.</p>
-<p>
-For an example, I will grab my user information from my public freeCodeCamp profile. But you can use these steps on any public HTML page.</p>
-<p>
-The first step in scraping the data is to grab the full page html using a jQuery <code class="markup--code markup--p-code">
-.get</code>
- request.</p>
-<pre>
+But just because there is no public API doesn't mean you need to give up! You can use web scraping to grab the data, with only <strong>a little extra work</strong>.
+
+For an example, I will grab my user information from my public freeCodeCamp profile. But you can use these steps on any public HTML page.
+
+The first step in scraping the data is to grab the full page html using a jQuery <code>.get</code> request.
+
 var name = &quot;codemzy&quot;;
 $.get("https://www.freecodecamp.com/" + name, function(response) {
   console.log(response);
-});</pre>
-<p>
-Awesome, the whole page source code just logged to the console.</p>
-<p>
-Note: If you get an error at this stage along the lines of <code class="markup--code markup--p-code">
-No ‘Access-Control-Allow-Origin' header is present on the requested resource</code>
-<em class="markup--em markup--p-em">
- </em>
-don't fret. Scroll down to the <strong class="markup--strong markup--p-strong">
-Don't Let CORS Stop You</strong>
- section of this post.</p>
-<p>
-That was easy. Using JavaScript and jQuery, the above code requests a page from <a href="http://www.freecodecamp.org" data-href="http://www.freecodecamp.org" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
-www.freecodecamp.org</a>
-, like a browser would. And freeCodeCamp responds with the page. Instead of a browser running the code to display the page, we get the HTML code.</p>
-<p>
-And that's what web scraping is, extracting data from websites.</p>
-<p>
-Ok, the response is not exactly as neat as the data we get back from an API.</p>
+});
 
+Awesome, the whole page source code just logged to the console.
 
-<p>
-But… we have the data, in there somewhere.</p>
-<p>
-Once we have the source code the information we need is in there, we just have to grab the data we need!</p>
-<p>
-We can search through the response to find the elements we need.</p>
-<p>
-Let's say we want to know how many challenges the user has completed, from the user profile response we got back.</p>
-<p>
-At the time of writing, a camper's completed challenges completed are organized in tables on the user profile. So to get the total number of challenges completed, we can count the number of rows.</p>
-<p>
-One way is to wrap the whole response in a jQuery object, so that we can use jQuery methods like <code class="markup--code markup--p-code">
-.find()</code>
- to get the data.</p>
-<pre>
-// number of challenges completed<br>
-var challenges = $(response).find(&#39;tbody tr&#39;).length;</pre>
-<p>
-This works fine — we get the right result. But its is <strong class="markup--strong markup--p-strong">
-not a good way</strong>
- to get the result we are after. Turning the response into a jQuery object actually loads the whole page, including all the external scripts, fonts and stylesheets from that page…Uh oh!</p>
-<p>
-We need a few bits of data. We really don't need the page the load, and certainly not all the external resources that come with it.</p>
-<p>
-We could strip out the script tags and then run the rest of the response through jQuery. To do this, we could use Regex to look for script patterns in the text and remove them.</p>
-<p>
-Or better still, why not use Regex to find what we are looking for in the first place?</p>
-<pre>
-// number of challenges completed<br>
-var challenges = response.replace(/&lt;thead&gt;[\s|\S]*?&lt;<strong class="markup--strong markup--pre-strong">
-\/</strong>
-thead&gt;/g).match(/&lt;tr&gt;/g).length;</pre>
-<p>
-And it works! By using the Regex code above, we strip out the table head rows (that did not contain any challenges), and then match all table rows to count the number of challenges completed.</p>
-<p>
-It's even easier if the data you want is just there in the response in plain text. At the time of writing the user points were in the html like <code class="markup--code markup--p-code">
+Note: If you get an error at this stage along the lines of <code>
+No ‘Access-Control-Allow-Origin' header is present on the requested resource</code> don't fret. 
+Scroll down to the <strong>Don't Let CORS Stop You</strong> section of this post.
+
+That was easy. Using JavaScript and jQuery, the above code requests a page from <a href="http://www.freecodecamp.org" data-href="http://www.freecodecamp.org" rel="noopener" target="_blank">www.freecodecamp.org</a>, like a browser would. And freeCodeCamp responds with the page. Instead of a browser running the code to display the page, we get the HTML code.
+
+And that's what web scraping is, extracting data from websites.
+
+Ok, the response is not exactly as neat as the data we get back from an API.
+
+But… we have the data, in there somewhere.
+
+Once we have the source code the information we need is in there, we just have to grab the data we need!
+
+We can search through the response to find the elements we need.
+
+Let's say we want to know how many challenges the user has completed, from the user profile response we got back.
+
+At the time of writing, a camper's completed challenges completed are organized in tables on the user profile. So to get the total number of challenges completed, we can count the number of rows.
+
+One way is to wrap the whole response in a jQuery object, so that we can use jQuery methods like <code>.find()</code>
+ to get the data.
+
+// number of challenges completed
+
+var challenges = $(response).find(&#39;tbody tr&#39;).length;
+
+This works fine — we get the right result. But its is <strong>not a good way</strong> to get the result we are after. 
+Turning the response into a jQuery object actually loads the whole page, including all the external scripts, fonts and stylesheets from that page…Uh oh!
+
+We need a few bits of data. We really don't need the page the load, and certainly not all the external resources that come with it.
+
+We could strip out the script tags and then run the rest of the response through jQuery. To do this, we could use Regex to look for script patterns in the text and remove them.
+
+Or better still, why not use Regex to find what we are looking for in the first place?
+
+// number of challenges completed
+
+var challenges = response.replace(/&lt;thead&gt;[\s|\S]*?&lt;<strong>
+\/</strong>thead&gt;/g).match(/&lt;tr&gt;/g).length;
+
+And it works! By using the Regex code above, we strip out the table head rows (that did not contain any challenges), and then match all table rows to count the number of challenges completed.
+
+It's even easier if the data you want is just there in the response in plain text. 
+At the time of writing the user points were in the html like <code>
 &lt;h1 class=”flat-top text-primary”&gt;[ 1498 ]&lt;/h1&gt;</code>
- just waiting to be scraped.</p>
-<pre>
-var points = response.match(/&lt;h1 class=&quot;flat-top text-primary&quot;&gt;<strong class="markup--strong markup--pre-strong">
-\[</strong>
- ([\d]*?) <strong class="markup--strong markup--pre-strong">
-\]</strong>
-&lt;<strong class="markup--strong markup--pre-strong">
-\/</strong>
-h1&gt;/)[1];</pre>
-<p>
-In the above Regex pattern we match the h1 element we are looking for including the <code class="markup--code markup--p-code">
-[ ]</code>
- that surrounds the points, and group any number inside with <code class="markup--code markup--p-code">
-([\d]*?).</code>
- We get an array back, the first <code class="markup--code markup--p-code">
-[0]</code>
- element is the entire match and the second <code class="markup--code markup--p-code">
-[1]</code>
- is our group match (our points).</p>
-<p>
-Regex is useful for matching all sorts of patterns in strings, and it is great for searching through our response to get the data we need.</p>
-<p>
-You can use the same 3 step process to scrape profile data from a variety of websites:</p>
-<ol class="postList">
-<li>
-Use client-side JavaScript</li>
-<li>
-Use jQuery to scrape the data</li>
-<li>
-Use Regex to filter the data for the relevant information</li>
-</ol>
-<p>
-Until I hit a problem, CORS.</p>
+ just waiting to be scraped.
 
-<h3>
-Don't Let CORS Stop You!</h3>
-<p>
-CORS or Cross-Origin Resource Sharing, can be a real problem with client-side web scraping.</p>
-<p>
-For security reasons, browsers restrict cross-origin HTTP requests initiated from within scripts. And because we are using client-side Javascript on the front end for web scraping, CORS errors can occur.</p>
-<p>
+var points = response.match(/&lt;h1 class=&quot;flat-top text-primary&quot;&gt;<strong>\[</strong> ([\d]*?) <strong>\]</strong>&lt;<strong>\/</strong>h1&gt;/)[1];
 
-<p>
-Staying firmly within our front end script, we can use <span class="red">cross-domain tools</span> such as <a href="http://anyorigin.com/" data-href="http://anyorigin.com/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
-Any Origin</a>
-, <a href="http://www.whateverorigin.org/" data-href="http://www.whateverorigin.org/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
-Whatever Origin</a>
-, <a href="http://multiverso.me/AllOrigins/" data-href="http://multiverso.me/AllOrigins/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
-All Origins</a>
-, <a href="https://crossorigin.me/" data-href="https://crossorigin.me/" class="markup--anchor markup--p-anchor" rel="noopener" target="_blank">
-crossorigin</a>
- and probably a lot more. I have found that you often need to test a few of these to find the one that will work on the site you are trying to scrape.</p>
-<p>
-Example, we can send our <span class="blue">request via a cross-domain tool</span> to bypass the CORS issue.</p>
+In the above Regex pattern we match the h1 element we are looking for including the <code>[ ]</code> that surrounds the points, and group any number inside with <code>([\d]*?).</code>
+We get an array back, the first <code>[0]</code> element is the entire match and the second <code>[1]</code> is our group match (our points).
 
-<pre>
+Regex is useful for matching all sorts of patterns in strings, and it is great for searching through our response to get the data we need.
+
+You can use the same 3 step process to scrape profile data from a variety of websites:
+
+Use client-side JavaScript
+Use jQuery to scrape the data
+Use Regex to filter the data for the relevant information
+
+Until I hit a problem, CORS.
+
+<h3>Don't Let CORS Stop You!</h3>
+
+CORS or Cross-Origin Resource Sharing, can be a real problem with client-side web scraping.
+
+For security reasons, browsers restrict cross-origin HTTP requests initiated from within scripts. And because we are using client-side Javascript on the front end for web scraping, CORS errors can occur.
+
+Staying firmly within our front end script, we can use <span>cross-domain tools</span> such as <a href="http://anyorigin.com/" data-href="http://anyorigin.com/" rel="noopener" target="_blank">
+Any Origin</a>, <a href="http://www.whateverorigin.org/" data-href="http://www.whateverorigin.org/" rel="noopener" target="_blank">
+Whatever Origin</a>, <a href="http://multiverso.me/AllOrigins/" data-href="http://multiverso.me/AllOrigins/" rel="noopener" target="_blank">
+All Origins</a>, <a href="https://crossorigin.me/" data-href="https://crossorigin.me/" rel="noopener" target="_blank">crossorigin</a> and probably a lot more. I have found that you often need to test a few of these to find the one that will work on the site you are trying to scrape.
+
+Example, we can send our <span>request via a cross-domain tool</span> to bypass the CORS issue.
+
 $.getJSON('http://www.whateverorigin.org/get?url=' + encodeURIComponent('http://google.com') + '&callback=?', function(data){
 	console.log(data.contents);
 });
-</pre>
 
-<br>
 <a href="https://stackoverflow.com/questions/11997256/call-a-external-web-page-cross-domain-with-javascript">Call a external web page (cross-domain) with javascript</a>
-<br><br>
-<br>
-<br>
 
+<h2>Webscraping without Node js</h2>
+search content of external webpages using javascript (e.g. running a webworker in background).
+<a href="https://stackoverflow.com/questions/55664259/webscraping-without-node-js-possible" class="whitebut ">Webscraping without Node js</a>
+
+Yes, this is possible. Just use the XMLHttpRequest API:
+Note that I had to use a proxy to bypass CORS issues; if you want to do this, run your own proxy on your own server.
+
+var request = new XMLHttpRequest();
+request.open("GET", "https://bypasscors.herokuapp.com/api/?url=" + encodeURIComponent("https://duckduckgo.com/html/?q=stack+overflow"), true);  // last parameter must be true
+
+request.responseType = "document";
+request.onload = function (e) {
+  if (request.readyState === 4) {
+    if (request.status === 200) {
+      var a = request.responseXML.querySelector("div.result:nth-child(1) > div:nth-child(1) > h2:nth-child(1) > a:nth-child(1)");
+      console.log(a.href);
+      document.body.appendChild(a);
+    } else {
+      console.error(request.status, request.statusText);
+    }
+  }
+};
+request.onerror = function (e) {
+  console.error(request.status, request.statusText);
+};
+request.send(null);  // not a POST request, so don't send extra data
+
+<a href="https://github.com/puppeteer/puppeteer" class="whitebut ">Puppeteer</a>
+Puppeteer is a Node library to control Chrome over the DevTools Protocol. Puppeteer runs headless by default, but can be configured to run full (non-headless) Chrome or Chromium.
+
+<h2>How to scrape the web with JavaScript</h2>
+Whether you're a student, researcher, journalist, or just plain interested in some data you've found on the internet, it can be really handy to know how to automatically save this data for later analysis, a process commonly known as <strong>"scraping"</strong>.
+
+There are several different ways to scrape, each with their own advantages and disadvantages and I'm going to cover three of them in this article:
+
+<strong>Scraping a JSON API</strong>
+<strong>Scraping sever-side rendered HTML</strong>
+<strong>Scraping JavaScript rendered HTML</strong>
+
+For each of these three cases, I'll use real websites as examples (stats.nba.com, espn.com, and basketball-reference.com respectively) to help ground the process. 
+I'll go through the way I investigate what is rendered on the page to figure out what to scrape, how to search through network requests to find relevant API calls, and how to automate the scraping process through scripts written in Node.js. 
+We'll even try out <code>curl</code> and <code>jq</code> on the command line for a bit.
+
+So without further adieu, let's begin with a quick primer on CSV vs JSON.
+
+<em>Note these instructions were written with Chrome 78 and will likely vary slightly with different browsers.</em>
+
+
+<h3>I know CSV, but what is JSON?</h3>
+You may be familiar with CSV files as a common way of working with data, but for the web, the standard is to use JSON. 
+There are plenty of tools online that can convert between the two formats so if you need a CSV, getting from one to the other shouldn't be a problem. 
+Here's a brief comparison of how some data may look in CSV vs JSON:
+ID,Name,Season,Points
+1,LeBron James,2019-20,25.2
+1,LeBron James,2018-19,27.4
+1,LeBron James,2017-18,27.5
+
+CSV
+[
+  { "id": 1, "name": "LeBron James", "season": "2019-20", "points": 25.2 },
+  { "id": 1, "name": "LeBron James", "season": "2018-19", "points": 27.4 },
+  { "id": 1, "name": "LeBron James", "season": "2017-18", "points": 27.5 }
+]
+
+JSON
+
+So there's a bunch more symbols and the headers are integrated into each item in the JSON version. 
+While this is a more common JSON format, some times we'll see data in other arrangements too, which are more similar to CSV. 
+For example, stats.nba.com uses a format similar to:
+{
+"headers": ["id", "name", "season", "points"],
+"rows": [
+    [1, "LeBron James", "2019-20", 25.2],
+    [1, "LeBron James", "2018-19", 27.4],
+    [1, "LeBron James", "2017-18", 27.5]
+  ]
+}
+
+JSON Alternative Form
+
+<h2><strong>Case 1</strong> – Using APIs Directly</h2>
+A very common flow that web applications use to load their data is to have JavaScript make asynchronous requests (AJAX) to an API server (typically REST or GraphQL) and receive their data back in JSON format, which then gets rendered to the screen. 
+In this case, we'll go over a method of intercepting these API requests and work with their JSON payloads directly via a script written in Node.js. 
+We'll use stats.nba.com as our case study to learn these techniques.
+<h3>Find the relevant API requests</h3>
+Okay with some preliminary understanding of data formats under our belt, it's time to take a stab at scraping some real data. 
+Our goal will be to write a script that will save LeBron James' year-over-year career stats.
+<h4>Step 1: Check if the data is loaded dynamically</h4>
+Let's head on over to stats.nba.com and find the page with the stats we care about, in this case LeBron's player page: https://stats.nba.com/player/2544/
+
+<img class="lazy" data-src="https://beshaimakes.com/3d6ac2b32826c0f229ec02576b2ef3db/f4a45/stats-nba-lebron-trad.png">
+
+Screenshot of LeBron's player page
+
+Hey! There's our table right up top on LeBron's page, how convenient. 
+We need to check if this data is already in the HTML or if it is loaded dynamically via a JSON API. 
+To do so, we'll <strong>View Source</strong> on the page and try to find the data in the HTML.
+
+<img class="lazy" data-src="https://beshaimakes.com/static/4b4c8955edd89323e0921ef335968e54/f4a45/stats-nba-view-source.png">
+
+Right click on the page and select View Source
+
+<img class="lazy" data-src="https://beshaimakes.com/static/d30f232305aa785bda593ace8703a84d/f4a45/stats-nba-view-source-2.png">
+
+The source code of LeBron's page
+
+With the source loaded, we can look for the data by searching (via <strong>Cmd+F</strong>) for some values that show up in it (e.g. 
+<code>2017-18</code> or <code>51.3</code>). 
+Alas, there are no results! This confirms that the data is loaded dynamically, likely via a JSON API.
+<h4>Step 2: Find the API endpoint that returns the data</h4>
+OK, so the data isn't in the HTML, where the heck is it? Let's inspect the element with our browser's developer tools to see if we can find any clues. 
+Right click the table and select <strong>Inspect</strong>.
+
+<img class="lazy" data-src="https://beshaimakes.com/static/b014f7d22469be710373669ab7600421/f4a45/stats-nba-inspect.png">
+
+Right click on the table and select Inspect
+
+<img class="lazy" data-src="https://beshaimakes.com/static/5e7d1d55e411956e85d61dd4135cebec/f4a45/stats-nba-inspect-2.png">
+
+The dynamically generated HTML source for the table
+
+We're in luck! Looks like that tag <code>nba-stat-table</code> has some clues in it. 
+This doesn't always happen, but it sure helps when it does.
+&lt;nba-stat-table
+ng-if="!datasets.Base.isLoading &amp;&amp; !datasets.Base.noData"
+rows="datasets.Base.sets[1].rows"
+params="params"
+filters="filters"
+ai="ai"
+template="player/player-traditional"&gt;
+
+In particular, it references <code>datasets.Base</code> and <code>datasets.Base.sets[1].rows</code>. 
+We now have to hunt through the network calls made after the page has loaded to see if we can find the matching API request. 
+To do so, load up the <strong>Network</strong> tab in the browser's developer tools and refresh the page to capture all requests.
+
+Note the tools should already be open from when you clicked <strong>Inspect</strong> to load the HTML inspector. 
+Network is just another tab in that panel. 
+Otherwise you can go to <strong>View → Developer → Developer Tools</strong> to open them.
+
+After refreshing the page, your network tab should be full of stuff as shown below.
+
+<img class="lazy" data-src="https://beshaimakes.com/static/37e6c0ddccede569f0c84b86d5af6253/f4a45/stats-nba-network.png">
+
+The Network tab in Chrome's developer tools
+
+These are all the requests the browser makes to render the page after loading the initial HTML. 
+Let's try and filter it down to something more manageable to sift through. 
+Click the filter icon (third from the left for me) to reveal a filter panel. 
+Select the <strong>XHR</strong> button to filter out everything (e.g., images, videos) except API requests. 
+Then let's cross our fingers and try filtering for the word <strong>"Base"</strong> since that seems to be the dataset we care about based on the HTML we found above.
+
+<img class="lazy" data-src="https://beshaimakes.com/static/6464c912e7cc88ce261f6d3dd0704307/f4a45/stats-nba-network-2.png">
+
+Filtering the Network tab
+
+Ooo looks like we've got something. 
+Click the row <strong>playerdashboardbyyearoveryear</strong> then  <strong>Response</strong> to see what's in it.
+
+<img class="lazy" data-src="https://beshaimakes.com/static/9b3cbbfadc3115adcbf505dcbf956bce/f4a45/stats-nba-network-3.png">
+
+The response of playerdashboardyearoveryear
+
+<em>Yikes!</em> That's not very easy to read, but hey it sure looks like JSON. 
+At this point, I take the text of the response and copy and paste it into a formatter so I can get a better understanding of what's in it. 
+I use my text editor for this, but googling for an online JSON formatter will work just as well.
+  {
+"resource": "playerdashboardbyyearoveryear",
+"parameters": { "MeasureType": "Base", ... 
+},
+"resultSets": [
+  { "name": "OverallPlayerDashboard", ... 
+},
+  {
+"name": "ByYearPlayerDashboard",
+"headers": [ "GROUP_SET", "GROUP_VALUE", "TEAM_ID",
+"TEAM_ABBREVIATION", "MAX_GAME_DATE", "GP", "W", "L",
+"W_PCT", "MIN", "FGM", "FGA", "FG_PCT", ... 
+],
+"rowSet": [
+  [ "By Year", "2019-20", 1610612747,
+"LAL", "2019-11-23T00:00:00", 16, 14, 2,
+0.875000, 35.2, 9.700000, 19.800000, 0.489, ... 
+],
+...
+]
+}
+]
+}
+
+The JSON response from the API request we found, truncated for readability
+
+Recalling the HTML we inspected from earlier, we were looking for a dataset named <strong>"Base"</strong> and the second set (<code>sets[1]</code> from before) in it to find our table data. 
+With some careful inspection, we can see that the second item in the <code>resultSets</code> entry in this response matches the data for our table. 
+We have now confirmed this is the API request we're interested in scraping.
+<h3>Download the response data with cURL</h3>
+Now that we know how to manually find the data we care about, let's work on automating it with a script. 
+We'll be using the terminal (<strong>Applications/Utilities/Terminal</strong> on a Mac) now to quickly iterate with the tools curl and jq.
+
+Note you may need to install <strong>jq</strong> if you do not already have it. 
+The easiest way is with Homebrew. 
+Run <code>brew install jq</code> on the command line to get it.
+
+Combining these tools with a bash script is probably sufficient for a bunch of scraping needs, but in this article we'll migrate over to using node.js after figuring out the exact request we want to make.
+
+Ok, so back to the Network tab in the browser's developer tools. 
+Right click the "playerdashboardyearoveryear" row and select <strong>Copy → Copy as cURL</strong>. 
+This will copy something like this to your clipboard:
+curl 'https://stats.nba.com/stats/playerdashboardbyyearoveryear?DateFrom=&amp;DateTo=&amp;GameSegment=&amp;LastNGames=0&amp;LeagueID=00&amp;Location=&amp;MeasureType=Base&amp;Month=0&amp;OpponentTeamID=0&amp;Outcome=&amp;PORound=0&amp;PaceAdjust=N&amp;PerMode=PerGame&amp;Period=0&amp;PlayerID=2544&amp;PlusMinus=N&amp;Rank=N&amp;Season=2019-20&amp;SeasonSegment=&amp;SeasonType=Regular+Season&amp;ShotClockRange=&amp;Split=yoy&amp;VsConference=&amp;VsDivision=' \
+-H 'Connection: keep-alive' \
+-H 'Accept: application/json, text/plain, */*' \
+-H 'x-nba-stats-token: true' \
+-H 'X-NewRelic-ID: VQECWF5UChAHUlNTBwgBVw==' \
+-H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' \
+-H 'x-nba-stats-origin: stats' \
+-H 'Sec-Fetch-Site: same-origin' \
+-H 'Sec-Fetch-Mode: cors' \
+-H 'Referer: https://stats.nba.com/player/2544/' \
+-H 'Accept-Encoding: gzip, deflate, br' \
+-H 'Accept-Language: en-US,en;q=0.9,id;q=0.8' \
+-H 'Cookie: a_bunch_of_stuff=that_i_removed;' \
+--compressed
+
+If you paste that into your terminal, you'll see the JSON response show up. 
+<strong><em>Nice!!</em></strong> But boy there's a bunch of stuff that we're adding to this command: HTTP Headers with the <code>-H</code> flag. 
+Do we really need all of that? It turns out the answer is <em>maybe</em>. 
+Some web servers will take precautions to protect against bots, while still allowing normal users to access their sites. 
+To appear as a normal user while we scrape, we sometimes need to include all kinds of HTTP headers and cookies.
+
+I'd like the request to be as simple as possible, so at this point I try and remove as many of the extra options while still having the request work. 
+This results in the following:
+curl 'https://stats.nba.com/stats/playerdashboardbyyearoveryear?DateFrom=&amp;DateTo=&amp;GameSegment=&amp;LastNGames=0&amp;LeagueID=00&amp;Location=&amp;MeasureType=Base&amp;Month=0&amp;OpponentTeamID=0&amp;Outcome=&amp;PORound=0&amp;PaceAdjust=N&amp;PerMode=PerGame&amp;Period=0&amp;PlayerID=2544&amp;PlusMinus=N&amp;Rank=N&amp;Season=2019-20&amp;SeasonSegment=&amp;SeasonType=Regular+Season&amp;ShotClockRange=&amp;Split=yoy&amp;VsConference=&amp;VsDivision=' \
+-H 'Connection: keep-alive' \
+-H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' \
+-H 'x-nba-stats-origin: stats' \
+-H 'Referer: https://stats.nba.com/player/2544/' \
+--compressed
+
+Now we can get some nice colors and formatting by simply piping the result to <strong>jq</strong>: <code>curl ... 
+| jq</code>. 
+But <strong>jq</strong> is awesome and powerful and let's us do a lot more. 
+For example, we can ask <strong>jq</strong> to get us the top row in the second result set by running the <strong>curl</strong> command piped with <code>curl ... 
+| jq .resultSets[1].rowSet[0]</code>:
+curl 'https://stats.nba.com/stats/playerdashboardbyyearoveryear?DateFrom=&amp;DateTo=&amp;GameSegment=&amp;LastNGames=0&amp;LeagueID=00&amp;Location=&amp;MeasureType=Base&amp;Month=0&amp;OpponentTeamID=0&amp;Outcome=&amp;PORound=0&amp;PaceAdjust=N&amp;PerMode=PerGame&amp;Period=0&amp;PlayerID=2544&amp;PlusMinus=N&amp;Rank=N&amp;Season=2019-20&amp;SeasonSegment=&amp;SeasonType=Regular+Season&amp;ShotClockRange=&amp;Split=yoy&amp;VsConference=&amp;VsDivision=' \
+-H 'Connection: keep-alive' \
+-H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' \
+-H 'x-nba-stats-origin: stats' \
+-H 'Referer: https://stats.nba.com/player/2544/' \
+--compressed | jq .resultSets[1].rowSet[0]
+
+  [ "By Year", "2019-20", 1610612747, "LAL", "2019-11-23T00:00:00", 16,
+14, 2, 0.875, 35.2, 9.7, 19.8, 0.489, 1.9, 5.6, 0.333, 3.9, 5.6,
+0.708, 1, 6.6, 7.6, 10.8, 3.5, 1.3, 0.6, 0.8, 1.4, 4.5, 25.2, 9.7,
+52.7, 13, 5, 17, 17, 17, 1, 17, 14, 8, 11, 2, 2, 11, 17, 17, 14, 14,
+5, 7, 1, 7, 15, 16, 9, 17, 15, 16, 2, 6, 15, 6, 264, "2019-20" ]
+
+The output of <code>curl ... 
+| jq .resultSets[1].rowSet[0]</code>
+
+Look at us go! <em>Everything is all right, everything is automatic</em>. 
+But we miss JavaScript, so let's head on over to Node land.
+<h3>Write a Node.js script to scrape multiple pages</h3>
+At this point we've figured out the URL and necessary headers to request the data we want. 
+Now we have everything we need to write a script to scrape the API automatically. 
+You could use whatever language you want here, but I'll do it using node.js with the request library.
+
+In an empty directory, run the following commands in your terminal to initialize a javascript project:
+npm init -y
+npm install --save request request-promise-native
+
+Now we just need to translate our request from the cURL format above to the format needed by the request library. 
+We'll use the promise version so we can take advantage of the very convenient async/await syntax, which let's us work with asynchronous code in a very readable way. 
+Put the following code in a file called <strong>index.js</strong>.
+const rp = require("request-promise-native");
+const fs = require("fs");
+
+async function main() {
+console.log("Making API Request...");
+
+// request the data from the JSON API
+const results = await rp({
+uri: "https://stats.nba.com/stats/playerdashboardbyyearoveryear?DateFrom=&amp;DateTo=&amp;GameSegment=&amp;LastNGames=0&amp;LeagueID=00&amp;Location=&amp;MeasureType=Base&amp;Month=0&amp;OpponentTeamID=0&amp;Outcome=&amp;PORound=0&amp;PaceAdjust=N&amp;PerMode=PerGame&amp;Period=0&amp;PlayerID=2544&amp;PlusMinus=N&amp;Rank=N&amp;Season=2019-20&amp;SeasonSegment=&amp;SeasonType=Regular+Season&amp;ShotClockRange=&amp;Split=yoy&amp;VsConference=&amp;VsDivision=",
+headers: {
+"Connection": "keep-alive",
+"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
+"x-nba-stats-origin": "stats",
+"Referer": "https://stats.nba.com/player/2544/"
+},
+json: true
+});
+
+console.log("Got results =", results);
+
+// save the JSON to disk
+await fs.promises.writeFile("output.json", JSON.stringify(results, null, 2));
+
+console.log("Done!")
+}
+
+// start the main script
+main();
+
+Now run this on the command line with
+node index.js
+
+Boom, we replaced a 1-liner from the command line with 30 lines of JavaScript. 
+We're so modern!
+<h4>Getting this data for other players</h4>
+Cool, so we've got LeBron's data being downloaded from the API automatically, but how about we get it going for a few other players too, so we can feel real productive. 
+You'll notice that the API URL includes a <strong>PlayerID</strong> query parameter:
+https://stats.nba.com/stats/playerdashboardbyyearoveryear?<br>DateFrom=&amp;DateTo=&amp;GameSegment=&amp;LastNGames=0&amp;LeagueID=00&amp;<br>Location=&amp;MeasureType=Base&amp;Month=0&amp;OpponentTeamID=0&amp;Outcome=&amp;<br>PORound=0&amp;PaceAdjust=N&amp;PerMode=PerGame&amp;Period=0&amp;<br><b>PlayerID=2544</b>&amp;<br>PlusMinus=N&amp;Rank=N&amp;Season=2019-20&amp;SeasonSegment=&amp;<br>SeasonType=Regular+Season&amp;ShotClockRange=&amp;Split=yoy&amp;<br>VsConference=&amp;VsDivision=
+
+We just need figure out the IDs of the other players we're interested in, modify that parameter and we'll be good to go. 
+I opened a few player pages on stats.nba.com and took the number from the URL to map these IDs to players:
+
+<table><thead><tr><th>Player ID</th><th>Player</th><th>URL</th></tr></thead><tbody><tr><td>2544</td><td>LeBron James</td><td>https://stats.nba.com/player/2544/</td></tr><tr><td>1629029</td><td>Luka Doncic</td><td>https://stats.nba.com/player/1629029/</td></tr><tr><td>201935</td><td>James Harden</td><td>https://stats.nba.com/player/201935/</td></tr><tr><td>202695</td><td>Kawhi Leonard</td><td>https://stats.nba.com/player/202695/</td></tr></tbody></table>
+
+We can modify our script above to use the player ID as a parameter:
+const rp = require("request-promise-native");
+const fs = require("fs");
+
+// helper to delay execution by 300ms to 1100ms
+async function delay() {
+const durationMs = Math.random() * 800 + 300;
+return new Promise(resolve =&gt; {
+setTimeout(() =&gt; resolve(), durationMs);
+});
+}
+
+async function fetchPlayerYearOverYear(playerId) {
+console.log(`Making API Request for ${playerId}...`);
+
+// add the playerId to the URI and the Referer header
+// NOTE: we could also have used the `qs` option for the
+// query parameters.
+const results = await rp({
+uri: "https://stats.nba.com/stats/playerdashboardbyyearoveryear?DateFrom=&amp;DateTo=&amp;GameSegment=&amp;LastNGames=0&amp;LeagueID=00&amp;Location=&amp;MeasureType=Base&amp;Month=0&amp;OpponentTeamID=0&amp;Outcome=&amp;PORound=0&amp;PaceAdjust=N&amp;PerMode=PerGame&amp;Period=0&amp;" +
+`PlayerID=${playerId}` +
+"&amp;PlusMinus=N&amp;Rank=N&amp;Season=2019-20&amp;SeasonSegment=&amp;SeasonType=Regular+Season&amp;ShotClockRange=&amp;Split=yoy&amp;VsConference=&amp;VsDivision=",
+headers: {
+"Connection": "keep-alive",
+"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
+"x-nba-stats-origin": "stats",
+"Referer": `https://stats.nba.com/player/${playerId}/`
+},
+json: true
+});
+
+// save to disk with playerID as the file name
+await fs.promises.writeFile(
+`${playerId}.json`,
+JSON.stringify(results, null, 2)
+);
+}
+
+async function main() {
+// PlayerIDs for LeBron, Harden, Kawhi, Luka
+const playerIds = [2544, 201935, 202695, 1629029];
+console.log("Starting script for players", playerIds);
+
+// make an API request for each player
+for (const playerId of playerIds) {
+await fetchPlayerYearOverYear(playerId);
+
+// be polite to our friendly data hosts and
+// don't crash their servers
+await delay();
+}
+
+console.log("Done!");
+}
+
+main();
+
+I mostly just extracted the request into its own async function called <strong>fetchPlayerYearOverYear</strong> and then looped over an array of IDs to fetch them all. 
+As a courtesy to our beloved data hosts, I like to put in a <strong>delay</strong> after each fetch to make sure I am not bombarding their servers with too many requests at once. 
+I hope this prevents me from being blacklisted for spamming requests to take their data for my own entirely benevolent purposes.
+
+And with that, we've successfully scraped a JSON API using Node.js. 
+One case down, two to go. 
+Let's move on to covering scraping HTML that's rendered by the web server in Case 2.
+<h2><strong>Case 2</strong> – Server-side Rendered HTML</h2>
+Besides getting data asynchronously via an API, another common technique used by web servers is to render the data directly into the HTML before serving the page up. 
+We'll cover how to extract data in this case by  downloading and parsing the HTML with the help of Cheerio.
+<h3>Find the HTML with the data</h3>
+In this case, we'll go through an example of extracting some juicy data from the HTML for NBA box scores on espn.com.
+<h4>Step 1: Verify the data comes loaded with the HTML</h4>
+Similar to Case 1, we're going to want to verify that the data is actually being loaded with the page. 
+We are going to scrape the box scores for a basketball game between the 76ers and Raptors available at: https://www.espn.com/nba/boxscore?gameId=401160888.
+
+<img class="lazy" data-src="https://beshaimakes.com/static/420479a8c0a9289266ce92e6672d816c/f4a45/espn-boxscore.png">
+
+Screenshot of a box score on ESPN
+
+To do so, we'll view the source of the page we're investigating, as we did in Case 1, and search for some of the data (<strong>Cmd+F</strong>). 
+In this case, I searched for the remarkable <strong>0-11</strong> stat from Joel Embiid's row.
+
+<img class="lazy" data-src="https://beshaimakes.com/static/75b7230732851c12a783348c58d6db87/f4a45/espn-viewsource.png">
+
+Screenshot of the server-rendered HTML for the box score
+
+There it is! Right in the HTML, practically begging to be scraped.
+<h4>Step 2: Figure out a selector to access the data</h4>
+Now that we've confirmed the data is in the actual HTML on page load, we should take a moment to figure out how to access it in the browser. 
+We need some way to identify programmatically the section of the HTML we care about, something CSS Selectors are great at. 
+This can get a bit messy and can often end up being pretty fragile, but such is life in the world of sraping.
+
+Let's go back to the web page, right click the table and select <strong>Inspect</strong>.
+
+<img class="lazy" data-src="https://beshaimakes.com/static/811c790b42e1abfd26607f611c836ddb/f4a45/espn-inspect-menu.png">
+
+Right click the table and select Inspect
+
+You should end up seeing something similar to what is shown below:
+
+<img class="lazy" data-src="https://beshaimakes.com/static/70150262ef20c5bffc28e9f0280854dc/f4a45/espn-inspected.png">
+
+The HTML for the table
+
+What we want is a selector that will give us all rows (or <code>&lt;tr&gt;</code>s) in the table. 
+We'll use the handy <strong>document.querySelectorAll()</strong> function to iterate until we get what we want. 
+Let's start with something general and get more and more specific until we only have what we need. 
+In the browser console (<strong>View → Developer → Javascript Console</strong>), we can interactively try our selectors until we get the right one. 
+Enter the following:
+document.querySelectorAll('tr')
+
+This outputs:
+&gt; NodeList(41)&nbsp;[tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr.highlight, tr.highlight, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr.highlight, tr.highlight, tr, tr, tr.highlight, tr.highlight, tr, tr]
+
+Well, using <code>"tr"</code> is too general. 
+It's returning 41 rows, but the 76ers only have 13 players in the table. 
+Whoops. 
+Looking back at the inspected HTML, we can see some IDs and classes of parent elements to the <code>&lt;tr&gt;</code>s that we can use to winnow down our selection.
+&lt;div id="gamepackage-boxscore-module"&gt;
+&lt;div class="row-wrapper"&gt;
+&lt;div class="col column-one gamepackage-away-wrap"&gt;
+&lt;div class="sub-module"&gt;
+&lt;div class="content desktop"&gt;
+&lt;div class="table-caption"&gt;...&lt;/div&gt;
+&lt;table class="mod-data" data-behavior="responsive_table" data-fix-cols="1" data-set-cell-heights="false" data-mobile-force-responsive="true"&gt;
+&lt;caption&gt;&lt;/caption&gt;
+&lt;thead&gt;...&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;...&lt;/tr&gt;
+&lt;tr&gt;...&lt;/tr&gt;
+...
+
+Excerpt of the box score table HTML
+document.querySelectorAll('.gamepackage-away-wrap tbody tr')
+&gt; NodeList(15) [tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr.highlight, tr.highlight]
+
+Getting pretty close, looks like we just have a couple of rows with the class <code>highlight</code> added to them at the end. 
+On closer inspection, they are the summary total rows at the bottom of the table. 
+We can update our selector to filter them out or we can do that later when writing the Node.js script. 
+Let's just get rid of them with the selector.
+document.querySelectorAll('.gamepackage-away-wrap tbody tr:not(.highlight)')
+&gt; NodeList(13)&nbsp;[tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr, tr]
+
+All right! Looks like we've got a selector to get us all the player rows for the away team from the box score. 
+Good enough to move on to scripting.
+<h3>Write a Node.js script to scrape the page</h3>
+So we've got our selector to get all the rows we care about from the Box Score table (<code>.gamepackage-away-wrap tbody tr:not(.highlight)</code>) and we've got the URL (https://www.espn.com/nba/boxscore?gameId=401160888) of the page we want to scrape. 
+That's all we need, so let's go ahead and scrape.
+<h4>Download the HTML page</h4>
+Things start off exactly the same as we did in Case 1. 
+In an empty directory, run the following commands in your terminal to initialize a javascript project:
+npm init -y
+npm install --save request request-promise-native
+
+I always prefer to save the HTML file directly to disk so while I'm iterating on parsing the data I don't have to keep hitting the web server. 
+So let's write a short script <code>index.js</code> to download the HTML as we did in Case 1.
+const rp = require('request-promise-native');
+const fs = require('fs');
+
+async function downloadBoxScoreHtml() {
+// where to download the HTML from
+const uri = 'https://www.espn.com/nba/boxscore?gameId=401160888';
+// the output filename
+const filename = 'boxscore.html';
+
+// download the HTML from the web server
+console.log(`Downloading HTML from ${uri}...`);
+const results = await rp({ uri: uri });
+
+// save the HTML to disk
+await fs.promises.writeFile(filename, results);
+}
+
+async function main() {
+console.log('Starting...');
+
+await downloadBoxScoreHtml();
+
+console.log('Done!');
+}
+
+main();
+
+Node.js script to download the box score HTML from espn.com
+
+Now run it with
+node index.js
+
+Great! With that, we've got our HTML saved to disk as <code>boxscore.html</code>. 
+The request to download it was a lot simpler than in Case 1 when we had to add a bunch of headers— looks like ESPN is a little less defensive than NBA.com.
+
+Before we start parsing the HTML, let's update the script so it only downloads the file if we don't already have it. 
+This will make it easier to quickly iterate on the script by just re-running it. 
+To do so, we add a check before making the request:
+async function downloadBoxScoreHtml() {
+// where to download the HTML from
+const uri = 'https://www.espn.com/nba/boxscore?gameId=401160888';
+// the output filename
+const filename = 'boxscore.html';
+
+// check if we already have the file
+const fileExists = fs.existsSync(filename);
+if (fileExists) {
+console.log(`Skipping download for ${uri} since ${filename} already exists.`);
+return;
+}
+
+// download the HTML from the web server
+console.log(`Downloading HTML from ${uri}...`);
+const results = await rp({ uri: uri });
+
+// save the HTML to disk
+await fs.promises.writeFile(filename, results);
+}
+
+Add a check to see if the file exists before downloading it
+
+Ok we're all set to start parsing the HTML for our data, but we'll need a new dependency: Cheerio.
+<h4>Parse the HTML with Cheerio</h4>
+The best way to pull out data from the HTML is to use an HTML parser like Cheerio. 
+Some people will try to get by with regular expressions, but they are insufficient in general and are a pain in the butt to write anyway. 
+Cheerio is kind of like our old friend jQuery but on the server-side— it's time to get those <code>$</code>s out again! What a time to be alive.
+
+Back in the terminal, we can install cheerio by running:
+npm install --save cheerio
+
+To get started with using Cheerio, we need to pass it the HTML as a string for it to parse and make queryable. 
+To do so, we run the load command:
+const $ = cheerio.load('&lt;html&gt;...&lt;/html&gt;')
+
+We can read our HTML from disk and load it into cheerio:
+// the input filename
+const htmlFilename = 'boxscore.html';
+// read the HTML from disk
+const html = await fs.promises.readFile(htmlFilename);
+// parse the HTML with Cheerio
+const $ = cheerio.load(html);
+
+After the HTML has been parsed, we can query it by passing our selector to the <code>$</code> function:
+const $trs = $('.gamepackage-away-wrap tbody tr:not(.highlight)')
+
+This gives us a selection containing the parsed <code>&lt;tr&gt;</code> nodes. 
+We can verify it has the HTML we're interested in by running <code>$.html</code> on it:
+console.log($.html($trs));
+
+We get (after some formatting):
+&lt;tr&gt;
+&lt;td class="name"&gt;
+&lt;a name="&amp;amp;lpos=nba:game:boxscore:playercard" href="https://www.espn.com/nba/player/_/id/6440/tobias-harris" data-player-uid="s:40~l:46~a:6440"&gt;
+&lt;span&gt;T. 
+Harris&lt;/span&gt;
+&lt;span class="abbr"&gt;T. 
+Harris&lt;/span&gt;
+&lt;/a&gt;
+&lt;span class="position"&gt;SF&lt;/span&gt;
+&lt;/td&gt;
+&lt;td class="min"&gt;38&lt;/td&gt;
+&lt;td class="fg"&gt;7-17&lt;/td&gt;
+&lt;td class="3pt"&gt;3-7&lt;/td&gt;
+&lt;td class="ft"&gt;1-1&lt;/td&gt;
+&lt;td class="oreb"&gt;0&lt;/td&gt;
+&lt;td class="dreb"&gt;5&lt;/td&gt;
+&lt;td class="reb"&gt;5&lt;/td&gt;
+&lt;td class="ast"&gt;2&lt;/td&gt;
+&lt;td class="stl"&gt;1&lt;/td&gt;
+&lt;td class="blk"&gt;0&lt;/td&gt;
+&lt;td class="to"&gt;2&lt;/td&gt;
+&lt;td class="pf"&gt;3&lt;/td&gt;
+&lt;td class="plusminus"&gt;-10&lt;/td&gt;
+&lt;td class="pts"&gt;18&lt;/td&gt;
+&lt;/tr&gt;
+...
+
+Looks good. 
+It seems like we can create an object mapping the <strong>class</strong> attribute of the <code>&lt;td&gt;</code> to the value contained inside of it. 
+Let's iterate over each of the rows and pull out the data. 
+Note we need to use <strong>toArray()</strong> to convert from a jQuery-style selection to a standard array to make iteration easier to reason about.
+const values = $trs.toArray().map(tr =&gt; {
+// find all children &lt;td&gt;
+const tds = $(tr).find('td').toArray();
+
+// create a player object based on the &lt;td&gt; values
+const player = {};
+for (td of tds) {
+// parse the &lt;td&gt;
+const $td = $(td);
+
+// map the td class attr to its value
+const key = $td.attr('class');
+const value = $td.text();
+player[key] = value;
+}
+
+return player;
+});
+
+Iterate over the &lt;tr&gt;s and create an object for each player
+
+If we look at our values, we get something like:
+  [
+  {
+"name": "T. 
+HarrisT. 
+HarrisSF",
+"min": "38",
+"fg": "7-17",
+"3pt": "3-7",
+"ft": "1-1",
+"oreb": "0",
+"dreb": "5",
+"reb": "5",
+"ast": "2",
+"stl": "1",
+"blk": "0",
+"to": "2",
+"pf": "3",
+"plusminus": "-10",
+"pts": "18"
+}
+...
+]
+
+Excerpt of the player objects we've extracted from the table
+
+It's pretty close, but there are a few problems. 
+Looks like the name is wrong and all the numbers are stored as strings. 
+There are a number of ways to solve these problems, but we'll do a couple quick ones. 
+To fix the name, notice that the HTML for the first column is actually a bit different than the others:
+&lt;td class="name"&gt;
+&lt;a name="&amp;amp;lpos=nba:game:boxscore:playercard" href="https://www.espn.com/nba/player/_/id/6440/tobias-harris" data-player-uid="s:40~l:46~a:6440"&gt;
+&lt;span&gt;T. 
+Harris&lt;/span&gt;
+&lt;span class="abbr"&gt;T. 
+Harris&lt;/span&gt;
+&lt;/a&gt;
+&lt;span class="position"&gt;SF&lt;/span&gt;
+&lt;/td&gt;
+
+So let's handle the <code>name</code> column differently by selecting the first <code>&lt;span&gt;</code> in the <code>&lt;a&gt;</code> tag only.
+for (td of tds) {
+const $td = $(td);
+
+// map the td class attr to its value
+const key = $td.attr('class');
+
+let value;
+if (key === 'name') {
+value = $td.find('a span:first-child').text();
+} else {
+value = $td.text();
+}
+
+player[key] = value;
+}
+
+Handle the name column differently than the others
+
+And since we know all the values are strings, we can do a simple check to try and make numbers be represented as numbers:
+player[key] = isNaN(+value) ? value : +value;
+
+With those changes, we now get the following results:
+  [
+  {
+"name": "T. 
+Harris",
+"min": 38,
+"fg": "7-17",
+"3pt": "3-7",
+"ft": "1-1",
+"oreb": 0,
+"dreb": 5,
+"reb": 5,
+"ast": 2,
+"stl": 1,
+"blk": 0,
+"to": 2,
+"pf": 3,
+"plusminus": -10,
+"pts": 18
+},
+...
+]
+
+Excerpt of the player objects we've extracted after handling special cases
+
+Good enough for me. 
+With these values parsed, all that's left is to save them to the disk and we're done.
+// save the scraped results to disk
+await fs.promises.writeFile(
+'boxscore.json',
+JSON.stringify(values, null, 2)
+);
+
+And there we have it, we've downloaded HTML with data already rendered into it, loaded and parsed it with Cheerio, then saved the JSON we care about to its own file. 
+Consider ESPN scraped. 
+Here's the full script:
+const rp = require('request-promise-native');
+const fs = require('fs');
+const cheerio = require('cheerio');
+
+async function downloadBoxScoreHtml() {
+// where to download the HTML from
+const uri = 'https://www.espn.com/nba/boxscore?gameId=401160888';
+// the output filename
+const filename = 'boxscore.html';
+
+// check if we already have the file
+const fileExists = fs.existsSync(filename);
+if (fileExists) {
+console.log(`Skipping download for ${uri} since ${filename} already exists.`);
+return;
+}
+
+// download the HTML from the web server
+console.log(`Downloading HTML from ${uri}...`);
+const results = await rp({ uri: uri });
+
+// save the HTML to disk
+await fs.promises.writeFile(filename, results);
+}
+
+async function parseBoxScore() {
+console.log('Parsing box score HTML...');
+
+// the input filename
+const htmlFilename = 'boxscore.html';
+// read the HTML from disk
+const html = await fs.promises.readFile(htmlFilename);
+// parse the HTML with Cheerio
+const $ = cheerio.load(html);
+
+// Get our rows
+const $trs = $('.gamepackage-away-wrap tbody tr:not(.highlight)');
+
+const values = $trs.toArray().map(tr =&gt; {
+// find all children &lt;td&gt;
+const tds = $(tr).find('td').toArray();
+
+// create a player object based on the &lt;td&gt; values
+const player = {};
+for (td of tds) {
+const $td = $(td);
+
+// map the td class attr to its value
+const key = $td.attr('class');
+let value;
+if (key === 'name') {
+value = $td.find('a span:first-child').text();
+} else {
+value = $td.text();
+}
+player[key] = isNaN(+value) ? value : +value;
+}
+
+return player;
+});
+
+return values;
+}
+
+async function main() {
+console.log('Starting...');
+
+await downloadBoxScoreHtml();
+const boxScore = await parseBoxScore();
+
+// save the scraped results to disk
+await fs.promises.writeFile(
+'boxscore.json',
+JSON.stringify(boxScore, null, 2)
+);
+
+console.log('Done!');
+}
+
+main();
+
+The full script to scrape espn.com
+
+By extracting the URL and the filenames into parameters, we could run this for script for many games, but I'll leave that as an exercise for the reader.
+<h2><strong>Case 3</strong> – JavaScript Rendered HTML</h2>
+Dang that's a lot of scraping already, I'm ready for a nap. 
+But we've got one more case to go: scraping the HTML after javascript has run on the page. 
+This case can sometimes be handled by Case 1 by intercepting API requests directly, but it may be easier to just get the HTML and work with it. 
+The request library we've been using thus far is insufficient for these purposes — it just downloads HTML, it doesn't run any JavaScript on the page. 
+We'll need to turn to the ultra powerful Puppeteer to get the job done.
+
+For this final case, we'll scrape some Steph Curry shooting data from Basketball Reference. 
+Tired of basketball yet? Sorry.
+<h3>Write a Node.js script to scrape the page after running JavaScript</h3>
+Our goal will be to scrape the data from this lovely shot chart on Steph Curry's 2019-20 shooting page: https://www.basketball-reference.com/players/c/curryst01/shooting/2020.
+
+<img class="lazy" data-src="https://beshaimakes.com/static/63cdeb2cc2f483653fdc96ed00076761/f4a45/bbref-shotchart.png">
+
+Steph Curry's 2019-20 Shot Chart from Basketball Reference
+
+By right clicking and inspecting one of the ● or × symbols (similar to how we did it in cases 1 and 2), we can see they are nested <code>&lt;div&gt;</code>s:
+&lt;div class="table_outer_container"&gt;
+&lt;div class="overthrow table_container" id="div_shot-chart"&gt;
+&lt;div id="shot-wrapper"&gt;
+&lt;div class="shot-area"&gt;
+&lt;img ...&gt;
+&lt;div
+style="top:331px;left:259px;"
+tip="Oct 24, 2019, GSW vs LAC&lt;br&gt;1st Qtr, 10:02 remaining&lt;br&gt;Missed 3-pointer from 28 ft&lt;br&gt;GSW trails 0-5"
+class="tooltip miss"&gt;
+×
+&lt;/div&gt;
+...
+&lt;div
+style="top:263px;left:264px;"
+tip="Oct 24, 2019, GSW vs LAC&lt;br&gt;1st Qtr, 4:57 remaining&lt;br&gt;Made 2-pointer from 21 ft&lt;br&gt;GSW now trails 14-20"
+class="tooltip make"&gt;
+●
+&lt;/div&gt;
+...
+
+Using the browser console (<strong>View → Developer → Javascript Console</strong>), we can find a selector (in a similar way as we did in case 2) that works to get us all the shot <code>&lt;div&gt;</code>s:
+document.querySelectorAll('.shot-area &gt; div')
+&gt; NodeList(66)&nbsp;[div.tooltip.miss, div.tooltip.miss, div.tooltip.miss, div.tooltip.make, div.tooltip.make, ...]
+
+With that selector handy, let's head on over to Node.js land and write a script to get us this data.
+<h4>Set up Puppeteer</h4>
+Let's set up a new javascript project by running these commands in your terminal:
+npm init -y
+npm install --save cheerio puppeteer
+
+Now Puppeteer is quite a bit more complex than request, and I don't claim to be an expert but I'll share what has worked for me. 
+Puppeteer works by running a headless Chrome browser so it can in theory do everything that your browser can. 
+To get it started, we need to import puppeteer and launch the browser.
+const puppeteer = require('puppeteer');
+
+async function main() {
+console.log('Starting...');
+
+const browser = await puppeteer.launch();
+
+// TODO download the HTML after running js on the page
+
+await browser.close();
+
+console.log('Done!');
+}
+
+main();
+
+Basic scaffolding to set up Puppeteer
+
+Next, we need to create a new "page" that we can use to fetch the HTML with. 
+I like to have a helper function to create the page where I can include all the options I want for all my requests. 
+There may be other ways to do this, but this has worked for me. 
+In particular, I set the timeout to 20 seconds (perhaps too generous, but puppeteer can be slow sometimes!) and to provide a spoofed User Agent string.
+async function newPage(browser) {
+// get a new page
+page = await browser.newPage();
+page.setDefaultTimeout(20000); // 20s
+
+// spoof user agent
+await page.setUserAgent('Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.111 Safari/537.36');
+
+// pretend to be desktop
+await page.setViewport({
+width: 1980,
+height: 1080,
+});
+
+return page;
+}
+
+Helper function to create a new Puppeteer page with custom settings
+
+With the page all set up, we need to do the actual fetching and running of the JS. 
+I use another helper function to do this. 
+Note that we must have <code>waitUntil: 'domcontentloaded'</code> to ensure the initial javascript on the page has been run.
+async function fetchUrl(browser, url) {
+const page = await newPage(browser);
+
+await page.goto(url, {
+timeout: 20000,
+waitUntil: 'domcontentloaded'
+});
+
+const html = await page.content();
+await page.close();
+
+return html;
+}
+
+Helper function to use Puppeteer to get the HTML after running JavaScript
+
+I've found it to be most reliable to create a new page for each request, otherwise puppeteer seems to hang at <strong>page.content()</strong> occasionally.
+<h4>Download the HTML page</h4>
+With these two functions, we can set up our code to download the shooting data:
+async function downloadShootingData(browser) {
+const url = 'https://www.basketball-reference.com/players/c/curryst01/shooting/2020';
+const htmlFilename = 'shots.html';
+
+// download the HTML from the web server
+console.log(`Downloading HTML from ${url}...`);
+const html = await fetchUrl(browser, url);
+
+// save the HTML to disk
+await fs.promises.writeFile(htmlFilename, html);
+}
+
+Helper function to download the HTML and save it to disk
+
+Again, I recommend checking to see if you already have the file before running the fetchUrl function since puppeteer can be pretty slow.
+async function downloadShootingData(browser) {
+const url = 'https://www.basketball-reference.com/players/c/curryst01/shooting/2020';
+const htmlFilename = 'shots.html';
+
+// check if we already have the file
+const fileExists = fs.existsSync(htmlFilename);
+if (fileExists) {
+console.log(`Skipping download for ${url} since ${htmlFilename} already exists.`);
+return;
+}
+
+// download the HTML from the web server
+console.log(`Downloading HTML from ${url}...`);
+const html = await fetchUrl(browser, url);
+
+// save the HTML to disk
+await fs.promises.writeFile(htmlFilename, html);
+}
+
+Add in a check to see if we already have the file since Puppeteer is slow
+
+Now we just need to call this function after we've launched the browser:
+async function main() {
+console.log('Starting...');
+
+// download the HTML after javascript has run
+const browser = await puppeteer.launch();
+await downloadShootingData(browser);
+await browser.close();
+
+console.log('Done!');
+}
+
+Then run the program:
+node index.js
+
+By george, we've got it! Check <code>shots.html</code> and you'll see all the shooting <code>&lt;div&gt;</code>s are sitting right there waiting to be parsed and saved.
+<h4>Parse the HTML with Cheerio</h4>
+At this point, the process of parsing is the same as we did in case 2. 
+We have an HTML document and we want to extract data using a selector (<code>.shot-area &gt; div</code>) we've already figured out. 
+Looking at the shot <code>&lt;div&gt;</code>s again, what data can we get from it?
+&lt;div
+style="top:331px;left:259px;"
+tip="Oct 24, 2019, GSW vs LAC&lt;br&gt;
+1st Qtr, 10:02 remaining&lt;br&gt;
+Missed 3-pointer from 28 ft&lt;br&gt;
+GSW trails 0-5"
+class="tooltip miss"&gt;
+×
+&lt;/div&gt;
+
+Excerpt of the HTML from the shot chart, a &lt;div&gt; respresenting a single missed shot
+
+How about we grab the <code>x</code> and <code>y</code> position from the <code>style</code> attribute, the point value of the shot (2-pointer or 3-pointer) from the <code>tip</code> attribute, and whether the shot was made or missed from the <code>class</code> attribute.
+
+Just as before, let's load the HTML file and parse it with cheerio:
+async function parseShots() {
+console.log('Parsing shots HTML...');
+
+// the input filename
+const htmlFilename = 'shots.html';
+// read the HTML from disk
+const html = await fs.promises.readFile(htmlFilename);
+// parse the HTML with Cheerio
+const $ = cheerio.load(html);
+
+// for each of the shot divs, convert to JSON
+const divs = $('.shot-area &gt; div').toArray();
+
+// TODO: convert divs to shot JSON objects
+
+return shots;
+}
+
+Scaffolding to parse the HTML from disk with Cheerio
+
+We've got the <code>&lt;div&gt;</code>s as an array now, so let's iterate over them and map them to JSON objects converting each of the attributes we mentioned above.
+const shots = divs.map(div =&gt; {
+const $div = $(div);
+
+// style="left:50px;top:120px" -&gt; x = 50, y = 120
+// slice -2 to drop "px", prefix with `+` to make a number
+const x = +$div.css('left').slice(0, -2);
+const y = +$div.css('top').slice(0, -2);
+
+// or "tooltip miss"
+const madeShot = $div.hasClass('make');
+
+// tip="...Made 3-pointer..."
+const shotPts = $div.attr('tip').includes('3-pointer') ? 3 : 2;
+
+return { x, y, madeShot, shotPts };
+});
+
+Iterate over the individual shot &lt;div&gt;s and convert the attributes to values in an object
+
+This should give us output like the following:
+  [
+  {
+"x": 259,
+"y": 331,
+"madeShot": false,
+"shotPts": 3
+},
+...
+]
+
+Excerpt of converted JS data objects for each shot
+
+We just need to hook up the <strong>parseShots()</strong> function to our <strong>main()</strong> function and then save the results to disk:
+async function main() {
+console.log('Starting...');
+
+// download the HTML after javascript has run
+const browser = await puppeteer.launch();
+await downloadShootingData(browser);
+await browser.close();
+
+// parse the HTML
+const shots = await parseShots();
+
+// save the scraped results to disk
+await fs.promises.writeFile('shots.json', JSON.stringify(shots, null, 2));
+
+console.log('Done!');
+}
+
+Call parse shots after acquiring the HTML then save the results to disk
+
+Check the disk for <code>shots.json</code> and you should see the results. 
+At last, we've done it.
+
+Here's the full script:
+const fs = require('fs');
+const cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
+
+const TIMEOUT = 20000; // 20s timeout with puppeteer operations
+const USER_AGENT =
+'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.111 Safari/537.36';
+
+async function newPage(browser) {
+// get a new page
+page = await browser.newPage();
+page.setDefaultTimeout(TIMEOUT);
+
+// spoof user agent
+await page.setUserAgent(USER_AGENT);
+
+// pretend to be desktop
+await page.setViewport({
+width: 1980,
+height: 1080,
+});
+
+return page;
+}
+
+async function fetchUrl(browser, url) {
+const page = await newPage(browser);
+
+await page.goto(url, { timeout: TIMEOUT, waitUntil: 'domcontentloaded' });
+const html = await page.content(); // sometimes this seems to hang, so now we create a new page each time
+await page.close();
+
+return html;
+}
+
+async function downloadShootingData(browser) {
+const url =
+'https://www.basketball-reference.com/players/c/curryst01/shooting/2020';
+const htmlFilename = 'shots.html';
+
+// check if we already have the file
+const fileExists = fs.existsSync(htmlFilename);
+if (fileExists) {
+console.log(
+`Skipping download for ${url} since ${htmlFilename} already exists.`
+);
+return;
+}
+
+// download the HTML from the web server
+console.log(`Downloading HTML from ${url}...`);
+const html = await fetchUrl(browser, url);
+
+// save the HTML to disk
+await fs.promises.writeFile(htmlFilename, html);
+}
+
+async function parseShots() {
+console.log('Parsing shots HTML...');
+
+// the input filename
+const htmlFilename = 'shots.html';
+// read the HTML from disk
+const html = await fs.promises.readFile(htmlFilename);
+// parse the HTML with Cheerio
+const $ = cheerio.load(html);
+
+// for each of the shot divs, convert to JSON
+const divs = $('.shot-area &gt; div').toArray();
+const shots = divs.map(div =&gt; {
+const $div = $(div);
+
+// style="left:50px;top:120px" -&gt; x = 50, y = 120
+const x = +$div.css('left').slice(0, -2);
+const y = +$div.css('top').slice(0, -2);
+
+// or "tooltip miss"
+const madeShot = $div.hasClass('make');
+
+// tip="...Made 3-pointer..."
+const shotPts = $div.attr('tip').includes('3-pointer') ? 3 : 2;
+
+return {
+x,
+y,
+madeShot,
+shotPts,
+};
+});
+
+return shots;
+}
+
+async function main() {
+console.log('Starting...');
+
+// download the HTML after javascript has run
+const browser = await puppeteer.launch();
+await downloadShootingData(browser);
+await browser.close();
+
+// parse the HTML
+const shots = await parseShots();
+
+// save the scraped results to disk
+await fs.promises.writeFile('shots.json', JSON.stringify(shots, null, 2));
+
+console.log('Done!');
+}
+
+main();
+
+The full script for case 3: scraping after running JavaScript on the page
+
+And we're all done with case 3! We've successfully downloaded a page after running JavaScript on it, parsed the HTML in it and extracted the data into a JSON file for future analysis.
+<h3>That's a wrap</h3>
+Thanks for following along, hopefully you've now got a better understanding of how to sniff out APIs you want to scrape and how to write node.js scripts to do the scraping. 
+If you've got any suggestions for improvement, comments on the article, or requests for other posts, you can find me on Twitter @pbesh.
+
+You can view all the code for this post <!-- -->on GitHub.
+
+
+
+
+
+
+
+
+
+
+
+<script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
 <script>
-	var toc = $('#toc');
-	$('h3').each(function(i) {
-		var topic = $(this), topicNumber = i + 1;
-		toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.text()+'</a><br>');
-		topic.attr('id', 'topic-' + topicNumber);
-	});
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+    // ... more custom settings?
+});
 </script>
 
-</body>
-</html>
+</pre></body></html>
