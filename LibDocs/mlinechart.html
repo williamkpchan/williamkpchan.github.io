@@ -16,7 +16,8 @@
 <body onkeypress="chkKey()">
 <center>
 <canvas id="cvs" width="1300" height="600">[No canvas support]</canvas>
-<div id="lastValues"></div>
+<br><span id="turnover"></span>
+<span id="lastValues"></span>
 </center><span class="randomBut gold bordred1 borRad10" onclick="jpforward()">Next</span>
 <pre>
 
@@ -35,7 +36,7 @@ commands:
 <script>
 
       let thestkdata = [];
-      period = 60;
+      period = 75;
       let dateLst = [];
       let openLst = [];
       let highLst = [];
@@ -57,22 +58,24 @@ commands:
       }
 
       function collectStkData(theCode) {
+      $("#turnover").text("");
+
           codewidth = theCode.length
           if(theCode == "HSI"){
-              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,180,qfq';
+              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,320,qfq';
           }else{
             if(codewidth <= 5){
               theCode = "00000"+theCode;
               codewidth = theCode.length;
               theCode = theCode.slice(codewidth-5, codewidth);
               codewidth = theCode.length; //update to be used later
-              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,180,qfq';
+              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,320,qfq';
             }else{
               codewidth = theCode.length
               theCode = theCode.slice(codewidth-9, codewidth)
               theCode = theCode.slice(7, 9) + theCode.slice(0, 6);
               codewidth = theCode.length; //update to be used later
-              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,180,qfq';
+              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,320,qfq';
             }
           }
       
@@ -95,6 +98,25 @@ commands:
               thestkkey = Object.keys(thedata)[0] // this is the stk key name
               var tempdata = thedata[Object.keys(thedata)[0]];
               thestkdata = tempdata[Object.keys(tempdata)[0]]; // real data here, this is whole dataset
+
+    for(i=(thestkdata.length-12);i<thestkdata.length;i++){
+      thedate = thestkdata[i][0];  // date
+      if(codewidth == 5){
+        theAmtIdx = 8;
+      }else{
+        theAmtIdx = 5;
+      }
+      theamt = Math.round(Number(thestkdata[i][theAmtIdx]));
+      if(codewidth != 5){
+        if(stkcode.slice(0, 5) == "sh688"){
+          theamt = Math.round(theamt * Number(thestkdata[i][2])/10000);
+        }else{
+          theamt = Math.round(theamt * Number(thestkdata[i][2])/100);
+        }
+      }
+      theamt = theamt.toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",");
+      $("#turnover").append( theamt,"w ");
+    }
       
               theNameObj = tempdata[Object.keys(tempdata)[1]];
               theNameObjName  = theNameObj[Object.keys(theNameObj)[0]];
@@ -124,7 +146,7 @@ commands:
                   amtLst.push(amtvalue);
               }
               stkpriceDataArr = closeLst
-              titleText = theStartCode + " " + stkName;
+              titleText = theStartCode + " " + stkName + " 日線保力加";
               redraw();  // this line must be inside the AJAX because AJAX run last
               // return  thedrawdata =[highLst, lowLst, closeLst];
            });
@@ -176,11 +198,11 @@ commands:
         theMax = Math.max(...[].concat(...mydata));
         theMin = Math.min(...[].concat(...mydata));
 
-statusMsg = '<span class="red">只信趨勢：price '+ mydata[0].slice(-1)[0].toFixed(2) +
-'</span>, <span class="lime">intvS '+ mydata[1].slice(-1)[0].toFixed(2) +
-'</span>, <span class="blue">intvL '+ mydata[2].slice(-1)[0].toFixed(2) +
-'</span>, <span class="purple">Top '+ mydata[3].slice(-1)[0].toFixed(2) +
-'</span>, <span class="yellow">Bottom '+ mydata[4].slice(-1)[0].toFixed(2) +
+statusMsg = '<br><span class="red">只信趨勢：price '+ mydata[0].slice(-1)[0].toFixed(3) +
+'</span>, <span class="lime">intvS '+ mydata[1].slice(-1)[0].toFixed(3) +
+'</span>, <span class="blue">intvL '+ mydata[2].slice(-1)[0].toFixed(3) +
+'</span>, <span class="purple">Top '+ mydata[3].slice(-1)[0].toFixed(3) +
+'</span>, <span class="yellow">Bottom '+ mydata[4].slice(-1)[0].toFixed(3) +
 '</span>, <span class="lime">IntvS '+ intv5 +
 '</span>, <span class="blue">IntvL '+ intv10 +
 '</span>'
@@ -291,7 +313,8 @@ $("#lastValues").append(statusMsg);
 			titleColor: 'grey',
 			titleSize: 20,
             // colors: ['darkgreen','blue','grey'],
-            backgroundGrid: false,
+            backgroundGrid: true, backgroundGridVlines: false,
+            backgroundGridColor: '#002010',
             axisColor: '#864',  scaleDecimals: 2,
             textColor: '#ccc',
             tickmarks: 'plus',
@@ -302,8 +325,6 @@ $("#lastValues").append(statusMsg);
       // labels control the number of grids
             // labels: ['2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018'],
             spline: false,
-            backgroundGrid: false,
-            backgroundGridColor: '#002010',
             shadow: false,
             gutterLeft: 50,
             gutterRight: 50,
