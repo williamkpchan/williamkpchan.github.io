@@ -53,8 +53,12 @@ function chkKey() {
 
   if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
   if(testkey == 'z'){showTenYear();}
+  if(testkey == ','){window.open("https://williamkpchan.github.io/LibDocs/mlinechart.html");}
+  if(testkey == '.'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutechart.html");}
 }
 function chkOtherKeys(testkey) {
+  if(testkey == ','){window.open("https://williamkpchan.github.io/LibDocs/mlinechart.html");}
+  if(testkey == '.'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutechart.html");}
   if(testkey == 'c'){showChart();}
   if(testkey == 'd'){window.open("https://www.youdao.com/");}
   if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
