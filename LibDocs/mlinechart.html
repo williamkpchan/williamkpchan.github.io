@@ -22,19 +22,26 @@
 <pre>
 
 commands:
- l loadLineData, paste data array to redraw chart with std dev
- c askforCode
- C open Random Charts.html
- f jpforward
- b jpback
- r jprandom
- i chgIntv
- L askList
+f fillLineData, paste data array to redraw chart with std dev
+c askforCode
+
+R Random Charts.html
+m mlineMinutechart.html
+
+f jpforward
+b jpback
+r jprandom
+
+h chgHighList
+l chgLowList
+C chgCloseLst
+
+i chgIntv
+L askList
 5 lines: data, WAve5, WAve10, sd+, sd-
 A stk code sample: 000001.sh, 399001.sz
 </pre>
 <script>
-
       let thestkdata = [];
       period = 75;
       let dateLst = [];
@@ -43,6 +50,8 @@ A stk code sample: 000001.sh, 399001.sz
       let lowLst = [];
       let closeLst = [];
       let amtLst = [];
+
+      dataStatus = "C"
       intv5 = 5
       stkpriceDataArr = [];
       stkList = localStorage.getItem("stkListArr").split(' ');
@@ -57,10 +66,11 @@ A stk code sample: 000001.sh, 399001.sz
       newstail = "/0/all/1"
 
       function askforCode() {
-        var theCode = prompt("Code Number:", "");
-        if (theCode != null && theCode != ""){
+        var tempCode = prompt("Code Number:", "");
+        if (tempCode != null && tempCode != ""){
+           theCode = tempCode
            storeCode(theCode)
-           collectStkData(theCode)
+           collectStkData(theCode)  // show turnover and draw
         }
       }
 
@@ -69,7 +79,7 @@ A stk code sample: 000001.sh, 399001.sz
        '<span class="randomBut gold bordred1 borRad10" onclick="jpforward()">Next</span> ' +
       '<a href="' + bigVolHeader + theCode +'" target="_blank" class="white bordred1 borRad10">大戶</a>' +
       '<a href="' + newshead + theCode + newstail +'" target="_blank" class="white bordred1 borRad10">資料</a>' +
-      '<a href="' + shortsellHeader + theCode + '" target="_blank" class="white bordred1 borRad10">沽空</a> ' 
+      '<a href="' + shortsellHeader + theCode + '" target="_blank" class="white bordred1 borRad10">沽空</a> '
       );
 
           codewidth = theCode.length
@@ -158,6 +168,7 @@ A stk code sample: 000001.sh, 399001.sz
                   amtLst.push(amtvalue);
               }
               stkpriceDataArr = closeLst
+              dataStatus = "C"
               titleText = theStartCode + " " + stkName + " 日線保力加";
               redraw();  // this line must be inside the AJAX because AJAX run last
               // return  thedrawdata =[highLst, lowLst, closeLst];
@@ -166,13 +177,18 @@ A stk code sample: 000001.sh, 399001.sz
 
      function chkKey() {
        var testkey = getChar(event);
-       if(testkey == 'l'){loadLineData();}
+       if(testkey == 'f'){fillLineData();}
        if(testkey == 'c'){askforCode();}
-       if(testkey == 'C'){storeCode(theCode); window.open("Random Charts.html");}
+       if(testkey == 'R'){storeCode(theCode); window.open("Random Charts.html");}
+       if(testkey == 'm'){storeCode(theCode); window.open("mlineMinutechart.html");}
+
        if(testkey == 'f'){jpforward();}
        if(testkey == 'b'){jpback();}
        if(testkey == 'r'){jprandom();}
+       if(testkey == 'h'){chgHighList();}
+       if(testkey == 'l'){chgLowList();}
        if(testkey == 'i'){chgIntv();}
+       if(testkey == 'C'){chgCloseLst();}
        if(testkey == 'L'){askList()}
      }
      function getChar(event) {
@@ -183,7 +199,7 @@ A stk code sample: 000001.sh, 399001.sz
        }
      }
 
-	function loadLineData() {
+	function fillLineData() {
       var dataArr = prompt("Enter stk list seperated by space:", "");
       if (dataArr != null && dataArr != "") {
         dataArrArr = dataArr.split(' ');
@@ -197,9 +213,10 @@ A stk code sample: 000001.sh, 399001.sz
 
         RGraph.reset(document.getElementById('cvs'));
 
-        stdDev = makeStd(stkpriceDataArr, intv10)
-        newDevadd = makeMovAve(stkpriceDataArr, intv10).map((a, i) => a + stdDev[i]);
-        newDevminus = makeMovAve(stkpriceDataArr, intv10).map((a, i) => a - stdDev[i]);
+        stdDevH = makeStd(highLst, intv10)
+        stdDevL = makeStd(lowLst, intv10)
+        newDevadd = makeMovAve(stkpriceDataArr, intv10).map((a, i) => a + stdDevH[i]);
+        newDevminus = makeMovAve(stkpriceDataArr, intv10).map((a, i) => a - stdDevL[i]);
 
         mydata= [
           stkpriceDataArr, 
@@ -312,16 +329,33 @@ $("#lastValues").append(statusMsg);
 
     function chgIntv() {
         intv = prompt("intv5 value:", "");
-        if (theCode != null && intv5 != ""){intv5 = parseInt(intv); redraw(theCode)}
-
+        if (theCode != null && intv5 != ""){intv5 = parseInt(intv); redraw()}
     }
+    function chgHighList() {
+        stkpriceDataArr = highLst
+        dataStatus = "H"
+        redraw()
+    }
+    function chgLowList() {
+        stkpriceDataArr = lowLst
+        dataStatus = "L"
+        redraw()
+    }
+    function chgCloseLst() {
+        stkpriceDataArr = closeLst
+        dataStatus = "C"
+        redraw()
+    }
+
+
+
     function drawchart() {
-      console.log(intv5)
+      // console.log(intv5)
       var line = new RGraph.Line({
         id:'cvs',
         data:mydata,
         options: {
-			title: titleText,
+			title: titleText + " " + dataStatus,
 			titleColor: 'grey',
 			titleSize: 20,
             // colors: ['darkgreen','blue','grey'],
