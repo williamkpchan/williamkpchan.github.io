@@ -30,7 +30,7 @@ function chkKey() {
   if(testkey == 'M'){window.open("https://www.google.com/maps");}
   if(testkey == 'n'){window.location = '#xinwen';}
   if(testkey == 'N'){window.location = '#Notes';}
-  if(testkey == 'p'){window.location = '#Programming';}
+  if(testkey == 'p'){window.open('LibDocs/temp.html');}
 
   if(testkey == 'q'){window.open('https://www.quora.com/');}
   if(testkey == 'Q'){window.open('https://news.qq.com/zt2020/page/feiyan.htm');}
