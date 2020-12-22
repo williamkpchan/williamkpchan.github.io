@@ -1,3 +1,5 @@
+var divtoc = document.getElementById("toc");
+
 function makeTOC(theStr, index) {
 	var topic = theStr.match(patt1)[0];
 	topic = topic.replace(patt2, "");
@@ -9,12 +11,25 @@ function jumpto(index) {
 	showImg();
 }
 function chkKey() {
-var testkey = getChar(event);
-if(testkey == "b"){ backward();}
-if(testkey == "f"){ foreward();}
-if(testkey == "p"){ pause();}
-if(testkey == "c"){ continU();}
-if(testkey == "s"){ showMov();}}
+  var testkey = getChar(event);
+  if(testkey == "b"){ backward();}
+  if(testkey == "f"){ foreward();}
+  if(testkey == "p"){ pause();}
+  if(testkey == "c"){ continU();}
+  if(testkey == "s"){ showMov();}
+  if(testkey == "r"){ randomFlip();}
+  if(testkey == "l"){
+    $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1); }
+  if(testkey == "2"){
+    $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1); }
+  if(testkey == "7"){
+    $('body,html').animate({scrollTop:(divtoc.clientHeight/2 + divtoc.offsetTop-600)}, 1); } //go to middle
+  if(testkey == 't'){window.location = '#toc';}
+  if(testkey == '8'){window.location = '#toc';}
+   if(testkey == 'T'){window.scrollTo(0,0);}
+
+}
+
 function getChar(event){if (event.which!=0 && event.charCode!=0) {return String.fromCharCode(event.which)}
  else {return null}}
 
@@ -34,6 +49,8 @@ function changeImg() {
  else { topicpointer = topicpointer + 1;}
  showImg()
 }
+
+function randomFlip() { topicpointer = Math.floor(Math.random() * ImgList.length); changeImg();}
 function backward() { topicpointer = topicpointer - 2; changeImg();}
 function foreward() { changeImg();}
 function pause() { clearInterval(myVar);}
