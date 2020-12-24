@@ -53,8 +53,8 @@ function chkKey() {
 
   if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
   if(testkey == 'z'){showTenYear();}
-  if(testkey == ','){window.open("https://williamkpchan.github.io/LibDocs/mlinechart.html");}
-  if(testkey == '.'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutechart.html");}
+  if(testkey == ','){window.open("LibDocs/mlinechart.html");}
+  if(testkey == '.'){window.open("LibDocs/mlineMinutechart.html");}
 }
 function chkOtherKeys(testkey) {
   if(testkey == ','){window.open("https://williamkpchan.github.io/LibDocs/mlinechart.html");}
