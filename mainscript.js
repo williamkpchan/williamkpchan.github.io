@@ -12,6 +12,7 @@ function chkKey() {
   var testkey = getChar(event);
   if(testkey == 'a'){window.open("apptechno.html");}
   if(testkey == 'b'){window.open("LibDocs/listofcharts.html");}
+  if(testkey == 'B'){window.open("https://map.baidu.com/");}
   if(testkey == 'c'){showChart();}
 // calculator  if(testkey == 'C'){window.open("https://www.desmos.com/fourfunction");}
   if(testkey == 'C'){window.open("LibDocs/caseStudiesLog.html");}
