@@ -12,7 +12,7 @@
 
 
 <style>
-bdateTime {  text-align: left;}
+dateTime {  text-align: left;}
 </style>
 
 </head>
@@ -40,6 +40,7 @@ r jprandom
 h chgHighList
 l chgLowList
 C chgCloseLst
+a useAttentionList
 q defaultLst
 i chgIntv
 L askList
@@ -64,6 +65,14 @@ A stk code sample: 000001.sh, 399001.sz
       theCode = localStorage.randomcode;
       titleText = "";
 
+      attentionList = ""
+      if (localStorage.getItem("attentionList") === null) {
+        localStorage.attentionList = "07500";
+      } else{
+        attentionList = localStorage.getItem("attentionList").split(',');
+      }
+      //console.log(attentionList)
+
       // added extra links
       bigVolHeader = "http://www.etnet.com.hk/www/tc/stocks/realtime/quote_transaction.php?code="
       shortsellHeader = "http://www.aastocks.com/tc/stocks/analysis/stock-short-selling-ratio.aspx?symbol="
@@ -73,7 +82,17 @@ A stk code sample: 000001.sh, 399001.sz
       function askforCode() {
         var tempCode = prompt("Code Number:", "");
         if (tempCode != null && tempCode != ""){
-           theCode = tempCode
+
+            codewidth = tempCode.length
+            if(codewidth <= 5){
+              theCode = "00000"+tempCode;
+              codewidth = theCode.length;
+              theCode = theCode.slice(codewidth-5, codewidth);
+              codewidth = theCode.length; //update to be used later
+            }else{
+              theCode = tempCode
+            }
+
            storeCode(theCode)
            collectStkData(theCode)  // show turnover and draw
         }
@@ -197,9 +216,12 @@ console.log(thestkdata.length)
        if(testkey == '9'){collectStkData('00390');}
        if(testkey == 'd'){fillLineData();}
        if(testkey == 'c'){askforCode();}
+       if(testkey == '+'){addToAttentionList();}
+       if(testkey == '-'){removeFmAttentionList();}
        if(testkey == 'R'){storeCode(theCode); window.open("Random Charts.html");}
        if(testkey == 'm'){storeCode(theCode); window.open("mlineMinutechart.html");}
 
+       if(testkey == 'a'){useAttentionList();}
        if(testkey == 'f'){jpforward();}
        if(testkey == 'b'){jpback();}
        if(testkey == 'r'){jprandom();}
@@ -228,6 +250,32 @@ console.log(thestkdata.length)
         redraw()
       }
      }
+	function addToAttentionList() {
+            codewidth = theCode.length
+            if(codewidth <= 5){
+              theCode = "00000"+theCode;
+              codewidth = theCode.length;
+              theCode = theCode.slice(codewidth-5, codewidth);
+              codewidth = theCode.length; //update to be used later
+            }
+
+        attentionList.push(theCode)
+        attentionList = [...new Set(attentionList)]; // set unique
+
+        ItemIndex = attentionList.indexOf("");  // remove empty items
+        if (ItemIndex > -1) { attentionList.splice(ItemIndex, 1); }
+
+        localStorage.setItem("attentionList", attentionList);
+        alert(theCode + " added to attentionList!")
+     }
+	function removeFmAttentionList() {
+        ItemIndex = attentionList.indexOf(theCode);
+        if (ItemIndex > -1) { attentionList.splice(ItemIndex, 1); }
+        attentionList = [...new Set(attentionList)]; // set unique
+        localStorage.setItem("attentionList", attentionList);
+        alert(theCode + " removed to attentionList!")
+   }
+
      function redraw() {
         intv10 = 2*intv5
 
@@ -303,10 +351,14 @@ $("#lastValues").append(statusMsg);
 	  return Math.sqrt(array.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n)
 	}
 
+    function useAttentionList() {
+        stkList = attentionList;
+        alert("Total: " + attentionList.length + "\n"+stkList)
+    }
     function defaultLst() {
         defaultStkLst = "03983 02016 00241 01882 02357 00670 00788 01186 01766 00390 00308 01339 02380 03800 00371 02009 01613 02208 09977 01193 00305 00303 01999 00992 01801 00004 00451 02331 02382 01250 00486 00388"
         stkList = defaultStkLst.split(" ");
-        alert(defaultStkLst)
+        alert(stkList)
     }
     function askList() {
         var theList = prompt("CodeList, Number (5 digits) sep by space： ", "");
