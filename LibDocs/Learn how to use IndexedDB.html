@@ -1492,6 +1492,136 @@ request.onsuccess = function (e) {
   }
 }</code>
 
+<h2>SUmmary</h2>
+Open database: 
+indexedDB.open(name, version)
+
+Upgrade database:
+request.onupgradeneeded
+
+Success:
+request.onsuccess
+
+Error:
+request.onerror
+
+var dbase;
+var request = indexedDB.open("testDB", 2);
+
+request.onerror = function(evt){ console.log("DB Open Error", evt); }
+
+request.onupgradeneeded = function(evt){
+ dbase = request.result;
+ var objectStore = dbase.createObjectStore("students", { keyPath : "rollNo" });
+};
+
+request.onupgradeneeded = function(event) {
+  dbase = event.target.result;
+  var objectStore = dbase.createObjectStore('person', { keyPath: 'id' });
+  objectStore.createIndex('name', 'name', { unique: false });
+  objectStore.createIndex('email', 'email', { unique: true });
+}
+
+
+request.onsuccess  = function(evt){ dbase = request.result; }
+
+function add() {
+  var request = dbase.transaction(['person'], 'readwrite')
+    .objectStore('person')
+    .add({ id: 1, name: 'Jam', age: 24, email: 'jam@example.com' });
+
+  request.onsuccess = function (event) {
+    console.log('The data has been written successfully');
+  };
+
+  request.onerror = function (event) {
+    console.log('The data has been written failed');
+  }
+}
+add();
+
+function read() {
+   var transaction = dbase.transaction(['person']);
+   var objectStore = transaction.objectStore('person');
+   var request = objectStore.get(1);
+
+   request.onerror = function(event) {
+     console.log('Transaction failed');
+   };
+
+   request.onsuccess = function( event) {
+      if (request.result) {
+        console.log('Name: ' + request.result.name);
+        console.log('Age: ' + request.result.age);
+        console.log('Email: ' + request.result.email);
+      } else {
+        console.log('No data record');
+      }
+   };
+}
+read();
+
+function readAll() {
+  var objectStore = dbase.transaction('person').objectStore('person');
+
+   objectStore.openCursor().onsuccess = function (event) {
+     var cursor = event.target.result;
+
+     if (cursor) {
+       console.log('Id: ' + cursor.key);
+       console.log('Name: ' + cursor.value.name);
+       console.log('Age: ' + cursor.value.age);
+       console.log('Email: ' + cursor.value.email);
+       cursor.continue();
+    } else {
+      console.log('No more data');
+    }
+  };
+}
+readAll();
+
+function update() {
+  var request = dbase.transaction(['person'], 'readwrite')
+    .objectStore('person')
+    .put({ id: 1, name: 'Jim', age: 35, email: 'Jim@example.com' });
+
+  request.onsuccess = function (event) {
+    console.log('The data has been updated successfully');
+  };
+
+  request.onerror = function (event) {
+    console.log('The data has been updated failed');
+  }
+}
+update();
+
+function remove() {
+  var request = dbase.transaction(['person'], 'readwrite')
+    .objectStore('person')
+    .delete(1);
+
+  request.onsuccess = function (event) {
+    console.log('The data has been deleted successfully');
+  };
+}
+remove();
+
+
+find the corresponding data record from the name.
+
+var transaction = dbase.transaction(['person'], 'readonly');
+var store = transaction.objectStore('person');
+var index = store.index('name');
+var request = index.get('Jim');
+
+request.onsuccess = function (e) {
+  var result = e.target.result;
+  if (result) { // ...
+  } else { // ...
+  }
+}
+
+
 
 <script type='text/javascript' src='readbook.js'></script>
 
