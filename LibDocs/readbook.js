@@ -111,7 +111,7 @@ if(markerName != "h0"){
 }
 
 var totalLength = topicLength
-var notvisitedList = [...Array(totalLength).keys()];
+notvisitedList = [...Array(totalLength).keys()];
 
 function storeBookmark(objName, pagepos) {
   if(typeof objName != 'undefined') {
