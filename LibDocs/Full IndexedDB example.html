@@ -1,36 +1,496 @@
-<html>
-<head>
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>    
-
+<base target="_blank"><html><head><title>Full IndexedDB example</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="https://williamkpchan.github.io/lazyload.min.js"></script>
+<script src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/commonfunctions.js"></script>
+<script>
+  var showTopicNumber = true;
+  var bookid = "Full IndexedDB example"
+  var markerName = "h2, h3"
+</script>
 <style>
-body{color: gray; width:70%;margin-left: 15%; font-size:24px;  background-color:black;}
-form { background-color: #cccccc; border-radius: 5px; display: inline-block; margin-bottom: 0.5em; padding: 1em;}
-table { border-collapse: collapse;}
-input { padding: 5px; border-color: #cccccc; border-radius: 5px;}
-
-.required:after { content: "*"; color: red;}
-.button-pane { margin-top: 1em;}
-#pub-viewer { float: center; width: 48%; height: 20em; border: solid #d092ff 1px; color:green;background-color: black;}
-#pub-viewer iframe { width: 100%; height: 100%;}
-#pub-list { width: 60%; background-color: black; border-radius: 5px; color:green;border: solid #d092ff 1px;}
-#pub-list li { padding-top: 0.5em; padding-bottom: 0.5em; padding-right: 0.5em;}
-#msg { margin-bottom: 1em;}
-.action-success { padding: 0.5em; color: #00d21e; background-color: #eeeeee; border-radius: 0.2em;}
-.action-failure { padding: 0.5em; color: #ff1408; background-color: #eeeeee; border-radius: 0.2em;}
-.note { font-size: smaller;}
-.destructive { background-color: orange;}
-.destructive:hover { background-color: #ff8000;}
-.destructive:active { background-color: red;}
-form{background-color:black; color: green;border: green solid 1px;}
-</style>
-
-</head>
-<body>
-<pre>
+body{width:80%;margin-left: 10%; font-size:24px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style></head><body onkeypress="chkKey()"><center>
 <h1>Full IndexedDB example</h1>
+<a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a>
+<br><br>
+<div id="toc"></div></center>
+<br><br>
+<div id="mustWatch"><center><span class="red">MustWatch</span></center><br>
+</div>
+<pre>
 
+<h2>Build a basic web app with IndexedDB</h2>
+<h3>Making our database</h3>
 
-<center>register-form</center>
+let db;
+let dbReq = indexedDB.open(&#x27;myDatabase&#x27;, 1);
+dbReq.onupgradeneeded = function(event) {
+  // Set the db variable to our database so we can use it!  
+  db = event.target.result;
+
+  // Create an object store named notes. Object stores in databases are where data are stored.
+
+  let notes = db.createObjectStore(&#x27;notes&#x27;, {autoIncrement: true});
+}
+dbReq.onsuccess = function(event) {
+  db = event.target.result;
+}
+dbReq.onerror = function(event) {
+  alert(&#x27;error opening database &#x27; + event.target.errorCode);
+}
+
+To run the JavaScript, put this code in a file named <code>index.html</code> and open it in Chrome:
+
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+  &lt;head&gt;&lt;title&gt;IndexedDB note store&lt;/title&gt;&lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id=&quot;app&quot;&gt;&lt;h1&gt;Coming soon&lt;/h1&gt;&lt;/div&gt;
+    &lt;script src=&quot;db.js&quot;&gt;&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+
+Now in Chrome, go to <strong>developer tools</strong>, click the <strong>application</strong> tab, and then click <strong>IndexedDB</strong> in the left bar, you can see that the database was created!
+
+<img src="https://miro.medium.com/max/1546/1*HHaYVXJSH6J0HFaeesea8g.png">
+
+Cool! We have a database named <code>myDatabase</code>, and there’s an <strong>object store</strong> (a collection of items, similar to a SQL table or a collection in MongoDB) named <code>notes</code>. 
+But that seemed like a lot of code for just creating the database and store. 
+So what’s going on there?
+In the first couple lines
+
+let db;
+let dbReq = indexedDB.open(&#x27;myDatabase&#x27;, 1);
+
+We open version 1 of a database named myDatabase, but <code>indexedDB.open</code> doesn’t return a database, it returns a <em>request</em> for a database because IndexedDB is an <em>asynchronous</em> API. 
+IndexedDB code runs behind the scenes so if we do something like store thousands of items, the rest of your web app won’t stop running its JavaScript waiting for that to complete. 
+So in the rest of the code we listen for when ourdatabase is ready for us with <em>event listeners</em>:
+
+dbReq.onupgradeneeded = function(event) {
+  db = event.target.result;
+  let notes = db.createObjectStore(&#x27;notes&#x27;, {autoIncrement: true});
+}
+
+<code>myDatabase</code> didn’t previously exist, so it’s automatically created and then the <code>onupgradeneeded</code> event fires. 
+In an onupgradeneeded callback, and only in that callback, we can create a database’s object stores. 
+So first, with <code>db = event.target.result</code>, we set the variable <code>db</code> to hold our database. 
+Then, we create one object store named <code>notes</code>.
+
+dbReq.onsuccess = function(event) {
+  db = event.target.result;
+}
+
+<code>onsuccess</code> fires after <code>onupgradeneeded</code> completes and it also fires if we refresh the page and open the database again. 
+So there too, we run <code>db = event.target.result</code> to get our database so we can use it.
+
+dbReq.onerror = function(event) {
+  alert(&#x27;error opening database &#x27; + event.target.errorCode);
+}
+
+Finally, if something goes wrong on any IndexedDB request, its <code>onerror</code> event fires so you can handle the error however you see fit. 
+We’re just going to do an <code>alert</code>.
+
+<h3>Put some data into the database</h3>
+Well we’ve got our database, but we can’t do much with it without data. 
+Let’s add a sticky note!
+
+function addStickyNote(db, message) {
+  // Start a database transaction and get the notes object store
+  let tx = db.transaction([&#x27;notes&#x27;], &#x27;readwrite&#x27;);
+  let store = tx.objectStore(&#x27;notes&#x27;);
+  // Put the sticky note into the object store
+  let note = {text: message, timestamp: Date.now()};
+  store.add(note);
+  // Wait for the database transaction to complete
+  tx.oncomplete = function() { console.log(&#x27;stored note!&#x27;) }
+  tx.onerror = function(event) {
+    alert(&#x27;error storing note &#x27; + event.target.errorCode);
+  }
+}
+
+To see this in action, let’s put some call to the function into our <code>dbReq.onsuccess</code>:
+
+dbReq.onsuccess = function(event) {
+  db = event.target.result;
+  <strong>// Add some sticky notes</strong>
+  <strong>addStickyNote(db, &#x27;Sloths are awesome!&#x27;);
+  addStickyNote(db, &#x27;Order more hibiscus tea&#x27;);
+  addStickyNote(db, &#x27;And Green Sheen shampoo, the best for sloth fur algae grooming!&#x27;);</strong>
+}
+
+Now refresh index.html in your browser, go to <strong>Application &gt; IndexedDB</strong> in developer tools again, click on the object store, and let’s see our data!
+
+<img src="https://miro.medium.com/max/2442/1*6wDn9WnLobrpoWFfdxkDPg.png">
+
+Now we have some data stored! And as you can see, our sticky notes in the notes object store are stored as JavaScript objects. 
+So what was going on in that code?
+
+let tx = db.transaction([&#x27;notes&#x27;], &#x27;readwrite&#x27;);
+let store = tx.objectStore(&#x27;notes&#x27;);
+
+First we start a <strong>transaction </strong>on our database to write data to our <code>notes</code> object store, and then we retrieve that object store from the transaction.
+
+let note = {text: message, timestamp: Date.now()};
+store.add(note);
+
+We represent the sticky note as a JavaScript object and store it in the object store with <code>store.add</code>.
+
+tx.oncomplete = function() { console.log(&#x27;stored note!&#x27;) }
+tx.onerror = function(event) {
+  alert(&#x27;error storing note &#x27; + event.target.errorCode);
+}
+
+Finally, just like our open database request, this transaction has event listeners; we listen for when storing the note finishes or where an errror happens with the transaction’s <code>oncomplete</code> and <code>onerror</code> listeners.
+
+Something else worth noting about our sticky notes is that each one has a number for its <code>Key</code> that counts up. 
+So if you stored another note after those three, its key would be 4. 
+Where did those numbers come from? In IndexedDB, all objects in an object store have a <strong>key</strong> identifying them, and when we created the object store with the line
+
+let notes = db.createObjectStore(&#x27;notes&#x27;, {autoIncrement: true});
+
+the <code>autoIncrement</code> option says that we want every object in the store to have a key that counts up. 
+You can also make object stores with string keys if it makes more sense to store and retrieve objects by a unique name (for example a UUID could be a string key for an object store, or if you had an object store of sloths, you could identify each sloth by a string encoding of the tone of their squeak as the key).
+
+Now let’s add this <code>addStickyNote</code> function to our actual web app; we need a text box to submit notes to, so in the &lt;body&gt; tag add these tags:
+
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+  &lt;head&gt;&lt;title&gt;IndexedDB note store&lt;/title&gt;&lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id=&quot;app&quot;&gt;
+      <strong>&lt;div id=&quot;textbox&quot;&gt;
+        &lt;textarea id=&quot;newmessage&quot;&gt;&lt;/textarea&gt;
+        &lt;button onclick=&quot;submitNote()&quot;&gt;Add note&lt;/button&gt;
+      &lt;/div&gt;</strong>
+    &lt;/div&gt;
+    &lt;script src=&quot;db.js&quot;&gt;&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+
+And add this function to <code>db.js</code> that runs every time a user submits a note:
+
+function submitNote() {
+  let message = document.getElementById(&#x27;newmessage&#x27;);
+  addStickyNote(db, message<em>.</em>value);
+  message<em>.</em>value = &#x27;&#x27;;
+}
+
+Now get rid of the call to <code>addStickyNote</code> in <code>dbReq.onsuccess</code> and then if we go to index.html, we’ll see notes being stored in IndexedDB when we click submit!
+
+Before we go on and I show you how to retrieve the data so we can display it, though, let’s take a detour to talk about a central concept to working with IndexedDB, transactions!
+
+<h3>Transactions are king in IndexedDB</h3>
+As you saw in our last example, to access our <code>notes</code> object store we had to run <code>db.transaction</code> to create a <strong>transaction</strong>, which is a set of one or more <strong>requests</strong> to the database. 
+Everything in IndexedDB happens through transactions. 
+So storing a sticky note, opening the database, and retrieving your notes are all requests that happen inside transactions.
+
+You can have more than one request in the same transaction too, for example if you’re storing many items in the same object store, all of the <code>store.add</code> requests can be made in the same transaction, like:
+
+function addManyNotes(db, messages) {
+  let tx = db.transaction([&#x27;notes&#x27;], &#x27;readwrite&#x27;);
+  let store = tx.objectStore(&#x27;notes&#x27;);
+  for (let i = 0; i &lt; messages.length; i++) {
+    // All of the requests made from store.add are part of
+    // the same transaction
+    store.add({text: messages[i], timestamp: Date.now()});
+  }
+  tx.oncomplete = function() {console.log(&#x27;transaction complete&#x27;)};
+}
+
+Just like requests have <code>onsuccess</code> and <code>onerror</code> event handlers, transactions have <code>oncomplete</code>, <code>onerror</code>, and <code>onabort</code> event handlers we can use for responding to a transaction completing, erroring, or being rolled back.
+
+But what exactly are we getting out of putting every request in a transaction? Remember that IndexedDB is an asynchronous API, so it’s possible to have many requests going on at the same time. 
+Say we had a sticky note in the note store that said “Sloths are awesome”, and we made one request to make the note all-caps and another to add an exclamation point to the note. 
+Without transactions, we could end up with a situation like this:
+
+<img src="https://miro.medium.com/max/1600/1*thqid7g2J59WDs2yJeCGOA.png">
+
+We start the <code>makeAllCaps</code> and <code>addExclamation</code> actions and both of them retrieve the unmodified “Sloths are awesome” note. 
+<code>addExclamation</code> saves the note with an exclamation point first. 
+<code>makeAllCaps</code> takes longer and it saves the note “SLOTHS ARE AWESOME”, with no exclamation point. 
+The <code>makeAllCaps</code> update completely wipes out the update from <code>addExclamation</code>!
+
+With transactions, though, we get <strong>concurrency control</strong>. 
+<em>Only one transaction can create, modify, or delete items in an object store at a time</em>, so what really happens looks more like this:
+
+<img src="https://miro.medium.com/max/1600/1*sPotSeQtjNDAcvavbjZKBQ.png">
+
+The <code>makeAllCaps</code> transaction starts first, but since <code>addExclamation</code> uses the same object store as <code>makeAllCaps</code>, it does not start until makeAllCaps finishes. 
+So makeAllCaps finishes, addExclamation reads the note in all caps, and then both edits go through! 🎉
+
+That also means if a road was an object store and a streetsweeper and a line painter were running without transactions, the line painter might paint before the streetsweeper moved a branch and you’d get this:
+
+<img src="https://miro.medium.com/max/700/1*EnkYMjS67faterkYkmVqrg.jpeg">
+
+But with transactions, the streetsweeper can sweep branches out of the road and the line painter can paint lines so sloths can safely go for a bike ride!
+
+<img src="https://miro.medium.com/max/508/1*ZyLHpl-fwH-uvne2vAA-bg.jpeg"/>
+
+Before we move on, one other thing to know is that transactions on the same object store only happen one-at-a-time <em>if they’re modifying data</em>; in other words they’re<code>readwrite</code> transactions, which are created like this:
+
+let tx = db.transaction([&#x27;notes&#x27;, &#x27;someOtherStore&#x27;], &#x27;readwrite&#x27;);
+
+Here we make a transaction that’s readwrite and say that it affects <code>notes</code> and <code>someOtherStore</code>. 
+Since it’s readwrite, it can’t start until any other transaction touching either of those object stores is done.
+
+While readwrite transactions are one at a time, there are also <code>readonly</code> transactions; you can <em>have as many of them as you want</em> talking to the same object store simultaneously since we don’t need to keep them from messing with each other’s data! You make them like this:
+
+// These transactions can all do their thing at the same time!
+let tx = db.transaction([&#x27;notes&#x27;, &#x27;someOtherStore&#x27;], &#x27;readonly&#x27;);
+let tx2 = db.transaction([&#x27;notes&#x27;], &#x27;readonly&#x27;);
+let tx3 = db.transaction([&#x27;someOtherStore&#x27;], &#x27;readonly&#x27;);
+
+<h3>Retrieving data and displaying your sticky notes</h3>
+Now that we know how transactions work and how readonly transactions work, let’s retrieve the sticky notes from the note store so we can display them. 
+If we’re getting just one item from our database, we would use an object store’s <code>get</code> method, like this:
+
+// Set up an object store and transaction
+let tx = db.transaction([&#x27;notes&#x27;], &#x27;readonly&#x27;);
+let store = tx.objectStore(&#x27;notes&#x27;);
+// Set up a request to get the sticky note with the key 1
+let req = store.get(1);
+// We can use the note if the request succeeds, getting it in the
+// onsuccess handler
+req.onsuccess = function(event) {
+  let note = event.target.result;
+  if (note) {
+    console.log(note);
+  } else {
+    console.log(&quot;note 1 not found&quot;)
+  }
+}
+// If we get an error, like that the note wasn&#x27;t in the object
+// store, we handle the error in the onerror handler
+req.onerror = function(event) {
+  alert(&#x27;error getting note 1 &#x27; + event.target.errorCode);
+}
+
+We make a transaction, request the note in the note store with the key 1 to get our request, and then we either use the retrieved note in the request’s <code>onsuccess</code> handler, or we handle an error in the <code>onerror</code> handler if we get an error. 
+Note that if the sticky note does not exist, <code>onsuccess</code> still fires, but <code>event.target.result</code> will be <code>undefined</code>.
+
+The pattern feels similar to the handler we had for opening the database; we start the request, then get the result in the onsuccess handler or handle an error in the onerror handler. 
+But we want to display all the notes, so we need to get all of them, and for that we use a <strong>cursor</strong>.
+
+Retrieve all the items in the object store with a cursor has this funky syntax:
+
+function getAndDisplayNotes(db) {
+  let tx = db.transaction([&#x27;notes&#x27;], &#x27;readonly&#x27;);
+  let store = tx.objectStore(&#x27;notes&#x27;);
+  // Create a cursor request to get all items in the store, which 
+  // we collect in the allNotes array
+  let req = store.openCursor();
+  let allNotes = [];
+
+  req.onsuccess = function(event) {
+    // The result of req.onsuccess is an IDBCursor
+    let cursor = event.target.result;
+    if (cursor != null) {
+      // If the cursor isn&#x27;t null, we got an IndexedDB item.
+      // Add it to the note array and have the cursor continue!
+      allNotes.push(cursor.value);
+      cursor.continue();
+    } else {
+      // If we have a null cursor, it means we&#x27;ve gotten
+      // all the items in the store, so display the notes we got
+      displayNotes(allNotes);
+    }
+  }
+  req.onerror = function(event) {
+    alert(&#x27;error in cursor request &#x27; + event.target.errorCode);
+  }
+}
+
+We create a readonly transaction on the <code>notes</code> object store, we get the store, and then with the <code>store.openCursor()</code> method, we get a request, which means once again we’re working with its results with its <code>onsuccess</code> and <code>onerror</code> handlers to handle the results.
+
+Inside the onsuccess handler, the event’s result is an <code>IDBCursor</code> containing the <code>key</code> of the sticky note the cursor is holding, as well as the sticky note itself as the cursor’s <code>value</code>.
+
+let cursor = event.target.result;
+if (cursor != null) {
+  allNotes.push(cursor.value);
+  cursor.continue();
+} else {
+
+In the if statement, if the cursor isn’t null, that means we have another sticky note, so we add the cursor’s value to our array of notes and continue retrieving notes by calling <code>cursor.continue()</code>.
+
+} else {
+  displayNotes(allNotes);
+}
+
+But if the cursor is null, there are no more notes to retrieve, so we display the notes by passing them to a <code>displayNotes</code> function.
+
+Hmm, this <code>cursor.continue()</code> thing feels kind of like a while loop, but there’s no looping or control flow going on. 
+So how exactly are we looping? This line will give you a hint:
+
+req.onsuccess = function(event) {
+
+It turns out every time you call <code>cursor.continue()</code>, an event fires and sends the cursor with the next item to the <code>onsuccess</code> handler. 
+So in each onsuccess, we collect another sticky note, until we get an onsuccess where the cursor is null. 
+That’s how we iterate with cursors.
+
+Now to display these notes, in <code>index.html</code>, after the textbox div, add a div below the text box to store our sticky notes:
+
+&lt;div id=&quot;notes&quot;&gt;&lt;/div&gt;
+
+And in <code>db.js</code> add this function to display the notes:
+
+function displayNotes(notes) {
+  let listHTML = &#x27;&lt;ul&gt;&#x27;;
+  for (let i = 0; i &lt; notes.length; i++) {
+    let note = notes[i];
+    listHTML += &#x27;&lt;li&gt;&#x27; + note.text + &#x27; &#x27; + 
+      new Date(note.timestamp).toString() + &#x27;&lt;/li&gt;&#x27;;
+  }
+  document.getElementById(&#x27;notes&#x27;).innerHTML = listHTML;
+}
+
+That function just converts each note to an <code>&lt;li&gt;</code> tag and displays them as a list with old-school JavaScript.
+
+Now that we have a function to display all the sticky notes, let’s add it in a couple places. 
+We’ll want to be able to see all our sticky notes when we first open the app, so when the database first opens, we should have a call to <code>getAndDisplayNotes</code> in <code>dbReq.onsuccess:</code>
+
+dbReq.onsuccess = function(event) {
+  db = event.target.result;
+  <strong>getAndDisplayNotes(db);</strong>
+}
+
+And when you add a sticky note, you should be able to see it right away, so in <code>addStickyNote</code>, let’s change the transaction <code>oncomplete</code> callback to call <code>getAndDisplayNotes</code>:
+
+tx.oncomplete = function() { getAndDisplayNotes(db); }
+
+Now reopen the page in Chrome and try adding some more notes. 
+It should look something like this!
+
+<img src="https://miro.medium.com/max/1782/1*FzIye7BYv6YBf4cSdDOK8A.png">
+
+Now for one last thing, let’s make a mode to see the newest notes first and see why this is called IndexedDB!
+
+<h3>Indices, putting the indexed in IndexedDB</h3>
+We’ve got this sticky note store and we’re storing notes with timestamps, so it should make sense that we should be able to retrieve all sticky notes for a time range (like 5–10 minutes ago, or all the notes from a given day) or be able to retrieve them with the newest ones first, right?
+
+Well we can, but to be able to query by the timestamp field, we need to give that field in the notes object store an <strong>index</strong>. 
+Once we have that index, we can query by it. 
+But remember that any changes to the structure of a database need to happen inside a database request’s <code>onupgradeneeded</code> handler, so we need to up the version of our database to create the index, like this:
+
+// We update the version of the database to 2 to trigger
+// onupgradeneeded
+let dbReq = indexedDB.open(&#x27;myDatabase&#x27;, 2);
+dbReq.onupgradeneeded = function(event) {
+  db = event.target.result;
+  // Create the nores object store, or retrieve it if it
+  // already exists.
+  let notes;
+  <strong>if (!db.objectStoreNames.contains(&#x27;notes&#x27;)) {
+</strong>    notes = db.createObjectStore(&#x27;notes&#x27;, {autoIncrement: true});
+  } <strong>else {
+    notes = dbReq.transaction.objectStore(&#x27;notes&#x27;);
+  }</strong>
+  <strong>// If there isn&#x27;t already a timestamp index, make one so we
+  // can query notes by their timestamps
+  if (!notes.indexNames.contains(&#x27;timestamp&#x27;)) {
+    notes.createIndex(&#x27;timestamp&#x27;, &#x27;timestamp&#x27;);
+  }</strong>
+}
+
+First, we update the version of our database to 2, which indicates that the structure of the database is changing, so we need an <code>onupgradeneeded</code> event:
+
+let dbReq = indexedDB.open(&#x27;myDatabase&#x27;, 2);
+
+Now we have a version upgrade where the notes object store already exists, so we check if there’s already a notes store with <code>db.objectStoreNames</code>:
+
+if(!db.objectStoreNames.contains(&#x27;notes&#x27;))
+
+and if there’s already one, we retrieve it with <code>dbReq.transaction.objectStore</code>:
+
+notes = dbReq.transaction.objectStore(&#x27;notes&#x27;);
+
+Finally, we add an index with <code>createIndex</code>:
+
+if (!notes.indexNames.includes(&#x27;timestamp&#x27;)) {
+  notes.createIndex(&#x27;timestamp&#x27;, &#x27;timestamp&#x27;);
+}
+
+The first parameter is the name of our index, and the second is the index’s <strong>keyPath</strong>. 
+An index is actually itself an object store, so all items in an index have a key, so if you give an index the keyPath <code>timestamp</code>, then the timestamp of each object in the object store will be its key.
+
+Additionally, there is an optional third options object parameter. 
+Say our notes had titles and we wanted to require that a note could not be stored if it had the same title as another note. 
+We could do that by creating a unique title index like this:
+
+notes.createIndex(&#x27;title&#x27;, &#x27;title&#x27;, {unique: true})
+
+To see our new index, once you update <code>onupgradeneeded</code>, refresh index.html in Chrome (you may need to X out of Chrome to see the change), go to Developer Tools &gt; Application &gt; IndexedDB again, and you should be able to see your notes object store:
+
+<img src="https://miro.medium.com/max/2248/1*bReu7gCgbgNhaTZGWQt4Mg.png">
+
+As you can see, the notes are now listed by their timestamps as their primary keys. 
+And in fact, as an object store, an index has the same <code>get</code> and <code>openCursor</code> methods that a regular object store would. 
+For example we could request the first note with a call to:
+
+tx.objectStore(&#x27;notes&#x27;).index(&#x27;timestamp&#x27;).get(1533144673015)
+
+Now that we’ve got a cool new index, let’s add a mode to our web app to flip the order we display notes in. 
+First, in <code>db.js</code>, add a global bool variable:
+
+let reverseOrder = false;
+
+Then in <code>getAndDisplayNotes</code>, we just need to update our request:
+
+let tx = db.transaction([&#x27;notes&#x27;], &#x27;readonly&#x27;);
+let store = tx.objectStore(&#x27;notes&#x27;);
+// Retrieve the sticky notes index to run our cursor query on; 
+// the results will be ordered by their timestamp<strong>
+let index = store.index(&#x27;timestamp&#x27;);
+</strong>
+// Create our openCursor request; if we&#x27;re going in reverse, then
+// specify the direction as prev, otherwise, we specify it as next
+<strong>let req = index.openCursor(null, reverseOrder ? &#x27;prev&#x27; : &#x27;next&#x27;);</strong>
+
+In <code>store.index()</code>, we retrieve the timestamp with the name we request, just like how we retrieve an object store from the transaction. 
+Now we can define a cursor request to get back our notes ordered by the timestamp.
+
+<code>index.openCursor</code> has two optional parameters. 
+The first one, if it isn’t null, lets us specify the range of items we want to retrieve. 
+For example, if we only wanted the sticky notes from the past hour, we could do:
+
+let anHourAgoInMS = Date.now() - 60 * 60 * 1000;
+// IDBKeyRange is a global variable for defining ranges to query
+// indices on
+let keyRange = IDBKeyRange.lowerBound(anHourAgoInMS)
+let req = index.openCursor(keyRange, &#x27;next&#x27;)
+
+The second parameter is the order we want to retrieve items in, which can be <code>&#x27;prev&#x27;</code> or <code>&#x27;next&#x27;</code>, so we specify our direction with:
+
+reverseOrder ? &#x27;prev&#x27; : &#x27;next&#x27;
+
+Finally, let’s see this in action; in index.html, add another button for flipping the order of the notes we display:
+
+function flipNoteOrder(notes) {
+  reverseOrder = !reverseOrder;
+  getAndDisplayNotes(db);
+}
+
+And in <code>index.html</code>, add one more button for flipping the order of the notes
+
+&lt;button onclick=&quot;flipNoteOrder()&quot;&gt;Flip note order&lt;/button&gt;
+
+And if you refresh Chrome, your flip button should now work!
+
+<img src="https://miro.medium.com/max/1776/1*hLvfo-iT59xs05dZAvnjag.png">
+
+<figcaption>The final product!</figcaption>Cool! Now we can change the order we see notes in! Now you’ve seen the basics of IndexedDB. 
+There are other functionalities we didn’t see in action, like deleting objects, storing binary data in IndexedDB, and multi-field indices, but this should be a good starting point for building web apps with IndexedDB.
+
+As you could see though, the basic IndexedDB API, though powerful, doesn’t really have an ergonomic feel to it. 
+I don’t know about you, but to me, these <code>on</code> event listeners feel inconvenient to reason about, and those handlers also took some thinking my first time figuring out how to give IndexedDB code test coverage.
+
+<h2>register-form</h2>
 <label for="pub-title" class="required">Title:</label><input type="text" id="pub-title" name="pub-title" />
 
 <label for="pub-biblioid" class="required">ISBN:</label><input type="text" id="pub-biblioid" name="pub-biblioid"/>
@@ -517,7 +977,13 @@ form{background-color:black; color: green;border: green solid 1px;}
   addEventListeners();
 
 })(); // Immediately-Invoked Function Expression (IIFE)
+
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+    // ... more custom settings?
+});
 </script>
+<script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
 
 </body>
 </html>
