@@ -12,10 +12,11 @@
   var markerName = "h2, h3"
 </script>
 <style>
-body{width:80%;margin-left: 10%; font-size:24px;}
+body{width:96%;margin-left: 2%; font-size:24px;}
 h1, h2 {color: gold;}
 strong {color: orange;}
 img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+pre {width: 90%;}
 </style></head><body onkeypress="chkKey()"><center>
 <h1></h1>
 <h1>Learn how to use IndexedDB</h1>
@@ -1492,7 +1493,246 @@ request.onsuccess = function (e) {
   }
 }</code>
 
-<h2>SUmmary</h2>
+<h2><span class="orange">enter into an IndexedDB</span></h2>
+https://www.tutorialspoint.com/html5/html5_indexeddb.htm
+
+Before enter into an indexeddb, we need to add some prefixes of implementation as shown below
+
+window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || 
+window.msIndexedDB;
+ 
+window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || 
+window.msIDBTransaction;
+window.IDBKeyRange = window.IDBKeyRange || 
+window.webkitIDBKeyRange || window.msIDBKeyRange
+ 
+if (!window.indexedDB) {
+   window.alert("Your browser doesn't support a stable version of IndexedDB.")
+}
+
+<h3> - Open an IndexedDB database</h3>
+Before creating a database, we have to prepare some data for the data base.let's start with company employee details.
+
+const employeeData = [
+   { id: "01", name: "Gopal K Varma", age: 35, email: "contact@tutorialspoint.com" },
+   { id: "02", name: "Prasad", age: 24, email: "prasad@tutorialspoint.com" }
+];
+
+<h3> - Adding the data</h3>
+Here adding some data manually into the data as shown below &minus;
+
+function add() {
+   var request = db.transaction(["employee"], "readwrite")
+   .objectStore("employee")
+   .add({ id: "01", name: "prasad", age: 24, email: "prasad@tutorialspoint.com" });
+   
+   request.onsuccess = function(event) {
+      alert("Prasad has been added to your database.");
+   };
+   
+   request.onerror = function(event) {
+      alert("Unable to add data\r\nPrasad is already exist in your database! ");
+   }
+}
+
+<h3> - Retrieving Data</h3>
+We can retrieve the data from the data base using with get()
+
+function read() {
+   var transaction = db.transaction(["employee"]);
+   var objectStore = transaction.objectStore("employee");
+   var request = objectStore.get("00-03");
+   
+   request.onerror = function(event) {
+      alert("Unable to retrieve daa from database!");
+   };
+   
+   request.onsuccess = function(event) {
+      
+      if(request.result) {
+         alert("Name: " + request.result.name + ", Age: 
+            " + request.result.age + ", Email: " + request.result.email);
+      } else {
+         alert("Kenny couldn't be found in your database!");  
+      }
+   };
+}
+
+Using with get(), we can store the data in object instead of that we can store the data in cursor and we can retrieve the data from cursor.
+
+function readAll() {
+   var objectStore = db.transaction("employee").objectStore("employee");
+   
+   objectStore.openCursor().onsuccess = function(event) {
+      var cursor = event.target.result;
+      
+      if (cursor) {
+         alert("Name for id " + cursor.key + " is " + cursor.value.name + ", 
+            Age: " + cursor.value.age + ", Email: " + cursor.value.email);
+         cursor.continue();
+      } else {
+         alert("No more entries!");
+      }
+   };
+}
+
+<h3> - Removing the data</h3>
+We can remove the data from IndexedDB with remove().Here is how the code looks like
+
+function remove() {
+   var request = db.transaction(["employee"], "readwrite")
+   .objectStore("employee")
+   .delete("02");
+   
+   request.onsuccess = function(event) {
+      alert("prasad entry has been removed from your database.");
+   };
+}
+
+<h3> - HTML Code</h3>
+To show all the data we need to use onClick event as shown below code &minus;
+
+&lt;!DOCTYPE html>
+
+&lt;html>
+   &lt;head>
+      &lt;meta http-equiv = "Content-Type" content = "text/html; charset = utf-8" />
+      &lt;title>IndexedDb Demo | onlyWebPro.com&lt;/title>
+   &lt;/head>
+   
+   &lt;body>
+      &lt;button onclick = "read()">Read &lt;/button>
+      &lt;button onclick = "readAll()">&lt;/button>
+      &lt;button onclick = "add()">&lt;/button>
+      &lt;button onclick = "remove()">Delete &lt;/button>
+   &lt;/body>
+&lt;/html>
+
+The final code should be as &minus;
+
+&lt;!DOCTYPE html>
+
+&lt;html>
+   &lt;head>
+      &lt;meta http-equiv = "Content-Type" content = "text/html; charset = utf-8" />
+      &lt;script type = "text/javascript">
+         
+         //prefixes of implementation that we want to test
+         window.indexedDB = window.indexedDB || window.mozIndexedDB || 
+         window.webkitIndexedDB || window.msIndexedDB;
+         
+         //prefixes of window.IDB objects
+         window.IDBTransaction = window.IDBTransaction || 
+         window.webkitIDBTransaction || window.msIDBTransaction;
+         window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || 
+         window.msIDBKeyRange
+         
+         if (!window.indexedDB) {
+            window.alert("Your browser doesn't support a stable version of IndexedDB.")
+         }
+         <span class="darkgreen">
+         const employeeData = [
+            { id: "00-01", name: "gopal", age: 35, email: "gopal@tutorialspoint.com" },
+            { id: "00-02", name: "prasad", age: 32, email: "prasad@tutorialspoint.com" }
+         ];
+         var db;
+         var request = window.indexedDB.open("newDatabase", 1);
+         
+         request.onerror = function(event) {
+            console.log("error: ");
+         };
+         
+         request.onsuccess = function(event) {
+            db = request.result;
+            console.log("success: "+ db);
+         };
+         
+         request.onupgradeneeded = function(event) {
+            var db = event.target.result;
+            var objectStore = db.createObjectStore("employee", {keyPath: "id"});
+            
+            for (var i in employeeData) {
+               objectStore.add(employeeData[i]);
+            }
+         }
+
+         function read() {
+            var transaction = db.transaction(["employee"]);
+            var objectStore = transaction.objectStore("employee");
+            var request = objectStore.get("00-03");
+            
+            request.onerror = function(event) {
+               alert("Unable to retrieve daa from database!");
+            };
+            
+            request.onsuccess = function(event) {
+               // Do something with the request.result!
+               if(request.result) {
+                  alert("Name: " + request.result.name + ", 
+                     Age: " + request.result.age + ", Email: " + request.result.email);
+               } else {
+                  alert("Kenny couldn't be found in your database!");
+               }
+            };
+         }
+         
+         function readAll() {
+            var objectStore = db.transaction("employee").objectStore("employee");
+            
+            objectStore.openCursor().onsuccess = function(event) {
+               var cursor = event.target.result;
+               
+               if (cursor) {
+                  alert("Name for id " + cursor.key + " is " + cursor.value.name + ", 
+                     Age: " + cursor.value.age + ", Email: " + cursor.value.email);
+                  cursor.continue();
+               } else {
+                  alert("No more entries!");
+               }
+            };
+         }
+         
+         function add() {
+            var request = db.transaction(["employee"], "readwrite")
+            .objectStore("employee")
+            .add({ id: "00-03", name: "Kenny", age: 19, email: "kenny@planet.org" });
+            
+            request.onsuccess = function(event) {
+               alert("Kenny has been added to your database.");
+            };
+            
+            request.onerror = function(event) {
+               alert("Unable to add data\r\nKenny is aready exist in your database! ");
+            }
+         }
+         
+         function remove() {
+            var request = db.transaction(["employee"], "readwrite")
+            .objectStore("employee")
+            .delete("00-03");
+            
+            request.onsuccess = function(event) {
+               alert("Kenny's entry has been removed from your database.");
+            };
+         }
+         </span>
+      &lt;/script>
+      
+   &lt;/head>
+   &lt;body>
+      &lt;button onclick = "read()">Read &lt;/button>
+      &lt;button onclick = "readAll()">Read all &lt;/button>
+      &lt;button onclick = "add()">Add data &lt;/button>
+      &lt;button onclick = "remove()">Delete data &lt;/button>
+   &lt;/body>
+&lt;/html>
+
+It will produce the following output &minus;
+
+<a href="https://www.tutorialspoint.com/html5/src/indexeddb.htm" class="whitebut ">thePage</a>
+
+
+<h2>Summary</h2>
 Open database: 
 indexedDB.open(name, version)
 
