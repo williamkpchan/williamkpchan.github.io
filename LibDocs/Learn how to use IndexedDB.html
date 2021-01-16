@@ -1127,7 +1127,7 @@ function addItem() {
   var item = {
     name: 'banana',
     price: '$2.99',
-    description: 'It is a purple banana!',
+    description: 'It is a brown banana!',
     created: new Date().getTime()
   };
 
@@ -1731,6 +1731,60 @@ It will produce the following output &minus;
 
 <a href="https://www.tutorialspoint.com/html5/src/indexeddb.htm" class="whitebut ">thePage</a>
 
+<h2>Working example</h2>
+Working example of an IndexedDB implementation to handle transactions surrounding a fake invoice database
+https://gist.github.com/ryandabler/41c458871cb6b64f599fb182ba88daba
+
+IndexedDB example.js
+<span class=orange>const</span> <span class=brown>request</span> <span class=green>=</span> <span class=silver>window</span><span class=silver>.</span><span class=green>indexedDB</span><span class=silver>.</span><span class=orange>open</span><span class=silver>(</span><span class=pl-s>&quot;database&quot;</span><span class=silver>,</span> <span class=green>1</span><span class=silver>)</span><span class=silver>;</span>
+<span class=gray>// Create schema</span>
+
+<span class=brown>request</span><span class=silver>.</span><span class=orange>onupgradeneeded</span> <span class=green>=</span> <span class=brown>event</span> <span class=green>=&gt;</span> <span class=silver>{</span>
+    <span class=orange>const</span> <span class=brown>db</span> <span class=green>=</span> <span class=brown>event</span><span class=silver>.</span><span class=green>target</span><span class=silver>.</span><span class=green>result</span><span class=silver>;</span>
+    <span class=orange>const</span> <span class=brown>invoiceStore</span> <span class=green>=</span> <span class=brown>db</span><span class=silver>.</span><span class=orange>createObjectStore</span><span class=silver>(</span><span class=pl-s>&quot;invoices&quot;</span><span class=silver>,</span> <span class=silver>{</span> <span class=green>keyPath</span>: <span class=pl-s>&quot;invoiceId&quot;</span> <span class=silver>}</span><span class=silver>)</span><span class=silver>;</span>
+
+    <span class=brown>invoiceStore</span><span class=silver>.</span><span class=orange>createIndex</span><span class=silver>(</span><span class=pl-s>&quot;VendorIndex&quot;</span><span class=silver>,</span> <span class=pl-s>&quot;vendor&quot;</span><span class=silver>)</span><span class=silver>;</span>
+    <span class=orange>const</span> <span class=brown>itemStore</span> <span class=green>=</span> <span class=brown>db</span><span class=silver>.</span><span class=orange>createObjectStore</span><span class=silver>(</span><span class=pl-s>&quot;invoice-items&quot;</span><span class=silver>,</span> <span class=silver>{</span> <span class=green>keyPath</span>: <span class=silver>[</span><span class=pl-s>&quot;invoiceId&quot;</span><span class=silver>,</span> <span class=pl-s>&quot;row&quot;</span><span class=silver>]</span> <span class=silver>}</span><span class=silver>)</span><span class=silver>;</span>
+    <span class=brown>itemStore</span><span class=silver>.</span><span class=orange>createIndex</span><span class=silver>(</span><span class=pl-s>&quot;InvoiceIndex&quot;</span><span class=silver>,</span> <span class=pl-s>&quot;invoiceId&quot;</span><span class=silver>)</span><span class=silver>;</span>
+    <span class=orange>const</span> <span class=brown>fileStore</span> <span class=green>=</span> <span class=brown>db</span><span class=silver>.</span><span class=orange>createObjectStore</span><span class=silver>(</span><span class=pl-s>&quot;attachments&quot;</span><span class=silver>,</span> <span class=silver>{</span> <span class=green>autoIncrement</span>: <span class=green>true</span> <span class=silver>}</span><span class=silver>)</span><span class=silver>;</span>
+
+    <span class=brown>fileStore</span><span class=silver>.</span><span class=orange>createIndex</span><span class=silver>(</span><span class=pl-s>&quot;InvoiceIndex&quot;</span><span class=silver>,</span> <span class=pl-s>&quot;invoiceId&quot;</span><span class=silver>)</span><span class=silver>;</span>
+<span class=silver>}</span><span class=silver>;</span>
+<span class=brown>request</span><span class=silver>.</span><span class=orange>onsuccess</span> <span class=green>=</span> <span class=silver>(</span><span class=silver>)</span> <span class=green>=&gt;</span> <span class=silver>{</span>
+    <span class=orange>const</span> <span class=brown>db</span> <span class=green>=</span> <span class=brown>request</span><span class=silver>.</span><span class=green>result</span><span class=silver>;</span>
+    <span class=orange>const</span> <span class=brown>transaction</span> <span class=green>=</span> <span class=brown>db</span><span class=silver>.</span><span class=orange>transaction</span><span class=silver>(</span><span class=silver>[</span><span class=pl-s>&quot;invoices&quot;</span><span class=silver>,</span> <span class=pl-s>&quot;invoice-items&quot;</span><span class=silver>]</span><span class=silver>,</span> <span class=pl-s>&quot;readwrite&quot;</span><span class=silver>)</span><span class=silver>;</span>
+    <span class=orange>const</span> <span class=brown>invStore</span> <span class=green>=</span> <span class=brown>transaction</span><span class=silver>.</span><span class=orange>objectStore</span><span class=silver>(</span><span class=pl-s>&quot;invoices&quot;</span><span class=silver>)</span><span class=silver>;</span>
+    <span class=orange>const</span> <span class=brown>itemStore</span> <span class=green>=</span> <span class=brown>transaction</span><span class=silver>.</span><span class=orange>objectStore</span><span class=silver>(</span><span class=pl-s>&quot;invoice-items&quot;</span><span class=silver>)</span><span class=silver>;</span>
+    <span class=orange>const</span> <span class=brown>invIndex</span> <span class=green>=</span> <span class=brown>invStore</span><span class=silver>.</span><span class=orange>index</span><span class=silver>(</span><span class=pl-s>&quot;VendorIndex&quot;</span><span class=silver>)</span><span class=silver>;</span>
+
+    <span class=gray>// Add data</span>
+    <span class=brown>invStore</span><span class=silver>.</span><span class=orange>add</span><span class=silver>(</span><span class=silver>{</span><span class=green>invoiceId</span>: <span class=pl-s>&quot;123&quot;</span><span class=silver>,</span> <span class=green>vendor</span>: <span class=pl-s>&quot;Whirlpool&quot;</span><span class=silver>,</span> <span class=green>paid</span>: <span class=green>false</span><span class=silver>}</span><span class=silver>)</span><span class=silver>;</span>
+    <span class=brown>itemStore</span><span class=silver>.</span><span class=orange>add</span><span class=silver>(</span><span class=silver>{</span><span class=green>invoiceId</span>: <span class=pl-s>&quot;123&quot;</span><span class=silver>,</span> <span class=green>row</span>: <span class=pl-s>&quot;1&quot;</span><span class=silver>,</span> <span class=green>item</span>: <span class=pl-s>&quot;Dish washer&quot;</span><span class=silver>,</span> <span class=green>cost</span>: <span class=green>1400</span><span class=silver>}</span><span class=silver>)</span><span class=silver>;</span>
+    <span class=brown>itemStore</span><span class=silver>.</span><span class=orange>add</span><span class=silver>(</span><span class=silver>{</span><span class=green>invoiceId</span>: <span class=pl-s>&quot;123&quot;</span><span class=silver>,</span> <span class=green>row</span>: <span class=pl-s>&quot;2&quot;</span><span class=silver>,</span> <span class=green>item</span>: <span class=pl-s>&quot;Labor&quot;</span><span class=silver>,</span> <span class=green>cost</span>: <span class=green>500</span><span class=silver>}</span><span class=silver>)</span><span class=silver>;</span>
+    <span class=brown>invStore</span><span class=silver>.</span><span class=orange>add</span><span class=silver>(</span><span class=silver>{</span><span class=green>invoiceId</span>: <span class=pl-s>&quot;580&quot;</span><span class=silver>,</span> <span class=green>vendor</span>: <span class=pl-s>&quot;Whirlpool&quot;</span><span class=silver>,</span> <span class=green>paid</span>: <span class=green>true</span><span class=silver>}</span><span class=silver>)</span><span class=silver>;</span>
+    <span class=brown>itemStore</span><span class=silver>.</span><span class=orange>add</span><span class=silver>(</span><span class=silver>{</span><span class=green>invoiceId</span>: <span class=pl-s>&quot;580&quot;</span><span class=silver>,</span> <span class=green>row</span>: <span class=pl-s>&quot;1&quot;</span><span class=silver>,</span> <span class=green>item</span>: <span class=pl-s>&quot;Rubber hose&quot;</span><span class=silver>,</span> <span class=green>cost</span>: <span class=green>20</span><span class=silver>}</span><span class=silver>)</span><span class=silver>;</span>
+    <span class=gray>// Update an item</span>
+    <span class=brown>itemStore</span><span class=silver>.</span><span class=orange>put</span><span class=silver>(</span><span class=silver>{</span><span class=green>invoiceId</span>: <span class=pl-s>&quot;123&quot;</span><span class=silver>,</span> <span class=green>row</span>: <span class=pl-s>&quot;1&quot;</span><span class=silver>,</span> <span class=green>item</span>: <span class=pl-s>&quot;Dish washer&quot;</span><span class=silver>,</span> <span class=green>cost</span>: <span class=green>1300</span><span class=silver>}</span><span class=silver>)</span><span class=silver>;</span>
+    <span class=gray>// Delete an item</span>
+    <span class=brown>itemStore</span><span class=silver>.</span><span class=orange>delete</span><span class=silver>(</span><span class=silver>[</span><span class=pl-s>&quot;123&quot;</span><span class=silver>,</span> <span class=pl-s>&quot;2&quot;</span><span class=silver>]</span><span class=silver>)</span><span class=silver>;</span>
+    <span class=gray>// Get an item by key</span>
+    <span class=orange>const</span> <span class=brown>getRequest</span> <span class=green>=</span> <span class=brown>invStore</span><span class=silver>.</span><span class=orange>get</span><span class=silver>(</span><span class=pl-s>&quot;123&quot;</span><span class=silver>)</span><span class=silver>;</span>
+
+    <span class=brown>getRequest</span><span class=silver>.</span><span class=orange>onsuccess</span> <span class=green>=</span> <span class=silver>(</span><span class=silver>)</span> <span class=green>=&gt;</span> <span class=silver>{</span>
+
+        <span class=silver>console</span><span class=silver>.</span><span class=orange>log</span><span class=silver>(</span><span class=brown>getRequest</span><span class=silver>.</span><span class=green>result</span><span class=silver>)</span><span class=silver>;</span> <span class=gray>// {invoiceId: &quot;123&quot;, vendor: &quot;Whirlpool&quot;, paid: false}</span>
+
+    <span class=silver>}</span><span class=silver>;</span>
+    <span class=gray>// Get an item by index</span>
+    <span class=orange>const</span> <span class=brown>getRequestIdx</span> <span class=green>=</span> <span class=brown>invIndex</span><span class=silver>.</span><span class=orange>getAll</span><span class=silver>(</span><span class=pl-s>&quot;Whirlpool&quot;</span><span class=silver>)</span><span class=silver>;</span>
+
+    <span class=brown>getRequestIdx</span><span class=silver>.</span><span class=orange>onsuccess</span> <span class=green>=</span> <span class=silver>(</span><span class=silver>)</span> <span class=green>=&gt;</span> <span class=silver>{</span>
+
+        <span class=silver>console</span><span class=silver>.</span><span class=orange>log</span><span class=silver>(</span><span class=brown>getRequestIdx</span><span class=silver>.</span><span class=green>result</span><span class=silver>)</span><span class=silver>;</span> <span class=gray>// [ {invoiceId: &quot;123&quot;, vendor: &quot;Whirlpool&quot;, paid: false},</span>
+
+    <span class=silver>}</span><span class=silver>;</span>                                     <span class=gray>//   {invoiceId: &quot;580&quot;, vendor: &quot;Whirlpool&quot;, paid: true} ]</span>
+
+<span class=silver>}</span><span class=silver>;</span>
 
 <h2>Summary</h2>
 Open database: 
