@@ -43,7 +43,7 @@ function showAllCharts(){
     }else{commentTxt = "";}
 
     // this is the key line to show K line charts
-    theFunccode =  "<div id=imgp" + codeNo + ">" + (codeNo+1) + " &emsp; " + theText  + "<br>" + thisImgHead + theText + thisImgPCode + thisImgTail + "onclick = \"xunbao('" + theText + "')\">" + "<br><span class='orange'>" + commentTxt + "</span></div>";
+    theFunccode =  "<div id=imgp" + codeNo + ">" + (codeNo+1) + " &emsp; " + theText  + "<br>" + thisImgHead + theText + thisImgPCode + thisImgTail + "onclick = \"xunbao('" + theText + "')\">" + "<br><span onclick=\"$('#cmt" + codeNo + "').toggle();\"> 🎌 </span><br>" + "<span class='orange' id='cmt" + codeNo + "'>" + commentTxt + "</span></div>";
     $( "#codelist" ).append( theFunccode);
     tradeDetailStr = ""; // clean the tradeDetailStr
 
