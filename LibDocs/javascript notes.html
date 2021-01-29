@@ -18433,6 +18433,49 @@ console.log(Array.from(allListNames));
    sections = string.split("/")
    sections[1]  // asdf
 
+<h2>build your own proxy</h2>
+
+The same origin policy is not enforced within server-to-server communication. 
+In addition, you eliminate the latency concern. 
+You don’t need to share the cors-anywhere proxy with other consumers, and you can dedicate as many resources as you need to your own servers.
+
+Here’s some quick Node.js code that uses the express web framework to create a proxy server around the same <code><a href="https://joke-api-strict-cors.appspot.com/random_joke" target="_blank" rel="noopener nofollow">https://joke-api-strict-cors.appspot.com/</a></code> from above:
+
+const express = require('express');
+const request = require('request');
+
+const app = express();
+
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  next();
+});
+
+app.get('/jokes/random', (req, res) => {
+  request(
+    { url: 'https://joke-api-strict-cors.appspot.com/jokes/random' },
+    (error, response, body) => {
+      if (error || response.statusCode !== 200) {
+        return res.status(500).json({ type: 'error', message: err.message });
+      }
+
+      res.json(JSON.parse(body));
+    }
+  )
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`listening on ${PORT}`));
+
+
+If you want to see this in action, head to the source code for the above, along with relevant steps in the README: <a href="https://github.com/15Dkatz/beat-cors-server" target="_blank" rel="noopener nofollow">https://github.com/15Dkatz/beat-cors-server</a> How does this work? The proxy uses express middleware to apply a <code>Access-Control-Allow-Origin: *</code> header to every response from the server. 
+At its own <code>jokes/random</code> GET endpoint, the proxy requests a random joke from another server. 
+The same-origin policy doesn’t step in to block the request, even though the domains are different. 
+After all, this is a server-to-server request. 
+Finally, the proxy creates a response to the original requester (an app on the browser) consisting of the resulting data and the middleware-applied <code>Access-Control-Allow-Origin: *</code> header.
+
+<a href="https://www.twilio.com/blog/node-js-proxy-server" class="whitebut ">Build a Node.js Proxy Server</a>
+
 
 
 
