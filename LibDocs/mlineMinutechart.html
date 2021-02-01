@@ -4,7 +4,9 @@
 <title>Minute Standard Deviation Chart</title>
 <link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src='..\mainscript.js'></script>
 <script src="longHistList.js"></script>
+<script src="stkComments.js"></script>
 <script src="./rchart/RGraph.common.core.js" ></script>
 <script src="./rchart/RGraph.line.js"></script>
 <script src="./rchart/RGraph.drawing.yaxis.js"></script>
@@ -23,11 +25,12 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
 <canvas id="cvs" width="1300" height="600">[No canvas support]</canvas>
 <div id="lastValues"></div>
 </center><span id="nextbutton" class="randomBut gold bordred1 borRad10" onclick="jpforward()">Next</span>
-<span onclick="$('#instruction').toggle();"> 🎌 </span>
+<span onclick="$('#instruction').toggle();">commands🎌 </span>
 <a href="AStkList.txt" class="whitebut" target="_blank">A股清单</a>
 
 <select id="selectList" onchange="assignList()"></select>
-<span onclick="$('#message').toggle();"> 🎌 </span>
+<span onclick="$('#message').toggle();">messages🎌 </span>
+<div id="dateTime" style="margin-left:5%;" class="lime"> </div>
 <pre id="instruction">
 commands:
  l loadLineData, paste data array to redraw chart with std dev
@@ -186,7 +189,7 @@ commands:
 		allData = allData.filter((val) => val != "");
 
           if(datawidth > allData.length){datawidth = allData.length};
-        //console.log("datawidth "+datawidth)
+          //console.log("datawidth "+datawidth)
 		allData = allData.slice(allData.length-datawidth); // get only req data
 
 		allData.forEach(str => { closeLst.push(Number(str.split(' ')[1])); }); // split the string and select only the middle close 
@@ -196,12 +199,12 @@ commands:
 		stkName = theNameObjName[1]
 
 		thedrawdata =[closeLst]; //closeLst is already originally an array
-              stkpriceDataArr = closeLst
-              titleText = theStartCode + " " + stkName + " 分鐘圖 "+ showTime() + " c: " + closeLst[closeLst.length-1];
-              redraw();  // this line must be inside the AJAX because AJAX run last
-
+          stkpriceDataArr = closeLst
+          titleText = theStartCode + " " + stkName + " 分鐘圖 "+ showTime() + " c: " + closeLst[closeLst.length-1];
+          redraw();  // this line must be inside the AJAX because AJAX run last
            });
-      $("#nextbutton").text("Item " + (stkPointer+1) + " of " + stkList.length + ", ");
+          $("#nextbutton").text("Item " + (stkPointer+1) + " of " + stkList.length + ", ");
+          showDateTime();
 
       }
 
@@ -438,9 +441,33 @@ $("#lastValues").append(statusMsg);
 function assignList(){
   newList = eval(document.getElementById("selectList").value).split(" ");
   stkList = newList;
-console.log(newList)
+  //console.log(newList)
   alert(newList + " Total: " + stkList.length + "\ndetails see end of this page.\nremember to modify mustadd list!")
         $("#message").text("Total: " + stkList.length + "\n"+stkList);
+}
+
+function showDateTime() {
+    var theDateTime = showDate() +" "+ showTime();
+    cmtCode = theCode // use another name not to interfere other parts
+    var cmtcodewidth = cmtCode.length
+    if(cmtcodewidth <= 5){
+      cmtCode = "00000"+cmtCode;
+      cmtcodewidth = cmtCode.length;
+      cmtCode = cmtCode.slice(cmtcodewidth-5, cmtcodewidth);
+    }
+    if(cmtcodewidth == 8){ cmtCode = cmtCode.slice(2, 8); }
+    if(cmtcodewidth == 9){ cmtCode = cmtCode.slice(0, 6); }
+    commentName = "j" + cmtCode;
+
+    CommentListNames = Object.keys(theCommentList); // extract the names from comments
+    // to show comments
+    if(CommentListNames.includes(commentName)){
+      cmtLocation = CommentListNames.indexOf(commentName);
+      commentTxt = theCommentList[Object.keys(theCommentList)[cmtLocation]]
+    }else{commentTxt = "No data!";}
+
+    document.getElementById("dateTime").text("");
+    document.getElementById("dateTime").innerHTML = theDateTime  + " <span class='orange'>" + commentTxt + "</span>";
 }
 
 
