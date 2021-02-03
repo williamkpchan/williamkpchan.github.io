@@ -40,7 +40,7 @@ function showAllCharts(){
     if(CommentListNames.includes(commentName)){
       cmtLocation = CommentListNames.indexOf(commentName);
       commentTxt = theCommentList[Object.keys(theCommentList)[cmtLocation]]
-    }else{commentTxt = "";}
+    }else{commentTxt = "no data!";}
 
     // this is the key line to show K line charts
     theFunccode =  "<div id=imgp" + codeNo + ">" + (codeNo+1) + " &emsp; " + theText  + "<br>" + thisImgHead + theText + thisImgPCode + thisImgTail + "onclick = \"xunbao('" + theText + "')\">" + "<br><span onclick=\"$('#cmt" + codeNo + "').toggle();\"> 🎌 </span><br>" + "<span class='orange' id='cmt" + codeNo + "'>" + commentTxt + "</span></div>";

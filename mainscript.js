@@ -11,71 +11,71 @@ styleStr = "<script type='text/javascript' src='mainscript.js'></script><style>b
 function chkKey() {
   var testkey = getChar(event);
   if(testkey == 'a'){window.open("apptechno.html");}
-  if(testkey == 'b'){window.open("LibDocs/listofcharts.html");}
-  if(testkey == 'B'){window.open("https://map.baidu.com/");}
-  if(testkey == 'c'){showChart();}
-// calculator  if(testkey == 'C'){window.open("https://www.desmos.com/fourfunction");}
-  if(testkey == 'C'){window.open("LibDocs/caseStudiesLog.html");}
-  if(testkey == 'd'){window.open("https://www.youdao.com/");}
-  if(testkey == 'e'){window.location = '#ertong';}
-  if(testkey == 'f'){window.open("http://williamkpchan.github.io/ForexChart.htm");}
-  if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
-  if(testkey == 'g'){window.location = '#_youxi';}
-  if(testkey == 'h'){window.open("LibDocs/News Points.html");}
-  if(testkey == 'H'){window.open("LibDocs/monitorHSI.html");}
-  if(testkey == 'J'){window.location = '#_jiaoyu';}
-  if(testkey == 'l'){window.location = '#dushu';}
+  else if(testkey == 'b'){window.open("LibDocs/listofcharts.html");}
+  else if(testkey == 'B'){window.open("https://map.baidu.com/");}
+  else if(testkey == 'c'){showChart();}
+// calculator  else if(testkey == 'C'){window.open("https://www.desmos.com/fourfunction");}
+  else if(testkey == 'C'){window.open("LibDocs/caseStudiesLog.html");}
+  else if(testkey == 'd'){window.open("https://www.youdao.com/");}
+  else if(testkey == 'e'){window.location = '#ertong';}
+  else if(testkey == 'f'){window.open("http://williamkpchan.github.io/ForexChart.htm");}
+  else if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
+  else if(testkey == 'g'){window.location = '#_youxi';}
+  else if(testkey == 'h'){window.open("LibDocs/News Points.html");}
+  else if(testkey == 'H'){window.open("LibDocs/monitorHSI.html");}
+  else if(testkey == 'J'){window.location = '#_jiaoyu';}
+  else if(testkey == 'l'){window.location = '#dushu';}
   //if(testkey == 'L'){openLogFile();}
-  if(testkey == 'L'){window.open("LibDocs/mlinechart.html");}
-  if(testkey == 'm'){window.open("medical.html");}
-  if(testkey == 'M'){window.open("https://www.google.com/maps");}
-  if(testkey == 'n'){window.location = '#xinwen';}
-  if(testkey == 'N'){window.location = '#Notes';}
-  if(testkey == 'p'){window.open('LibDocs/temp.html');}
+  else if(testkey == 'L'){window.open("LibDocs/mlinechart.html");}
+  else if(testkey == 'm'){window.open("medical.html");}
+  else if(testkey == 'M'){window.open("https://www.google.com/maps");}
+  else if(testkey == 'n'){window.location = '#xinwen';}
+  else if(testkey == 'N'){window.location = '#Notes';}
+  else if(testkey == 'p'){window.open('LibDocs/temp.html');}
 
-  if(testkey == 'q'){window.open('https://www.quora.com/');}
-  if(testkey == 'Q'){window.open('https://news.qq.com/zt2020/page/feiyan.htm');}
+  else if(testkey == 'q'){window.open('https://www.quora.com/');}
+  else if(testkey == 'Q'){window.open('https://news.qq.com/zt2020/page/feiyan.htm');}
 
-  if(testkey == 'r'){randomLinkTo();}
+  else if(testkey == 'r'){randomLinkTo();}
 
-  if(testkey == 's'){window.open("stkListVH.html");}
-  if(testkey == 'S'){window.open("LibDocs/Hour STK Charts.html");}
+  else if(testkey == 's'){window.open("stkListVH.html");}
+  else if(testkey == 'S'){window.open("LibDocs/Hour STK Charts.html");}
 
 
-  if(testkey == 't'){window.open("https://my.weather.gov.hk/tc/myindex.htm");}
-  if(testkey == 'T'){window.open("https://translate.google.com/#en/zh-CN");}
+  else if(testkey == 't'){window.open("https://my.weather.gov.hk/tc/myindex.htm");}
+  else if(testkey == 'T'){window.open("https://translate.google.com/#en/zh-CN");}
 
-  if(testkey == 'u'){window.open("https://www.worldometers.info/coronavirus/");}
-  if(testkey == 'v'){window.open("https://williamkpchan.github.io/LibDocs/StkImgViewer.html");}
-  if(testkey == 'w'){window.location = '#ruanjian';}
-  if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
-  if(testkey == 'x'){window.open("https://wx.qq.com/");}
-  if(testkey == 'X'){window.open("LibDocs/Random Charts.html");}
+  else if(testkey == 'u'){window.open("https://www.worldometers.info/coronavirus/");}
+  else if(testkey == 'v'){window.open("https://williamkpchan.github.io/LibDocs/StkImgViewer.html");}
+  else if(testkey == 'w'){window.location = '#ruanjian';}
+  else if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
+  else if(testkey == 'x'){window.open("https://wx.qq.com/");}
+  else if(testkey == 'X'){window.open("LibDocs/Random Charts.html");}
 
-  if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
-  if(testkey == 'z'){showTenYear();}
-  if(testkey == ','){window.open("LibDocs/mlinechart.html");}
-  if(testkey == '.'){window.open("LibDocs/mlineMinutechart.html");}
+  else if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
+  else if(testkey == 'z'){showTenYear();}
+  else if(testkey == ','){window.open("LibDocs/mlinechart.html");}
+  else if(testkey == '.'){window.open("LibDocs/mlineMinutechart.html");}
 }
 function chkOtherKeys(testkey) {
   if(testkey == ','){window.open("https://williamkpchan.github.io/LibDocs/mlinechart.html");}
-  if(testkey == '.'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutechart.html");}
-  if(testkey == 'c'){showChart();}
-  if(testkey == 'd'){window.open("https://www.youdao.com/");}
-  if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
-  if(testkey == 'f'){window.open("http://williamkpchan.github.io/ForexChart.htm");}
-  if(testkey == 'm'){window.open("http://williamkpchan.github.io/medical.html");}
-  if(testkey == 'M'){window.open("https://www.google.com.hk/maps/");}
-  if(testkey == 'q'){window.open('https://www.quora.com/');}
+  else if(testkey == '.'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutechart.html");}
+  else if(testkey == 'c'){showChart();}
+  else if(testkey == 'd'){window.open("https://www.youdao.com/");}
+  else if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
+  else if(testkey == 'f'){window.open("http://williamkpchan.github.io/ForexChart.htm");}
+  else if(testkey == 'm'){window.open("http://williamkpchan.github.io/medical.html");}
+  else if(testkey == 'M'){window.open("https://www.google.com.hk/maps/");}
+  else if(testkey == 'q'){window.open('https://www.quora.com/');}
 
-  if(testkey == 's'){window.open("D:/Dropbox/Public/stkListVH.html");}
-  if(testkey == 't'){window.open("https://my.weather.gov.hk/tc/myindex.htm");}
-  if(testkey == 'T'){window.open("https://translate.google.com/#en/zh-CN");}
-  if(testkey == 'u'){window.open("https://www.worldometers.info/coronavirus/");}
-  if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
-  if(testkey == 'x'){window.open("https://wx.qq.com/");}
-  if(testkey == 'X'){window.open("D:/Dropbox/Public/LibDocs/Random Charts.html");}
-  if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
+  else if(testkey == 's'){window.open("D:/Dropbox/Public/stkListVH.html");}
+  else if(testkey == 't'){window.open("https://my.weather.gov.hk/tc/myindex.htm");}
+  else if(testkey == 'T'){window.open("https://translate.google.com/#en/zh-CN");}
+  else if(testkey == 'u'){window.open("https://www.worldometers.info/coronavirus/");}
+  else if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
+  else if(testkey == 'x'){window.open("https://wx.qq.com/");}
+  else if(testkey == 'X'){window.open("D:/Dropbox/Public/LibDocs/Random Charts.html");}
+  else if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
 }
 function getChar(event) {
   if (event.which!=0 && event.charCode!=0) {
