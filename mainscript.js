@@ -55,11 +55,13 @@ function chkKey() {
   else if(testkey == 'z'){showTenYear();}
   else if(testkey == ','){window.open("LibDocs/mlinechart.html");}
   else if(testkey == '.'){window.open("LibDocs/mlineMinutechart.html");}
+  else if(testkey == '/'){window.open("LibDocs/mlineMinutecharttest.html");}
   else{chkOtherKeys(testkey)} 
 }
 function chkOtherKeys(testkey) {
   if(testkey == ','){window.open("https://williamkpchan.github.io/LibDocs/mlinechart.html");}
   else if(testkey == '.'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutechart.html");}
+  else if(testkey == '/'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutecharttest.html");}
   else if(testkey == 'c'){showChart();}
   else if(testkey == 'd'){window.open("https://www.youdao.com/");}
   else if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
@@ -101,7 +103,7 @@ function showBoth(stkcode) {
     }else if (stkcode != "HSI") { // this part handle HK code
       stkcode = FormatNumberLength5(stkcode);
       localStorage.otherCode = stkcode;
-      window.open("file:///D:/Dropbox/Public/LibDocs/OHLCOtherCode.html");
+      window.open("file:///D:/Dropbox/Public/LibDocs/mlinechart.html");
       localStorage.randomcode= stkcode;
       window.open("file:///D:/Dropbox/Public/LibDocs/Random Charts.html");
       sCt(stkcode);
