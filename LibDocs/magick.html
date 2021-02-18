@@ -1,0 +1,654 @@
+<base target="_blank"><html><head><title>magick package</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="https://williamkpchan.github.io/lazyload.min.js"></script>
+<script src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/commonfunctions.js"></script>
+<script>
+  var showTopicNumber = true;
+  var bookid = "magick package"
+  var markerName = "h2, h3"
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:24px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>The magick package: Advanced Image-Processing in R</h1>
+<a href="https://cran.r-project.org/web/packages/magick/magick.pdf" class="whitebut gold redbs">magick.pdf</a>
+
+<a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a>
+<br><br>
+<div id="toc"></div></center>
+<br><br>
+<div id="mustWatch"><center><span class="red">MustWatch</span></center><br>
+</div>
+<pre>
+<br>
+<br>
+
+<h2>Advanced Image-Processing</h2>
+The <a href="https://cran.r-project.org/package=magick">magick</a> package provide a modern and simple toolkit for image processing in R. 
+It wraps the <a href="https://www.imagemagick.org/Magick++/STL.html">ImageMagick STL</a> which is the most comprehensive open-source image processing library available today.
+
+The ImageMagick library has an overwhelming amount of functionality. 
+Magick exposes a decent subset of it, but it is impossible to document everything in detail. 
+This article introduces some basic concepts and examples to get started.
+
+<h2>Installing <code>magick</code></h2>
+On Windows or macOS the package is most easily installed via CRAN.
+
+<code>install.packages(&quot;magick&quot;)</code>
+
+The binary CRAN packages work out of the box and have most important features enabled. 
+Use <code>magick_config</code> to see which features and formats are supported by your version of ImageMagick.
+
+<code>library(magick)</code>
+
+<code>## Linking to ImageMagick 6.9.11.57
+## Enabled features: cairo, fontconfig, freetype, heic, lcms, pango, raw, rsvg, webp
+## Disabled features: fftw, ghostscript, x11</code>
+
+<code class="orange">str(magick::magick_config())</code>
+
+<code>## List of 24
+##  $ version           :Class &#39;numeric_version&#39;  hidden list of 1
+##   ..$ : int [1:4] 6 9 11 57
+##  $ modules           : logi FALSE
+##  $ cairo             : logi TRUE
+##  $ fontconfig        : logi TRUE
+##  $ freetype          : logi TRUE
+##  $ fftw              : logi FALSE
+##  $ ghostscript       : logi FALSE
+##  $ heic              : logi TRUE
+##  $ jpeg              : logi TRUE
+##  $ lcms              : logi TRUE
+##  $ libopenjp2        : logi TRUE
+##  $ lzma              : logi TRUE
+##  $ pangocairo        : logi TRUE
+##  $ pango             : logi TRUE
+##  $ png               : logi TRUE
+##  $ raw               : logi TRUE
+##  $ rsvg              : logi TRUE
+##  $ tiff              : logi TRUE
+##  $ webp              : logi TRUE
+##  $ wmf               : logi FALSE
+##  $ x11               : logi FALSE
+##  $ xml               : logi TRUE
+##  $ zero-configuration: logi TRUE
+##  $ threads           : int 1</code>
+
+<h3> - Build from source</h3>
+On Linux you need to install the ImageMagick++ library: on Debian/Ubuntu this is called <a href="https://packages.debian.org/testing/libmagick++-dev">libmagick++-dev</a>:
+
+<code>sudo apt-get install libmagick++-dev</code>
+
+On Fedora or CentOS/RHEL we need <a href="https://src.fedoraproject.org/rpms/ImageMagick">ImageMagick-c++-devel</a>:
+
+<code>sudo yum install ImageMagick-c++-devel</code>
+
+To install from source on macOS you need <code>imagemagick@6</code> from homebrew.
+
+<code>brew install imagemagick@6</code>
+
+Unfortunately the current <code>imagemagick@6</code> configuration on homebrew disables a bunch of features, including librsvg and fontconfig. 
+Therefore the quality of fonts and svg rendering might be suboptimal. 
+The is not a problem for the CRAN binary package.
+
+<h2>Image IO</h2>
+What makes magick so magical is that it automatically converts and renders all common image formats. 
+ImageMagick supports dozens of formats and automatically detects the type. 
+Use <code>magick::magick_config()</code> to list the formats that your version of ImageMagick supports.
+
+<h3> - Read and write</h3>
+Images can be read directly from a file path, URL, or raw vector with image data with <code>image_read</code>. 
+The <code>image_info</code> function shows some meta data about the image, similar to the imagemagick <code>identify</code> command line utility.
+
+<code>library(magick)
+tiger &lt;- <span class="orange">image_read_svg</span>(&#39;http://jeroen.github.io/images/tiger.svg&#39;, width = 350)
+print(tiger)</code>
+
+<code>##   format width height colorspace matte filesize density
+## 1    PNG   350    350       sRGB  TRUE        0   72x72</code>
+
+We use <code>image_write</code> to export an image in any format to a file on disk, or in memory if <code>path = NULL</code>.
+
+<code># Render svg to png bitmap
+<span class="orange">image_write</span>(tiger, path = &quot;tiger.png&quot;, format = &quot;png&quot;)</code>
+
+If <code>path</code> is a filename, <code>image_write</code> returns <code>path</code> on success such that the result can be piped into function taking a file path.
+
+<h3> - Converting formats</h3>
+Magick keeps the image in memory in its original format. 
+Specify the <code>format</code> parameter <code>image_write</code> to convert to another format. 
+You can also internally convert the image to another format earlier, before applying transformations. 
+This can be useful if your original format is lossy.
+
+<code>tiger_png &lt;- <span class="orange">image_convert</span>(tiger, &quot;png&quot;)
+<span class="orange">image_info</span>(tiger_png)</code>
+
+<code>##   format width height colorspace matte filesize density
+## 1    PNG   350    350       sRGB  TRUE        0   72x72</code>
+
+Note that size is currently 0 because ImageMagick is lazy (in the good sense) and does not render until it has to.
+
+<h3> - Preview</h3>
+IDE’s with a built-in web browser (such as RStudio) automatically display magick images in the viewer. 
+This results in a neat interactive image editing environment.
+<img src="https://jeroen.github.io/images/magick-rstudio.png">
+
+&lt;img id="rstudioimg" alt="rstudio">
+&lt;script>
+//this is a hack to prevent pandoc 'self_contained' from embedding this image
+//in future version of pandoc we can use the image and set 'data-external=1' instead
+window.onload = function(){
+  document.getElementById("rstudioimg").src = "https://jeroen.github.io/images/magick-rstudio.png";
+}
+&lt;/script>
+Alternatively, on Linux you can use <code>image_display</code> to preview the image in an X11 window. 
+Finally <code>image_browse</code> opens the image in your system’s default application for a given type.
+
+<code># X11 only
+image_display(tiger)
+
+# System dependent
+<span class="orange">image_browse</span>(tiger)</code>
+
+Another method is converting the image to a raster object and plot it on R’s graphics display. 
+However this is very slow and only useful in combination with other plotting functionality. 
+See <a href="#raster-images">#raster</a> below.
+
+<h2>Transformations</h2>
+The best way to get a sense of available transformations is walk through the examples in the <code>?transformations</code> help page in RStudio. 
+Below a few examples to get a sense of what is possible.
+
+<h3> - Cut and edit</h3>
+Several of the transformation functions take an <code>geometry</code> parameter which requires a special syntax of the form <code>AxB+C+D</code> where each element is optional. 
+Some examples:
+
+<ul>
+<li><code><span class="orange">image_crop</span>(image, &quot;100x150+50&quot;)</code>: <em>crop out <code>width:100px</code> and <code>height:150px</code> starting <code>+50px</code> from the left</em></li>
+<li><code><span class="orange">image_scale</span>(image, &quot;200&quot;)</code>: <em>resize proportionally to width: <code>200px</code></em></li>
+<li><code>image_scale(image, &quot;x200&quot;)</code>: <em>resize proportionally to height: <code>200px</code></em></li>
+<li><code><span class="orange">image_fill</span>(image, &quot;blue&quot;, &quot;+100+200&quot;)</code>: <em>flood fill with blue starting at the point at <code>x:100, y:200</code></em></li>
+<li><code><span class="orange">image_border</span>(frink, &quot;red&quot;, &quot;20x10&quot;)</code>: <em>adds a border of 20px left+right and 10px top+bottom</em></li>
+</ul>
+The full syntax is specified in the <a href="http://www.imagemagick.org/Magick++/Geometry.html">Magick::Geometry</a> documentation.
+
+<code># Example image
+frink &lt;- <span class="orange">image_read</span>(&quot;https://jeroen.github.io/images/frink.png&quot;)</code>
+
+<code>print(frink)</code>
+
+<code>##   format width height colorspace matte filesize density
+## 1    PNG   220    445       sRGB  TRUE    73494   72x72</code>
+
+<code># Add 20px left/right and 10px top/bottom
+image_border(image_background(frink, &quot;hotpink&quot;), &quot;#000080&quot;, &quot;20x10&quot;)</code>
+
+<code># Trim margins
+<span class="orange">image_trim</span>(frink)</code>
+
+<code># Passport pica
+image_crop(frink, &quot;100x150+50&quot;)</code>
+
+<code># Resize
+image_scale(frink, &quot;300&quot;) # width: 300px</code>
+
+<code>image_scale(frink, &quot;x300&quot;) # height: 300px</code>
+
+<code># Rotate or mirror
+<span class="orange">image_rotate</span>(frink, 45)</code>
+
+<code><span class="orange">image_flip</span>(frink)</code>
+
+<code><span class="orange">image_flop</span>(frink)</code>
+
+<code># Brightness, Saturation, Hue
+<span class="orange">image_modulate</span>(frink, brightness = 80, saturation = 120, hue = 90)</code>
+
+<code># Paint the shirt orange
+image_fill(frink, &quot;orange&quot;, point = &quot;+100+200&quot;, fuzz = 20)</code>
+
+With <code>image_fill</code> we can flood fill starting at pixel <code>point</code>. 
+The <code>fuzz</code> parameter allows for the fill to cross for adjacent pixels with similarish colors. 
+Its value must be between 0 and 256^2 specifying the max geometric distance between colors to be considered equal. 
+Here we give professor frink an orange shirt for the World Cup.
+
+<h3> - Filters and effects</h3>
+ImageMagick also has a bunch of standard effects that are worth checking out.
+
+<code># Add randomness
+<span class="orange">image_blur</span>(frink, 10, 5)</code>
+
+<code>image_noise(frink)</code>
+
+<code># Silly filters
+<span class="orange">image_charcoal</span>(frink)</code>
+
+<code><span class="orange">image_oilpaint</span>(frink)</code>
+
+<code><span class="orange">image_negate</span>(frink)</code>
+
+<h3> - Kernel convolution</h3>
+The <code><span class="orange">image_convolve</span>()</code> function applies a <a href="https://en.wikipedia.org/wiki/Kernel_(image_processing)">kernel</a> over the image. 
+Kernel convolution means that each pixel value is recalculated using the weighted neighborhood sum defined in the kernel matrix. 
+For example lets look at this simple kernel:
+
+<code>kern &lt;- matrix(0, ncol = 3, nrow = 3)
+kern[1, 2] &lt;- 0.25
+kern[2, c(1, 3)] &lt;- 0.25
+kern[3, 2] &lt;- 0.25
+kern</code>
+
+<code>##      [,1] [,2] [,3]
+## [1,] 0.00 0.25 0.00
+## [2,] 0.25 0.00 0.25
+## [3,] 0.00 0.25 0.00</code>
+
+This kernel changes each pixel to the mean of its horizontal and vertical neighboring pixels, which results in a slight blurring effect in the right-hand image below:
+
+<code>img &lt;- image_resize(logo, &quot;300x300&quot;)
+img_blurred &lt;- <span class="orange">image_convolve</span>(img, kern)
+<span class="orange">image_append</span>(c(img, img_blurred))</code>
+
+Or use any of the <a href="https://legacy.imagemagick.org/Usage/convolve/">standard kernels</a>
+
+<code>img %&gt;% image_convolve(&#39;Sobel&#39;) %&gt;% image_negate()</code>
+
+<code>img %&gt;% image_convolve(&#39;DoG:0,0,2&#39;) %&gt;% image_negate()</code>
+
+<h3> - Text annotation</h3>
+Finally it can be useful to print some text on top of images:
+
+<code># Add some text
+<span class="orange">image_annotate</span>(frink, &quot;I like R!&quot;, size = 70, gravity = &quot;southwest&quot;, color = &quot;green&quot;)</code>
+
+<code># Customize text
+image_annotate(frink, &quot;CONFIDENTIAL&quot;, size = 30, color = &quot;red&quot;, boxcolor = &quot;pink&quot;,
+  degrees = 60, location = &quot;+50+100&quot;)</code>
+
+<code># Fonts may require ImageMagick has fontconfig
+image_annotate(frink, &quot;The quick brown fox&quot;, font = &#39;Times&#39;, size = 30)</code>
+
+Fonts that are supported on most platforms include <code>&quot;sans&quot;</code>, <code>&quot;mono&quot;</code>, <code>&quot;serif&quot;</code>, <code>&quot;Times&quot;</code>, <code>&quot;Helvetica&quot;</code>, <code>&quot;Trebuchet&quot;</code>, <code>&quot;Georgia&quot;</code>, <code>&quot;Palatino&quot;</code>or <code>&quot;Comic Sans&quot;</code>.
+
+<h3> - Combining with pipes</h3>
+Each of the image transformation functions returns a <strong>modified copy</strong> of the original image. 
+It does not affect the original image.
+
+<code>frink &lt;- image_read(&quot;https://jeroen.github.io/images/frink.png&quot;)
+frink2 &lt;- image_scale(frink, &quot;100&quot;)
+image_info(frink)</code>
+
+<code>##   format width height colorspace matte filesize density
+## 1    PNG   220    445       sRGB  TRUE    73494   72x72</code>
+
+<code>image_info(frink2)</code>
+
+<code>##   format width height colorspace matte filesize density
+## 1    PNG   100    202       sRGB  TRUE        0   72x72</code>
+
+Hence to combine transformations you need to chain them:
+
+<code>test &lt;- image_rotate(frink, 90)
+test &lt;- <span class="orange">image_background</span>(test, &quot;blue&quot;, flatten = TRUE)
+test &lt;- image_border(test, &quot;red&quot;, &quot;10x10&quot;)
+test &lt;- image_annotate(test, &quot;This is how we combine transformations&quot;, color = &quot;white&quot;, size = 30)
+print(test)</code>
+
+<code>##   format width height colorspace matte filesize density
+## 1    PNG   465    240       sRGB  TRUE        0   72x72</code>
+
+Using <code>magrittr</code> pipe syntax makes it a bit more readable
+
+<code>image_read(&quot;https://jeroen.github.io/images/frink.png&quot;) %&gt;%
+  image_rotate(270) %&gt;%
+  image_background(&quot;blue&quot;, flatten = TRUE) %&gt;%
+  image_border(&quot;red&quot;, &quot;10x10&quot;) %&gt;%
+  image_annotate(&quot;The same thing with pipes&quot;, color = &quot;white&quot;, size = 30)</code>
+
+<h2>Image Vectors</h2>
+The examples above concern single images. 
+However all functions in magick have been vectorized to support working with layers, compositions or animation.
+
+The standard base methods <code>[</code> <code>[[</code>, <code>c()</code> and <code>length()</code> are used to manipulate vectors of images which can then be treated as layers or frames.
+
+<code># Download earth gif and make it a bit smaller for vignette
+earth &lt;- image_read(&quot;https://jeroen.github.io/images/earth.gif&quot;) %&gt;%
+  image_scale(&quot;200x&quot;) %&gt;%
+  image_quantize(128)
+
+length(earth)</code>
+
+<code>## [1] 44</code>
+
+<code>earth</code>
+
+<code>head(image_info(earth))</code>
+
+<code>##   format width height colorspace matte filesize density
+## 1    GIF   200    200        RGB FALSE        0   72x72
+## 2    GIF   200    200        RGB FALSE        0   72x72
+## 3    GIF   200    200        RGB FALSE        0   72x72
+## 4    GIF   200    200        RGB FALSE        0   72x72
+## 5    GIF   200    200        RGB FALSE        0   72x72
+## 6    GIF   200    200        RGB FALSE        0   72x72</code>
+
+<code>rev(earth) %&gt;% 
+  image_flip() %&gt;% 
+  image_annotate(&quot;meanwhile in Australia&quot;, size = 20, color = &quot;white&quot;)</code>
+
+<h3> - Layers</h3>
+We can stack layers on top of each other as we would in Photoshop:
+
+<code>bigdata &lt;- image_read(&#39;https://jeroen.github.io/images/bigdata.jpg&#39;)
+frink &lt;- image_read(&quot;https://jeroen.github.io/images/frink.png&quot;)
+logo &lt;- image_read(&quot;https://jeroen.github.io/images/Rlogo.png&quot;)
+img &lt;- c(bigdata, logo, frink)
+img &lt;- image_scale(img, &quot;300x300&quot;)
+image_info(img)</code>
+
+<code>##   format width height colorspace matte filesize density
+## 1   JPEG   300    225       sRGB FALSE        0   72x72
+## 2    PNG   300    232       sRGB  TRUE        0   72x72
+## 3    PNG   148    300       sRGB  TRUE        0   72x72</code>
+
+A mosaic prints images on top of one another, expanding the output canvas such that that everything fits:
+
+<code>image_mosaic(img)</code>
+
+Flattening combines the layers into a single image which has the size of the first image:
+
+<code>image_flatten(img)</code>
+
+Flattening and mosaic allow for specifying alternative <a href="https://www.imagemagick.org/Magick++/Enumerations.html#CompositeOperator">composite operators</a>:
+
+<code>image_flatten(img, &#39;Add&#39;)</code>
+
+<code>image_flatten(img, &#39;Modulate&#39;)</code>
+
+<code>image_flatten(img, &#39;Minus&#39;)</code>
+
+<h3> - Combining</h3>
+Appending means simply putting the frames next to each other:
+
+<code>image_append(image_scale(img, &quot;x200&quot;))</code>
+
+Use <code>stack = TRUE</code> to position them on top of each other:
+
+<code>image_append(image_scale(img, &quot;100&quot;), stack = TRUE)</code>
+
+Composing allows for combining two images on a specific position:
+
+<code>bigdatafrink &lt;- image_scale(image_rotate(image_background(frink, &quot;none&quot;), 300), &quot;x200&quot;)
+image_composite(image_scale(bigdata, &quot;x400&quot;), bigdatafrink, offset = &quot;+180+100&quot;)</code>
+
+<h3> - Pages</h3>
+When reading a PDF document, each page becomes an element of the vector. 
+Note that PDF gets rendered while reading so you need to specify the density immediately.
+
+<code>manual &lt;- image_read_pdf(&#39;https://cloud.r-project.org/web/packages/magick/magick.pdf&#39;, density = 72)
+image_info(manual)</code>
+
+<code>##    format width height colorspace matte filesize density
+## 1     PNG   612    792       sRGB  TRUE        0   72x72
+## 2     PNG   612    792       sRGB  TRUE        0   72x72
+## 3     PNG   612    792       sRGB  TRUE        0   72x72
+## 4     PNG   612    792       sRGB  TRUE        0   72x72
+## 5     PNG   612    792       sRGB  TRUE        0   72x72
+## 6     PNG   612    792       sRGB  TRUE        0   72x72
+## 7     PNG   612    792       sRGB  TRUE        0   72x72
+## 8     PNG   612    792       sRGB  TRUE        0   72x72
+## 9     PNG   612    792       sRGB  TRUE        0   72x72
+## 10    PNG   612    792       sRGB  TRUE        0   72x72
+## 11    PNG   612    792       sRGB  TRUE        0   72x72
+## 12    PNG   612    792       sRGB  TRUE        0   72x72
+## 13    PNG   612    792       sRGB  TRUE        0   72x72
+## 14    PNG   612    792       sRGB  TRUE        0   72x72
+## 15    PNG   612    792       sRGB  TRUE        0   72x72
+## 16    PNG   612    792       sRGB  TRUE        0   72x72
+## 17    PNG   612    792       sRGB  TRUE        0   72x72
+## 18    PNG   612    792       sRGB  TRUE        0   72x72
+## 19    PNG   612    792       sRGB  TRUE        0   72x72
+## 20    PNG   612    792       sRGB  TRUE        0   72x72
+## 21    PNG   612    792       sRGB  TRUE        0   72x72
+## 22    PNG   612    792       sRGB  TRUE        0   72x72
+## 23    PNG   612    792       sRGB  TRUE        0   72x72
+## 24    PNG   612    792       sRGB  TRUE        0   72x72
+## 25    PNG   612    792       sRGB  TRUE        0   72x72
+## 26    PNG   612    792       sRGB  TRUE        0   72x72
+## 27    PNG   612    792       sRGB  TRUE        0   72x72
+## 28    PNG   612    792       sRGB  TRUE        0   72x72
+## 29    PNG   612    792       sRGB  TRUE        0   72x72
+## 30    PNG   612    792       sRGB  TRUE        0   72x72
+## 31    PNG   612    792       sRGB  TRUE        0   72x72
+## 32    PNG   612    792       sRGB  TRUE        0   72x72
+## 33    PNG   612    792       sRGB  TRUE        0   72x72
+## 34    PNG   612    792       sRGB  TRUE        0   72x72
+## 35    PNG   612    792       sRGB  TRUE        0   72x72
+## 36    PNG   612    792       sRGB  TRUE        0   72x72
+## 37    PNG   612    792       sRGB  TRUE        0   72x72
+## 38    PNG   612    792       sRGB  TRUE        0   72x72
+## 39    PNG   612    792       sRGB  TRUE        0   72x72
+## 40    PNG   612    792       sRGB  TRUE        0   72x72
+## 41    PNG   612    792       sRGB  TRUE        0   72x72
+## 42    PNG   612    792       sRGB  TRUE        0   72x72
+## 43    PNG   612    792       sRGB  TRUE        0   72x72</code>
+
+<code>manual[1]</code>
+
+<h3> - Animation</h3>
+Instead of treating vector elements as layers, we can also make them frames in an animation!
+
+<code>image_animate(image_scale(img, &quot;200x200&quot;), fps = 1, dispose = &quot;previous&quot;)</code>
+
+Morphing creates a sequence of <code>n</code> images that gradually morph one image into another. 
+It makes animations
+
+<code>newlogo &lt;- image_scale(image_read(&quot;https://jeroen.github.io/images/Rlogo.png&quot;))
+oldlogo &lt;- image_scale(image_read(&quot;https://jeroen.github.io/images/Rlogo-old.png&quot;))
+image_resize(c(oldlogo, newlogo), &#39;200x150!&#39;) %&gt;%
+  image_background(&#39;white&#39;) %&gt;%
+  image_morph() %&gt;%
+  image_animate(optimize = TRUE)</code>
+
+If you read in an existing GIF or Video file, each frame becomes a layer:
+
+<code># Foreground image
+banana &lt;- image_read(&quot;https://jeroen.github.io/images/banana.gif&quot;)
+banana &lt;- image_scale(banana, &quot;150&quot;)
+image_info(banana)</code>
+
+<code>##   format width height colorspace matte filesize density
+## 1    GIF   150    148       sRGB  TRUE        0   72x72
+## 2    GIF   150    148       sRGB  TRUE        0   72x72
+## 3    GIF   150    148       sRGB  TRUE        0   72x72
+## 4    GIF   150    148       sRGB  TRUE        0   72x72
+## 5    GIF   150    148       sRGB  TRUE        0   72x72
+## 6    GIF   150    148       sRGB  TRUE        0   72x72
+## 7    GIF   150    148       sRGB  TRUE        0   72x72
+## 8    GIF   150    148       sRGB  TRUE        0   72x72</code>
+
+Manipulate the individual frames and put them back into an animation:
+
+<code># Background image
+background &lt;- image_background(image_scale(logo, &quot;200&quot;), &quot;white&quot;, flatten = TRUE)
+
+# Combine and flatten frames
+frames &lt;- image_composite(background, banana, offset = &quot;+70+30&quot;)
+
+# Turn frames into animation
+animation &lt;- image_animate(frames, fps = 10, optimize = TRUE)
+print(animation)</code>
+
+<code>##   format width height colorspace matte filesize density
+## 1    gif   200    155       sRGB  TRUE        0   72x72
+## 2    gif    94    105       sRGB  TRUE        0   72x72
+## 3    gif   125    122       sRGB  TRUE        0   72x72
+## 4    gif   108    118       sRGB  TRUE        0   72x72
+## 5    gif   108    105       sRGB  TRUE        0   72x72
+## 6    gif    92    105       sRGB  TRUE        0   72x72
+## 7    gif   113    123       sRGB  TRUE        0   72x72
+## 8    gif   119    118       sRGB  TRUE        0   72x72</code>
+
+Animations can be saved as GIF of MPEG files:
+
+<code>image_write(animation, &quot;Rlogo-banana.gif&quot;)</code>
+
+<h2>Drawing and Graphics</h2>
+A relatively recent addition to the package is a native R graphics device which produces a magick image object. 
+This can either be used like a regular device for making plots, or alternatively to open a device which draws onto an existing image using pixel coordinates.
+
+<h3> - Graphics device</h3>
+The <code>image_graph()</code> function opens a new graphics device similar to e.g. 
+<code>png()</code> or <code>x11()</code>. 
+It returns an image object to which the plot(s) will be written. 
+Each “page” in the plotting device will become a frame in the image object.
+
+<code># Produce image using graphics device
+fig &lt;- image_graph(width = 400, height = 400, res = 96)
+ggplot2::qplot(mpg, wt, data = mtcars, colour = cyl)
+dev.off()</code>
+
+We can easily post-process the figure using regular image operations.
+
+<code># Combine
+out &lt;- image_composite(fig, frink, offset = &quot;+70+30&quot;)
+print(out)</code>
+
+<code>## # A tibble: 1 x 7
+##   format width height colorspace matte filesize density
+##   &lt;chr&gt;  &lt;int&gt;  &lt;int&gt; &lt;chr&gt;      &lt;lgl&gt;    &lt;int&gt; &lt;chr&gt;  
+## 1 PNG      400    400 sRGB       TRUE         0 96x96</code>
+
+<h3> - Drawing device</h3>
+Another way to use the graphics device is to draw on top of an exiting image using pixel coordinates.
+
+<code># Or paint over an existing image
+img &lt;- image_draw(frink)
+rect(20, 20, 200, 100, border = &quot;red&quot;, lty = &quot;dashed&quot;, lwd = 5)
+abline(h = 300, col = &#39;blue&#39;, lwd = &#39;10&#39;, lty = &quot;dotted&quot;)
+text(30, 250, &quot;Hoiven-Glaven&quot;, family = &quot;monospace&quot;, cex = 4, srt = 90)
+palette(rainbow(11, end = 0.9))
+symbols(rep(200, 11), seq(0, 400, 40), circles = runif(11, 5, 35),
+  bg = 1:11, inches = FALSE, add = TRUE)
+dev.off()</code>
+
+<code>print(img)</code>
+
+<code>## # A tibble: 1 x 7
+##   format width height colorspace matte filesize density
+##   &lt;chr&gt;  &lt;int&gt;  &lt;int&gt; &lt;chr&gt;      &lt;lgl&gt;    &lt;int&gt; &lt;chr&gt;  
+## 1 PNG      220    445 sRGB       TRUE         0 72x72</code>
+
+By default <code>image_draw()</code> sets all margins to 0 and uses graphics coordinates to match image size in pixels (width x height) where (0,0) is the top left corner. 
+Note that this means the y axis increases from top to bottom which is the opposite of typical graphics coordinates. 
+You can override all this by passing custom <code>xlim</code>, <code>ylim</code> or <code>mar</code> values to <code>image_draw</code>.
+
+<h3> - Animated Graphics</h3>
+The graphics device supports multiple frames which makes it easy to create animated graphics. 
+The code below shows how you would implement the example from the very cool <a href="https://gganimate.com/">gganimate</a> package using the magick graphics device.
+
+<code>library(gapminder)
+library(ggplot2)
+img &lt;- image_graph(600, 340, res = 96)
+datalist &lt;- split(gapminder, gapminder$year)
+out &lt;- lapply(datalist, function(data){
+  p &lt;- ggplot(data, aes(gdpPercap, lifeExp, size = pop, color = continent)) +
+    scale_size(&quot;population&quot;, limits = range(gapminder$pop)) + geom_point() + ylim(20, 90) + 
+    scale_x_log10(limits = range(gapminder$gdpPercap)) + ggtitle(data$year) + theme_classic()
+  print(p)
+})
+dev.off()
+animation &lt;- image_animate(img, fps = 2, optimize = TRUE)
+print(animation)</code>
+
+<code>## # A tibble: 12 x 7
+##    format width height colorspace matte filesize density
+##    &lt;chr&gt;  &lt;int&gt;  &lt;int&gt; &lt;chr&gt;      &lt;lgl&gt;    &lt;int&gt; &lt;chr&gt;  
+##  1 gif      600    340 sRGB       TRUE         0 96x96  
+##  2 gif      385    243 sRGB       TRUE         0 96x96  
+##  3 gif      395    237 sRGB       TRUE         0 96x96  
+##  4 gif      374    232 sRGB       TRUE         0 96x96  
+##  5 gif      393    225 sRGB       TRUE         0 96x96  
+##  6 gif      373    234 sRGB       TRUE         0 96x96  
+##  7 gif      354    234 sRGB       TRUE         0 96x96  
+##  8 gif      308    210 sRGB       TRUE         0 96x96  
+##  9 gif      320    260 sRGB       TRUE         0 96x96  
+## 10 gif      331    218 sRGB       TRUE         0 96x96  
+## 11 gif      356    208 sRGB       TRUE         0 96x96  
+## 12 gif      347    208 sRGB       TRUE         0 96x96</code>
+
+To write it to a file you would simply do:
+
+<code>image_write(animation, &quot;gapminder.gif&quot;)</code>
+
+<h2>Raster Images</h2>
+Magick images can also be converted to raster objects for use with R’s graphics device. 
+Thereby we can combine it with other graphics tools. 
+However do note that R’s graphics device is very slow and has a very different coordinate system which reduces the quality of the image.
+
+<h3> - Base R rasters</h3>
+Base R has an <code>as.raster</code> format which converts the image to a vector of strings. 
+The paper <a href="https://journal.r-project.org/archive/2011-1/RJournal_2011-1_Murrell.pdf">Raster Images in R Graphics</a> by Paul Murrell gives a nice overview.
+
+<code>plot(as.raster(frink))</code>
+
+<code># Print over another graphic
+plot(cars)
+rasterImage(frink, 21, 0, 25, 80)</code>
+
+<h3> - The <code>grid</code> package</h3>
+The <code>grid</code> package makes it easier to overlay a raster on the graphics device without having to adjust for the x/y coordinates of the plot.
+
+<code>library(ggplot2)
+library(grid)
+qplot(speed, dist, data = cars, geom = c(&quot;point&quot;, &quot;smooth&quot;))</code>
+
+<code>## `geom_smooth()` using method = &#39;loess&#39; and formula &#39;y ~ x&#39;</code>
+
+<code>grid.raster(frink)</code>
+
+<h2>OCR text extraction</h2>
+A recent addition to the package is to extract text from images using OCR. 
+This requires the tesseract package:
+
+<code>install.packages(&quot;tesseract&quot;)</code>
+
+<code>img &lt;- image_read(&quot;http://jeroen.github.io/images/testocr.png&quot;)
+print(img)</code>
+
+<code>## # A tibble: 1 x 7
+##   format width height colorspace matte filesize density
+##   &lt;chr&gt;  &lt;int&gt;  &lt;int&gt; &lt;chr&gt;      &lt;lgl&gt;    &lt;int&gt; &lt;chr&gt;  
+## 1 PNG      640    480 sRGB       TRUE     23359 72x72</code>
+
+<code># Extract text
+cat(image_ocr(img))</code>
+
+<code>## This is a lot of 12 point text to test the
+## ocr code and see if it works on all types
+## of file format.
+## 
+## The quick brown dog jumped over the
+## lazy fox. 
+The quick brown dog jumped
+## over the lazy fox. 
+The quick brown dog
+## jumped over the lazy fox. 
+The quick
+## brown dog jumped over the lazy fox.</code>
+
+<script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+    // ... more custom settings?
+});
+</script>
+
+</pre></body></html>
