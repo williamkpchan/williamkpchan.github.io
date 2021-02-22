@@ -1,0 +1,378 @@
+<base target="_blank"><html><head><title>Using Inline Assembly in C/C++</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="https://williamkpchan.github.io/lazyload.min.js"></script>
+<script src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/commonfunctions.js"></script>
+<script>
+  var showTopicNumber = true;
+  var bookid = "Using Inline Assembly in C/C++"
+  var markerName = "h2"
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:24px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>Using Inline Assembly in C/C++</h1>
+<a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a><br><br>
+<div id="toc"></div></center><br><br>
+<div id="mustWatch"><center><span class="red">MustWatch</span></center><br></div>
+<pre><br><br>
+
+https://www.codeproject.com/Articles/15971/Using-Inline-Assembly-in-C-C
+
+This article describes using inline assembly code in your C/C++ program... was it ever difficult for you, it will never be any more!
+
+<a href="/KB/cpp/edujini_inline_asm/edujini_inline_asm_src.zip">Download source files - 1.86 KB</a>
+
+<img src="/KB/cpp/edujini_inline_asm/edujini_inline_asm.jpg"> 
+<h2>Introduction</h2>
+
+First of all, what does term "inline" mean? 
+
+Generally the inline term is used to instruct the compiler to insert the code of a function into the code of its caller at the point where the actual call is made. 
+Such functions are called "inline functions". 
+The benefit of inlining is that it reduces function-call overhead. 
+
+Now, it's easier to guess about inline assembly. 
+It is just a set of assembly instructions written as inline functions. 
+Inline assembly is used for speed, and you ought to believe me that it is frequently used in system programming. 
+
+We can mix the assembly statements within C/C++ programs using keyword <code>asm</code>. 
+Inline assembly is important because of its ability to operate and make its output visible on C/C++ variables. 
+
+<h2>GCC Inline Assembly Syntax</h2>
+
+Assembly language appears in two flavors: Intel Style & AT&T style. 
+GNU C compiler i.e. 
+GCC uses AT&T syntax and this is what we would use. 
+Let us look at some of the major differences of this style as against the Intel Style. 
+
+If you are wondering how you can use GCC on Windows, you can just download Cygwin from <a href="http://www.cygwin.com/">www.cygwin.com</a>. 
+
+<strong>Register Naming</strong>: Register names are prefixed with <code>%</code>, so that registers are <code>%eax, %cl</code> etc, instead of just <code>eax, cl.</code> 
+<strong>Ordering of operands</strong>: Unlike Intel convention (first operand is destination), the order of operands is source(s) first, and destination last. 
+For example, Intel syntax "<code>mov eax, edx</code>" will look like "<code>mov %edx, %eax</code>" in AT&T assembly. 
+
+<strong>Operand Size</strong>: In AT&T syntax, the size of memory operands is determined from the last character of the op-code name. 
+The suffix is <code>b</code> for (8-bit) byte, <code>w</code> for (16-bit) word, and <code>l</code> for (32-bit) long. 
+For example, the correct syntax for the above instruction would have been "<code>movl %edx, %eax</code>". 
+
+<strong>Immediate Operand</strong>: Immediate operands are marked with a <code>$</code> prefix, as in "<code>addl $5, %eax</code>", which means add immediate long value 5 to register <code>%eax</code>). 
+
+<strong>Memory Operands</strong>: Missing operand prefix indicates it is a memory-address; hence "<code>movl $bar, %ebx</code>" puts the address of variable bar into register <code>%ebx</code>, but "<code>movl bar, %ebx</code>" puts the contents of variable bar into register <code>%ebx</code>. 
+
+<strong>Indexing</strong>: Indexing or indirection is done by enclosing the index register or indirection memory cell address in parentheses. 
+For example, "<code>movl 8(%ebp), %eax</code>" (moves the contents at offset 8 from the cell pointed to by <code>%ebp</code> into register <code>%eax</code>). 
+
+For all our code, we would be working on Intel x86 processors. 
+This information is necessary since all instructions may or may not work with other processors. 
+
+<h2>Basic Inline Code</h2>
+
+We can use either of the following formats for basic inline assembly. 
+
+asm("assembly code");
+
+or 
+
+__asm__ ("assembly code");
+
+Example: 
+
+asm("movl %ebx, %eax"); /* moves the contents of ebx register to eax */
+__asm__("movb %ch, (%ebx)"); /* moves the byte from ch to the memory pointed by ebx */
+
+Just in case we have more than one assembly instruction, use semicolon at the end of each instruction. 
+
+Please refer to the example below (available in <em>basic_arithmetic.c</em> in downloads). 
+
+#include &lt;stdio.h&gt;
+
+int main() {
+    /* Add 10 and 20 and store result into register %eax */
+    __asm__ ( "movl $10, %eax;"
+                "movl $20, %ebx;"
+                "addl %ebx, %eax;"
+    );
+
+    /* Subtract 20 from 10 and store result into register %eax */
+    __asm__ ( "movl $10, %eax;"
+                    "movl $20, %ebx;"
+                    "subl %ebx, %eax;"
+    );
+
+    /* Multiply 10 and 20 and store result into register %eax */
+    __asm__ ( "movl $10, %eax;"
+                    "movl $20, %ebx;"
+                    "imull %ebx, %eax;"
+    );
+
+    return 0 ;
+}
+
+Compile it using "<code>-g</code>" option of GNU C compiler "<code>gcc</code>" to keep debugging information with the executable and then using GNU Debugger "<code>gdb</code>" to inspect the contents of CPU registers. 
+
+<h2>Extended Assembly</h2>
+
+In extended assembly, we can also specify the operands. 
+It allows us to specify the input registers, output registers and a list of clobbered registers. 
+
+asm ( "assembly code"
+           : output operands                  /* optional */
+           : input operands                   /* optional */
+           : list of clobbered registers      /* optional */
+);
+
+If there are no output operands but there are input operands, we must place two consecutive colons surrounding the place where the output operands would go. 
+
+It is not mandatory to specify the list of clobbered registers to use, we can leave that to GCC and GCC’s optimization scheme do the needful. 
+
+<h3>Example (1)</h3>
+
+asm ("movl %%eax, %0;" : "=r" ( val ));
+
+In this example, the variable "<code>val</code>" is kept in a register, the value in register <code>eax</code> is copied onto that register, and the value of "<code>val</code>" is updated into the memory from this register. 
+
+When the "<code>r</code>" constraint is specified, gcc may keep the variable in any of the available General Purpose Registers. 
+We can also specify the register names directly by using specific register constraints. 
+
+The register constraints are as follows : 
+
++---+--------------------+
+| r |    Register(s)     |
++---+--------------------+
+| a |   %eax, %ax, %al   |
+| b |   %ebx, %bx, %bl   |
+| c |   %ecx, %cx, %cl   |
+| d |   %edx, %dx, %dl   |
+| S |   %esi, %si        |
+| D |   %edi, %di        |
++---+--------------------+
+
+<h3>Example (2)</h3>
+
+int no = 100, val ;
+    asm ("movl %1, %%ebx;"
+         "movl %%ebx, %0;"
+         : "=r" ( val )        /* output */
+         : "r" ( no )         /* input */
+         : "%ebx"         /* clobbered register */
+     );
+
+In the above example, "<code>val</code>" is the output operand, referred to by <code>%0 </code>and "<code>no</code>" is the input operand, referred to by <code>%1</code>. 
+"<code>r</code>" is a constraint on the operands, which says to GCC to use any register for storing the operands. 
+
+Output operand constraint should have a constraint modifier "<code>=</code>" to specify the output operand in write-only mode. 
+There are two <code>%</code>’s prefixed to the register name, which helps GCC to distinguish between the operands and registers. 
+operands have a single <code>%</code> as prefix. 
+
+The clobbered register <code>%ebx </code>after the third colon informs the GCC that the value of <code>%ebx </code>is to be modified inside "<code>asm</code>", so GCC won't use this register to store any other value. 
+
+<h3>Example (3)</h3>
+
+int arg1, arg2, add ;
+__asm__ ( "addl %%ebx, %%eax;"
+        : "=a" (add)
+        : "a" (arg1), "b" (arg2) );
+
+Here "<code>add</code>" is the output operand referred to by register <code>eax</code>. 
+And <code>arg1 </code>and <code>arg2 </code>are input operands referred to by registers <code>eax </code>and <code>ebx </code>respectively. 
+
+Let us see a complete example using extended inline assembly statements. 
+It performs simple arithmetic operations on integer operands and displays the result (available as <em>arithmetic.c</em> in downloads). 
+
+#include &lt;stdio.h&gt;
+
+int main() {
+
+    int arg1, arg2, add, sub, mul, quo, rem ;
+
+    printf( "Enter two integer numbers : " );
+    scanf( "%d%d", &arg1, &arg2 );
+
+    /* Perform Addition, Subtraction, Multiplication & Division */
+    __asm__ ( "addl %%ebx, %%eax;" : "=a" (add) : "a" (arg1) , "b" (arg2) );
+    __asm__ ( "subl %%ebx, %%eax;" : "=a" (sub) : "a" (arg1) , "b" (arg2) );
+    __asm__ ( "imull %%ebx, %%eax;" : "=a" (mul) : "a" (arg1) , "b" (arg2) );
+
+    __asm__ ( "movl $0x0, %%edx;"
+              "movl %2, %%eax;"
+              "movl %3, %%ebx;"
+               "idivl %%ebx;" : "=a" (quo), "=d" (rem) : "g" (arg1), "g" (arg2) );
+
+    printf( "%d + %d = %d\n", arg1, arg2, add );
+    printf( "%d - %d = %d\n", arg1, arg2, sub );
+    printf( "%d * %d = %d\n", arg1, arg2, mul );
+    printf( "%d / %d = %d\n", arg1, arg2, quo );
+    printf( "%d %% %d = %d\n", arg1, arg2, rem );
+
+    return 0 ;
+}
+
+<h2>Volatile</h2>
+
+If our assembly statement must execute where we put it, (i.e. 
+must not be moved out of a loop as an optimization), put the keyword "<code>volatile</code>" or "<code>__volatile__</code>" after "<code>asm</code>" or "<code>__asm__</code>" and before the <code>()</code>s. 
+
+asm volatile ( "...;"
+        "...;" : ... 
+);
+
+or 
+
+__asm__ __volatile__ ( "...;"
+            "...;" : ... 
+);
+
+Refer to the following example, which computes the Greatest Common Divisor using well known Euclid's Algorithm ( honoured as first algorithm). 
+
+#include &lt;stdio.h&gt;
+
+int gcd( int a, int b ) {
+    int result ;
+    /* Compute Greatest Common Divisor using Euclid's Algorithm */
+    __asm__ __volatile__ ( "movl %1, %%eax;"
+                          "movl %2, %%ebx;"
+                          "CONTD: cmpl $0, %%ebx;"
+                          "je DONE;"
+                          "xorl %%edx, %%edx;"
+                          "idivl %%ebx;"
+                          "movl %%ebx, %%eax;"
+                          "movl %%edx, %%ebx;"
+                          "jmp CONTD;"
+                          "DONE: movl %%eax, %0;" : "=g" (result) : "g" (a), "g" (b)
+    );
+
+    return result ;
+}
+
+int main() {
+    int first, second ;
+    printf( "Enter two integers : " ) ;
+    scanf( "%d%d", &first, &second );
+
+    printf( "GCD of %d & %d is %d\n", first, second, gcd(first, second) ) ;
+
+    return 0 ;
+}
+
+Here are some more examples which use FPU (Floating Point Unit) Instruction Set. 
+
+An example program to perform simple floating point arithmetic: 
+
+#include &lt;stdio.h&gt;
+
+int main() {
+
+    float arg1, arg2, add, sub, mul, div ;
+
+    printf( "Enter two numbers : " );
+    scanf( "%f%f", &arg1, &arg2 );
+
+    /* Perform floating point Addition, Subtraction, Multiplication & Division */
+    __asm__ ( "fld %1;"
+              "fld %2;"
+              "fadd;"
+              "fstp %0;" : "=g" (add) : "g" (arg1), "g" (arg2) ) ;
+
+    __asm__ ( "fld %2;"
+              "fld %1;"
+              "fsub;"
+              "fstp %0;" : "=g" (sub) : "g" (arg1), "g" (arg2) ) ;
+
+    __asm__ ( "fld %1;"
+              "fld %2;"
+              "fmul;"
+              "fstp %0;" : "=g" (mul) : "g" (arg1), "g" (arg2) ) ;
+
+    __asm__ ( "fld %2;"
+              "fld %1;"
+              "fdiv;"
+              "fstp %0;" : "=g" (div) : "g" (arg1), "g" (arg2) ) ;
+
+    printf( "%f + %f = %f\n", arg1, arg2, add );
+    printf( "%f - %f = %f\n", arg1, arg2, sub );
+    printf( "%f * %f = %f\n", arg1, arg2, mul );
+    printf( "%f / %f = %f\n", arg1, arg2, div );
+
+    return 0 ;
+}
+
+Example program to compute trigonometrical functions like sin and cos: 
+
+#include &lt;stdio.h&gt;
+
+float sinx( float degree ) {
+    float result, two_right_angles = 180.0f ;
+    /* Convert angle from degrees to radians and then calculate sin value */
+    __asm__ __volatile__ ( "fld %1;"
+                            "fld %2;"
+                            "fldpi;"
+                            "fmul;"
+                            "fdiv;"
+                            "fsin;"
+                            "fstp %0;" : "=g" (result) : 
+"g"(two_right_angles), "g" (degree)
+    ) ;
+    return result ;
+}
+
+float cosx( float degree ) {
+    float result, two_right_angles = 180.0f, radians ;
+    /* Convert angle from degrees to radians and then calculate cos value */
+    __asm__ __volatile__ ( "fld %1;"
+                            "fld %2;"
+                            "fldpi;"
+                            "fmul;"
+                            "fdiv;"
+                            "fstp %0;" : "=g" (radians) : 
+"g"(two_right_angles), "g" (degree)
+    ) ;
+    __asm__ __volatile__ ( "fld %1;"
+                            "fcos;"
+                            "fstp %0;" : "=g" (result) : "g" (radians)
+    ) ;
+    return result ;
+}
+
+float square_root( float val ) {
+    float result ;
+    __asm__ __volatile__ ( "fld %1;"
+                            "fsqrt;"
+                            "fstp %0;" : "=g" (result) : "g" (val)
+    ) ;
+    return result ;
+}
+
+int main() {
+    float theta ;
+    printf( "Enter theta in degrees : " ) ;
+    scanf( "%f", &theta ) ;
+
+    printf( "sinx(%f) = %f\n", theta, sinx( theta ) );
+    printf( "cosx(%f) = %f\n", theta, cosx( theta ) );
+    printf( "square_root(%f) = %f\n", theta, square_root( theta ) ) ;
+
+    return 0 ;
+}
+
+<h2>Summary</h2>
+
+GCC uses AT&T style assembly statements and we can use <code>asm </code>keyword to specify basic as well as extended assembly instructions. 
+Using inline assembly can reduce the number of instructions required to be executed by the processor. 
+In our example of GCD, if we implement using inline assembly, the number of instructions required for calculation would be much less as compared to normal C code using Euclid's Algorithm. 
+
+You can also visit <a href="http://eduzine.edujinionline.com/">Eduzine</a><sup>©</sup> - electronic technology magazine of <a href="http://www.edujinionline.com/">EduJini</a>, the company that I work with. 
+
+<script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+    // ... more custom settings?
+});
+</script>

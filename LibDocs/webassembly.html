@@ -1,0 +1,595 @@
+<base target="_blank"><html><head><title>webassembly</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="https://williamkpchan.github.io/lazyload.min.js"></script>
+<script src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/commonfunctions.js"></script>
+<script>
+  var showTopicNumber = true;
+  var bookid = "webassembly"
+  var markerName = "h2, h3"
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:24px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>webassembly</h1>
+<a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a><br><br>
+<div id="toc"></div></center><br><br>
+<div id="mustWatch"><center><span class="red">MustWatch</span></center><br></div>
+<pre><br><br>
+
+<h2><span class="orange">Combining C++ with JavaScript</span></h2>
+https://www.syntaxsuccess.com/viewarticle/combining-c-plus-plus-with-javascript
+<h3> - Web Assembly</h3>
+
+Web assembly, or wasm, is a web standard that allows us to integrate compiled languages like C++ and C in Javascript applications. 
+Note: At this point there might be support for other platforms as well (e.g. .Net).
+
+Wasm enables us to compile C/C++ code to a binary format that can be executed directly by the browser. 
+As a result the code may execute as fast as native machine code. 
+In most everyday web application this extra boost in performance may not mean much in practice, but still, it makes for a fun experiment :-)
+
+Since this is my first time playing with wasm, I won’t attempt anything fancy. 
+Instead I will keep it simple and implement a recursive version of n-factorial in C++. 
+
+I will use the following Javascript implementation as a baseline for the C++ version.
+
+function factorialJS (n) {
+  if (n === 0 || n === 1) {
+    return 1;  
+  }
+  else {
+    return n * factorialJS(n-1);
+  }
+}</div>
+
+<h3> - C++</h3>
+
+It’s probably overkill to do an object oriented implementation of this, but I went ahead and did one anyway. 
+Mainly because I wanted to test out a multi file integration.
+
+Here is the C++ code:
+
+<h3> : factorial.cpp</h3>
+#include "factorial-service.h"
+extern "C" int factorial(int n) {
+  FactorialService factorialService;
+  return factorialService.factorial(n);
+}
+</div>
+
+<h3> : factorial-service.h
+</h3>
+class FactorialService {
+  public:
+    int factorial (int n);
+};</div>
+
+<h3> : factorial-service.cpp</h3>
+#include "factorial-service.h"
+int FactorialService::factorial (int n) {
+  if (n == 0 || n == 1) {
+    return 1; 
+  }
+  else {
+    return n * this -> factorial(n-1);
+  }
+}</div>
+
+For the most part this looks like regular C++ code… Or at least how I remember it from my C++ courses close to 20 years ago :-)… 
+
+The only exception might be the extern "C" int factorial(int n) part. 
+This is done to prevent the C++ compiler from mangling the function name into something unpredictable.
+
+Now that we have some C++ code, how do we compile it?
+
+For this experiment I will be using the Emscripten compiler, which seems to be a popular choice btw. 
+Most examples I could find used Emscripten.
+
+I am not aware of an IDE, but running Emscripten from the command line works just fine. 
+Here is the command I used to compile the C++ code:
+
+emcc -O3 -s WASM=1 -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap"]' -s EXPORTED_FUNCTIONS="['_factorial']" factorial.cpp factorial-service.cpp -o factorial.js</div>
+
+The output from the compiler is a .wasm file and a .js file. 
+The wasm file is where you will find the compiled C++ code. 
+
+Why is there a Javascript file? The .js file provides a Javascript api for loading the wasm file in Javascript. 
+Technically this file is optional since you could hand code the integration, but this can get tricky. 
+The .js file adds to the payload of your application, but several compiler flags are available to ensure that the file is as small as possible.
+
+How do we call the function from Javascript? Luckily it’s pretty straight forward as you can see from the code below:
+
+Module.onRuntimeInitialized = _ => {
+  const  factorialCpp = Module.cwrap('factorial', 'number', ['number']);
+  factorialCpp(10);
+ };</div>
+
+The code looks a bit weird, but at a high level, this wraps the original C++ method in a way that allows us to call it like a regular Javascript method. 
+Notice that the wrapper asks for the function name as well as args and return type. 
+Module is part of the api brought in by the .js file I mentioned earlier.
+
+<h3> - Performance</h3>
+
+Moment of truth! Does the C++ code run faster than the Javascript baseline?
+
+I didn’t expect a huge difference in performance he
+re, but my measurements showed that the C++ version is consistently faster. 
+I measured an average difference of 10-20% when running with large values of n in a long running loop.
+
+<h2><span class="orange">Applying Web Assembly Made Easy</span></h2>
+There are plethora of programming languages nowadays, and different languages have different pros and cons. 
+As for languages I have worked with, I would rate C/C++ &gt; Java &gt; JavaScript in terms of performance, and JavaScript &gt; Java &gt; C/C++ in terms of productivity, while it would depend on the programmer. 
+In the world of JavaScript, the emergence of Just-in-Time (JIT) Compiler instigated a rapid development, and has become a foundation upon which programmers used to build larger and larger web applications. 
+However, while everyone was still unsatisfied with the performance of JavaScript, came the WebAssembly.
+
+Two aspects that makes the biggest difference in performance arise when the compiling happens (compile language vs. 
+interpreter language,) and the lack of a need for a virtual machine (VM), as WebAssembly code can be executed directly in Assembly. 
+As most of you know, JavaScript, due to the flexibility and productivity, has its patented pros and cons. 
+It is interpreted, compiled, and executed in runtime, so in terms of performance, such sacrifices are quite clear.
+
+<h3> - Convert Existing Modules into WebAssembly</h3>
+There are toolchains out there that allow you to transform any asm.js or C/C++ code written for and working in FireFox into WebAssembly modules like ones shown below.
+
+Code asm.js and Turn It Into WebAssembly (<a href="https://github.com/WebAssemblybinaryen">binaryen</a>)
+Code C/C++ and Turn It Into WebAssembly (<a href="http://kripken.github.io/emscripten-site/">Emscripten</a>)
+
+However, to a Front-end developer, it is a long way ahead to get to fast, performant WebAssembly modules. 
+In order to bestow glorious WebAssembly onto your program, you need to go through and understand the confusing concepts including the make, llvm, C/C++, compile, and linking. 
+Then, you can use Webpack or rollup to integrate the created modules in a development environment. 
+It is no wonder that most of the introductory material on WebAssembly only include creating the main function in C/C++ to print out a “Hello, World.”
+
+It is very likely that you would be exhausted before you can start applying the knowledge to useful applications.
+<h3> - AssemblyScript</h3>
+<a href="https://github.com/dcodeIO/AssemblyScript">AssemblyScript</a>
+There are some prerequisites to languages that can be converted into WebAssembly, and it is that the variable types can be categorized. 
+Languages like C/C++, <a href="https://medium.com/@ianjsikes/get-started-with-rust-webassembly-and-webpack-58d28e219635" rel="noopener">Rust</a>, TypeScript(<a href="https://github.com/Microsoft/TypeScript/issues/9202">Issue on Compilation target other than JavaScript</a>) can be converted into WebAssembly, and <strong>“AssemblyScript”</strong>, a lower set of TypeScript, can also be converted into WebAssembly.
+
+The reasoning behind choosing AssemblyScript is the utility. 
+It is registered on NPM, and a front end developer can easily test the WebAssembly codes.
+
+In this article, I will use AssemblyScript to convert my codes into a WebAssembly module.
+
+Here are some warnings before we start writing WebAssembly codes using AssemblyScript.
+
+Clearly document the type in order to avoid implicit format changes.
+It is necessary to initialize the default values of parameters.
+Only support clear types (Does not support <em>any</em> or <em>undefined</em> types.)
+Boolean Operators &amp;&amp; and || always result in bool values.
+
+If you install <a href="https://www.npmjs.com/package/assemblyscript">assemblyscript</a> through NPM, you can easily compile and create a .wasm (WebAssembly) file over the command line. 
+Furthermore, there are tools to use the created WASM files as modules like <a href="https://www.npmjs.com/package/assemblyscript-loader">assemblyscript-loader</a> and <a href="https://www.npmjs.com/package/wasm-loader">wasm-loader</a>, and they mainly defer in that the first one has more options to load WASM modules from inside of the code, and the latter is provided using the Webpack loader, and can be bundled and used more easily.
+<h3> - AssemblyScript Made Easier</h3>
+As we mentioned before, using native languages like C/C++ to compile into WebAssembly is an extremely convoluted task. 
+Let’s use JavaScript language family that is more familiar to write codes that can compile directly into WebAssembly and that can be bundled using the Webpack.
+<h3> - assemblyscript-live-loader</h3>
+<a href="https://github.com/dongsik-yoo/assemblyscript-live-loader">assemblyscript-live-loader</a>
+The two NPM packages offer convenience to some degree, but there are still shortcomings when it comes to writing the JavaScript code in the Webpack development environment to be bundled immediately. 
+Therefore, I have written my own Webpack loader. 
+The loader provides two main functionalities.
+
+Compiling AssemblyScript as WASM
+Bunlding the WASM module so that it can be used as WebAssembly.Module
+
+Note: There was an error when it comes to uglifying codes when using the wasm-loader, so I had to write the WASM loading portion myself.
+<h3> - Installing the Package</h3>
+Since I have not yet registered the package on NPM, install it through Github.
+npm install --save-dev <a href="https://github.com/dongsik-yoo/assemblyscript-live-loader.git">https://github.com/dongsik-yoo/assemblyscript-live-loader.git</a>
+<h3> - Webpack Loader config</h3>
+Modify the config file to allow Webpack to bundle files written in AssemblyScript.
+
+webpack.config.js
+module: {
+  loaders: [
+    {
+      test: /\.asc$/, // assemblyscript Source File
+      exclude: &quot;/node_modules/&quot;,
+      loader: &quot;assemblyscript-live-loader&quot;
+    }
+  ];
+}
+<h3> - Writing the Code To Be Compiled</h3>
+Create a <strong>./asc/Calculator.asc</strong> file, and fill in the following content.
+export function add(a: int, b: int): int {
+  return a + b;
+}export function subtract(a: int, b: int): int {
+  return a - b;
+}export function multiply(a: int, b: int): int {
+  return a * b;
+}export function divide(a: int, b: int): int {
+  return a / b;
+}
+<h3> - Importing the Module</h3>
+Now, the ostensibly complicated process of compiling, loading, and bundling the module can be simplified through the Webpack loader. 
+Now, let’s import the WebAssembly module to use in our <strong>index.js</strong> file, and call the prepared test functions to fetch the results.
+import Calculator from &quot;./asc/Calculator.asc&quot;;const calc = new Calculator().exports;
+const add = calc.add(44, 8832);
+const subtract = calc.subtract(100, 20);
+const multiply = calc.multiply(13, 4);
+const divide = calc.divide(20, 4);console.log(add);
+console.log(subtract);
+console.log(multiply);
+console.log(divide);
+<h3> - Build</h3>npx webpack
+
+Note: It’s more convenient if you use NPM 5.2’s newly added npx
+<h3> - Testing for Performance</h3>
+Before I started writing this article, I was under the impression that the WebAssembly would be faster in general. 
+Therefore, I wrote simple binary arithmetic operators and factorials using WebAssembly version that compiled JavaScript and AssemblyScript for a simple performance measurement. 
+However, WebAssembly’s performance test results came out to be different from what I expected.
+
+Note: Chrome and Firefox now use WebAssembly as defaults, and can be tested.
+<h3> - Test Environment</h3>
+Testing Tools: Chrome59.0.3071.115, Firefox 54.0.1, <a href="https://www.npmjs.com/package/micro-benchmark">micro-benchmark</a>
+Test Results (Chart): <a href="https://github.com/nhnent/tui.chart">TUI-Chart</a> 2.9.0
+Tested Features: Addition, Subtraction, Multiplication, Division, Factorial
+Legends: JavaScript (Red), WebAssembly (Orange) <strong>Shorter bar graphs show faster performance.</strong>
+Test Page: The aforementioned test is documented <a href="https://dongsik-yoo.github.io/assemblyscript-live-loader/">here</a>.
+Test Code: Test codes can be seen at respective links. 
+<a href="https://github.com/dongsik-yoo/assemblyscript-live-loader/blob/master/example/src/js/Calculator.js">Javascript</a>, <a href="https://github.com/dongsik-yoo/assemblyscript-live-loader/blob/master/example/src/asc/Calculator.asc">WebAssembly</a>, <a href="https://github.com/dongsik-yoo/assemblyscript-live-loader/blob/master/example/src/js/components/App.js">Benchmark</a>
+
+<h3> - Test Code Sample</h3>// Initialization Code 
+const factorialNumber = 1000;
+const factorialLoop = 10000;
+const N = 1000000;
+...// (JavaScript) Loops are executed in JavaScript
+{
+    name: &#x27;Factorial&#x27;,
+    fn: function () {
+        var i = 0;
+        for (; i &lt; factorialLoop; i += 1) {
+            CalculatorJS.factorial(factorialNumber);
+        }
+    }
+},
+// (JavaScript) Loops are executed in the test function.
+{
+    name: &#x27;Factorial&#x27;,
+    fn: function () {
+        CalculatorJS.factorialWithLoopCount(factorialLoop, factorialNumber);
+    }
+},
+// (WebAssembly) Loops are executed in JavaScript
+{
+    name: &#x27;Factorial&#x27;,
+    fn: function () {
+        var i = 0;
+        for (; i &lt; factorialLoop; i += 1) {
+            CalculatorWASM.factorial(factorialNumber);
+        }
+    }
+},
+// (WebAssembly) Loops are executed in the test function. 
+
+{
+    name: &#x27;Factorial&#x27;,
+    fn: function () {
+        CalculatorWASM.factorialWithLoopCount(factorialLoop, factorialNumber);
+    }
+}// Javascript Test Code
+function factorial(num) {
+  let tmp = num;  if (num &lt; 0) {
+    return -1;
+  } else if (num === 0) {
+    return 1;
+  }  while (num &gt; 2) {
+    tmp *= num;
+    num -= 1;
+  }  return tmp;
+}function factorialWithLoopCount(count, num) {
+  let i = 0;
+  for (; i &lt; count; i += 1) {
+    factorial(num);
+  }
+}// WebAssembly Test Code
+export function factorial(num: int): int {
+  var tmp: int = num;  if (num &lt; 0) {
+    return -1;
+  } else if (num === 0) {
+    return 1;
+  }  while (num &gt; 2) {
+    tmp *= num;
+    num -= 1;
+  }  return tmp;
+}export function factorialWithLoopCount(count: int, num: int) {
+  var i: int = 0;
+  for (; i &lt; count; i += 1) {
+    factorial(num);
+  }
+}
+<h3> - Test Results from Chrome</h3>
+<img class="lazy"  src="https://miro.medium.com/max/60/0*_2JzvZAikxuGHEY9.png?q=20" width="700" height="400"/>
+
+<img class="lazy"  src="https://miro.medium.com/max/60/0*oyR_gaW3oXcTPxv8.png?q=20" width="700" height="400"/>
+
+<h3> - Test Results from Firefox</h3>
+<img class="lazy"  src="https://miro.medium.com/max/60/0*bABXVof7N-zMWoDZ.png?q=20" width="700" height="400"/>
+
+<img class="lazy"  src="https://miro.medium.com/max/60/0*NRqIwDR2cKCvDi2s.png?q=20" width="700" height="400"/>
+
+<h3> - Test Results and Closing Remarks</h3>
+As many people have predicted, WebAssembly will not replace JavaScript, but instead will be used to enhance the performance of modules that can be executed faster than plain JavaScript.
+
+There are unbelievably diverse factors that affect JavaScript’s performance. 
+As I mentioned before, I for sure surmised that WebAssembly would be faster, but aside from the factorial operation, basic binary arithmetic operations were executed faster with JavaScript.
+
+To list a few of numerous factors that contribute to JavaScript’s performance is as follows.
+
+Performance of the JavaScript Engine
+Unexpectedly fast Performance Optimization of JIT
+Call-stack Handling (ex&gt; when using recursion)
+Cost of calling WebAssembly functions
+WebAssembly Compiler Optimization
+
+I have to assume that, in this test, as I ran repetitive loops, simple arithmetic operators became faster as they were compiled to Assembly in JIT. 
+Also, it seems that the process of being converted from JavaScript to WebAssembly, also known as trampolining, has taken a serious toll on performance. 
+Lastly, the difference between Chrome and Firefox cannot be ignored.
+
+As the introduction of JIT initiated a fierce competition among JavaScript engines, the performance competition initiated by WebAssembly should also be a hoot and a half.
+<h3> - And The Rest</h3>
+One of the issues I was worried about was how to debug the program when an error occurs in the WebAssembly module, but luckily, Chrome captures the Call-stack as below.
+
+<img class="lazy"  src="https://miro.medium.com/max/60/0*GtE8rkW91K6NN4S5.png?q=20" width="994" height="394"/>
+
+<h2><span class="orange">Loading and running WebAssembly code</span></h2>
+
+To use WebAssembly in JavaScript, you first need to pull your module into memory before compilation/instantiation. 
+This article provides a reference for the different mechanisms that can be used to fetch WebAssembly bytecode, as well as how to compile/instantiate then run it.
+
+<h3> - What are the options?</h3>WebAssembly is not yet integrated with <code>&lt;script type='module'&gt;</code> or ES2015&nbsp;<code>import</code> statements, thus there is not a path to have the browser fetch modules for you using imports.
+
+The older <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compile"><code>WebAssembly.compile</code></a>/<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate"><code>WebAssembly.instantiate</code></a> methods require you to create an <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer"><code>ArrayBuffer</code></a> containing your WebAssembly module binary after fetching the raw bytes, and then compile/instantiate it. 
+This is analogous to <code>new Function(string)</code>, except that we are substituting a string of characters (JavaScript source code) with an array buffer of bytes (WebAssembly source code).
+
+The newer <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compileStreaming"><code>WebAssembly.compileStreaming</code></a>/<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming"><code>WebAssembly.instantiateStreaming</code></a> methods are a lot more efficient — they perform their actions directly on the raw stream of bytes coming from the network, cutting out the need for the <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer"><code>ArrayBuffer</code></a> step.
+
+So how do we get those bytes into an array buffer and compiled? The following sections explain.
+
+<h3> - Using Fetch</h3><a href="https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API">Fetch</a> is a convenient, modern API for fetching network resources.
+
+The quickest, most efficient way to fetch a wasm module is using the newer <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming"><code>WebAssembly.instantiateStreaming()</code></a> method, which can take a <code>fetch()</code> call as its first argument, and will handle fetching, compiling, and instantiating the module in one step, accessing the raw byte code as it streams from the server:
+
+<code>WebAssembly.instantiateStreaming(fetch('simple.wasm'), importObject)
+.then(results =&gt; {
+// Do something with the results!
+});</code>
+
+If we used the older <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate"><code>WebAssembly.instantiate()</code></a> method, which doesn't work on the direct stream, we'd need an extra step of converting the fetched byte code to an <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer"><code>ArrayBuffer</code></a>, like so:
+
+<code>fetch('module.wasm').then(response =&gt;
+response.arrayBuffer()
+).then(bytes =&gt;
+WebAssembly.instantiate(bytes, importObject)
+).then(results =&gt; {
+// Do something with the results!
+});</code>
+
+<h3> - Aside on instantiate() overloads</a></h3>The <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate"><code>WebAssembly.instantiate()</code></a> function has two overload forms — the one shown above takes the byte code to compile as an argument and returns a Promise that resolves to an object containing both the compiled module object and an instantiated instance of it. 
+The object looks like this:
+
+<code>{
+module : Module // The newly compiled WebAssembly.Module object,
+instance : Instance // A new WebAssembly.Instance of the module object
+}</code>
+
+<strong>Note</strong>: Usually we only care about the instance, but it’s useful to have the module in case we want to cache it, share it with another worker or window via <code><a href="https://developer.mozilla.org/en-US/docs/Web/API/MessagePort/postMessage">postMessage()</a></code>, or create more instances.
+
+<strong>Note</strong>: The second overload form takes a <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module"><code>WebAssembly.Module</code></a> object as an argument, and returns a promise directly containing the instance object as the result. 
+See the&nbsp;<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate#second_overload_example">Second overload example</a>.
+
+<h3> - Running your WebAssembly code</a></h3>Once you've got your WebAssembly instance available in your JavaScript, you can then start using features of it that have been exported via the <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Instance/exports"><code>WebAssembly.Instance.exports</code></a> property. 
+Your code might look something like this:
+
+<code>WebAssembly.instantiateStreaming(fetch('myModule.wasm'), importObject)
+.then(obj =&gt; {
+// Call an exported function:
+obj.instance.exports.exported_func();
+
+// or access the buffer contents of an exported memory:
+var i32 = new Uint32Array(obj.instance.exports.memory.buffer);
+
+// or access the elements of an exported table:
+var table = obj.instance.exports.table;
+console.log(table.get(0)());
+})</code>
+
+<strong>Note</strong>: For more information on how exporting from a WebAssembly module works, have a read of <a href="https://developer.mozilla.org/en-US/docs/WebAssembly/Using_the_JavaScript_API">Using the WebAssembly JavaScript API</a>, and <a href="https://developer.mozilla.org/en-US/docs/WebAssembly/Understanding_the_text_format">Understanding WebAssembly text format</a>.
+
+<h3> - Using XMLHttpRequest</h3><code><a href="https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest">XMLHttpRequest</a></code> is somewhat older than Fetch, but can still be happily used to get a typed array. 
+Again, assuming our module is called <code>simple.wasm</code>:
+
+Create a new <a href="https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest"><code>XMLHttpRequest()</code></a> instance, and use its <a href="https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/open" title="open()"><code>open()</code></a> method to open a request, setting the request method to <code>GET</code>, and declaring the path to the file we want to fetch.
+
+The key part of this is to set the response type to <code>'arraybuffer'</code> using the <a href="https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/responseType" title="responseType"><code>responseType</code></a> property.
+
+Next, send the request using <a href="https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/send"><code>XMLHttpRequest.send()</code></a>.
+
+We then use the <a title="The documentation about this has not yet been written; please consider contributing!"><code>onload</code></a> event handler to invoke a function when the response has finished downloading — in this function we get the array buffer from the <a href="https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/response" title="response"><code>response</code></a> property, and then feed that into our <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate"><code>WebAssembly.instantiate()</code></a> method as we did with Fetch.
+
+The final code looks like this:
+
+<code>request = new XMLHttpRequest();
+request.open('GET', 'simple.wasm');
+request.responseType = 'arraybuffer';
+request.send();
+
+request.onload = function() {
+var bytes = request.response;
+WebAssembly.instantiate(bytes, importObject).then(results =&gt; {
+  results.instance.exports.exported_func();
+});
+};</code>
+
+<strong>Note</strong>: You can see an example of this in action in <a href="https://mdn.github.io/webassembly-examples/js-api-examples/xhr-wasm.html" rel=" noopener">xhr-wasm.html</a>.
+
+<h2><span class="orange">WebAssembly Concepts</span></h2>
+This article explains the concepts behind how WebAssembly works including its goals, the problems it solves, and how it runs inside the web browser's rendering engine.
+
+<h3> - What is WebAssembly?</h3>
+WebAssembly is a new type of code that can be run in modern web browsers and provides new features and major gains in performance. 
+It is not primarily intended to be written by hand, rather it is designed to be an effective compilation target for source languages like C, C++, Rust, etc.
+
+This has huge implications for the web platform — it provides a way to run code written in multiple languages on the web at near-native speed, with client apps running on the web that previously couldn’t have done so.
+
+What’s more, you don’t even have to know how to create WebAssembly code to take advantage of it. 
+WebAssembly modules can be imported into a web (or Node.js) app, exposing WebAssembly functions for use via JavaScript. 
+JavaScript frameworks could make use of WebAssembly to confer massive performance advantages and new features while still making functionality easily available to web developers.
+
+<h3> - WebAssembly goals</h3>
+WebAssembly is being created as an open standard inside the W3C WebAssembly Community Group with the following goals:
+
+Be fast, efficient, and portable — WebAssembly code can be executed at near-native speed across different platforms by taking advantage of common hardware capabilities.
+
+Be readable and debuggable — WebAssembly is a low-level assembly language, but it does have a human-readable text format (the specification for which is still being finalized) that allows code to be written, viewed, and debugged by hand.
+
+Keep secure — WebAssembly is specified to be run in a safe, sandboxed execution environment. 
+Like other web code, it will enforce the browser's same-origin and permissions policies.
+
+Don't break the web — WebAssembly is designed so that it plays nicely with other web technologies and maintains backwards compatibility.
+
+<strong>Note</strong>: WebAssembly will also have uses outside web and JavaScript environments (see Non-web embeddings).
+
+<h3> - How does WebAssembly fit into the web platform?</h3>
+The web platform can be thought of as having two parts:
+
+A virtual machine (VM) that runs the Web app’s code, e.g. 
+the JavaScript code that powers your apps.
+
+A set of Web APIs that the Web app can call to control web browser/device functionality and make things happen (DOM, CSSOM, WebGL, IndexedDB, Web Audio API, etc.).
+
+Historically, the VM has been able to load only JavaScript. 
+This has worked well for us as JavaScript is powerful enough to solve most problems people have on the Web today. 
+We have run into performance problems, however, when trying to use JavaScript for more intensive use cases like 3D games, Virtual and Augmented Reality, computer vision, image/video editing, and a number of other domains that demand native performance (see WebAssembly use cases for more ideas).
+
+Additionally, the cost of downloading, parsing, and compiling very large JavaScript applications can be prohibitive. 
+Mobile and other resource-constrained platforms can further amplify these performance bottlenecks.
+
+WebAssembly is a different language from JavaScript, but it is not intended as a replacement. 
+Instead, it is designed to complement and work alongside JavaScript, allowing web developers to take advantage of both languages' strong points:
+
+JavaScript is a high-level language, flexible and expressive enough to write web applications. 
+It has many advantages — it is dynamically typed, requires no compile step, and has a huge ecosystem that provides powerful frameworks, libraries, and other tools.
+
+WebAssembly is a low-level assembly-like language with a compact binary format that runs with near-native performance and provides languages with low-level memory models such as C++ and Rust with a compilation target so that they can run on the web. 
+(Note that WebAssembly has the high-level goal of supporting languages with garbage-collected memory models in the future.)
+
+With the advent of WebAssembly appearing in browsers, the virtual machine that we talked about earlier will now load and run two types of code — JavaScript AND WebAssembly.
+
+The different code types can call each other as required — the WebAssembly JavaScript API wraps exported WebAssembly code with JavaScript functions that can be called normally, and WebAssembly code can import and synchronously call normal JavaScript functions. 
+In fact, the basic unit of WebAssembly code is called a module and WebAssembly modules are symmetric in many ways to ES2015 modules.
+
+<h3> : WebAssembly key concepts</h3>
+There are several key concepts needed to understand how WebAssembly runs in the browser. 
+All of these concepts are reflected 1:1 in the WebAssembly JavaScript API.
+
+<strong>Module</strong>: Represents a WebAssembly binary that has been compiled by the browser into executable machine code. 
+A Module is stateless and thus, like a Blob, can be explicitly shared between windows and workers (via <code>postMessage()</code>). 
+A Module declares imports and exports just like an ES2015module.
+
+<strong>Memory</strong>: A resizable ArrayBuffer that contains the linear array of bytes read and written by WebAssembly’s low-level memory access instructions.
+
+<strong>Table</strong>: A resizable typed array of references (e.g. 
+to functions) that could not otherwise be stored as raw bytes in Memory (for safety and portability reasons).
+
+<strong>Instance</strong>: A Module paired with all the state it uses at runtime including a Memory, Table, and set of imported values. 
+An Instance is like an ES2015 module that has been loaded into a particular global with a particular set of imports.
+
+The JavaScript API provides developers with the ability to create modules, memories, tables, and instances. 
+Given a WebAssembly instance, JavaScript code can synchronously call its exports, which are exposed as normal JavaScript functions. 
+Arbitrary JavaScript functions can also be synchronously called by WebAssembly code by passing in those JavaScript functions as the imports to a WebAssembly instance.
+
+Since JavaScript has complete control over how WebAssembly code is downloaded, compiled and run, JavaScript developers could even think of WebAssembly as just a JavaScript feature for efficiently generating high-performance functions.
+
+In the future, WebAssembly modules will be loadable just like ES2015 modules (using <code>&lt;script type='module'&gt;</code>), meaning that JavaScript will be able to fetch, compile, and import a WebAssembly module as easily as an ES2015 module.
+
+<h3> - How do I use WebAssembly in my app?</h3>
+Above we talked about the raw primitives that WebAssembly adds to the Web platform: a binary format for code and APIs for loading and running this binary code. 
+Now let’s talk about how we can use these primitives in practice.
+
+The WebAssembly ecosystem is at a nascent stage; more tools will undoubtedly emerge going forward. 
+Right now, there are four main entry points:
+
+Porting a C/C++ application with Emscripten.
+
+Writing or generating WebAssembly directly at the assembly level.
+
+Writing a Rust application and targeting WebAssembly as its output.
+
+Using AssemblyScript which looks similar to TypeScript and compiles to WebAssembly binary.
+
+Let’s talk about these options:
+
+<h3> : Porting from C/C++</h3>
+Two of the many options for creating WASM code are an online wasm assembler or Emscripten. 
+There are a number of online WASM assembler choices, such as:
+
+WasmFiddle
+
+WasmFiddle++
+
+WasmExplorer
+
+These are great resources for people who are trying to figure out where to start, but they lack some of the tooling and optimizations of Emscripten.
+
+The Emscripten tool is able to take just about any C/C++ source code and compile it into a .wasm module, plus the necessary JavaScript "glue" code for loading and running the module, and an HTML document to display the results of the code.
+
+<img src="https://mdn.mozillademos.org/files/14647/emscripten-diagram.png">
+
+In a nutshell, the process works as follows:
+
+Emscripten first feeds the C/C++ into clang+LLVM — a mature open-source C/C++ compiler toolchain, shipped as part of XCode on OSX for example.
+
+Emscripten transforms the compiled result of clang+LLVM into a .wasm binary.
+
+By itself, WebAssembly cannot currently directly access the DOM; it can only call JavaScript, passing in integer and floating point primitive data types. 
+Thus, to access any Web API, WebAssembly needs to call out to JavaScript, which then makes the Web API call. 
+Emscripten therefore creates the HTML and JavaScript glue code needed to achieve this.
+
+<strong>Note</strong>: There are future plans to allow WebAssembly to call Web APIs directly.
+
+The JavaScript glue code is not as simple as you might imagine. 
+For a start, Emscripten implements popular C/C++ libraries like SDL, OpenGL, OpenAL, and parts of POSIX. 
+These libraries are implemented in terms of Web APIs and thus each one requires some JavaScript glue code to connect WebAssembly to the underlying Web API.
+
+So part of the glue code is implementing the functionality of each respective library used by the C/C++ code. 
+The glue code also contains the logic for calling the above-mentioned WebAssembly JavaScript APIs to fetch, load and run the .wasm file.
+
+The generated HTML document loads the JavaScript glue file and writes stdout to a <code>&lt;textarea&gt;</code>. 
+If the application uses OpenGL, the HTML also contains a <code>&lt;canvas&gt;</code> element that is used as the rendering target. 
+It’s very easy to modify the Emscripten output and turn it into whatever web app you require.
+
+You can find full documentation on Emscripten at emscripten.org, and a guide to implementing the toolchain and compiling your own C/C++ app across to wasm at Compiling from C/C++ to WebAssembly.
+
+<h3> : Writing WebAssembly directly</h3>
+Do you want to build your own compiler, or your own tools, or make a JavaScript library that generates WebAssembly at runtime?
+
+In the same fashion as physical assembly languages, the WebAssembly binary format has a text representation — the two have a 1:1 correspondence. 
+You can write or generate this format by hand and then convert it into the binary format with any of several WebAssemby text-to-binary tools.
+
+For a simple guide on how to do this, see our Converting WebAssembly text format to wasm article.
+
+<h3> : Writing Rust Targeting WebAssembly</h3>
+It is also possible to write Rust code and compile over to WebAssembly, thanks to the tireless work of the Rust WebAssembly Working Group. 
+You can get started with installing the necessary toolchain, compiling a sample Rust program to a WebAssembly npm package, and using that in a sample web app, over at our Compiling from Rust to WebAssembly article.
+
+<h3> : Using AssemblyScript</h3>
+For web developers who want to try WebAssembly without needing to learn the details of C or Rust, AssemblyScript will be the best option. 
+It generates a small bundle and its performance is slightly slower compared to C or Rust. 
+You can check its documentation on https://assemblyscript.org/.
+
+<h3> - Summary</h3>
+This article has given you an explanation of what WebAssembly is, why it is so useful, how it fits into the web, and how you can make use of it.
+<script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+    // ... more custom settings?
+});
+</script>
+
+</pre></body></html>

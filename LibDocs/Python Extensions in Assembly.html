@@ -1,0 +1,1011 @@
+<base target="_blank"><html><head><title>Writing Python Extensions in Assembly</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="https://williamkpchan.github.io/lazyload.min.js"></script>
+<script src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/commonfunctions.js"></script>
+<script>
+  var showTopicNumber = true;
+  var bookid = "Writing Python Extensions in Assembly"
+  var markerName = "h2, h3"
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:24px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>Writing Python Extensions in Assembly</h1>
+<a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a><br><br>
+<div id="toc"></div></center><br><br>
+
+<div id="mustWatch"><center><span class="red">MustWatch</span></center><br>
+https://tonybaloney.github.io/posts/extending-python-with-assembly.html</div>
+<pre><br><br>
+On occasion, you need to take something apart and put it back together to fully understand it. 
+I'm sure many of the people reading this article will have been one of those kids. 
+Kids who took a screwdriver to something, just to see whats inside it.
+It's a thrill, but its a whole different skill to put it back together.
+
+<img class="lazy" data-src="https://tonybaloney.github.io/img/posts/remote-control-car.jpg">
+
+The working machine on the outside obscures a network of patterns, patches, and workarounds in its internals.
+Programmers are used to working on the guts of a system and manipulating the ugly-inner workings to get it to follow some simple instructions.
+
+This experiment was no different. 
+I wanted to see if I could write a CPython Extension in 100% assembly.
+
+<strong>Why</strong>? Well, because after finishing the <a href="https://realpython.com/products/cpython-internals-book/">CPython Internals book</a>, the assembly code was still something of a mystery. 
+I started learning x86-64 assembly from <a href="https://www.apress.com/gp/book/9781484250754">Jo Van Hooey's book</a> and understood some of the basic concepts but struggled to relate
+them to the high-level languages that I'm familiar with.
+
+There are some questions I wanted answers to, like:
+
+Why do extensions in CPython need to be written in Python or C?
+
+If Python C extensions compile to shared libraries, whats the magic inside them that makes them loadable by Python?
+
+What ABI does CPython have between C that could make it more extensible by other languages
+
+<h2><span class="orange">Assembly quick summary</span></h2>
+Assembly code is a sequence of instructions, using an instruction set. 
+Different CPU architectures have different instruction sets. 
+With the most common being x86, ARM, and x86-64.
+There are also extension instructions on those CPU architectures. 
+Over releases of a CPU architecture the manufacturers add new instructions to the set. 
+Often to improve performance.
+
+The CPU has many registers and it loads data from registers to execute the instructions. 
+You can also copy data from memory (RAM), but you can't copy from RAM to RAM, it must go via a register.
+This means that when writing assembly instructions, you need to need to run many steps to accomplish something which would otherwise be done in 1 line in a higher-level language.
+
+For example, to assign a variable <code>a</code> to the reference of variable <code>b</code> in Python:
+
+<code>a = b</code>
+
+Whereas in assembly, you copy first to a register (we'll use RAX) and then to the destination:
+
+<code>mov RAX, a
+mov b, RAX</code>
+
+The instruction <code>mov RAX, a</code> will copy the <strong>address</strong> of the variable <code>a</code> to the register. 
+The register RAX is a <strong>64-bit register</strong>, so it can contain any value which fits into 64 bits (8 bytes).
+On a 64-bit Operating System, memory addresses are 64-bit addresses, so the address value will be 64 bits.
+
+You can also copy the <strong>value</strong> of the variable to the register by using <code>[]</code> around the name:
+
+<code>mov a, 1
+mov RAX, [a]</code>
+
+Now the value of the <code>RAX</code> register will be the decimal value 1 (<code>0000 0000 0000 0001</code> in hexadecimal).
+
+I picked RAX because it's the first register, but you can arbitrary pick any register if you're writing a standalone application.
+
+64-bit registers start with <code>r</code>, the first 8 registers can also be used with 32, 16 or 8-bit values by referencing the lower bits of the register. 
+Addressing 32-bits of a register is faster, so most compilers will use a smaller register address if the
+value is within 32-bits:
+
+<table>
+<thead>
+<tr><th>64-bit register</th><th>Lower 32 bits</th><th>Lower 16 bits</th><th>Lower 8 bits</th></tr></thead>
+<tbody>
+<tr><td>rax</td><td>eax</td><td>ax</td><td>al</td></tr>
+<tr><td>rbx</td><td>ebx</td><td>bx</td><td>bl</td></tr>
+<tr><td>rcx</td><td>ecx</td><td>cx</td><td>cl</td></tr>
+<tr><td>rdx</td><td>edx</td><td>dx</td><td>dl</td></tr>
+<tr><td>rsi</td><td>esi</td><td>si</td><td>sil</td></tr>
+<tr><td>rdi</td><td>edi</td><td>di</td><td>dil</td></tr>
+<tr><td>rbp</td><td>ebp</td><td>bp</td><td>bpl</td></tr>
+<tr><td>rsp</td><td>esp</td><td>sp</td><td>spl</td></tr>
+<tr><td>r8</td><td>r8d</td><td>r8w</td><td>r8b</td></tr>
+<tr><td>r9</td><td>r9d</td><td>r9w</td><td>r9b</td></tr>
+<tr><td>r10</td><td>r10d</td><td>r10w</td><td>r10b</td></tr>
+<tr><td>r11</td><td>r11d</td><td>r11w</td><td>r11b</td></tr>
+<tr><td>r12</td><td>r12d</td><td>r12w</td><td>r12b</td></tr>
+<tr><td>r13</td><td>r13d</td><td>r13w</td><td>r13b</td></tr>
+<tr><td>r14</td><td>r14d</td><td>r14w</td><td>r14b</td></tr>
+<tr><td>r15</td><td>r15d</td><td>r15w</td><td>r15b</td></tr></tbody>
+</table>
+As assembly is a sequence of instructions, branching can be tricky. 
+The way to implement branching is to use conditional and unconditional jump statements to move the instruction pointer (<code>rip</code>) to the instruction address.
+Instruction addresses can be labeled in the assembly source code and the assembly will replace these names with a actual memory address. 
+This address is either relative or absolute (will be explained later).
+
+<code>jmp leapfrog ; jump to leapfrog label
+mov rax, rcx ; this never gets executed
+leapfrog:
+mov rcx, rax</code>
+
+This simple Python code, contains a branch when comparing <code>a</code> with the decimal value <code>5</code>:
+
+<code>a = 2
+a += 3
+if a == 5:
+  print(&quot;YES&quot;)
+else:
+  print(&quot;NO&quot;)</code>
+
+You could do this in assembly by simplifying the assignment of (<code>a</code> and increment by <code>3</code>) into a simple comparison.
+Most compilers would make this sort of optimization automatically, because they would determine that you're comparing constant values.
+
+Here is some pseudo-assembly to demonstrate:
+
+<code> mov rcx, 2  ; Move the decimal value 2 to the RCX CPU register
+ add rcx, 3  ; Add 3 to the value in the RCX CPU register, RCX is now equal to 5
+ cmp rcx, 5  ; Compare RCX to the value 5, 
+ je YES      ; If the comparison was equal, jump to the instruction offset YES
+ jmp NO      ; Jump to the instruction offset NO
+ YES:  ; RCX == 5
+   ... 
+
+   jmp END
+ NO:   ; RCX != 5
+   ...
+   jmp END</code>
+
+<h3> - Calling external functions</h3>
+Unless you want to entirely reinvent the wheel, your application or library will probably be using functions from other compiled libraries.
+
+In assembly, you can refer to the address of an external function by using the <code>extern</code> instruction with the symbol name.
+The linker will replace this with the actual value of the library, if the executable is statically linked, or depend upon a runtime value if the executable is dynamically linked. 
+I don't want to get into linking in this article
+otherwise it will keep going into a mini-book (and I don't really know that much about linkers).
+
+If you were writing an application in C and required to call a function in another library, you would use the Header (H) file.
+
+Header files would tell the compiler:
+
+The name of the function (symbol)
+
+Its return value and the size of the response
+
+The arguments and their types
+
+For example, if you defined a function in C:
+
+<code>char* pad_right(char * message, int width, char padding);</code>
+
+What this header tells us:
+- The function takes 3 arguments
+- The first argument is a <code>char</code> pointer, so a 64-bit address to an 8-bit value (<code>char</code>)
+- The second argument is an int, which (depending on the OS and some other factors) is probably a 32-bit value
+- The third argument is a <code>char</code>, which is 8-bits
+- The response is a <code>char</code> pointer, so we need a 64-bit address to store the result
+
+Assembly function calls don't have the concept of arguments, but instead Operating Systems define a specification (called a calling convention) on which registers
+should be used for which argument.
+
+Luckily, macOS and Linux have the same <a href="https://software.intel.com/sites/default/files/article/402129/mpx-linux64-abi.pdf">calling convention</a> called System-V for arguments, which states that the following registers should be populated with the values of the arguments when a function is called:
+
+<table>
+<thead>
+<tr><th>Argument</th><th>64-bit Register</th></tr></thead>
+<tbody>
+<tr><td>Argument 1</td><td>rdi</td></tr>
+<tr><td>Argument 2</td><td>rsi</td></tr>
+<tr><td>Argument 3</td><td>rdx</td></tr>
+<tr><td>Argument 4</td><td>rcx</td></tr>
+<tr><td>Argument 5</td><td>r8</td></tr>
+<tr><td>Argument 6</td><td>r9</td></tr></tbody>
+</table>
+NB: Windows has a <a href="https://cda.ms/1VT">calling convention</a>, which uses different registers to System-V.
+
+Additional arguments are loaded from the value stack, and because its a value stack you push them in reverse order. 
+For example, if the function had 10 arguments, you would push the 10th first:
+
+<code> push arg10
+ push arg9
+ push arg8
+ push arg7</code>
+
+This calling convention means that if you're calling a function written in C, C++, or even Rust, the function will read whatever is in the <code>rdi</code> CPU register and use that as the first argument.
+
+If you wanted to call the <code>pad_right()</code> function you would write the equivalent assembly code:
+
+<code>extern pad_right
+section .data
+    message db &quot;Hello&quot;, 0 ; null-terminated string
+section .bss
+    result  resb 11
+section .text
+    mov rdi, db  ; argument 1 
+    mov rsi, 10  ; argument 2
+    mov rdx, '-' ; argument 3
+    call pad_right
+    mov [result], rax ; result</code>
+
+The calling convention states that the register <code>rax</code> will be populated with the result. 
+Because this function returns a <code>char *</code>, we expect the result to be a pointer (64-bit memory address value).
+We reserved 11 bytes (10 letters + null terminator) in the <code>bss</code> section and then write the result <code>rax</code> to that address.
+
+Something else important to remember is that assembly doesn't have scope. 
+So if you were using a register for something, like storing a value, then called an external function, that register could have changed values.
+Registers are effectively global.
+
+The correct way to preserve the state of your registers before calling functions is to push them onto the value stack, then pop them back off when the function call has completed:
+
+<code>... 
+do stuff with r9
+push r9
+call externalFunction
+pop r9</code>
+
+When you are building your own functions, its expected that you preserve the call frame during your instructions. 
+The call frame uses the stack pointer (<code>rsp</code>) and <code>rbp</code> registers.
+To accomplish this, assembly functions should include some extra instructions at the beginning and end (called the prolog and epilog):
+
+<code>push rbp
+mov rbp, rsp
+
+... 
+your code
+
+mov rsp, rbp
+pop rbp</code>
+
+Windows defines <a href="https://cda.ms/1VV">another calling convention</a>, using different registers for the arguments.
+It also requires a different prolog and epilog, which calculates address limits. 
+This is a bit more complex than the original Intel spec.
+
+<h3> - Turning assembly into an executable</h3>
+You can't execute an assembly source file directly. 
+It may seem like you're coding machine-code, but there is a wrapper around the assembly instructions required to make the OS run the instructions (an Executable File Format).
+
+The assembler will take an assembly source file and assemble it into a machine-code format. 
+The formats are Operating System specific. 
+Some common formats for executable code are:
+
+<a href="https://en.wikipedia.org/wiki/Mach-O">Mach-O</a> for macOS
+
+<a href="https://refspecs.linuxfoundation.org/elf/elf.pdf">ELF</a> for Linux
+
+<a href="https://cda.ms/1VW">PE</a> for Windows
+
+Executable file formats include a few components, not just instructions:
+
+The machine-code instructions (in a section called <code>text</code>)
+
+A list of external symbols (external references)
+
+A list of memory requirements (Bytes Started by Sequence, <code>bss</code> section)
+
+Constant values, like strings (in a section called <code>data</code>)
+
+EFF headers also contain some other useful information that the Operating System needs.
+
+The Mach-O format contains a detailed header before any data or instructions. 
+I like a program called <a href="https://www.synalysis.net">SynalizeIT!</a>, a HEX Editor that can apply binary grammars to visualize and decode binary file formats.
+The Mach-O format is a supported grammar, and if you open up the CPython executable (<code>/usr/bin/python3</code> or whereever you've installed it), you can see and explore those headers.
+
+<img class="lazy" data-src="https://tonybaloney.github.io/img/posts/synalize-screenshot-1.png">
+
+On the right, you can see some attributes like:
+
+The CPU architecture this binary was assembled for. 
+In the future, when Apple release an ARM MacBook, this executable won't work as it will inspect this header and see a mismatch in the CPU architecture (before trying to load the instructions)
+
+The length, positions and offsets of the data, text and bss sections
+
+Any runtime flags, such as Position-Independent-Executable (PIE) (covered later)
+
+Another feature of the ELF, mach-O and PE formats is the ability to build shared libraries (.so files in Linux, .dylib or .so in macOS, and .dll files in Windows).
+
+A shared library can be imported dynamically (like a plugin) or linked during the build stage as a dependency to your application.
+When building CPython C extensions, you need to link the extension with the Python shared library.
+Your C extension is also in itself a shared library, and is dynamically loaded by CPython (when you <code>import mylibrary</code>).
+
+<h3> - Complex data structures in assembly</h3>
+If you were calling a function that had a more complex data type for its argument (like a pointer to a <code>struct</code>), you need to be aware of the storage size
+of the C data types:
+
+<table>
+<thead>
+<tr><th>Scalar Type</th><th>C Data Type</th><th>Storage Size (in bytes)</th><th>Recommended Alignment</th></tr></thead>
+<tbody>
+<tr><td>INT8</td><td><code>char</code></td><td>1</td><td>Byte</td></tr>
+<tr><td>UINT8</td><td><code>unsigned char</code></td><td>1</td><td>Byte</td></tr>
+<tr><td>INT16</td><td><code>short</code></td><td>2</td><td>Word</td></tr>
+<tr><td>UINT16</td><td><code>unsigned short</code></td><td>2</td><td>Word</td></tr>
+<tr><td>INT32</td><td><code>int</code>, <code>long</code></td><td>4</td><td>Doubleword</td></tr>
+<tr><td>UINT32</td><td><code>unsigned int</code>, <code>unsigned long</code></td><td>4</td><td>Doubleword</td></tr>
+<tr><td>INT64</td><td><code>__int64</code></td><td>8</td><td>Quadword</td></tr>
+<tr><td>UINT64</td><td><code>unsigned __int64</code></td><td>8</td><td>Quadword</td></tr>
+<tr><td>FP32 (single precision)</td><td><code>float</code></td><td>4</td><td>Doubleword</td></tr>
+<tr><td>FP64 (double precision)</td><td><code>double</code></td><td>8</td><td>Quadword</td></tr>
+<tr><td>POINTER</td><td><code>*</code></td><td>8</td><td>Quadword</td></tr></tbody>
+</table>
+Take this example of a struct in C with 3 integer fields (<code>x</code>, <code>y</code>, and <code>z</code>):
+
+<code>typedef struct { 
+    int x; 
+    int y;
+    int z;
+} position</code>
+
+Each of those 3 fields would use 4 bytes (32-bits), so if you were to define in C:
+
+<code>position myself = { 3, 9, 0} ;</code>
+
+That would equate the variable <code>myself</code> to the hexadecimal value:
+
+<code>0000 0003 0000 0009 0000 0000</code>
+
+You can recreate this structure in NASM assembly using the <code>struc</code> and <code>istruc</code> macros:
+
+<code>section .data:
+    struc position
+        x: resd 1
+        y: resd 1
+        z: resd 1
+    endstruc
+
+    myself:
+        istruc position
+            at x, dd 3
+            at y, dd 9
+            at z, dd 0
+        iend</code>
+
+The <code>struc</code> macro is equivalent to the <code>struct</code> construct in C, for defining memory structures. 
+The <code>istruc</code> allocates a constant value with the values defined.
+The instruction <code>resd</code> means to reserve a double word (4 bytes), the <code>dd</code> means to define a double word to the value.
+
+This would create the identical memory sequence:
+
+<code>0000 0003 0000 0009 0000 0000</code>
+
+Because this doesn't fit into 64-bits, you would send a pointer to the address of the allocated memory.
+
+If, in C you had a function that used the typedef:
+
+<code>void calculatePosition(position* p);</code>
+
+You could call that function from assembly by setting the <code>rdi</code> register to the address of your allocated memory:
+
+<code>mov rdi, myself
+call calculatePosition</code>
+
+The function, <code>calculatePosition()</code>, is ignorant to whether it's being called by code written in C, Assembly, C++, etc.
+
+Its this principal that I'll explore next to see if we can write a dynamically loaded CPython Extension in Assembly.
+
+<h2><span class="orange">Registering the Python Extension module</span></h2>
+When you load a module in Python, the import library will look in the <code>PYTHONPATH</code> for a matching module for the name you provided.
+
+Modules can be in either C (as compiled extensions) or Python. 
+Many of the CPython standard library modules are written in C because they either require interfaces to lower-level Operating System APIs (disk IO, networking, etc.). 
+The remainder of the standard library modules are written in Python. 
+Some are a combination of both, a Python module with C extension functions. 
+This is normally implemented as a hidden-module written in C with the public module written in Python. 
+The Python module will import the hidden C module and wrap its functions.
+
+To write a C extension module, you need:
+
+A C compiler
+
+A linker
+
+The Python libraries
+
+Setuptools
+
+The C code we're trying to recreate is a function called <code>PyInit_pymult()</code> that returns a <code>PyObject*</code>, which is created by calling <code>PyModule_Create2()</code>.
+
+<code>PyObject* PyInit_pymult() {
+    return PyModule_Create2(&amp;_moduledef, 1033); 
+}</code>
+
+There are many options for registering your module, but I'm just going to go into this approach, called a single-phase registration.
+
+When you type <code>import XYZ</code> in Python, it looks for,
+
+<ol>
+A file called <code>XYZ-cpython-{version}-{os.name}.so</code> in the Python Path
+
+A file called <code>XYZ.so</code> in the Python Path
+
+</ol>
+The first option is a compiled library for that version of Python. 
+You could have multiple compiled libraries in a binary-distribution (wheel) of a package. 
+e.g.,
+
+<code>XYZ-cpython-39-darwin.so</code> Python 3.9
+
+<code>XYZ-cpython-38-darwin.so</code> Python 3.8
+
+<code>XYZ-cpython-37-darwin.so</code> Python 3.7
+
+If you're wondering what &ldquo;darwin&rdquo; is, its the old name for the macOS kernel. 
+It's still referred to that today in CPython.
+
+<code>PyModule_Create2()</code> is a function that takes a <code>PyModule_Def *</code> and an <code>int</code> with the version of CPython this module is for.
+
+The type structures, defined in CPython <code>Include/moduleobject.h</code>:
+
+<code>typedef struct PyModuleDef_Base {
+  PyObject_HEAD // PyObject header 
+  PyObject* (*m_init)(void); // Pointer to the init function
+  Py_ssize_t m_index; // index
+  PyObject* m_copy; // Optional pointer to a copy() function
+} PyModuleDef_Base;
+... 
+
+typedef struct PyModuleDef{
+  PyModuleDef_Base m_base; // The base data 
+  const char* m_name;      // The module name
+  const char* m_doc;       // The module docstring
+  Py_ssize_t m_size;       // The module size
+  PyMethodDef *m_methods;  // A list of methods, terminated by NULL, NULL, NULL, NULL
+  struct PyModuleDef_Slot* m_slots; // Defined slots for Python protocols (e.g., __eq__, __contains__)
+  traverseproc m_traverse; // Optional custom traverse method
+  inquiry m_clear;         // Optional custom clear method
+  freefunc m_free;         // Optional custom free method (called when module is destroyed by GC)
+} PyModuleDef;
+...</code>
+
+We can recreate those structures in assembly with a knowledge of the storage requirements of the basic C types:
+
+<code>default rel
+bits 64
+
+section .data
+    modulename db &quot;pymult&quot;, 0
+    docstring db &quot;Simple Multiplication function&quot;, 0
+
+    struc   moduledef
+        ;pyobject header
+        m_object_head_size: resq 1
+        m_object_head_type: resq 1
+        ;pymoduledef_base
+        m_init: resq 1
+        m_index: resq 1
+        m_copy: resq 1
+        ;moduledef
+        m_name: resq    1
+        m_doc:  resq    1
+        m_size: resq    1
+        m_methods:  resq    1
+        m_slots: resq   1
+        m_traverse: resq    1
+        m_clear: resq   1
+        m_free: resq    1
+    endstruc
+section .bss
+section .text</code>
+
+Then we can define a global function to be exported as a symbol when this shared library is compiled:
+
+<code>global PyInit_pymult</code>
+
+The <code>__init__</code> function can load the correct values into the moduledef structure:
+
+<code>PyInit_pymult:
+    extern PyModule_Create2
+    section .data
+
+        _moduledef:
+            istruc moduledef
+                at m_object_head_size, dq  1
+                at m_object_head_type, dq 0x0  ; null
+                at m_init, dq 0x0       ; null
+                at m_index, dq 0        ; zero
+                at m_copy, dq 0x0       ; null
+                at m_name, dq modulename
+                at m_doc, dq   docstring
+                at m_size, dq 2
+                at m_methods, dq 0 ; null - no functions
+                at m_slots, dq 0    ; null- no slots
+                at m_traverse, dq 0 ; null
+                at m_clear, dq 0    ; null - no custom clear
+                at m_free, dq 0     ; null - no custom free()
+            iend</code>
+
+The instructions for the <code>__init__</code> function will follow the System-V calling convention and call <code>PyModule_Create2(&amp;_moduledef, 1033)</code>:
+
+<code>    section .text
+        push rbp                    ; preserve stack pointer
+        mov rbp, rsp
+
+        lea rdi, [_moduledef]  ; load module def
+        mov esi, 0x3f5              ; 1033 - module_api_version
+        call PYMODULE_CREATE2       ; create module, leave return value in register as return result
+
+        mov rsp, rbp ; reinit stack pointer
+        pop rbp
+        ret</code>
+
+The constant <code>0x3f5</code> is <code>1033</code>, the integer value for the CPython API we're using.
+
+Next, to compile the source, we have to assemble the <code>pymult.asm</code> file, then link it to the <code>libpythonXX</code> library.
+This is done in two steps. 
+The first step is to create the object file, using <code>nasm</code>. 
+The second step is to link the object file with the Python 3.X (in my case 3.9) library:
+
+For macOS, we use the <code>macho64</code> object format, include debug symbols with <code>-g</code>, and tell the NASM compiler that all symbols will have the prefix <code>_</code>. 
+When the external module is linked, <code>PyModule_Create2</code> will be called <code>_PyModule_Create2</code> in macOS. 
+But later on, we're going to try Linux and it won't have that prefix.
+
+<code>nasm -g -f macho64 -DMACOS --prefix=_ pymult.asm -o pymult.obj
+cc -shared -g pymult.obj -L/Library/Frameworks/Python.framework/Versions/3.9/lib -lpython3.9 -o pymult.cpython-39-darwin.so</code>
+
+This will produce the artifact <code>pymult.cpython-39-darwin.so</code> which can be loaded into CPython.
+Because we build with the debug symbols (the <code>-g</code> flag), the lldb or gdb debugger can be used to set a breakpoint in the assembly code.
+
+<code> $ lldb python3.9
+(lldb) target create &quot;python3.9&quot;
+Current executable set to 'python3.9' (x86_64).
+(lldb) b pymult.asm:128
+Breakpoint 2: where = pymult.cpython-39-darwin.so`PyInit_pymult + 16, address = 0x00000001059c7f6c</code>
+
+When the module is loaded, lldb will hit the breakpoint. 
+You can start the process with the arguments <code>-c 'import pymult'</code> to just import the new module and quit:
+
+<code>(lldb) process launch -- -c &quot;import pymult&quot;
+Process 30590 launched: '/Library/Frameworks/Python.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python' (x86_64)
+1 location added to breakpoint 1
+Process 30590 stopped
+* thread #1, queue = 'com.apple.main-thread', stop reason = breakpoint 1.1
+    frame #0: 0x00000001007f6f6c pymult.cpython-39-darwin.so`PyInit_pymult at pymult.asm:128
+   125
+   126          lea rdi, [_moduledef]  ; load module def
+   127          mov esi, 0x3f5              ; 1033 - module_api_version
+-&gt; 128          call PyModule_Create2       ; create module, leave return value in register as return result
+   129
+   130          mov rsp, rbp ; reinit stack pointer
+   131          pop rbp
+Target 0: (Python) stopped.</code>
+
+Hooray! The module is being initialized. 
+At this point you can manipulate any of the registers or visualize the data.
+
+<code>(lldb) reg read
+General Purpose Registers:
+       rax = 0x00000001007d3d20
+       rbx = 0x0000000000000000
+       rcx = 0x000000000000000f
+       rdx = 0x0000000101874930
+       rdi = 0x00000001007f709a  pymult.cpython-39-darwin.so`..@31.strucstart
+       rsi = 0x00000000000003f5
+       rbp = 0x00007ffeefbfdbf0
+       rsp = 0x00007ffeefbfdbf0
+        r8 = 0x0000000000000000
+        r9 = 0x0000000000000000
+       r10 = 0x0000000000000000
+       r11 = 0x0000000000000000
+       r12 = 0x00000001007d3cf0
+       r13 = 0x000000010187c670
+       r14 = 0x00000001007f6f5c  pymult.cpython-39-darwin.so`PyInit_pymult
+       r15 = 0x00000001003a1520  Python`_Py_PackageContext
+       rip = 0x00000001007f6f6c  pymult.cpython-39-darwin.so`PyInit_pymult + 16
+    rflags = 0x0000000000000202
+        cs = 0x000000000000002b
+        fs = 0x0000000000000000
+        gs = 0x0000000000000000</code>
+
+You can also inspect the frame and see the frame stack:
+
+<code>(lldb) fr info
+frame #0: 0x0000000101adbf6c pymult.cpython-39-darwin.so`PyInit_pymult at pymult.asm:128
+(lldb) bt
+* thread #1, queue = 'com.apple.main-thread', stop reason = breakpoint 1.1
+  * frame #0: 0x0000000101adbf6c pymult.cpython-39-darwin.so`PyInit_pymult at pymult.asm:128
+    frame #1: 0x000000010023326a Python`_PyImport_LoadDynamicModuleWithSpec + 714
+    frame #2: 0x0000000100232a2a Python`_imp_create_dynamic + 298
+    frame #3: 0x0000000100166699 Python`cfunction_vectorcall_FASTCALL + 217
+    frame #4: 0x000000010020131c Python`_PyEval_EvalFrameDefault + 28636
+    frame #5: 0x0000000100204373 Python`_PyEval_EvalCode + 2611
+    frame #6: 0x00000001001295b1 Python`_PyFunction_Vectorcall + 289
+    frame #7: 0x0000000100203567 Python`call_function + 471
+    frame #8: 0x0000000100200c1e Python`_PyEval_EvalFrameDefault + 26846
+    frame #9: 0x0000000100129625 Python`function_code_fastcall + 101
+    ...</code>
+
+To compile for Linux, we need to add Position-Independent-Executable (PIE or PIC) support. 
+This is normally done by the GCC compiler, but since we're writing straight assembly we have to do this ourselves. 
+Position-independent code can be executed at any memory address without modification, the only components we need to care about the positions are the external references to the Python C API.
+
+Instead of defining the external symbol as being at a static location like we did for macOS:
+
+<code>call PyModule_Create2</code>
+
+We need to call the position of the symbol with respect to the <a href="https://eli.thegreenplace.net/2011/11/03/position-independent-code-pic-in-shared-libraries/">Global Offset Table</a>. 
+NASM has a shorthand for defining it as an offset of the PLT/GOT:
+
+<code>call PyModule_Create2 wrt ..plt</code>
+
+Instead of maintaining two source files for PIE and non-PIE, we can use a NASM macro to replace the instruction if <code>NOPIE</code> is defined.
+
+<code>%ifdef PIE
+    %define PYARG_PARSETUPLE PyArg_ParseTuple wrt ..plt
+    %define PYLONG_FROMLONG PyLong_FromLong wrt ..plt
+    %define PYMODULE_CREATE2 PyModule_Create2 wrt ..plt
+%else
+    %define PYARG_PARSETUPLE PyArg_ParseTuple
+    %define PYLONG_FROMLONG PyLong_FromLong
+    %define PYMODULE_CREATE2 PyModule_Create2
+%endif</code>
+
+Then replace <code>call PyModule_Create2</code> with the macro value <code>call PYMODULE_CREATE2</code>. 
+When assembled, NASM will replace this with the correct instruction.
+
+Linux uses the ELF format instead of macho, so specify the output format in NASM:
+
+<code>nasm -g -f elf64 -DPIE pymult.asm -o pymult.obj
+cc -shared -g pymult.obj -L/usr/shared/lib -lpython3.9 -o pymult.cpython-39-linux.so</code>
+
+<h2><span class="orange">Adding a function to the module</span></h2>
+When we initialized the module, we provided the value <code>0</code> (<code>NULL</code>) as the list of functions.
+Using the same pattern as before, the <code>PyMethodDef</code> struct is:
+
+<code>struct PyMethodDef {
+    const char  *ml_name;   /* The name of the built-in function/method */
+    PyCFunction ml_meth;    /* The C function that implements it */
+    int         ml_flags;   /* Combination of METH_xxx flags, which mostly
+                               describe the args expected by the C func */
+    const char  *ml_doc;    /* The __doc__ attribute, or NULL */
+};</code>
+
+In assembly, you can represent those fields as:
+
+<code>    struc methoddef
+        ml_name:  resq 1
+        ml_meth: resq 1
+        ml_flags: resd 1
+        ml_doc: resq 1
+
+        ml_term: resq 1  // NULL terminator
+        ml_term2: resq 1 // NULL terminator
+    endstruc
+
+    method1name db &quot;multiply&quot;, 0
+    method1doc db &quot;Multiply two values&quot;, 0
+
+    _method1def:
+        istruc methoddef
+            at ml_name, dq method1name
+            at ml_meth, dq PyMult_multiply
+            at ml_flags, dd 0x0001 ; METH_VARARGS
+            at ml_doc, dq 0x0
+            at ml_term, dq 0x0 ; Method defs are terminated by two NULL values,
+            at ml_term2, dq 0x0 ; equivalent to qword[0x0], qword[0x0]
+        iend</code>
+
+Then define the function, equivalent to the C code:
+
+<code>static PyObject* PyMult_multiply(PyObject *self, PyObject *args) {
+    long x, y, result;
+    if (!PyArg_ParseTuple(args, &quot;LL&quot;, &amp;x, &amp;y))
+        return NULL;
+    result = x * y;
+    return PyLong_FromLong(result);
+}</code>
+
+Writing extension modules in C (or assembly) requires knowledge of the CPython C API. 
+For example, if you're working with Python integers, they don't map to a simple low-level memory structure like a C long. 
+To convert a C long to a Python long, you have to call <code>PyLong_FromLong</code>. 
+To convert a Python long to a C long, you call <code>PyLong_AsLong</code>. 
+Because Python long's can be longer than the maximum value of a C long, there is a chance of an overflow, so you can use <code>PyLong_AsLongAndOverFlow()</code>. 
+Alternatively, if the value will fit into a <code>long long</code>, you can use <code>`PyLong_AsLongLong()</code>.
+
+These decisions are abstracted for arguments to a method by calling the <code>PyArg_ParseTuple()</code> function will will convert a tuple of method arguments into native C types.
+You provide this method a special format string and a list of pointers to the desination addresses.
+
+The example we used, to turn the arguments into two C long (&ldquo;LL&rdquo;) values and the addresses for the output:
+
+<code>PyArg_ParseTuple(args, &quot;LL&quot;, &amp;x, &amp;y)</code>
+
+Accomplishing this in assembly, you send the PyArg_ParseTuple the args (in <code>rsi</code>), the string as a constant and the addresses of two reserved quad-word memory spaces.
+
+In assembly, this is using the load-effective-address instruction:
+
+<code>lea rdx, [x]</code>
+
+Using the System-V calling conventions we can convert the C function into an assembly function:
+
+<code>global PyMult_multiply
+
+PyMult_multiply:
+    ;
+    ; pymult.multiply (a, b)
+    ; Multiplies a and b
+    ; Returns value as PyLong(PyObject*)
+    extern PyLong_FromLong
+    extern PyArg_ParseTuple
+    section .data
+        parseStr db &quot;LL&quot;, 0 ; convert arguments to Long, Long
+    section .bss
+        result resq 1 ; long result
+        x resq 1      ; long input
+        y resq 1      ; long input
+    section .text
+        push rbp ; preserve stack pointer
+        mov rbp, rsp
+        push rbx
+        sub rsp, 0x18
+
+        mov rdi, rsi                ; args
+        lea rsi, [parseStr]    ; Parse args to LL
+        xor ebx, ebx                ; clear the ebx
+        lea rdx, [x]           ; set the address of x as the 3rd arg
+        lea rcx, [y]           ; set the address of y as the 4th arg
+
+        xor eax, eax                ; clear eax
+        call PYARG_PARSETUPLE       ; Parse Args via C-API
+
+        test eax, eax               ; if PyArg_ParseTuple is NULL, exit with error
+        je badinput
+
+        mov rax, [x]                ; multiply x and y
+        imul qword[y]
+        mov [result], rax
+
+        mov edi, [result]           ; convert result to PyLong
+        call PYLONG_FROMLONG
+
+        mov rsp, rbp ; reinit stack pointer
+        pop rbp
+        ret
+
+        badinput:
+            mov rax, rbx
+            add rsp, 0x18
+            pop rbx
+            pop rbp
+            ret</code>
+
+Next, change the module definition to include the new method definition <code>at m_methods, dq _methoddef</code>.
+
+If you're a mac user, I recommend the <a href="https://www.hopperapp.com">Hopper Disassembler</a> as it comes with a nice &ldquo;pseudo-code&rdquo; view. 
+If you open up the newly compiled <code>.so</code> file in Hopper and
+look at the function you just wrote, you can verify it looks loosely like you'd expect in C:
+
+<img class="lazy" data-src="https://tonybaloney.github.io/img/posts-original/hopper-screenshot.png">
+
+Once you recompile and reimport the module, you'll see the function on <code>dir(pymult)</code> and it will take the two arguments.
+
+Set a breakpoint on line 77
+
+<code>(lldb) b pymult.asm:77
+Breakpoint 4: where = pymult.cpython-39-darwin.so`PyMult_multiply + 67, address = 0x00000001019dbf42</code>
+
+Now launch a process and run the function after import, lldb should stop at the breakpoint:
+
+<code>(lldb) process launch -- -c &quot;import pymult; pymult.multiply(2, 3)&quot;
+Process 39626 launched: '/Library/Frameworks/Python.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python' (x86_64)
+Process 39626 stopped
+* thread #1, queue = 'com.apple.main-thread', stop reason = breakpoint 4.1
+    frame #0: 0x00000001007f6f42 pymult.cpython-39-darwin.so`PyMult_multiply at pymult.asm:77
+   74           imul qword[y]
+   75           mov [result], rax
+   76
+-&gt; 77           mov edi, [result]           ; convert result to PyLong
+   78           call PyLong_FromLong
+   79
+   80           mov rsp, rbp ; reinit stack pointer
+Target 0: (Python) stopped.
+(lldb)</code>
+
+You can check the decimal value in the <code>rax</code> register with:
+
+<code>(lldb) p/d $rax
+(unsigned long) $6 = 6</code>
+
+Hooray! It works!
+
+<em>For the record&hellip;</em> It took about 25-30 recompilations and changes to get this work succesfully. 
+In hindsight, its not <strong>too</strong> complicated, but it was very frustrating to get this working.
+
+One of the issues with assembly is that it seems to either work, or it just fails spectacularly! There is no exception, it just crashes the process or corrupts the host process if you make a mistake. 
+It's very unforgiving.
+
+<h2><span class="orange">Extending setuptools/distutils</span></h2>
+Next, its not much good pushing a bunch of assembly source files up to PyPi, because if you <code>pip install</code> it wouldn't work out of the box. 
+The end user would have to know how to compile the libraries.
+
+The <code>setuptools</code> package adds the <code>build_ext</code> command to <code>setup.py</code>, so if you had this in <code>setup.py</code>:
+
+<code>...
+setup(
+    name='pymult',
+    version='0.0.1',
+    ...
+    ext_modules=[
+        Extension(
+            splitext(relpath(path, 'src').replace(os.sep, '.'))[0],
+            sources=[path],
+        )
+        for root, _, _ in os.walk('src')
+        for path in glob(join(root, '*.c'))
+    ],
+)</code>
+
+Then ran:
+
+<code>$ python setup.py build_ext --force -v</code>
+
+It run the GCC compiler against the source code, link it to the Python library of the Python executable you're using to run <code>setup.py</code> and put a compiled module in the <code>build</code> directory.
+
+We want to use GCC to link the object, but NASM to compile the assembly source.
+
+There are some other things we need which are specific to NASM:
+
+Use <code>-DNOPIE</code> when the platform doesn't require PIE
+
+Use <code>-f macho64</code> on macOS, or <code>-f elf64</code> on linux
+
+Use <code>-g</code> to add debug symbols if <code>setup.py</code> was run with the debug flag
+
+Add the <code>_</code> prefix on macOS
+
+I've added all this to a custom <code>setuptools</code> build command, called <code>NasmBuildCommand</code>. 
+You can update the <code>setup()</code> method to include this class and then specify the <code>.asm</code> source files:
+
+<code>    cmdclass={'build_ext': NasmBuildCommand},
+    ext_modules=[
+        Extension(
+            splitext(relpath(path, 'src').replace(os.sep, '.'))[0],
+            sources=[path],
+            extra_compile_args=[],
+            extra_link_args=[],
+            include_dirs=[dirname(path)]
+        )
+        for root, _, _ in os.walk('src')
+        for path in glob(join(root, '*.asm'))
+    ],
+)</code>
+
+Now if you run <code>setup.py build</code> with verbose (<code>-v</code>) and debug (<code>--debug</code>) it will compile the library for you:
+
+<code>$ python setup.py build --force -v --debug
+running build
+running build_ext
+building 'pymult' extension
+nasm -g -Isrc -I/Users/anthonyshaw/CLionProjects/mucking-around/venv/include -I/Library/Frameworks/Python.framework/Versions/3.8/include/python3.8 -f macho64 -DNOPIE --prefix=_ src/pymult.asm -o build/temp.macosx-10.9-x86_64-3.8/src/pymult.obj
+cc -shared -g build/temp.macosx-10.9-x86_64-3.8/src/pymult.obj -L/Library/Frameworks/Python.framework/Versions/3.8/lib -lpython3.8 -o build/lib.macosx-10.9-x86_64-3.8/pymult.cpython-38-darwin.so</code>
+
+Once this is all done, the wheel with the compiled binaries can be created along with the source distribution:
+
+<code>$ python setup.py bdist_wheel sdist</code>
+
+And then the wheel can be uploaded to PyPi:
+
+<code>$ twine upload dist/*</code>
+
+If someone downloads this on a platform that the wheel includes (only macOS in this example), it will install the compiled library.
+If someone is on another platform, the <code>pip install</code> command will try and compile from source using the custom <code>build</code> command.
+
+You can force this behaviour by running <code>pip install --no-binary :all: &lt;package&gt; -v --force</code> to see the whole download and compile process in verbose mode:
+
+<img class="lazy" data-src="https://tonybaloney.github.io/img/posts/custom-build-from-source.png">
+
+<h2><span class="orange">GitHub CI/CD workflows</span></h2>
+Lastly, I wanted to add some unit tests and continuous testing to the GitHub repository, which meant compiling on GitHub actions.
+
+This wasn't too hard now that <code>setuptools</code> had been extended to build in a single command.
+
+There is only 1 unit test, which cautiously avoid negative numbers (!):
+
+<code>from pymult import multiply
+
+def test_basic_multiplication():
+    assert multiply(2, 4) == 8</code>
+
+For testing on Linux, I just installed NASM from apt, then run <code>python setup.py install</code> on the source directory (which runs <code>python setup.py build_ext</code> implicitly):
+
+<code>jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8]
+    steps:
+    - name: Install NASM
+      run: |
+        sudo apt-get install -y nasm
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip pytest
+        python setup.py install
+    - name: Test with pytest
+      run: |
+        python -X dev -m pytest test.py</code>
+
+The extra <code>-X dev</code> flag gives more verbose output when CPython crashes (not if).
+
+For macOS, the build steps are the same, except NASM comes from brew:
+
+<code>    - name: Install NASM
+      run: |
+        brew install nasm</code>
+
+And then, to live dangerously, give it a go on Windows using the Chocolatey NASM package:
+
+<code>  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: [3.8]
+    steps:
+      - name: Install NASM
+        run: |
+          choco install nasm
+      - name: Add NASM to path
+        run: echo '::add-path::c:\\Program Files\\NASM'
+      - name: Add VC to path
+        run: echo '::add-path::C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\bin'
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip pytest
+          python setup.py install
+      - name: Test with pytest
+        run: |
+          python -X dev -m pytest test.py</code>
+
+<h2><span class="orange">Windows Support</span></h2>
+I did end up extending <code>setuptools</code> to support NASM + the Microsoft Linker as a customer compiler implemenetation, <a href="https://github.com/tonybaloney/python-assembly-poc/blob/master/winnasmcompiler.py">WinAsmCompiler</a>.
+
+The biggest changes were:
+
+Use <code>-f win64</code> (64-bit PE) as the object format
+
+Use <code>-DNOPIE</code>
+
+However, the existing code wouldn't work because it assumed the System-V calling conventions.
+
+You could write a second assembly function, or abstract the calling conventions to allow both standards and swap them out via macros. 
+At this point, I decided to call it a day!
+(it does compile though, but crashes on import).
+
+<h2><span class="orange">Conclusion</span></h2>
+The full source code for this project is <a href="https://github.com/tonybaloney/python-assembly-poc">up on Github</a>.
+
+Some things I learned:
+
+How to explore registers in lldb, (which is really useful)
+
+How to use hopper properly
+
+How to set breakpoints in assembled libraries to see why they might be crashing from segmentation faults
+
+How setuptools/distutils compiles C extensions, and how it <em>really</em> needs to be updated with the current compiler toolchain
+
+How to compile from assembly in GitHub Actions
+
+How the object formats work and the differences between mach-o and ELF
+
+Places I'm thinking of applying this knowledge are firstly in the security space. 
+I'm still reading the Shellcoders' Handbook after finishing Black Hat Python (which, was great btw).
+
+Some ways I could think to apply this knowledge:
+
+Reverse engineering compiled libraries to look for security exploits
+
+Completing more challenges on <a href="hackthebox.eu">Hack The Box</a>
+
+Adapting security exploits to mimic complex C data structures
+
+Creating shellcode exploits to demonstrate stackoverflow errors and other things that shouldn't be happening
+
+In particular, I think I could find security exploits in compiled Python C extensions. 
+Not in the standard library, because hopefully they've been tested, but in 3rd party libraries.
+<script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+    // ... 
+more custom settings?
+});
+</script>
+</pre></body></html>
