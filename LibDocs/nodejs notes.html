@@ -68,11 +68,132 @@ Now, open any preferred web browser and visit http://127.0.0.1:3000.
 
 
 <h2>Communication</h2>
-
 <a href="Complete Guide To Node Client-Server Communication.html"><span class="orangeb">&diams;Complete Guide To Node Client-Server Communication</span></a>
 
 <a href="https://stackoverflow.com/questions/11115508/in-node-js-how-do-i-communicate-with-client-side-javascript">node js communicate with client side javascript</a>
 <a href="https://flaviocopes.com/node-websockets/">Using WebSockets with Node.js</a>
+
+The easiest way is to set up <a href="http://expressjs.com/" class="whitebut ">Express</a> and have your client side code communicate via Ajax (for example, using jQuery).
+
+(function() {
+  var app, express;
+  express = require("express");
+  app = express.createServer();
+
+  app.configure(function() {
+    app.use(express.bodyParser());
+    return app.use(app.router);
+  });
+
+  app.configure("development", function() {
+    return app.use(express.errorHandler({
+      dumpExceptions: true,
+      showStack: true
+    }));
+  });
+
+  app.post("/locations", function(request, response) {
+    var latitude, longitude;
+    latitude = request.body.latitude;
+    longitude = request.body.longitude;
+    return response.json({}, 200);
+  });
+  app.listen(80);
+}).call(this);
+
+On the client side, call it like this:
+
+var latitude = 0, longitude = 0; // Set from form
+$.post({
+  url: "http://localhost/locations",
+  data: {latitude: latitude, longitude: longitude},
+  success: function (data) {
+    console.log("Success");
+  },
+  dataType: "json"
+});
+
+Note this code is simply an example; you'll have to work out the error handling, etc.
+
+Another way is by making an HTTP request, just like any other server side program in a web application.
+
+With the XMLHttpRequest object, or by generating a <form> and then submitting it, or a variety of other methods.
+
+<h2>Create a new WebSockets connection</h2>
+<code>const url = &#39;wss://myserver.com/something&#39;
+const connection = new WebSocket(url)
+</code>
+
+<code>connection</code> is a <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSocket">WebSocket</a> object.
+
+When the connection is successfully established, the <code>open</code> event is fired.
+
+Listen for it by assigning a callback function to the <code>onopen</code> property of the <code>connection</code> object:
+
+<code>connection.onopen = () =&gt; {
+  //...
+}
+</code>
+
+If there's any error, the <code>onerror</code> function callback is fired:
+
+<code>connection.onerror = error =&gt; {
+  console.log(`WebSocket error: ${error}`)
+}
+</code>
+
+<h2>Sending data to the server using WebSockets</h2>
+
+Once the connection is open, you can send data to the server.
+
+You can do so conveniently inside the <code>onopen</code> callback function:
+
+<code>connection.onopen = () =&gt; {
+  connection.send(&#39;hey&#39;)
+}
+</code>
+
+<h2>Receiving data from the server using WebSockets</h2>
+
+Listen with a callback function on <code>onmessage</code>, which is called when the <code>message</code> event is received:
+
+<code>connection.onmessage = e =&gt; {
+  console.log(e.data)
+}
+</code>
+
+<h2>Implement a WebSockets server in Node.js</h2>
+
+<a href="https://github.com/websockets/ws">ws</a> is a popular WebSockets library for <a href="/nodejs/">Node.js</a>.
+
+We'll use it to build a WebSockets server. It can also be used to implement a client, and use WebSockets to communicate between two backend services.
+
+Easily install it using
+
+<code>yarn init
+yarn add ws</code>
+
+The code you need to write is very little:
+
+<code>const WebSocket = require(&#39;ws&#39;)
+
+const wss = new WebSocket.Server({ port: 8080 })
+
+wss.on(&#39;connection&#39;, ws =&gt; {
+  ws.on(&#39;message&#39;, message =&gt; {
+    console.log(`Received message =&gt; ${message}`)
+  })
+  ws.send(&#39;ho!&#39;)
+})
+</code>
+
+This code creates a new server on port 8080 (the default port for WebSockets), and adds a callback function when a connection is established, sending <code>ho!</code> to the client, and logging the messages it receives.
+
+<h2>See a live example on Glitch</h2>
+
+Here is a live example of a WebSockets server: <a href="https://glitch.com/edit/#!/flavio-websockets-server-example">https://glitch.com/edit/#!/flavio-websockets-server-example</a>
+
+Here is a WebSockets client that interacts with the server: <a href="https://glitch.com/edit/#!/flavio-websockets-client-example">https://glitch.com/edit/#!/flavio-websockets-client-example</a>
 
 <h2>Node.js Generate html</h2>
 <a href="https://stackoverflow.com/questions/21617468/node-js-generate-html">Node.js Generate html</a>
@@ -897,6 +1018,45 @@ socket.addEventListener('message', function (event) {
 
 There are alternatives if you can't use websockets, such as polling (where the client periodically calls the server to see if theres a message), and long-polling (where the server holds a http request open for an artificially long period of time until a message is ready).
 
+<h2>send data to USB device in node.js</h2>
+<a href="https://www.npmjs.com/package/usb#interfaceinterface" class="whitebut ">USB Library for Node.JS</a>
+
+Installation
+Libusb is included as a submodule. 
+
+npm install usb
+
+Windows
+Use Zadig to install the WinUSB driver for your USB device. 
+Otherwise you will get LIBUSB_ERROR_NOT_SUPPORTED when attempting to open devices.
+
+var usb = require('usb')
+usb
+Top-level object.
+
+usb.getDeviceList()
+Return a list of Device objects for the USB devices attached to the system.
+
+usb.findByIds(vid, pid)
+Convenience method to get the first device with the specified VID and PID, or undefined if no such device is present.
+
+usb.LIBUSB_*
+Constant properties from libusb
+
+usb.setDebugLevel(level : int)
+Set the libusb debug level (between 0 and 4)
+
+Device
+Represents a USB device.
+
+.busNumber
+Integer USB device number
+
+.deviceAddress
+Integer USB device address
+
+.portNumbers
+Array containing the USB device port numbers, or undefined if not supported on this platform.
 
 
 

@@ -1,0 +1,410 @@
+<base target="_blank"><html><head><title>Inkscape extensions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="https://williamkpchan.github.io/lazyload.min.js"></script>
+<script src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/commonfunctions.js"></script>
+<script>
+  var showTopicNumber = true;
+  var bookid = "Inkscape extensions"
+  var markerName = "h2,h3,h4"
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:24px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>Inkscape extensions</h1>
+<a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a><br><br>
+<div id="toc"></div></center><br><br>
+<div id="mustWatch"><center><span class="red">MustWatch</span></center><br></div>
+<pre><br><br>
+
+<h2>Inkscape extensions by non developers</h2>
+Lets begin with the extensions structure. 
+A basic Inkscape extension is formed by two files:
+
+<code>A python script (</code><em>extension_name.py</em><code>)</code>The responsible for the magic
+<code>A inkscape extension description file</code> (<em>extension_name.inx</em>) This will be the responsible of communicating the inkscape UI with our script.
+
+Lets split this files up!
+<h2>Extension description file (.inx)</h2>The INX file (extension description file) will be the responsible of defining how the UI user interaction should be to connect Inkscape with our python script.
+Lets see how a basic INX file is and lets analyze its parts:
+
+<code>The XML definition </code>since this file is a valid XML
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+A simple <code>Inkscape extension tag</code>
+&lt;inkscape-extension xmlns=&quot;http://www.inkscape.org/namespace/inkscape/extension&quot;&gt;
+&lt;/inkscape-extension&gt;
+<code>The extension name</code>. 
+Remember, this will become the name in the UI button so add a nice name.
+&lt;_name&gt;Your extension awesome Name&lt;/_name&gt;
+<code>The extension ID</code>. 
+This ID should be unique, you could just replace ‘<em>org.inkscape.id</em>’ with ‘<em>org.inkscape.extension_name</em>’.
+&lt;id&gt;org.inkscape.id&lt;/id&gt;
+The <code>dependencies</code>. 
+Here you should add the relative path to your python script (.py) file. 
+If this file does not exist the extension will not be loaded.
+&lt;dependency type=&quot;executable&quot; location=&quot;extensions&quot;&gt;plugin_name.py&lt;/dependency&gt;
+Extension <code>params. 
+</code>Here we will set the UI of our extension. 
+Will the user need a textfield? A range selector? Tabs? We will use the user options in our python script afterwards. 
+Lets see a basic example:
+&lt;param name=&quot;some_name&quot; type=&quot;string&quot; _gui-text=&quot;Some text label&quot;&gt;Some default text&lt;/param&gt;
+
+
+<code>name</code>: Its the name of your option. 
+Set an easy name because it will be used in your script to get this param value
+<code>type: </code>By default, Inkscape offers a <a href="http://wiki.inkscape.org/wiki/index.php/INX_Parameters#Types">very small set of GUI options</a>: <em>strings</em> (textfields), <em>interger</em>(numbers field from 1 to 10), <em>float</em>(decimal numbers field), <em>booleans</em> (a checkbox selector), <em>enum</em> (a dropdown list), <em>optiongroup</em> (a multiselect), <em>color</em> (a colorpicker), <em>desc (</em>a free text<em>) </em>and<em> notebook (</em>a tab selector<em>).</em>
+<code>_gui-text</code>: This will be the label of the UI element so add a self explanatory copy
+<code>Content</code>: In some cases you can add a default text or set a boolean to true or false.
+<code>_gui-hidden</code>: A hidden parameter that can have a value.
+
+The inkscape <a href="http://wiki.inkscape.org/wiki/index.php/INX_Parameters">wiki page of INX file params </a>is well documented.
+<code>The GUI menu</code>. 
+Here you will set the name of the button your users will click to perform the action. 
+It will be useful to set your plugin at the <em>submenu tag</em>. 
+Forget about the rest in this tutorial, its just the structure.
+&lt;effect&gt;
+	&lt;object-type&gt;all&lt;/object-type&gt;
+	&lt;effects-menu&gt;
+		&lt;submenu _name=&quot;Your plugin name&quot;/&gt;
+	&lt;/effects-menu&gt;
+&lt;/effect&gt;
+<code>The reference script</code>. 
+As in the dependencies you set at the beggining, you should tell inkscape which file it has to execute. 
+Add here the relative path to your python script.
+&lt;script&gt;
+        &lt;command reldir=&quot;extensions&quot; interpreter=&quot;python&quot;&gt;plugin_name.py&lt;/command&gt;
+&lt;/script&gt;
+<code>And that&#x27;s it for the INX file! Now, if we install this plugin, you should be able to see a new option under extensions menu, and your plugin name sub option on hover.</code>
+
+<img src="https://miro.medium.com/max/1984/1*5lku2gj2PV0K5uRnQZ6zGw.png">
+
+Example capture of my extension <a href="https://github.com/Xaviju/inkscape-placeholder">inkscape-placehoder</a>
+
+<h2>The Python Script (.py)</h2>As we have seen, the INX requires a python script to be executed. 
+This script will be the responsible for the transformation of our SVG (everything in the inkscape work area is an SVG).
+As said in the inkscape wiki this file can do three things:
+<blockquote>- <code>Input</code>, providing translation from a file format to SVG
+- <code>Output</code>, providing translation from SVG to a format
+- <code>Effect</code>, taking in SVG, changing it, and then outputting SVG
+</blockquote>
+<a href="http://wiki.inkscape.org/wiki/index.php/PythonEffectTutorial">inkscape wiki extension tutorial</a>.
+Lets see how it looks, in its simplest version:
+
+</figure>Ok, lets open our file and follow (and understand) the code:
+First, set the file<code> as executable</code> so Inkscape can execute its content and <code>the character encoding</code>
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+<code>Import Inkex</code>, a inkscape dependency, that will do some magic for us applying our changes to the SVG.
+import inkex
+<code>Declare a new Class() </code>inheriting from <em>inkex</em>
+class MyExtensionName(inkex.Effect):
+Declare the <code>init() function</code> that will be executed when the class is invoked and add the option params defined at the INX (remember we set this params to be used later in the INX section? Yes, its now!)
+def __init__(self):
+        inkex.Effect.__init__(self)
+        self.OptionParser.add_option(&#x27;-x&#x27;, &#x27;--something&#x27;, action=&#x27;store&#x27;, type=&#x27;string&#x27;, dest=&#x27;optionName&#x27;, default=&#x27;defaultvalue&#x27;, help=&#x27;Helper text for this option&#x27;)
+Lets review the <code>OptionParser </code>according to the inkscape Wiki
+
+<em>action</em> — An action that will do something with our value. 
+In this case we store the value in the dest value (following point)
+<em>dest</em> — Destination of option action specified by <em>action</em> argument. 
+Using <em>opti nName</em> value we say that we want to store this value to self.options.optionName.
+<em>type</em> — Type of option value. 
+We use string here but could anything of the defined in the INX file.
+<em>default</em> — Defalut value for this option if it is not specified.
+<em>help</em> — A help string that will be displayed if script will be given no arguments or some option or argument will have wrong syntax.
+
+<code>Create a new effect()</code> function to get this values from the optionParser. 
+It receives as first argument <em>self, </em>which is its parent class, in this case is <em>MyExtensionName</em>
+def effect(self):
+    option = self.options.optionName        
+    self._main_function()
+
+In the first line, we store the value we set in the <em>optionParser</em> in the variable <em>option </em>so we could use it anywhere in the function.
+In the second line, we just ask the parent to call a second function called<em> _main_function</em> that receives the <em>option </em>variable as a second parameter.
+
+<h2>main function</h2>
+Although it is not necessary, it helps keep clarity. 
+Do whatever you can to your SVG.
+ 
+In this case, we just print the value. 
+This will have no effects on inkscape SVG.
+
+Find a <a href="https://github.com/Xaviju/inkscape-placeholder">simple extension example on my extensions,</a> since are quite simple because I am not a python developer
+
+def _main_function(self, option): 
+    print option
+
+Last step: Invoke the class and execute the affect() function that will do its inkscape magic to execute it on the SVG.
+
+if __name__ == ‘__main__’: 
+    MyExtension = MyExtensionName() 
+    MyExtension.affect()
+
+
+<h2>To install the extension</h2>
+Just copy the two files (<em>extension_name.py </em>and <em>extension_name.inx</em>) into your local inkscape extensions folder
+~/.config/inkscape/extensions
+
+Its a nice place to find how others made things and find clues on how to solve your own extension challenges. 
+There are also d<a href="http://wiki.inkscape.org/wiki/index.php/Extension_repository">ozens of extensions out there</a> and <a href="https://inkscape.org/en/download/addons/">there</a> to learn from.
+
+<h2><span class="orange">Python modules for extensions</h2>
+These modules are provided as part of Inkscape and can be found in /usr/share/inkscape/extensions on GNU/Linux, ... 
+on Windows along with the extensions bundled with Inkscape. 
+They can be <code>import</code>ed from an extension just like any other python module.
+
+<h2>inkex.py</h2>
+
+This module encapsulates the basic behavior of a script extension, allowing the author to concentrate on manipulating the SVG data. 
+It relies on <a rel="nofollow" href="http://lxml.de/tutorial.html"><code>lxml.etree</code></a> to work with the XML tree. 
+inkex.py was originally designed to provide the Effect (filter) extension type, but has been used for Input/Output extensions simply by overriding additional class methods.
+
+<h3>Functions</h3>inkex.py provides the following functions:
+
+<code>errormsg( msg )</code>
+End-user visible error message, it should always be used with translation: <code>inkex.errormsg(_("This extension requires two selected paths"))</code>
+<code>addNS( tag, ns=None )</code>
+Returns the selected tag, with the namespace applied. 
+The namespace is selected from a list supplied with the module.
+<h3>The <code>Effect</code> class</h3>The most important part of inkex.py is the <code>Effect</code> class. 
+To implement an effect type extension in Python see <a href="/wiki/index.php?title=PythonEffectTutorial" title="PythonEffectTutorial">PythonEffectTutorial</a>
+
+<h4>Methods</h4>
+<code>effect()</code>
+You should overwrite this method with your own, as shown in <a href="/wiki/index.php?title=PythonEffectTutorial#Effect_Extension_Script" title="PythonEffectTutorial">PythonEffectTutorial#Effect Extension Script</a>
+<code>getElementById( id )</code>
+Returns the firs found element with given id, as a <code>lxml</code> element.
+<code>getParentNode( node )</code>
+Returns the parent of <code>node</code>. 
+Probably the same as <code>node.getparent()</code> from <code>lxml</code>?
+<code>createGuide( x, y, angle )</code>
+Creates guide at position (<code>x</code>,<code>y</code>), with angle <code>angle</code>.
+<code>affect()</code>
+Actuate the script.
+<code>xpathSingle( path )</code>
+An xpath wrapper to return a single node.
+<code>uniqueId( old_id )</code>
+Return an id that is unique in the document given a proposed id, by appending random alphanumeric characters to it.
+<code>getDocumentWidth()</code>
+Return width of document, as a string.
+<code>getDocumentHeight()</code>
+Return height of document, as a string.
+<code>getDocumentUnit()</code>
+Return a string representing the default unit for the document. 
+Full list of possible units is defined in the module.
+<code>unittouu( string )</code>
+Convert given value (as a string, e.g: "4px") to units used by the document. 
+Returns float.
+<code>uutounit( value, unit )</code>
+Convert a value (float) in document default units to given units.
+<h4>Properties</h4>
+<code>document</code>
+DOM document, as a <code>lxml.etree</code>.
+<code>selected</code>
+A dict mapping ids to nodes, for all nodes selected in Inkscape.
+<code>doc_ids</code>
+
+A dict mapping ids to the constant 1, for all of the ids used in the original document. 
+Does not get automatically updated when adding elements.
+<code>options</code>
+Options passed to the script.
+<h2>simplestyle.py</h2>
+
+Provides methods for dealing with css data embedded in SVG's style attribute. 
+When a color is represented as integers they should be in the (0, 255) range, when represented as floats, they should be in the (0.0, 1.0) range.
+
+<code>parseStyle( string )</code>
+Create a dictionary of attribute-value pairs from the value of an inline style attribute.
+<code>formatStyle( dict )</code>
+Format an inline style attribute from a dictionary of attribute-value pairs, values are converted to strings by <code>str()</code>.
+<code>isColor( c )</code>
+Determine if <code>c</code> is a valid color.
+<code>parseColor( c )</code>
+Creates a rgb int array. 
+<code>c</code> can be any type of string representation of a color.
+<code>formatColoria( a )</code>
+Convert int array to #rrggbb string.
+<code>formatColorfa( a )</code>
+Convert float array to #rrggbb string.
+<code>formatColor3i( r, g, b )</code>
+Convert 3 ints to #rrggbb string.
+<code>formatColor3f( r, g, b )</code>
+Convert 3 floats to #rrggbb string.
+<code>svgcolors</code>
+A dictionary defining legal color names and corresponding color values.
+<h2>simplepath.py</h2>
+
+Provides functions to round trip svg path d="" attribute data and a simple path format mimicking that datastructure, and additional functions for scaling translating and rotating path data.
+
+<code>parsePath( d )</code>
+Parse SVG path and return an array of segments. 
+Removes all shorthand notation. 
+Converts coordinates to absolute. 
+Returns list of <code>[ command, params ]</code> list.
+<code>formatPath( l )</code>
+Format path data from a list. 
+Returns the string representing the path, <code>l</code> should have the same format as returned by <code>parsePath</code>.
+<code>translatePath( p, x, y ), scalePath( p, x, y ), rotatePath( p, angle, cx=0, cy=0 )</code>
+Transforms path <code>p</code>.
+<h2>cubicsuperpath.py</h2>
+
+An alternative path representation, accessing both handles of a node at once. 
+Loses a path's open/closed identity.
+
+<code>CubicSuperPath( simplepath )</code>
+Given a path as a list returned by <code>simplepath.parsePath</code>, it returns a list of lists in <code>[ [ [ h1_0, pt_0, h2_0 ], [ h1_1, pt_1, h2_1 ], ... 
+], [ [ h1_m, pt_m, h2_m ], ...], ... 
+]</code> format, where <code>h1_n</code> and <code>h2_n</code> are handles for the node at point <code>pt_n</code>. 
+All points/handles are lists of two floats (<code>[ x, y ]</code>). 
+The list is the representation of the whole path, the first level sub-lists are representations of sub-paths, and the lists containing 3 points represent the individual control nodes.
+<code>unCubicSuperPath( csp )</code>
+Given a path in the format returned by <code>CubicSuperPath</code> returns it in the format used by <code>simplepath</code>.
+<code>parsePath( d )</code>
+Parse a string representation directly.
+<code>formatPath( p )</code>
+Format path as a string.
+<h2>simpletransform.py</h2>
+
+Provides code to easily transform objects. 
+Transformations are represented as <a rel="nofollow" href="https://en.wikipedia.org/wiki/Transformation_matrix#Affine_transformations">affine transformation matrices</a>. 
+Since the last row of such matrices is always the same ([0,0,1]) it is not included, so the final matrix is a list of two lists of 3 floats containing the first two rows of the matrix. 
+Wherever <code>E</code> is used as a default argument it means the identity matrix, a transformation that does nothing.
+
+<code>parseTransform( transform, mat=E )</code>
+Takes a string representing a transformation (like a SVG nodes transform attribute), and returns a transformation matrix. 
+If <code>mat</code> is supplied, the returned matrix is <code>composeTransform( mat, matrix)</code>.
+<code>formatTransform( mat )</code>
+Returns string representation for transform (for use in transform attribute).
+<code>invertTransform( mat )</code>
+Returns inverse of transformation given by <code>mat</code>.
+<code>composeTransform( mat1, mat2 )</code>
+Returns matrix representing a transformation equal to applying <code>mat1</code> then <code>mat2</code>.
+<code>composeParents( node, mat )</code>
+Returns <code>mat</code> composed with every transformation that applies to <code>node</code>. 
+If a node has a transformation applied to it, and is part of a group that has an other transformation applied to it, both apply to the node. 
+This function composes all the nodes ancestors' transformations.
+<code>applyTransformToNode( mat, node )</code>
+Apply transform to <code>node</code> by setting its transform attribute, does not change coordinates in any part of node.
+<code>applyTransformToPath( mat, path )</code>
+Apply transform to path, by changing the coordinates of points and handles. 
+<code>path</code> has to be a representation used by <code>SuperCubicPath</code>.
+<code>applyTransformToPoint( mat, point )</code>
+Apply transform to a point given as a list <code>[ x, y ]</code>.
+<code>fuseTransform( node )</code>
+Removes the transform attribute from a node, and applies it to the node, changing the nodes points' coordinates.
+
+The following functions might be broken out into a separate module in the future (see comment in code).
+
+<code>roughBBox( path )</code>
+Returns four floats <code>xmin, xMax, ymin, yMax</code>, the coordinates for a rough bounding box. 
+<code>path</code> has to be a representation used by <code>SuperCubicPath</code>.
+<code>refinedBBox( path )</code>
+Same as the above, takes longer to calculate but more precise.
+<code>computeBBox( node_list, mat = E )</code>
+Returns the bounding box for a list of nodes. 
+If supplied <code>mat</code> is applied to the nodes before calculating the bounding box. 
+Uses <code>refinedBBox</code> when applicable, text nodes are not yet supported.
+<code>computePointInNode( pt, node, mat = E )</code>
+Given a point and a node, returns the coordinates that when transformed by the nodes and its ancestors transformations are the same as <code>pt</code>. 
+For example take a circle created with its centre at (0,0) and then transformed by applying a pure translation to (1,0). 
+If the centre is now set to (0,1) the centre of the circle will actually be at (1,1) because the transformation still applies. 
+It can be avoided by using <code>computePointInNode( [ 0, 1 ], circle )</code> which gives (-1,1), setting the centre to this the circle will appear at the desired (0,1).
+<h2>pturtle.py</h2>
+
+Provides turtle graphics primitives with svg path data output
+
+<h2>beziermisc.py</h2>
+
+Utility functions for working with bezier curves
+
+<h2>cspsubdiv.py</h2>
+
+Decompose a path into polylines
+
+<h2>ff*.py</h2>
+
+an obscure set of tools for dealing with musical scales.
+
+
+Retrieved from "<a dir="ltr" href="https://wiki.inkscape.org/wiki/index.php?title=Python_modules_for_extensions&amp;oldid=114116">https://wiki.inkscape.org/wiki/index.php?title=Python_modules_for_extensions&amp;oldid=114116</a>"
+
+<a href="/wiki/index.php?title=Special:Categories" title="Special:Categories">Category</a>: 
+<a href="/wiki/index.php?title=Category:Extensions" title="Category:Extensions">Extensions</a>
+
+
+<h2>Navigation menu</h2>
+
+<h3>Personal tools</h3>
+<a href="#">English</a>
+
+<a href="/wiki/index.php?title=Special:UserLogin&amp;returnto=Python+modules+for+extensions" title="You are encouraged to log in; however, it is not mandatory [o]" accesskey="o">Log in</a>
+
+
+<h3>Namespaces</h3>
+<a href="/wiki/index.php?title=Python_modules_for_extensions" title="View the content page [c]" accesskey="c">Page</a>
+
+<a href="/wiki/index.php?title=Talk:Python_modules_for_extensions" rel="discussion" title="Discussion about the content page [t]" accesskey="t">Discussion</a>
+
+
+
+<h3>Variants</h3>
+
+<h3>Views</h3>
+<a href="/wiki/index.php?title=Python_modules_for_extensions">Read</a>
+
+<a href="/wiki/index.php?title=Python_modules_for_extensions&amp;action=edit" title="This page is protected.&#10;You can view its source [e]" accesskey="e">View source</a>
+
+<a href="/wiki/index.php?title=Python_modules_for_extensions&amp;action=history" title="Past revisions of this page [h]" accesskey="h">View history</a>
+
+
+
+<h3>More</h3>
+
+
+<a href="/wiki/index.php?title=Inkscape" title="Visit the main page"></a>
+
+<h3>Navigation</h3>
+
+<a href="/wiki/index.php?title=Inkscape" title="Visit the main page [z]" accesskey="z">Main page</a>
+
+<a href="/wiki/index.php?title=Inkscape_Wiki:Current_events" title="Find background information on current events">Current events</a>
+
+<a href="/wiki/index.php?title=Special:RecentChanges" title="A list of recent changes in the wiki [r]" accesskey="r">Recent changes</a>
+
+<a href="/wiki/index.php?title=Special:Random" title="Load a random page [x]" accesskey="x">Random page</a>
+
+<a href="https://www.mediawiki.org/wiki/Special:MyLanguage/Help:Contents" title="The place to find out">Help</a>
+
+
+<h3>Tools</h3>
+
+<a href="/wiki/index.php?title=Special:WhatLinksHere/Python_modules_for_extensions" title="A list of all wiki pages that link here [j]" accesskey="j">What links here</a>
+
+<a href="/wiki/index.php?title=Special:RecentChangesLinked/Python_modules_for_extensions" rel="nofollow" title="Recent changes in pages linked from this page [k]" accesskey="k">Related changes</a>
+
+<a href="/wiki/index.php?title=Special:SpecialPages" title="A list of all special pages [q]" accesskey="q">Special pages</a>
+
+<a href="/wiki/index.php?title=Python_modules_for_extensions&amp;printable=yes" rel="alternate" title="Printable version of this page [p]" accesskey="p">Printable version</a>
+
+<a href="/wiki/index.php?title=Python_modules_for_extensions&amp;oldid=114116" title="Permanent link to this revision of the page">Permanent link</a>
+
+<a href="/wiki/index.php?title=Python_modules_for_extensions&amp;action=info" title="More information about this page">Page information</a>
+
+<a href="/wiki/index.php?title=Special:CiteThisPage&amp;page=Python_modules_for_extensions&amp;id=114116" title="Information on how to cite this page">Cite this page</a>
+
+
+
+<script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+    // ... more custom settings?
+});
+</script>
+</pre></body></html>
