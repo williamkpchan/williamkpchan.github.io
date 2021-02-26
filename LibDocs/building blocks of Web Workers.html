@@ -214,6 +214,176 @@ This is why we’re offloading (wherever it makes sense) logic from both our mon
 Web technologies constantly change and develop so We go the extra mile to ensure SessionStack is very lightweight and has zero performance impact on our users’ apps.
 There is a free plan if you’d like to <a href="https://www.sessionstack.com/solutions/developers/?utm_source=medium&amp;utm_medium=source&amp;utm_content=javascript-series-web-workers-try-now" target="_blank" rel="noopener">give SessionStack a try</a>.
 
+<h2><span class="orange">Using worker_threads in Node.js</span></h2>
+This is a beginner’s guide to using <code><a href="https://nodejs.org/api/worker_threads.html">worker_threads</a></code> in Node.js. 
+
+What are they good for?
+As <a href="https://nodejs.org/api/worker_threads.html">the documentation</a> says:
+<blockquote>
+Workers are useful for performing CPU-intensive JavaScript operations; do not use them for I/O, since Node.js’s built-in mechanisms for performing operations asynchronously already treat it more efficiently than Worker threads can.
+</blockquote>
+<code>worker_threads</code> are more lightweight than the parallelism you can get using<code>child_process</code> or <code>cluster</code>. 
+Additionally, <code>worker_threads</code> can share memory efficiently.
+
+<h2>Hello world!</h2>
+In the following example, <code>Worker</code> is the constructor for a worker. 
+It requires an argument which is the path to a file containing the code for the worker to execute. 
+In this case, we send it <code>__filename</code> so that the code that launches the worker and the code for the worker itself are in the same file. 
+The constructor also takes an optional second <code>options</code> argument, but we do not use it here.
+
+To differentiate whether we are in the main thread (which will launch the worker) or the worker itself, we use <code>isMainThread</code>. 
+It is <code>true</code> if we are in the main thread (that is, not in a worker) and <code>false</code> if we are in a worker.
+
+Once the worker is created, we listen (in the main thread) for the <code>message</code> event on the worker and use <code>console.log()</code> to print whatever is sent.
+
+Lastly, to send a message from the worker to the main thread, we use <code>parentPort.postMessage()</code>.
+
+</figure>
+Put this code in a file called <code>threads-example.js</code>, invoke it with <code>node</code> (and the <code>--experimental-worker</code> flag if you are not running Node.js 11.7.0 or newer), and the output should be <code>Hello world!</code>.
+
+$ node threads-example.js 
+Hello world!
+$
+
+<h2>Calculating Primes</h2>
+Now let’s do something a little more interesting. 
+Without <code>worker_threads</code>, here is how you might calculate all the prime numbers less than 10,000,000:
+
+</figure>
+The code above was ported from a C# implementation at <a href="https://stackoverflow.com/a/34429272/436641">https://stackoverflow.com/a/34429272/436641</a>. 
+The important thing to know is that the <code>generatePrimes()</code> function does CPU-intensive work.
+
+On my laptop, running the code above with the <code>time</code> utility reports results along the lines of:
+
+real 0m17.209s
+user 0m15.589s
+sys 0m0.242s
+
+Now let’s see what happens with <code>worker_threads</code>:
+
+</figure>
+The new concept here is <code>workerData</code>. 
+You set a value for the <code>workerData</code>option when invoking the <code>Worker</code> constructor. 
+The value of <code>workerData</code> is cloned and available in the worker thread as <code>require('worker_threads').workerData</code>.
+
+Running this script and passing it <code>2</code> on the command line (as the number of threads to use) yields far better performance than the single-threaded version:
+
+real 0m7.881s
+user 0m12.832s
+sys 0m0.162s
+
+With Node.js 11.7.0, you no longer need the <code>--experimental-workers</code> flag to use the <code>worker_threads</code> module. 
+So it’s even easier to use <code>worker_threads</code> than it was when I wrote that first article.
+
+Robert left a comment requesting more sophisticated real-world examples. 
+I’m not sure this is more sophisticated than the prime number example in the previous article. 
+But it is more of a real-world example!
+
+I used to have a website that would solve Six Degrees Of Kevin Bacon queries, but for music rather than movies. 
+Give it two musicians, and it would tell you how to connect them. 
+It did this based on who recorded with whom on particular tracks. 
+One thing I discovered is that there wasn’t a good source for track-by-track recording data. 
+So I had to curate my own. 
+A data dump is at <a href="https://github.com/Trott/music-routes-data">https://github.com/Trott/music-routes-data</a>.
+
+Let’s say you wanted to connect <a href="https://en.wikipedia.org/wiki/Carrie_Brownstein">Carrie Brownstein</a> to <a href="https://en.wikipedia.org/wiki/Michael_Jackson">Michael Jackson</a>:
+
+Carrie Brownstein played on <a href="https://www.youtube.com/watch?v=Z-qVktbzavk">Wild Flag’s “Black Tiles”</a> with Janet Weiss.
+Janet Weiss played on <a href="https://www.youtube.com/watch?v=9FIRTw609o8">Bright Eyes’ “Clairaudients (Kill Or Be Killed)”</a> with Nate Walcott.
+Nate Walcott played on <a href="https://www.youtube.com/watch?v=H0apYcXCaA4">Pete Yorn’s “Social Development Dance”</a> with Joey Waronker
+Joey Waronker played on <a href="https://www.youtube.com/watch?v=l4kQmrXxgJ4">Paul McCartney’s “A Certain Softness”</a> with Paul McCartney
+Paul McCartney played on <a href="https://www.youtube.com/watch?v=rHp0s2wKajw">Michael Jackson’s “The Girl Is Mine”</a> with Michael Jackson
+
+The data is a simple undirected and unweighted graph. 
+The algorithm is a breadth first search from each endpoint. 
+Find all people one step away from Carrie Brownstein. 
+Are any of them Michael Jackson? If not, find all people one step away from Michael Jackson. 
+Are any of them also one step away from Carrie Brownstein? If not, find all people two steps away from Carrie Brownstein. 
+If no overlap yet, find all people two steps away from Michael Jackson. 
+And repeat until you find someone that is in both sets of connections.
+
+I wrote some code to do this:
+Unfortunately, it’s single-threaded. 
+This means it will be slow:
+
+<strong>$ </strong>node index.js
+search duration: 4144.005ms
+Carrie Brownstein played on "Racehorse" with Janet Weiss
+Janet Weiss played on "Clairaudients (Kill Or Be Killed)" with Mike Mogis
+Mike Mogis played on "Social Development Dance" with Joey Waronker
+Joey Waronker played on "A Certain Softness" with Paul McCartney
+Paul McCartney played on "The Girl Is Mine" with Michael Jackson
+$ 
+
+4 seconds isn’t too bad, I suppose. 
+But it can get a lot longer:
+
+<strong>$ </strong>node index.js 8876 8992
+search duration: 27410.035ms
+Derek Holt played on "She's Falling Apart" with Dweezil Zappa
+Dweezil Zappa played on "Trouble Every Day" with Steve Vai
+Steve Vai played on "Fishing" with John Lydon
+John Lydon played on "Bad Baby" with Martin Atkins
+Martin Atkins played on "The Bushmaster" with David Yow
+David Yow played on "Seasick" with David Wm. 
+Sims
+David Wm. 
+Sims played on "Soul Machine" with Jim Kimball
+Jim Kimball played on "Now I Agree" with Drew Thomas
+Drew Thomas played on "Running Into Walls" with Tony Bono
+Tony Bono played on "Insult To Injury" with Joe Cangelosi
+Joe Cangelosi played on "Isolation" with Mille Petrozza
+Mille Petrozza played on "World Beyond" with Rob Fioretti
+$ 
+
+<a href="https://en.wikipedia.org/wiki/Climax_Blues_Band">Climax Blues Band</a> guitarist Derek Holt to German thrash-metal bassist Rob Fioretti? Over 27 seconds! Unacceptable!
+
+To the rescue, <code>worker_threads</code>!
+
+Here’s the main thread code:
+<figure></div></div></figure>
+And here’s the worker thread code:
+<figure></div></div></figure>
+As far as <code>worker_threads</code> go, there isn’t anything that wasn’t covered in the previous article. 
+Things do get a bit more complicated with the messaging. 
+But there’s nothing new. 
+Let’s see if we’ve improved performance.
+
+<strong>$ </strong>node main.js
+search duration: 724.048ms
+Carrie Brownstein played on "Glass Tambourine" with Mary Timony
+Mary Timony played on "All Dressed Up In Dreams" with Stephin Merritt
+Stephin Merritt played on "The Dead Only Quickly" with Neil Hannon
+Neil Hannon played on "Do They Know It's Christmas?" with Paul McCartney
+Paul McCartney played on "The Girl Is Mine" with Michael Jackson
+$ 
+
+Nice! From over 4 seconds to under 724ms. 
+Let’s see how we do on the 27-second route!
+
+<strong>$ </strong>node main.js 8876 8992
+search duration: 2767.005ms
+Derek Holt played on "She's Falling Apart" with Dweezil Zappa
+Dweezil Zappa played on "Smoke On The Water" with Steve Madaio
+Steve Madaio played on "All By Myself" with Jim Keltner
+Jim Keltner played on "Couldn't Call It Unexpected No. 
+4" with Marc Ribot
+Marc Ribot played on "Bridge To The Beyond" with Mike Patton
+Mike Patton played on "When The Stars Begin To Fall" with Duane Denison
+Duane Denison played on "Soul Machine" with Jim Kimball
+Jim Kimball played on "Monday's Highs" with Drew Thomas
+Drew Thomas played on "William" with Tony Bono
+Tony Bono played on "Battle Scars" with Joe Cangelosi
+Joe Cangelosi played on "Prevail" with Frank Blackfire
+Frank Blackfire played on "World Beyond" with Rob Fioretti
+$ 
+
+Whoa! That’s a roughly tenfold improvement! From over 27 seconds to under 3 seconds! And we’re only using two threads!
+
+This may not quite be the complex example sought by the commenter in the last article. 
+But I hope it is a step in that direction. 
+And there’s always the possibility of a Part 3….
+
 <script type='text/javascript' src='readbook.js'></script>
 <script>
 var lazyLoadInstance = new LazyLoad({
