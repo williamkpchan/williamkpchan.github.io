@@ -1058,7 +1058,202 @@ Integer USB device address
 .portNumbers
 Array containing the USB device port numbers, or undefined if not supported on this platform.
 
+<h2>Scrape a site with Node and Cheerio in 5 minutes</h2>
+https://www.twilio.com/blog/web-scraping-and-parsing-html-with-node-js-and-cheerio
 
+Website scraping is a common problem with a common toolset. 
+Two approaches dominate the web today:
+
+Automate a browser to navigate a site programmatically, using tools like <a href="https://github.com/GoogleChrome/puppeteer" rel="noopener nofollow">Puppeteer</a> or <a href="https://www.seleniumhq.org/" rel="noopener nofollow">Selenium</a>.
+
+Make an HTTP request to a website, retrieving data on the page using tools like <a href="https://github.com/cheeriojs/cheerio" rel="noopener nofollow">Cheerio</a> or <a href="https://www.crummy.com/software/BeautifulSoup/bs4/doc/" rel="noopener nofollow">BeautifulSoup</a>.
+
+The first approach — driving a real browser programmatically — is typical for projects where you’re running automated website tests, or capturing screenshots of your site.
+
+The second approach has limitations. 
+For example, Cheerio “<a href="https://github.com/cheeriojs/cheerio#cheerio-is-not-a-web-browser" rel="noopener nofollow">is not a browser</a>” and “does <em>not</em> produce a visual rendering, apply CSS, load external resources, or execute JavaScript”. 
+<strong>But this approach is simple, and often sufficient, especially when you’re learning how scraping works.</strong>
+<h3>Using Got to retrieve data to use with Cheerio</h3>
+First let's write some code to grab the HTML from the web page, and look at how we can start parsing through it. 
+The following code will send a <code>GET</code> request to the web page we want, and will create a Cheerio object with the HTML from that page. 
+We'll name it <code>$</code> following the infamous jQuery convention:
+
+<code>const fs = require('fs');
+const cheerio = require('cheerio');
+const got = require('got');
+
+const vgmUrl= 'https://www.vgmusic.com/music/console/nintendo/nes';
+
+got(vgmUrl).then(response => {
+  const $ = cheerio.load(response.body);
+  console.log($('title')[0].text());
+  console.log($('h1').text());  // print the text
+
+}).catch(err => {
+  console.log(err);
+});
+</code>
+
+With this <code>$</code> object, you can navigate through the HTML and retrieve <a href="https://api.jquery.com/Types/#Element">DOM elements</a> for the data you want, <a href="https://api.jquery.com/jQuery/">in the same way that you can with jQuery</a>. 
+For example, <code>$('title')</code> will get you an array of objects corresponding to every <code>&lt;title></code> tag on the page. 
+There's typically only one <code>title</code> element, so this will be an array with one object. 
+If you run this code with the command <code>node index.js</code>, it will log the structure of this object to the console.
+
+<h3>Getting familiar with Cheerio</h3>
+When you have an object corresponding to an element in the HTML you're parsing through, you can do things like navigate through its children, parent and sibling elements. 
+The child of this <code>&lt;title></code> element is the text within the tags. 
+So <code>console.log($('title')[0].children[0].data);</code> will log the title of the web page.
+
+If you want to get more specific in your query, <a href="https://api.jquery.com/category/selectors/">there are a variety of selectors</a> you can use to parse through the HTML. 
+Two of the most common ones are to search for elements by <a href="https://api.jquery.com/class-selector/">class</a> or <a href="https://api.jquery.com/id-selector/">ID</a>. 
+If you wanted to get a div with the ID of &quot;menu&quot; you would run <code>$('#menu')</code> and if you wanted all of the columns in the table of VGM MIDIs with the &quot;header&quot; class, you'd do <code>$('td.header')</code>
+
+What we want on this page are the hyperlinks to all of the MIDI files we need to download. 
+We can start by getting every link on the page using <code>$('a')</code>. 
+Add the following to your code in <code>index.js</code>:
+
+<code>got(vgmUrl).then(response => {
+  const $ = cheerio.load(response.body);
+
+  $('a').each((i, link) => {
+    const href = link.attribs.href;
+    console.log(href);
+  });
+}).catch(err => {
+  console.log(err);
+});
+</code>
+
+This code logs the URL of every link on the page. 
+Notice that we're able to look through all elements from a given selector using the <code>.each()</code> function. 
+Iterating through every link on the page is great, but we're going to need to get a little more specific than that if we want to download all of the MIDI files.
+
+<h3>Filtering through HTML elements with Cheerio</h3>
+Before writing more code to parse the content that we want, let’s first take a look at the HTML that’s rendered by the browser. 
+Every web page is different, and sometimes getting the right data out of them requires a bit of creativity, pattern recognition, and experimentation.
+
+<img src="https://twilio-cms-prod.s3.amazonaws.com/images/RqLbgi-q_vRQy0ai0TmWqdjoJjaN9k-OpSrNj2drs46QnP.width-500.png">
+
+Our goal is to download a bunch of MIDI files, but there are a lot of duplicate tracks on this webpage, as well as remixes of songs. 
+We only want one of each song, and because our ultimate goal is to use this data to train a neural network to generate accurate Nintendo music, we won't want to train it on user-created remixes.
+
+When you're writing code to parse through a web page, it's usually helpful to use the developer tools available to you in most modern browsers. 
+If you right-click on the element you're interested in, you can inspect the HTML behind that element to get more insight.
+
+<img src="https://twilio-cms-prod.s3.amazonaws.com/images/eTCvZko6rcZKTGL3cwARnulCWGmKGP4Rpi1dK-XQbmmAgl.width-500.png">
+
+With Cheerio, you can write filter functions to fine-tune which data you want from your selectors. 
+These functions loop through all elements for a given selector and return true or false based on whether they should be included in the set or not.
+
+If you looked through the data that was logged in the previous step, you might have noticed that there are quite a few links on the page that have no <code>href</code> attribute, and therefore lead nowhere. 
+We can be sure those are not the MIDIs we are looking for, so let's write a short function to filter those out as well as making sure that elements which do contain a <code>href</code> element lead to a <code>.mid</code> file:
+
+    <code>const isMidi = (i, link) => {
+  // Return false if there is no href attribute.
+  if(typeof link.attribs.href === 'undefined') { return false }
+
+  return link.attribs.href.includes('.mid');
+};
+</code>
+
+Now we have the problem of not wanting to download duplicates or user generated remixes. 
+For this we can use regular expressions to make sure we are only getting links whose text has no parentheses, as only the duplicates and remixes contain parentheses:
+
+    <code>const noParens = (i, link) => {
+  // Regular expression to determine if the text has parentheses.
+  const parensRegex = /^((?!\().)*$/;
+  return parensRegex.test(link.children[0].data);
+};
+</code>
+
+Try adding these to your code in <code>index.js</code>:
+
+    <code>got(vgmUrl).then(response => {
+  const $ = cheerio.load(response.body);
+
+  $('a').filter(isMidi).filter(noParens).each((i, link) => {
+    const href = link.attribs.href;
+    console.log(href);
+  });
+});
+</code>
+
+Run this code again and it should only be printing <code>.mid</code> files.
+
+<h3>Downloading the MIDI files we want from the webpage</h3>
+Now that we have working code to iterate through every MIDI file that we want, we have to write code to download all of them.
+
+In the callback function for looping through all of the MIDI links, add this code to stream the MIDI download into a local file, complete with error checking:
+
+    <code>  $('a').filter(isMidi).filter(noParens).each((i, link) => {
+    const fileName = link.attribs.href;
+
+    got.stream(`${vgmUrl}/${fileName}`)
+      .on('error', err => { console.log(err); console.log(`Error on ${vgmUrl}/${fileName}`) })
+      .pipe(fs.createWriteStream(`MIDIs/${fileName}`))
+      .on('error', err => { console.log(err); console.log(`Error on ${vgmUrl}/${fileName}`) })
+      .on('finish', () => console.log(`Finished ${fileName}`));
+  });
+</code>
+
+Run this code from a directory where you want to save all of the MIDI files, and watch your terminal screen display all 2230 MIDI files that you downloaded (at the time of writing this). 
+With that, we should be finished scraping all of the MIDI files we need.
+<h3>Worked Sample</h3>
+const fs = require('fs');
+const cheerio = require('cheerio');
+const got = require('got');
+
+const theAddr= "https://williamkpchan.github.io/LibDocs/GoNotes.html"
+
+got(theAddr).then(response => {
+  const $ = cheerio.load(response.body);
+
+  $('h2').each(function(i) {
+     console.log($(this).text())  // extract text content
+     console.log(String($(this))) // cvt object to string
+
+  });
+}).catch(err => {
+  console.log(err);
+});
+
+<h3>sample</h3>
+const cheerio = require('cheerio');
+const $ = cheerio.load('&lt;h2 class="title">Hello world&lt;/h2>');
+
+$('h2.title').text('Hello there!');
+$('h2').addClass('welcome');
+
+$.html();
+//=> &lt;html>&lt;head>&lt;/head>&lt;body>&lt;h2 class="title welcome">Hello there!&lt;/h2>&lt;/body>&lt;/html>
+
+<h2>Copy to clipboard</h2>
+const clipboardy = require('clipboardy');
+
+// Copy
+clipboardy.writeSync('🦄');
+
+// Paste
+clipboardy.readSync();
+//🦄
+
+<h2>Debugging</h2>
+<a href="https://nodejs.org/en/docs/guides/debugging-getting-started/" class="whitebut ">Nodejs Debugging Guide</a>
+
+<h2>await is only valid in async function</h2>
+await can only be called in a function marked as async. 
+
+(async function(){
+    var body = await httpGet('link');
+    $.response.setBody(body);
+})()
+
+Basically when you use one asynchronous operation, you need to make the entire flow asynchronous as well.
+So the async keyword kindof uses ES6 generator function 
+and makes it return a promise.
+
+<h2>Promises</h2>
+Promises simplify deferred and asynchronous computations. A promise represents an operation that hasn't completed yet.
 
 
 
