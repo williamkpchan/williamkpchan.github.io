@@ -190,6 +190,7 @@ function fullStkChartInit() {
     theList = localStorage.getItem("stkListArr");  // this is the shareList from showstklist.js
     theList = theList.split(' ');
     titleBar = localStorage.getItem("titleBar");
+
     $("#titlebar").empty();
     $("#titlebar").append(titleBar);
 }
@@ -206,6 +207,19 @@ function toACode(thecode) {
 	else { thecode = thecode+".sz" }
 	return(thecode);
 }
+function selectList(){
+  newList = eval(document.getElementById("selectList").value).split(" ");
+  theList = newList;
+
+  alert(" Total: " + theList.length + "\ndetails see end of this page.\nremember to modify mustadd list!\n" + newList)
+        $("#message").text("Total: " + theList.length + "\n"+theList);
+
+    localStorage.setItem("titleBar", document.getElementById("selectList").value);
+    localStorage.setItem("stkListArr",theList.toString().replace(/\,/g," ")); // this is the shareList
+    location.reload();
+
+}
+
 
 
 function showNextPage(){
