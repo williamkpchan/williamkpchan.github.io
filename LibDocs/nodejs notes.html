@@ -65,9 +65,813 @@ $ node hello-world.js
 
 Now, open any preferred web browser and visit http://127.0.0.1:3000.
 
+<h2><span class="orange">XMLHttpRequest</span></h2>
+Example Using the XMLHttpRequest Object
+function loadXMLDoc() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("demo").innerHTML =
+      this.responseText;
+    }
+  };
+  xhttp.open("GET", "xmlhttp_info.txt", true);
+  xhttp.send();
+}
+
+XMLHttpRequest is a built-in browser object that allows to make HTTP requests in JavaScript.
+
+Despite of having the word “XML” in its name, it can operate on any data, not only in XML format. 
+We can upload/download files, track progress and much more.
+
+Right now, there’s another, more modern method <code>fetch</code>, that somewhat deprecates <code>XMLHttpRequest</code>.
+<b>A Fetch API Example</b>
+let file = "fetch_info.txt"
+fetch (file)
+.then(x => x.text())
+.then(y => document.getElementById("demo").innerHTML = y);
+
+Since Fetch is based on async and await, the example above might be easier to understand like this:
+
+getText("fetch_info.txt");
+async function getText(file) {
+  let x = await fetch(file);
+  let y = await x.text();
+  document.getElementById("demo").innerHTML = y;
+}
+In modern web-development <code>XMLHttpRequest</code> is used for three reasons:
+Historical reasons: we need to support existing scripts with <code>XMLHttpRequest</code>.
+We need to support old browsers, and don’t want polyfills (e.g. to keep scripts tiny).
+We need something that <code>fetch</code> can’t do yet, e.g. to track upload progress.
+
+Does that sound familiar? If yes, then all right, go on with <code>XMLHttpRequest</code>. 
+Otherwise, please head on to <a href="/fetch">Fetch</a>.
+
+<h2>The basics</h2>XMLHttpRequest has two modes of operation: synchronous and asynchronous.
+
+Let’s see the asynchronous first, as it’s used in the majority of cases.
+
+To do the request, we need 3 steps:
+
+Create <code>XMLHttpRequest</code>:
+
+<code>let xhr = new XMLHttpRequest();</code>
+
+The constructor has no arguments.
+
+Initialize it, usually right after <code>new XMLHttpRequest</code>:
+
+<code>xhr.open(method, URL, [async, user, password])</code>
+
+This method specifies the main parameters of the request:
+
+<code>method</code> – HTTP-method. 
+Usually <code>"GET"</code> or <code>"POST"</code>.
+<code>URL</code> – the URL to request, a string, can be <a href="/url">URL</a> object.
+<code>async</code> – if explicitly set to <code>false</code>, then the request is synchronous, we’ll cover that a bit later.
+<code>user</code>, <code>password</code> – login and password for basic HTTP auth (if required).
+
+Please note that <code>open</code> call, contrary to its name, does not open the connection. 
+It only configures the request, but the network activity only starts with the call of <code>send</code>.
+
+Send it out.
+
+<code>xhr.send([body])</code>
+
+This method opens the connection and sends the request to server. 
+The optional <code>body</code> parameter contains the request body.
+
+Some request methods like <code>GET</code> do not have a body. 
+And some of them like <code>POST</code> use <code>body</code> to send the data to the server. 
+We’ll see examples of that later.
+
+Listen to <code>xhr</code> events for response.
+
+These three events are the most widely used:
+
+<code>load</code> – when the request is complete (even if HTTP status is like 400 or 500), and the response is fully downloaded.
+<code>error</code> – when the request couldn’t be made, e.g. network down or invalid URL.
+<code>progress</code> – triggers periodically while the response is being downloaded, reports how much has been downloaded.
+
+<code>xhr.onload = function() {
+  alert(`Loaded: ${xhr.status} ${xhr.response}`);
+};
+
+xhr.onerror = function() {
+  // only triggers if the request couldn't be made at all
+  alert(`Network Error`);
+};
+
+xhr.onprogress = function(event) {
+  // triggers periodically
+ // event.loaded - how many bytes downloaded
+ // event.lengthComputable = true if the server sent Content-Length header
+ // event.total - total number of bytes (if lengthComputable)
+ alert(`Received ${event.loaded} of ${event.total}`);
+};</code>
+
+Here’s a full example. 
+The code below loads the URL at <code>/article/xmlhttprequest/example/load</code> from the server and prints the progress:
+
+<code>// 1. Create a new XMLHttpRequest object
+let xhr = new XMLHttpRequest();
+
+// 2. Configure it: GET-request for the URL /article/.../load
+xhr.open('GET', '/article/xmlhttprequest/example/load');
+
+// 3. Send the request over the network
+xhr.send();
+
+// 4. This will be called after the response is received
+xhr.onload = function() {
+  if (xhr.status != 200) {
+    // analyze HTTP status of the response
+    alert(`Error ${xhr.status}: ${xhr.statusText}`); // e.g. 404: Not Found
+  } else { // show the result
+    alert(`Done, got ${xhr.response.length} bytes`); // response is the server response
+  }
+};
+
+xhr.onprogress = function(event) {
+  if (event.lengthComputable) {
+    alert(`Received ${event.loaded} of ${event.total} bytes`);
+  } else {
+    alert(`Received ${event.loaded} bytes`); // no Content-Length
+  }
+};
+
+xhr.onerror = function() {
+  alert("Request failed");
+};</code>
+
+Once the server has responded, we can receive the result in the following <code>xhr</code> properties:
+
+<dt><code>status</code></dt>
+<dd>HTTP status code (a number): <code>200</code>, <code>404</code>, <code>403</code> and so on, can be <code>0</code> in case of a non-HTTP failure.</dd>
+<dt><code>statusText</code></dt>
+<dd>HTTP status message (a string): usually <code>OK</code> for <code>200</code>, <code>Not Found</code> for <code>404</code>, <code>Forbidden</code> for <code>403</code> and so on.</dd>
+<dt><code>response</code> (old scripts may use <code>responseText</code>)</dt>
+<dd>The server response body.</dd>
+
+We can also specify a timeout using the corresponding property:
+
+<code>xhr.timeout = 10000; // timeout in ms, 10 seconds</code>
+
+If the request does not succeed within the given time, it gets canceled and <code>timeout</code> event triggers.
+
+URL search parameters
+To add parameters to URL, like <code>?name=value</code>, and ensure the proper encoding, we can use <a href="/url">URL</a> object:
+
+<code>let url = new URL('https://google.com/search');
+url.searchParams.set('q', 'test me!');
+
+// the parameter 'q' is encoded
+xhr.open('GET', url); // https://google.com/search?q=test+me%21</code>
+
+<h2>Response Type</h2>We can use <code>xhr.responseType</code> property to set the response format:
+
+<code>"</code> (default) – get as string,
+<code>"text"</code> – get as string,
+<code>"arraybuffer"</code> – get as <code>ArrayBuffer</code> (for binary data, see chapter <a href="/arraybuffer-binary-arrays">ArrayBuffer, binary arrays</a>),
+<code>"blob"</code> – get as <code>Blob</code> (for binary data, see chapter <a href="/blob">Blob</a>),
+<code>"document"</code> – get as XML document (can use XPath and other XML methods) or HTML document (based on the MIME type of the received data),
+<code>"json"</code> – get as JSON (parsed automatically).
+
+For example, let’s get the response as JSON:
+<code>let xhr = new XMLHttpRequest();
+
+xhr.open('GET', '/article/xmlhttprequest/example/json');
+xhr.responseType = 'json';
+xhr.send();
+// the response is {"message": "Hello, world!"}
+xhr.onload = function() {
+  let responseObj = xhr.response;
+  alert(responseObj.message); // Hello, world!
+};</code>
+
+Please note:
+In the old scripts you may also find <code>xhr.responseText</code> and even <code>xhr.responseXML</code> properties.
+
+They exist for historical reasons, to get either a string or XML document. 
+Nowadays, we should set the format in <code>xhr.responseType</code> and get <code>xhr.response</code> as demonstrated above.
+
+<h2>Ready states</h2><code>XMLHttpRequest</code> changes between states as it progresses. 
+The current state is accessible as  <code>xhr.readyState</code>.
+
+All states, as in <a href="https://xhr.spec.whatwg.org/#states">the specification</a>:
+
+<code>UNSENT = 0; // initial state
+OPENED = 1; // open called
+HEADERS_RECEIVED = 2; // response headers received
+LOADING = 3; // response is loading (a data packet is received)
+DONE = 4; // request complete</code>
+
+An <code>XMLHttpRequest</code> object travels them in the order <code>0</code> → <code>1</code> → <code>2</code> → <code>3</code> → … → <code>3</code> → <code>4</code>. 
+State <code>3</code> repeats every time a data packet is received over the network.
+
+We can track them using <code>readystatechange</code> event:
+
+<code>xhr.onreadystatechange = function() {
+  if (xhr.readyState == 3) {
+    // loading
+  }
+  if (xhr.readyState == 4) {
+    // request finished
+  }
+};</code>
+
+You can find <code>readystatechange</code> listeners in really old code, it’s there for historical reasons, as there was a time when there were no <code>load</code> and other events. 
+Nowadays, <code>load/error/progress</code> handlers deprecate it.
+
+<h2>Aborting request</h2>We can terminate the request at any time. 
+The call to <code>xhr.abort()</code> does that:
+
+<code>xhr.abort(); // terminate the request</code>
+
+That triggers <code>abort</code> event, and <code>xhr.status</code> becomes <code>0</code>.
+
+<h2>Synchronous requests</h2>If in the <code>open</code> method the third parameter <code>async</code> is set to <code>false</code>, the request is made synchronously.
+
+In other words, JavaScript execution pauses at <code>send()</code> and resumes when the response is received. 
+Somewhat like <code>alert</code> or <code>prompt</code> commands.
+
+Here’s the rewritten example, the 3rd parameter of <code>open</code> is <code>false</code>:
+
+<code>let xhr = new XMLHttpRequest();
+
+xhr.open('GET', '/article/xmlhttprequest/hello.txt', false);
+
+try {
+xhr.send();
+if (xhr.status != 200) {
+alert(`Error ${xhr.status}: ${xhr.statusText}`);
+} else {
+alert(xhr.response);
+}
+} catch(err) { // instead of onerror
+alert("Request failed");
+}</code>
+
+It might look good, but synchronous calls are used rarely, because they block in-page JavaScript till the loading is complete. 
+In some browsers it becomes impossible to scroll. 
+If a synchronous call takes too much time, the browser may suggest to close the “hanging” webpage.
+
+Many advanced capabilities of <code>XMLHttpRequest</code>, like requesting from another domain or specifying a timeout, are unavailable for synchronous requests. 
+Also, as you can see, no progress indication.
+
+Because of all that, synchronous requests are used very sparingly, almost never. 
+We won’t talk about them any more.
+
+<h2>HTTP-headers</h2><code>XMLHttpRequest</code> allows both to send custom headers and read headers from the response.
+
+There are 3 methods for HTTP-headers:
+
+<dl>
+<dt><code>setRequestHeader(name, value)</code></dt>
+<dd>
+Sets the request header with the given <code>name</code> and <code>value</code>.
+
+For instance:
+
+<code>xhr.setRequestHeader('Content-Type', 'application/json');</code>
+
+Headers limitations
+Several headers are managed exclusively by the browser, e.g. <code>Referer</code> and <code>Host</code>.
+The full list is <a href="https://xhr.spec.whatwg.org/#the-setrequestheader()-method">in the specification</a>.
+
+<code>XMLHttpRequest</code> is not allowed to change them, for the sake of user safety and correctness of the request.
+
+Can’t remove a header
+Another peculiarity of <code>XMLHttpRequest</code> is that one can’t undo <code>setRequestHeader</code>.
+
+Once the header is set, it’s set. 
+Additional calls add information to the header, don’t overwrite it.
+
+For instance:
+
+<code>xhr.setRequestHeader('X-Auth', '123');
+xhr.setRequestHeader('X-Auth', '456');
+
+// the header will be:
+// X-Auth: 123, 456</code>
+
+</dd>
+<dt><code>getResponseHeader(name)</code></dt>
+<dd>
+Gets the response header with the given <code>name</code> (except <code>Set-Cookie</code> and <code>Set-Cookie2</code>).
+
+For instance:
+
+<code>xhr.getResponseHeader('Content-Type')</code>
+
+</dd>
+<dt><code>getAllResponseHeaders()</code></dt>
+<dd>
+Returns all response headers, except <code>Set-Cookie</code> and <code>Set-Cookie2</code>.
+
+Headers are returned as a single line, e.g.:
+
+<code>Cache-Control: max-age=31536000
+Content-Length: 4260
+Content-Type: image/png
+Date: Sat, 08 Sep 2012 16:53:16 GMT</code>
+
+The line break between headers is always <code>"\r\n"</code> (doesn’t depend on OS), so we can easily split it into individual headers. 
+The separator between the name and the value is always a colon followed by a space <code>": "</code>. 
+That’s fixed in the specification.
+
+So, if we want to get an object with name/value pairs, we need to throw in a bit JS.
+
+Like this (assuming that if two headers have the same name, then the latter one overwrites the former one):
+
+<code>let headers = xhr
+.getAllResponseHeaders()
+.split('\r\n')
+.reduce((result, current) =&gt; {
+let [name, value] = current.split(': ');
+result[name] = value;
+return result;
+}, {});
+
+// headers['Content-Type'] = 'image/png'</code>
+
+</dd>
+</dl>
+<h2>POST, FormData</h2>To make a POST request, we can use the built-in <a href="https://developer.mozilla.org/en-US/docs/Web/API/FormData">FormData</a> object.
+
+The syntax:
+
+<code>let formData = new FormData([form]); // creates an object, optionally fill from &lt;form&gt;
+formData.append(name, value); // appends a field</code>
+
+We create it, optionally fill from a form, <code>append</code> more fields if needed, and then:
+
+<code>xhr.open('POST', ...)</code> – use <code>POST</code> method.
+<code>xhr.send(formData)</code> to submit the form to the server.
+
+For instance:
 
 
-<h2>Communication</h2>
+
+
+
+<code>&lt;form name="person"&gt;
+&lt;input name="name" value="John"&gt;
+&lt;input name="surname" value="Smith"&gt;
+&lt;/form&gt;
+
+&lt;script&gt;
+// pre-fill FormData from the form
+let formData = new FormData(document.forms.person);
+
+// add one more field
+formData.append("middle", "Lee");
+
+// send it out
+let xhr = new XMLHttpRequest();
+xhr.open("POST", "/article/xmlhttprequest/post/user");
+xhr.send(formData);
+
+xhr.onload = () =&gt; alert(xhr.response);
+&lt;/script&gt;</code>
+
+The form is sent with <code>multipart/form-data</code> encoding.
+
+Or, if we like JSON more, then <code>JSON.stringify</code> and send as a string.
+
+Just don’t forget to set the header <code>Content-Type: application/json</code>, many server-side frameworks automatically decode JSON with it:
+
+<code>let xhr = new XMLHttpRequest();
+
+let json = JSON.stringify({
+name: "John",
+surname: "Smith"
+});
+
+xhr.open("POST", '/submit')
+xhr.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+
+xhr.send(json);</code>
+
+The <code>.send(body)</code> method is pretty omnivore. 
+It can send almost any <code>body</code>, including <code>Blob</code> and <code>BufferSource</code> objects.
+
+<h2>Upload progress</h2>The <code>progress</code> event triggers only on the downloading stage.
+
+That is: if we <code>POST</code> something, <code>XMLHttpRequest</code> first uploads our data (the request body), then downloads the response.
+
+If we’re uploading something big, then we’re surely more interested in tracking the upload progress. 
+But <code>xhr.onprogress</code> doesn’t help here.
+
+There’s another object, without methods, exclusively to track upload events: <code>xhr.upload</code>.
+
+It generates events, similar to <code>xhr</code>, but <code>xhr.upload</code> triggers them solely on uploading:
+
+<code>loadstart</code> – upload started.
+<code>progress</code> – triggers periodically during the upload.
+<code>abort</code> – upload aborted.
+<code>error</code> – non-HTTP error.
+<code>load</code> – upload finished successfully.
+<code>timeout</code> – upload timed out (if <code>timeout</code> property is set).
+<code>loadend</code> – upload finished with either success or error.
+
+Example of handlers:
+
+<code>xhr.upload.onprogress = function(event) {
+alert(`Uploaded ${event.loaded} of ${event.total} bytes`);
+};
+
+xhr.upload.onload = function() {
+alert(`Upload finished successfully.`);
+};
+
+xhr.upload.onerror = function() {
+alert(`Error during the upload: ${xhr.status}`);
+};</code>
+
+Here’s a real-life example: file upload with progress indication:
+
+
+
+
+
+<code>&lt;input type="file" onchange="upload(this.files[0])"&gt;
+
+&lt;script&gt;
+function upload(file) {
+let xhr = new XMLHttpRequest();
+
+// track upload progress
+xhr.upload.onprogress = function(event) {
+console.log(`Uploaded ${event.loaded} of ${event.total}`);
+};
+
+// track completion: both successful or not
+xhr.onloadend = function() {
+if (xhr.status == 200) {
+console.log("success");
+} else {
+console.log("error " + this.status);
+}
+};
+
+xhr.open("POST", "/article/xmlhttprequest/post/upload");
+xhr.send(file);
+}
+&lt;/script&gt;</code>
+
+<h2>Cross-origin requests</h2><code>XMLHttpRequest</code> can make cross-origin requests, using the same CORS policy as <a href="/fetch-crossorigin">fetch</a>.
+
+Just like <code>fetch</code>, it doesn’t send cookies and HTTP-authorization to another origin by default. 
+To enable them, set <code>xhr.withCredentials</code> to <code>true</code>:
+
+<code>let xhr = new XMLHttpRequest();
+xhr.withCredentials = true;
+
+xhr.open('POST', 'http://anywhere.com/request');
+...</code>
+
+See the chapter <a href="/fetch-crossorigin">Fetch: Cross-Origin Requests</a> for details about cross-origin headers.
+
+<h2>Summary</h2>Typical code of the GET-request with <code>XMLHttpRequest</code>:
+
+<code>let xhr = new XMLHttpRequest();
+
+xhr.open('GET', '/my/url');
+
+xhr.send();
+
+xhr.onload = function() {
+if (xhr.status != 200) { // HTTP error?
+// handle error
+alert( 'Error: ' + xhr.status);
+return;
+}
+
+// get the response from xhr.response
+};
+
+xhr.onprogress = function(event) {
+// report progress
+alert(`Loaded ${event.loaded} of ${event.total}`);
+};
+
+xhr.onerror = function() {
+// handle non-HTTP error (e.g. network down)
+};</code>
+
+There are actually more events, the <a href="https://xhr.spec.whatwg.org/#events">modern specification</a> lists them (in the lifecycle order):
+
+<code>loadstart</code> – the request has started.
+<code>progress</code> – a data packet of the response has arrived, the whole response body at the moment is in <code>response</code>.
+<code>abort</code> – the request was canceled by the call <code>xhr.abort()</code>.
+<code>error</code> – connection error has occurred, e.g. wrong domain name. 
+Doesn’t happen for HTTP-errors like 404.
+<code>load</code> – the request has finished successfully.
+<code>timeout</code> – the request was canceled due to timeout (only happens if it was set).
+<code>loadend</code> – triggers after <code>load</code>, <code>error</code>, <code>timeout</code> or <code>abort</code>.
+
+The <code>error</code>, <code>abort</code>, <code>timeout</code>, and <code>load</code> events are mutually exclusive. 
+Only one of them may happen.
+
+The most used events are load completion (<code>load</code>), load failure (<code>error</code>), or we can use a single <code>loadend</code> handler and check the properties of the request object <code>xhr</code> to see what happened.
+
+We’ve already seen another event: <code>readystatechange</code>. 
+Historically, it appeared long ago, before the specification settled. 
+Nowadays, there’s no need to use it, we can replace it with newer events, but it can often be found in older scripts.
+
+If we need to track uploading specifically, then we should listen to same events on <code>xhr.upload</code> object.
+
+<h2><span class="orange">Chat with WebSockets, Server and Client both in NodeJs</span></h2>
+Usually when somebody thinks chat, they think WebSockets. 
+Normally there are tutorials how you make a server in NodeJs for example and a client in HTML. 
+But in this case the client will also be a NodeJs app. 
+It will display messages from the server and listen to users input with NodeJs <code>readline</code>.
+
+<img src="https://miro.medium.com/max/8802/0*9F8GQk7R1EZQagSO">
+<h2>Extra</h2>
+There will be no persistence here. 
+A client wil<span>l</span> see only messages that server sends him from the point he connects to it. 
+Also whenever a client is connected, the server will generate a random color and a random name, and the client will use that. 
+It’s not necessary, it’s just a few extra stuff.
+
+Utils — this file contains the generate random color and generate random name. 
+You can check the contents of that file in full on Github. 
+Link at the end of story.
+<h2>Server</h2>
+<code>myClient</code> is just a class called Client (not the actual client we are gonna define that connects to the server). 
+It contains 2 fields, name &amp; color.
+
+<code>handleReceviedMsg</code> accepts the message that was send to server, and returns that it’s JSON stringified.
+
+For WebSockets we are using the ws package. 
+And chalk is used to make the console log a little colourful.
+
+First we create the WebSocketServer, running on port 8080, with option for client tracking. 
+This tracking enables that the WebSocket server has clients property.
+
+When the server detects a connection, we create a client instance. 
+It’s just a placeholder for name and color. 
+Then we send the init or welcome message to the client, with that information.
+
+Whenever a new message is received, we will send that message to every client back. 
+Even to the one who has send it. 
+So they know that the message was received and transmitted.
+<h2>Client</h2>
+The client connects to the WebSocket server. 
+On initial or welcome message, the server will return the name and the color. 
+The client will use that to display message in color with the help of chalk.
+
+For client input we use nodes readline. 
+Readline listents on the line event. 
+This event is triggered whenever the client presses the Enter key. 
+On that event we capture the text that was inputed and together with the clients name and color we send that to the server.
+
+Everything else should be pretty much self explanatory.
+
+On open is when we have a connection established. 
+On close is when the connection gets terminated. 
+On message is whenever server send us a message.
+
+<img src="https://miro.medium.com/max/972/1*cjeTJvXhzR1xiAgA3f-YmQ.png">
+client.js
+
+<img src="https://miro.medium.com/max/932/1*H7WqjR0xG_fjBWE99b9ZHQ.png">
+server.js
+
+Whole structure and code: <a href="https://github.com/zprima/wschat" rel="noopener nofollow">https://github.com/zprima/wschat</a>
+
+<h2><span class="orange">Creating a chat with Node.js</span></h2>
+https://itnext.io/creating-a-chat-with-node-js-from-the-scratch-707896d64593
+<h2>About Socket.IO</h2>
+This Node.js module brings a way to connect directly from the client browser to the application server. 
+The library works through events, that is, the server or client will trigger events so that there are responses from one of the parties
+
+In a way, let’s use two very basic methods, which are <code>emit</code> and <code>on</code>. 
+One serves to make the emission of the event and the other to receive the response of it. 
+Each side of the application will therefore have the Socket.IO library added.
+
+In addition to allowing the direct exchange of messages between two devices, Socket.IO also allows the broadcast of messages, sending an event to all other connected users. 
+The broadcast can be both from client and server.
+
+When the user accesses the page, a socket is created with the server and it is through this socket that the exchange of messages between a client and a server takes place. 
+This, in turn, can either issue an event to a single Socket or to all the sockets connected to it, what we call a message broadcast.
+
+<h2>The project</h2>
+Let’s create now a directory called <code>\ChatJs</code> and, inside of it, we will create a file called app.js, which will be the main file of our server. 
+As a first part we will create a fairly simple server that will only present a successful message on the browser screen
+
+Creating a single application.
+var app = require('http').createServer(response);
+app.listen(3000);
+console.log("App running…");
+function response(req, res) {
+ res.writeHead(200);
+ res.end("Hi, your server is working!");
+}
+
+The script creates an HTTP server (which will be listening on port 3000) which has as main method to be requested the <code>response()</code> function, which, in turn, has two parameters: <code>req</code> (request) and <code>res</code> (response). 
+Into the function, we define a success code (200) and end it with a string warning that the server is ok.
+
+Soon after, just run the following command, which will run our application at the prompt:
+node app.js
+
+Note that when you run this code at the prompt, the terminal presents the content of the <code>console.log</code> function warning that the application is running. 
+However, it will not print any other lines, indicating that our application is currently running.
+
+At this point, we have only our Node.js server running. 
+If you access the browser at <a href="http://localhost:3000/">http://localhost:3000/</a> you’ll see the message we passed in the <code>end</code> method
+
+Next, we will make our server present an HTML response that will be the main page of our chat. 
+For this, we will have to load the <code>FileSystem</code> module, since we will navigate the project directory and open a file. 
+So, let’s change our <code>app.js</code> just like we see at <strong>Listing 4</strong>. 
+Before making the changes, go to the prompt and press <code>Ctrl + C</code> (or <code>command + C</code>) to stop our application on the server.
+
+<strong>Listing 4.</strong> Introducing an HTML page.
+var app = require('http').createServer(response);
+var fs = require('fs');
+app.listen(3000);
+console.log("App running…");
+function response(req, res) {
+ fs.readFile(__dirname + '/index.html',
+ function (err, data) {
+ if (err) {
+   res.writeHead(500);
+   return res.end('Failed to load file index.html');
+ } res.writeHead(200);
+   res.end(data);
+ });
+}
+
+After these changes we will again execute the command <code>node app.js</code> and, when accessing again the address <a href="http://localhost:3000/">http://localhost:3000/</a>, you’ll come across the message “<em>Error loading the index.html file”</em>, just because we don’t have an index.html file inside our project yet.
+
+It is also important to remember that the server we created so far does not differentiate the path, ie you can put anything after <a href="http://localhost:3000/">http://localhost:3000/</a> and it will always respond in the same way because we have not implemented how it’d treat these paths. 
+Soon, you can very well call up addresses like <a href="http://localhost:3000/chat">http://localhost:3000/chat</a>, <a href="http://localhost:3000/error">http://localhost:3000/error</a>, <a href="http://localhost:3000/potato">http://localhost:3000/potato</a>, etc.
+
+Let’s create a simple interface for our chat. 
+Create an <code>index.html</code> file inside the project root directory. 
+In this file enter a code equal to that shown in <strong>Listing 5</strong>.
+
+<strong>Listing 5.</strong> Chat HTML code.
+&lt;!DOCTYPE html>
+&lt;html>
+&lt;head>
+ &lt;title>ChatJS&lt;/title>
+ &lt;link rel="stylesheet" type="text/css" href="/css/style.css" />
+&lt;/head>
+&lt;body>
+ &lt;div id="history">&lt;/div>
+ &lt;form id="chat">
+ &lt;input type="text" id="msg_text" name="msg_text" />
+ &lt;input type="submit" value="Send!" /> 
+ &lt;/form>
+&lt;/body>
+&lt;/html>
+
+Our index, for now, will only deals with a div called <code>history</code> that is where all the messages exchanged in the chat will be arranged. 
+Then, we have soon after a form with a text box and the button of message sending. 
+A very simple chat structure so far.
+
+However, if you now try to access the address <a href="http://localhost:3000/">http://localhost:3000/</a> you will receive the same error message. 
+This is because we do not restart our server application, then we go to the prompt again, press <code>Ctrl + C</code> and then reexecute the app.
+
+As you may have noticed, we already left a link tag in the <code>&lt;head></code> of our application to load our CSS. 
+Within the directory of our project create another directory called <code>css</code> and, inside it, the <code>style.css</code> file with the same content as shown in <strong>Listing 6</strong>.
+
+<strong>Listing 6.</strong> style.css file.
+html, body, input { font-family: Georgia, Tahoma, Arial, sans-serif; margin: 0; padding: 0;}
+body { background: #302F31; padding: 10px;}
+
+form { margin: 15px 0;}
+form input[type='text'] { border: 2px solid #eb5424; border-radius: 5px; padding: 5px; width: 75%;}
+form input[type='submit'] { background: #eb5424; border: none; border-radius: 5px; color: #FFF; cursor: pointer; font-weight: bold; padding: 7px 5px; width: 19%;}
+
+#history { background: #FFF; border: 2px solid #eb5424; height: 550px;}
+
+
+If we restart the application, the style is not yet applied to the index page. 
+The reason is that our app.js only deals with a request path so far. 
+To solve this we will change our app.js file so that it loads the files that are passed in the request URL, instead of placing each of the URLs manually. 
+Let’s take a closer look at the changes listed in <strong>Listing 7</strong>.
+
+<strong>Listing 7.</strong> Path changes in app.js.
+var app = require('http').createServer(response);
+var fs = require('fs');
+app.listen(3000);
+console.log("App running...");
+function response(req, res) {
+    var file = "";
+    if (req.url == "/") {
+        file = __dirname + '/index.html';
+    } else {
+        file = __dirname + req.url;
+    }
+    fs.readFile(file, function(err, data) {
+        if (err) {
+            res.writeHead(404);
+            return res.end('Page or file not found');
+        }
+        res.writeHead(200);
+        res.end(data);
+    });
+}
+
+After restarting the app
+
+<h2>Sending messages</h2>
+We will now work on the messaging mechanism. 
+Our application will work by communicating with the Node.js server through the client-side library of Socket.IO while jQuery takes place in the interaction with the page.
+
+For this, we will change the app.js file as shown in <strong>Listing 8</strong>, and include a line of a command at the beginning of the file stating that we are including Socket.IO in the application.
+
+<strong>Listing 8.</strong> Including Socket.IO module.
+var app = require('http').createServer(response);
+var fs = require('fs');
+var io = require('socket.io')(app);
+…
+
+In order to use the <code>require</code> function in a module we need first to install it for our application. 
+So, stop the application and run the following command to get this done:
+npm install socket.io
+
+Once finished, go to your index.html page and add the code snippet shown in <strong>Listing 9</strong>, at the end of the file.
+
+<strong>Listing 9.</strong> Message sending event.
+…
+ &lt;script type="text/javascript" src="<a href="https://code.jquery.com/jquery-3.3.1.min.js">https://code.jquery.com/jquery-3.3.1.min.js</a>">&lt;/script>
+ &lt;script type="text/javascript" src="/socket.io/socket.io.js">&lt;/script>
+ &lt;script type="text/javascript">
+ var socket = io.connect();
+ $("form#chat").submit(function(e) {
+   e.preventDefault();
+ 
+   socket.emit("send message", $(this).find("#msg_text").val(), function() {
+     $("form#chat #msg_text").val(");
+   });
+ });
+ &lt;/script>
+&lt;/body>
+&lt;/html>
+
+We are declaring a <code>socket</code> variable that refers to the Socket.IO library, which will be responsible for all socket functionalities. 
+Next, we declare a <code>submit</code> event of our form in jQuery and pass a <code>preventDefault</code> so that the form does not proceed to its <code>action</code>, since we are the ones who are going to take care of the form response.
+
+Note that the <code>emit</code> method of the library is invoked, in which we pass as parameters three things: the event name (this will be useful on the server), the data we are sending (in this case we are only sending the contents of the <code>message</code> field) and finally the <code>callback</code>, a function that will be executed once the event is issued. 
+The latter, in particular, will only serve to clear the message field, so the user does not have to delete the message after sending it.
+
+If we now test our application the message sending will not work, not even the callback to clear the message field, because we have not yet put the functionality of what the server have to do as soon as it receives this event. 
+To do this, edit the app.js file and put the code shown in <strong>Listing 11</strong> at the end of it.
+
+<strong>Listing 11.</strong> Receiving messages from the client.
+io.on("connection", function(socket) {
+    socket.on("send message", function(sent_msg, callback) {
+        sent_msg = "[ " + getCurrentDate() + " ]: " + sent_msg;
+        io.sockets.emit("update messages", sent_msg);
+        callback();
+    });
+});
+function getCurrentDate() {
+    var currentDate = new Date();
+    var day = (currentDate.getDate() < 10 ? '0' : '') + currentDate.getDate();
+    var month = ((currentDate.getMonth() + 1) < 10 ? '0' : '') + (currentDate.getMonth() + 1);
+    var year = currentDate.getFullYear();
+    var hour = (currentDate.getHours() < 10 ? '0' : '') + currentDate.getHours();
+    var minute = (currentDate.getMinutes() < 10 ? '0' : '') + currentDate.getMinutes();
+    var second = (currentDate.getSeconds() < 10 ? '0' : '') + currentDate.getSeconds();
+    return year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second;
+}
+
+We’ve created a method that will work in response to the client’s connection to the server. 
+When the client accesses the page it triggers this method on the server and when this socket receives a <code>send message</code> we trigger a method that has as parameters the sent data (the <code>message</code> field) and the callback that we created on the client side.
+
+Within this method we put the second part of the functionality: the module will send to the sockets connected to the server (all users) the <code>update messages</code> event and will also pass which new message was sent, with a specific datetime format. 
+To provide the date and time we create a separate function because we will still use this method a few more times throughout the development. 
+Right away, we call the callback that we created on the client side, which is the method for clearing the fields.
+
+Finally, also edit the index.html file and create the method that will update the messages for the users. 
+The idea is quite simple: let’s give an <code>append</code> in the <code>history</code> div (the changes are in <strong>Listing 12</strong>). 
+The following lines should be entered shortly after submitting the form.
+
+<strong>Listing 12.</strong> Updating message history.
+socket.on("update messages", function(msg){
+var final_message = $("&lt;p />").text(msg);
+   $("#history").append(final_message);
+});
+
+Basically, the conversation between the server and the client is the same on both sides, that is, the two have an <code>emit</code> and <code>on</code> functions for issuing and receiving events, respectively.
+
+So, restart and access the application in two tabs and just send a message to see the power of Socket.IO in action. 
+The application should display the message
+
+<h2>Conclusion</h2>
+With this very simple project and a few dependencies, we managed to create, in some lines of code, a very functional application.
+
+Notwithstanding, the power of Socket.IO extends to more solutions that previously relied on back-end pages. 
+Now, the inbound/outbound server response time can rely on the WebSocket protocol for a more agile information exchange, enabling systems that track monitoring results or even setting real-time pricing for users.
+
+You can find the full source code <a href="https://github.com/diogosouza/ChatJS">here</a>.
+
+<h2><span class="orange">Communication</span></h2>
 <a href="Complete Guide To Node Client-Server Communication.html"><span class="orangeb">&diams;Complete Guide To Node Client-Server Communication</span></a>
 
 <a href="https://stackoverflow.com/questions/11115508/in-node-js-how-do-i-communicate-with-client-side-javascript">node js communicate with client side javascript</a>
