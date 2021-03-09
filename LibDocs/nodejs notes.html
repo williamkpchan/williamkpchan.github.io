@@ -644,6 +644,7 @@ Whole structure and code: <a href="https://github.com/zprima/wschat" rel="noopen
 <h2><span class="orange">Creating a chat with Node.js</span></h2>
 https://itnext.io/creating-a-chat-with-node-js-from-the-scratch-707896d64593
 <h2>About Socket.IO</h2>
+<a href="socket.io.html" class="whitebut red goldts bluebs">socket.io</a>
 This Node.js module brings a way to connect directly from the client browser to the application server. 
 The library works through events, that is, the server or client will trigger events so that there are responses from one of the parties
 
@@ -2130,6 +2131,66 @@ app.use('/static', express.static(path.join(__dirname, 'public')))
 
 <h2>express dynamic content</h2>
 <a href="Node.js dynamic content.html" class="whitebut ">Node.js dynamic content</a>
+
+<h2>Socket.io with multiple clients</h2>
+<a href="https://stackoverflow.com/questions/38999157/using-socket-io-with-multiple-clients-connecting-to-same-server/38999513" class="whitebut ">Socket.io with multiple clients connecting to same server</a>
+
+Server side:
+// you have your socket ready and inside the on('connect'...) you handle a register event where the client passes an id if one exists else you create one.
+
+socket.on('register', function(clientUuid){ // a client requests registration
+      var id = clientUuid == null? uuid.v4() : clientUuid; // create an id if client doesn't already have one
+      var nsp;
+      var ns = "/" + id;
+
+      socket.join(id);
+      var nsp = app.io.of(ns); // create a room using this id that is only for this client
+      clientToRooms[ns] = nsp; // save it to a dictionary for future use
+
+      // set up what to do on connection
+      nsp.on('connection', function(nsSocket){
+        console.log('someone connected');
+
+        nsSocket.on('Info', function(data){
+          // just an example
+        });
+      });
+
+Client side:
+// you already have declared uuid, uuidSocket and have connected to the socket previously so you define what to do on register:
+    socket.on("register", function(data){
+      if (uuid == undefined || uuidSocket == undefined) {// first time we get id from server
+        //save id to a variable
+        uuid = data.uuid;
+
+        // save to localstorage for further usage (optional - only if you want one client per browser e.g.)
+        localStorage.setItem('socketUUID', uuid);
+
+        uuidSocket = io(serverHost + "/" + uuid); // set up the room --> will trigger nsp.on('connect',... ) on the server
+
+        uuidSocket.on("Info", function(data){
+          //handle on Info
+        });
+
+// initiate the register from the client
+ socket.emit("register", uuid);
+
+<h2>Send broadcast to all connected client in node js</h2>
+var WebSocketServer = require("ws").Server;
+var wss = new WebSocketServer({port:8100});
+
+wss.on('connection', function connection(ws) {
+    ws.on('message', function(message) {
+       wss.broadcast(message);
+    }
+}
+
+wss.broadcast = function broadcast(msg) {
+   console.log(msg);
+   wss.clients.forEach(function each(client) {
+       client.send(msg);
+    });
+};
 
 
 
