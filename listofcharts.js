@@ -34,7 +34,23 @@ function showAllCharts(){
     //showStkTO(theList[codeNo]); // this show turnover details
     theText = theList[codeNo]
 
-
+    // modify to suit A stock
+    textwidth = theText.length;
+    if(textwidth <= 5){
+      theText = "00000"+theText;
+      textwidth = theText.length;
+      theText = theText.slice(textwidth-5, textwidth);
+      textwidth = theText.length; //update to be used later
+    }else{
+      textwidth = theText.length
+      if((textwidth == 6) && !hsReservedCode.includes(theText)){
+         // note the code is diff fm tencent code
+         if (theText.charAt(0) == "6"){ theText = theText + ".sh"; 
+         }else{ theText = theText + ".sz"}
+      }else if(textwidth == 9){
+        theText = theText.substring(7, 9) + theText.substring(0, 7);
+      }
+    }
     // to show comments
     commentName = "j" + theList[codeNo]
     if(CommentListNames.includes(commentName)){
@@ -43,6 +59,7 @@ function showAllCharts(){
     }else{commentTxt = "no data!";}
 
     // this is the key line to show K line charts
+
     theFunccode =  "<div id=imgp" + codeNo + ">" + (codeNo+1) + " &emsp; " + theText  + "<br>" + thisImgHead + theText + thisImgPCode + thisImgTail + "onclick = \"xunbao('" + theText + "')\">" + "<br><span onclick=\"$('#cmt" + codeNo + "').toggle();\"> 🎌 </span><br>" + "<span class='orange' id='cmt" + codeNo + "'>" + commentTxt + "</span></div>";
     $( "#codelist" ).append( theFunccode);
     tradeDetailStr = ""; // clean the tradeDetailStr
