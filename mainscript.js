@@ -12,7 +12,7 @@ function chkKey() {
   var testkey = getChar(event);
   if(testkey == 'a'){window.open("apptechno.html");}
   else if(testkey == 'b'){window.open("LibDocs/listofcharts.html");}
-  else if(testkey == 'B'){window.open("https://map.baidu.com/");}
+  else if(testkey == 'B'){window.open("http://xh.5156edu.com/bs.html");}
   else if(testkey == 'c'){showChart();}
 // calculator  else if(testkey == 'C'){window.open("https://www.desmos.com/fourfunction");}
   else if(testkey == 'C'){window.open("LibDocs/caseStudiesLog.html");}
