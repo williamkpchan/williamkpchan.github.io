@@ -43,7 +43,7 @@ img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; bor
 Usage
 node [options] [V8 options] [script.js | -e "script" | - ] [arguments]
 node [options] [V8 options] [script.js | -e "script" | -] [--] [arguments]
-node inspect [script.js | -e "script" | <host>:<port>] …
+node inspect [script.js | -e "script" | &lt;host>:&lt;port>] …
 node --v8-options
 
 Next, create a new source file in the projects folder and call it hello-world.js.
@@ -636,10 +636,10 @@ On open is when we have a connection established.
 On close is when the connection gets terminated. 
 On message is whenever server send us a message.
 
-<img src="https://miro.medium.com/max/972/1*cjeTJvXhzR1xiAgA3f-YmQ.png">
+<img class="lazy" data-src="https://miro.medium.com/max/972/1*cjeTJvXhzR1xiAgA3f-YmQ.png">
 client.js
 
-<img src="https://miro.medium.com/max/932/1*H7WqjR0xG_fjBWE99b9ZHQ.png">
+<img class="lazy" data-src="https://miro.medium.com/max/932/1*H7WqjR0xG_fjBWE99b9ZHQ.png">
 server.js
 
 Whole structure and code: <a href="https://github.com/zprima/wschat" rel="noopener nofollow">https://github.com/zprima/wschat</a>
@@ -856,14 +856,167 @@ Basically, the conversation between the server and the client is the same on bot
 
 So, restart and access the application in two tabs and just send a message to see the power of Socket.IO in action. 
 The application should display the message
+full source code <a href="https://github.com/diogosouza/ChatJS">here</a>.
 
-<h2>Conclusion</h2>
-With this very simple project and a few dependencies, we managed to create, in some lines of code, a very functional application.
+<h2>multiple clients</h2>
+There are multiple clients C1, C2, ..., Cn
+Clients emit request to the server R1,...,Rn
+Server receives request, does data processing
+When data-processing is complete, Server emits response to clients Rs1, .., Rs2
+When the server has finished data processing it emits the response in the following way:
 
-Notwithstanding, the power of Socket.IO extends to more solutions that previously relied on back-end pages. 
-Now, the inbound/outbound server response time can rely on the WebSocket protocol for a more agile information exchange, enabling systems that track monitoring results or even setting real-time pricing for users.
+// server listens for request from client
+socket.on('request_from_client', function(data){
+    // user data and request_type is stored in the data variable
+    var user = data.user.id
+    var action = data.action
 
-You can find the full source code <a href="https://github.com/diogosouza/ChatJS">here</a>.
+    // server does data processing 
+    do_some_action(..., function(rData){
+        // when the processing is completed, the response data is emitted as a response_event
+        // The problem is here, how to make sure that the response data goes to the right client
+        socket.emit('response_to_client', rData)
+    })
+})
+
+The instance of the socket object corresponds to a client connection. 
+So every message you emit from that instance is send to the client that opened that socket connection. 
+Remember that upon the connection event you get (through the onDone callback) the socket connection object. 
+This event triggers everytime a client connects to the socket.io server.
+
+If you want to send a message to all clients you can use
+io.sockets.emit("message-to-all-clients")
+
+and if you want to send an event to every client apart the one that emits the event socket.broadcast.emit("message-to-all-other-clients");
+
+On every connection, a "new channel" is created.
+
+<h2>multiple clients connecting to same server</h2>
+Server-
+
+  var dgram = require('dgram');
+  var client = dgram.createSocket('udp4');
+
+  /** @requires socket.io */
+  var io = require('socket.io')(http);
+
+  /** Array of clients created to keep track of who is listening to what*/
+      var clients = [];
+
+      io.sockets.on('connection', function(socket, username){
+
+        /** printing out the client who joined */
+        console.log('New client connected (id=' + socket.id + ').');
+
+        /** pushing new client to client array*/
+        clients.push(socket);
+
+      /** listening for acknowledgement message */
+      client.on('message', function( message, rinfo ){
+
+        /** creating temp array to put data in */
+        var temp = [];
+
+        /**converting data bit to bytes */
+        var number= req.body.size * 2
+
+        /** acknowledgement message is converted to a string from buffer */
+        var message = message.toString();
+
+        /** cutting hex string to correspong to requested data size*/
+        var data = message.substring(0, number);
+
+        /** converting that data to decimal */
+        var data = parseInt(data, 16);
+
+        /** adding data to data array */
+        temp[0] = data
+
+        /** emitting message to html page */
+        socket.emit('temp', temp);
+      });
+
+      /** listening if client has disconnected */
+      socket.on('disconnect', function() {
+          clients.splice(clients.indexOf(client), 1);
+          console.log('client disconnected (id=' + socket.id + ').');
+          clearInterval(loop);
+      });
+    });
+  }
+});
+
+Client-
+var socket = io.connect('192.168.0.136:3000');
+  socket.on(temp', function(temp){
+    var temp= temp.toString();
+    var message= temp.split(',').join("<br>");
+    $('#output').html('<output>' + message + '</output>');
+  });
+
+When a client connects, a random number called temp is emitted to the client. 
+The above code works when one client connects to the server. 
+Now how can you set a new connection each time? So that if one tab is opened, it gets its own random message back, while when another tab opens, it gets its own random message back.
+
+You could send an id back to the client and save it to localStorage (or a variable or anywhere else).
+Then have the client listen to a 'room' that is just for this client.
+e.g.
+   var uuidSocket = io(serverHost + "/" + uuid);
+   uuidSocket.on("Info", (data:any)=> {
+     // do something on data
+   });
+This id / room will be used by the server to inform the specific client. And so on.
+
+Server side:
+
+// you have your socket ready and inside the on('connect'...) you handle a register event where the client passes an id if one exists else you create one.
+
+socket.on('register', function(clientUuid){ // a client requests registration
+      var id = clientUuid == null? uuid.v4() : clientUuid; // create an id if client doesn't already have one
+      var nsp;
+      var ns = "/" + id;
+
+      socket.join(id);
+      var nsp = app.io.of(ns); // create a room using this id that is only for this client
+      clientToRooms[ns] = nsp; // save it to a dictionary for future use
+
+      // set up what to do on connection
+      nsp.on('connection', function(nsSocket){
+        console.log('someone connected');
+
+        nsSocket.on('Info', function(data){
+          // just an example
+        });
+      });
+Client side:
+
+// you already have declared uuid, uuidSocket and have connected to the socket previously so you define what to do on register:
+    socket.on("register", function(data){
+      if (uuid == undefined || uuidSocket == undefined) {// first time we get id from server
+        //save id to a variable
+        uuid = data.uuid;
+
+        // save to localstorage for further usage (optional - only if you want one client per browser e.g.)
+        localStorage.setItem('socketUUID', uuid);
+
+        uuidSocket = io(serverHost + "/" + uuid); // set up the room --> will trigger nsp.on('connect',... ) on the server
+
+        uuidSocket.on("Info", function(data){
+          //handle on Info
+        });
+
+// initiate the register from the client
+ socket.emit("register", uuid);
+
+Broadcasting means sending a message to everyone else except for the socket that starts it.
+
+Server:
+
+var io = require('socket.io')(80);
+
+io.on('connection', function (socket) {
+  socket.broadcast.emit('user connected');
+});
 
 <h2><span class="orange">Communication</span></h2>
 <a href="Complete Guide To Node Client-Server Communication.html"><span class="orangeb">&diams;Complete Guide To Node Client-Server Communication</span></a>
@@ -915,7 +1068,7 @@ Note this code is simply an example; you'll have to work out the error handling,
 
 Another way is by making an HTTP request, just like any other server side program in a web application.
 
-With the XMLHttpRequest object, or by generating a <form> and then submitting it, or a variety of other methods.
+With the XMLHttpRequest object, or by generating a &lt;form> and then submitting it, or a variety of other methods.
 
 <h2>Create a new WebSockets connection</h2>
 <code>const url = &#39;wss://myserver.com/something&#39;
@@ -1258,7 +1411,7 @@ $(&#x27;.large&#x27;)<strong>.text()</strong>
 <h2>Additional Methods</h2>There are more methods than I can count, and the documentation for all of them is available <a href="https://github.com/cheeriojs/cheerio"><strong>here</strong></a>.
 <h3>Chrome Developer Tools</h3>Don’t forget, the Chrome Developer Tools are your friend. 
 In Google Chrome, you can easily find element, class, and ID names using: <strong>CTRL + SHIFT + C</strong>
-<div role="button" tabindex="0"><img alt="Image for post" src="https://miro.medium.com/max/60/1*HNgMR7H87W7I0p3JvekDIQ.png?q=20" width="928" height="286"/><img alt="Image for post" width="928" height="286"/><noscript><img alt="Image for post" src="https://miro.medium.com/max/1856/1*HNgMR7H87W7I0p3JvekDIQ.png" width="928" height="286" srcSet="https://miro.medium.com/max/552/1*HNgMR7H87W7I0p3JvekDIQ.png 276w, https://miro.medium.com/max/1104/1*HNgMR7H87W7I0p3JvekDIQ.png 552w, https://miro.medium.com/max/1280/1*HNgMR7H87W7I0p3JvekDIQ.png 640w, https://miro.medium.com/max/1400/1*HNgMR7H87W7I0p3JvekDIQ.png 700w" sizes="700px"/></noscript>
+<img class="lazy" data-src="https://miro.medium.com/max/1400/1*HNgMR7H87W7I0p3JvekDIQ.png">
 Finding class names with chrome dev tools
 As you seen in the above image, I’m able to hover over an element on the page and the element name and class name of the selected element are shown in real-time!
 <h3>Limitations</h3>As Jaye Speaks points out:
@@ -1933,7 +2086,7 @@ Iterating through every link on the page is great, but we're going to need to ge
 Before writing more code to parse the content that we want, let’s first take a look at the HTML that’s rendered by the browser. 
 Every web page is different, and sometimes getting the right data out of them requires a bit of creativity, pattern recognition, and experimentation.
 
-<img src="https://twilio-cms-prod.s3.amazonaws.com/images/RqLbgi-q_vRQy0ai0TmWqdjoJjaN9k-OpSrNj2drs46QnP.width-500.png">
+<img class="lazy" data-src="https://twilio-cms-prod.s3.amazonaws.com/images/RqLbgi-q_vRQy0ai0TmWqdjoJjaN9k-OpSrNj2drs46QnP.width-500.png">
 
 Our goal is to download a bunch of MIDI files, but there are a lot of duplicate tracks on this webpage, as well as remixes of songs. 
 We only want one of each song, and because our ultimate goal is to use this data to train a neural network to generate accurate Nintendo music, we won't want to train it on user-created remixes.
@@ -1941,7 +2094,7 @@ We only want one of each song, and because our ultimate goal is to use this data
 When you're writing code to parse through a web page, it's usually helpful to use the developer tools available to you in most modern browsers. 
 If you right-click on the element you're interested in, you can inspect the HTML behind that element to get more insight.
 
-<img src="https://twilio-cms-prod.s3.amazonaws.com/images/eTCvZko6rcZKTGL3cwARnulCWGmKGP4Rpi1dK-XQbmmAgl.width-500.png">
+<img class="lazy" data-src="https://twilio-cms-prod.s3.amazonaws.com/images/eTCvZko6rcZKTGL3cwARnulCWGmKGP4Rpi1dK-XQbmmAgl.width-500.png">
 
 With Cheerio, you can write filter functions to fine-tune which data you want from your selectors. 
 These functions loop through all elements for a given selector and return true or false based on whether they should be included in the set or not.
@@ -3171,7 +3324,241 @@ setInterval(() => {
   process.send({ counter: counter++ });
 }, 1000);
 
+<h2>string_decoder</h2>
+decoding Buffer objects into strings.
+end()	Returns what remains of the input stored in the internal buffer
+write()	Returns the specified buffer as a string
 
+Example
+const { StringDecoder } = require('string_decoder');
+const decoder = new StringDecoder('utf8');
+const euro = Buffer.from([0xE2, 0x82, 0xAC]);
+console.log(decoder.write(euro));
+
+Decode a stream of binary data (a buffer object) into a string:
+var StringDecoder = require('string_decoder').StringDecoder;
+var d = new StringDecoder('utf8');
+var b = Buffer('abc');
+console.log(b); //write buffer
+console.log(d.write(b)); // write decoded buffer;
+
+<h2>Writing Simple Module</h2>
+Write simple logging module which logs the information, warning or error to the console.
+
+In Node.js, module should be placed in a separate JavaScript file. 
+So, create a Log.js file and write the following code in it.
+
+Log.js
+var log = {
+            info: function (info) { 
+                console.log('Info: ' + info);
+            },
+            warning:function (warning) { 
+                console.log('Warning: ' + warning);
+            },
+            error:function (error) { 
+                console.log('Error: ' + error);
+            }
+    };
+
+module.exports = log
+
+In the above example of logging module, we have created an object with three functions - info(), warning() and error(). 
+At the end, we have assigned this object to <b>module.exports</b>. 
+The module.exports in the above example exposes a log object as a module.
+
+The module.exports is a special object which is included in every JS file in the Node.js application by default. 
+Use <b>module.exports</b> or <b>exports</b> to expose a function, object or variable as a module in Node.js.
+
+Now, let's see how to use the above logging module in our application.
+
+Loading Local Module
+To use local modules in your application, you need to load it using require() function in the same way as core module. 
+However, you need to specify the path of JavaScript file of the module.
+
+The following example demonstrates how to use the above logging module contained in Log.js.
+
+app.js
+var myLogModule = require('./Log.js');
+
+myLogModule.info('Node.js started');
+In the above example, app.js is using log module. 
+First, it loads the logging module using require() function and specified path where logging module is stored. 
+Logging module is contained in Log.js file in the root folder. 
+So, we have specified the path './Log.js' in the require() function. 
+The '.' denotes a root folder.
+
+The require() function returns a log object because logging module exposes an object in Log.js using module.exports. 
+So now you can use logging module as an object and call any of its function using dot notation e.g myLogModule.info() or myLogModule.warning() or myLogModule.error()
+
+Run the above example using command prompt (in Windows) as shown below.
+
+C:\> node app.js
+Info: Node.js started
+Thus, you can create a local module using module.exports and use it in your application.
+
+Let's see how to expose different types as a node module using module.exports in the next section.
+
+<h2>Working with images</h2>
+<h4>Manipulate images</h4>
+<a href="https://github.com/aheckmann/gm">gm</a>
+GraphicsMagick and ImageMagick are two popular tools for creating, editing, composing and converting images. 
+
+<h4>Process images</h4>
+<a href="https://github.com/lovell/sharp">Sharp</a>
+Sharp claims to be four to five times faster than ImageMagick.
+
+<h4>Generate sprite sheets</h4>
+<a href="https://github.com/Ensighten/spritesmith">spritesmith</a>
+Sprite sheets are bitmap files that contain many different small images (for example icons), and they are often used to reduce the overhead of downloading images and speed up overall page load. 
+Generating sprite sheets manually is very cumbersome, but with spritesmith you can automate the process. 
+This module takes a folder as input and combines all the images in it into one sprite sheet. 
+It also generates a JSON file that contains all the coordinates for each of the images in the resulting image, which you can directly copy in your CSS code.
+
+<h2>Dates, strings, colours</h2>
+<h4>Format dates</h4>
+<a href="https://github.com/moment/moment">Moment</a>
+Moment.js is a great alternative to JavaScript's Date object
+
+The standard JavaScript API already comes with the Date object for working with dates and times. 
+However, this object is not very user-friendly when it comes to printing and formatting dates. 
+On the other hand, Moment.js offers a clean and fluid API, and the resulting code is very readable and easy to understand. 
+
+<code>moment()
+  .add(7, 'days')
+  .subtract(1, 'months')
+  .year(2009)
+  .hours(0)
+  .minutes(0)
+.seconds(0);</code>
+In addition, there is an add-on available for parsing and formatting dates in different time zones.
+
+<h4>Validate strings</h4>
+<a href="https://github.com/chriso/validator.js">validator</a>
+When providing forms on a web page, you always should validate the values the user inputs – not only on the client-side, but also on the server-side to prevent malicious data. 
+A module that can help you here is validator.js. 
+It provides several methods for validating strings, from <strong>isEmail()</strong> and <strong>isURL()</strong> to <strong>isMobilePhone(</strong>) or <strong>isCreditCard()</strong>, plus you can use it on the server- and the client-side.
+
+<h4>colour values</h4>
+<a href="https://www.github.com/bgrins/TinyColor">TinyColor</a>
+Converting colour values from one format into another is one of the tasks every frontend developer needs to do once in a while. 
+TinyColor2 takes care of this programmatically, and it's available for Node.js as well as for browsers. 
+It provides a set of conversion methods (e.g. <strong>toHexString()</strong>, <strong>toRGBString()</strong>), as well as methods for all sorts of colour operations (e.g. <strong>lighten()</strong>, <strong>saturate()</strong>, <strong>complement()</strong>).
+
+<h2>Working with different formats</h2>
+
+<h4>Generate PDF files</h4>
+<a href="https://github.com/devongovett/pdfkit">pdfkit</a>
+You want to dynamically generate PDF files? Then <strong>PDFKit</strong> is the module you are looking for. 
+It supports embedding font types, embedding images and the definition of vector graphics, either programmatically (using a Canvas-like API) or by specifying SVG paths. 
+Furthermore, you can define links, include notes, highlight text and more. 
+The best way to start is the interactive browser demo, which is available <a href="http://pdfkit.org/demo/browser.html">here</a>.
+
+<h4>Process HTML files</h4>
+<a href="https://github.com/cheeriojs/cheerio">cheerio</a>
+
+Cheerio makes processing HTML on the server side much easier
+
+Ever wanted to process HTML code on the server side and missed the jQuery utility methods? ThenCheerio is the answer. 
+Although it implements only a subset of the core jQuery library, it makes processing HTML on the server side much easier. 
+It is built on top of the <a href="https://github.com/fb55/htmlparser2">htmlparser2 module</a>, an HTML, XML and RSS parser. 
+Plus, according to benchmarks, it's eight times faster than <a href="https://github.com/tmpvar/jsdom">jsdom</a>, another module for working with the DOM on the server side.
+
+<h4>Process CSV files</h4>
+<a href="https://github.com/wdavidw/node-csv">node-csv</a>
+Node-cvg simplifies the process of working with CSV data
+
+The CSV (comma-separated values) format is often used when interchanging table-based data. 
+For example, Microsoft Excel allows you to export or import your data in that format. 
+node-cvg simplifies the process of working with CSV data in JavaScript, and provides functionalities for generating, parsing, transforming and stringifying CSV. 
+It comes with a callback API, a stream API and a synchronous API, so you can choose the style you prefer.
+
+<h4>Process markdown files</h4>
+<a href="https://github.com/chjj/marked">marked</a>
+Markdown is a popular format when creating content for the web. 
+If you ever wanted to process markdown content programmatically (i.e. 
+write your own markdown editor), marked is worth a look. 
+It takes a string of markdown code as input and outputs the appropriate HTML code. 
+It is even possible to further customise that HTML output by providing custom renderers.
+
+<h2>Minification</h2>
+<h4>Minify images</h4>
+<a href="https://github.com/imagemin/imagemin">imagemin</a>Imagemin is a brilliant module for minifying and optimising images 
+A very good module for minifying and optimising images is imagemin, which can be used programmatically (via the command line), as a gulp or Grunt plugin, or through imagemin-app (a graphical application available for all of the three big OSs). 
+Its plugin-based architecture means it is also very flexible, and can be extended to support new image formats.
+
+<h4>Minify HTML</h4>
+<a href="https://github.com/kangax/html-minifier">html-minifier</a>
+This claims to be the best HTML minifier available 
+After minifying images you should consider minifying your web app's HTML. 
+The module HTMLMinifier can be used via the command line, but is also available for gulp and Grunt. 
+On top of that, there are middleware solutions for integrating it into web frameworks like Koa and Express, so you can minify the HTML directly at runtime before serving it to the client via HTTP. 
+According to benchmarks on the module's homepage, it is the best HTML minifier available.
+
+<h4>Minify CSS</h4>
+<a href="https://github.com/jakubpawlowicz/clean-css">clean-css</a>
+As well as images and HTML, you should consider minifying the CSS you send the user. 
+A very fast module in this regard is <strong>clean-css</strong>, which can be used both from the command line and programmatically. 
+It comes with support for source maps and also provides different compatibility modes to ensure the minified CSS is compatible with older versions of IE.
+
+<h4>Minify JavaScript</h4>
+<a href="https://github.com/mishoo/UglifyJS2">UglifyJS2</a>
+UglifyJS2 isn't just for minifying code, but it's very good at it 
+The popular module UglifyJS2 is often used for minifying JavaScript code, but because of its parsing features, in principle you can use it to do anything related to processing JavaScript code. 
+UglifyJS2 parses JavaScript code into an abstract syntax tree (an object model that represents the code) and provides a tree walker component that can be used to traverse that tree. 
+Ever wanted to write your own JavaScript optimiser? Then UglifyJS2 is for you.
+
+<h4>Minify SVG</h4>
+<a href="https://github.com/svg/svgo">svgo</a>
+Last but not least when it comes to minification, don't forget to minify the SVG content. 
+This format has made a great comeback in the past few years, thanks to its great browser and tool support. 
+Unfortunately, the SVG content that is generated by editors often contains redundant and useless information like comments and metadata.&nbsp;
+
+With SVGO you can easily remove such information and create a minified version of your SVG content. 
+The&nbsp;module has a&nbsp;plugin-based architecture, with (almost) every optimisation implemented as a separate plugin. 
+As with all the other modules regarding minification, SVGO can&nbsp;be used either via the command line or programmatically.
+
+<h2>Utilities</h2>
+<h4>Log application output</h4>
+<a href="https://github.com/winstonjs/winston">winston</a>
+When you are dealing with complex web applications a proper logging library can be very useful to help you find runtime problems, both during development and in production. 
+A very popular module in this regard is the winston library. 
+It supports multiple transports, meaning you can tell winston to simply log to the console, but also to store logs in files or in databases (like CouchDB, MongoDB or Redis) or even stream them to an HTTP endpoint for further processing.
+
+<h4>Generate fake data</h4>
+<a href="https://github.com/Marak/Faker.js">Faker</a>When implementing or testing user interfaces you often need dummy data such as email addresses, user names, street addresses and phone numbers. 
+That&nbsp;is where faker.js comes into play. 
+This can be used either on the server side (as a module for Node.js) or on the client side, and provides a set of methods for generating fake data. 
+Need a user name? Just call <strong>faker.internet.userName()</strong> and you get a random one. 
+Need a fake company name? Call <strong>faker.company.companyName()</strong> and you get one. 
+And there are a lot more methods for all types of data.
+
+<h4>Send emails</h4>
+<a href="https://github.com/nodemailer/nodemailer">nodemailer</a>
+Nodemailer supports text and HTML content, embedded images and SSL/STARTTLS 
+Programmatically sending emails is one of the features you need often when implementing websites. 
+From registration confirmation, to notifying users of special events or sending newsletters, there are a lot of use cases that require you to get in touch with users.&nbsp;
+
+The standard Node.js API does not offer such a feature, but fortunately the module Nodemailer fills this gap. 
+It supports both text and HTML content, embedded images and &ndash; most importantly &ndash; it uses the secure SSL/STARTTLS protocol.
+
+<h4>Create REST APIs</h4>
+<a href="https://github.com/restify/node-restify">node-restify</a>
+REST is the de facto standard when implementing web applications that make&nbsp;use of web services. 
+Frameworks like Express facilitate the creation of such web services, but often come with a lot of features such as templating and rendering that &ndash; depending on the use case &ndash; you may not need. 
+On the other hand, the Node.js module restify focuses on the creation and the debugging of REST APIs. 
+It has a very similar API to the Connect middleware (which is the base for Express) but gives you more control over HTTP interactions and also supports DTrace for troubleshooting applications in real time.&nbsp;
+
+<h4>Create CLI applications</h4>
+<a href="https://github.com/tj/commander.js/">commander</a>
+There are already tons of command line applications (CLI applications) written in Node.js to address different use cases (see, for example, the aforementioned modules for minification). 
+If you want to write your own CLI application, the module Commander.js is a very good starting point. 
+It provides a fluent API for defining various aspects of CLI applications like the commands, options, aliases, help and many more, and it really simplifies the process of creating applications for the command line.
+
+<h4>Conclusion</h4>
+We've only scratched the surface of the huge number of Node.js modules out there. 
+JavaScript is more popular than ever before and there are new modules popping up every week. 
+A good place to stay up to date is the 'most starred packages' section of the <a href="https://www.npmjs.com/">npm homepage</a> or Github's list of <a href="https://www.creativebloq.com/features/20-nodejs-modules-you-need-to-know" data-original-url="github.com/trending/javascript">trending repositories</a>.
 
 
 
@@ -3185,5 +3572,6 @@ setInterval(() => {
 <script>
 var lazyLoadInstance = new LazyLoad({ elements_selector: ".lazy" });
 </script>
+</pre>
 </body>
 </html>

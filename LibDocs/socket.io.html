@@ -885,6 +885,264 @@ Now connect any number of clients to your server, provide them a username and st
 <a target="_blank" href="https://www.amazon.com/Socket-IO-Real-time-Web-Application-Development/dp/1782160787/httpwwwtuto0a-20"><img src="https://images-na.ssl-images-amazon.com/images/I/51AJwvbiI9L._SX404_BO1,204,203,200_.jpg"/></a>
 <a target="_blank" href="https://www.amazon.com/Socket-IO-Cookbook-Tyson-Cadenhead/dp/1785880861/httpwwwtuto0a-20"><img src="https://images-na.ssl-images-amazon.com/images/I/51z00hSUzUL._SX404_BO1,204,203,200_.jpg"/></a>  
 
+<h2><span class="orange borRad20 bordred1">Introduction</span></h2>
+<h2>What Socket.IO is</h2>
+Socket.IO is a library that enables real-time, bidirectional and event-based communication between the browser and the server. 
+It consists of:
+a Node.js server: <a href="https://github.com/socketio/socket.io">Source</a> | <a href="https://socket.io/docs/v3/server-api/">API</a>
+
+a Javascript client library for the browser (which can be also run from Node.js): <a href="https://github.com/socketio/socket.io-client">Source</a> | <a href="https://socket.io/docs/v3/client-api/">API</a>
+
+<img src="https://socket.io/images/bidirectional-communication.png">
+<h2>How does that work?</h2>
+The client will try to establish a <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSocket">WebSocket</a> connection if possible, and will fall back on HTTP long polling if not.
+
+WebSocket is a communication protocol which provides a full-duplex and low-latency channel between the server and the browser. 
+More information can be found <a href="https://en.wikipedia.org/wiki/WebSocket">here</a>.
+
+So, in the best-case scenario, provided that:
+the browser supports WebSocket (<a href="https://caniuse.com/#search=websocket">97%</a> of all browsers in 2020)
+
+there is no element (proxy, firewall, …) preventing WebSocket connections between the client and the server  
+
+you can consider the Socket.IO client as a “slight” wrapper around the WebSocket API. 
+Instead of writing:
+
+const socket = new WebSocket("ws://localhost:3000");
+socket.onopen = () => {
+  socket.send("Hello!");
+};
+socket.onmessage = (data) => {
+  console.log(data);
+};
+
+You will have, on the client-side:
+const socket = io("ws://localhost:3000");
+socket.on("connect", () => {
+  // either with send()
+  socket.send("Hello!");
+
+  // or with emit() <i>and custom event names</i>
+  socket.emit("salutations", "Hello!", { "mr": "john" }, Uint8Array.from([1, 2, 3, 4]));
+});
+
+// handle the event sent with socket.send()
+socket.on("message", data => {
+  console.log(data);
+});
+
+// handle the event sent with socket.emit()
+socket.on("greetings", (elem1, elem2, elem3) => {
+  console.log(elem1, elem2, elem3);
+});
+
+The API on the server-side is similar, you also get a <code>socket</code> object which extends the Node.js <a href="https://nodejs.org/docs/latest/api/events.html#events_class_eventemitter">EventEmitter</a> class:
+
+const io = require("socket.io")(3000);
+
+io.on("connection", socket => {
+  // either with send()
+  socket.send("Hello!");
+
+  // or with emit() and custom event names
+  socket.emit("greetings", "Hey!", { "ms": "jane" }, Buffer.from([4, 3, 3, 1]));
+
+  // handle the event sent with socket.send()
+  socket.on("message", (data) => {
+    console.log(data);
+  });
+
+  // handle the event sent with socket.emit()
+  socket.on("salutations", (elem1, elem2, elem3) => {
+    console.log(elem1, elem2, elem3);
+  });
+});
+
+Socket.IO provides additional features over a plain WebSocket object, which are listed below.
+
+But first, let’s detail what the Socket.IO library is not.
+<h2>What Socket.IO is not</h2>
+Socket.IO is <strong>NOT</strong> a WebSocket implementation. 
+Although Socket.IO indeed uses WebSocket as a transport when possible, it adds additional metadata to each packet. 
+That is why a WebSocket client will not be able to successfully connect to a Socket.IO server, and a Socket.IO client will not be able to connect to a plain WebSocket server either.
+
+// WARNING: the client will NOT be able to connect!
+const socket = io("ws://echo.websocket.org");
+
+If you are looking for a plain WebSocket server, please take a look at <a href="https://github.com/websockets/ws">ws</a> or <a href="https://github.com/uNetworking/uWebSockets.js">uWebSockets.js</a>.
+
+There are also <a href="https://github.com/nodejs/node/issues/19308">talks</a> to include a WebSocket server in the Node.js core.
+
+On the client-side, you might be interested by the <a href="https://github.com/nathanboktae/robust-websocket">robust-websocket</a> package.
+<h2><span class="orange borRad20 bordred1">Namespaces</span></h2>
+
+A Namespace is a communication channel that allows you to split the logic of your application over a single shared connection (also called “multiplexing”).
+
+<img src="https://socket.io/images/namespaces.png">
+<h2>Introduction</h2>
+Each namespace has its own:
+
+<a href="https://socket.io/docs/v3/listening-to-events/">event handlers</a>
+
+io.of("/orders").on("connection", (socket) => {
+  socket.on("order:list", () => {});
+  socket.on("order:create", () => {});
+});
+
+io.of("/users").on("connection", (socket) => {
+  socket.on("user:list", () => {});
+});
+
+<a href="https://socket.io/docs/v3/rooms/">rooms</a>
+
+const orderNamespace = io.of("/orders");
+
+orderNamespace.on("connection", (socket) => {
+  socket.join("room1");
+  orderNamespace.to("room1").emit("hello");
+});
+
+const userNamespace = io.of("/users");
+
+userNamespace.on("connection", (socket) => {
+  socket.join("room1"); // distinct from the room in the "orders" namespace
+  userNamespace.to("room1").emit("holà");
+});
+
+<a href="https://socket.io/docs/v3/middlewares/">middlewares</a>
+
+const orderNamespace = io.of("/orders");
+
+orderNamespace.use((socket, next) => {
+  // ensure the socket has access to the "orders" namespace, and then
+  next();
+});
+
+const userNamespace = io.of("/users");
+
+userNamespace.use((socket, next) => {
+  // ensure the socket has access to the "users" namespace, and then
+  next();
+});
+
+Possible use cases:
+
+you want to create a special namespace that only authorized users have access to, so the logic related to those users is separated from the rest of the application
+
+const adminNamespace = io.of("/admin");
+
+adminNamespace.use((socket, next) => {
+  // ensure the user has sufficient rights
+  next();
+});
+
+adminNamespace.on("connection", socket => {
+  socket.on("delete user", () => {
+    // ...
+  });
+});
+
+your application has multiple tenants so you want to dynamically create one namespace per tenant
+
+const workspaces = io.of(/^\/\w+$/);
+
+workspaces.on("connection", socket => {
+  const workspace = socket.nsp;
+
+  workspace.emit("hello");
+});
+<h2>Main namespace</h2>
+Until now, you interacted with the main namespace, called <code>/</code>. 
+The <code>io</code> instance inherits all of its methods:
+
+io.on("connection", (socket) => {});
+io.use((socket, next) => { next() });
+io.emit("hello");
+// are actually equivalent to
+io.of("/").on("connection", (socket) => {});
+io.of("/").use((socket, next) => { next() });
+io.of("/").emit("hello");
+
+Some tutorials may also mention <code>io.sockets</code>, it’s simply an alias for <code>io.of("/")</code>.
+
+io.sockets === io.of("/")
+<h2>Custom namespaces</h2>
+To set up a custom namespace, you can call the <code>of</code> function on the server-side:
+
+const nsp = io.of("/my-namespace");
+
+nsp.on("connection", socket => {
+  console.log("someone connected");
+});
+
+nsp.emit("hi", "everyone!");
+<h2>Client initialization</h2>
+Same-origin version:
+
+const socket = io(); // or io("/"), the main namespace
+const orderSocket = io("/orders"); // the "orders" namespace
+const userSocket = io("/users"); // the "users" namespace
+
+Cross-origin/Node.js version:
+
+const socket = io("https://example.com"); // or io("https://example.com/"), the main namespace
+const orderSocket = io("https://example.com/orders"); // the "orders" namespace
+const userSocket = io("https://example.com/users"); // the "users" namespace
+
+In the example above, only one WebSocket connection will be established, and the packets will automatically be routed to the right namespace.
+
+Please note that multiplexing will be disabled in the following cases:
+
+multiple creation for the same namespace
+
+const socket1 = io();
+const socket2 = io(); // no multiplexing, two distinct WebSocket connections
+
+different domains
+
+const socket1 = io("https://first.example.com");
+const socket2 = io("https://second.example.com"); // no multiplexing, two distinct WebSocket connections
+
+usage of the <a href="https://socket.io/docs/v3/client-initialization/#forceNew">forceNew</a> option
+
+const socket1 = io();
+const socket2 = io("/admin", { forceNew: true }); // no multiplexing, two distinct WebSocket connections
+<h2>Dynamic namespaces</h2>
+It is also possible to dynamically create namespaces, either with a regular expression:
+
+io.of(/^\/dynamic-\d+$/);
+
+or with a function:
+
+io.of((name, auth, next) => {
+  next(null, true); // or false, when the creation is denied
+});
+
+You can have access to the new namespace in the <code>connection</code> event:
+
+io.of(/^\/dynamic-\d+$/).on("connection", (socket) => {
+  const namespace = socket.nsp;
+});
+
+The return value of the <code>of()</code> method is what we call the parent namespace, from which you can:
+
+register <a href="https://socket.io/docs/v3/middlewares/">middlewares</a>
+
+const parentNamespace = io.of(/^\/dynamic-\d+$/);
+
+parentNamespace.use((socket, next) => { next() });
+
+The middleware will automatically be registered on each child namespace.
+
+<a href="https://socket.io/docs/v3/broadcasting-events/">broadcast</a> events
+
+const parentNamespace = io.of(/^\/dynamic-\d+$/);
+
+parentNamespace.emit("hello"); // will be sent to users in /dynamic-1, /dynamic-2, ...
+<h2>Complete API</h2>
+The complete API exposed by the Namespace instance can be found <a href="https://socket.io/docs/v3/server-api/#Namespace">here</a>.
+
+
 <h2><span class="orange borRad20 bordred1">Client API</span></h2>
 https://socket.io/docs/v3/client-api/index.html
 <h2>IO</h2>Exposed as the <code>io</code> namespace in the standalone build, or the result of calling <code>require("socket.io-client")</code>.
@@ -1184,7 +1442,7 @@ If the manager was initiated with <code>autoConnect</code> to <code>false</code>
 
 The <code>callback</code> argument is optional and will be called once the attempt fails/succeeds.
 
-<h3><span class="brown">manager.connect([callback])</h3>Synonym of manager.open([callback])</a></a>.
+<h3><span class="brown">manager.connect([callback])</span></h3>Synonym of manager.open([callback])</a></a>.
 
 <h3><span class="brown">manager.socket(nsp, options)</span></h3>
 <code>nsp</code> <em>(String)</em>
@@ -1215,9 +1473,9 @@ Fired upon an attempt to reconnect.
 
 Fired upon a reconnection attempt error.
 
-<h3><span class="brown">Event: ‘reconnect_failed’</h3>Fired when couldn’t reconnect within <code>reconnectionAttempts</c</code>ode>.
+<h3><span class="brown">Event: ‘reconnect_failed’</span></h3>Fired when couldn’t reconnect within <code>reconnectionAttempts</code>.
 
-<h3><span class="brown">Event: ‘ping’</h3>Fired when a ping packet is received from the se</rver.
+<h3><span class="brown">Event: 'ping'</span></h3>Fired when a ping packet is received from the server.
 
 <h2>Socket</h2>A <code>Socket</code> is the fundamental class for interacting with the server. 
 A <code>Socket</code> belongs to a certain <a href="/docs/v3/namespaces/">Namespace</a> (by default <code>/</code>) and uses an underlying Manager</a> to communicate.
@@ -1286,7 +1544,7 @@ socket.on("disconnect", () => {
   socket.open();
 });
 
-<h3><span class="brown">socket.connect()</h3>Synonym of socket.open()</a></a>.
+<h3><span class="brown">socket.connect()</span></h3>Synonym of socket.open()</a></a>.
 
 <h3><span class="brown">socket.send([…args][, ack])</span></h3>
 <code>args</code>
@@ -1400,9 +1658,9 @@ socket.compress(false).emit("an event", { some: "data" });
 
 Disconnects the socket manually.
 
-<h3><span class="brown">socket.disconnect()</h3>Synonym of socket.close()</a></a>.
+<h3><span class="brown">socket.disconnect()</span></h3>Synonym of socket.close()</a></a>.
 
-<h3><span class="brown">Event: ‘connect’</h3>Fired upon connection to the Namespace (including a successful reconnect</ion).
+<h3><span class="brown">Event: 'connect'</span></h3>Fired upon connection to the Namespace (including a successful reconnect</ion).
 
 socket.on("connect", () => {
   // ...
@@ -2914,6 +3172,111 @@ A reference to the underlying <code>engine.io</code> <code>Socket</code> connect
 A getter proxy that returns the reference to the <code>request</code> that originated the engine.io connection. 
 Useful for accessing request headers such as <code>Cookie</code> or <code>User-Agent</code>.
 
+<h2><span class="orange borRad20 bordred1">Emit cheatsheet</span></h2>
+io.on("connection", (socket) => {
+
+  // sending to the client
+  socket.emit("hello", "can you hear me?", 1, 2, "abc");
+
+  // sending to all clients except sender
+  socket.broadcast.emit("broadcast", "hello friends!");
+
+  // sending to all clients in "game" room except sender
+  socket.to("game").emit("nice game", "let's play a game");
+
+  // sending to all clients in "game1" and/or in "game2" room, except sender
+  socket.to("game1").to("game2").emit("nice game", "let's play a game (too)");
+
+  // sending to all clients in "game" room, including sender
+  io.in("game").emit("big-announcement", "the game will start soon");
+
+  // sending to all clients in namespace "myNamespace", including sender
+  io.of("myNamespace").emit("bigger-announcement", "the tournament will start soon");
+
+  // sending to a specific room in a specific namespace, including sender
+  io.of("myNamespace").to("room").emit("event", "message");
+
+  // sending to individual socketid (private message)
+  io.to(socketId).emit("hey", "I just met you");
+
+  // WARNING: `socket.to(socket.id).emit()` will NOT work, as it will send to everyone in the room
+  // named `socket.id` but the sender. Please use the classic `socket.emit()` instead.
+
+  // sending with acknowledgement
+  socket.emit("question", "do you think so?", (answer) => {});
+
+  // sending without compression
+  socket.compress(false).emit("uncompressed", "that's rough");
+
+  // sending a message that might be dropped if the client is not ready to receive messages
+  socket.volatile.emit("maybe", "do you really need it?");
+
+  // sending to all clients on this node (when using multiple nodes)
+  io.local.emit("hi", "my lovely babies");
+
+  // sending to all connected clients
+  io.emit("an event sent to all connected clients");
+
+});
+
+<strong>Note:</strong> The following events are reserved and should not be used as event names by your application:
+
+<code>connect</code>
+<code>connect_error</code>
+<code>disconnect</code>
+<code>disconnecting</code>
+<code>newListener</code>
+<code>removeListener</code>
+
+// BAD, will throw an error
+socket.emit(disconnecting);
+
+<h2>List of Socket.io Events</h2>
+<h4>Client-side events for <code>socket.io</code> object:</h4>
+<code>connect</code>. Fired upon a successful connection.
+<code>connect_error</code>. Fired upon a connection error.
+Parameters:
+<code>Object</code> error object
+<code>connect_timeout</code>. Fired upon a connection timeout.
+<code>reconnect</code>. Fired upon a successful reconnection.
+Parameters:
+<code>Number</code> reconnection attempt number
+<code>reconnect_attempt</code>. Fired upon an attempt to reconnect.
+<code>reconnecting</code>. Fired upon an attempt to reconnect.
+Parameters:
+<code>Number</code> reconnection attempt number
+<code>reconnect_error</code>. Fired upon a reconnection attempt error.
+Parameters:
+<code>Object</code> error object
+<code>reconnect_failed</code>. Fired when couldn’t reconnect within <code>reconnectionAttempts</code>
+<h4>Client-side events for <code>socket</code> object:</h4>
+<a href="https://socket.io/docs/client-api/#socket-disconnect">Client-side events for <code>socket</code> object:</a>
+<code>connect</code>. Fired upon connecting.
+<code>error</code>. Fired upon a connection error
+Parameters:
+<code>Object</code> error data
+<code>disconnect</code>. Fired upon a disconnection.
+<code>reconnect</code>. Fired upon a successful reconnection.
+Parameters:
+<code>Number</code> reconnection attempt number
+<code>reconnect_attempt</code>. Fired upon an attempt to reconnect.
+<code>reconnecting</code>. Fired upon an attempt to reconnect.
+Parameters:
+<code>Number</code> reconnection attempt number
+<code>reconnect_error</code>. Fired upon a reconnection attempt error.
+Parameters:
+<code>Object</code> error object
+<code>reconnect_failed</code>. Fired when couldn’t reconnect within <code>reconnectionAttempts</code>
+<h4>Server-side events:</h4>
+<a href="http://socket.io/docs/server-api/#namespace">Server-side events:</a>
+<code>connection</code> / <code>connect</code>. Fired upon a connection.
+Parameters:
+<code>Socket</code> the incoming socket.
+<h4>Edit:</h4>
+For the current version (<code>1.3.4</code>) the <code>reconnect_attempt</code> and <code>reconnecting</code>
+ client-side events are synonyms.
+
+
 
 
 
@@ -2929,3 +3292,4 @@ var lazyLoadInstance = new LazyLoad({
     // ... more custom settings?
 });
 </script>
+</pre></body></html>
