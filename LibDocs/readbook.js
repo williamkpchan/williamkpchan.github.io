@@ -31,6 +31,7 @@ function chkKey() {
   else if(testkey == 't'){window.location = '#toc';}
   else if(testkey == '8'){window.location = '#toc';}
   else if(testkey == 'T'){window.scrollTo(0,0);}
+  else if(testkey == 'B'){window.open("http://xh.5156edu.com/bs.html");}
 
   else if(testkey == "K"){ 
     pos = document.getElementsByTagName("body")[0].scrollTop;
