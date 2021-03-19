@@ -53,6 +53,8 @@ function chkKey() {
 
   else if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
   else if(testkey == 'z'){showTenYear();}
+  else if(testkey == 'Z'){window.open("LibDocs/minBor.html", "_blank");}
+
   else if(testkey == ','){window.open("LibDocs/mlinechart.html");}
   else if(testkey == '.'){window.open("LibDocs/mlineMinutechart.html");}
   else if(testkey == '/'){window.open("LibDocs/mlineMinutecharttest.html");}
