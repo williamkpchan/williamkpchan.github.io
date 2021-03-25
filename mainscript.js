@@ -71,6 +71,7 @@ function chkOtherKeys(testkey) {
   else if(testkey == 'm'){window.open("http://williamkpchan.github.io/medical.html");}
   else if(testkey == 'M'){window.open("https://www.google.com.hk/maps/");}
   else if(testkey == 'q'){window.open('https://www.quora.com/');}
+  else if(testkey == 'o'){window.open("http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=T&lang=1&titlestyle=1&vol=1&Indicator=9&indpara1=9&indpara2=1.6&indpara3=0&indpara4=0&indpara5=0&subChart1=9&ref5para1=0&ref5para2=0&ref5para3=0&scheme=3&com=100&chartwidth=1350&chartheight=1200&stockid=981&period=9&type=1&logoStyle=1");}
 
   else if(testkey == 'r'){randomLinkTo();}
   else if(testkey == 's'){window.open("D:/Dropbox/Public/stkListVH.html");}
