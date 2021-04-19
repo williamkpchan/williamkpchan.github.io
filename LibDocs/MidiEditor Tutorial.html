@@ -1,0 +1,640 @@
+<base target="_blank"><html><head><title>MidiEditor Tutorial</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="https://williamkpchan.github.io/lazyload.min.js"></script>
+<script src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/commonfunctions.js"></script>
+<script>
+ var showTopicNumber = true;
+ var bookid = "MidiEditor"
+ var markerName = "h2,h3"
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:24px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px; background-color: #204020;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>MidiEditor</h1>
+<a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a><br><br>
+<div id="toc"></div></center><br><br>
+<div id="mustWatch"><center><span class="red">MustWatch</span></center><br></div>
+<pre><br><br>
+http://www.midieditor.org/index.php?category=manual&subcategory=midi-overview
+<h2><span class="orange">Midi - a Short Overview</span></h2>
+
+Midi (Musical Instrument Digital Interface) is a digital interface allowing the user to control virtual music instruments on his computer or on other hardware components. 
+In general, the Midi protocol is used to exchange commands like "play note X with velocity Y on instrument Z" or similar.
+
+Those commands are usually stored and exchanged using so-called Midi events. 
+They can contain information about the notes which are currently played, the sounds which belong to each (virtual) instrument, or general information about the song, e.g. about the key, the meter, or the song's name. 
+While the above mentioned commands are definitely the most often used, there are many other commands, which can e.g. control the sustain pedal of a piano or define an instrument's overall volume. 
+The events are presented below in more detail.
+
+<h3>Tracks and Channels</h3>
+
+The different virtual instruments are organized in tracks, where each track refers to one instrument or a group of instruments. 
+Hence, each Midi event is assigned to a track.
+Each note will be assigned to the track of the instrument which plays the note,
+while events, which do not belong to a specific instrument (key, meter, etc.), are usually assigned to a specific track ("Tempo Track"). 
+Moreover, each note and other instrument-specific events are assigned to a channel. 
+There are 16 channels where each channel has a defined sound (e.g. "Piano" or "String Ensemble").
+While it may sound redundant to have each note assigned to a track and a channel, the concept makes sense. 
+This is, because the information about the different tracks is only known to the device requesting another device to play the note. 
+The other device will only receive information about the channel on which to play the note, which reduces the traffic needed to exchange the information. 
+Hence, the tracks are (mostly) for a user's orientation when editing a file. 
+Usually, all notes within a single track are also assigned to one specific channel. 
+However, there are exceptions, e.g. when a group of strings is divided into two parts where one part plays pizzicato and the other part plays legato; in this case both groups can be noted in the same track but they have to use different channels, as each group has another sound.
+
+<h3>Midi Events</h3>
+
+The following list shows the different Midi events and provides an overview of their functionality.
+
+<ul>
+<li><i>Note On/Off Events</i>
+
+Each note is represented by two events, where one event indicates the start of a note and the other event is used to stop the note. 
+The note height is represented by a number from 0 (C0) to 127 (G10) and the note's velocity (loudness) has a range from 0 to 127. 
+The note is assigned to a channel, where the channel's configuration specifies the voice of the note.
+</li>
+<li><i>Tempo Change Events</i>
+
+A Tempo Change Events sets the current tempo. 
+The tempo is set in beats per minute (BPM). 
+Higher values indicate a faster tempo.
+</li>
+<li><i>Time Signature Events</i>
+
+Any meter change is represented by a Time Signature Event in Midi. 
+The event holds two parameters, the numerator and the denominator of the meter. 
+E.g.,
+in order to represent an <i>alla breve</i> meter, the numerator would be set to 2 and the denominator would be set to half notes.
+</li>
+<li><i>Key Signature Events</i>
+
+A Key Signature Event defines the song's key (<i>C major</i>, <i>G minor</i>, ...).
+</li>
+<li><i>Program Change Events</i>
+
+In order to define the voice (or instrument) assigned to each channel, a Program Change Event can be used. 
+E.g., after the program <i>Church Organ</i>
+has been set for channel 5, all notes played on channel 5 will be played with an organ's voice.
+</li>
+<li><i>Control Change Events</i>
+
+Besides the voice assigned to each channel, a lot of other properties regarding a channel's sound can be controlled using Control Change Events.
+Up to 128 different controls exist for each channel where a value between
+0 and 127 can be assigned to each control. 
+The available controls include the sustain pedal of a piano, the channel's overall volume, and the modulation wheel.
+</li>
+<li><i>Key/Channel Pressure Events</i>
+
+These events control the pressure for each note (Key Pressure Events)
+or for all notes played on a given channel (Channel Pressure Events).
+</li>
+<li><i>Pitch Bend Events</i>
+
+The Pitch Bend Events are used to modify the pitch of a given channel.
+</li>
+<li><i>Text Events</i>
+
+Lyrics, instrument/tracknames or general information (Copyright etc.) can be stored in TextEvents.
+</li>
+<li><i>System Exclusive Events</i>
+
+System Exclusive Events are used by manufacturers to provide a way to send device-specific messages.
+</li>
+</ul>
+
+<h3>Midi I/O</h3>
+
+While synthesizers can easily be installed and run on a computer, a lot of hardware exists which can be used to play or record Midi data (e.g. digital pianos or hardware synthesizers). 
+Such additional hardware is usually connected to the computer using a USB port. 
+Whether or not a synthesizer or a keyboard is running on a computer or an additional hardware which is connected to a computer does not affect the way how the device is used within a Midi software
+(e.g. MidiEditor). 
+In both cases, a Midi port will be existing for each device to allow the software to receive data from or to send data to the device.
+
+<h2><span class="orange">The Editor and its Components</span></h2>
+
+The following screenshot shows the editor in use:
+
+<img class="lazy" data-src="http://www.midieditor.org/pages/manual/screenshots/midieditor-full.png">
+
+On the top of the editor there are the menubar and the toolbar which contain buttons to load and save files, to play the currently loaded file, or to edit the file's content. 
+Moreover, the settings can be accessed from the menubar and additional tools, such as the metronome, can be controlled from the menues.
+
+Below the toolbar, the mainscreen is split into two parts. 
+On the left side,
+there is the event view, which shows all events, and a view which can be used to visualize and edit the velocity for each note as well as the different controller values, the pitch for each channel, or the key/channel pressure.
+
+On the right side, there are different windows allowing the user to edit the tracks and channels, to visualize the protocol of all actions the user did, and to edit all properties of the selected event(s).
+
+<h3>Menubar</h3>
+
+Most actions which can be performed by the user are accessible using the menubar. 
+The actions are structured within the following submenues:<table border="0" cellspacing="0" cellpadding="2">
+<tr>
+<td  valign="top">File</td>
+<td>
+The <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-file">file menu</a> provides the usual actions to load, create, and save files.
+</td>
+</tr>
+<tr>
+<td>Edit</td>
+<td valign="top">
+The <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-edit">edit menu</a> provides actions to select events, to copy and paste events, and to
+ undo / redo actions.
+</td>
+</tr>
+<tr>
+<td valign="top">Tools</td>
+<td>
+The <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-tools">tools menu</a> provides actions to edit the current file's content.
+</td>
+</tr>
+<tr>
+<td valign="top">View</td>
+<td>
+The <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-view">view menu</a> provides actions to customize the view settings. 
+This includes items to zoom in or out and the raster settings.
+</td>
+</tr>
+<tr>
+<td valign="top">Playback</td>
+<td>
+The <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-playback">playback menu</a> contains all actions which control the playback, the recording, or the metronome.
+</td>
+</tr>
+<tr>
+<td valign="top">Midi</td>
+<td>
+The <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-midi">Midi menu</a> provides actions which let the user set the Midi preferences.
+</td>
+</tr>
+</table>
+
+<h3>Toolbar</h3>
+
+The toolbar contains items from the menubar in order to provide quick access to the most frequently used actions.
+
+<h3>Event View</h3>
+
+The event view is the most important part of the editor. 
+It visualizes the events in the loaded Midi file. 
+Moreover, most editing can be done in this window.
+
+All events are colored, where the colors can either be chosen to represent the event's channel or its track.
+<img class="lazy"data-src="http://www.midieditor.org/pages/manual/screenshots/eventview_small.png" >
+
+Notes are diplayed as bars. 
+The rows of the event view represent the different notes according to the piano roll on the left. 
+The horizontal length of a notes represents the note's duration according to the time line on the top of the window.
+
+Below the notes the other events are shown. 
+The row names below the piano roll indicate the event type shown in each row.
+
+In order to <a href="http://www.midieditor.org/index.php?category=manual&subcategory=editing-midi-files">edit</a> the content of a Midi file, the user has to select a <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-tools">tool</a> in the menubar or in the toolbar. 
+After that, the user can select events in the event view and move the events, change the notes' durations, create new events,
+and remove events.
+
+Below the event view, the velocities of all notes, the controllers, the key/channel pressure, and the pitch of each channel can be <a href="http://www.midieditor.org/index.php?category=manual&subcategory=editing-midi-files#controls-and-velocities">edited</a> and visualized. 
+The user can select the data to show and edit on the left of the window.
+
+<h3>Track Editor</h3>
+<img class="lazy"data-src="http://www.midieditor.org/pages/manual/screenshots/track_editor.png" align="right" >
+
+The track editor contains a list of all tracks in the currently loaded Midi file. 
+The list shows the names of the tracks as well as their numbers and the tracks' colors. 
+Moreover, the track editor enables the user to hide or mute specific channels (by clicking <img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/visible.png"  /> and <img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/loud.png"  />),
+to rename a track (by clicking <img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/rename.png"  />) or to delete a track (by clicking <img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/remove.png"  />).
+
+New tracks can be added to the Midi file by clicking <img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/add.png"  />.
+
+In order to mute or hide all tracks at once, the according actions above the track list can be used.
+
+Please refer to <a href="http://www.midieditor.org/index.php?category=manual&subcategory=editing-midi-files#tracks-and-channels">Tracks and Channels</a> for more details about the track editor.
+
+<h3>Channel Editor</h3>
+
+Similar to the track editor, a list of all channels is provided in the channel editor. 
+Channels can be hidden or muted (by clicking <img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/visible.png"  /> and <img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/loud.png"  />). 
+Moreover, the solo mode (by clicking <img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/solo.png"  />) can be activated for a specific channel which will make the channel
+ be the only audible channel until the solo mode is deactivated.
+
+As an instrument (or "voice") is assigned to each channel at each time, the channels' instruments can be assigned by clicking <img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/instrument.png"  />. 
+This will open a dialog which lets the user specify the instrument for the given channel.
+
+Please refer to <a href="http://www.midieditor.org/index.php?category=manual&subcategory=editing-midi-files#tracks-and-channels">Tracks and Channels</a> for more details about the channel editor.
+
+<h3>Event Editor</h3>
+<img class="lazy"data-src="http://www.midieditor.org/pages/manual/screenshots/event_editor.png" align="right" >
+
+Once one or more events have been selected, the events' data will be visualized inside the event editor. 
+The data is provided as a table containing property-value pairs. 
+Double-clicking inside any value-field will allow the user to modify the propertie's value which will set the new value to all selected events immediately.
+
+In the case of multiple selected events, the editor will only show the values which are equal for all selected events. 
+Assigning new values to those initially empty values will set the value for all selected events.
+
+<h2><span class="orange">Setting up MidiEditor</span></h2>
+
+<h3>Midi I/O</h3>
+
+MidiEditor has to be correctly configured in order to be able to send data to a Midi device which is connected to the computer and (if required) to receive any data in order to allow <a href="http://www.midieditor.org/index.php?category=manual&subcategory=record">recording</a>. 
+If not correctly configured, MidiEditor can be used to edit Midi files; however, you won't be able to listen to the music.
+
+<img class="lazy"data-src="http://www.midieditor.org/pages/manual/screenshots/setup-io.png">
+
+To select the input or output device click "Settings.." in the
+<a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-midi">midi menu in the menubar</a>. 
+In the list on the left-hand side of the upcoming dialog, please select the card "Midi I/O". 
+This will show two lists which show all available input/output devices.
+
+Select in-/and output from the lists and click "Close".
+
+On startup, MidiEditor will always try to connect to the devices which have been used during the last session.
+
+<h3>Making the Input Device audible</h3>
+<img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/connection.png"  >
+A lot of Midi devices which allow you to input Midi data are not audible but need a connected computer to generate sounds (similar to MidiEditor).
+When having chosen a valid output device, you can pass all notes played at the input device to the output device which makes the played notes audible.
+Select the option "Connect Midi In/Out" in the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-midi">midi menu in the menubar</a> or in the toolbar.
+
+<h3>Starting Synthesizers along with MidiEditor</h3>
+
+There are a lot of synthesizers MidiEditor can use to produce its sound with. 
+However, some of those synthesizers have to be started each time you start MidiEditor, as they are not running by default.
+
+To start a software each time when MidiEditor is started, you can set a start-command which is executed at each startup of the editor.
+To enter this command, click the menu entry "Settings..." in the
+<a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-midi">midi menu in the menubar</a>. 
+Select the card "Additional Midi Settings"
+and enter your start command in the according field. 
+The output of the started component will be visible (after the next startup) in the text area below this field.
+
+<h3>Automatic Updates</h3>
+
+MidiEditor connects to internet at each startup in order to check whether a new version of MidiEditor is available. 
+If so, you will be notified and asked to download the new version.
+
+In order to make sure, that MidiEditor can connect to the internet configure your firewall accordingly. 
+To disable the automatic update checker, please open the settings dialog, chose the card "Updates" and deselect the checkbox.
+
+<h3>Support for older Midi Devices</h3>
+
+Some old Midi devices may not support the full Midi instruction set. 
+Hence, these devices may not stop the currently played notes when you click the stop button. 
+MidiEditor provides a solution for this, which can be activated in the
+"Additional Midi Settings" card in the settings dialog. 
+In order to activate it, check the checkbox
+"Manually stop notes". 
+This should not be used when your Midi device does stop the playback whenever requested.
+
+<h3>Larger Playback Toolbar</h3>
+
+MidiEditor allows you to start with a larger playback toolbar. 
+This is necessary when using the editor while beeing seated at your digital piano. 
+The editor has to be started along with the command-line argument --large-playback-toolbar.
+On linux, use the command line to start MidiEditor. 
+On windows, right-click on the desktop-shortcut and select "Properties".
+Add the argument --large-playback-toolbar to the target field as shown below.
+<img class="lazy"data-src="http://www.midieditor.org/pages/manual/screenshots/command-line-windows.png"></div>
+
+<h2><span class="orange">Editing Midi files</span></h2>
+
+<h3>Selecting Events</h3>
+
+In order to edit Midi events, the events which will be edited have to be selected. 
+There are many different ways how to select events. 
+Events can be selected using the <a href="http://www.midieditor.org/#std_tool">standard tool</a>
+or using one of the tools listed below.
+
+When pressing SHIFT while selecting events, the old selection will be extended with the newly selected events.
+In order to remove events from a selection, the events can be accessed as if you wanted to select them while pressing CTRL.
+<table border="0" cellspacing="0" cellpadding="2">
+<tr>
+<td valign="top"><img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/select_single.png"  /></td>
+<td>
+<i>Select single Events</i><br>
+   Click on an event in the view to select it.
+</td>
+</tr>
+<tr>
+<td valign="top"><img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/select_box.png"  /></td>
+<td>
+<i>Select Events (Box)</i><br>
+If you want to select more events at the same time you can use the "Select Box" Tool.
+Click at any point in the event view and drag theappearing box. 
+All events in the box will be selected.
+</td>
+</tr>
+<tr>
+<td valign="top"><img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/select_left.png"  /></td>
+<td>
+<i>Select all Events on the left side</i><br>
+Select the tool and click at the wishedhorizontal position. 
+All events before the clicked position will be selected.
+</td>
+</tr>
+<tr>
+<td valign="top"><img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/select_right.png"  /></td>
+<td>
+<i>Select all Events on the left side</i><br>
+Select the tool and click at the wishedhorizontal position. 
+All events after theclicked position will be selected.
+</td>
+</tr>
+</table>
+
+When pressing CTRL+A, all visible events will be selected. 
+Moreover, events from a specific track or from a specific channel can be selected using the according actions in the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-edit">edit menu in the menubar</a>.
+
+<h3>Moving events</h3>
+
+Moving events will either change their start- and endtimes (horizontal movement) or the note height of note events (moving notes up and down).
+While the <a href="http://www.midieditor.org/#std_tool">standard tool</a> can select and move events at the same time, selected events can either be moved with one of the tools listed below, or by accessing the according values of the events in the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=editor-and-components#event_editor">event editor.</a>
+<table border="0" cellspacing="0" cellpadding="2">
+<tr>
+<td valign="top"><img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/move_up_down_left_right.png"  /></td>
+<td>
+<i>Move Events (all directions)</i><br>
+Click inside the event view and drag the mouse in order to move all selected events.
+</td>
+</tr>
+<tr>
+<td valign="top"><img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/move_left_right.png"  /></td>
+<td>
+<i>Move Events (Left and Right)</i><br>
+Click inside the event view and drag the mouse in order to move all selected events horizontal.
+</td>
+</tr>
+<tr>
+<td valign="top"><img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/move_up_down.png"  /></td>
+<td>
+<i>Move Events (Up and Down)</i><br>
+Click inside the event view and drag the mouse in order to move all selected events vertical. 
+This tool only works with note events.
+</td>
+</tr>
+</table>
+
+Moreover, the timing of the events can be corrected by <a href=#quantization>quantifying</a> them.
+
+<h3>Changing the duration of events</h3>
+<img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/change_size.png"  >
+
+Resizing note events changes the start or the end time of the event - this means the duration of the note. 
+All other events can not be resized.
+The duration of a note can either be directly set using the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=editor-and-components#event_editor">event editor</a> or by selecting the resizing tool (shown on the left). 
+To use the tool, select the events to resize and move the mouse over the start or the end of a selected event.
+Drag the mouse in order to resize the event. 
+The <a href="http://www.midieditor.org/#std_tool">standard tool</a> can also resize events.
+
+<h3>Creating and deleting events</h3>
+
+<img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/newnote.png"  >
+
+Creating events can be done with the <a href="http://www.midieditor.org/#std_tool">standard tool</a> or with the new events tool (shown on the left). 
+Clicking inside the event view and dragging the mouse will create the events. 
+New events will be assigned to the track and the channel which are defined in the lower right corner of the editor.
+<img class="lazy"data-src="http://www.midieditor.org/pages/manual/screenshots/new-events.png">
+
+In order to remove events, you can press the DEL key which will delete all selected events. 
+Moreover, events from a specific channel can be removed by clicking the according action in the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-tools">tools menu</a>. 
+The remove events tool can remove specific events.
+
+<h3>Standard Tool</h3>
+<img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/select.png"  >
+
+This tool is the most often used tool in MidiEditor. 
+It provides a mixture of all selectable tools above. 
+Events can be selected by clicking on them or by dragging a box around the events to select. 
+In order to add an event to an already existing selection, hold the SHIFT key while selecting new events in the above explained manner. 
+In order to remove individual events, hold CTRL and click on the events to deselect.
+Events can be moved up and down as well as left and right by clicking inside the event and dragging the mouse. 
+Clicking at the left or right border of an event and dragging the mouse afterwards will change the duration and the starting time of the event. 
+All actions will be applied to all selected events.
+Clicking the right mouse key will create new events.
+
+<h3>Magnet and Raster</h3>
+<img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/magnet.png"  >
+
+When the magnet (shown on the left) is enabled, all dragging or shifting operations inside the event view will result in a timing which is aligned to the specified raster. 
+That means that events will start at the correct time when the start time is close to the time which is represented by a vertical line in the event view. 
+The raster size can be controlled from within the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-view">view menu in the menubar</a>. 
+It can be set to any known note length (eights, quarters etc.).
+
+<h3>Quantization</h3>
+<img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/quantize.png"  >
+
+While an event can start and end at any time, it is often required to make the timing "correct" which means,
+that the event starts at an exact position within the measure and have a duration which is equal to a known note duration (quarter, 8th, ...).
+This exact timing can be achieved by quantifying the events. 
+Pressing the quantify button (shown on the left) will align all selected events to a grid.
+The size of this grid, the quantization fractions, can be controlled from within the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-tools">tools menu in the menubar</a>.
+
+The following picture shows some notes before (left) and after (right) quantization. 
+The quantization fractions were set to 8ths.
+<img class="lazy"data-src="http://www.midieditor.org/pages/manual/screenshots/quantization.png">
+
+As tuplets are not aligned on the usual grid, you can select the events which belong to a tuplet und use the action quantify tuplet in order to correct a tuplet's timing.
+
+<h3>Copying/Pasting Events</h3>
+
+In order to copy events, select the events to copy and press CTRL+C. 
+This will copy the events to the clipboard. 
+Set the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=playback#cursor">cursor</a>
+at the time where you want the copied events to start and press CRTL+V which will paste the events at the wished position.
+
+<h3>Editing Tempo and Meter</h3>
+
+Tempo and meter can be changed using the according tools.
+<table border="0" cellspacing="0" cellpadding="2">
+<tr>
+<td valign="top"><img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/tempo.png"  /></td>
+<td>
+<i>Edit Tempo</i><br>
+After selecting the tool, click inside the event view at the position were you want
+                     to change the tempo. 
+A dialog will pop up letting you enter the new tempo.
+                     <br>
+                     You can also select a time period by letting the mouse pressed after clicking and
+                     moving the mouse to the end of the time period. 
+This allows you to gradually increase
+                     or decrease the tempo.
+</td>
+</tr>
+<tr>
+<td valign="top"><img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/meter.png"  /></td>
+<td>
+<i>Edit time signatures</i><br>
+This tool allows you to select a measure and set the according time signature (meter).
+</td>
+</tr>
+</table>
+
+<h3>Add or remove measures</h3>
+<table border="0" cellspacing="0" cellpadding="2">
+<tr>
+<td valign="top"><img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/measure.png"  /></td>
+<td>
+<i>Add or remove measures</i><br>
+Either click on the line between two measures to add measures, or select a single or multiple
+                     measures and press the DELETE key on your keyboard to remove the measures. 
+
+</td>
+</tr>
+</table>
+
+<h3>Editing Controls and Velocities</h3>
+
+Below the event view there is a window which allows you to edit and visualize the control change events, the velocity of the notes, and other parameters.
+<img  class="lazy"data-src="http://www.midieditor.org/pages/manual/screenshots/controls.png">
+
+Editing can be done with three different modes:
+<table border="0" cellspacing="0" cellpadding="2">
+<tr>
+<td valign="top"><img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/misc_single.png"  /></td>
+<td>
+<i>Single mode</i><br>
+The curve's points can be selected and dragged. 
+New points can be created by clicking areas with no points.
+</td>
+</tr>
+<tr>
+<td><img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/misc_freehand.png"  /></td>
+<td valign="top">
+<i>Free-hand mode</i><br>
+A freehand curve can be entered by moving the mouse while pressing the left button.
+</td>
+</tr>
+<tr>
+<td valign="top"><img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/misc_line.png"  /></td>
+<td>
+<i>Line mode</i><br>
+A line can be dragged with the mouse.
+</td>
+</tr>
+</table>
+
+<h3>Tracks and Channels</h3>
+
+Each Midi file seperates its events in one or more tracks. 
+Each track can contain multiple channels.
+
+Each track has a name. 
+This name describes the tracks content. 
+To change it you can press the button <img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/rename.png"  /> in the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=editor-and-components#track_editor">track editor.</a>
+A dialog will open up to enter the tracks new name.
+
+To create a new track you can press the button <img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/add.png"  /> in the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=editor-and-components#track_editor">track editor.</a>
+To remove a whole track you can press <img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/remove.png"   />. 
+This will delete all events of the selected track and the track itself.
+If there is only one track left, this track can not be deleted.
+
+Channel 0 - 15 are the instrument channels. 
+They contain information about the notes to play and the instruments sound. 
+The sound of the instrument can be chosen from a list of instruments. 
+Press
+<img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/instrument.png"   /> in the channel list to change the instrument. 
+This will open up the following dialog:
+
+<img class="lazy"data-src="http://www.midieditor.org/pages/manual/screenshots/instrument.png">
+
+You can specify the instrument from the given list. 
+Accepting the dialog will set the channel's instrument in the beginning of the file to the instrument from the list. 
+Later in the file there may be Program Change Events changing the channel's instrument. 
+To prevent this, you can select
+"Remove other Program Change Events" before accepting the dialog. 
+All other Program Change Events of the channel will be removed.
+<h2><span class="orange">Playback</span></h2>
+
+MidiEditor allows you to play the song when you have selected an
+<a href="http://www.midieditor.org/index.php?category=manual&subcategory=setup#io">output device</a>.
+
+You can find buttons for the playback in the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-playback">playback menu</a> or in the toolbar. 
+There are buttons which allow you to start a playback (or a recording, please read <a href="http://www.midieditor.org/index.php?category=manual&subcategory=record">Recording Midi data</a> for more details), to stop and pause the playback, and to control the<a href="http://www.midieditor.org/#cursor">cursor</a>. 
+Moreover, individual tracks and channels can be muted and the <a href="http://www.midieditor.org/#metronome">metronome</a> can be controlled from within the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-playback">playback menu</a>.
+
+<h3>Muting Tracks and Channels</h3>
+
+Sometimes it makes sense to play only specific channels or tracks in order to listen to one or more instruments at a time.
+Hence, specific tracks and channels can be muted. 
+If either the track or the channels assigned to a Midi event is muted, the event will be ignored during the playback. 
+Hence, notes of muted tracks and channels will not be audible during the playback.
+
+In order to mute a specific track or a channel, please press <img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/loud.png"  /> in the according list in the
+<a href="http://www.midieditor.org/index.php?category=manual&subcategory=editor-and-components#track_editor">track editor</a> or the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=editor-and-components#channel_editor">channel editor</a>.
+Click again in order to make the channel or track audible again.
+
+Moreover, there are actions which allow you to mute or make audible all tracks or channels at once. 
+These buttons can be found in the
+<a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-playback">playback menu</a> as well as in the
+<a href="http://www.midieditor.org/index.php?category=manual&subcategory=editor-and-components#track_editor">track editor</a> or the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=editor-and-components#channel_editor">channel editor</a>.
+
+If you want to play one channel alone, the channel can be marked to be the "solo channel". 
+This will automatically mute all other channels without having to mute them manually. 
+The solo mode can be entered by clicking <img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/solo.png"  /> for the according channel in the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=editor-and-components#channel_editor">channel editor</a>.
+
+<h3>Setting the Cursor</h3>
+
+<img class="lazy"data-src="http://www.midieditor.org/pages/manual/screenshots/setting-cursor.png"  align="right" >
+
+You can specify the position in the song where the playback starts when pressing the play button. 
+This can be done by double clicking into the time line above the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=editor-and-components#event-view">event view</a>.
+
+In the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-playback">playback menu</a> there are additional actions which can move the cursor to the next or previous measure (<img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/back.png"  /> and
+<img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/forward.png"  />) or reset the cursor to start the playback at the beginning of the file (<img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/back_to_begin.png"  />).
+
+<h3>Speed</h3>
+
+Sometimes it will be useful to slow done the playback speed (or to speed it up). 
+This can be done by setting the playback speed in the
+<a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-playback">playback menu</a>. 
+Setting the playback speed to 1 (default) will play at normal speed, while setting it to 2 will result in a two times faster playback speed. 
+Playback speeds lower than 1 will slow down the playback.
+
+<h3>Metronome</h3>
+<img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/metronome.png" align="right"  >
+
+The metronome can be enabled or disabled in the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-playback">playback menu</a> or in the toolbar. 
+Enabling the metronome will result in a metronome sound at each beat during the playback.
+
+<h3>Locking the Screen</h3>
+
+When you play a song and there must not be any delays while playing you may have to lock the screen by enabling  <img class="lazy" data-src="http://www.midieditor.org/pages/manual/tools/screen_locked.png"  /> in the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-playback">playback menu</a>. 
+This mean that the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=editor-and-components#event-view">event view</a> does not follow the cursor while playing, because the repainting of the window can cause a short delay on slower machines.
+<h2><span class="orange">Recording Midi Data</span></h2>
+
+MidiEditor is able to record Midi data from an <a href="http://www.midieditor.org/index.php?category=manual&subcategory=setup#io">input device</a>, e.g. a digital piano.
+
+To start a recording, press the record button in the <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-playback">playback menu</a> or in the toolbar.
+MidiEditor will start a <a href="http://www.midieditor.org/index.php?category=manual&subcategory=playback">playback</a> (which will allow you to hear any in advance entered Midi events) and listen to the
+<a href="http://www.midieditor.org/index.php?category=manual&subcategory=setup#io">input device</a> at the same time. 
+Hence, played notes (and other events) which where entered using the
+<a href="http://www.midieditor.org/index.php?category=manual&subcategory=setup#io">input device</a> can be added to the currently loaded Midi file which will add the events at the time they were played.
+
+<img class="lazy"data-src="http://www.midieditor.org/pages/manual/screenshots/record_window.png" align="right" >
+
+After a recording has been finished, click the stop button in the  <a href="http://www.midieditor.org/index.php?category=manual&subcategory=menu-playback">playback menu</a> or in the toolbar. 
+If any events have been recorded, a dialog will pop up which allows you to specify how to handle the recorded events.
+
+You can ignore some event types. 
+All events with this type will not be added to the file, all other events will be added at the time they have been played. 
+You can specify the track and the channel of the recorded events in the dialog. 
+Pressing "Ok" will add the events to the file.
+
+After the events have been added, you may want to edit the events. 
+This can include correcting wrong notes or adjusting the timing. 
+Especially the
+<a href="http://www.midieditor.org/index.php?category=manual&subcategory=editing-midi-files#quantization">quantization function</a> will be useful in this context,
+<script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+   elements_selector: ".lazy"
+   // ... more custom settings?
+});
+</script>
+</pre></body></html>
