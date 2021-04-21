@@ -268,8 +268,7 @@ YouTube网上有不少这方面的视频，大家可以找来看看。
 
 <img src="https://pic3.zhimg.com/v2-72a8b89160f0edab30f476e2e6137638_b.jpg">
 
-
-</figure><b>首先，从表面一层来看。</b>
+<b>首先，从表面一层来看。</b>
 反映在一些产业新闻和社会新闻层面上，人工智能经过了几起几落，英文叫做Boom and Bust，意思是一哄而上、一哄而散，很形象。
 每次兴盛期都有不同的技术在里面起作用。
 1980年代初又兴起了第二次热潮，一批吹牛的教授、研究人员登场了。
@@ -21671,6 +21670,960 @@ plaintext <- "西兰花"
 plaintext.raw <- serialize(plaintext, NULL)
 ciphertext <- data_encrypt(plaintext.raw, key = passkey)
 unserialize(data_decrypt(ciphertext, key = sha256(charToRaw("password123"))))
+
+<h2>Exploratory Data Analysis</h2>
+Topics: <i>Variation; Visualising distributions;
+Typical values; Unusual values; Missing values;
+Covariation; A categorical and continuous variable;
+Two categorical variables; Two continuous variables;
+Patterns and models; ggplot2 calls</i>
+
+Exploratory data analysis, or EDA for short. 
+EDA is an iterative cycle. 
+
+You:
+Generate questions about your data.
+Search for answers by visualising, transforming, and modelling your data.
+Use what you learn to refine your questions and/or generate new questions.
+
+EDA is not a formal process with a strict set of rules. 
+More than anything, EDA is a state of mind. 
+During the initial phases of EDA you should feel free to investigate every idea that occurs to you. 
+Some of these ideas will pan out, and some will be dead ends. 
+As your exploration continues, you will home in on a few particularly productive areas that you’ll eventually write up and communicate to others.
+
+EDA is an important part of any data analysis, even if the questions are handed to you on a platter, because you always need to investigate the quality of your data. 
+Data cleaning is just one application of EDA: you ask questions about whether your data meets your expectations or not. 
+To do data cleaning, you’ll need to deploy all the tools of EDA: visualisation, transformation, and modelling.
+
+<h3>Prerequisites</h3>
+In this chapter we’ll combine what you’ve learned about dplyr and ggplot2 to interactively ask questions, answer them with data, and then ask new questions.
+
+<code><a href="https://rdrr.io/r/base/library.html">library</a>(<a href="http://tidyverse.tidyverse.org">tidyverse</a>)</code>
+
+<h3>Questions</h3>
+“There are no routine statistical questions, only questionable statistical
+routines.” — Sir David Cox
+“Far better an approximate answer to the right question, which is often
+vague, than an exact answer to the wrong question, which can always be made
+precise.” — John Tukey
+
+Your goal during EDA is to develop an understanding of your data. 
+The easiest way to do this is to use questions as tools to guide your investigation. 
+When you ask a question, the question focuses your attention on a specific part of your dataset and helps you decide which graphs, models, or transformations to make.
+
+EDA is fundamentally a creative process. 
+And like most creative processes, the key to asking <em>quality</em> questions is to generate a large <em>quantity</em> of questions. 
+It is difficult to ask revealing questions at the start of your analysis because you do not know what insights are contained in your dataset. 
+On the other hand, each new question that you ask will expose you to a new aspect of your data and increase your chance of making a discovery. 
+You can quickly drill down into the most interesting parts of your data—and develop a set of thought-provoking questions—if you follow up each question with a new question based on what you find.
+
+There is no rule about which questions you should ask to guide your research. 
+However, two types of questions will always be useful for making discoveries within your data. 
+You can loosely word these questions as:
+
+What type of variation occurs within my variables?
+
+What type of covariation occurs between my variables?
+
+The rest of this chapter will look at these two questions. 
+I’ll explain what variation and covariation are, and I’ll show you several ways to answer each question. 
+To make the discussion easier, let’s define some terms:
+
+A <strong>variable</strong> is a quantity, quality, or property that you can measure.
+
+A <strong>value</strong> is the state of a variable when you measure it. 
+The value of a
+variable may change from measurement to measurement.
+
+An <strong>observation</strong> is a set of measurements made under similar conditions
+(you usually make all of the measurements in an observation at the same
+time and on the same object). 
+An observation will contain several values,
+each associated with a different variable. 
+I’ll sometimes refer to
+an observation as a data point.
+
+<strong>Tabular data</strong> is a set of values, each associated with a variable and an
+observation. 
+Tabular data is <em>tidy</em> if each value is placed in its own
+“cell”, each variable in its own column, and each observation in its own
+row.
+
+So far, all of the data that you’ve seen has been tidy. 
+In real-life, most data isn’t tidy, so we’ll come back to these ideas again in <a href="tidy-data.html#tidy-data-1">tidy data</a>.
+
+<h3>Variation</h3>
+<strong>Variation</strong> is the tendency of the values of a variable to change from measurement to measurement. 
+You can see variation easily in real life; if you measure any continuous variable twice, you will get two different results. 
+This is true even if you measure quantities that are constant, like the speed of light. 
+Each of your measurements will include a small amount of error that varies from measurement to measurement. 
+Categorical variables can also vary if you measure across different subjects (e.g. 
+the eye colors of different people), or different times (e.g. 
+the energy levels of an electron at different moments).
+Every variable has its own pattern of variation, which can reveal interesting information. 
+The best way to understand that pattern is to visualise the distribution of the variable’s values.
+
+<h3>Visualising distributions</h3>
+How you visualise the distribution of a variable will depend on whether the variable is categorical or continuous. 
+A variable is <strong>categorical</strong> if it can only take one of a small set of values. 
+In R, categorical variables are usually saved as factors or character vectors. 
+To examine the distribution of a categorical variable, use a bar chart:
+
+<code>ggplot(data = diamonds) +
+  geom_bar(mapping = aes(x = cut))</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/7f4cb432b8891f01b8097e31f286cb54d7473ced/02c81/eda_files/figure-html/unnamed-chunk-1-1.png">
+The height of the bars displays how many observations occurred with each x value. 
+You can compute these values manually with <code><a href="https://dplyr.tidyverse.org/reference/count.html">dplyr::count()</a></code>:
+
+<code>diamonds %>% 
+  count(cut)
+#> # A tibble: 5 x 2
+#>   cut           n
+#>   &lt;ord>     &lt;int>
+#> 1 Fair       1610
+#> 2 Good       4906
+#> 3 Very Good 12082
+#> 4 Premium   13791
+#> 5 Ideal     21551</code>
+A variable is <strong>continuous</strong> if it can take any of an infinite set of ordered values. 
+Numbers and date-times are two examples of continuous variables. 
+To examine the distribution of a continuous variable, use a histogram:
+
+<code>ggplot(data = diamonds) +
+  geom_histogram(mapping = aes(x = carat), binwidth = 0.5)</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/832184b1db9d6bca2080fa526b7d791f77d37b8f/880fa/eda_files/figure-html/unnamed-chunk-3-1.png">
+You can compute this by hand by combining <code><a href="https://dplyr.tidyverse.org/reference/count.html">dplyr::count()</a></code> and <code><a href="https://ggplot2.tidyverse.org/reference/cut_interval.html">ggplot2::cut_width()</a></code>:
+
+<code>diamonds %>% 
+  count(cut_width(carat, 0.5))
+#> # A tibble: 11 x 2
+#>   `cut_width(carat, 0.5)`     n
+#>   &lt;fct>                   &lt;int>
+#> 1 [-0.25,0.25]              785
+#> 2 (0.25,0.75]             29498
+#> 3 (0.75,1.25]             15977
+#> 4 (1.25,1.75]              5313
+#> 5 (1.75,2.25]              2002
+#> 6 (2.25,2.75]               322
+#> # … with 5 more rows</code>
+A histogram divides the x-axis into equally spaced bins and then uses the height of a bar to display the number of observations that fall in each bin. 
+In the graph above, the tallest bar shows that almost 30,000 observations have a <code>carat</code> value between 0.25 and 0.75, which are the left and right edges of the bar.
+
+You can set the width of the intervals in a histogram with the <code>binwidth</code> argument, which is measured in the units of the <code>x</code> variable. 
+You should always explore a variety of binwidths when working with histograms, as different binwidths can reveal different patterns. 
+For example, here is how the graph above looks when we zoom into just the diamonds with a size of less than three carats and choose a smaller binwidth.
+
+<code>smaller &lt;- diamonds %>% 
+  <a href="https://rdrr.io/r/stats/filter.html">filter</a>(carat &lt; 3)
+  
+ggplot(data = smaller, mapping = aes(x = carat)) +
+  geom_histogram(binwidth = 0.1)</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/2f4885ec2541f7490d6504d1e4c2d2707b7cd8d5/b5df8/eda_files/figure-html/unnamed-chunk-5-1.png">
+If you wish to overlay multiple histograms in the same plot, I recommend using <code>geom_freqpoly()</code> instead of <code>geom_histogram()</code>. 
+<code>geom_freqpoly()</code> performs the same calculation as <code>geom_histogram()</code>, but instead of displaying the counts with bars, uses lines instead. 
+It’s much easier to understand overlapping lines than bars.
+
+<code>ggplot(data = smaller, mapping = aes(x = carat, colour = cut)) +
+  geom_freqpoly(binwidth = 0.1)</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/73b1aa01f56fdebb5829f8bb9efefd2d424165dd/0799c/eda_files/figure-html/unnamed-chunk-6-1.png">
+There are a few challenges with this type of plot, which we will come back to in <a href="exploratory-data-analysis.html#cat-cont">visualising a categorical and a continuous variable</a>.
+
+Now that you can visualise variation, what should you look for in your plots? And what type of follow-up questions should you ask? I’ve put together a list below of the most useful types of information that you will find in your graphs, along with some follow-up questions for each type of information. 
+The key to asking good follow-up questions will be to rely on your curiosity (What do you want to learn more about?) as well as your skepticism (How could this be misleading?).
+
+<h3>Typical values</h3>
+In both bar charts and histograms, tall bars show the common values of a variable, and shorter bars show less-common values. 
+Places that do not have bars reveal values that were not seen in your data. 
+To turn this information into useful questions, look for anything unexpected:
+
+Which values are the most common? Why?
+
+Which values are rare? Why? Does that match your expectations?
+
+Can you see any unusual patterns? What might explain them?
+
+As an example, the histogram below suggests several interesting questions:
+
+Why are there more diamonds at whole carats and common fractions of carats?
+
+Why are there more diamonds slightly to the right of each peak than there
+are slightly to the left of each peak?
+
+Why are there no diamonds bigger than 3 carats?
+
+<code>ggplot(data = smaller, mapping = aes(x = carat)) +
+  geom_histogram(binwidth = 0.01)</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/d4853921e3a2dbbac40b7b4ff2f138f0766b1f82/c7f2a/eda_files/figure-html/unnamed-chunk-7-1.png">
+# 
+smaller <- diamonds %>% filter(carat < 3)
+
+ggplot(data = smaller, mapping = aes(x = carat)) + geom_histogram(binwidth = 0.1)
+
+# same result:
+index = diamonds$carat < 3
+smaller1 <- diamonds[index,]
+barplot(table(smaller1$carat))
+cut_interval(smaller1$carat, n = NULL, length = 0.01)
+barplot(table(cut_interval(smaller1$carat, n = NULL, length = 0.02)))
+
+geom_freqpoly() performs the same calculation as geom_histogram(), but uses lines instead. 
+
+ggplot(data = smaller, mapping = aes(x = carat, colour = cut)) + geom_freqpoly(binwidth = 0.1)
+
+Clusters of similar values suggest that subgroups exist in your data. 
+To understand the subgroups, ask:
+
+How are the observations within each cluster similar to each other?
+
+How are the observations in separate clusters different from each other?
+
+How can you explain or describe the clusters?
+
+Why might the appearance of clusters be misleading?
+
+The histogram below shows the length (in minutes) of 272 eruptions of the Old Faithful Geyser in Yellowstone National Park. 
+Eruption times appear to be clustered into two groups: there are short eruptions (of around 2 minutes) and long eruptions (4-5 minutes), but little in between.
+
+<code>ggplot(data = faithful, mapping = aes(x = eruptions)) + 
+  geom_histogram(binwidth = 0.25)</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/aaa1365ef32c8038eab5a48634c2f78274ab1386/7b1be/eda_files/figure-html/unnamed-chunk-8-1.png">
+Many of the questions above will prompt you to explore a relationship <em>between</em> variables, for example, to see if the values of one variable can explain the behavior of another variable. 
+We’ll get to that shortly.
+
+<h3>Unusual values</h3>
+Outliers are observations that are unusual; data points that don’t seem to fit the pattern. 
+Sometimes outliers are data entry errors; other times outliers suggest important new science. 
+When you have a lot of data, outliers are sometimes difficult to see in a histogram. 
+For example, take the distribution of the <code>y</code> variable from the diamonds dataset. 
+The only evidence of outliers is the unusually wide limits on the x-axis.
+
+<code>ggplot(diamonds) + 
+  geom_histogram(mapping = aes(x = y), binwidth = 0.5)</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/e6b7f3c6684eff5146e447bc122ca4ed032aec87/08e60/eda_files/figure-html/unnamed-chunk-9-1.png">
+There are so many observations in the common bins that the rare bins are so short that you can’t see them (although maybe if you stare intently at 0 you’ll spot something). 
+To make it easy to see the unusual values, we need to zoom to small values of the y-axis with <code>coord_cartesian()</code>:
+
+<code>ggplot(diamonds) + 
+  geom_histogram(mapping = aes(x = y), binwidth = 0.5) +
+  coord_cartesian(ylim = <a href="https://rdrr.io/r/base/c.html">c</a>(0, 50))</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/0d4e86fd0fb0909eae2ea1df2e703feaa1732297/d1e5d/eda_files/figure-html/unnamed-chunk-10-1.png">
+(<code>coord_cartesian()</code> also has an <code><a href="https://rdrr.io/r/graphics/plot.window.html">xlim()</a></code> argument for when you need to zoom into the x-axis. 
+ggplot2 also has <code><a href="https://rdrr.io/r/graphics/plot.window.html">xlim()</a></code> and <code><a href="https://rdrr.io/r/graphics/plot.window.html">ylim()</a></code> functions that work slightly differently: they throw away the data outside the limits.)
+
+This allows us to see that there are three unusual values: 0, ~30, and ~60. 
+We pluck them out with dplyr:
+
+<code>unusual &lt;- diamonds %>% 
+  <a href="https://rdrr.io/r/stats/filter.html">filter</a>(y &lt; 3 | y > 20) %>% 
+  select(price, x, y, z) %>%
+  arrange(y)
+unusual
+#> # A tibble: 9 x 4
+#>   price     x     y     z
+#>   &lt;int> &lt;dbl> &lt;dbl> &lt;dbl>
+#> 1  5139  0      0    0   
+#> 2  6381  0      0    0   
+#> 3 12800  0      0    0   
+#> 4 15686  0      0    0   
+#> 5 18034  0      0    0   
+#> 6  2130  0      0    0   
+#> 7  2130  0      0    0   
+#> 8  2075  5.15  31.8  5.12
+#> 9 12210  8.09  58.9  8.06</code>
+The <code>y</code> variable measures one of the three dimensions of these diamonds, in mm. 
+We know that diamonds can’t have a width of 0mm, so these values must be incorrect. 
+We might also suspect that measurements of 32mm and 59mm are implausible: those diamonds are over an inch long, but don’t cost hundreds of thousands of dollars!
+
+It’s good practice to repeat your analysis with and without the outliers. 
+If they have minimal effect on the results, and you can’t figure out why they’re there, it’s reasonable to replace them with missing values, and move on. 
+However, if they have a substantial effect on your results, you shouldn’t drop them without justification. 
+You’ll need to figure out what caused them (e.g. 
+a data entry error) and disclose that you removed them in your write-up.
+
+<h3>Exercises</h3>
+
+Explore the distribution of each of the <code>x</code>, <code>y</code>, and <code>z</code> variables
+in <code>diamonds</code>. 
+What do you learn? Think about a diamond and how you
+might decide which dimension is the length, width, and depth.
+
+Explore the distribution of <code>price</code>. 
+Do you discover anything unusual
+or surprising? (Hint: Carefully think about the <code>binwidth</code> and make sure
+you try a wide range of values.)
+
+How many diamonds are 0.99 carat? How many are 1 carat? What
+do you think is the cause of the difference?
+
+Compare and contrast <code>coord_cartesian()</code> vs <code><a href="https://rdrr.io/r/graphics/plot.window.html">xlim()</a></code> or <code><a href="https://rdrr.io/r/graphics/plot.window.html">ylim()</a></code> when
+zooming in on a histogram. 
+What happens if you leave <code>binwidth</code> unset?
+What happens if you try and zoom so only half a bar shows?
+
+<h3>Missing values</h3>
+If you’ve encountered unusual values in your dataset, and simply want to move on to the rest of your analysis, you have two options.
+
+Drop the entire row with the strange values:
+
+<code>diamonds2 &lt;- diamonds %>% 
+  <a href="https://rdrr.io/r/stats/filter.html">filter</a>(between(y, 3, 20))</code>
+I don’t recommend this option because just because one measurement
+is invalid, doesn’t mean all the measurements are. 
+Additionally, if you
+have low quality data, by time that you’ve applied this approach to every
+variable you might find that you don’t have any data left!
+
+Instead, I recommend replacing the unusual values with missing values.
+The easiest way to do this is to use <code>mutate()</code> to replace the variable
+with a modified copy. 
+You can use the <code><a href="https://rdrr.io/r/base/ifelse.html">ifelse()</a></code> function to replace
+unusual values with <code>NA</code>:
+
+<code>diamonds2 &lt;- diamonds %>% 
+  mutate(y = <a href="https://rdrr.io/r/base/ifelse.html">ifelse</a>(y &lt; 3 | y > 20, NA, y))</code>
+
+<code><a href="https://rdrr.io/r/base/ifelse.html">ifelse()</a></code> has three arguments. 
+The first argument <code>test</code> should be a logical vector. 
+The result will contain the value of the second argument, <code>yes</code>, when <code>test</code> is <code>TRUE</code>, and the value of the third argument, <code>no</code>, when it is false. 
+Alternatively to ifelse, use <code><a href="https://dplyr.tidyverse.org/reference/case_when.html">dplyr::case_when()</a></code>. 
+<code>case_when()</code> is particularly useful inside mutate when you want to create a new variable that relies on a complex combination of existing variables.
+
+Like R, ggplot2 subscribes to the philosophy that missing values should never silently go missing. 
+It’s not obvious where you should plot missing values, so ggplot2 doesn’t include them in the plot, but it does warn that they’ve been removed:
+
+<code>ggplot(data = diamonds2, mapping = aes(x = x, y = y)) + 
+  geom_point()
+#> Warning: Removed 9 rows containing missing values (geom_point).</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/0567235adf6a020b121e8bbbb68aca6c3ec757e1/4bb0c/eda_files/figure-html/unnamed-chunk-16-1.png">
+To suppress that warning, set <code>na.rm = TRUE</code>:
+
+<code>ggplot(data = diamonds2, mapping = aes(x = x, y = y)) + 
+  geom_point(na.rm = TRUE)</code>
+Other times you want to understand what makes observations with missing values different to observations with recorded values. 
+For example, in <code><a href="https://rdrr.io/pkg/nycflights13/man/flights.html">nycflights13::flights</a></code>, missing values in the <code>dep_time</code> variable indicate that the flight was cancelled. 
+So you might want to compare the scheduled departure times for cancelled and non-cancelled times. 
+You can do this by making a new variable with <code><a href="https://rdrr.io/r/base/NA.html">is.na()</a></code>.
+
+<code>nycflights13::<a href="https://rdrr.io/pkg/nycflights13/man/flights.html">flights</a> %>% 
+  mutate(
+    cancelled = <a href="https://rdrr.io/r/base/NA.html">is.na</a>(dep_time),
+    sched_hour = sched_dep_time %/% 100,
+    sched_min = sched_dep_time %% 100,
+    sched_dep_time = sched_hour + sched_min / 60
+  ) %>% 
+  ggplot(mapping = aes(sched_dep_time)) + 
+    geom_freqpoly(mapping = aes(colour = cancelled), binwidth = 1/4)</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/3b39886be0ed133839461341db7faeb7420c7942/2b3e3/eda_files/figure-html/unnamed-chunk-18-1.png">
+However this plot isn’t great because there are many more non-cancelled flights than cancelled flights. 
+In the next section we’ll explore some techniques for improving this comparison.
+
+<h3>Exercises</h3>
+
+What happens to missing values in a histogram? What happens to missing
+values in a bar chart? Why is there a difference?
+
+What does <code>na.rm = TRUE</code> do in <code><a href="https://rdrr.io/r/base/mean.html">mean()</a></code> and <code><a href="https://rdrr.io/r/base/sum.html">sum()</a></code>?
+
+<h3>Covariation</h3>
+If variation describes the behavior <em>within</em> a variable, covariation describes the behavior <em>between</em> variables. 
+<strong>Covariation</strong> is the tendency for the values of two or more variables to vary together in a related way. 
+The best way to spot covariation is to visualise the relationship between two or more variables. 
+How you do that should again depend on the type of variables involved.
+
+<h3>A categorical and continuous variable</h3>
+It’s common to want to explore the distribution of a continuous variable broken down by a categorical variable, as in the previous frequency polygon. 
+The default appearance of <code>geom_freqpoly()</code> is not that useful for that sort of comparison because the height is given by the count. 
+That means if one of the groups is much smaller than the others, it’s hard to see the differences in shape. 
+For example, let’s explore how the price of a diamond varies with its quality:
+
+<code>ggplot(data = diamonds, mapping = aes(x = price)) + 
+  geom_freqpoly(mapping = aes(colour = cut), binwidth = 500)</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/e1fa3645c501327ca1dd355d1a58e4b5dd5ae395/175af/eda_files/figure-html/unnamed-chunk-19-1.png">
+It’s hard to see the difference in distribution because the overall counts differ so much:
+
+<code>ggplot(diamonds) + 
+  geom_bar(mapping = aes(x = cut))</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/8eef08495f22577681edeb581899317bcae342de/0dc3d/eda_files/figure-html/unnamed-chunk-20-1.png">
+To make the comparison easier we need to swap what is displayed on the y-axis. 
+Instead of displaying count, we’ll display <strong>density</strong>, which is the count standardised so that the area under each frequency polygon is one.
+
+<code>ggplot(data = diamonds, mapping = aes(x = price, y = ..density..)) + 
+  geom_freqpoly(mapping = aes(colour = cut), binwidth = 500)</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/f9865bcc8f3f3b4213c6356cf214f11be754e3c7/4a632/eda_files/figure-html/unnamed-chunk-21-1.png">
+There’s something rather surprising about this plot - it appears that fair diamonds (the lowest quality) have the highest average price! But maybe that’s because frequency polygons are a little hard to interpret - there’s a lot going on in this plot.
+
+Another alternative to display the distribution of a continuous variable broken down by a categorical variable is the boxplot. 
+A <strong>boxplot</strong> is a type of visual shorthand for a distribution of values that is popular among statisticians. 
+Each boxplot consists of:
+
+A box that stretches from the 25th percentile of the distribution to the
+75th percentile, a distance known as the interquartile range (IQR). 
+In the
+middle of the box is a line that displays the median, i.e. 
+50th percentile,
+of the distribution. 
+These three lines give you a sense of the spread of the
+distribution and whether or not the distribution is symmetric about the
+median or skewed to one side.
+
+Visual points that display observations that fall more than 1.5 times the
+IQR from either edge of the box. 
+These outlying points are unusual
+so are plotted individually.
+
+A line (or whisker) that extends from each end of the box and goes to the<br>
+farthest non-outlier point in the distribution.
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/153b9af53b33918353fda9b691ded68cd7f62f51/5b616/images/eda-boxplot.png">
+Let’s take a look at the distribution of price by cut using <code>geom_boxplot()</code>:
+
+<code>ggplot(data = diamonds, mapping = aes(x = cut, y = price)) +
+  geom_boxplot()</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/dd32748293488cb51f7ca92587c4c8745c5855c0/9dcb3/eda_files/figure-html/unnamed-chunk-23-1.png">
+We see much less information about the distribution, but the boxplots are much more compact so we can more easily compare them (and fit more on one plot). 
+It supports the counterintuitive finding that better quality diamonds are cheaper on average! In the exercises, you’ll be challenged to figure out why.
+
+<code>cut</code> is an ordered factor: fair is worse than good, which is worse than very good and so on. 
+Many categorical variables don’t have such an intrinsic order, so you might want to reorder them to make a more informative display. 
+One way to do that is with the <code><a href="https://rdrr.io/r/stats/reorder.factor.html">reorder()</a></code> function.
+
+For example, take the <code>class</code> variable in the <code>mpg</code> dataset. 
+You might be interested to know how highway mileage varies across classes:
+
+<code>ggplot(data = mpg, mapping = aes(x = class, y = hwy)) +
+  geom_boxplot()</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/9d74715c7564aa5b82548d56f35a55ffa8f845ed/463c0/eda_files/figure-html/unnamed-chunk-24-1.png">
+To make the trend easier to see, we can reorder <code>class</code> based on the median value of <code>hwy</code>:
+
+<code>ggplot(data = mpg) +
+  geom_boxplot(mapping = aes(x = <a href="https://rdrr.io/r/stats/reorder.factor.html">reorder</a>(class, hwy, FUN = median), y = hwy))</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/ef621dd0d8904e2091d1ed7db8553d90f89f33a5/29adc/eda_files/figure-html/unnamed-chunk-25-1.png">
+If you have long variable names, <code>geom_boxplot()</code> will work better if you flip it 90°. 
+You can do that with <code>coord_flip()</code>.
+
+<code>ggplot(data = mpg) +
+  geom_boxplot(mapping = aes(x = <a href="https://rdrr.io/r/stats/reorder.factor.html">reorder</a>(class, hwy, FUN = median), y = hwy)) +
+  coord_flip()</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/46d22e252c5cc27cebbd2568030ac57be1e53ef9/f34fd/eda_files/figure-html/unnamed-chunk-26-1.png">
+
+<h4>Exercises</h4>
+
+Use what you’ve learned to improve the visualisation of the departure times
+of cancelled vs. 
+non-cancelled flights.
+
+What variable in the diamonds dataset is most important for predicting
+the price of a diamond? How is that variable correlated with cut?
+Why does the combination of those two relationships lead to lower quality
+diamonds being more expensive?
+
+Install the ggstance package, and create a horizontal boxplot.
+How does this compare to using <code>coord_flip()</code>?
+
+One problem with boxplots is that they were developed in an era of
+much smaller datasets and tend to display a prohibitively large
+number of “outlying values”. 
+One approach to remedy this problem is
+the letter value plot. 
+Install the lvplot package, and try using
+<code>geom_lv()</code> to display the distribution of price vs cut. 
+What
+do you learn? How do you interpret the plots?
+
+Compare and contrast <code>geom_violin()</code> with a facetted <code>geom_histogram()</code>,
+or a coloured <code>geom_freqpoly()</code>. 
+What are the pros and cons of each
+method?
+
+If you have a small dataset, it’s sometimes useful to use <code>geom_jitter()</code>
+to see the relationship between a continuous and categorical variable.
+The ggbeeswarm package provides a number of methods similar to
+<code>geom_jitter()</code>. 
+List them and briefly describe what each one does.
+
+<h3>Two categorical variables</h3>
+To visualise the covariation between categorical variables, you’ll need to count the number of observations for each combination. 
+One way to do that is to rely on the built-in <code>geom_count()</code>:
+
+<code>ggplot(data = diamonds) +
+  geom_count(mapping = aes(x = cut, y = color))</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/7b7010bda735b55f17db8d3afffacd63b833d147/12920/eda_files/figure-html/unnamed-chunk-27-1.png">
+The size of each circle in the plot displays how many observations occurred at each combination of values. 
+Covariation will appear as a strong correlation between specific x values and specific y values.
+
+Another approach is to compute the count with dplyr:
+
+<code>diamonds %>% 
+  count(color, cut)
+#> # A tibble: 35 x 3
+#>   color cut           n
+#>   &lt;ord> &lt;ord>     &lt;int>
+#> 1 D     Fair        163
+#> 2 D     Good        662
+#> 3 D     Very Good  1513
+#> 4 D     Premium    1603
+#> 5 D     Ideal      2834
+#> 6 E     Fair        224
+#> # … with 29 more rows</code>
+Then visualise with <code>geom_tile()</code> and the fill aesthetic:
+
+<code>diamonds %>% 
+  count(color, cut) %>%  
+  ggplot(mapping = aes(x = color, y = cut)) +
+    geom_tile(mapping = aes(fill = n))</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/6076a5cc3814716d72982f5025c9a9fcfe271135/d09ef/eda_files/figure-html/unnamed-chunk-29-1.png">
+If the categorical variables are unordered, you might want to use the seriation package to simultaneously reorder the rows and columns in order to more clearly reveal interesting patterns. 
+For larger plots, you might want to try the d3heatmap or heatmaply packages, which create interactive plots.
+
+<h4>Exercises</h4>
+
+How could you rescale the count dataset above to more clearly show
+the distribution of cut within colour, or colour within cut?
+
+Use <code>geom_tile()</code> together with dplyr to explore how average flight
+delays vary by destination and month of year. 
+What makes the
+plot difficult to read? How could you improve it?
+
+Why is it slightly better to use <code>aes(x = color, y = cut)</code> rather
+than <code>aes(x = cut, y = color)</code> in the example above?
+
+<h3>Two continuous variables</h3>
+You’ve already seen one great way to visualise the covariation between two continuous variables: draw a scatterplot with <code>geom_point()</code>. 
+You can see covariation as a pattern in the points. 
+For example, you can see an exponential relationship between the carat size and price of a diamond.
+
+<code>ggplot(data = diamonds) +
+  geom_point(mapping = aes(x = carat, y = price))</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/fce2e7b428f14530f408483742ecd32043598796/21088/eda_files/figure-html/unnamed-chunk-30-1.png">
+Scatterplots become less useful as the size of your dataset grows, because points begin to overplot, and pile up into areas of uniform black (as above).
+You’ve already seen one way to fix the problem: using the <code>alpha</code> aesthetic to add transparency.
+
+<code>ggplot(data = diamonds) + 
+  geom_point(mapping = aes(x = carat, y = price), alpha = 1 / 100)</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/fec521e4f29a7d938da5f243cf3e1cd8d8a514ec/344ef/eda_files/figure-html/unnamed-chunk-31-1.png">
+But using transparency can be challenging for very large datasets. 
+Another solution is to use bin. 
+Previously you used <code>geom_histogram()</code> and <code>geom_freqpoly()</code> to bin in one dimension. 
+Now you’ll learn how to use <code>geom_bin2d()</code> and <code>geom_hex()</code> to bin in two dimensions.
+
+<code>geom_bin2d()</code> and <code>geom_hex()</code> divide the coordinate plane into 2d bins and then use a fill color to display how many points fall into each bin. 
+<code>geom_bin2d()</code> creates rectangular bins. 
+<code>geom_hex()</code> creates hexagonal bins. 
+You will need to install the hexbin package to use <code>geom_hex()</code>.
+
+<code>ggplot(data = smaller) +
+  geom_bin2d(mapping = aes(x = carat, y = price))
+
+# install.packages("hexbin")
+ggplot(data = smaller) +
+  geom_hex(mapping = aes(x = carat, y = price))</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/bd8faa5a44198b42b39eb84a94a8aa9090723aec/9a45f/eda_files/figure-html/unnamed-chunk-32-1.png">
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/48c515b1c463019bf93e32b648beeea37d848911/dc464/eda_files/figure-html/unnamed-chunk-32-2.png">
+
+Another option is to bin one continuous variable so it acts like a categorical variable. 
+Then you can use one of the techniques for visualising the combination of a categorical and a continuous variable that you learned about. 
+For example, you could bin <code>carat</code> and then for each group, display a boxplot:
+
+<code>ggplot(data = smaller, mapping = aes(x = carat, y = price)) + 
+  geom_boxplot(mapping = aes(group = cut_width(carat, 0.1)))</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/6a7c21b0a75c6cd54a707e6be1190559e1780dfe/97fb8/eda_files/figure-html/unnamed-chunk-33-1.png">
+<code>cut_width(x, width)</code>, as used above, divides <code>x</code> into bins of width <code>width</code>. 
+By default, boxplots look roughly the same (apart from number of outliers) regardless of how many observations there are, so it’s difficult to tell that each boxplot summarises a different number of points. 
+One way to show that is to make the width of the boxplot proportional to the number of points with <code>varwidth = TRUE</code>.
+
+Another approach is to display approximately the same number of points in each bin. 
+That’s the job of <code>cut_number()</code>:
+
+<code>ggplot(data = smaller, mapping = aes(x = carat, y = price)) + 
+  geom_boxplot(mapping = aes(group = cut_number(carat, 20)))</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/85b4b0538dc988dcf6ad4fb5c64ef5a45d286ea5/82b02/eda_files/figure-html/unnamed-chunk-34-1.png">
+
+<h4>Exercises</h4>
+
+Instead of summarising the conditional distribution with a boxplot, you
+could use a frequency polygon. 
+What do you need to consider when using
+<code>cut_width()</code> vs <code>cut_number()</code>? How does that impact a visualisation of
+the 2d distribution of <code>carat</code> and <code>price</code>?
+
+Visualise the distribution of carat, partitioned by price.
+
+How does the price distribution of very large diamonds compare to small
+diamonds? Is it as you expect, or does it surprise you?
+
+Combine two of the techniques you’ve learned to visualise the
+combined distribution of cut, carat, and price.
+
+Two dimensional plots reveal outliers that are not visible in one
+dimensional plots. 
+For example, some points in the plot below have an
+unusual combination of <code>x</code> and <code>y</code> values, which makes the points outliers
+even though their <code>x</code> and <code>y</code> values appear normal when examined separately.
+
+<code>ggplot(data = diamonds) +
+  geom_point(mapping = aes(x = x, y = y)) +
+  coord_cartesian(xlim = <a href="https://rdrr.io/r/base/c.html">c</a>(4, 11), ylim = <a href="https://rdrr.io/r/base/c.html">c</a>(4, 11))</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/b75ede65f85da37195fc8d31cae5f70efcd5e0b0/b8a4a/eda_files/figure-html/unnamed-chunk-35-1.png">
+Why is a scatterplot a better display than a binned plot for this case?
+
+<h3>Patterns and models</h3>
+Patterns in your data provide clues about relationships. 
+If a systematic relationship exists between two variables it will appear as a pattern in the data. 
+If you spot a pattern, ask yourself:
+
+Could this pattern be due to coincidence (i.e. 
+random chance)?
+
+How can you describe the relationship implied by the pattern?
+
+How strong is the relationship implied by the pattern?
+
+What other variables might affect the relationship?
+
+Does the relationship change if you look at individual subgroups of the data?
+
+A scatterplot of Old Faithful eruption lengths versus the wait time between eruptions shows a pattern: longer wait times are associated with longer eruptions. 
+The scatterplot also displays the two clusters that we noticed above.
+
+<code>ggplot(data = faithful) + 
+  geom_point(mapping = aes(x = eruptions, y = waiting))</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/7427e8aa85fc6150d830776fca343b9d39f239bc/35c23/eda_files/figure-html/unnamed-chunk-36-1.png">
+Patterns provide one of the most useful tools for data scientists because they reveal covariation. 
+If you think of variation as a phenomenon that creates uncertainty, covariation is a phenomenon that reduces it. 
+If two variables covary, you can use the values of one variable to make better predictions about the values of the second. 
+If the covariation is due to a causal relationship (a special case), then you can use the value of one variable to control the value of the second.
+
+Models are a tool for extracting patterns out of data. 
+For example, consider the diamonds data. 
+It’s hard to understand the relationship between cut and price, because cut and carat, and carat and price are tightly related. 
+It’s possible to use a model to remove the very strong relationship between price and carat so we can explore the subtleties that remain. 
+The following code fits a model that predicts <code>price</code> from <code>carat</code> and then computes the residuals (the difference between the predicted value and the actual value). 
+The residuals give us a view of the price of the diamond, once the effect of carat has been removed.
+
+<code><a href="https://rdrr.io/r/base/library.html">library</a>(<a href="https://modelr.tidyverse.org">modelr</a>)
+
+mod &lt;- <a href="https://rdrr.io/r/stats/lm.html">lm</a>(<a href="https://rdrr.io/r/base/Log.html">log</a>(price) ~ <a href="https://rdrr.io/r/base/Log.html">log</a>(carat), data = diamonds)
+
+diamonds2 &lt;- diamonds %>% 
+  <a href="https://modelr.tidyverse.org/reference/add_residuals.html">add_residuals</a>(mod) %>% 
+  mutate(resid = <a href="https://rdrr.io/r/base/Log.html">exp</a>(resid))
+
+ggplot(data = diamonds2) + 
+  geom_point(mapping = aes(x = carat, y = resid))</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/0db11cf59fcd403141ac4a164f4163141c9ecec0/0d9cf/eda_files/figure-html/unnamed-chunk-37-1.png">
+Once you’ve removed the strong relationship between carat and price, you can see what you expect in the relationship between cut and price: relative to their size, better quality diamonds are more expensive.
+
+<code>ggplot(data = diamonds2) + 
+  geom_boxplot(mapping = aes(x = cut, y = resid))</code>
+
+<img class="lazy" data-src="https://d33wubrfki0l68.cloudfront.net/7bd23f88dac60d143f81be465a23a687fadad9fb/de235/eda_files/figure-html/unnamed-chunk-38-1.png">
+You’ll learn how models, and the modelr package, work in the final part of the book, <a href="model-intro.html#model-intro">model</a>. 
+We’re saving modelling for later because understanding what models are and how they work is easiest once you have tools of data wrangling and programming in hand.
+
+<h3>ggplot2 calls</h3>
+As we move on from these introductory chapters, we’ll transition to a more concise expression of ggplot2 code. 
+So far we’ve been very explicit, which is helpful when you are learning:
+
+<code>ggplot(data = faithful, mapping = aes(x = eruptions)) + 
+  geom_freqpoly(binwidth = 0.25)</code>
+Typically, the first one or two arguments to a function are so important that you should know them by heart. 
+The first two arguments to <code>ggplot()</code> are <code>data</code> and <code>mapping</code>, and the first two arguments to <code>aes()</code> are <code>x</code> and <code>y</code>. 
+In the remainder of the book, we won’t supply those names. 
+That saves typing, and, by reducing the amount of boilerplate, makes it easier to see what’s different between plots. 
+That’s a really important programming concern that we’ll come back in <a href="functions.html#functions">functions</a>.
+
+Rewriting the previous plot more concisely yields:
+
+<code>ggplot(faithful, aes(eruptions)) + 
+  geom_freqpoly(binwidth = 0.25)</code>
+Sometimes we’ll turn the end of a pipeline of data transformation into a plot. 
+Watch for the transition from <code><a href="https://modelr.tidyverse.org/reference/pipe.html">%>%</a></code> to <code><a href="https://rdrr.io/r/base/Arithmetic.html">+</a></code>. 
+I wish this transition wasn’t necessary but unfortunately ggplot2 was created before the pipe was discovered.
+
+<code>diamonds %>% 
+  count(cut, clarity) %>% 
+  ggplot(aes(clarity, cut, fill = n)) + 
+    geom_tile()</code>
+
+<h3>Learning more</h3>
+If you want to learn more about the mechanics of ggplot2, I’d highly recommend grabbing a copy of the ggplot2 book: <a href="https://amzn.com/331924275X">https://amzn.com/331924275X</a>. 
+It’s been recently updated, so it includes dplyr and tidyr code, and has much more space to explore all the facets of visualisation. 
+Unfortunately the book isn’t generally available for free, but if you have a connection to a university you can probably get an electronic version for free through SpringerLink.
+
+Another useful resource is the <a href="https://amzn.com/1449316956"><em>R Graphics Cookbook</em></a> by Winston Chang. 
+Much of the contents are available online at <a href="http://www.cookbook-r.com/Graphs/">http://www.cookbook-r.com/Graphs/</a>.
+
+I also recommend <a href="https://amzn.com/1498715230"><em>Graphical Data Analysis with R</em></a>, by Antony Unwin. 
+This is a book-length treatment similar to the material covered in this chapter, but has the space to go into much greater depth.
+
+<h2>Tibbles</h2>
+Tibbles are data.frames that are lazy and surly: they do less (i.e. they don’t change variable names or types, and don’t do partial matching) and complain more (e.g. when a variable does not exist). 
+
+Tibbles also have an enhanced print() method which makes them easier to use with large datasets containing complex objects.
+
+Here we will describe the <strong>tibble</strong> package, which provides opinionated data frames that make working in the tidyverse a little easier. 
+In most places, I’ll use the term tibble and data frame interchangeably; when I want to draw particular attention to R’s built-in data frame, I’ll call them <code>data.frame</code>s.
+
+If this chapter leaves you wanting to learn more about tibbles, you might enjoy <code>vignette("tibble")</code>.
+
+<h3>Prerequisites</h3>
+In this chapter we’ll explore the <strong>tibble</strong> package, part of the core tidyverse.
+
+<code><a href="https://rdrr.io/r/base/library.html">library</a>(<a href="http://tidyverse.tidyverse.org">tidyverse</a>)</code>
+
+<h3>Creating tibbles</h3>
+Almost all of the functions that you’ll use in this book produce tibbles, as tibbles are one of the unifying features of the tidyverse. 
+Most other R packages use regular data frames, so you might want to coerce a data frame to a tibble. 
+You can do that with <code>as_tibble()</code>:
+
+<code>as_tibble(iris)
+#> # A tibble: 150 x 5
+#>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+#>          &lt;dbl>       &lt;dbl>        &lt;dbl>       &lt;dbl> &lt;fct>  
+#> 1          5.1         3.5          1.4         0.2 setosa 
+#> 2          4.9         3            1.4         0.2 setosa 
+#> 3          4.7         3.2          1.3         0.2 setosa 
+#> 4          4.6         3.1          1.5         0.2 setosa 
+#> 5          5           3.6          1.4         0.2 setosa 
+#> 6          5.4         3.9          1.7         0.4 setosa 
+#> # … with 144 more rows</code>
+
+You can create a new tibble from individual vectors with <code>tibble()</code>. 
+<code>tibble()</code> will automatically recycle inputs of length 1, and allows you to refer to variables that you just created, as shown below.
+
+<code>tibble(
+  x = 1:5, 
+  y = 1, 
+  z = x ^ 2 + y
+)
+#> # A tibble: 5 x 3
+#>       x     y     z
+#>   &lt;int> &lt;dbl> &lt;dbl>
+#> 1     1     1     2
+#> 2     2     1     5
+#> 3     3     1    10
+#> 4     4     1    17
+#> 5     5     1    26</code>
+
+If you’re already familiar with <code><a href="https://rdrr.io/r/base/data.frame.html">data.frame()</a></code>, note that <code>tibble()</code> does much less: it never changes the type of the inputs (e.g. 
+it never converts strings to factors!), it never changes the names of variables, and it never creates row names.
+
+It’s possible for a tibble to have column names that are not valid R variable names, aka <strong>non-syntactic</strong> names. 
+For example, they might not start with a letter, or they might contain unusual characters like a space. 
+To refer to these variables, you need to surround them with backticks, <code>`</code>:
+
+<code>tb &lt;- tibble(
+  `:)` = "smile", 
+  ` ` = "space",
+  `2000` = "number"
+)
+tb
+#> # A tibble: 1 x 3
+#>   `:)`  ` `   `2000`
+#>   &lt;chr> &lt;chr> &lt;chr> 
+#> 1 smile space number</code>
+
+You’ll also need the backticks when working with these variables in other packages, like ggplot2, dplyr, and tidyr.
+
+Another way to create a tibble is with <code>tribble()</code>, short for <strong>tr</strong>ansposed tibble. 
+<code>tribble()</code> is customised for data entry in code: column headings are defined by formulas (i.e. 
+they start with <code><a href="https://rdrr.io/r/base/tilde.html">~</a></code>), and entries are separated by commas. 
+This makes it possible to lay out small amounts of data in easy to read form.
+
+<code>tribble(
+  ~x, ~y, ~z,
+  #--|--|----
+  "a", 2, 3.6,
+  "b", 1, 8.5
+)
+#> # A tibble: 2 x 3
+#>   x         y     z
+#>   &lt;chr> &lt;dbl> &lt;dbl>
+#> 1 a         2   3.6
+#> 2 b         1   8.5</code>
+
+I often add a comment (the line starting with <code>#</code>), to make it really clear where the header is.
+
+<h3>Tibbles vs. 
+data.frame</h3>
+There are two main differences in the usage of a tibble vs. 
+a classic <code>data.frame</code>: printing and subsetting.
+
+<h3>Printing</h3>
+Tibbles have a refined print method that shows only the first 10 rows, and all the columns that fit on screen. 
+This makes it much easier to work with large data. 
+In addition to its name, each column reports its type, a nice feature borrowed from <code><a href="https://rdrr.io/r/utils/str.html">str()</a></code>:
+
+<code>tibble(
+  a = lubridate::<a href="http://lubridate.tidyverse.org/reference/now.html">now</a>() + <a href="https://rdrr.io/r/stats/Uniform.html">runif</a>(1e3) * 86400,
+  b = lubridate::<a href="http://lubridate.tidyverse.org/reference/now.html">today</a>() + <a href="https://rdrr.io/r/stats/Uniform.html">runif</a>(1e3) * 30,
+  c = 1:1e3,
+  d = <a href="https://rdrr.io/r/stats/Uniform.html">runif</a>(1e3),
+  e = <a href="https://rdrr.io/r/base/sample.html">sample</a>(letters, 1e3, replace = TRUE)
+)
+#> # A tibble: 1,000 x 5
+#>   a                   b              c     d e    
+#>   &lt;dttm>              &lt;date>     &lt;int> &lt;dbl> &lt;chr>
+#> 1 2020-10-09 13:55:17 2020-10-16     1 0.368 n    
+#> 2 2020-10-10 08:00:26 2020-10-21     2 0.612 l    
+#> 3 2020-10-10 02:24:06 2020-10-31     3 0.415 p    
+#> 4 2020-10-09 15:45:23 2020-10-30     4 0.212 m    
+#> 5 2020-10-09 12:09:39 2020-10-27     5 0.733 i    
+#> 6 2020-10-09 23:10:37 2020-10-23     6 0.460 n    
+#> # … with 994 more rows</code>
+
+Tibbles are designed so that you don’t accidentally overwhelm your console when you print large data frames. 
+But sometimes you need more output than the default display. 
+There are a few options that can help.
+
+First, you can explicitly <code><a href="https://rdrr.io/r/base/print.html">print()</a></code> the data frame and control the number of rows (<code>n</code>) and the <code>width</code> of the display. 
+<code>width = Inf</code> will display all columns:
+
+<code>nycflights13::<a href="https://rdrr.io/pkg/nycflights13/man/flights.html">flights</a> %>% 
+  <a href="https://rdrr.io/r/base/print.html">print</a>(n = 10, width = Inf)</code>
+
+You can also control the default print behaviour by setting options:
+
+<ul>
+<code><a href="https://rdrr.io/r/base/options.html">options(tibble.print_max = n, tibble.print_min = m)</a></code>: if more than <code>n</code>
+rows, print only <code>m</code> rows. 
+Use <code><a href="https://rdrr.io/r/base/options.html">options(tibble.print_min = Inf)</a></code> to always show all rows.
+
+Use <code><a href="https://rdrr.io/r/base/options.html">options(tibble.width = Inf)</a></code> to always print all columns, regardless of the width of the screen.
+
+</ul>
+You can see a complete list of options by looking at the package help with <code>package?tibble</code>.
+
+A final option is to use RStudio’s built-in data viewer to get a scrollable view of the complete dataset. 
+This is also often useful at the end of a long chain of manipulations.
+
+<code>nycflights13::<a href="https://rdrr.io/pkg/nycflights13/man/flights.html">flights</a> %>% 
+  <a href="https://rdrr.io/r/utils/View.html">View</a>()</code>
+
+<h3>Subsetting</h3>
+So far all the tools you’ve learned have worked with complete data frames. 
+If you want to pull out a single variable, you need some new tools, <code><a href="https://rdrr.io/r/base/Extract.html">$</a></code> and <code><a href="https://rdrr.io/r/base/Extract.html">[[</a></code>. 
+<code><a href="https://rdrr.io/r/base/Extract.html">[[</a></code> can extract by name or position; <code><a href="https://rdrr.io/r/base/Extract.html">$</a></code> only extracts by name but is a little less typing.
+
+<code>df &lt;- tibble(
+  x = <a href="https://rdrr.io/r/stats/Uniform.html">runif</a>(5),
+  y = <a href="https://rdrr.io/r/stats/Normal.html">rnorm</a>(5)
+)
+
+# Extract by name
+df$x
+#> [1] 0.73296674 0.23436542 0.66035540 0.03285612 0.46049161
+df[["x"]]
+#> [1] 0.73296674 0.23436542 0.66035540 0.03285612 0.46049161
+
+# Extract by position
+df[[1]]
+#> [1] 0.73296674 0.23436542 0.66035540 0.03285612 0.46049161</code>
+
+To use these in a pipe, you’ll need to use the special placeholder <code>.</code>:
+
+<code>df %>% .$x
+#> [1] 0.73296674 0.23436542 0.66035540 0.03285612 0.46049161
+df %>% .[["x"]]
+#> [1] 0.73296674 0.23436542 0.66035540 0.03285612 0.46049161</code>
+
+Compared to a <code>data.frame</code>, tibbles are more strict: they never do partial matching, and they will generate a warning if the column you are trying to access does not exist.
+
+<h3>Interacting with older code</h3>
+Some older functions don’t work with tibbles. 
+If you encounter one of these functions, use <code><a href="https://rdrr.io/r/base/as.data.frame.html">as.data.frame()</a></code> to turn a tibble back to a <code>data.frame</code>:
+
+<code><a href="https://rdrr.io/r/base/class.html">class</a>(<a href="https://rdrr.io/r/base/as.data.frame.html">as.data.frame</a>(tb))
+#> [1] "data.frame"</code>
+
+The main reason that some older functions don’t work with tibble is the <code><a href="https://rdrr.io/r/base/Extract.html">[</a></code> function. 
+We don’t use <code><a href="https://rdrr.io/r/base/Extract.html">[</a></code> much in this book because <code><a href="https://dplyr.tidyverse.org/reference/filter.html">dplyr::filter()</a></code> and <code><a href="https://dplyr.tidyverse.org/reference/select.html">dplyr::select()</a></code> allow you to solve the same problems with clearer code (but you will learn a little about it in <a href="vectors.html#vector-subsetting">vector subsetting</a>). 
+With base R data frames, <code><a href="https://rdrr.io/r/base/Extract.html">[</a></code> sometimes returns a data frame, and sometimes returns a vector. 
+With tibbles, <code><a href="https://rdrr.io/r/base/Extract.html">[</a></code> always returns another tibble.
+
+<h3>Exercises</h3>
+<ol style="list-style-type: decimal">
+How can you tell if an object is a tibble? (Hint: try printing <code>mtcars</code>,
+which is a regular data frame).
+
+Compare and contrast the following operations on a <code>data.frame</code> and equivalent tibble. 
+What is different? Why might the default data frame behaviours cause you frustration?
+
+<code>df &lt;- <a href="https://rdrr.io/r/base/data.frame.html">data.frame</a>(abc = 1, xyz = "a")
+df$x
+df[, "xyz"]
+df[, <a href="https://rdrr.io/r/base/c.html">c</a>("abc", "xyz")]</code>
+
+If you have the name of a variable stored in an object, e.g. 
+<code>var &lt;- "mpg"</code>,
+how can you extract the reference variable from a tibble?
+
+Practice referring to non-syntactic names in the following data frame by:
+
+<ol style="list-style-type: decimal">
+Extracting the variable called <code>1</code>.
+
+Plotting a scatterplot of <code>1</code> vs <code>2</code>.
+
+Creating a new column called <code>3</code> which is <code>2</code> divided by <code>1</code>.
+
+Renaming the columns to <code>one</code>, <code>two</code> and <code>three</code>.
+
+<code>annoying &lt;- tibble(
+  `1` = 1:10,
+  `2` = `1` * 2 + <a href="https://rdrr.io/r/stats/Normal.html">rnorm</a>(<a href="https://rdrr.io/r/base/length.html">length</a>(`1`))
+)</code>
+
+What does <code><a href="https://tibble.tidyverse.org/reference/enframe.html">tibble::enframe()</a></code> do? When might you use it?
+
+What option controls how many additional column names are printed at the footer of a tibble?
+
+<h2>differences in histograms</h2>
+ggplot(data = diamonds) + geom_bar(mapping = aes(x = cut))
+
+barplot(table(diamonds$cut))
+barplot(prop.table(table(diamonds$cut)))
+
+hist(table(diamonds$cut))
+hist(prop.table(table(diamonds$cut)))
+
+<h2>Count frequency</h2>
+diamonds %>%  count(cut)
+table(diamonds$cut)
+tabulate(diamonds$cut)
+
+library("plyr")
+count(diamonds, 'cut')
 
 
 
