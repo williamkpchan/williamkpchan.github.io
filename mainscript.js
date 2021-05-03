@@ -55,6 +55,9 @@ function chkKey() {
   else if(testkey == 'z'){showTenYear();}
   else if(testkey == 'Z'){window.open("LibDocs/minBor.html", "_blank");}
 
+  else if(testkey == '"'){window.open("LibDocs/mline11Minutechart.html");}
+  else if(testkey == "'"){window.open("LibDocs/mline11chart.html");}
+
   else if(testkey == ','){window.open("LibDocs/mlinechart.html");}
   else if(testkey == '.'){window.open("LibDocs/mlineMinutechart.html");}
   else if(testkey == '/'){window.open("LibDocs/mlineMinutecharttest.html");}
@@ -81,6 +84,9 @@ function chkOtherKeys(testkey) {
   else if(testkey == 'x'){window.open("https://wx.qq.com/");}
   else if(testkey == 'X'){window.open("D:/Dropbox/Public/LibDocs/Random Charts.html");}
   else if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
+  else if(testkey == '"'){window.open("mline11Minutechart.html");}
+  else if(testkey == "'"){window.open("mline11chart.html");}
+
 }
 function getChar(event) {
   if (event.which!=0 && event.charCode!=0) {
