@@ -1,0 +1,2273 @@
+<base target="_blank"><html><head><title>common R snippets</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="https://williamkpchan.github.io/lazyload.min.js"></script>
+<script src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/commonfunctions.js"></script>
+<script>
+  var showTopicNumber = true;
+  var bookid = "common R snippets"
+  var markerName = "h2, h3"
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:24px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>common R snippets</h1>
+<a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a><br><br>
+<div id="toc"></div></center><br><br>
+<div id="mustWatch"><center><span class="red">MustWatch</span></center><br></div>
+<pre><br><br>
+
+
+
+<h3>Vectors, lists, matrices, data frames</h3>
+
+# Goals: A first look at R objects - vectors, lists, matrices, data frames.
+
+# To make vectors "x" "y" "year" and "names"
+x &lt;- c(2,3,7,9)
+y &lt;- c(9,7,3,2)
+year &lt;- 1990:1993
+names &lt;- c("payal", "shraddha", "kritika", "itida")
+# Accessing the 1st and last elements of y --
+y[1]
+y[length(y)]
+
+# To make a list "person" --
+person &lt;- list(name="payal", x=2, y=9, year=1990)
+person
+# Accessing things inside a list --
+person$name
+person$x
+
+# To make a matrix, pasting together the columns "year" "x" and "y"
+# The verb cbind() stands for "column bind"
+cbind(year, x, y)
+
+# To make a "data frame", which is a list of vectors of the same length --
+D &lt;- data.frame(names, year, x, y)
+nrow(D)
+# Accessing one of these vectors
+D$names
+# Accessing the last element of this vector
+D$names[nrow(D)]
+# Or equally,
+D$names[length(D$names)]
+
+<h3>Sorting</h3>
+
+# Goal: To do sorting.
+#
+# The approach here needs to be explained. If `i' is a vector of
+# integers, then the data frame D[i,] picks up rows from D based
+# on the values found in `i'.
+#
+# The order() function makes an integer vector which is a correct
+# ordering for the purpose of sorting.
+
+D &lt;- data.frame(x=c(1,2,3,1), y=c(7,19,2,2))
+D
+
+# Sort on x
+indexes &lt;- order(D$x)
+D[indexes,]
+
+# Print out sorted dataset, sorted in reverse by y
+D[rev(order(D$y)),]
+
+<h3>Prices and returns</h3>
+
+# Goal: Prices and returns
+
+# I like to multiply returns by 100 so as to have "units in percent".
+# In other words, I like it for 5% to be a value like 5 rather than 0.05.
+
+##
+# I. Simulate random-walk prices, switch between prices &amp; returns.
+##
+# Simulate a time-series of PRICES drawn from a random walk
+# where one-period returns are i.i.d. N(mu, sigma^2).
+ranrw &lt;- function(mu, sigma, p0=100, T=100) {
+  cumprod(c(p0, 1 + (rnorm(n=T, mean=mu, sd=sigma)/100)))
+}
+prices2returns &lt;- function(x) {
+  100*diff(log(x))
+}
+returns2prices &lt;- function(r, p0=100) {
+  c(p0, p0 * exp(cumsum(r/100)))
+}
+
+cat("Simulate 25 points from a random walk starting at 1500 --\n")
+p &lt;- ranrw(0.05, 1.4, p0=1500, T=25)
+    # gives you a 25-long series, starting with a price of 1500, where
+    # one-period returns are N(0.05,1.4^2) percent.
+print(p)
+
+cat("Convert to returns--\n")
+r &lt;- prices2returns(p)
+print(r)
+
+cat("Go back from returns to prices --\n")
+goback &lt;- returns2prices(r, 1500)
+print(goback)
+
+##
+# II. Plenty of powerful things you can do with returns....
+##
+summary(r); sd(r)                       # summary statistics
+plot(density(r))                        # kernel density plot
+acf(r)                                  # Autocorrelation function
+ar(r)                                   # Estimate a AIC-minimising AR model
+Box.test(r, lag=2, type="Ljung")        # Box-Ljung test
+library(tseries)
+runs.test(factor(sign(r)))              # Runs test
+bds.test(r)                             # BDS test.
+
+##
+# III. Visualisation and the random walk
+##
+# I want to obtain intuition into what kinds of price series can happen,
+# given a starting price, a mean return, and a given standard deviation.
+# This function simulates out 10000 days of a price time-series at a time,
+# and waits for you to click in the graph window, after which a second
+# series is painted, and so on. Make the graph window very big and
+# sit back and admire.
+# The point is to eyeball many series and thus obtain some intuition
+# into what the random walk does.
+visualisation &lt;- function(p0, s, mu, labelstring) {
+  N &lt;- 10000
+  x &lt;- (1:(N+1))/250                        # Unit of years
+  while (1) {
+    plot(x, ranrw(mu, s, p0, N), ylab="Level", log="y",
+         type="l", col="red", xlab="Time (years)",
+         main=paste("40 years of a process much like", labelstring))
+    grid()
+    z=locator(1)
+  }
+}
+
+# Nifty -- assuming sigma of 1.4% a day and E(returns) of 13% a year
+visualisation(2600, 1.4, 13/250, "Nifty")
+
+# The numerical values here are used to think about what the INR/USD
+# exchange rate would have looked like if it started from 31.37, had
+# a mean depreciation of 5% per year, and had the daily vol of a floating
+# exchange rate like EUR/USD.
+visualisation(31.37, 0.7, 5/365, "INR/USD (NOT!) with daily sigma=0.7")
+# This is of course not like the INR/USD series in the real world -
+# which is neither a random walk nor does it have a vol of 0.7% a day.
+
+# The numerical values here are used to think about what the USD/EUR
+# exchange rate, starting with 1, having no drift, and having the observed
+# daily vol of 0.7. (This is about right).
+visualisation(1, 0.7, 0, "USD/EUR with no drift")
+
+##
+# IV. A monte carlo experiment about the runs test
+##
+# Measure the effectiveness of the runs test when faced with an
+# AR(1) process of length 100 with a coeff of 0.1
+set.seed(101)
+one.ts &lt;- function() {arima.sim(list(order = c(1,0,0), ar = 0.1), n=100)}
+table(replicate(1000, runs.test(factor(sign(one.ts())))$p.value &lt; 0.05))
+# We find that the runs test throws up a prob value of below 0.05
+# for 91 out of 1000 experiments.
+# Wow! :-)
+# To understand this, you need to look up the man pages of:
+#    set.seed, arima.sim, sign, factor, runs.test, replicate, table.
+# e.g. say ?replicate
+
+<h3>Writing functions</h3>
+
+# Goals: To write functions
+#        To write functions that send back multiple objects.
+
+# FIRST LEARN ABOUT LISTS --
+X = list(height=5.4, weight=54)
+print("Use default printing --")
+print(X)
+print("Accessing individual elements --")
+cat("Your height is ", X$height, " and your weight is ", X$weight, "\n")
+
+# FUNCTIONS --
+square &lt;- function(x) {
+  return(x*x)
+}
+cat("The square of 3 is ", square(3), "\n")
+
+                 # default value of the arg is set to 5.
+cube &lt;- function(x=5) {
+  return(x*x*x);
+}
+cat("Calling cube with 2 : ", cube(2), "\n")    # will give 2^3
+cat("Calling cube        : ", cube(), "\n")     # will default to 5^3.
+
+# LEARN ABOUT FUNCTIONS THAT RETURN MULTIPLE OBJECTS --
+powers &lt;- function(x) {
+  parcel = list(x2=x*x, x3=x*x*x, x4=x*x*x*x);
+  return(parcel);
+}
+
+X = powers(3);
+print("Showing powers of 3 --"); print(X);
+
+# WRITING THIS COMPACTLY (4 lines instead of 7)
+
+powerful &lt;- function(x) {
+  return(list(x2=x*x, x3=x*x*x, x4=x*x*x*x));
+}
+print("Showing powers of 3 --"); print(powerful(3));
+
+# In R, the last expression in a function is, by default, what is
+# returned. So you could equally just say:
+powerful &lt;- function(x) {list(x2=x*x, x3=x*x*x, x4=x*x*x*x)}
+
+<h3>Amazing R vector notation</h3>
+
+# Goal: The amazing R vector notation.
+
+cat("EXAMPLE 1: sin(x) for a vector --\n")
+# Suppose you have a vector x --
+x = c(0.1,0.6,1.0,1.5)
+
+# The bad way --
+n = length(x)
+r = numeric(n)
+for (i in 1:n) {
+  r[i] = sin(x[i])
+}
+print(r)
+
+# The good way -- don't use loops --
+print(sin(x))
+
+cat("\n\nEXAMPLE 2: Compute the mean of every row of a matrix --\n")
+# Here's another example. It isn't really about R; it's about thinking in
+# matrix notation. But still.
+# Let me setup a matrix --
+N=4; M=100;
+r = matrix(runif(N*M), N, M)
+
+# So I face a NxM matrix
+#               [r11 r12 ... r1N]
+#               [r21 r22 ... r2N]
+#               [r32 r32 ... r3N]
+# My goal: each column needs to be reduced to a mean.
+
+# Method 1 uses loops:
+mean1 = numeric(M)
+for (i in 1:M) {
+  mean1[i] = mean(r[,i])
+}
+
+# Alternatively, just say:
+mean2 = rep(1/N, N) %*% r               # Pretty!
+
+# The two answers are the same --
+all.equal(mean1,mean2[,])
+#
+# As an aside, I should say that you can do this directly by using
+# the rowMeans() function. But the above is more about pedagogy rather
+# than showing you how to get rowmeans.
+
+cat("\n\nEXAMPLE 3: Nelson-Siegel yield curve\n")
+# Write this asif you're dealing with scalars --
+# Nelson Siegel function
+nsz &lt;- function(b0, b1, b2, tau, t) {
+  tmp = t/tau
+  tmp2 = exp(-tmp)
+  return(b0 + ((b1+b2)*(1-tmp2)/(tmp)) - (b2*tmp2))
+}
+
+timepoints &lt;- c(0.01,1:5)
+
+# The bad way:
+z &lt;- numeric(length(timepoints))
+for (i in 1:length(timepoints)) {
+  z[i] &lt;- nsz(14.084,-3.4107,0.0015,1.8832,timepoints[i])
+}
+print(z)
+
+# The R way --
+print(z &lt;- nsz(14.084,-3.4107,0.0015,1.8832,timepoints))
+
+cat("\n\nEXAMPLE 3: Making the NPV of a bond--\n")
+# You know the bad way - sum over all cashflows, NPVing each.
+# Now look at the R way.
+C = rep(100, 6)
+nsz(14.084,-3.4107,0.0015,1.8832,timepoints)        # Print interest rates
+C/((1.05)^timepoints)                               # Print cashflows discounted &#64; 5%
+C/((1 + (0.01*nsz(14.084,-3.4107,0.0015,1.8832,timepoints))^timepoints)) # Using NS instead of 5%
+# NPV in two different ways --
+C %*% (1 + (0.01*nsz(14.084,-3.4107,0.0015,1.8832,timepoints)))^-timepoints
+sum(C * (1 + (0.01*nsz(14.084,-3.4107,0.0015,1.8832,timepoints)))^-timepoints)
+# You can drop back to a flat yield curve at 5% easily --
+sum(C * 1.05^-timepoints)
+
+# Make a function for NPV --
+npv &lt;- function(C, timepoints, r) {
+  return(sum(C * (1 + (0.01*r))^-timepoints))
+}
+npv(C, timepoints, 5)
+
+# Bottom line: Here's how you make the NPV of a bond with cashflows C
+# at timepoints timepoints when the zero curve is a Nelson-Siegel curve --
+npv(C, timepoints, nsz(14.084,-3.4107,0.0015,1.8832,timepoints))
+# Wow!
+
+# ---------------------------------------------------------------------------
+# Elegant vector notation is amazingly fast (in addition to being beautiful)
+N &lt;- 1e5
+x &lt;- runif(N, -3,3)
+y &lt;- runif(N)
+
+method1 &lt;- function(x,y) {
+  tmp &lt;- NULL
+  for (i in 1:N) {
+    if (x[i] &lt; 0) tmp &lt;- c(tmp, y[i])
+  }
+  tmp
+}
+
+method2 &lt;- function(x,y) {
+  y[x &lt; 0]
+}
+
+s1 &lt;- system.time(ans1 &lt;- method1(x,y))
+s2 &lt;- system.time(ans2 &lt;- method2(x,y))
+all.equal(ans1,ans2)
+s1/s2           # On my machine it's 2000x faster
+
+<!--HTML generated by highlight 2.4.8, http://www.andre-simon.de/-->
+
+<h3>Amazing R indexing notation</h3>
+
+# Goal: To show amazing R indexing notation, and the use of is.na()
+
+x &lt;- c(2,7,9,2,NA,5)                 # An example vector to play with.
+
+# Give me elems 1 to 3 --
+x[1:3]
+
+# Give me all but elem 1 --
+x[-1]
+
+# Odd numbered elements --
+indexes &lt;- seq(1,6,2)
+x[indexes]
+# or, more compactly,
+x[seq(1,6,2)]
+
+# Access elements by specifying "on" / "off" through booleans --
+require &lt;- c(TRUE,TRUE,FALSE,FALSE,FALSE,FALSE)
+x[require]
+# Short vectors get reused! So, to get odd numbered elems --
+x[c(TRUE,FALSE)]
+
+# Locate missing data --
+is.na(x)
+
+# Replace missing data by 0 --
+x[is.na(x)] &lt;- 0
+x
+
+# Similar ideas work for matrices --
+y &lt;- matrix(c(2,7,9,2,NA,5), nrow=2)
+y
+
+# Make a matrix containing columns 1 and 3 --
+y[,c(1,3)]
+
+# Let us see what is.na(y) does --
+is.na(y)
+str(is.na(y))
+# So is.na(y) gives back a matrix with the identical structure as that of y.
+# Hence I can say
+y[is.na(y)] &lt;- -1
+y
+
+<h3>Making latex tabular objects</h3>
+
+# Goal: To make latex tabular out of an R matrix
+
+# Setup a nice R object:
+m &lt;- matrix(rnorm(8), nrow=2)
+rownames(m) &lt;- c("Age", "Weight")
+colnames(m) &lt;- c("Person1", "Person2", "Person3", "Person4")
+m
+
+# Translate it into a latex tabular:
+library(xtable)
+xtable(m, digits=rep(3,5))
+
+# Production latex code that goes into a paper or a book --
+print(xtable(m,
+             caption="String",
+             label="t:"),
+             type="latex",
+             file="blah.gen",
+             table.placement="tp",
+             latex.environments=c("center", "footnotesize"))
+# Now you do \input{blah.gen} in your latex file.
+
+# You're lazy, and want to use R to generate latex tables for you?
+data &lt;- cbind(
+              c(7,9,11,2),
+              c(2,4,19,21)
+              )
+colnames(data) &lt;- c("a","b")
+rownames(data) &lt;- c("x","y","z","a")
+xtable(data)
+
+# or you could do
+data &lt;- rbind(
+              c(7,2),
+              c(9,4),
+              c(11,19),
+              c(2,21)
+              )
+# and the rest goes through identically.
+
+<!--HTML generated by highlight 2.4.8, http://www.andre-simon.de/-->
+
+<h3>Associative arrays / hashes</h3>
+
+# Goal: Associative arrays (as in awk) or hashes (as in perl).
+#       Or, more generally, adventures in R addressing.
+
+# Here's a plain R vector:
+x &lt;- c(2,3,7,9)
+# But now I tag every elem with labels:
+names(x) &lt;- c("kal","sho","sad","aja")
+# Associative array operations:
+x["kal"] &lt;- 12
+# Pretty printing the entire associative array:
+x
+
+# This works for matrices too:
+m &lt;- matrix(runif(10), nrow=5)
+rownames(m) &lt;- c("violet","indigo","blue","green","yellow")
+colnames(m) &lt;- c("Asia","Africa")
+# The full matrix --
+m
+# Or even better --
+library(xtable)
+xtable(m)
+
+# Now address symbolically --
+m[,"Africa"]
+m["indigo",]
+m["indigo","Africa"]
+
+# The "in" operator, as in awk --
+for (colour in c("yellow", "orange", "red")) {
+  if (colour %in% rownames(m)) {
+    cat("For Africa and ", colour, " we have ", m[colour, "Africa"], "\n")
+  } else {
+    cat("Colour ", colour, " does not exist in the hash.\n")
+  }
+}
+
+# This works for data frames also --
+D &lt;- data.frame(m)
+D
+# Look closely at what happened --
+str(D)                                  # The colours are the rownames(D).
+
+# Operations --
+D$Africa
+D[,"Africa"]
+D["yellow",]
+# or
+subset(D, rownames(D)=="yellow")
+
+colnames(D) &lt;- c("Antarctica","America")
+D
+D$America
+
+<h3>Matrix notation (portfolio computations in financial economics)</h3>
+
+# Goal: Utilise matrix notation
+#       We use the problems of portfolio analysis as an example.
+
+# Prices of 4 firms to play with, at weekly frequency (for calendar 2004) --
+p &lt;- structure(c(300.403, 294.604, 291.038, 283.805, 270.773, 275.506, 292.271, 292.837, 284.872, 295.037, 280.939, 259.574, 250.608, 268.84, 266.507, 263.94, 273.173, 238.609, 230.677, 192.847, 219.078, 201.846, 210.279, 193.281, 186.748, 197.314, 202.813, 204.08, 226.044, 242.442, 261.274, 269.173, 256.05, 259.75, 243, 250.3, 263.45, 279.5, 289.55, 291.95, 302.1, 284.4, 283.5, 287.8, 298.3, 307.6, 307.65, 311.9, 327.7, 318.1, 333.6, 358.9, 385.1, 53.6, 51.95, 47.65, 44.8, 44.85, 44.3, 47.1, 44.2, 41.8, 41.9, 41, 35.3, 33.35, 35.6, 34.55, 35.55, 40.05, 35, 34.85, 28.95, 31, 29.25, 29.05, 28.95, 24.95, 26.15, 28.35, 29.4, 32.55, 37.2, 39.85, 40.8, 38.2, 40.35, 37.55, 39.4, 39.8, 43.25, 44.75, 47.25, 49.6, 47.6, 46.35, 49.4, 49.5, 50.05, 50.5, 51.85, 56.35, 54.15, 58, 60.7, 62.7, 293.687, 292.746, 283.222, 286.63, 259.774, 259.257, 270.898, 250.625, 242.401, 248.1, 244.942, 239.384, 237.926, 224.886, 243.959, 270.998, 265.557, 257.508, 258.266, 257.574, 251.917, 250.583, 250.783, 246.6, 252.475, 266.625, 263.85, 249.925, 262.9, 264.975, 273.425, 275.575, 267.2, 282.25, 284.25, 290.75, 295.625, 296.25, 291.375, 302.225, 318.95, 324.825, 320.55, 328.75, 344.05, 345.925, 356.5, 368.275, 374.825, 373.525, 378.325, 378.6, 374.4, 1416.7, 1455.15, 1380.97, 1365.31, 1303.2, 1389.64, 1344.05, 1266.29, 1265.61, 1312.17, 1259.25, 1297.3, 1327.38, 1250, 1328.03, 1347.46, 1326.79, 1286.54, 1304.84, 1272.44, 1227.53, 1264.44, 1304.34, 1277.65, 1316.12, 1370.97, 1423.35, 1382.5, 1477.75, 1455.15, 1553.5, 1526.8, 1479.85, 1546.8, 1565.3, 1606.6, 1654.05, 1689.7, 1613.95, 1703.25, 1708.05, 1786.75, 1779.75, 1906.35, 1976.6, 2027.2, 2057.85, 2029.6, 2051.35, 2033.4, 2089.1, 2065.2, 2091.7), .Dim = c(53, 4), .Dimnames = list(NULL, c("TISCO", "SAIL", "Wipro", "Infosys")))
+# Shift from prices to returns --
+r &lt;- 100*diff(log(p))
+
+# Historical expected returns --
+colMeans(r)
+# Historical correlation matrix --
+cor(r)
+# Historical covariance matrix --
+S &lt;- cov(r)
+S
+
+# Historical portfolio variance for a stated portfolio of 20%,20%,30%,30% --
+w &lt;- c(.2, .2, .3, .3)
+t(w) %*% S %*% w
+
+# The portfolio optimisation function in tseries --
+library(tseries)
+optimised &lt;- portfolio.optim(r)         # This uses the historical facts from r
+optimised$pw                            # Weights
+optimised$pm                            # Expected return using these weights
+optimised$ps                            # Standard deviation of optimised port.
+
+<!--HTML generated by highlight 2.4.8, http://www.andre-simon.de/-->
+
+<h3>Handling missing data</h3>
+
+# Goal:
+#       A stock is traded on 2 exchanges.
+#       Price data is missing at random on both exchanges owing to non-trading.
+#       We want to make a single price time-series utilising information
+#          from both exchanges. I.e., missing data for exchange 1 will
+#          be replaced by information for exchange 2 (if observed).
+
+# Let's create some example data for the problem.
+e1 &lt;- runif(15)                         # Prices on exchange 1
+e2 &lt;- e1 + 0.05*rnorm(15)               # Prices on exchange 2.
+cbind(e1, e2)
+# Blow away 5 points from each at random.
+e1[sample(1:15, 5)] &lt;- NA
+e2[sample(1:15, 5)] &lt;- NA
+cbind(e1, e2)
+
+# Now how do we reconstruct a time-series that tries to utilise both?
+combined &lt;- e1                          # Do use the more liquid exchange here.
+missing &lt;- is.na(combined)
+combined[missing] &lt;- e2[missing]        # if it's also missing, I don't care.
+cbind(e1, e2, combined)
+# There you are.
+
+<!--HTML generated by highlight 2.4.6, http://www.andre-simon.de/-->
+
+<h4>Reading files</h4>
+
+<h3>Reading a file with a few columns of numbers, and look at what is there.</h3>
+
+# Goal: To read in a simple data file, and look around it's contents.
+
+# Suppose you have a file "x.data" which looks like this:
+#        1997,3.1,4
+#        1998,7.2,19
+#        1999,1.7,2
+#        2000,1.1,13
+# To read it in --
+
+A &lt;- read.table("x.data", sep=",",
+                col.names=c("year", "my1", "my2"))
+nrow(A)                                 # Count the rows in A
+
+summary(A$year)                         # The column "year" in data frame A
+                                        # is accessed as A$year
+
+A$newcol &lt;- A$my1 + A$my2               # Makes a new column in A
+newvar &lt;- A$my1 - A$my2                 # Makes a new R object "newvar"
+A$my1 &lt;- NULL                           # Removes the column "my1"
+
+# You might find these useful, to "look around" a dataset --
+str(A)
+summary(A)
+library(Hmisc)          # This requires that you've installed the Hmisc package
+contents(A)
+describe(A)
+
+<h3>Reading a file involving dates</h3>
+
+# Goal: To read in a simple data file where date data is present.
+
+# Suppose you have a file "x.data" which looks like this:
+#        1997-07-04,3.1,4
+#        1997-07-05,7.2,19
+#        1997-07-07,1.7,2
+#        1997-07-08,1.1,13
+
+A &lt;- read.table("x.data", sep=",",
+                col.names=c("date", "my1", "my2"))
+A$date &lt;- as.Date(A$date, format="%Y-%m-%d")
+       # Say ?strptime to learn how to use "%" to specify
+       # other date formats. Two examples --
+       # "15/12/2002"  needs "%d/%m/%Y"
+       # "03 Jun 1997" needs "%d %b %Y"
+
+       # Actually, if you're using the ISO 8601 date format, i.e.
+       # "%Y-%m-%d", that's the default setting and you don't need to
+       # specify the format.
+
+A$newcol &lt;- A$my1 + A$my2               # Makes a new column in A
+newvar &lt;- A$my1 - A$my2                 # Makes a new R object "newvar"
+A$my1 &lt;- NULL                           # Delete the `my1' column
+summary(A)                              # Makes summary statistics
+
+<!--HTML generated by highlight 2.4.6, http://www.andre-simon.de/-->
+
+<h3>Reading in a file made by CMIE's <i>Business Beacon</i> program</h3>
+
+# Goal: To read in files produced by CMIE's "Business Beacon".
+#       This assumes you have made a file of MONTHLY data using CMIE's
+#       Business Beacon program. This contains 2 columns: M3 and M0.
+
+A &lt;- read.table(
+                # Generic to all BB files --
+                sep="|",                # CMIE's .txt file is pipe delimited
+                skip=3,                 # Skip the 1st 3 lines
+                na.strings=c("N.A.","Err"),  # The ways they encode missing data
+                # Specific to your immediate situation --
+                file="bb_data.text",
+                col.names=c("junk", "date", "M3", "M0")
+                )
+A$junk &lt;- NULL                          # Blow away this column
+
+# Parse the CMIE-style "Mmm yy" date string that's used on monthly data
+A$date &lt;- as.Date(paste("1", as.character(A$date)), format="%d %b %Y")
+
+<!--HTML generated by highlight 2.4.6, http://www.andre-simon.de/-->
+
+Reading and writing both ascii files and binary files. Also, measure speed of <h3>these.</h3>
+
+# Goal: Reading and writing ascii files, reading and writing binary files.
+#       And, to measure how much faster it is working with binary files.
+
+# First manufacture a tall data frame:
+                # FYI -- runif(10) yields 10 U(0,1) random numbers.
+B = data.frame(x1=runif(100000), x2=runif(100000), x3=runif(100000))
+summary(B)
+
+# Write out ascii file:
+write.table(B, file = "/tmp/foo.csv", sep = ",", col.names = NA)
+# Read in this resulting ascii file:
+C=read.table("/tmp/foo.csv", header = TRUE, sep = ",", row.names=1)
+# Write a binary file out of dataset C:
+save(C, file="/tmp/foo.binary")
+# Delete the dataset C:
+rm(C)
+# Restore from foo.binary:
+load("/tmp/foo.binary")
+summary(C)                              # should yield the same results
+                                        # as summary(B) above.
+
+# Now we time all these operations --
+cat("Time creation of dataset:\n")
+system.time({
+  B = data.frame(x1=runif(100000), x2=runif(100000), x3=runif(100000))
+})
+
+cat("Time writing an ascii file out of dataset B:\n")
+system.time(
+            write.table(B, file = "/tmp/foo.csv", sep = ",", col.names = NA)
+            )
+
+cat("Time reading an ascii file into dataset C:\n")
+system.time(
+            {C=read.table("/tmp/foo.csv", header = TRUE, sep=",", row.names=1)
+           })
+
+cat("Time writing a binary file out of dataset C:\n")
+system.time(save(C, file="/tmp/foo.binary"))
+
+cat("Time reading a binary file + variablenames from /tmp/foo.binary:\n")
+system.time(load("/tmp/foo.binary"))    # and then read it in from binary file
+
+<h3>Sending an R data object to someone else, either in email or as a binary </h3>file.
+
+# Goals: Lots of times, you need to give an R object to a friend,
+#        or embed data into an email.
+
+# First I invent a little dataset --
+set.seed(101)   # To make sure you get the same random numbers as me
+                # FYI -- runif(10) yields 10 U(0,1) random numbers.
+A = data.frame(x1=runif(10), x2=runif(10), x3=runif(10))
+# Look at it --
+print(A)
+
+# Writing to a binary file that can be transported
+save(A, file="/tmp/my_data_file.rda")   # You can give this file to a friend
+load("/tmp/my_data_file.rda")
+
+# Plan B - you want pure ascii, which can be put into an email --
+dput(A)
+# This gives you a block of R code. Let me utilise that generated code
+# to create a dataset named "B".
+B &lt;- structure(list(x1 = c(0.372198376338929, 0.0438248154241592,
+0.709684018278494, 0.657690396532416, 0.249855723232031, 0.300054833060130,
+0.584866625955328, 0.333467143354937, 0.622011963743716, 0.54582855431363
+), x2 = c(0.879795730113983, 0.706874740775675, 0.731972594512627,
+0.931634427979589, 0.455120594473556, 0.590319729177281, 0.820436094887555,
+0.224118480458856, 0.411666829371825, 0.0386105608195066), x3 = c(0.700711545301601,
+0.956837461562827, 0.213352001970634, 0.661061500199139, 0.923318882007152,
+0.795719761401415, 0.0712125543504953, 0.389407767681405, 0.406451216200367,
+0.659355078125373)), .Names = c("x1", "x2", "x3"), row.names = c("1",
+"2", "3", "4", "5", "6", "7", "8", "9", "10"), class = "data.frame")
+
+# Verify that A and B are near-identical --
+A-B
+# or,
+all.equal(A,B)
+
+<h3>Make a "zoo" object, for handling time-series data.</h3>
+
+# Goal: Make a time-series object using the "zoo" package
+
+A &lt;- data.frame(date=c("1995-01-01", "1995-01-02", "1995-01-03", "1995-01-06"),
+                x=runif(4),
+                y=runif(4))
+A$date &lt;- as.Date(A$date) # yyyy-mm-dd is the default format
+# So far there's nothing new - it's just a data frame. I have hand-
+# constructed A but you could equally have obtained it using read.table().
+
+# I want to make a zoo matrix out of the numerical columns of A
+library(zoo)
+B &lt;- A
+B$date &lt;- NULL
+z &lt;- zoo(as.matrix(B), order.by=A$date)
+rm(A, B)
+
+# So now you are holding "z", a "zoo" object. You can do many cool
+# things with it.
+# See http://www.google.com/search?hl=en&amp;q=zoo+quickref+achim&amp;btnI=I%27m+Feeling+Lucky
+
+# To drop down to a plain data matrix, say
+C &lt;- coredata(z)
+rownames(C) &lt;- as.character(time(z))
+# Compare --
+str(C)
+str(z)
+
+# The above is a tedious way of doing these things, designed to give you
+# an insight into what is going on. If you just want to read a file
+# into a zoo object, a very short path is something like:
+#        z &lt;- read.zoo(filename, format="%d %b %Y")
+
+<!--HTML generated by highlight 2.4.6, http://www.andre-simon.de/-->
+
+<h3>Exporting and importing data.</h3>
+
+# Goal: All manner of import and export of datasets.
+
+# Invent a dataset --
+A &lt;- data.frame(
+                name=c("a","b","c"),
+                ownership=c("Case 1","Case 1","Case 2"),
+                listed.at=c("NSE",NA,"BSE"),
+                   # Firm "b" is unlisted.
+                is.listed=c(TRUE,FALSE,TRUE),
+                   # R convention - boolean variables are named "is.something"
+                x=c(2.2,3.3,4.4),
+                date=as.Date(c("2004-04-04","2005-05-05","2006-06-06"))
+              )
+
+# To a spreadsheet through a CSV file --
+write.table(A,file="demo.csv",sep = ",",col.names = NA,qmethod = "double")
+B &lt;- read.table("demo.csv", header = TRUE, sep = ",", row.names = 1)
+
+# To R as a binary file --
+save(A, file="demo.rda")
+load("demo.rda")
+
+# To the Open XML standard for transport for statistical data --
+library(StatDataML)
+writeSDML(A, "/tmp/demo.sdml")
+B &lt;- readSDML("/tmp/demo.sdml")
+
+# To Stata --
+library(foreign)
+write.dta(A, "/tmp/demo.dta")
+B &lt;- read.dta("/tmp/demo.dta")
+
+# foreign::write.foreign() also has a pathway to SAS and SPSS.
+
+<!--HTML generated by highlight 2.4.8, http://www.andre-simon.de/-->
+
+<h3>Reading .gz .bz2 files and URLs</h3>
+
+# Goal: Special cases in reading files
+
+# Reading in a .bz2 file --
+read.table(bzfile("file.text.bz2"))           # Requires you have ./file.text.bz2
+
+# Reading in a .gz file --
+read.table(gzfile("file.text.gz"))            # Requires you have ./file.text.bz2
+
+# Reading from a pipe --
+mydata &lt;- read.table(pipe("awk -f filter.awk input.txt"))
+
+# Reading from a URL --
+read.table(url("http://www.mayin.org/ajayshah/A/demo.text"))
+
+# This also works --
+read.table("http://www.mayin.org/ajayshah/A/demo.text")
+
+# Hmm, I couldn't think of how to read a .bz2 file from a URL. How about:
+read.table(pipe("links -source http://www.mayin.org/ajayshah/A/demo.text.bz2 | bunzip2"))
+
+# Reading binary files from a URL --
+load(url("http://www.mayin.org/ajayshah/A/nifty_weekly_returns.rda"))
+
+<!--HTML generated by highlight 2.4.6, http://www.andre-simon.de/-->
+
+<h3>Directly reading Microsoft Excel files</h3>
+
+# Goal: Reading in a Microsoft .xls file directly
+
+library(gdata)
+a &lt;- read.xls("file.xls", sheet=2)                # This reads in the 2nd sheet
+
+# Look at what the cat dragged in
+str(a)
+
+# If you have a date column, you'll want to fix it up like this:
+a$date &lt;- as.Date(as.character(a$X), format="%d-%b-%y")
+a$X &lt;- NULL
+
+# Also see http://tolstoy.newcastle.edu.au/R/help/06/04/25674.html for
+# another path.
+
+<!--HTML generated by highlight 2.4.8, http://www.andre-simon.de/-->
+
+<h4>Graphs</h4>
+
+<h3>A grid of multiple pictures on one screen</h3>
+
+# Goal: To make a panel of pictures.
+
+par(mfrow=c(3,2))                       # 3 rows, 2 columns.
+
+# Now the next 6 pictures will be placed on these 6 regions. :-)
+
+# Let me take some pains on the 1st
+plot(density(runif(100)), lwd=2)
+text(x=0, y=0.2, "100 uniforms")        # Showing you how to place text at will
+abline(h=0, v=0)
+              # All these statements effect the 1st plot.
+
+x=seq(0.01,1,0.01)
+par(col="blue")                         # default colour to blue.
+
+# 2 --
+plot(x, sin(x), type="l")
+lines(x, cos(x), type="l", col="red")
+
+# 3 --
+plot(x, exp(x), type="l", col="green")
+lines(x, log(x), type="l", col="orange")
+
+# 4 --
+plot(x, tan(x), type="l", lwd=3, col="yellow")
+
+# 5 --
+plot(x, exp(-x), lwd=2)
+lines(x, exp(x), col="green", lwd=3)
+
+# 6 --
+plot(x, sin(x*x), type="l")
+lines(x, sin(1/x), col="pink")
+
+<h3>Making PDF files that go into books/papers</h3>
+
+# Goal: Make pictures in PDF files that can be put into a paper.
+
+xpts &lt;- seq(-3,3,.05)
+
+# Here is my suggested setup for a two-column picture --
+pdf("demo2.pdf", width=5.6, height=2.8, bg="cadetblue1", pointsize=8)
+par(mai=c(.6,.6,.2,.2))
+plot(xpts, sin(xpts*xpts), type="l", lwd=2, col="cadetblue4",
+     xlab="x", ylab="sin(x*x)")
+grid(col="white", lty=1, lwd=.2)
+abline(h=0, v=0)
+
+# My suggested setup for a square one-column picture --
+pdf("demo1.pdf", width=2.8, height=2.8, bg="cadetblue1", pointsize=8)
+par(mai=c(.6,.6,.2,.2))
+plot(xpts, sin(xpts*xpts), type="l", lwd=2, col="cadetblue4",
+     xlab="x", ylab="sin(x*x)")
+grid(col="white", lty=1, lwd=.2)
+abline(h=0, v=0)
+
+<h3>A histogram with tails in red</h3>
+
+# Goal: A histogram with tails shown in red.
+
+# This happened on the R mailing list on 7 May 2004.
+# This is by Martin Maechler &lt;maechler&#64;stat.math.ethz.ch&gt;, who was
+# responding to a slightly imperfect version of this by
+# "Guazzetti Stefano" &lt;Stefano.Guazzetti&#64;ausl.re.it&gt;
+
+x &lt;- rnorm(1000)
+hx &lt;- hist(x, breaks=100, plot=FALSE)
+plot(hx, col=ifelse(abs(hx$breaks) &lt; 1.669, 4, 2))
+         # What is cool is that "col" is supplied a vector.
+
+<h3>z=f(x,y) using contour lines and colours</h3>
+
+# Goal: Visualisation of 3-dimensional (x,y,z) data using contour
+#       plots and using colour to represent the 3rd dimension.
+#       The specific situation is: On a grid of (x,y) points, you have
+#       evaluated f(x,y). Now you want a graphical representation of
+#       the resulting list of (x,y,z) points that you have.
+
+# Setup an interesting data matrix of (x,y,z) points:
+points &lt;- structure(c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.55, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.65, 0.65, 0.65, 0.65, 0.65, 0.65, 0.65, 0.65, 0.65, 0.65, 0.65, 0.65, 0.65, 0.65, 0.65, 0.65, 0.65, 0.65, 0.65, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0.998, 0.124, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0.998, 0.71, 0.068, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0.998, 0.898, 0.396, 0.058, 0.002, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0.998, 0.97, 0.726, 0.268, 0.056, 0.006, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0.996, 0.88, 0.546, 0.208, 0.054, 0.012, 0.002, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.998, 0.964, 0.776, 0.418, 0.18, 0.054, 0.014, 0.002, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.998, 0.906, 0.664, 0.342, 0.166, 0.056, 0.018, 0.006, 0.002, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.986, 0.862, 0.568, 0.29, 0.15, 0.056, 0.022, 0.008, 0.002, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.954, 0.778, 0.494, 0.26, 0.148, 0.056, 0.024, 0.012, 0.004, 0.002, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.906, 0.712, 0.43, 0.242, 0.144, 0.058, 0.028, 0.012, 0.006, 0.002, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.878, 0.642, 0.38, 0.222, 0.142, 0.066, 0.034, 0.014, 0.008, 0.004, 0.002, 0, 0, 0, 0, 0, 0, 0, 0, 0.846, 0.586, 0.348, 0.208, 0.136, 0.068, 0.034, 0.016, 0.012, 0.006, 0.004, 0.002, 0, 0, 0, 0, 0, 0, 0, 0.8, 0.538, 0.318, 0.204, 0.136, 0.07, 0.046, 0.024, 0.012, 0.008, 0.004, 0.002, 0.002, 0, 0, 0, 0, 0, 0, 0.762, 0.496, 0.294, 0.2, 0.138, 0.072, 0.05, 0.024, 0.014, 0.012, 0.006, 0.004, 0.002, 0.002, 0, 0, 0, 0, 0, 0.704, 0.472, 0.286, 0.198, 0.138, 0.074, 0.054, 0.028, 0.016, 0.012, 0.008, 0.006, 0.004, 0.002, 0.002, 0, 0, 0, 0, 0.668, 0.438, 0.276, 0.196, 0.138, 0.078, 0.054, 0.032, 0.024, 0.014, 0.012, 0.008, 0.004, 0.004, 0.002, 0.002, 0, 0, 0, 0.634, 0.412, 0.27, 0.194, 0.14, 0.086, 0.056, 0.032, 0.024, 0.016, 0.012, 0.01, 0.006, 0.004, 0.004, 0.002, 0.002, 0, 0, 0.604, 0.388, 0.26, 0.19, 0.144, 0.088, 0.058, 0.048, 0.026, 0.022, 0.014, 0.012, 0.008, 0.006, 0.004, 0.004, 0.002, 0.002, 0, 0.586, 0.376, 0.256, 0.19, 0.146, 0.094, 0.062, 0.052, 0.028, 0.024, 0.014, 0.012, 0.012, 0.008, 0.004, 0.004, 0.004, 0.002, 0.002, 0.566, 0.364, 0.254, 0.192, 0.148, 0.098, 0.064, 0.054, 0.032, 0.024, 0.022, 0.014, 0.012, 0.012, 0.008, 0.004, 0.004, 0.004, 0.002), .Dim = c(399, 3), .Dimnames = list(NULL, c("x", "y", "z")))
+
+# Understand this object --
+summary(points)
+  # x is a grid from 0 to 1
+  # y is a grid from 20 to 200
+  # z is the interesting object which will be the 3rd dimension.
+
+# Solution using contourplot() from package 'lattice'
+library(lattice)
+d3 &lt;- data.frame(points)
+contourplot(z ~ x+y, data=d3)
+## or nicer
+contourplot(z ~ x+y, data=d3, cuts=20, region = TRUE)
+## or using logit - transformed z values:
+contourplot(qlogis(z) ~ x+y, data=d3, pretty=TRUE, region = TRUE)
+
+# An interesting alternative is levelplot()
+levelplot(z ~ x+y, pretty=TRUE, contour=TRUE, data=d3)
+
+# There is a contour() function in R. Even though it sounds obvious
+# for the purpose, it is a bit hard to use.
+# contour() wants 3 inputs: vectors of x and y values, and a matrix of
+# z values, where the x values correspond to the rows of z, and the y
+# values to the columns.  A collection of points like `points' above
+# needs to be turned into such a grid. It might sound odd, but contour()
+# image() and persp() have used this kind of input for the longest time.
+#
+# For irregular data, there's an interp function in the akima package
+# that can convert from irregular data into the grid format.
+#
+# The `points' object that I have above - a list of (x,y,z) points -
+# fits directly into the mentality of lattice::contourplot() but not
+# into the requirements of contour()
+
+<!--HTML generated by highlight 2.4.6, http://www.andre-simon.de/-->
+
+<h3>Show recessions using filled  colour in a macro time-series plot</h3>
+
+# Goal: Display of a macroeconomic time-series, with a filled colour
+#       bar showing a recession.
+
+years &lt;- 1950:2000
+timeseries &lt;- cumsum(c(100, runif(50)*5))
+hilo &lt;- range(timeseries)
+plot(years, timeseries, type="l", lwd=3)
+# A recession from 1960 to 1965 --
+polygon(x=c(1960,1960, 1965,1965),
+        y=c(hilo, rev(hilo)),
+        density=NA, col="orange", border=NA)
+lines(years, timeseries, type="l", lwd=3) # paint again so line comes on top
+
+# alternative method -- though not as good looking --
+# library(plotrix)
+# gradient.rect(1960, hilo[1], 1965, hilo[2],
+#               reds=c(0,1), greens=c(0,0), blues=c(0,0),
+#               gradient="y")
+
+<!--HTML generated by highlight 2.4.6, http://www.andre-simon.de/-->
+
+Plotting two series on one graph, one  with a left y axis and another with a <h3>right y axis.</h3>
+
+# Goal: Display two series on one plot, one with a left y axis
+#       and another with a right y axis.
+
+y1 &lt;- cumsum(rnorm(100))
+y2 &lt;- cumsum(rnorm(100, mean=0.2))
+
+par(mai=c(.8, .8, .2, .8))
+plot(1:100, y1, type="l", col="blue", xlab="X axis label", ylab="Left legend")
+par(new=TRUE)
+plot(1:100, y2, type="l", ann=FALSE, yaxt="n")
+axis(4)
+legend(x="topleft", bty="n", lty=c(1,1), col=c("blue","black"),
+       legend=c("String 1 (left scale)", "String 2 (right scale)"))
+
+<!--HTML generated by highlight 2.4.6, http://www.andre-simon.de/-->
+
+<h4>Probability and statistics</h4>
+
+<h3>Tables, joint and marginal distributions</h3>
+
+# Goal: Joint distributions, marginal distributions, useful tables.
+
+# First let me invent some fake data
+set.seed(102)                           # This yields a good illustration.
+x &lt;- sample(1:3, 15, replace=TRUE)
+education &lt;- factor(x, labels=c("None", "School", "College"))
+x &lt;- sample(1:2, 15, replace=TRUE)
+gender &lt;- factor(x, labels=c("Male", "Female"))
+age &lt;- runif(15, min=20,max=60)
+
+D &lt;- data.frame(age, gender, education)
+rm(x,age,gender,education)
+print(D)
+
+# Table about education
+table(D$education)
+
+# Table about education and gender --
+table(D$gender, D$education)
+# Joint distribution of education and gender --
+table(D$gender, D$education)/nrow(D)
+
+# Add in the marginal distributions also
+addmargins(table(D$gender, D$education))
+addmargins(table(D$gender, D$education))/nrow(D)
+
+# Generate a good LaTeX table out of it --
+library(xtable)
+xtable(addmargins(table(D$gender, D$education))/nrow(D),
+       digits=c(0,2,2,2,2))             # You have to do | and \hline manually.
+
+# Study age by education category
+by(D$age, D$gender, mean)
+by(D$age, D$gender, sd)
+by(D$age, D$gender, summary)
+
+# Two-way table showing average age depending on education &amp; gender
+a &lt;- matrix(by(D$age, list(D$gender, D$education), mean), nrow=2)
+rownames(a) &lt;- levels(D$gender)
+colnames(a) &lt;- levels(D$education)
+print(a)
+# or, of course,
+print(xtable(a))
+
+<h3>`Moving window' standard deviation</h3>
+
+# Goal: To do `moving window volatility' of returns.
+
+library(zoo)
+
+# Some data to play with (Nifty on all fridays for calendar 2004) --
+p &lt;- structure(c(1946.05, 1971.9, 1900.65, 1847.55, 1809.75, 1833.65, 1913.6, 1852.65, 1800.3, 1867.7, 1812.2, 1725.1, 1747.5, 1841.1, 1853.55, 1868.95, 1892.45, 1796.1, 1804.45, 1582.4, 1560.2, 1508.75, 1521.1, 1508.45, 1491.2, 1488.5, 1537.5, 1553.2, 1558.8, 1601.6, 1632.3, 1633.4, 1607.2, 1590.35, 1609, 1634.1, 1668.75, 1733.65, 1722.5, 1775.15, 1820.2, 1795, 1779.75, 1786.9, 1852.3, 1872.95, 1872.35, 1901.05, 1996.2, 1969, 2012.1, 2062.7, 2080.5), index = structure(c(12419, 12426, 12433, 12440, 12447, 12454, 12461, 12468, 12475, 12482, 12489, 12496, 12503, 12510, 12517, 12524, 12531, 12538, 12545, 12552, 12559, 12566, 12573, 12580, 12587, 12594, 12601, 12608, 12615, 12622, 12629, 12636, 12643, 12650, 12657, 12664, 12671, 12678, 12685, 12692, 12699, 12706, 12713, 12720, 12727, 12734, 12741, 12748, 12755, 12762, 12769, 12776, 12783), class = "Date"), frequency = 0.142857142857143, class = c("zooreg", "zoo"))
+
+# Shift to returns --
+r &lt;- 100*diff(log(p))
+head(r)
+summary(r)
+sd(r)
+
+# Compute the moving window vol --
+vol &lt;- sqrt(250) * rollapply(r, 20, sd, align = "right")
+
+# A pretty plot --
+plot(vol, type="l", ylim=c(0,max(vol,na.rm=TRUE)),
+     lwd=2, col="purple", xlab="2004",
+     ylab=paste("Annualised sigma, 20-week window"))
+grid()
+legend(x="bottomleft", col=c("purple", "darkgreen"),
+       lwd=c(2,2), bty="n", cex=0.8,
+       legend=c("Annualised 20-week vol (left scale)", "Nifty (right scale)"))
+par(new=TRUE)
+plot(p, type="l", lwd=2, col="darkgreen",
+     xaxt="n", yaxt="n", xlab=", ylab=")
+axis(4)
+
+
+<h3>Requires this data file.</h3>
+
+# Get the data in place --
+load(file="demo.rda")
+summary(firms)
+
+# Look at it --
+plot(density(log(firms$mktcap)))
+plot(firms$mktcap, firms$spread, type="p", cex=.2, col="blue", log="xy",
+     xlab="Market cap (Mln USD)", ylab="Bid/offer spread (bps)")
+m=lm(log(spread) ~ log(mktcap), firms)
+summary(m)
+
+# Making deciles --
+library(gtools)
+library(gdata)
+                                      # for deciles (default=quartiles)
+size.category = quantcut(firms$mktcap, q=seq(0, 1, 0.1), labels=F)
+table(size.category)
+means = aggregate(firms, list(size.category), mean)
+print(data.frame(means$mktcap,means$spread))
+
+# Make a picture combining the sample mean of spread (in each decile)
+# with the weighted average sample mean of the spread (in each decile),
+# where weights are proportional to size.
+wtd.means = by(firms, size.category,
+  function(piece) (sum(piece$mktcap*piece$spread)/sum(piece$mktcap)))
+lines(means$mktcap, means$spread, type="b", lwd=2, col="green", pch=19)
+lines(means$mktcap, wtd.means, type="b", lwd=2, col="red", pch=19)
+legend(x=0.25, y=0.5, bty="n",
+       col=c("blue", "green", "red"),
+       lty=c(0, 1, 1), lwd=c(0,2,2),
+       pch=c(0,19,19),
+       legend=c("firm", "Mean spread in size deciles",
+         "Size weighted mean spread in size deciles"))
+
+# Within group standard deviations --
+aggregate(firms, list(size.category), sd)
+
+# Now I do quartiles by BOTH mktcap and spread.
+size.quartiles = quantcut(firms$mktcap, labels=F)
+spread.quartiles = quantcut(firms$spread, labels=F)
+table(size.quartiles, spread.quartiles)
+# Re-express everything as joint probabilities
+table(size.quartiles, spread.quartiles)/nrow(firms)
+# Compute cell means at every point in the joint table:
+aggregate(firms, list(size.quartiles, spread.quartiles), mean)
+
+# Make pretty two-way tables
+aggregate.table(firms$mktcap, size.quartiles, spread.quartiles, nobs)
+aggregate.table(firms$mktcap, size.quartiles, spread.quartiles, mean)
+aggregate.table(firms$mktcap, size.quartiles, spread.quartiles, sd)
+aggregate.table(firms$spread, size.quartiles, spread.quartiles, mean)
+aggregate.table(firms$spread, size.quartiles, spread.quartiles, sd)
+
+<h3>Distribution of sample mean and sample median</h3>
+
+# Goal: Show the efficiency of the mean when compared with the median
+#       using a large simulation where both estimators are applied on
+#       a sample of U(0,1) uniformly distributed random numbers.
+
+one.simulation &lt;- function(N=100) {     # N defaults to 100 if not supplied
+  x &lt;- runif(N)
+  return(c(mean(x), median(x)))
+}
+
+# Simulation --
+results &lt;- replicate(100000, one.simulation(20)) # Gives back a 2x100000 matrix
+
+# Two kernel densities --
+k1 &lt;- density(results[1,])              # results[1,] is the 1st row
+k2 &lt;- density(results[2,])
+
+# A pretty picture --
+xrange &lt;- range(k1$x, k2$x)
+plot(k1$x, k1$y, xlim=xrange, type="l", xlab="Estimated value", ylab=")
+grid()
+lines(k2$x, k2$y, col="red")
+abline(v=.5)
+legend(x="topleft", bty="n",
+       lty=c(1,1),
+       col=c("black", "red"),
+       legend=c("Mean", "Median"))
+
+<h3>The bootstrap[</h3>
+
+The package <code>boot</code> has elegant and powerful support for bootstrapping. In order to use it, you have to repackage your estimation function as follows.
+
+R has very elegant and abstract notation in array indexes. Suppose there is an integer vector <code>OBS</code> containing the elements 2, 3, 7, i.e. that <code>OBS &lt;- c(2,3,7);</code>. Suppose x is a vector. Then the notation <code>x[OBS]</code> is a vector containing elements x[2], x[3] and x[7]. This beautiful notation works for x as a dataset (data frame) also. Here are demos:
+
+# For vectors --
+> x = c(10,20,30,40,50)
+> d = c(3,2,2)
+> x[d]
+[1] 30 20 20
+
+# For data frames --
+> D = data.frame(x=seq(10,50,10), y=seq(500,100,-100))
+> t(D)
+    1   2   3   4   5
+x  10  20  30  40  50
+y 500 400 300 200 100
+> D[d,]
+     x   y
+3   30 300
+2   20 400
+2.1 20 400
+
+Now for the key point: how does the R boot package work? The R package <code>boot</code> repeatedly calls your estimation function, and each time, the bootstrap sample is supplied using an integer vector of indexes like above. Let me show you two examples of how you would write estimation functions which are compatible with the package:
+
+samplemean <- function(x, d) {
+  return(mean(x[d]))
+}
+
+samplemedian <- function(x, d) {
+  return(median(x[d]))
+}
+
+The estimation function (that you write) consumes data <code>x</code> and a vector of indices <code>d</code>. This function will be called many times, one for each bootstrap replication. Every time, the data `x' will be the same, and the bootstrap sample `d' will be different.
+
+At each call, the boot package will supply a fresh set of indices d. The notation x[d] allows us to make a brand-new vector (the bootstrap sample), which is given to mean() or median(). This reflects sampling with replacement from the original data vector.
+Once you have written a function like this, here is how you would obtain bootstrap estimates of the standard deviation of the distribution of the median: 
+
+    b = boot(x, samplemedian, R=1000)           # 1000 replications
+
+The object `b' that is returned by boot() is interesting and useful. Say ?boot to learn about it. For example, after making <code>b</code> as shown above, you can say: 
+
+    print(sd(b$t[,1]))
+
+Here, I'm using the fact that b$t is a matrix containing 1000 rows which holds all the results of estimation. The 1st column in it is the only thing being estimated by samplemedian(), which is the sample median. 
+The default plot() operator does nice things when fed with this
+object. Try it: say <code>plot(b)</code>
+
+<h3>Dealing with data frames</h3>
+
+Here is an example, which uses the bootstrap to report the ratio of two standard deviations:
+
+library(boot)
+
+sdratio <- function(D, d) {
+  E=D[d,]
+  return(sd(E$x)/sd(E$y))
+}
+
+x = runif(100)
+y = 2*runif(100)
+D = data.frame(x, y)
+
+b = boot(D, sdratio, R=1000)
+cat("Standard deviation of sdratio = ", sd(b$t[,1]), "\n")
+ci = boot.ci(b, type="basic")
+cat("95% CI from ", ci$basic[1,4], " - ", ci$basic[1,5], "\n")
+
+Note the beautiful syntax <code>E = D[d,]</code> which gives you a
+data frame E using the rows out of data frame D that are specified by
+the integer vector d.
+
+<h3>Sending more stuff to your estimation function</h3>
+
+Many times, you want to send additional things to your estimation
+function. You're allowed to say whatever you want to boot(), after you
+have supplied the two mandatory things that he wants. Here's an
+example: the trimmed mean.
+
+The R function mean() is general, and will also do a trimmed
+mean. If you say mean(x, 0.1), then it will remove the most extreme
+10% of the data at both the top and the bottom, and report the mean of
+the middle 80%. Suppose you want to explore the sampling
+characteristics of the trimmed mean using boot(). You would write this:
+
+trimmedmean <- function(x, d, trim=0) {
+  return(mean(x[d], trim/length(x)))
+}
+
+Here, I'm defaulting trim to 0. And, I'll allowing the caller to
+talk in the units of observations, not fractions of the data. So the
+user would say "5" to trim off the most extreme 5 observations at the
+top and the bottom. I convert that into fractions before feeding this
+to mean().
+
+Here's how you would call boot() using this:
+
+    b = boot(x, trimmedmean, R=1000, trim=5)
+
+This sends the extra argument trim=5 to boot, which sends it on to
+our trimmedmean() function.
+
+<h3>Finding out more</h3>
+
+The boot() function is very powerful. The above examples only
+scratch the surface. Among other things, it does things like the block
+bootstrap for time-series data, randomly censored data, etc. The
+manual can be accessed by saying:
+
+library(boot)
+?boot
+
+but what you really need is the article <i>Resampling Methods in R:
+The <code>boot</code> package</i> by Angelo J. Canty, which appeared
+in the December 2002 issue of <a
+href="http://cran.r-project.org/doc/Rnews"><i>R News</i></a>.
+
+Also see the web appendix to <i>An R and S-PLUS Companion to
+Applied Regression</i> by John Fox [<a
+href="http://socserv.mcmaster.ca/jfox/Books/Companion/appendix-bootstrapping.pdf">pdf</a>],
+and a tutorial by Patrick Burns [<a href="http://www.burns-stat.com/pages/Tutor/bootstrap_resampling.html">html</a>].
+
+Return to <a href="../index.html"><i>R by example</i></a>
+
+<a href="http://www.mayin.org/ajayshah">Ajay Shah</a>
+ajayshah at mayin dot org
+
+<h3>Notes on boot()</h3>
+
+# Goals: Do bootstrap inference, as an example, for a sample median.
+
+library(boot)
+
+samplemedian &lt;- function(x, d) {        # d is a vector of integer indexes
+  return(median(x[d]))                  # The genius is in the x[d] notation
+}
+
+data &lt;- rnorm(50)                          # Generate a dataset with 50 obs
+b  &lt;-  boot(data, samplemedian, R=2000)    # 2000 bootstrap replications
+cat("Sample median has a sigma of ", sd(b$t[,1]), "\n")
+plot(b)
+
+# Make a 99% confidence interval
+boot.ci(b, conf=0.99, type="basic")
+
+<h3>Doing MLE with your own likelihood function</h3>
+
+Roll your own likelihood function with R
+
+This document assumes you know something about maximum likelihood
+estimation. It helps you get going in terms of doing MLE in R. All
+through this, we will use the "ordinary least squares" (OLS) model
+(a.k.a. "linear regression" or "classical least squares" (CLS)) as the
+simplest possible example. <a href="ols-lf.pdf">Here are the formulae
+for the OLS likelihood, and the notation that I use.</a>
+
+There are two powerful optimisers in R: optim() and nlminb().
+This note only uses optim(). You should also explore nlminb().
+
+You might find it convenient to <a href="mlefiles.tar.bz2">snarf
+a tarfile of all the .R programs involved in this page.</a>
+
+<h2>Writing the likelihood function</h2>
+
+You have to write an R function which computes out the likelihood
+function. As always in R, this can be done in several different
+ways.
+
+One issue is that of restrictions upon parameters. When the search
+algorithm is running, it may stumble upon nonsensical values - such as
+a sigma below 0 - and you do need to think about this. One traditional
+way to deal with this is to "transform the parameter space". As an
+example, for all positive values of sigma, log(sigma) ranges from
+-infinity to +infinity. So it's safe to do an unconstrained search
+using log(sigma) as the free parameter.
+
+<a href="html/ols_lfn.html">Here is the OLS likelihood, written in a few ways.</a>
+
+Confucius he said, when you write a likelihood function, do take
+the trouble of also writing it's gradient (the vector of first
+derivatives). You don't absolutely need it, but it's highly
+recommended. In my toy experiment, this seems to be merely a question
+of speed - using the analytical gradient makes the MLE go faster. But
+the OLS likelihood is unique and simple; it is globally quasiconcave
+and has a clear top. There could not be a simpler task for a
+maximisation routine. In more complex situations, numerical
+derivatives are known to give more unstable searches, while analytical
+derivatives give more reliable answers.
+
+<h2>A simulation setup</h2>
+
+To use the other files on this page, you need to take my <a
+href="html/simulated_setup.html">simulation setup file</a>.
+
+<h2>Comparing these alternatives</h2>
+
+Now that I've written the OLS likelihood function in a few ways,
+it's natural to ask: Do they all give the same answer? And, which is
+the fastest?
+
+I <a href="html/lfn_testing_timing.html">wrote a simple R program in order
+to learn these things</a>. This gives the result:
+
+True theta =  2 4 6 
+OLS theta =  2.004311 3.925572 6.188047 
+
+Kick the tyres --
+                 lf1() lf1() in logs    lf2()    lf3()
+A weird theta 1864.956      1864.956 1864.956 1864.956
+True theta    1766.418      1766.418 1766.418 1766.418
+OLS theta     1765.589      1765.589 1765.589 1765.589
+Cost (ms)        0.450         0.550    1.250    1.000
+
+Derivatives -- first let me do numerically --
+  Derivative in sigma     --  10.92756 
+  Derivative in intercept -- -8.63967 
+  Derivative in slope     -- -11.82872 
+  Analytical derivative in sigma -- 10.92705 
+  Analytical derivative in beta  -- -8.642051 -11.82950 
+
+This shows us that of the 4 ways of writing it, ols.lf1() is the
+fastest, and that there is a fair match between my claimed analytical
+gradient and numerical derivatives.
+
+<h2>A minimal program which does the full MLE</h2>
+
+Using this foundation, I can jump to a self-contained and <a
+href="html/minimal.html">minimal R program which does the full job</a>. It
+gives this result:
+
+True theta =  2 4 6 
+OLS theta =  2.004311 3.925572 6.188047 
+
+Gradient-free (constrained optimisation) --
+$par
+[1] 2.000304 3.925571 6.188048
+$value
+[1] 1765.588
+$counts
+function gradient 
+      18       18 
+$convergence
+[1] 0
+$message
+[1] "CONVERGENCE: REL_REDUCTION_OF_F <= FACTR*EPSMCH"
+
+Using the gradient (constrained optimisation) --
+$par
+[1] 2.000303 3.925571 6.188048
+$value
+[1] 1765.588
+$counts
+function gradient 
+      18       18 
+$convergence
+[1] 0
+$message
+[1] "CONVERGENCE: REL_REDUCTION_OF_F <= FACTR*EPSMCH"
+
+You say you want a covariance matrix?
+MLE results --
+          Coefficient  Std. Err.        t
+Sigma        2.000303 0.08945629 22.36068
+Intercept    3.925571 0.08792798 44.64530
+X            6.188048 0.15377325 40.24138
+Compare with the OLS results --
+            Estimate Std. Error  t value      Pr(>|t|)
+(Intercept) 3.925572 0.08801602 44.60065 7.912115e-240
+X[, 2]      6.188047 0.15392722 40.20112 6.703474e-211
+
+The file minimal.R also generates this picture:
+
+<img src="logl_in_sigma.jpg">
+
+<h2>Measurement about the full MLE</h2>
+
+The R optim() function has many different paths to MLE. I wrote <a
+href="html/mle_testing_timing.html">a simple R program</a> in order to learn
+about these. This yields the result:
+
+True theta =  2 4 6 
+OLS theta =  2.004311 3.925572 6.188047 
+
+                        Hit rate   Cost
+L-BFGS-B, analytical         100   25.1
+BFGS, analytical             100   33.1
+Nelder-Mead, trans.          100   59.2
+Nelder-Mead                  100   60.5
+L-BFGS-B, numerical          100   61.2
+BFGS, trans., numerical      100   68.5
+BFGS, numerical              100   71.2
+SANN                          99 4615.5
+SANN, trans.                  96 4944.9
+
+The algorithms compared above are:
+
+
+ <i>L-BFGS-B, analytical</i>. This uses L-BFGS-B which is a
+variant of BFGS which allows "box" constraints (you can specify a
+permitted range for each parameter). This uses the ols.gradient()
+function to do analytical derivatives. It is the fastest (25.1
+milliseconds on my machine) and works 100% of the time.
+
+ <i>BFGS, analytical</i>. This uses BFGS instead of L-BFGS-B --
+i.e. no constraints are permitted. Analytical derivatives are used.
+
+ <i>Nelder-Mead, trans.</i>. Nelder-Mead is a derivative-free
+algorithm. It does not need you to write the gradient. This variant
+uses the log() transformation in order to ensure that sigma is positive.
+
+ <i>Nelder-Mead</i> This is Nelder-Mead without the transformation.
+
+ <i>L-BFGS-B, numerical</i> This is the same L-BFGS-B but instead
+of giving him analytical derivative, I leave optim() to fend for himself
+with numerical derivatives. A worse than doubling of cost!
+
+ <i>BFGS, trans., numerical</i> This uses plain BFGS, with
+the log() transformation to ensure that sigma stays positive, but using
+numerical derivatives.
+
+ <i>BFGS, numerical</i> This is plain BFGS, with no transformation
+to ensure a sane sigma, and using numerical derivatives.
+
+ <i>SANN</i> This is a stochastic search algorithm based on
+simulated annealing. As you see, it failed for 1% of the runs. It is
+very costly. The attraction is that it might be more effective at
+finding global maxima and in "staying out of troublesome territory".
+
+ <i>SANN trans.</i> This uses the log() transform for sigma
+and does the search using simulated annealing.
+
+
+<h2>Credits</h2>
+
+I learned this with help from Douglas Bates and Spencer Graves, and
+by lurking on the r-help mailing list, thus learning from everyone who
+takes the trouble of writing there. Thanks!
+
+<a href="../../index.html">Back up to my <i>R knowledge base</i> system</a>
+
+<a href="http://www.mayin.org/ajayshah">Ajay Shah</a>
+ajayshah at mayin dot org
+
+<h3>Notes on MLE</h3>
+
+# Goal: To do OLS by MLE.
+
+# OLS likelihood function
+# Note: I am going to write the LF using sigma2=sigma^2 and not sigma.
+ols.lf1 &lt;- function(theta, y, X) {
+  beta &lt;- theta[-1]
+  sigma2 &lt;- theta[1]
+  if (sigma2 &lt;= 0) return(NA)
+  n &lt;- nrow(X)
+  e &lt;- y - X%*%beta                                  # t() = matrix transpose
+  logl &lt;- ((-n/2)*log(2*pi)) - ((n/2)*log(sigma2)) - ((t(e)%*%e)/(2*sigma2))
+  return(-logl) # since optim() does minimisation by default.
+}
+
+# Analytical derivatives
+ols.gradient &lt;- function(theta, y, X) {
+  beta &lt;- theta[-1]
+  sigma2 &lt;- theta[1]
+  e &lt;- y - X%*%beta
+  n &lt;- nrow(X)
+
+  g &lt;- numeric(length(theta))
+  g[1] &lt;- (-n/(2*sigma2)) + (t(e)%*%e)/(2*sigma2*sigma2) # d logl / d sigma
+  g[-1] &lt;- (t(X) %*% e)/sigma2                           # d logl / d beta
+
+  return(-g)
+}
+
+X &lt;- cbind(1, runif(1000))
+theta.true &lt;- c(2,4,6) # error variance = 2, intercept = 4, slope = 6.
+y &lt;- X %*% theta.true[-1] + sqrt(theta.true[1]) * rnorm(1000)
+
+# Estimation by OLS --
+d &lt;- summary(lm(y ~ X[,2]))
+theta.ols &lt;- c(sigma2 = d$sigma^2, d$coefficients[,1])
+cat("OLS theta = ", theta.ols, "\n\n")
+
+cat("\nGradient-free (constrained optimisation) --\n")
+optim(c(1,1,1), method="L-BFGS-B", fn=ols.lf1,
+      lower=c(1e-6,-Inf,-Inf), upper=rep(Inf,3), y=y, X=X)
+
+cat("\nUsing the gradient (constrained optimisation) --\n")
+optim(c(1,1,1), method="L-BFGS-B", fn=ols.lf1, gr=ols.gradient,
+      lower=c(1e-6,-Inf,-Inf), upper=rep(Inf,3), y=y, X=X)
+
+cat("\n\nYou say you want a covariance matrix?\n")
+p &lt;- optim(c(1,1,1), method="L-BFGS-B", fn=ols.lf1, gr=ols.gradient,
+           lower=c(1e-6,-Inf,-Inf), upper=rep(Inf,3), hessian=TRUE,
+           y=y, X=X)
+inverted &lt;- solve(p$hessian)
+results &lt;- cbind(p$par, sqrt(diag(inverted)), p$par/sqrt(diag(inverted)))
+colnames(results) &lt;- c("Coefficient", "Std. Err.", "t")
+rownames(results) &lt;- c("Sigma", "Intercept", "X")
+cat("MLE results --\n")
+print(results)
+cat("Compare with the OLS results --\n")
+d$coefficients
+
+# Picture of how the loglikelihood changes if you perturb the sigma
+theta &lt;- theta.ols
+delta.values &lt;- seq(-1.5, 1.5, .01)
+logl.values &lt;- as.numeric(lapply(delta.values,
+                                 function(x) {-ols.lf1(theta+c(x,0,0),y,X)}))
+plot(sqrt(theta[1]+delta.values), logl.values, type="l", lwd=3, col="blue",
+     xlab="Sigma", ylab="Log likelihood")
+grid()
+
+<h3>The strange Cauchy distribution</h3>
+
+# Goals: Scare the hell out of children with the Cauchy distribution.
+
+# A function which simulates N draws from one of two distributions,
+# and returns the mean obtained thusly.
+one.simulation &lt;- function(N=100, distribution="normal") {
+  if (distribution == "normal") {
+    x &lt;- rnorm(N)
+  } else {
+    x &lt;- rcauchy(N)
+  }
+  mean(x)
+}
+
+k1 &lt;- density(replicate(1000, one.simulation(20)))
+k2 &lt;- density(replicate(1000, one.simulation(20, distribution="cauchy")))
+
+xrange &lt;- range(k1$x, k2$x)
+plot(k1$x, k1$y, xlim=xrange, type="l", xlab="Estimated value", ylab=")
+grid()
+lines(k2$x, k2$y, col="red")
+abline(v=.5)
+legend(x="topleft", bty="n",
+       lty=c(1,1),
+       col=c("black", "red"),
+       legend=c("Mean of Normal", "Mean of Cauchy"))
+# The distribution of the mean of normals collapses into a point;
+# that of the cauchy does not.
+
+# Here's more scary stuff --
+for (i in 1:10) {
+  cat("Sigma of distribution of 1000 draws from mean of normal - ",
+      sd(replicate(1000, one.simulation(20))), "\n")
+}
+for (i in 1:10) {
+  cat("Sigma of distribution of 1000 draws from mean of cauchy - ",
+      sd(replicate(1000, one.simulation(20, distribution="cauchy"))), "\n")
+}
+
+# Exercise for the reader: Compare the distribution of the median of
+# the Normal against the distribution of the median of the Cauchy.
+
+<h3>An example of simulation-based inference</h3>
+
+# Goal: An example of simulation-based inference.
+# This is in the context of testing for time-series dependence in
+# stock market returns data.
+# The code here does the idea of Kim, Nelson, Startz (1991).
+# We want to use the distribution of realworld returns data, without
+# needing assumptions about normality.
+# The null is lack of dependence (i.e. an efficient market).
+# So repeatedly, the data is permuted, and the sample ACF is computed.
+# This gives us the distribution of the ACF under H0: independence, but
+# while using the empirical distribution of the returns data.
+
+# Weekly returns on Nifty, 1/1/2002 to 31/12/2003, 104 weeks of data.
+r &lt;- c(-0.70031182197603, 0.421690133064168, -1.20098072984689, 0.143402360644984, 3.81836537549516, 3.17055939373247, 0.305580301919228, 1.23853814691852, 0.81584795095706, -1.51865139747764, -2.71223626421522, -0.784836480094242, 1.09180041170998, 0.397649587762761, -4.11309534220923, -0.263912425099111, -0.0410144239805454, 1.75756212770972, -2.3335373897992, -2.19228764624217, -3.64578978183987, 1.92535789661354, 3.45782867883164, -2.15532607229374, -0.448039988298987, 1.50124793565896, -1.45871585874362, -2.13459863369767, -6.2128068251802, -1.94482987066289, 0.751294815735637, 1.78244982829590, 1.61567494389745, 1.53557708728931, -1.53557708728931, -0.322061470004265, -2.28394919698225, 0.70399304137414, -2.93580952607737, 2.38125098034425, 0.0617697039252185, -4.14482733720716, 2.04397528093754, 0.576400673606603, 3.43072725191913, 2.96465382864843, 2.89833358015583, 1.85387040058336, 1.52136515035952, -0.637268376944444, 1.75418926224609, -0.804391905851354, -0.861816058320475, 0.576902488444109, -2.84259880663331, -1.35375536139417, 1.49096529042234, -2.05404881010045, 2.86868849528146, -0.258270670200478, -4.4515881438687, -1.73055019137092, 3.04427015714648, -2.94928202352018, 1.62081315773994, -6.83117945164824, -0.962715713711582, -1.75875847071740, 1.50330330252721, -0.0479705789653728, 3.68968303215933, -0.535807567290103, 3.94034871061182, 3.85787174417738, 0.932185956989873, 4.08598654183674, 2.27343783689715, 1.13958830440017, 2.01737201171230, -1.88131458327554, 1.97596267156648, 2.79857144562001, 2.22470306481695, 2.03212951411427, 4.95626853448883, 3.40400972901396, 3.03840139165246, -1.89863129741417, -3.70832135042951, 4.78478922155396, 4.3973589590097, 4.9667050392987, 2.99775078737081, -4.12349101552438, 3.25638269809945, 2.29683376253966, -2.64772825878214, -0.630835277076258, 4.72528848505451, 1.87368447333380, 3.17543946162564, 4.58174427843208, 3.23625985632168, 2.29777651227296)
+
+# The 1st autocorrelation from the sample:
+acf(r, 1, plot=FALSE)$acf[2]
+
+# Obtain 1000 draws from the distribution of the 1st autocorrelation
+# under the null of independence:
+set.seed &lt;- 101
+simulated &lt;- replicate(1000, acf(r[sample(1:104, replace=FALSE)], 1, plot=FALSE)$acf[2])
+# At 95% --
+quantile(simulated, probs=c(.025,.975))
+# At 99% --
+quantile(simulated, probs=c(.005,.995))
+
+# So we can reject the null at 95% but not at 99%.
+
+# A pretty picture.
+plot(density(simulated), col="blue")
+abline(v=0)
+abline(v=quantile(simulated, probs=c(.025,.975)), lwd=2, col="purple")
+abline(v=acf(r, 1, plot=FALSE)$acf[2], lty=2, lwd=4, col="yellow")
+
+<h3>Four standard operations with standard distributions</h3>
+
+# Goal: Standard computations with well-studied distributions.
+
+# The normal distribution is named "norm". With this, we have:
+
+# Normal density
+dnorm(c(-1.96,0,1.96))
+
+# Cumulative normal density
+pnorm(c(-1.96,0,1.96))
+
+# Inverse of this
+qnorm(c(0.025,.5,.975))
+pnorm(qnorm(c(0.025,.5,.975)))
+
+# 1000 random numbers from the normal distribution
+summary(rnorm(1000))
+
+# Here's the same ideas, for the chi-squared distribution with 10 degrees
+# of freedom.
+dchisq(c(0,5,10), df=10)
+
+# Cumulative normal density
+pchisq(c(0,5,10), df=10)
+
+# Inverse of this
+qchisq(c(0.025,.5,.975), df=10)
+
+# 1000 random numbers from the normal distribution
+summary(rchisq(1000, df=10))
+
+<!--HTML generated by highlight 2.4.8, http://www.andre-simon.de/-->
+
+<h3>Two CDFs and a two-sample Kolmogorov-Smirnoff test</h3>
+
+# Goal: Given two vectors of data,
+#       superpose their CDFs
+#       and show the results of the two-sample Kolmogorov-Smirnoff test
+
+# The function consumes two vectors x1 and x2.
+# You have to provide a pair of labels as `legendstrings'.
+# If you supply an xlab, it's used
+# If you specify log - e.g. log="x" - this is passed on to plot.
+# The remaining args that you specify are sent on into ks.test()
+two.cdfs.plot &lt;- function(x1, x2, legendstrings, xlab=", log=", ...) {
+  stopifnot(length(x1)&gt;0,
+            length(x2)&gt;0,
+            length(legendstrings)==2)
+  hilo &lt;- range(c(x1,x2))
+
+  par(mai=c(.8,.8,.2,.2))
+  plot(ecdf(x1), xlim=hilo, verticals=TRUE, cex=0,
+       xlab=xlab, log=log, ylab="Cum. distribution", main=")
+  grid()
+  plot(ecdf(x2), add=TRUE, verticals=TRUE, cex=0, lwd=3)
+  legend(x="bottomright", lwd=c(1,3), lty=1, bty="n",
+         legend=legendstrings)
+
+  k &lt;- ks.test(x1,x2, ...)
+  text(x=hilo[1], y=c(.9,.85), pos=4, cex=.8,
+     labels=c(
+       paste("KS test statistic: ", sprintf("%.3g", k$statistic)),
+       paste("Prob value: ", sprintf("%.3g", k$p.value))
+       )
+     )
+  k
+}
+
+x1 &lt;- rnorm(100, mean=7, sd=1)
+x2 &lt;- rnorm(100, mean=9, sd=1)
+
+# Check error detection --
+two.cdfs.plot(x1,x2)
+
+# Typical use --
+two.cdfs.plot(x1, x2, c("X1","X2"), xlab="Height (metres)", log="x")
+
+# Send args into ks.test() --
+two.cdfs.plot(x1, x2, c("X1","X2"), alternative="less")
+
+<!--HTML generated by highlight 2.4.8, http://www.andre-simon.de/-->
+
+<h3>Simulation to measure size and power of a test</h3>
+
+# Goal: Simulation to study size and power in a simple problem.
+
+set.seed(101)
+
+# The data generating process: a simple uniform distribution with stated mean
+dgp &lt;- function(N,mu) {runif(N)-0.5+mu}
+
+# Simulate one FIXED hypothesis test for H0:mu=0, given a true mu for a sample size N
+one.test &lt;- function(N, truemu) {
+  x &lt;- dgp(N,truemu)
+  muhat &lt;- mean(x)
+  s &lt;- sd(x)/sqrt(N)
+  # Under the null, the distribution of the mean has standard error s
+  threshold &lt;- 1.96*s
+  (muhat &lt; -threshold) || (muhat &gt; threshold)
+} # Return of TRUE means reject the null
+
+# Do one experiment, where the fixed H0:mu=0 is run Nexperiments times with a sample size N.
+# We return only one number: the fraction of the time that H0 is rejected.
+experiment &lt;- function(Nexperiments, N, truemu) {
+  sum(replicate(Nexperiments, one.test(N, truemu)))/Nexperiments
+}
+
+# Measure the size of a test, i.e. rejections when H0 is true
+experiment(10000, 50, 0)
+# Measurement with sample size of 50, and true mu of 0.
+
+# Power study: I.e. Pr(rejection) when H0 is false
+# (one special case in here is when the H0 is actually true)
+
+muvalues &lt;- seq(-.15,.15,.01)
+  # When true mu &lt; -0.15 and when true mu &gt; 0.15,
+  # the Pr(rejection) veers to 1 (full power) and it's not interesting.
+
+# First do this with sample size of 50
+results &lt;- NULL
+for (truth in muvalues) {
+  results &lt;- c(results, experiment(10000, 50, truth))
+}
+par(mai=c(.8,.8,.2,.2))
+plot(muvalues, results, type="l", lwd=2, ylim=c(0,1),
+     xlab="True mu", ylab="Pr(Rejection of H0:mu=0)")
+abline(h=0.05, lty=2)
+
+# Now repeat this with sample size of 100 (should yield a higher power)
+results &lt;- NULL
+for (truth in muvalues) {
+  results &lt;- c(results, experiment(10000, 100, truth))
+}
+lines(muvalues, results, lwd=2, col="blue")
+legend(x=-0.15, y=.2, lwd=c(2,1,2), lty=c(1,2,1), cex=.8,
+       col=c("black","black","blue"), bty="n",
+       legend=c("N=50", "Size, 0.05", "N=100"))
+
+<!--HTML generated by highlight 2.4.8, http://www.andre-simon.de/-->
+
+<h4>Regression</h4>
+
+<h3>Doing OLS</h3>
+
+# Goal: Simulate a dataset from the OLS model and obtain
+#       obtain OLS estimates for it.
+
+x &lt;- runif(100, 0, 10)                  # 100 draws from U(0,10)
+y &lt;- 2 + 3*x + rnorm(100)               # beta = [2, 3] and sigma = 1
+
+# You want to just look at OLS results?
+summary(lm(y ~ x))
+
+# Suppose x and y were packed together in a data frame --
+D &lt;- data.frame(x,y)
+summary(lm(y ~ x, D))
+
+# Full and elaborate steps --
+d &lt;- lm(y ~ x)
+# Learn about this object by saying ?lm and str(d)
+# Compact model results --
+print(d)
+# Pretty graphics for regression diagnostics --
+par(mfrow=c(2,2))
+plot(d)
+
+d &lt;- summary(d)
+# Detailed model results --
+print(d)
+# Learn about this object by saying ?summary.lm and by saying str(d)
+cat("OLS gave slope of ", d$coefficients[2,1],
+    "and a error sigma of ", d$sigma, "\n")
+
+## I need to drop down to a smaller dataset now --
+x &lt;- runif(10)
+y &lt;- 2 + 3*x + rnorm(10)
+m &lt;- lm(y ~ x)
+
+# Now R supplies a wide range of generic functions which extract
+# useful things out of the result of estimation of many kinds of models.
+
+residuals(m)
+fitted(m)
+AIC(m)
+AIC(m, k=log(10))                        # SBC
+vcov(m)
+logLik(m)
+
+<h3>Dummy variables in regression</h3>
+
+# Goal: "Dummy variables" in regression.
+
+# Suppose you have this data:
+people = data.frame(
+  age =       c(21,62,54,49,52,38),
+  education = c("college", "school", "none", "school", "college", "none"),
+  education.code = c(  2,        1,      0,        1,         2,      0 )
+  )
+# Here people$education is a string categorical variable and
+# people$education.code is the same thing, with a numerical coding system.
+people
+
+# Note the structure of the dataset --
+str(people)
+# The strings supplied for `education' have been treated (correctly) as
+# a factor, but education.code is being treated as an integer and not as
+# a factor.
+
+# We want to do a dummy variable regression. Normally you would have:
+#  1 Chosen college as the omitted category
+#  2 Made a dummy for "none" named educationnone
+#  3 Made a dummy for "school" named educationschool
+#  4 Ran a regression like lm(age ~ educationnone + educationschool, people)
+# But this is R. Things are cool:
+lm(age ~ education, people)
+
+# ! :-)
+# When you feed him an explanatory variable like education, he does all
+# these steps automatically. (He chose college as the omitted category).
+
+# If you use an integer coding, then the obvious thing goes wrong --
+lm(age ~ education.code, people)
+# because he's thinking that education.code is an integer explanatory
+# variable. So you need to:
+
+lm(age ~ factor(education.code), people)
+# (he choose a different omitted category)
+
+# Alternatively, fix up the dataset --
+people$education.code &lt;- factor(people$education.code)
+lm(age ~ education.code, people)
+
+#
+# Bottom line:
+# Once the dataset has categorical variables correctly represented as factors, i.e. as
+str(people)
+# doing OLS in R induces automatic generation of dummy variables while leaving one out:
+lm(age ~ education, people)
+lm(age ~ education.code, people)
+
+# But what if you want the X matrix?
+m &lt;- lm(age ~ education, people)
+model.matrix(m)
+# This is the design matrix that went into the regression m.
+
+<!--HTML generated by highlight 2.4.8, http://www.andre-simon.de/-->
+
+<h3>Generate latex tables of OLS results</h3>
+
+# Goal: To make a latex table with results of an OLS regression.
+
+# Get an OLS --
+x1 = runif(100)
+x2 = runif(100, 0, 2)
+y = 2 + 3*x1 + 4*x2 + rnorm(100)
+m = lm(y ~ x1 + x2)
+
+# and print it out prettily --
+library(xtable)
+# Bare --
+xtable(m)
+xtable(anova(m))
+
+# Better --
+print.xtable(xtable(m, caption="My regression",
+                    label="t:mymodel",
+                    digits=c(0,3,2,2,3)),
+             type="latex",
+             file="xtable_demo_ols.tex",
+             table.placement = "tp",
+             latex.environments=c("center", "footnotesize"))
+
+print.xtable(xtable(anova(m),
+                    caption="ANOVA of my regression",
+                    label="t:anova_mymodel"),
+             type="latex",
+             file="xtable_demo_anova.tex",
+             table.placement = "tp",
+             latex.environments=c("center", "footnotesize"))
+
+# Read the documentation of xtable. It actually knows how to generate
+# pretty latex tables for a lot more R objects than just OLS results.
+# It can be a workhorse for making tabular out of matrices, and
+# can also generate HTML.
+
+<h3>`Least squares dummy variable' (LSDV) or `fixed effects' model</h3>
+
+# Goals: Simulate a dataset from a "fixed effects" model, and
+#        obtain "least squares dummy variable" (LSDV) estimates.
+#
+# We do this in the context of a familiar "earnings function" -
+#  log earnings is quadratic in log experience, with parallel shifts by
+#  education category.
+
+# Create an education factor with 4 levels --
+education &lt;- factor(sample(1:4,1000, replace=TRUE),
+                    labels=c("none", "school", "college", "beyond"))
+# Simulate an experience variable with a plausible range --
+experience &lt;- 30*runif(1000)            # experience from 0 to 20 years
+# Make the intercept vary by education category between 4 given values --
+intercept &lt;- c(0.5,1,1.5,2)[education]
+
+# Simulate the log earnings --
+log.earnings &lt;- intercept +
+  2*experience - 0.05*experience*experience + rnorm(1000)
+A &lt;- data.frame(education, experience, e2=experience*experience, log.earnings)
+summary(A)
+
+# The OLS path to LSDV --
+summary(lm(log.earnings ~ -1 + education + experience + e2, A))
+
+<h3>Estimate beta of Sun Microsystems using data from Yahoo finance</h3>
+<h3>Elaborate version</h3>
+
+# Goal: Using data from Yahoo finance, estimate the beta of Sun Microsystems
+#       for weekly returns.
+# This is the `elaborate version' (36 lines), also see terse version (16 lines)
+
+library(tseries)
+
+# I know that the yahoo symbol for the common stock of Sun Microsystems
+# is "SUNW" and for the S&amp;P 500 index is "^GSPC".
+prices &lt;- cbind(get.hist.quote("SUNW", quote="Adj", start="2003-01-01", retclass="zoo"),
+                get.hist.quote("^GSPC", quote="Adj", start="2003-01-01", retclass="zoo"))
+colnames(prices) &lt;- c("SUNW", "SP500")
+prices &lt;- na.locf(prices)               # Copy last traded price when NA
+
+# To make weekly returns, you must have this incantation:
+nextfri.Date &lt;- function(x) 7 * ceiling(as.numeric(x - 1)/7) + as.Date(1)
+# and then say
+weekly.prices &lt;- aggregate(prices, nextfri.Date,tail,1)
+
+# Now we can make weekly returns --
+r &lt;- 100*diff(log(weekly.prices))
+
+# Now shift out of zoo to become an ordinary matrix --
+r &lt;- coredata(r)
+rj &lt;- r[,1]
+rM &lt;- r[,2]
+d &lt;- lm(rj ~ rM)               # Market model estimation.
+print(summary(d))
+
+# Make a pretty picture
+big &lt;- max(abs(c(rj, rM)))
+range &lt;- c(-big, big)
+plot(rM, rj, xlim=range, ylim=range,
+     xlab="S&amp;P 500 weekly returns (%)", ylab="SUNW weekly returns (%)")
+grid()
+abline(h=0, v=0)
+lines(rM, d$fitted.values, col="blue")
+
+<h3>Terse version.</h3>
+
+# Goal : Terse version of estimating the beta of Sun Microsystems
+#        using weekly returns and data from Yahoo finance.
+#        By Gabor Grothendieck.
+
+library(tseries)
+
+getstock &lt;- function(x)
+   c(get.hist.quote(x, quote = "Adj", start = "2003-01-01", compress = "w"))
+r &lt;- diff(log(cbind(sp500 = getstock("^gspc"), sunw = getstock("sunw"))))
+
+mm &lt;- lm(sunw ~ ., r)
+print(summary(mm))
+
+range &lt;- range(r, -r)
+plot(r[,1], r[,2], xlim = range, ylim = range,
+     xlab = "S&amp;P 500 weekly returns (%)", ylab = "SUNW weekly returns (%)")
+grid()
+abline(mm, h = 0, v = 0, col = "blue")
+
+<!--HTML generated by highlight 2.4.6, http://www.andre-simon.de/-->
+
+<h3>Nonlinear regression</h3>
+
+# Goal: To do nonlinear regression, in three ways
+#       By just supplying the function to be fit,
+#       By also supplying the analytical derivatives, and
+#       By having him analytically differentiate the function to be fit.
+#
+# John Fox has a book "An R and S+ companion to applied regression"
+# (abbreviated CAR).
+# An appendix associated with this book, titled
+#   "Nonlinear regression and NLS"
+# is up on the web, and I strongly recommend that you go read it.
+#
+# This file is essentially from there (I have made slight changes).
+
+# First take some data - from the CAR book --
+library(car)
+data(US.pop)
+attach(US.pop)
+plot(year, population, type="l", col="blue")
+
+# So you see, we have a time-series of the US population. We want to
+# fit a nonlinear model to it.
+
+library(stats)                            # Contains nonlinear regression
+time &lt;- 0:20
+pop.mod &lt;- nls(population ~ beta1/(1 + exp(beta2 + beta3*time)),
+  start=list(beta1=350, beta2=4.5, beta3=-0.3), trace=TRUE)
+# You just write in the formula that you want to fit, and supply
+# starting values. "trace=TRUE" makes him show iterations go by.
+
+summary(pop.mod)
+# Add in predicted values into the plot
+lines(year, fitted.values(pop.mod), lwd=3, col="red")
+
+# Look at residuals
+plot(year, residuals(pop.mod), type="b")
+abline(h=0, lty=2)
+
+# Using analytical derivatives:
+model &lt;- function(beta1, beta2, beta3, time) {
+  m &lt;- beta1/(1+exp(beta2+beta3*time))
+  term &lt;- exp(beta2 + beta3*time)
+  gradient &lt;- cbind((1+term)^-1,
+                    -beta1*(1+term)^-2 * term,
+                    -beta1*(1+term)^-2 * term * time)
+  attr(m, 'gradient') &lt;- gradient
+  return(m)
+}
+
+summary(nls(population ~ model(beta1, beta2, beta3, time),
+            start=list(beta1=350, beta2=4.5, beta3=-0.3)))
+
+# Using analytical derivatives, using automatic differentiation (!!!):
+model &lt;- deriv(~ beta1/(1 + exp(beta2+beta3*time)), # rhs of model
+               c('beta1', 'beta2', 'beta3'), # parameter names
+               function(beta1, beta2, beta3, time){} # arguments for result
+               )
+summary(nls(population ~ model(beta1, beta2, beta3, time),
+            start=list(beta1=350, beta2=4.5, beta3=-0.3)))
+
+<h3>Standard tests</h3>
+
+# Goal: Some of the standard tests
+
+# A classical setting --
+x &lt;- runif(100, 0, 10)                  # 100 draws from U(0,10)
+y &lt;- 2 + 3*x + rnorm(100)               # beta = [2, 3] and sigma is 1
+d &lt;- lm(y ~ x)
+# CLS results --
+summary(d)
+
+library(sandwich)
+library(lmtest)
+# Durbin-Watson test --
+dwtest(d, alternative="two.sided")
+# Breusch-Pagan test --
+bptest(d)
+# Heteroscedasticity and autocorrelation consistent (HAC) tests
+coeftest(d, vcov=kernHAC)
+
+# Tranplant the HAC values back in --
+library(xtable)
+sum.d &lt;- summary(d)
+xtable(sum.d)
+sum.d$coefficients[1:2,1:4] &lt;- coeftest(d, vcov=kernHAC)[1:2,1:4]
+xtable(sum.d)
+
+<h3>Using orthogonal polynomials</h3>
+
+# Goal: Experiment with fitting nonlinear functional forms in
+#       OLS, using orthogonal polynomials to avoid difficulties with
+#       near-singular design matrices that occur with ordinary polynomials.
+#       Shriya Anand, Gabor Grothendieck, Ajay Shah, March 2006.
+
+# We will deal with noisy data from the d.g.p. y = sin(x) + e
+x &lt;- seq(0, 2*pi, length.out=50)
+set.seed(101)
+y &lt;- sin(x) + 0.3*rnorm(50)
+basicplot &lt;- function(x, y, minx=0, maxx=3*pi, title=") {
+  plot(x, y, xlim=c(minx,maxx), ylim=c(-2,2), main=title)
+  lines(x, sin(x), col="blue", lty=2, lwd=2)
+  abline(h=0, v=0)
+}
+x.outsample &lt;- seq(0, 3*pi, length.out=100)
+
+# Severe multicollinearity with ordinary polynomials
+x2 &lt;- x*x
+x3 &lt;- x2*x
+x4 &lt;- x3*x
+cor(cbind(x, x2, x3, x4))
+# and a perfect design matrix using orthogonal polynomials
+m &lt;- poly(x, 4)
+all.equal(cor(m), diag(4))              # Correlation matrix is I.
+
+par(mfrow=c(2,2))
+# Ordinary polynomial regression --
+  p &lt;- lm(y ~ x + I(x^2) + I(x^3) + I(x^4))
+  summary(p)
+  basicplot(x, y, title="Polynomial, insample") # Data
+  lines(x, fitted(p), col="red", lwd=3)  # In-sample
+  basicplot(x, y, title="Polynomial, out-of-sample")
+  predictions.p &lt;- predict(p, list(x = x.outsample))    # Out-of-sample
+  lines(x.outsample, predictions.p, type="l", col="red", lwd=3)
+  lines(x.outsample, sin(x.outsample), type="l", col="blue", lwd=2, lty=2)
+  # As expected, polynomial fitting gives terrible results out of sample.
+
+# These IDENTICAL things using orthogonal polynomials
+  d &lt;- lm(y ~ poly(x, 4))
+  summary(d)
+  basicplot(x, y, title="Orth. poly., insample") # Data
+  lines(x, fitted(d), col="red", lwd=3)  # In-sample
+  basicplot(x, y, title="Orth. poly., out-of-sample")
+  predictions.op &lt;- predict(d, list(x = x.outsample))    # Out-of-sample
+  lines(x.outsample, predictions.op, type="l", col="red", lwd=3)
+  lines(x.outsample, sin(x.outsample), type="l", col="blue", lwd=2, lty=2)
+
+# predict(d) is magical! See ?SafePrediction
+# The story runs at two levels. First, when you do an OLS model,
+# predict()ion requires applying coefficients to an appropriate
+# X matrix. But one level deeper, the polynomial or orthogonal-polynomial
+# needs to be utilised for computing the X matrix based on the
+# supplied x.outsample data.
+# If you say p &lt;- poly(x, n)
+# then you can say predict(p, new) where predict.poly() gets invoked.
+# And when you say predict(lm()), the full steps are worked out for
+# you automatically: predict.poly() is used to make an X matrix and
+# then prediction based on the regression results is done.
+
+all.equal(predictions.p, predictions.op) # Both paths are identical for this
+                                         # (tame) problem.
+
+<!--HTML generated by highlight 2.4.6, http://www.andre-simon.de/-->
+
+<h3>A function that takes a model specification as an argument</h3>
+
+# Goal: R syntax where model specification is an argument to a function.
+
+# Invent a dataset
+x &lt;- runif(100); y &lt;- runif(100); z &lt;- 2 + 3*x + 4*y + rnorm(100)
+D &lt;- data.frame(x=x, y=y, z=z)
+
+amodel &lt;- function(modelstring) {
+  summary(lm(modelstring, D))
+}
+
+amodel(z ~ x)
+amodel(z ~ y)
+
+<!--HTML generated by highlight 2.4.6, http://www.andre-simon.de/-->
+
+<h4>Time-series analysis</h4>
+
+<h3>ARMA estimation, diagnostics, forecasting</h3>
+
+# Goals: ARMA modeling - estimation, diagnostics, forecasting.
+
+# 0. SETUP DATA
+rawdata &lt;- c(-0.21,-2.28,-2.71,2.26,-1.11,1.71,2.63,-0.45,-0.11,4.79,5.07,-2.24,6.46,3.82,4.29,-1.47,2.69,7.95,4.46,7.28,3.43,-3.19,-3.14,-1.25,-0.50,2.25,2.77,6.72,9.17,3.73,6.72,6.04,10.62,9.89,8.23,5.37,-0.10,1.40,1.60,3.40,3.80,3.60,4.90,9.60,18.20,20.60,15.20,27.00,15.42,13.31,11.22,12.77,12.43,15.83,11.44,12.32,12.10,12.02,14.41,13.54,11.36,12.97,10.00,7.20,8.74,3.92,8.73,2.19,3.85,1.48,2.28,2.98,4.21,3.85,6.52,8.16,5.36,8.58,7.00,10.57,7.12,7.95,7.05,3.84,4.93,4.30,5.44,3.77,4.71,3.18,0.00,5.25,4.27,5.14,3.53,4.54,4.70,7.40,4.80,6.20,7.29,7.30,8.38,3.83,8.07,4.88,8.17,8.25,6.46,5.96,5.88,5.03,4.99,5.87,6.78,7.43,3.61,4.29,2.97,2.35,2.49,1.56,2.65,2.49,2.85,1.89,3.05,2.27,2.91,3.94,2.34,3.14,4.11,4.12,4.53,7.11,6.17,6.25,7.03,4.13,6.15,6.73,6.99,5.86,4.19,6.38,6.68,6.58,5.75,7.51,6.22,8.22,7.45,8.00,8.29,8.05,8.91,6.83,7.33,8.52,8.62,9.80,10.63,7.70,8.91,7.50,5.88,9.82,8.44,10.92,11.67)
+
+# Make a R timeseries out of the rawdata: specify frequency &amp; startdate
+gIIP &lt;- ts(rawdata, frequency=12, start=c(1991,4))
+print(gIIP)
+plot.ts(gIIP, type="l", col="blue", ylab="IIP Growth (%)", lwd=2,
+        main="Full data")
+grid()
+
+# Based on this, I decide that 4/1995 is the start of the sensible period.
+gIIP &lt;- window(gIIP, start=c(1995,4))
+print(gIIP)
+plot.ts(gIIP, type="l", col="blue", ylab="IIP Growth (%)", lwd=2,
+        main="Estimation subset")
+grid()
+
+# Descriptive statistics about gIIP
+mean(gIIP); sd(gIIP); summary(gIIP);
+plot(density(gIIP), col="blue", main="(Unconditional) Density of IIP growth")
+acf(gIIP)
+
+# 1. ARMA ESTIMATION
+m.ar2 &lt;- arima(gIIP, order = c(2,0,0))
+print(m.ar2)                       # Print it out
+
+# 2. ARMA DIAGNOSTICS
+tsdiag(m.ar2)                      # His pretty picture of diagnostics
+## Time series structure in errors
+print(Box.test(m.ar2$residuals, lag=12, type="Ljung-Box"));
+## Sniff for ARCH
+print(Box.test(m.ar2$residuals^2, lag=12, type="Ljung-Box"));
+## Eyeball distribution of residuals
+plot(density(m.ar2$residuals), col="blue", xlim=c(-8,8),
+     main=paste("Residuals of AR(2)"))
+
+# 3. FORECASTING
+## Make a picture of the residuals
+plot.ts(m.ar2$residual, ylab="Innovations", col="blue", lwd=2)
+s &lt;- sqrt(m.ar2$sigma2)
+abline(h=c(-s,s), lwd=2, col="lightGray")
+
+p &lt;- predict(m.ar2, n.ahead = 12)         # Make 12 predictions.
+print(p)
+
+## Watch the forecastability decay away from fat values to 0.
+## sd(x) is the naive sigma. p$se is the prediction se.
+gain &lt;- 100*(1-p$se/sd(gIIP))
+plot.ts(gain, main="Gain in forecast s.d.", ylab="Per cent",
+        col="blue", lwd=2)
+
+## Make a pretty picture that puts it all together
+ts.plot(gIIP, p$pred, p$pred-1.96*p$se, p$pred+1.96*p$se,
+        gpars=list(lty=c(1,1,2,2), lwd=c(2,2,1,1),
+          ylab="IIP growth (%)", col=c("blue","red", "red", "red")))
+grid()
+abline(h=mean(gIIP), lty=2, lwd=2, col="lightGray")
+legend(x="bottomleft", cex=0.8, bty="n",
+       lty=c(1,1,2,2), lwd=c(2,1,1,2),
+       col=c("blue", "red", "red", "lightGray"),
+       legend=c("IIP", "AR(2) forecasts", "95% C.I.", "Mean IIP growth"))
+
+
+<script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+    // ... more custom settings?
+});
+</script>
+</pre></body></html>
