@@ -6,7 +6,7 @@ record structure: date, time, alarm msg
 
 <html>
 <head>
-<meta http-equiv="refresh" content="300">
+<meta http-equiv="refresh" content="30">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>Other minute data</title>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
@@ -15,7 +15,7 @@ record structure: date, time, alarm msg
 <script src="./rchart/RGraph.common.dynamic.js"></script>
 <script src="./rchart/RGraph.line.js" ></script>
 <script src="./rchart/RGraph.common.tooltips.js"></script>
-<script src="https://williamkpchan.github.io/mainscript.js"></script>
+<script src='../mainscript.js'></script>
 <script src="../stkcodeMin.js"></script>
 <script src="https://williamkpchan.github.io/showAllCharts.js"></script>
 
@@ -102,8 +102,8 @@ let openLst = [];
 let highLst = [];
 let lowLst = [];
 let closeLst = [];
-
-var minTrendSteps = [];
+chartColor = ['red','green','blue','brown', 'orange','gold','yellow', 'cyan', 'violet','silver'];
+minTrendSteps = [];
 var theMax, theMin;
 var intv1, intv2, intv3, intv4, intv5, intv6, intv7, showWidth, datawidth;
 
@@ -167,21 +167,21 @@ function startToRoll(theCode) {
 		thedrawdata.push(makeMovAve(thedrawdata[0], intv4));
 		thedrawdata.push(makeMovAve(thedrawdata[0], intv5));
 		thedrawdata.push(makeMovAve(thedrawdata[0], intv6));
-//		thedrawdata.push(makeMovAve(thedrawdata[0], intv7)); // length is width + intv7
+		thedrawdata.push(makeMovAve(thedrawdata[0], intv7)); // length is width + intv7
 		// chop and keep the display data only
 
 		//stddev = makeStd(thedrawdata[0], intv4); // failed to draw sd
 		//thedrawdata.push(thedrawdata+stddev);
 		//thedrawdata.push(thedrawdata-stddev);
           //console.log(thedrawdata[7])
-		thedrawdata[0] = thedrawdata[0].slice(intv6);
-		thedrawdata[1] = thedrawdata[1].slice(intv6+1);
-		thedrawdata[2] = thedrawdata[2].slice(intv6+1);
-		thedrawdata[3] = thedrawdata[3].slice(intv6+1);
-		thedrawdata[4] = thedrawdata[4].slice(intv6+1);
-		thedrawdata[5] = thedrawdata[5].slice(intv6+1);
-		thedrawdata[6] = thedrawdata[6].slice(intv6+1);
-		//thedrawdata[7] = thedrawdata[7].slice(intv6+1);
+		thedrawdata[0] = thedrawdata[0].slice(intv7);
+		thedrawdata[1] = thedrawdata[1].slice(intv7+1);
+		thedrawdata[2] = thedrawdata[2].slice(intv7+1);
+		thedrawdata[3] = thedrawdata[3].slice(intv7+1);
+		thedrawdata[4] = thedrawdata[4].slice(intv7+1);
+		thedrawdata[5] = thedrawdata[5].slice(intv7+1);
+		thedrawdata[6] = thedrawdata[6].slice(intv7+1);
+		thedrawdata[7] = thedrawdata[7].slice(intv7+1);
 		theMax = Math.max(Math.max(...thedrawdata[0]),Math.max(...thedrawdata[1]),Math.max(...thedrawdata[2]),Math.max(...thedrawdata[3]),Math.max(...thedrawdata[4]),Math.max(...thedrawdata[5]),Math.max(...thedrawdata[6]),Math.max(...thedrawdata[6]));
 		theMin = Math.min(Math.min(...thedrawdata[0]),Math.min(...thedrawdata[1]),Math.min(...thedrawdata[2]),Math.min(...thedrawdata[3]),Math.min(...thedrawdata[4]),Math.min(...thedrawdata[5]),Math.min(...thedrawdata[6]),Math.min(...thedrawdata[6]));
 
@@ -189,7 +189,7 @@ function startToRoll(theCode) {
 		 transp = transpose(thedrawdata);
             wAveTrendRange = [];  // this is the gap diff
 		  for (var row=0; row < transp.length; row++) {
-		    rowRange = transp[row].slice(1, 7);
+		    rowRange = transp[row].slice(1, thedrawdata.length);
       	    rowMax = Math.max(...rowRange);
       	    rowMin = Math.min(...rowRange);
       	    var rowDiff = rowMax - rowMin;
@@ -198,19 +198,27 @@ function startToRoll(theCode) {
 
 		wAvemax = Math.max(...wAveTrendRange);
 		wAvemin = Math.min(...wAveTrendRange);
-		drawTrend(wAveTrendRange, wAvemax, wAvemin, 'trend', 'red');
+		drawTrend(wAveTrendRange, wAvemax, wAvemin, 'gapSpace');
 
 		// find derivative
-		derivative = diff(wAveTrendRange);
+		derivative = diff(makeMovAve(thedrawdata[0], 10));
 		derivative.unshift(0);
-          // derivative = makeMovAve(derivative, 10)
+		derivative.fill(null,0,12); //array.fill(value, start, end)
+
           //derivative = derivative.map(item => Math.round(item*10000)/10000)
 		derivmax = Math.max(...derivative);
 		derivmin = Math.min(...derivative);
-		drawTrend(derivative, derivmax, derivmin, 'deriv', 'green');
+		drawTrend(derivative, derivmax, derivmin, 'speed');
 
+		// find derivative7
+		derivative7 = diff(makeMovAve(thedrawdata[7], 10));
+		derivative7.unshift(0);
+		derivative7.fill(null,0,12);
+		derivmax7 = Math.max(...derivative7);
+		derivmin7 = Math.min(...derivative7);
+		drawTrend(derivative7, derivmax7, derivmin7, 'speed7');
 
-		drawchart(thedrawdata, ['silver','green','yellow', 'cyan', 'blue', 'orange', 'red', "violet", "gold"]);
+		drawchart(thedrawdata);
 		showStatus();
 		detectX();
 		detectTrend();
@@ -414,16 +422,41 @@ function checkDnX(prevL, prevS, curL, curS){
 function chkKey() {
 	var testkey = getChar(event);
 	if(testkey == 'c'){askCode();}
-  	if(testkey == 'd'){window.open("OHLCOtherCode.html");}
-	if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
+     if(testkey == '0'){storeCode('sh000001');startToRoll('sh000001');}
+     if(testkey == '3'){storeCode('sz399001');startToRoll('sz399001');}
+     if(testkey == '1'){storeCode('HSI');startToRoll('HSI');}
+     if(testkey == '2'){storeCode('01339');startToRoll('01339');}
+     if(testkey == '4'){storeCode('01766');startToRoll('01766');}
+     if(testkey == '5'){storeCode('55608');startToRoll('55608');}
+     if(testkey == '6'){storeCode('00371');startToRoll('00371');}
+     if(testkey == '7'){storeCode('00788');startToRoll('00788');}
+     if(testkey == '8'){storeCode('00308');startToRoll('00308');}
+     if(testkey == '9'){storeCode('00390');startToRoll('00390');}
+
+     if(testkey == 'a'){window.location = '#cvs';}
+     if(testkey == 's'){window.location = '#speed';}
+     //if(testkey == 's'){storeCode(theCode); window.open("mline11MinuteSto.html");}
+     if(testkey == 'd'){window.location = '#gapSpace';}
+  	//if(testkey == 'd'){window.open("mline11chart.html");}
+     //if(testkey == 'v'){window.location = '#imgp6';}
 	if(testkey == 'v'){sCt(theStartCode);}
+
+     if(testkey == 'w'){window.scrollTo(0,0);}
+     if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
+
+     if(testkey == ','){window.open("mlinechart.html");}
+     if(testkey == '"'){window.open("mline11Minutechart.html");}
+     if(testkey == "'"){window.open("mline11chart.html");}
+     if(testkey == '.'){localStorage.setItem("randomcode", thecode); window.open("mlineMinutechart.html");}
+
+     if(testkey == 'X'){storeCode(theCode); window.open("Random Charts.html");}
 	if(testkey == 'f'){jpforward();}
-	if(testkey == 'i'){fullinit();}
+	if(testkey == 'I'){fullinit();}
 	if(testkey == 'b'){jpback();}
 	if(testkey == 'R'){jprandom();}
 	if(testkey == 't'){window.scrollTo(0,0);}
 	if(testkey == 'w'){askWidth();}
-	if(testkey == 'p'){chgMinPeriod();}
+	if(testkey == 'i'){chgInterval();}
 	if(testkey == 'z'){toggleMinPeriod();}
 	if(testkey == 'l'){askList()}
      if(testkey == 'r'){
@@ -502,12 +535,9 @@ function FormatNumberLength(num) {
 </h4>
 
 <canvas id="cvs" width="1150" height="600">[No canvas support]</canvas>
-<br>
-margin width<br>
-<canvas id="trend" width="1150" height="240">[No canvas support]</canvas>
-<br>
-margin width deriv<br>
-<canvas id="deriv" width="1150" height="240">[No canvas support]</canvas>
+<canvas id="speed" width="1150" height="240">[No canvas support]</canvas>
+<canvas id="speed7" width="1150" height="240">[No canvas support]</canvas>
+<canvas id="gapSpace" width="1150" height="240">[No canvas support]</canvas>
 <br>
 
 <div id="msg"></div>
@@ -520,26 +550,26 @@ d open("OHLCOtherCode.html")
 e scrollTo end
 v sCt(theStartCode)
 f jpforward
-i fullinit
+I fullinit
 b jpback
 t scrollTo(0,0)
 w askWidth, default 350
 l askList()
-p chgMinPeriod, default 10,20,40,80,160,320,640
+i chgInterval
 R jprandom
 r Random Charts
 refresh after 120 sec
 </pre>
 <script>
-function drawchart(thedrawdata, thecolors) {
+function drawchart(thedrawdata) {
 	RGraph.reset(document.getElementById('cvs'));
 	line = new RGraph.Line({
 		id:'cvs', data:thedrawdata,
 		options: {
-			title: theStartCode + " " + stkName,
+			title:  showDate()+" " + theStartCode + " " + stkName + "  p1: " + intv1+ " p7: "+intv7+", c: "+ closeLst[closeLst.length-1] + " "+ showTime(),
 			titleColor: 'grey', 
 			titleSize: 16,
-			colors: thecolors, scaleDecimals: 2,
+			colors: chartColor, scaleDecimals: 2,
 			backgroundGrid: true, axisColor: '#864', textColor: '#ccc', numxticks: 0,
                tickmarks: 'plus',
 
@@ -557,15 +587,18 @@ function drawchart(thedrawdata, thecolors) {
 };
 
 
-function drawTrend(therange,maxValue, minValue, chartID, linecolor) {
+function drawTrend(therange,maxValue, minValue, chartID) {
    dataTooltips = therange.map(item => Math.round(item * 1000) / 1000)
    dataTooltips = dataTooltips.map(String)
    RGraph.reset(document.getElementById(chartID));
    line = new RGraph.Line({
    	id:chartID, data:therange,
    	options: {
+   		title: chartID,
+			titleColor: 'grey', 
+			titleSize: 10,
    		backgroundGrid: true, axisColor: '#864', textColor: '#ccc',
-		numxticks: 0, colors:[linecolor], scaleDecimals: 2,
+		numxticks: 0, colors: chartColor, scaleDecimals: 2,
    		tickmarksDotLinewidth: 0,ticksize: 1, linewidth: 1, 
    		ymax: maxValue, ymin: minValue,
    		spline: false, shadow: false,
@@ -592,13 +625,17 @@ function askCode() {
 function askList() {
 	var theList = prompt("set temp stkList, Number (5 digits) sep by space： ", "");
 	if (theList != null && theList != "") {
-		if (theList != "HSI") { stkList = theList.split(" ");}
-		}
+		if (theList != "HSI") {
+             localStorage.setItem("stkListArr", theList);
+             stkList = theList.split(" ");
+          }
+	}
 }
 
 function storeCode(thecode) {
 	if(typeof(Storage) !== "undefined") {
 		localStorage.otherCode = thecode;
+		localStorage.setItem("randomcode", thecode)
 	}
 }
 function _init() {
@@ -649,11 +686,12 @@ function askWidth() {
 	}
 }
 
-function chgMinPeriod() {
-	var minTrendStepsS = prompt("enter 7 trend periods, sep by space (not to start with 10):", "");
-	if (minTrendStepsS != null && minTrendStepsS != "") {
-          minTrendStepsS = minTrendStepsS.split(' ');
-          localStorage.setItem("minTrendSteps", JSON.stringify(minTrendStepsS));
+function chgInterval() {
+	var baseStep = prompt("Base period:", "");
+	if (baseStep != null && baseStep != "") {
+          baseStep = Number(baseStep);
+          minTrendSteps = [baseStep, baseStep*2, baseStep*3, baseStep*4, baseStep*5, baseStep*6, baseStep*7]
+          localStorage.setItem("minTrendSteps", JSON.stringify(minTrendSteps));
 		window.location.reload(true);
 		}
 }
