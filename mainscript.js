@@ -86,6 +86,7 @@ function chkOtherKeys(testkey) {
   else if(testkey == 'X'){window.open("D:/Dropbox/Public/LibDocs/Random Charts.html");}
   else if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
   else if(testkey == '"'){window.open("mline11Minutechart.html");}
+  else if(testkey == ";"){window.open("otherCode.html");}
   else if(testkey == "'"){window.open("mline11chart.html");}
 
 }

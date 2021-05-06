@@ -26,7 +26,11 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
 <body onkeypress="chkKey()">
 <center>
 <br>
-<canvas id="cvs" width="1350" height="550">[No canvas support]</canvas>
+<canvas id="cvs" width="1200" height="600">[No canvas support]</canvas>
+<canvas id="speed" width="1200" height="240">[No canvas support]</canvas>
+<canvas id="speed9" width="1200" height="240">[No canvas support]</canvas>
+<canvas id="gapSpace" width="1200" height="240">[No canvas support]</canvas>
+
 <br><span id="turnover"></span>
 <span id="lastValues"></span>
 </center>
@@ -73,21 +77,35 @@ A stk code sample: 000001.sh, 399001.sz
 </pre>
 <script>
       let thestkdata = [];
-      period = 75;
       let dateLst = [];
       let openLst = [];
       let highLst = [];
       let lowLst = [];
       let closeLst = [];
       let amtLst = [];
-
+      if (localStorage.getItem("daychartWidth") === null) {
+        localStorage.setItem("daychartWidth", 75);
+        period = 75;
+      } else{
+        period = localStorage.getItem("daychartWidth");
+      }
       dataStatus = "L"
-      intv1 = 2
+      intv1 = 5
+      intv2 = 2*intv1
+      intv3 = 3*intv1
+      intv4 = 4*intv1
+      intv5 = 5*intv1
+      intv6 = 6*intv1
+      intv7 = 7*intv1
+      intv8 = 8*intv1
+      intv9 = 9*intv1
       stkpriceDataArr = [];
       stkList = localStorage.getItem("stkListArr").split(' ');
       stkPointer = 0;
       theCode = localStorage.randomcode;
       titleText = "";
+      starti = 0;
+      chartColor = ['red','green','blue','brown', 'orange','gold','yellow', 'cyan', 'violet','silver'];
 
       attentionList = ""
 
@@ -204,24 +222,24 @@ A stk code sample: 000001.sh, 399001.sz
 
               if(thestkdata.length == 0){alert("no data in: " + thestkkey)}
 
-    for(i=(thestkdata.length-12);i<thestkdata.length;i++){
-      thedate = thestkdata[i][0];  // date
-      if(codewidth <= 5){
-        theAmtIdx = 8;
-      }else{
-        theAmtIdx = 5;
-      }
-      theamt = Math.round(Number(thestkdata[i][theAmtIdx]));
-      if(codewidth > 5){
-        if(theCode.slice(0, 5) == "sh688"){
-          theamt = Math.round(theamt * Number(thestkdata[i][2])/10000);
-        }else{
-          theamt = Math.round(theamt * Number(thestkdata[i][2])/100);
-        }
-      }
-      theamt = theamt.toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",");
-      $("#turnover").append( theamt,"w ");
-    }
+              for(i=(thestkdata.length-12);i<thestkdata.length;i++){
+                    thedate = thestkdata[i][0];  // date
+                    if(codewidth <= 5){
+                      theAmtIdx = 8;
+                    }else{
+                      theAmtIdx = 5;
+                    }
+                    theamt = Math.round(Number(thestkdata[i][theAmtIdx]));
+                    if(codewidth > 5){
+                      if(theCode.slice(0, 5) == "sh688"){
+                        theamt = Math.round(theamt * Number(thestkdata[i][2])/10000);
+                      }else{
+                        theamt = Math.round(theamt * Number(thestkdata[i][2])/100);
+                      }
+                    }
+                    theamt = theamt.toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",");
+                    $("#turnover").append( theamt,"w ");
+                  }
       
               theNameObj = tempdata[Object.keys(tempdata)[1]];
               theNameObjName  = theNameObj[Object.keys(theNameObj)[0]];
@@ -254,13 +272,12 @@ A stk code sample: 000001.sh, 399001.sz
               }else if(dataStatus == "L"){ stkpriceDataArr = lowLst
               }else { stkpriceDataArr = highLst}
 
-              titleText = showDate() +" "+ showTime()+"\n"+theStartCode + " " + stkName + " 日線保力加 ";
               redraw();  // this line must be inside the AJAX because AJAX run last
               // return  thedrawdata =[highLst, lowLst, closeLst];
            });
 
            showDateTime();
-      $("#dateTime").prepend("Item " + (stkPointer+1) + " of " + stkList.length + ", ");
+           $("#dateTime").prepend("Item " + (stkPointer+1) + " of " + stkList.length + ", ");
 
 
       }
@@ -373,14 +390,8 @@ A stk code sample: 000001.sh, 399001.sz
    }
 
      function redraw() {
-        intv2 = 2*intv1
-        intv3 = 3*intv1
-        intv4 = 4*intv1
-        intv5 = 5*intv1
-        intv6 = 6*intv1
-        intv7 = 7*intv1
-        intv8 = 8*intv1
-        intv9 = 9*intv1
+        initIntvSteps()
+        titleText = showDate() +" "+ showTime()+", p1: "+intv1+ " p9: "+intv8+" w: "+(thestkdata.length-starti) +"\n"+theStartCode + " " + stkName + " 日線 ";
 
         RGraph.reset(document.getElementById('cvs'));
 
@@ -421,6 +432,40 @@ $("#lastValues").text("");
 $("#lastValues").append(statusMsg);
 
        drawchart()
+
+		// create datalog table
+		 transp = transpose(mydata);
+            wAveTrendRange = [];  // this is the gap diff
+		  for (var row=0; row < transp.length; row++) {
+		    rowRange = transp[row].slice(1, mydata.length);
+      	    rowMax = Math.max(...rowRange);
+      	    rowMin = Math.min(...rowRange);
+      	    var rowDiff = rowMax - rowMin;
+      	    wAveTrendRange.push(rowDiff);
+      	  }
+
+		wAvemax = Math.max(...wAveTrendRange);
+		wAvemin = Math.min(...wAveTrendRange);
+		drawTrend(wAveTrendRange, wAvemax, wAvemin, 'gapSpace');
+
+		// find derivative
+		derivative = diff(makeMovAve(mydata[0], 3));
+		derivative.unshift(0);
+		derivative.fill(null,0,12); //array.fill(value, start, end)
+
+          //derivative = derivative.map(item => Math.round(item*10000)/10000)
+		derivmax = Math.max(...derivative);
+		derivmin = Math.min(...derivative);
+		drawTrend(derivative, derivmax, derivmin, 'speed');
+
+		// find derivative9
+		derivative9 = diff(makeMovAve(mydata[10], 5));
+		derivative9.unshift(0);
+		derivative9.fill(null,0,12);
+		derivmax9 = Math.max(...derivative9);
+		derivmin9 = Math.min(...derivative9);
+		drawTrend(derivative9, derivmax9, derivmin9, 'speed9');
+
      }
 
 	function makeMovAve(bigArray, intv) {
@@ -462,6 +507,12 @@ $("#lastValues").append(statusMsg);
 	  const n = array.length
 	  const mean = array.reduce((a, b) => a + b) / n
 	  return Math.sqrt(array.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n)
+	}
+
+	function transpose(thisArr) { // Swap rows with columns of a matrix
+	    return Object.keys(thisArr[0]).map(function(column) {
+	        return thisArr.map(function(row) { return row[column]; });
+	    });
 	}
 
     function useAttentionList() {
@@ -532,11 +583,30 @@ $("#lastValues").append(statusMsg);
 
     function chgchartWidth() {
         newChartWidth = prompt("enter chart width:", "");
-        if (newChartWidth != null && newChartWidth != "" && newChartWidth < (1000 - 2*intv1)){period = parseInt(newChartWidth); collectStkData(theCode)}
+        if (newChartWidth != null && newChartWidth != "" && newChartWidth < (1000 - 2*intv1)){
+          period = parseInt(newChartWidth);
+          localStorage.setItem("daychartWidth", period);
+          collectStkData(theCode);
+        }
+
     }
     function chgIntv() {
         intv = prompt("intv1 value:", "");
-        if (theCode != null && intv1 != ""){intv1 = parseInt(intv); redraw()}
+        if (theCode != null && intv1 != ""){
+          intv1 = parseInt(intv);
+          initIntvSteps()
+          redraw()
+        }
+    }
+    function initIntvSteps() {
+      intv2 = 2*intv1
+      intv3 = 3*intv1
+      intv4 = 4*intv1
+      intv5 = 5*intv1
+      intv6 = 6*intv1
+      intv7 = 7*intv1
+      intv8 = 8*intv1
+      intv9 = 9*intv1
     }
     function chgHighList() {
         dataStatus = "H"
@@ -618,9 +688,9 @@ function showDateTime() {
             // labels: ['2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018'],
             spline: false,
             shadow: false,
-            gutterLeft: 50,
+            gutterLeft: 0,
             gutterRight: 50,
-            gutterTop: 22,
+            gutterTop: 25,
             gutterBottom: 25
             }
           }).trace();
@@ -628,7 +698,7 @@ function showDateTime() {
 		yminpct = 100 - (theMax-theMin)*100/theMax,
 		ymaxpct = 100,
 
-          yaxis1 = new RGraph.Drawing.YAxis('cvs', 1350)
+          yaxis1 = new RGraph.Drawing.YAxis('cvs', 1200)
                 .Set('colors', ['gold'])
                 .Set('text.color', 'gray')
                 .Set('text.size', 8)
@@ -640,6 +710,33 @@ function showDateTime() {
                 .Draw();
 
     };
+
+    function drawTrend(therange,maxValue, minValue, chartID) {
+       // dataTooltips = therange.map(item => Math.round(item * 1000) / 1000)
+       // dataTooltips = dataTooltips.map(String)
+       RGraph.reset(document.getElementById(chartID));
+       line = new RGraph.Line({
+       	id:chartID, data:therange,
+       	options: {
+       		title: chartID,
+    			titleColor: 'grey', 
+    			titleSize: 10,
+       		backgroundGrid: true, axisColor: '#864', textColor: '#ccc',
+    		numxticks: 0, colors: chartColor, scaleDecimals: 2,
+       		tickmarksDotLinewidth: 0,ticksize: 1, linewidth: 1, 
+       		ymax: maxValue, ymin: minValue,
+       		spline: false, shadow: false,
+              // tooltips: dataTooltips,
+       		backgroundGridColor: '#001000', backgroundGridVlines: false,
+       		gutterLeft: 0, gutterRight: 50, gutterTop: 25, gutterBottom: 25
+       	}
+       }).trace();
+    };
+    
+    function diff(arr) {
+      return arr.slice(1).map(function(n, i) { return n - arr[i]; });
+    }
+
 
     collectStkData(theCode);
 </script>
