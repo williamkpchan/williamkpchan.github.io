@@ -216,7 +216,8 @@ function showTime() {
     var secs=d.getSeconds();
     var mins=d.getMinutes();
     var hr=d.getHours();
-    var timemsg = FormatNumberLength(hr) + ":" + FormatNumberLength(mins) + ":" + FormatNumberLength(secs);
+    var ampm = hr >= 12 ? 'pm' : 'am';
+    var timemsg = FormatNumberLength(hr) + ":" + FormatNumberLength(mins) + ":" + FormatNumberLength(secs) + " "+ampm;
     return(timemsg);
 }
 
