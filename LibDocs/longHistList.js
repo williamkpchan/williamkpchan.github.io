@@ -1,6 +1,6 @@
 // remember to register new list in hsReservedCode
 const hsReservedCode = [ "110000","110001","110002","110003","110004","110010","110030","110041","110050","110078","111000","111100","221000",]
-var allListNames = ["exam210205", "HKIndexes", "lowPriceLrgAmtList","uptrend", "mychips", "big20List", "HSList","Abig20List", "AlowPrice", "myfavorList", "activeList", "aETFList", "ahDiffList", "aTenYiList", "aOneYiList", "a30MilList", "atv210205", "fraudSTK"]
+var allListNames = ["fraudSTK","HKIndexes","lowPriceLrgAmtList","uptrend","big20List","HSList","Abig20List","AlowPrice","myfavorList","activeList","aETFList","ahDiffList","aTenYiList","aOneYiList","a30MilList","mychips","atv210205","exam210205","usHKstks","us137Tech","us41Finance","us46MedFood","us13Media","us35CarEngy","us50Manuf","us24ETF",]
 var HKIndexes = "110000 110078 110030 110010 110050 110001 110002 110003 110004 110041";
 var lowPriceLrgAmtList = "03988 00857 02600 01288 02399 01339 01988 02866 00728 00390 02135 00762 01053 01765 02103 01138 01610 02233 06818";
 var uptrend = "02331 01876 03898 01308 01378 02883 01268 01057 03968 02020 01811 02600 02333 01918 01038 00267 00857 00883 01138 02186 00003 00902 00338 01515 03883 06078 06186 07299 09990 00525";
