@@ -6,7 +6,7 @@ record structure: date, time, alarm msg
 
 <html>
 <head>
-<meta http-equiv="refresh" content="660">
+<meta http-equiv="refresh" content="60">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>Other minute data</title>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
@@ -29,6 +29,8 @@ record structure: date, time, alarm msg
 body { margin: auto; width: 90%; font-size: 18px; background-color: #000000; color: #20C030;}
 
 button, input, select {color: gray; background-color: #001010;  font-size: 18px; }
+select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
+
 .redword{color: red;}
 .greenword{color: lightgreen;}
 .goldword{color: gold;}
@@ -112,6 +114,7 @@ var theMax, theMin;
 var intv1, intv2, intv3, intv4, intv5, intv6, intv7, showWidth, datawidth;
 
 var stkPointer = 0
+
 function startToRoll(theCode) {
   // to check A stk or HK stk
           codewidth = theCode.length
@@ -152,6 +155,27 @@ function startToRoll(theCode) {
 	thestkdata = [];
 	thedrawdata = [];
 	closeLst = [];
+
+      var options = '';  // build the List select option
+      for (var i = 0; i < allListNames.length; i++) {
+         options += '<option value="' + allListNames[i]+ '">' + allListNames[i] + '</option>';
+      }
+      $("#selectList").html(options);
+
+      if (localStorage.getItem("attentionList") === null) {
+        localStorage.attentionList = "07500";
+      } else{
+        stkList = localStorage.getItem("attentionList").split(',');
+      }
+      //console.log(attentionList)
+
+
+  if(fraudSTK.includes(theCode)){
+    $('#alertMsg').show()
+  }else{
+    $('#alertMsg').hide()
+  }
+
 	//var theurl = theurlHead + theStartCode
 	RGraph.AJAX.getJSON(theurl, function (rawJSON){
 		keys = Object.keys(rawJSON); // read the structure keys ["code", "msg", "data"]
@@ -259,10 +283,10 @@ function startToRoll(theCode) {
 		showComments();
 		detectX();
 		detectTrend();
-		statusMsg = '<br><span class="cyanword">淺藍</span> ' + thedrawdata[3][lastPtr].toFixed(3) + "&emsp;" + 
-		'<span class="blueword">深藍</span> ' + thedrawdata[4][lastPtr].toFixed(3) + "&emsp;" + 
-		'<span class="brownword">橙</span> ' + thedrawdata[5][lastPtr].toFixed(3) + "&emsp;" + 
-		'<span class="redword">red</span> ' + thedrawdata[6][lastPtr].toFixed(3) + "&emsp;" + 
+		statusMsg = '<br><span class="cyanword">淺藍</span> ' + thedrawdata[3][lastPtr-1].toFixed(3) + "&emsp;" + 
+		'<span class="blueword">深藍</span> ' + thedrawdata[4][lastPtr-1].toFixed(3) + "&emsp;" + 
+		'<span class="brownword">橙</span> ' + thedrawdata[5][lastPtr-1].toFixed(3) + "&emsp;" + 
+		'<span class="redword">red</span> ' + thedrawdata[6][lastPtr-1].toFixed(3) + "&emsp;" + 
 		"<br>commands: c, v, f, b, r, m<br>" + "trends: " + minTrendSteps + "<br>";
 		$("#msg").append(statusMsg);
 
@@ -595,6 +619,7 @@ function FormatNumberLength(num) {
 <center>
 <h4>
 
+<span id="alertMsg" class="bordred1 borRad15 blinkred whiteback goldbs">提防老千 !!! </span>
 <span class="orangebut gold brownblackgrad embossts" onclick="localStorage.setItem('randomcode', theCode);
        window.open('Random Charts.html');">尋寶</span>
 
@@ -630,6 +655,7 @@ function FormatNumberLength(num) {
 </div>
 
 </h4>
+<select id="selectList" onchange="assignList()"></select>
 
 <canvas id="cvs" width="1250" height="600">[No canvas support]</canvas>
 <canvas id="speed" width="1250" height="240">[No canvas support]</canvas>
@@ -639,6 +665,7 @@ function FormatNumberLength(num) {
 <br>
 
 <div id="msg"></div>
+
 <audio id="alarmPt" src="stringVibrate.mp3" preload="auto"></audio>
 <audio id="audioPop"></audio>
 <br>
@@ -660,6 +687,7 @@ r Random Charts
 refresh after 120 sec
 
 </pre>
+<div id="listMsg"></div>
 <br><br><br><br><br><br>
 <script>
 function drawchart(thedrawdata) {
@@ -878,8 +906,24 @@ function toggleButton() {
     document.getElementById('myDropdown').classList.toggle('show');
 }
 function qList() {
-    stkList = lowPriceLrgAmtList.split(' ');
+    stkList = myfavorList.split(' ');
+    alert("changed list: " + stkList.length + "\ndetails see end of this page.\nremember to modify mustadd list!")
+    $("#listMsg").text("stkList Total: " + stkList.length + "\n"+stkList);
+
 }
+
+function assignList(){
+  newList = eval(document.getElementById("selectList").value).split(" ");
+  stkList = newList;
+  localStorage.setItem("attentionList", newList)
+
+  // console.log(newList)
+
+  document.getElementById("listMsg").focus();
+  alert(" Total: " + stkList.length + "\ndetails see end of this page.\nremember to modify mustadd list!\n" + newList)
+        $("#listMsg").text("Total: " + stkList.length + "\n"+stkList);
+}
+
 // Close the dropdown if the user clicks outside of it
 window.onclick = function(event) {
   if (!event.target.matches('.dropbtn')) {
