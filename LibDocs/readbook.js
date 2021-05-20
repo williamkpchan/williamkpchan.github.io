@@ -24,7 +24,7 @@ function chkKey() {
     $('body,html').animate({scrollTop:(divtoc.clientHeight/2 + divtoc.offsetTop-600)}, 1); } //go to middle
   else if(testkey == "m"){ location = '#mustWatch';}
   else if(testkey == "p"){ pause();}
-  else if(testkey == "c"){ continU();}
+  // else if(testkey == "c"){ continU();}
   else if(testkey == "r"){ randomFlip();}
   else if(testkey == "5"){ randomFlip();}
   else if(testkey == "s"){ showMov();}
@@ -44,6 +44,11 @@ function chkKey() {
   }
   else if(testkey == 'd'){window.open("https://www.youdao.com/");}
   else if(testkey == 'u'){window.open("https://www.worldometers.info/coronavirus/");}
+  else if(testkey == "R"){ randomWL();}
+  else if(testkey == "+"){ addtoWL();}
+  else if(testkey == "-"){ rvFmWL();}
+  else if(testkey == "a"){ askNum();}
+
   else{chkOtherKeys(testkey)} 
 }
 function getChar(event){
@@ -95,7 +100,7 @@ function jumpTo() {
 var toc = $('#toc');
 if(markerName != "h0"){
   $(markerName).each(function(i) {
-      var topic = $(this), topicNumber = i + 1; topicLength = topicNumber;
+      var topic = $(this), topicNumber = i; topicLength = topicNumber +1;
   
       if (typeof(showTopicNumber) !== 'undefined'){
         if (showTopicNumber == true){
@@ -129,5 +134,68 @@ function loadBookmark(objName) {
 
 
 randomFlip();
-$("#mustWatch").append('<pre><br><span class="silver">keys: <br>r random article<br>5 random article<br>b backward<br>4 backward<br>f foreward<br>6 foreward<br><br>t top of table<br>8 top of table<br>l last of table<br>2 last of table<br>7 go to table middle<br><br>T Top of page<br>e end of page<br><br>m mustWatch<br>p pause<br>c continU<br>s showPage<br><br>K set bookmark<br>k open bookmark</span></pre>');
+$("#mustWatch").append('<pre><br><span class="silver">keys: <br>r random article<br>5 random article<br>b backward<br>4 backward<br>f foreward<br>6 foreward<br><br>t top of table<br>8 top of table<br>l last of table<br>2 last of table<br>7 go to table middle<br><br>T Top of page<br>e end of page<br><br>m mustWatch<br>p pause<br>c continU<br>s showPage<br><br>K set bookmark<br>k open bookmark</span><br>R randomWL; + addtoWL; - rvFmWL; a askNum</pre>');
+
+
+
+// learningMode package //
+// totalLength already exist
+
+// init the removeList
+var rvListName = "removeList"
+window[rvListName] = window["bookid"] + " rvList" // removeList is variable name now
+
+if (localStorage.getItem(removeList) === null) {
+    localStorage.setItem(removeList, 0)
+    rMList = 0
+}else{
+    rMList = localStorage.getItem(removeList).split(",").map(Number)
+}
+
+// init waitingList
+var waitListName = "waitingList"
+window[waitListName] = window["bookid"] + " waitList" // waitingList is variable name now
+
+if (localStorage.getItem(waitingList) === null) {
+    localStorage.setItem(waitingList, [0,1,2,3,4])
+    waitList = [1,2,3,4,5]
+}else{
+    waitList = localStorage.getItem(waitingList).split(",").map(Number)
+}
+
+function randomWL() {
+  newPointer = waitList[Math.floor(Math.random() * waitList.length)];
+  while(newPointer == topicpointer){
+    newPointer = waitList[Math.floor(Math.random() * waitList.length)];
+  }
+  topicpointer = newPointer;
+  showTopic();
+}
+
+function addtoWL() {
+     console.log(topicpointer)
+	waitList.push(topicpointer)
+	waitList = Array.from(new Set(waitList))
+	localStorage.setItem(waitingList, waitList)
+	alert("waitList: " + waitList)
+}
+function rvFmWL() {
+	ItemIndex = waitList.indexOf(topicpointer);
+	if (ItemIndex > -1) { waitList.splice(ItemIndex, 1); }
+	waitList = [...new Set(waitList)]; // set unique
+	localStorage.setItem(waitingList, waitList)
+	alert("topicpointer "+topicpointer + " removed fm waitList! Remaining: " + waitList)
+}
+
+function askNum() {
+    thecode = prompt("Include Topic Number:", "");
+    if (thecode != null && thecode != "") {
+		topicpointer = parseInt(thecode)
+		addtoWL()
+    }else{
+      return;
+    }
+}
+
+// learningMode package complete//
 

@@ -18,6 +18,7 @@ function chkKey() {
   else if(testkey == 'C'){window.open("LibDocs/caseStudiesLog.html");}
   else if(testkey == 'd'){window.open("https://www.youdao.com/");}
   else if(testkey == 'e'){window.location = '#ertong';}
+  else if(testkey == 'E'){window.open("LibDocs/English Conversation.html");}
   else if(testkey == 'f'){window.open("http://williamkpchan.github.io/ForexChart.htm");}
   else if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
   else if(testkey == 'g'){window.location = '#_youxi';}
