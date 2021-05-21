@@ -134,7 +134,7 @@ function loadBookmark(objName) {
 
 
 randomFlip();
-$("#mustWatch").append('<pre><br><span class="silver">keys: <br>r random article<br>5 random article<br>b backward<br>4 backward<br>f foreward<br>6 foreward<br><br>t top of table<br>8 top of table<br>l last of table<br>2 last of table<br>7 go to table middle<br><br>T Top of page<br>e end of page<br><br>m mustWatch<br>p pause<br>c continU<br>s showPage<br><br>K set bookmark<br>k open bookmark</span><br>R randomWL; + addtoWL; - rvFmWL; a askNum</pre>');
+$("#mustWatch").append('<pre><br><span class="silver">快捷键: <br>r, 5 跳任意题目 b, 4 前一题目 f, 6 下一题目<br><br>t, 8 目录顶 l, 2 目录底 7 目录中部<br><br>T 网页顶 e 网页底 m 必看<br><br>K 设定书签 k 跳到书签</span><br>多书签管理- R 跳任意书签; + 加书签; - 减书签; a 手动书签</pre>');
 
 
 
