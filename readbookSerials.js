@@ -51,6 +51,11 @@ function chkKey() {
     if(typeof bookid != 'undefined') {loadBookmark(bookid);}
     else{alert("No BookId!")}
   }
+  else if(testkey == "R"){ randomWL();}
+  else if(testkey == "+"){ addtoWL();}
+  else if(testkey == "-"){ rvFmWL();}
+  else if(testkey == "a"){ askNum();}
+
   else if(testkey == 'd'){window.open("https://www.youdao.com/");}
   else{chkOtherKeys(testkey);}
 }
@@ -58,7 +63,7 @@ function chkKey() {
 function getChar(event){if (event.which!=0 && event.charCode!=0) {return String.fromCharCode(event.which)}
  else {return null}}
 
-var topicpointer = ImgList.length, timer = 15000
+var topicpointer = ImgList.length -1, timer = 15000
 function shuffle(array) {
  var i = ImgList.length, j = 0, temp;
  while (i--) { j = Math.floor(Math.random() * (i+1))
@@ -69,7 +74,7 @@ function shuffle(array) {
 //ImgList = shuffle(Array.from(Array(ImgList.length).keys()))
 ImgList.forEach(makeTOC);
 function changeImg() {
- if (topicpointer >= ImgList.length - 1) { topicpointer = 0;}
+ if (topicpointer > ImgList.length - 1) { topicpointer = 0;}
  else if (topicpointer < 0) { topicpointer = ImgList.length - 1;} 
  else { topicpointer = topicpointer + 1;}
  // console.log(topicpointer);
@@ -80,7 +85,6 @@ function foreward() { changeImg();}
 function pause() { clearInterval(myVar);}
 function continU() { myVar = setInterval(changeImg, timer); foreward()}
 function showImg() { var thePointerImg = document.querySelector(".imagearea");
- console.log("cur topicpointer "+topicpointer);
  thePointerImg.innerHTML = ImgList[topicpointer];
  // console.log(thePointerImg.innerHTML);
  scroll(0,0);
@@ -103,7 +107,7 @@ function showMov() { var imgAdr = ImgList[topicpointer];
 
  var end = imgAdr.indexOf('"', start+1);
  var list = imgAdr.substring(start+1, end);
- console.log(list);
+ //console.log(list);
  window.open(list);
 }
 function randomFlip() {
@@ -132,7 +136,7 @@ function LoadJs(src, callback) {
 function reTOC() {
   document.getElementById("toc").innerHTML = ""; // clear old TOC
   notvisitedList = [...Array(ImgList.length).keys()];
-  topicpointer = ImgList.length
+  topicpointer = ImgList.length -1
   ImgList.forEach(makeTOC);
   randomFlip();
   changeImg();
@@ -144,4 +148,66 @@ randomFlip();
 changeImg();
 retstr = ' '.repeat(80);
 $("#mustWatch").prepend('<pre><br>===============<br><br>');
-$("#mustWatch").append('<pre><br><span class="silver">keys: <br>t top of table<br>8 top of table<br>l last of table<br>2 last of table<br>7 go to table middle<br><br>T Top of page<br>e end of page<br>m mustWatch<br><br>r random mustWatch<br>5 random mustWatch<br>f foreward<br>6 foreward<br>b backward<br>4 backward<br><br>p pause<br>c continU<br>s showPage<br>0 showPage<br><br>K set bookmark<br>k open bookmark</span></pre>');
+$("#mustWatch").append('<pre><br><span class="silver">keys: <br>t top of table<br>8 top of table<br>l last of table<br>2 last of table<br>7 go to table middle<br><br>T Top of page<br>e end of page<br>m mustWatch<br><br>r random mustWatch<br>5 random mustWatch<br>f foreward<br>6 foreward<br>b backward<br>4 backward<br><br>p pause<br>c continU<br>s showPage<br>0 showPage<br><br>K set bookmark<br>k open bookmark</span><br>多书签管理- R 跳任意书签; + 加书签; - 减书签; a 手动书签</pre>');
+
+// learningMode package //
+// totalLength already exist
+
+// init the removeList
+var rvListName = "removeList"
+window[rvListName] = window["bookid"] + " rvList" // removeList is variable name now
+
+if (localStorage.getItem(removeList) === null) {
+    localStorage.setItem(removeList, 0)
+    rMList = 0
+}else{
+    rMList = localStorage.getItem(removeList).split(",").map(Number)
+}
+
+// init waitingList
+var waitListName = "waitingList"
+window[waitListName] = window["bookid"] + " waitList" // waitingList is variable name now
+
+if (localStorage.getItem(waitingList) === null) {
+    localStorage.setItem(waitingList, [0,1,2,3,4])
+    waitList = [1,2,3,4,5]
+}else{
+    waitList = localStorage.getItem(waitingList).split(",").map(Number)
+}
+
+function randomWL() {
+  newPointer = waitList[Math.floor(Math.random() * waitList.length)];
+  while(newPointer == topicpointer){
+    newPointer = waitList[Math.floor(Math.random() * waitList.length)];
+  }
+  topicpointer = newPointer;
+  showImg();
+}
+
+function addtoWL() {
+     console.log(topicpointer)
+	waitList.push(topicpointer)
+	waitList = Array.from(new Set(waitList))
+	localStorage.setItem(waitingList, waitList)
+	alert("waitList: " + waitList)
+}
+function rvFmWL() {
+	ItemIndex = waitList.indexOf(topicpointer);
+	if (ItemIndex > -1) { waitList.splice(ItemIndex, 1); }
+	waitList = [...new Set(waitList)]; // set unique
+	localStorage.setItem(waitingList, waitList)
+	alert("topicpointer "+topicpointer + " removed fm waitList! Remaining: " + waitList)
+}
+
+function askNum() {
+    thecode = prompt("Include Topic Number:", "");
+    if (thecode != null && thecode != "") {
+		topicpointer = parseInt(thecode)
+		addtoWL()
+    }else{
+      return;
+    }
+}
+
+// learningMode package complete//
+
