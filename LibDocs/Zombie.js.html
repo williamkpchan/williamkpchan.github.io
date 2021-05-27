@@ -1,0 +1,1099 @@
+<base target="_blank"><html><head><title>Zombie.js</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="https://williamkpchan.github.io/lazyload.min.js"></script>
+<script src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/commonfunctions.js"></script>
+<script>
+  var showTopicNumber = true;
+  var bookid = "Zombie.js"
+  var markerName = "h2"
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:24px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>Zombie.js</h1>
+<a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a><br><br>
+<div id="toc"></div></center><br><br>
+<div id="mustWatch"><center><span class="red">MustWatch</span></center><br></div>
+<pre><br><br>
+
+<h3>Insanely fast, headless full-stack testing using Node.js</h3>
+
+
+<strong>Zombie 6.x</strong> is tested to work with Node 8 or later.
+If you need to use Node 6, consider using Zombie 5.x.
+
+<h2>The Bite</h2>
+
+If you’re going to write an insanely fast, headless browser, how can you not call it Zombie?  Zombie it is.
+
+Zombie.js is a lightweight framework for testing client-side JavaScript code in a simulated environment.
+No browser required.
+
+Let’s try to sign up to a page and see what happens:
+
+<code>const Browser = require('zombie');
+
+// We're going to make requests to http://example.com/signup
+// Which will be routed to our test server localhost:3000
+Browser.localhost('example.com', 3000);
+
+describe('User visits signup page', function() {
+
+  const browser = new Browser();
+
+  before(function(done) {
+    browser.visit('/signup', done);
+  });
+
+  describe('submits form', function() {
+
+    before(function(done) {
+      browser
+        .fill('email',    'zombie@underworld.dead')
+        .fill('password', 'eat-the-living')
+        .pressButton('Sign Me Up!', done);
+    });
+
+    it('should be successful', function() {
+      browser.assert.success();
+    });
+
+    it('should see welcome page', function() {
+      browser.assert.text('title', 'Welcome To Brains Depot');
+    });
+  });
+});</code>
+
+This example uses the <a href="https://github.com/mochajs/mocha">Mocha</a> testing framework, but Zombie will work with other testing frameworks.
+Since Mocha supports promises, we can also write the test like this:
+
+<code>const Browser = require('zombie');
+
+// We're going to make requests to http://example.com/signup
+// Which will be routed to our test server localhost:3000
+Browser.localhost('example.com', 3000);
+
+describe('User visits signup page', function() {
+
+  const browser = new Browser();
+
+  before(function() {
+    return browser.visit('/signup');
+  });
+
+  describe('submits form', function() {
+
+    before(function() {
+      browser
+        .fill('email',    'zombie@underworld.dead')
+        .fill('password', 'eat-the-living');
+      return browser.pressButton('Sign Me Up!');
+    });
+
+    it('should be successful', function() {
+      browser.assert.success();
+    });
+
+    it('should see welcome page', function() {
+      browser.assert.text('title', 'Welcome To Brains Depot');
+    });
+  });
+
+});</code>
+
+Well, that was easy.
+
+<h2>Installing</h2>
+
+To install Zombie.js you will need <a href="https://nodejs.org/">Node.js</a>:
+
+<code>$ npm install zombie --save-dev</code>
+
+<h2>Browser</h2>
+
+<h4>browser.assert</h4>
+
+Methods for making assertions against the browser, such as
+<code>browser.assert.element('.foo')</code>.
+
+See <a href="#assertions">Assertions</a> for detailed discussion.
+
+<h4>browser.referer</h4>
+
+You can use this to set the HTTP Referer header.
+
+<h4>browser.resources</h4>
+
+Access to history of retrieved resources.
+See <a href="#resources">Resources</a> for detailed discussion.
+
+<h4>browser.pipeline</h4>
+
+Access to the pipeline for making requests and processing responses.
+Use this to add new request/response handlers the pipeline for a single browser instance,
+or use <code>Pipeline.addHandler</code> to modify all instances.
+See
+<a href="#pipeline">Pipeline</a>.
+
+<h4>browser.tabs</h4>
+
+Array of all open tabs (windows).
+Allows you to operate on more than one open window at a time.
+
+See <a href="#tabs">Tabs</a> for detailed discussion.
+
+<h4>browser.proxy</h4>
+
+The <code>proxy</code> option takes a URL so you can tell Zombie what protocol, host and port to use. Also supports Basic authentication, e.g.:
+
+<code>browser.proxy = 'http://me:secret@myproxy:8080'</code>
+
+<h4>browser.errors</h4>
+
+Collection of errors accumulated by the browser while loading page and executing scripts.
+
+<h4>browser.source</h4>
+
+Returns a string of the source HTML from the last response.
+
+<h4>browser.html(element)</h4>
+
+Returns a string of HTML for a selected HTML element. If argument <code>element</code> is <code>undefined</code>, the function returns a string of the source HTML from the last response.
+
+Example uses:
+
+<code>browser.html('div');
+browser.html('div#contain');
+browser.html('.selector');
+browser.html();</code>
+
+<h4>Browser.localhost(host, port)</h4>
+
+Allows you to make requests against a named domain and HTTP/S port, and will route it to the test server running on localhost and unprivileged port.
+
+For example, if you want to call your application “example.com”, and redirect traffic from port 80 to the test server that’s listening on port 3000, you can do this:
+
+<code>Browser.localhost('example.com', 3000)
+browser.visit('/path', function() {
+  console.log(browser.location.href);
+});
+=&gt; 'http://example.com/path'</code>
+
+The first time you call <code>Browser.localhost</code>, if you didn’t specify
+<code>Browser.site</code>, it will set it to the hostname (in the above example,
+“example.com”).
+Whenever you call <code>browser.visit</code> with a relative URL, it appends it to <code>Browser.site</code>, so you don’t need to repeat the full URL in every test case.
+
+You can use wildcards to map domains and all hosts within these domains, and you can specify the source port to map protocols other than HTTP.
+For example:
+
+<code>// HTTP requests for example.test www.example.test will be answered by localhost
+// server running on port 3000
+Browser.localhost('*.example.test', 3000);
+// HTTPS requests will be answered by localhost server running on port 3001
+Browser.localhost('*.example.test:443', 3001);</code>
+
+The underlying implementation hacks <code>net.Socket.connect</code>, so it will route any TCP connection made by the Node application, whether Zombie or any other library.
+It does not affect other processes running on your machine.
+
+<h3>Browser.extend</h3>
+
+You can use this to customize new browser instances for your specific needs.
+The extension function is called for every new browser instance, and can change properties, bind methods, register event listeners, etc.
+
+<code>Browser.extend(function(browser) {
+  browser.on('console', function(level, message) {
+    logger.log(message);
+  });
+  browser.on('log', function(level, message) {
+    logger.log(message);
+  });
+});</code>
+
+<h3>Browser.evaluate</h3>
+
+You can use this to evaluate javascript in the browser, it’s similar to <code>browser.assert.evaluate</code>
+
+<code>Browser.evaluate('document.querySelector("a").class')</code>
+
+<h2>Assertions</h2>
+
+To make life easier, Zombie introduces a set of convenience assertions that you can access directly from the browser object.
+For example, to check that a page loaded successfully:
+
+<code>browser.assert.success();
+browser.assert.text('title', 'My Awesome Site');
+browser.assert.element('#main');</code>
+
+These assertions are available from the <code>browser</code> object since they operate on a particular browser instance – generally dependent on the currently open window,
+or document loaded in that window.
+
+Many assertions require an element/elements as the first argument, for example,
+to compare the text content (<code>assert.text</code>), or attribute value
+(<code>assert.attribute</code>).
+You can pass one of the following values:
+
+
+  <li>An HTML element or an array of HTML elements</li>
+  <li>A CSS selector string (e.g. “h2”, “.book”, “#first-name”)</li>
+
+
+Many assertions take an expected value and compare it against the actual value.
+For example, <code>assert.text</code> compares the expected value against the text contents of one or more strings.
+The expected value can be one of:
+
+
+  <li>A JavaScript primitive value (string, number)</li>
+  <li><code>undefined</code> or <code>null</code> are used to assert the lack of value</li>
+  <li>A regular expression</li>
+  <li>A function that is called with the actual value and returns true if the assertion is true</li>
+  <li>Any other object will be matched using <code>assert.deepEqual</code></li>
+
+
+Note that in some cases the DOM specification indicates that lack of value is an empty string, not <code>null</code>/<code>undefined</code>.
+
+All assertions take an optional last argument that is the message to show if the assertion fails.
+Better yet, use a testing framework like
+<a href="https://github.com/mochajs/mocha">Mocha</a> that has good diff support and don’t worry about these messages.
+
+<h3>Available Assertions</h3>
+
+The following assertions are available:
+
+<h4>assert.attribute(selection, name, expected, message)</h4>
+
+Asserts the named attribute of the selected element(s) has the expected value.
+
+Fails if no element found.
+
+<code>browser.assert.attribute('form', 'method', 'post');
+browser.assert.attribute('form', 'action', '/customer/new');
+// Disabled with no attribute value, i.e. &lt;button disabled&gt;
+browser.assert.attribute('button', 'disabled', '');
+// No disabled attribute i.e. &lt;button&gt;
+browser.assert.attribute('button', 'disabled', null);</code>
+
+<h4>assert.className(selection, className, message)</h4>
+
+Asserts that selected element(s) has that and only that class name.
+May also be space-separated list of class names.
+
+Fails if no element found.
+
+<code>browser.assert.className('form input[name=email]', 'has-error');</code>
+
+<h4>assert.cookie(identifier, expected, message)</h4>
+
+Asserts that a cookie exists and  has the expected value, or if <code>expected</code> is
+<code>null</code>, that no such cookie exists.
+
+The identifier is either the name of a cookie, or an object with the property
+<code>name</code> and the optional properties <code>domain</code> and <code>path</code>.
+
+<code>browser.assert.cookie('flash', 'Missing email address');</code>
+
+<h4>assert.element(selection, message)</h4>
+
+Asserts that one element matching selection exists.
+
+Fails if no element or more than one matching element are found.
+
+<code>browser.assert.element('form');
+browser.assert.element('form input[name=email]');
+browser.assert.element('form input[name=email].has-error');</code>
+
+<h4>assert.elements(selection, count, message)</h4>
+
+Asserts how many elements exist in the selection.
+
+The argument <code>count</code> can be a number, or an object with the following properties:
+
+
+  <li><code>atLeast</code> - Expecting to find at least that many elements</li>
+  <li><code>atMost</code>  - Expecting to find at most that many elements</li>
+  <li><code>exactly</code> - Expecting to find exactly that many elements</li>
+
+
+<code>browser.assert.elements('form', 1);
+browser.assert.elements('form input', 3);
+browser.assert.elements('form input.has-error', { atLeast: 1 });
+browser.assert.elements('form input:not(.has-error)', { atMost: 2 });</code>
+
+<h4>assert.evaluate(expression, expected, message)</h4>
+
+Evaluates the JavaScript expression in the context of the currently open window.
+
+With one argument, asserts that the value is equal to <code>true</code>.
+
+With two/three arguments, asserts that the returned value matches the expected value.
+
+<code>browser.assert.evaluate('$("form").data("valid")');
+browser.assert.evaluate('$("form").data("errors").length', 3);</code>
+
+<h4>assert.global(name, expected, message)</h4>
+
+Asserts that the global (window) property has the expected value.
+
+<h4>assert.hasClass(selection, className, message)</h4>
+
+Asserts that selected element(s) have the expected class name.
+Elements may have other class names (unlike <code>assert.className</code>).
+
+Fails if no element found.
+
+<code>browser.assert.hasClass('form input[name=email]', 'has-error');</code>
+
+<h4>assert.hasFocus(selection, message)</h4>
+
+Asserts that selected element has the focus.
+
+If the first argument is <code>null</code>, asserts that no element has the focus.
+
+Otherwise, fails if element not found, or if more than one element found.
+
+<code>browser.assert.hasFocus('form input:nth-child(1)');</code>
+
+<h4>assert.hasNoClass(selection, className, message)</h4>
+
+Asserts that selected element(s) does not have the expected class name.
+Elements may have other class names (unlike <code>assert.className</code>).
+
+Fails if no element found.
+
+<code>browser.assert.hasNoClass('form input', 'has-error');</code>
+
+<h4>assert.input(selection, expected, message)</h4>
+
+Asserts that selected input field(s) (<code>input</code>, <code>textarea</code>, <code>select</code> etc) have the expected value.
+
+Fails if no element found.
+
+<code>browser.assert.input('form input[name=text]', 'Head Eater');</code>
+
+<h4>assert.link(selection, text, url, message)</h4>
+
+Asserts that at least one link exists with the given selector, text and URL.
+The selector can be <code>a</code>, but a more specific selector is recommended.
+
+URL can be relative to the current document, or a regular expression.
+
+Fails if no element is selected that also has the specified text content and URL.
+
+<code>browser.assert.link('footer a', 'Privacy Policy', '/privacy');</code>
+
+<h4>assert.redirected(message)</h4>
+
+Asserts the browser was redirected when retrieving the current page.
+
+<h4>assert.success(message)</h4>
+
+Asserts the current page loaded successfully (status code 2xx or 3xx).
+
+<h4>assert.status(code, message)</h4>
+
+Asserts the current page loaded with the expected status code.
+
+<code>browser.assert.status(404);</code>
+
+<h4>assert.style(selection, style, expected, message)</h4>
+
+Asserts that selected element(s) have the expected value for the named style property.
+For example:
+
+Fails if no element found, or element style does not match expected value.
+
+<code>browser.assert.style('#show-hide.hidden', 'display', 'none');
+browser.assert.style('#show-hide:not(.hidden)', 'display', '');</code>
+
+<h4>assert.text(selection, expected, message)</h4>
+
+Asserts that selected element(s) have the expected text content.
+For example:
+
+Fails if no element found that has that text content.
+
+<code>browser.assert.text('title', 'My Awesome Page');</code>
+
+<h4>assert.url(url, message)</h4>
+
+Asserts the current page has the expected URL.
+
+The expected URL can be one of:
+
+
+  <li>The full URL as a string</li>
+  <li>A regular expression</li>
+  <li>A function, called with the URL and returns true if the assertion is true</li>
+  <li>An <a href="http://nodejs.org/api/url.html#url_url_parse_urlstr_parsequerystring_slashesdenotehost">object</a>, in which case individual properties are matched against the URL</li>
+
+
+For example:
+
+<code>browser.assert.url('http://localhost/foo/bar');
+browser.assert.url(new RegExp('^http://localhost/foo/\\w+$'));
+browser.assert.url({ pathname: '/foo/bar' });
+browser.assert.url({ query: { name: 'joedoe' } });</code>
+
+<h3>Roll Your Own Assertions</h3>
+
+Not seeing an assertion you want?  You can add your own assertions to the prototype of <code>Browser.Assert</code>.
+
+For example:
+
+<code>// Asserts the browser has the expected number of open tabs.
+Browser.Assert.prototype.openTabs = function(expected, message) {
+  assert.equal(this.browser.tabs.length, expected, message);
+};</code>
+
+Or application specific:
+
+<code>// Asserts which links is highlighted in the navigation bar Browser.Assert.navigationOn = function(linkText) {
+  this.assert.element('.navigation-bar');
+  this.assert.text('.navigation-bar a.highlighted', linkText);
+};</code>
+
+<h2>Cookies</h2>
+
+Are delicious.
+Also, somewhat tricky to work with.
+A browser will only send a cookie to the server if it matches the request domain and path.
+
+Most modern Web applications don’t care so much about the path and set all cookies to the root path of the application (<code>/</code>), but do pay attention to the domain.
+
+Consider this code:
+
+<code>browser.setCookie({ name: 'session', domain: 'example.com', value: 'delicious' });
+browser.visit('http://example.com', function() {
+  const value = browser.getCookie('session');
+  console.log('Cookie', value);
+});</code>
+
+In order for the cookie to be set in this example, we need to specify the cookie name, domain and path.
+In this example we omit the path and choose the default
+<code>/</code>.
+
+To get the cookie in this example, we only need the cookie name, because at that point the browser has an open document, and it can use the domain of that document to find the right cookie.
+We do need to specify a domain if we’re interested in other cookies, e.g for a 3rd party widget.
+
+There may be multiple cookies that match the same host, for example, cookies set for <code>.example.com</code> and <code>www.example.com</code> will both match <code>www.example.com</code>, but only the former will match <code>example.com</code>.
+Likewise, cookies set for <code>/</code> and
+<code>/foo</code> will both match a request for <code>/foo/bar</code>.
+
+<code>getCookie</code>, <code>setCookie</code> and <code>deleteCookie</code> always operate on a single cookie,
+and they match the most specific one, starting with the cookies that have the longest matching domain, followed by the cookie that has the longest matching path.
+
+If the first argument is a string, they look for a cookie with that name using the hostname of the currently open page as the domain and <code>/</code> as the path.
+To be more specific, the first argument can be an object with the properties
+<code>name</code>, <code>domain</code> and <code>path</code>.
+
+The following are equivalent:
+
+<code>browser.getCookie('session');
+browser.getCookie({ name: 'session',
+                    domain: browser.location.hostname,
+                    path: browser.location.pathname });</code>
+
+<code>getCookie</code> take a second argument.
+If false (or missing), it returns the value of the cookie.
+If true, it returns an object with all the cookie properties: <code>name</code>, <code>value</code>, <code>domain</code>, <code>path</code>, <code>expires</code>, <code>httpOnly</code> and
+<code>secure</code>.
+
+<h4>browser.cookies</h4>
+
+Returns an object holding all cookies used by this browser.
+
+<h4>browser.cookies.dump(output?)</h4>
+
+Dumps all cookies to standard output, or the output stream.
+
+<h4>browser.deleteCookie(identifier)</h4>
+
+Deletes a cookie matching the identifier.
+
+The identifier is either the name of a cookie, or an object with the property
+<code>name</code> and the optional properties <code>domain</code> and <code>path</code>.
+
+<h4>browser.deleteCookies()</h4>
+
+Deletes all cookies.
+
+<h4>browser.getCookie(identifier, allProperties?)</h4>
+
+Returns a cookie matching the identifier.
+
+The identifier is either the name of a cookie, or an object with the property
+<code>name</code> and the optional properties <code>domain</code> and <code>path</code>.
+
+If <code>allProperties</code> is true, returns an object with all the cookie properties,
+otherwise returns the cookie value.
+
+<h4>browser.setCookie(name, value)</h4>
+
+Sets the value of a cookie based on its name.
+
+<h4>browser.setCookie(cookie)</h4>
+
+Sets the value of a cookie based on the following properties:
+
+
+  <li><code>domain</code> - Domain of the cookie (requires, defaults to hostname of currently open page)</li>
+  <li><code>expires</code> - When cookie it set to expire (<code>Date</code>, optional, defaults to session)</li>
+  <li><code>maxAge</code> - How long before cookie expires (in seconds, defaults to session)</li>
+  <li><code>name</code> - Cookie name (required)</li>
+  <li><code>path</code> - Path for the cookie (defaults to <code>/</code>)</li>
+  <li><code>httpOnly</code> - True if HTTP-only (not accessible from client-side JavaScript,
+defaults to false)</li>
+  <li><code>secure</code> - True if secure (requires HTTPS, defaults to false)</li>
+  <li><code>value</code> - Cookie value (required)</li>
+
+
+<h2>Tabs</h2>
+
+Just like your favorite Web browser, Zombie manages multiple open windows as tabs.
+New browsers start without any open tabs.
+As you visit the first page,
+Zombie will open a tab for it.
+
+All operations against the <code>browser</code> object operate on the currently active tab
+(window) and most of the time you only need to interact with that one tab.
+You can access it directly via <code>browser.window</code>.
+
+Web pages can open additional tabs using the <code>window.open</code> method, or whenever a link or form specifies a target (e.g. <code>target=_blank</code> or <code>target=window-name</code>).
+You can also open additional tabs by calling <code>browser.open</code>.
+To close the currently active tab, close the window itself.
+
+You can access all open tabs from <code>browser.tabs</code>.
+This property is an associative array, you can access each tab by its index number, and iterate over all open tabs using functions like <code>forEach</code> and <code>map</code>.
+
+If a window was opened with a name, you can also access it by its name.
+Since names may conflict with reserved properties/methods, you may need to use
+<code>browser.tabs.find</code>.
+
+The value of a tab is the currently active window.
+That window changes when you navigate forwards and backwards in history.
+For example, if you visited the URL
+‘/foo’ and then the URL ‘/bar’, the first tab (<code>browser.tabs[0]</code>) would be a window with the document from ‘/bar’.
+If you then navigate back in history, the first tab would be the window with the document ‘/foo’.
+
+The following operations are used for managing tabs:
+
+<h4>browser.tabs</h4>
+
+Returns an array of all open tabs.
+
+<h4>browser.tabs[number]</h4>
+
+Returns the tab with that index number.
+
+<h4>browser.tabs[string]</h4>
+<h4>browser.tabs.find(string)</h4>
+
+Returns the tab with that name.
+
+<h4>browser.tabs.closeAll()</h4>
+
+Closes all tabs.
+
+<h4>browser.tabs.current</h4>
+
+This is a read/write property.
+It returns the currently active tab.
+
+Can also be used to change the currently active tab.
+You can set it to a window (e.g. as currently returned from <code>browser.current</code>), a window name or the tab index number.
+
+<h4>browser.tabs.dump(output?)</h4>
+
+Dump a list of all open tabs to standard output, or the output stream.
+
+<h4>browser.tabs.index</h4>
+
+Returns the index of the currently active tab.
+
+<h4>browser.tabs.length</h4>
+
+Returns the number of currently opened tabs.
+
+<h4>browser.open (url)</h4>
+
+Opens and returns a new tab.
+Supported options are:
+
+  <li><code>name</code> - Window name.</li>
+  <li><code>url</code> - Load document from this URL.</li>
+
+
+<h4>browser.window</h4>
+
+Returns the currently active window, same as <code>browser.tabs.current.</code>
+
+<h2>Debugging</h2>
+
+To see what your code is doing, you can use <code>console.log</code> and friends from both client-side scripts and your test code.
+
+To see everything Zombie does (opening windows, loading URLs, firing events,
+etc), set the environment variable <code>DEBUG=zombie</code>.
+Zombie uses the
+<a href="https://github.com/visionmedia/debug">debug</a> module.
+For example:
+
+<code>$ DEBUG=zombie mocha</code>
+
+You can also turn debugging on from your code (e.g. a specific test you’re trying to troubleshoot) by calling <code>browser.debug()</code>.
+
+Some objects, like the browser, history, resources, tabs and windows also include <code>dump</code> method that will dump the current state to the console, or an output stream of your choice.
+For example:
+
+<code>browser.dump();
+browser.dump(process.stderr);</code>
+
+If you want to disable console output from scripts, set <code>browser.silent = true</code>
+or once for all browser instances with <code>Browser.silent = true</code>.
+
+<h2>Events</h2>
+
+Each browser instance is an <code>EventEmitter</code>, and will emit a variety of events you can listen to.
+
+Some things you can do with events:
+
+
+  <li>Trace what the browser is doing, e.g. log every page loaded, every DOM event emitted, every timeout fired</li>
+  <li>Wait for something to happen, e.g. form submitted, link clicked, input element getting the focus</li>
+  <li>Strip out code from HTML pages, e.g remove analytics code when running tests</li>
+  <li>Add event listeners to the page before any JavaScript executes</li>
+  <li>Mess with the browser, e.g. modify loaded resources, capture and change DOM events</li>
+
+
+<h4>console (level, message)</h4>
+
+Emitted whenever a message is printed to the console (<code>console.log</code>,
+<code>console.error</code>, <code>console.trace</code>, etc).
+
+The first argument is the logging level, and the second argument is the message.
+
+The logging levels are: <code>debug</code>, <code>error</code>, <code>info</code>, <code>log</code>, <code>trace</code> and <code>warn</code>.
+
+<h4>active (window)</h4>
+
+Emitted when this window becomes the active window.
+
+<h4>closed (window)</h4>
+
+Emitted when this window is closed.
+
+<h4>done ()</h4>
+
+Emitted when the event loop goes empty.
+
+<h4>error (error)</h4>
+
+Error when loading a resource, or evaluating JavaScript.
+
+<h4>evaluated (code, result, filename)</h4>
+
+Emitted after JavaScript code is evaluated.
+
+The first argument is the JavaScript function or code (string).
+The second argument is the result.
+The third argument is the filename.
+
+<h4>event (event, target)</h4>
+
+Emitted whenever a DOM event is fired on the target element, document or window.
+
+<h4>focus (element)</h4>
+
+Emitted whenever an element receives the focus.
+
+<h4>idle ()</h4>
+
+Event loop is idle.
+
+<h4>inactive (window)</h4>
+
+Emitted when this window is no longer the active window.
+
+<h4>interval (function, interval)</h4>
+
+Emitted whenever an interval (<code>setInterval</code>) is fired.
+
+The first argument is the function or code to evaluate, the second argument is the interval in milliseconds.
+
+<h4>link (url, target)</h4>
+
+Emitted when a link is clicked.
+
+The first argument is the URL of the new location, the second argument identifies the target window (<code>_self</code>, <code>_blank</code>, window name, etc).
+
+<h4>loaded (document)</h4>
+
+Emitted when a document has been loaded into a window or frame.
+
+This event is emitted after the HTML is parsed, and some scripts executed.
+
+<h4>loading (document)</h4>
+
+Emitted when a document is about to be loaded into a window or frame.
+
+This event is emitted when the document is still empty, before parsing any HTML.
+
+<h4>opened (window)</h4>
+
+Emitted when a new window is opened.
+
+<h4>redirect (request, response)</h4>
+
+Emitted when following a redirect.
+
+<h4>request (request)</h4>
+
+Emitted before making a request to retrieve a resource.
+
+The first argument is the request object.
+See <a href="#resources">Resources</a> for more details.
+
+<h4>response (request, response)</h4>
+
+Emitted after receiving the response (excluding redirects).
+
+The first argument is the request object, the second argument is the response object.
+See <a href="#resources">Resources</a> for more details.
+
+<h4>serverEvent ()</h4>
+
+Browser received server initiated event (e.g. <code>EventSource</code> message).
+
+<h4>setInterval (function, interval)</h4>
+
+Event loop fired a <code>setInterval</code> event.
+
+<h4>setTimeout (function, delay)</h4>
+
+Event loop fired a <code>setTimeout</code> event.
+
+<h4>submit (url, target)</h4>
+
+Emitted whenever a form is submitted.
+
+The first argument is the URL of the new location, the second argument identifies the target window (<code>_self</code>, <code>_blank</code>, window name, etc).
+
+<h4>timeout (function, delay)</h4>
+
+Emitted whenever a timeout (<code>setTimeout</code>) is fired.
+
+The first argument is the function or code to evaluate, the second argument is the delay in milliseconds.
+
+<h4>xhr (event, url)</h4>
+
+Called for each XHR event (<code>progress</code>, <code>abort</code>, <code>readystatechange</code>, <code>loadend</code>,
+etc).
+
+<h2>Authentication</h2>
+
+Zombie supports HTTP basic access authentication. To provide the login credentials:
+
+<code>browser.on('authenticate', function(authentication) {
+  authentication.username = 'myusername';
+  authentication.password = 'mypassword';
+});
+
+browser.visit('/mypage');</code>
+
+<h2>Resources</h2>
+
+Zombie can retrieve with resources - HTML pages, scripts, XHR requests - over HTTP, HTTPS and from the file system.
+
+Most work involving resources is done behind the scenes, but there are few notable features that you’ll want to know about. Specifically, if you need to do any of the following:
+
+
+  <li>Inspect the history of retrieved resources, useful for troubleshooting issues related to resource loading</li>
+  <li>Request resources directly, but have Zombie handle cookies, authentication,
+etc</li>
+  <li>Implement new mechanism for retrieving resources, for example, add new protocols or support new headers (see <a href="#pipeline">Pipeline</a>)</li>
+
+
+<h3>The Resources List</h3>
+
+Each browser provides access to the list of resources loaded by the currently open window via <code>browser.resources</code>.
+You can iterate over this list just like any JavaScript array.
+
+Each resource provides three properties:
+
+
+  <li><code>request</code>   - The request object</li>
+  <li><code>response</code>  - The resource object (if received)</li>
+  <li><code>error</code>     - The error generated (no response)</li>
+
+
+The request object is based on the <a href="https://fetch.spec.whatwg.org/#request-class">Fetch API Request object</a>.
+
+The response object is based on the <a href="https://fetch.spec.whatwg.org/#response-class">Fetch API Response object</a>.
+Note that the fetch API has the property <code>status</code>, whereas Node HTTP module uses <code>statusCode</code>.
+
+<h4>browser.fetch(input, init)</h4>
+
+You can use the browser directly to make requests against external resources.
+These requests will share the same cookies, authentication and other browser settings (also pipeline).
+
+The <code>fetch</code> method is based on the <a href="https://fetch.spec.whatwg.org/#fetch-method">Fetch API</a>.
+
+For example:
+
+<code>browser.fetch(url)
+  .then(function(response) {
+    console.log('Status code:', response.status);
+    if (response.status === 200)
+      return response.text();
+  })
+  .then(function(text) {
+    console.log('Document:', text);
+  })
+  .catch(function(error) {
+    console.log('Network error');
+  });</code>
+
+To access the response document body as a Node buffer, use the following:
+
+<code>response.arrayBuffer()
+  .then(Buffer) // arrayBuffer -&gt; Buffer
+  .then(function(buffer) {
+    assert( Buffer.isBuffer(buffer) );
+  });</code>
+
+<h4>resources.dump(output?)</h4>
+
+Dumps the resources list to the output stream (defaults to standard output stream).
+
+<h2>Pipeline</h2>
+
+Zombie uses a pipeline to operate on resources.
+You can extend that pipeline with your own set of handlers, for example, to support additional protocols,
+content types, special handlers, etc.
+
+The pipeline consists of a set of handlers.
+There are two types of handlers:
+
+Functions with two arguments deal with requests.
+They are called with the browser and request object.
+They may modify the request object, and they may either return null (pass control to the next handler) or return the Response object, or return a promise that resolves to either outcome.
+
+Functions with three arguments deal with responses.
+They are called with the browser, request and response objects.
+They may modify the response object, and must return a Response object, either the same as the argument or a new Response object, either directly or through a promise.
+
+To add a new handle to the end of the pipeline:
+
+<code>browser.pipeline.addHandler(function(browser, request) {
+  // Let's delay this request by 1/10th second
+  return new Promise(function(resolve) {
+    setTimeout(resolve, 100);
+  });
+});</code>
+
+You can add handlers to all browsers via <code>Pipeline.addHandler</code>.
+These handlers are automatically added to every new <code>browser.pipeline</code> instance.
+
+<code>Pipeline.addHandler(function(browser, request, response) {
+  // Log the response body
+  console.log('Response body: ' + response.body);
+});</code>
+
+<h2>Testing with Zombie.js + Jasmine</h2>
+We all know that the testing is a big part of our daily tasks and we should use every existing tool to make our lives easier. 
+I really like <a href="http://en.wikipedia.org/wiki/Test-driven_development">test driven development</a> and once I found the concept of the <a href="http://blog.arhg.net/2009/10/what-is-headless-browser.html">headless browsing</a> I started to think that we can automate every single aspect of the testing. 
+In this post I'll show you how to use <a href="http://nodejs.org/">Nodejs</a> to test a simple php site.
+
+All the source files in this post could be found here
+<a href="https://github.com/krasimir/blog-posts/tree/master/2012/TestingWithZombieJS">https://github.com/krasimir/blog-posts/tree/master/2012/TestingWithZombieJS</a>. 
+First of all, let's see how our test site looks like (feel free to browse it
+<a href="https://github.com/krasimir/blog-posts/tree/master/2012/TestingWithZombieJS/site">here</a>.
+Username: admin, password: 1234). 
+The site's content is protected with a password. 
+So initially a login form is shown:
+[1] (If the user type wrong credentials the login form is shown again). 
+The home page presents some text and two buttons. 
+<i>Logout</i> removes the current session of the user and <i>CSS selectors</i> points to another page with text. 
+[2] The second page of the site: [3] It is really simple web site, but it is enough to illustrate the idea. 
+The topic of the article is to show the process of testing, so I'm not going to spend time in explaining how the site works. 
+If you are interested in this part please check the
+<a href="https://github.com/krasimir/blog-posts/tree/master/2012/TestingWithZombieJS" target="_blank">source code</a>.
+Here is what we will probably want to test in a real environment:
+<ul>
+  <li>Can we actually access the site</li>
+  <li>We are not logged in the beginning, so we should see the login form</li>
+  <li>We should not be able to login via wrong credentials</li>
+  <li>We should be able to login with the correct credentials</li>
+  <li>We should be able to see the second page <i>CSS selectors</i></li>
+  <li>We should be able to logout</li>
+  <li>We should not be able to see <i>CSS selectors</i> page because we are logged out</li>
+</ul>
+Without the usage of the headless browser we will need to test all those things manually. 
+For such a simple application it will take no more then minute or two, but imagine if you have really solid web based system with bunch of features. 
+It will take some time for sure. 
+I'm going to use
+<a href="http://zombie.labnotes.org/">Zombie.js</a> together with
+<a href="https://github.com/mhevery/jasmine-node">Jasmine</a> under
+<a href="http://nodejs.org/">Nodejs</a>. 
+To install Nodejs on your system please check
+<a href="https://github.com/creationix/nvm">https://github.com/creationix/nvm</a>. 
+The NVM is really nice too, especially if you have to deal with different versions. 
+Once you have Nodejs installed you should prepare your testing and install the necessary modules. 
+The usage of the
+<a href="https://npmjs.org/">Node Package Manager (NPM)</a> is recommended. 
+So, create a directly where you will place your test, go there and create a <i>package.json</i> file with the following content:
+<code>{
+    "name": "TestingWithZombieJS",
+    "version": "0.0.0",
+    "description": "Testing using headless browser",
+    "main": "index.js",
+    "scripts": {
+      "test": "echo \\"Error: no test specified\\" && exit 1"  },
+    "repository": "",
+    "keywords": [
+      "testing",
+      "headless",
+      "browser"  ],
+    "dependencies": {
+      "zombie": "latest",
+      "jasmine-node": "latest"  },
+    "author": "Krasimir Tsonev",
+    "license": "BSD"}</code>
+(You can use <a href="https://npmjs.org/doc/init.html">npm init</a>. 
+It will help you to create the file.) Once you have <i>package.json</i> in your directory you could run <i>npm install</i> there and at the end you should have a folder called <i>node_modules</i> with zombiejs and jasmine-node modules inside. 
+If you successfully finished the above steps, then you could start writing your test. 
+Create an empty .js file (for example zombie.spec.js) and put the following code there:
+<code>var Browser = require("zombie");
+  var url = "https://github.com/krasimir/blog-posts/tree/master/2012/TestingWithZombieJS/site";
+  var browser = new Browser();
+
+  describe("testing with zombie", function() {
+
+  });</code>
+When you run the test via
+<code>jasmine-node zombie.spec.js</code>
+You should see the following result:
+<code>Finished in 0.004 seconds
+  0 tests, 0 assertions, 0 failures</code>
+The first thing that we should test - is our browser created and is our site actually accessible:
+<code>var Browser = require("zombie");
+  var url = "https://github.com/krasimir/blog-posts/tree/master/2012/TestingWithZombieJS/site";
+  var browser = new Browser();
+
+  describe("testing with zombie", function() {
+
+      it("should have defined headless browser", function(next){
+          expect(typeof browser != "undefined").toBe(true);
+          expect(browser instanceof Browser).toBe(true);
+          next();
+      });
+
+      it("should visit the site and see the login form", function(next) {
+          browser.visit(url, function(err) {
+              expect(browser.success).toBe(true);
+              expect(browser.query("input[value='Login']")).toBeDefined();
+              next();
+          })
+      });
+
+  });</code>
+The result should be:
+<code>Finished in 0.208 seconds
+  2 tests, 4 assertions, 0 failures</code>
+Zombiejs's browser has bunch of helpful features, which you can use to check what is going on. 
+For example in the code above we used <i>.query</i>, which accepts a valid CSS selector and returns a DOM element. 
+We used this information to find out if the <i>Login</i> button is on the page, which means that the login form is shown. 
+You could also use
+<i>.html</i> or <i>.text</i> to get the exact html markup, which is currently in the browser. 
+I strongly recommend checking the <a href="http://zombie.labnotes.org/API">Zombiejs API</a> to find out what you can do.
+Here is the full test of site:
+<code>var Browser = require("zombie");
+  var url = "https://github.com/krasimir/blog-posts/tree/master/2012/TestingWithZombieJS/site";
+  var browser = new Browser();
+
+  describe("testing with zombie", function() {
+
+      it("should have defined headless browser", function(next){
+          expect(typeof browser != "undefined").toBe(true);
+          expect(browser instanceof Browser).toBe(true);
+          next();
+      });
+
+      it("should visit the site and see the login form", function(next) {
+          browser.visit(url, function(err) {
+              expect(browser.success).toBe(true);
+              expect(browser.query("input[value='Login']")).toBeDefined();
+              next();
+          })
+      });
+
+      it("should not be able to login with wrong credentials", function(next) {
+          browser
+          .fill('input[name="username"]', "wrongname")
+          .fill('input[name="password"]', "wrongpassword")
+          .pressButton('input[value="Login"]', function() {
+              expect(browser.html("body")).not.toContain("Insanely fast, headless full-stack testing using Node.js");
+              expect(browser.query("input[value='Login']")).toBeDefined();
+              next();
+          });
+      });
+
+      it("should be able to login with correct credentials", function(next) {
+          browser
+          .fill('input[name="username"]', "admin")
+          .fill('input[name="password"]', "1234")
+          .pressButton('input[value="Login"]', function(res) {
+              expect(browser.html("body")).toContain("Insanely fast, headless full-stack testing using Node.js");
+              expect(browser.query("input[value='Login']")).toBeUndefined();
+              next();
+          });
+      });
+
+      it("should be able to see CSS selectors page", function(next) {
+          browser.visit(url + "css-selectors", function(err) {
+              expect(browser.html("body")).toContain("CSS Selectors");
+              next();
+          });
+      });
+
+      it("should logout", function(next) {
+          browser.clickLink('#logout', function() {
+              expect(browser.query("input[value='Login']")).toBeDefined();
+              next();
+          });
+      });
+
+      it("should not be able to see CSS selectors page after the logout", function(next) {
+          browser.visit(url + "css-selectors", function(err) {
+              expect(browser.html("body")).not.toContain("CSS Selectors");
+              next();
+          });
+      });
+
+  });</code>
+The final result:
+<code>Finished in 1.274 seconds
+  7 tests, 11 assertions, 0 failures</code>
+As you can see you have a fully working browser under your script control. 
+You can fill forms, click buttons or links.
+You can also modify the request headers and all those things are programmable. 
+By creating such an automated tests you could save a lot of time, which is normally spend in browsing the application. 
+And, of course, the very best part, is that you will be notified where exactly is the problem.
+
+
+
+
+
+<script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+    // ... more custom settings?
+});
+</script>
