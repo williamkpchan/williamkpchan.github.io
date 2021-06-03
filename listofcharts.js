@@ -161,7 +161,7 @@ function chkKey() { testkey = getChar(event);
   if(testkey == 'r'){randomChartinList();} // random jmp to a chart
   if(testkey == 's'){xunbao(chartPtCode);}
   if(testkey == 't'){window.scrollTo(0,0);}
-  if(testkey == 'x'){window.open("Random Charts.html");}
+  if(testkey == 'X'){window.open("Random Charts.html");}
   if(testkey == 'z'){topicpointer = 12; showstkList();}
 
   if(testkey == '.'){showNextPage();}
