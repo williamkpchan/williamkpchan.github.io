@@ -22983,6 +22983,536 @@ Data science is driving the AI market, with organizations looking to leverage AI
 To leverage these capabilities, organizations need developers trained in developing Artificial intelligence applications using R.
 Businesses all over the world are looking for smarter tools and applications that help them reduce efforts and maximize profits.
 
+<h2>Packages for sending emails from R</h2>
+Here are the R packages you can use for sending emails:
+<a href="https://github.com/olafmersmann/sendmailR" target="_blank">sendmailR</a>	A portable solution for sending emails from R (contains a simple SMTP client)
+<a href="https://cran.r-project.org/web/packages/mail/index.html" target="_blank">mail</a>	An easy to use package for sending emails from R
+<a href="https://github.com/rpremraj/mailR" target="_blank">mailR</a>	A wrapper around Apache Commons Email for sending emails from R
+<a href="https://github.com/rich-iannone/blastula" target="_blank">blastula</a>	A package for creating and sending HTML emails from R through an SMTP server or Mailgun API
+<a href="https://cran.r-project.org/web/packages/blatr/index.html" target="_blank">blatr</a>	A wrapper around Blat – a Windows command line utility that sends emails via SMTP or posts to Usenet via NNTP
+<a href="https://github.com/r-lib/gmailr" target="_blank">gmailR</a>	A package for sending emails via the Gmail’s RESTful API
+<a href="https://cran.r-project.org/web/packages/IMmailgun/index.html" target="_blank">IMmailgun</a>	A package for sending emails via the Mailgun API
+<a href="https://github.com/datawookie/emayili/" target="_blank">emayili</a>	A package for sending emails from R via an SMTP server
+<a href="https://github.com/omegahat/RDCOMClient" target="_blank">RDCOMClient</a>	A Windows-specific package for sending emails in R from the Outlook app
+<a href="https://github.com/ropenscilabs/ponyexpress" target="_blank">ponyexpress</a>	A package to automate email sending from R via Gmail (based on the gmailR package)
+We won’t focus on all of them, but we will introduce the most common and convenient options.
+<h3>Sending emails in R via SMTP</h3>
+Whichever R package of the following you choose, keep in mind that you need to have an SMTP server to send emails. 
+In our examples, we’ll be using Mailtrap, a service providing a fake SMTP server for testing. 
+<h3>sendmailR </h3>
+sendmailR can be used for sending all sorts of email notifications such as completed jobs and scheduled tasks. 
+At the same time, you can distribute analytical results to stakeholders using this R package as well. 
+sendmailR is mostly used for SMTP servers without authentication. 
+That’s why we won’t use Mailtrap in the following examples. 
+Let’s install the package first:
+install.packages("sendmailR",repos="http://cran.r-project.org")
+Next, we create a data structure called Server, which is a map with a single key value pair – key: smtpServer, value: smtp.example.io: 
+Server&lt;-list(smtpServer= "smtp.example.io")
+Now, let’s write a few R lines to send a simple email:
+library(sendmailR)
+from &lt;- sprintf("&lt;user@sender.com>","The Sender") # the sender’s name is an optional value
+to &lt;- sprintf("&lt;user@recipient.com>")
+subject &lt;- "Test email subject"
+body &lt;- "Test email body"
+sendmail(from,to,subject,body,control=list(smtpServer= "smtp.example.io"))
+The following code sample is for sending an email to multiple recipients:
+from &lt;- sprintf("&lt;user@sender.com>","The Sender")
+to &lt;-sprintf(c("&lt;user@recipient.com>","&lt;user2@recipient.com>", "&lt;user3@recipient.com>")
+subject &lt;- "Test email subject"
+body &lt;- "Test email body"
+sapply(to,function(x) sendmail(from,to=x,subject,body,control=list(smtpServer= "smtp.example.io"))
+And now, let’s send an email with an attachment as well:
+from &lt;- sprintf("&lt;user@sender.com>","The Sender")
+to &lt;- sprintf("&lt;user@recipient.com>")
+subject &lt;- "Test email subject"
+body &lt;- "Test email body"
+attachmentPath &lt;-"C:/.../Attachment.png"
+attachmentObject &lt;-mime_part(x=attachmentPath,name=attachmentName)
+bodyWithAttachment &lt;- list(body,attachmentObject)
+sendmail(from,to,subject,bodyWithAttachment,control=list(smtpServer= "smtp.example.io"))
+NB: To send emails with sendmailR, you may also need to configure your machine so it can send emails from your local host. 
+We’ve covered this step in <a rel="noreferrer noopener" aria-label=" (opens in a new tab)" href="/blog/setup-smtp-server/" target="_blank">How To Set Up An SMTP Server</a>.
+<h3>mailR</h3>
+If you employ an authentication-based SMTP server, you’d better pick the mailR package. 
+It’s a wrapper around Apache Commons Email, an email library built on top of the Java Mail API. 
+Due to this, mailR has a dependency on the rJava package, a low-level interface to Java VM. 
+This requires Java Runtime Environment to be installed. 
+You can download it from <a href="https://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html" target="_blank">Oracle</a>. 
+In case of problems with pointing to the right Java binary, refer to <a href="https://github.com/s-u/rJava/issues/151" target="_blank">this troubleshooting guide</a> on GitHub. 
+In practice, this may cause a bit of trouble when deploying in some environments. 
+Nevertheless, mailR is a rather popular solution to automate sending emails with the R that offers the following:
+multiple recipients (Cc, Bcc, and ReplyTo)multiple attachments (both from the file system and URLs)HTML formatted emails 
+Install the package:
+install.packages("mailR",repos="http://cran.r-project.org")
+Now, we can use the Mailtrap SMTP server that requires authentication to send an email:
+library(mailR)
+send.mail(from = "user@sender.com",
+    to = "user@recipient.com",
+    subject = "Test email subject",
+    body = "Test emails body",
+    smtp = list(host.name = "smtp.mailtrap.io", port = 25,
+          user.name = "********",
+          passwd = "******", ssl = TRUE),
+    authenticate = TRUE,
+    send = TRUE)
+Insert your Mailtrap credentials (user.name and passwd) and pick any SMTP port of 25, 465, 587, 2525.
+Here is how to send an email to multiple recipients:
+library(mailR)
+send.mail(from = "user@sender.com",
+    to = c("Recipient 1 &lt;user1@recipient.com>", "Recipient 2 &lt;user@recipient.com>"),
+    cc = c("CC Recipient &lt;cc.user@recipient.com>"),
+    bcc = c("BCC Recipient &lt;bcc.user@recipient.com>"),
+    replyTo = c("Reply to Recipient &lt;reply-to@recipient.com>"),
+    subject = "Test email subject",
+    body = "Test emails body",
+    smtp = list(host.name = "smtp.mailtrap.io", port = 25,
+          user.name = "********",
+          passwd = "******", ssl = TRUE),
+    authenticate = TRUE,
+    send = TRUE)
+Now, let’s add a few attachments to the email:
+library(mailR)
+send.mail(from = "user@sender.com",
+    to = c("Recipient 1 &lt;user1@recipient.com>", "Recipient 2 &lt;user@recipient.com>"),
+    cc = c("CC Recipient &lt;cc.user@recipient.com>"),
+    bcc = c("BCC Recipient &lt;bcc.user@recipient.com>"),
+    replyTo = c("Reply to Recipient &lt;reply-to@recipient.com>"),
+    subject = "Test email subject",
+    body = "Test emails body",
+    smtp = list(host.name = "smtp.mailtrap.io", port = 25,
+          user.name = "********",
+          passwd = "******", ssl = TRUE),
+    authenticate = TRUE,
+    send = TRUE,
+    attach.files = c("./attachment.png", "https://dl.dropboxusercontent.com/u/123456/Attachment.pdf"),
+    file.names = c("Attachment.png", "Attachment.pdf"), #this is an optional parameter
+    file.descriptions = c("Description for Attachment.png", "Description for Attachment.pdf")) #this is an optional parameter
+Eventually, let’s send an HTML email from R:
+library(mailR)
+send.mail(from = "user@sender.com",
+    to = "user@recipient.com",
+    subject = "Test email subject",
+    body = "&lt;html>Test &lt;strong>email&lt;/strong> body&lt;/html>",
+    smtp = list(host.name = "smtp.mailtrap.io", port = 25,
+          user.name = "********",
+          passwd = "******", ssl = TRUE),
+    authenticate = TRUE,
+    send = TRUE)
+You can also point to an HTML template by specifying its location, as follows:
+body = "./Template.html",
+<h3>blastula</h3>
+The blastula package allows you to craft and send responsive HTML emails in R programming. 
+We’ll review how to send emails via the SMTP server, however, blastula also supports the Mailgun API. 
+Install the package:
+install.packages("blastula",repos="http://cran.r-project.org")
+and load it:
+library(blastula)
+Compose an email using Markdown formatting. 
+You can also employ the following string objects:
+add_readable_time – creates a nicely formatted date/time string for the current time 
+add_image – transforms an image to an HTML string object
+For example,
+date_time &lt;- add_readable_time() # => "Thursday, November 28, 2019 at 4:34 PM (CET)"
+img_file_path &lt;- "./attachment.png" # => "&lt;img cid=\"mtwhxvdnojpr__attachment.png\" src=\"data:image/png;base64,iVBORw0KG...g==\" width=\"520\" alt=\"\"/>\n"
+img_string &lt;- add_image(file = img_file_path)
+When composing an email, you will need the c() function to combine the strings in the email body and footer. 
+You can use three main arguments: body, header, and footer. 
+If you have Markdown and HTML fragments in the email body, use the md() function. 
+Here is what we’ve got:
+library(blastula)
+email &lt;-
+compose_email(
+  body = md(
+    c("&lt;html>Test &lt;strong>email&lt;/strong> body&lt;/html>",
+img_string
+      )
+    ),
+ footer = md(
+    c(
+      "Test email footer", date_time, "."
+      )
+  )
+)
+Preview the email using attach_connect_email(email = email)
+Now, let’s send the email. 
+This can be done with the smtp_send() function through one of the following ways:
+<ol>Providing the SMTP credentials directly via the creds() helper: </ol>
+smtp_send(
+  email = email,
+  from = "user@sender.com",
+  to = "user@recipient.com",
+  credentials = creds(
+    host = "smtp.mailtrap.io",
+    port = 25,
+    user = "********"
+  )
+)
+<ol start="2">Using a credentials key that you can generate with the create_smtp_creds_key() function: </ol>
+create_smtp_creds_key(
+  id = "mailtrap",
+  host = "smtp.mailtrap.io",
+  port = 25,
+  user = "********"
+)
+smtp_send(
+  email = email,
+  from = "user@sender.com",
+  to = "user@recipient.com",
+  credentials = creds_key("mailtrap")
+)
+<ol start="3">Using a credentials file that you can generate with the create_smtp_creds_file() function:</ol>
+create_smtp_creds_file(
+  file = "mailtrap_file",
+  host = "smtp.mailtrap.io",
+  port = 25,
+  user = "********"
+)
+smtp_send(
+  email = email,
+  from = "user@sender.com",
+  to = "user@recipient.com",
+  credentials = creds_file("mailtrap_file")
+)
+NB: There is no way to programmatically specify a password for authentication. 
+The user will be prompted to provide one during code execution.
+<h3>emayili </h3>
+emayili is the last package on our list for sending emails in R via SMTP. 
+The package works with all SMTP servers and has minimal dependencies. 
+Install it from GitHub and let’s move on:
+install.packages("remotes")
+library(remotes)
+remotes::install_github("datawookie/emayili")
+Emayili has two classes at the core:
+envelope – to create emails server – to communicate with the SMTP server
+Let’s create an email first:
+library(emayili)
+email &lt;- envelope() %>%
+  from("user@sender.com") %>%
+  to("user@recipient.com") %>%
+  subject("Test email subject") %>%
+  body("Test email body")
+Now, configure the SMTP server:
+smtp &lt;- server(host = "smtp.mailtrap.io",
+         port = 25,
+         username = "********",
+         password = "*********")
+To send the email to multiple recipients, enhance your emails with Cc, Bcc, and Reply-To header fields as follows:
+email &lt;- envelope() %>%
+  from("user@sender.com") %>%
+  to(c("Recipient 1 &lt;user1@recipient.com>", "Recipient 2 &lt;user@recipient.com>")) %>%
+  cc("cc@recipient.com") %>%
+  bcc("bcc@recipient.com") %>%
+  reply("reply-to@recipient.com") %>%
+  subject("Test email subject") %>%
+  body("Test email body")
+You can also use the attachment() method to add attachments to your email:
+email &lt;- email %>% attachment(c("./attachment.png", "https://dl.dropboxusercontent.com/u/123456/Attachment.pdf"))
+Eventually, you can send your email with:
+smtp(email, verbose = TRUE)
+<h3>Sending emails via Gmail API – gmailR</h3>
+Today, Gmail is one of the most popular email services. 
+It provides RESTful API for a bunch of functionalities, such as:
+send/receive HTML emails with attachmentsCRUD (create, read, update, and delete) operations with messages, drafts, threads, and labels access control of your Gmail inboxand so on
+For sending emails from R via Gmail API, you need two things: the gmailR package and the API access. 
+Let’s start with the latest, which requires four steps to be done:
+<ol>Create a project in the Google API ConsoleEnable Gmail APISet up credentials and authentication with OAuth 2.0Download a JSON file with your credentials</ol>
+We’ve described all these steps in <a href="/blog/send-emails-with-gmail-api/" target="_blank" rel="noreferrer noopener" aria-label=" (opens in a new tab)">How to send emails with Gmail API</a>, so feel free to reference this blog post. 
+After you’ve accomplished the preparation stage, get back to gmailR. 
+The package is available on CRAN, so you can install, as follows:
+install.packages("gmailr", repos="http://cran.r-project.org")
+and load in your R script:
+library(gmailr)
+Now, you can use your downloaded JSON credentials file. 
+Employ the use_secret_file() function. 
+For example, if your JSON file is named GmailCredentials.json, this will look, as follows:
+use_secret_file("GmailCredentials.json")
+After that, create a MIME email object:
+email &lt;- gm_mime() %>%
+  gm_to("user@recipient.com") %>%
+  gm_from("user@sender.com") %>%
+  gm_subject("Test email subject") %>%
+  gm_text_body("Test email body")
+To create an HTML email, use markup to shape your HTML string, for example:
+email &lt;- gm_mime() %>%
+  gm_to("user@recipient.com") %>%
+  gm_from("user@sender.com") %>%
+  gm_subject("Test email subject") %>%
+  gm_html_body("&lt;html>Test &lt;strong>email&lt;/strong> body&lt;/html>")
+To add an attachment, you can:
+use the gm_attach_file() function, if the attachment has not been loaded into R. 
+You can specify the MIME type yourself using the type parameter or let it be automatically guessed by mime::guess_type
+email &lt;- gm_mime() %>%
+  gm_to("user@recipient.com") %>%
+  gm_from("user@sender.com") %>%
+  gm_subject("Test email subject") %>%
+  gm_html_body("&lt;html>Test &lt;strong>email&lt;/strong> body&lt;/html>") %>%
+  gm_attach_file("Attachment.png")
+use attach_part() to attach the binary data to your file:
+email &lt;- gm_mime() %>%
+  gm_to("user@recipient.com") %>%
+  gm_from("user@sender.com") %>%
+  gm_subject("Test email subject") %>%
+  gm_html_body("&lt;html>Test &lt;strong>email&lt;/strong> body&lt;/html>") %>%
+  gm_attach_part(part = charToRaw("attach me!"), name = "please")
+If you need to include an image into HTML, you can use the &lt;img src=”cid:xy”> tag to reference the image. 
+First create a plot to send, and save it to AttachImage.png:
+# 1. 
+use built-in mtcars data set
+my_data &lt;- mtcars
+# 2. 
+Open file for writing
+png("AttachImage.png", width = 350, height = 350)
+# 3. 
+Create the plot
+plot(x = my_data$wt, y = my_data$mpg,
+  pch = 16, frame = FALSE,
+  xlab = "wt", ylab = "mpg", col = "#2E9FDF")
+# 4. 
+Close the file
+dev.off()
+Now, create an HTML email that references the plot as foobar:
+email &lt;- gm_mime() %>%
+  gm_to("user@recipient.com") %>%
+  gm_from("user@sender.com") %>%
+  gm_subject("Test email subject") %>%
+  gm_html_body(
+    '&lt;html>Test &lt;strong>email&lt;/strong> body&lt;/html>
+    &lt;br>&lt;img src="cid:foobar">'
+  ) %>%
+  gm_attach_file("AttachImage.png", id = "foobar")
+Eventually, you can send your email:
+gm_send_message(email)
+Enjoying this Post?Join Our NewsletterOnly the best content, delivered once a month. 
+Unsubscribe anytime.</p><form class="hustle-layout-form" novalidate="novalidate"><label for="hustle-field-email-module-1" id="hustle-field-email-module-1-label" class="hustle-screen-reader">Your email address</label><input id="hustle-field-email-module-1" type="email" class="hustle-input " name="email" value="" aria-labelledby="hustle-field-email-module-1-label" data-validate="1" data-required-error="Your email is required." data-validation-error="Please enter a valid email.">Your Email<button class="hustle-button hustle-button-submit " aria-live="polite" data-loading-text="Form is being submitted, please wait a bit.">Submit</button><input type="hidden" name="hustle_module_id" value="1"><input type="hidden" name="post_id" value="2497"><input type="hidden" name="hustle_sub_type" value="shortcode"><label for="hustle-gdpr-module-1-1" class="hustle-checkbox hustle-gdpr "><input type="checkbox" name="gdpr" id="hustle-gdpr-module-1-1" data-required-error="Please accept the terms and try again.">I have read and agree with <a href="https://mailtrap.io/privacy/" target="_blank">Mailtrap's privacy policy</a>.</label></form>
+<h3>Sending emails from Outlook – RDCOMClient</h3>
+R has a package for sending emails from Microsoft Outlook as well. 
+It’s called RDCOMClient and allows you to connect to DCOM architecture, which you can consider an API for communicating with Microsoft Office in Windows environments. 
+Let’s explore how to connect R to the Outlook app installed on your Windows.
+Install RDCOMClient via an option of your choice:
+from CRAN:
+install.packages("RDCOMClient")
+via devtools:
+devtools::install_github("omegahat/RDCOMClient")
+from the Windows command line:
+R CMD INSTALL RDCOMClient
+Warning: if you receive a message like package ‘RDCOMClient’ is not available (for R version 3.5.1)” during the installation from CRAN, try to install RDCOMClient from the source repository:
+install.packages("RDCOMClient", repos = "http://www.omegahat.net/R")
+Load the package, open Outlook, and create a simple email:
+library(RDCOMClient)
+Outlook &lt;- COMCreate("Outlook.Application")
+Email = Outlook$CreateItem(0)
+Email[["to"]] = "user@recipient.com"
+Email[["subject"]] = "Test email subject"
+Email[["body"]] = "Test email body"
+If you need to change the default From: field and send from a secondary mailbox, use:
+Email[["SentOnBehalfOfName"]] = "user@sender.com"
+Here is how you can specify multiple recipients, as well as Cc and Bcc headers:
+Email[["to"]] = "user1@recipient.com, user2@recipient.com"
+Email[["cc"]] = "cc.user@recipient.com"
+Email[["bcc"]] = "bcc.user@recipient.com"
+To create an HTML email, use [["htmlbody"]]. 
+You can simply add your HTML in the R code as follows:
+library(RDCOMClient)
+Outlook &lt;- COMCreate("Outlook.Application")
+Email = Outlook$CreateItem(0)
+Email[["to"]] = "user@recipietn.com"
+Email[["subject"]] = "Test email subject"
+Email[["htmlbody"]] =
+"&lt;html>Test &lt;strong>email&lt;/strong> body&lt;/html>"
+Let’s also add an attachment: 
+library(RDCOMClient)
+Outlook &lt;- COMCreate("Outlook.Application")
+Email = Outlook$CreateItem(0)
+Email[["to"]] = "user@recipient.com"
+Email[["subject"]] = "Test email subject"
+Email[["htmlbody"]] =
+"&lt;html>Test &lt;strong>email&lt;/strong> body&lt;/html>"
+Email[["attachments"]]$Add("C:/.../Attachment.png")
+Now, you can send the email:
+outMail$Send()
+<h3>How to send bulk emails from R?</h3>
+Let’s say your mail list includes many more than ten recipients and you need to send bulk emails from R. 
+We’ll show you how this can be done via Web API (gmailR) and SMTP (mailR).
+<h3>Bulk emails with gmailR</h3>
+As an example, we’ll inform recipients of how much they won in the lottery. 
+For this, we need:
+an enabled API access on your Google account. an installed gmailr R package.a set of R packages for data iteration: readr, dplyr, and purrr (or plyr as an alternative).a file containing the variable bits (lottery wins), Variables.csv, with the following format:
+lastname,firstname,win_amount,email_address
+SMITH,JOHN,1234,johnsmith@winner.com
+LOCKWOOD,JANE,1234,janelockwood24@example.com
+Now, let’s go through the mail steps to create an R script for bulk emails.
+Load the packages and files we need:
+suppressPackageStartupMessages(library(gmailr))
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(plyr))
+suppressPackageStartupMessages(library(purrr))
+library(readr) # => if you don’t have it, run: install.packages("readr", repos="http://cran.r-project.org")
+my_dat &lt;- read_csv("Variables.csv") 
+Create a data frame that will insert variables from the file into the email: 
+this_hw &lt;- "Lottery Winners"
+email_sender &lt;- 'Best Lottery Ever &lt;info@best-lottery-ever.com>'
+optional_bcc &lt;- 'Anonymous &lt;bcc@example.com>'
+body &lt;- "Hi, %s.
+Your lottery win is %s.
+Thanks for betting with us!
+"
+edat &lt;- my_dat %>%
+    mutate(
+        To = sprintf('%s &lt;%s>', firstname, email_address),
+        Bcc = optional_bcc,
+        From = email_sender,
+        Subject = sprintf('Lottery win for %s', win_amount),
+        body = sprintf(body, firstname, win_amount)) %>%
+    select(To, Bcc, From, Subject, body)
+write_csv(edat, "data-frame.csv")
+The data frame will be saved to data-frame.csv. 
+This will provide an easy-to-read record of the composed emails. 
+Now, convert each row of the data frame into a MIME object using the gmailr::mime() function. 
+After that, purrr::pmap() generates the list of MIME objects, one per row of the input data frame:
+emails &lt;- edat %>%
+  pmap(mime)
+str(emails, max.level = 2, list.len = 2)
+If you use plyr (install.packages("plyr")), you can do this, as follows:
+emails &lt;- plyr::dlply(edat, ~ To, function(x) mime(
+  To = x$To,
+  Bcc = x$Bcc,
+  From = x$From,
+  Subject = x$Subject,
+  body = x$body))
+Specify your JSON credentials file:
+use_secret_file("GmailCredentials.json")
+And send emails with purrr::safely(). 
+This will protect your bulk emails from failures in the middle:
+safe_send_message &lt;- safely(send_message)
+sent_mail &lt;- emails %>%
+  map(safe_send_message)
+saveRDS(sent_mail,
+        paste(gsub("\\s+", "_", this_hw), "sent-emails.rds", sep = "_"))
+List recipients with TRUE in case of errors:
+errors &lt;- sent_mail %>%
+  transpose() %>%
+  .$error %>%
+  map_lgl(Negate(is.null))
+Take a look at the full code now:
+suppressPackageStartupMessages(library(gmailr))
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(plyr))
+suppressPackageStartupMessages(library(purrr))
+library(readr) # => if you don’t have it, run: install.packages("readr", repos="http://cran.r-project.org")
+my_dat &lt;- read_csv("Variables.csv")
+this_hw &lt;- "Lottery Winners"
+email_sender &lt;- 'Best Lottery Ever &lt;info@best-lottery-ever.com>'
+optional_bcc &lt;- 'Anonymous &lt;bcc@example.com>'
+body &lt;- "Hi, %s.
+Your lottery win is %s.
+Thanks for betting with us!
+"
+edat &lt;- my_dat %>%
+    mutate(
+        To = sprintf('%s &lt;%s>', firstname, email_address),
+        Bcc = optional_bcc,
+        From = email_sender,
+        Subject = sprintf('Lottery win for %s', win_amount),
+        body = sprintf(body, firstname, win_amount)) %>%
+    select(To, Bcc, From, Subject, body)
+write_csv(edat, "data-frame.csv")
+emails &lt;- edat %>%
+  pmap(mime)
+str(emails, max.level = 2, list.len = 2)
+use_secret_file("GmailCredentials.json")
+safe_send_message &lt;- safely(send_message)
+sent_mail &lt;- emails %>%
+  map(safe_send_message)
+saveRDS(sent_mail,
+        paste(gsub("\\s+", "_", this_hw), "sent-emails.rds", sep = "_"))
+errors &lt;- sent_mail %>%
+  transpose() %>%
+  .$error %>%
+  map_lgl(Negate(is.null))
+<h3>Bulk emails with mailR</h3>
+If you want to send bulk emails with SMTP, make sure to have an appropriate SMTP server and install the mailR package. 
+Once again, we’ll need a .csv file that will contain the data frame you want to integrate into the email. 
+The data should be separated by a special character such as a comma, a semicolon, or a tab9. 
+For example:
+lastname; firstname; win_amount; email_address
+SMITH; JOHN; 1234; johnsmith@winner.com
+LOCKWOOD; JANE; 1234; janelockwood24@example.com
+What you need to do next:
+Build the HTML email body for a given recipient using the message_text function:
+message_text &lt;- function(x) sprintf('Hello %s %s!\nCongratulation to your win.\nYour prize is XXX.\nBet with the Best Lottery Ever!', x$firstname, x$lastname)
+Load the package and read in the mail list:
+library(mailR)
+mail_list &lt;- read.csv2("Variables.csv",as.is=TRUE)
+Values in the Variables.csv should be separated with a semicolon (;). 
+You can configure settings to read the data frame using the read.table or read.csv functions.
+Create a file to write the information of each individual row in the mail_list after each email is sent.
+my_file &lt;- file("mail.out",open="w")
+# … write data here
+close(my_file)
+Perform the batch emailing to all students in the mail list:
+for (recipient in 1:nrow(mail_list)) {
+  body &lt;- message_text(mail_list[recipient,])
+  send.mail(from="info@best-lottery-ever.com",
+    to=as.character(mail_list[recipient,]$email_address),
+    subject="Lottery Winners",
+    body=body,
+    html=TRUE,
+    authenticate=TRUE,
+    smtp = list(host.name = "smtp.mailtrap.io",
+    user.name = "*****", passwd = "*****", ssl = TRUE),
+    encoding = "utf-8",send=TRUE)
+  print(mail_list[recipient,])
+  Sys.sleep(runif(n=1,min=3,max=6))
+  #write each recipient to a file
+  result_file &lt;- file("mail.out",open="a")
+  writeLines(text=paste0("[",recipient,"] ",
+    paste0(as.character(mail_list[recipient,]),collapse="\t")),
+    sep="\n",con=result_file)
+  close(result_file)
+}
+And here is the full code:
+message_text &lt;- function(x) sprintf('Hello %s %s!\nCongratulation to your win.\nYour prize is XXX.\nBet with the Best Lottery Ever!', x$firstname, x$lastname)
+library(mailR)
+mail_list &lt;- read.csv2("Variables.csv",as.is=TRUE)
+my_file &lt;- file("mail.out",open="w")
+# … write data here
+close(my_file)
+for (recipient in 1:nrow(mail_list)) {
+  body &lt;- message_text(mail_list[recipient,])
+  send.mail(from="info@best-lottery-ever.com",
+    to=as.character(mail_list[recipient,]$email_address),
+    subject="Lottery Winners",
+    body=body,
+    html=TRUE,
+    authenticate=TRUE,
+    smtp = list(host.name = "smtp.mailtrap.io",
+    user.name = "*****", passwd = "*****", ssl = TRUE),
+    encoding = "utf-8",send=TRUE)
+  print(mail_list[recipient,])
+  Sys.sleep(runif(n=1,min=3,max=6))
+  #write each recipient to a file
+  result_file &lt;- file("mail.out",open="a")
+  writeLines(text=paste0("[",recipient,"] ",
+    paste0(as.character(mail_list[recipient,]),collapse="\t")),
+    sep="\n",con=result_file)
+  close(result_file)
+}
+<h3>How to test email sending in R with Mailtrap</h3>
+If you choose to send emails from R via SMTP, then Mailtrap is what you need for testing. 
+It’s a universal service with a fake SMTP server underneath. 
+This means, your test emails are not actually being sent. 
+They go from your app or any other mail client to the SMTP server and are trapped there. 
+Thus, you protect your real recipients from an undesirable experience – they won’t receive any of your test emails. 
+All the aforementioned examples with Mailtrap credentials work in this way. 
+If you need to test anything else, just replace your SMTP credentials with those of Mailtrap and that’s it. 
+For this, you need to <a aria-label=" (opens in a new tab)" rel="noreferrer noopener" href="/register/signup?ref=header" target="_blank">sign up</a> first using your email, GitHub or Google account. 
+A FREE FOREVER plan is available! For more on the features and functions provided by Mailtrap, read the <a href="https://help.mailtrap.io/article/12-getting-started-guide">Getting Started Guide</a>.
+<h3>To wrap up</h3>
+We’ve listed a number of options for sending emails in R, so choose the one that best fits your requirements. 
+For example, if you need to send hundreds (or even thousands) of emails daily, gmailR may be the best solution. 
+On the other hand, sending via SMTP is a more common and reliable way and R provides a few packages for this. 
+So, good luck with your choice!
+
 
 
 <script type='text/javascript' src='readbook.js'></script>
