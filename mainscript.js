@@ -21,7 +21,8 @@ function chkKey() {
   else if(testkey == 'E'){window.open("LibDocs/English Conversation.html");}
   else if(testkey == 'f'){window.open("http://williamkpchan.github.io/ForexChart.htm");}
   else if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
-  else if(testkey == 'g'){window.location = '#_youxi';}
+  else if(testkey == 'g'){window.open("https://mail.google.com/");}
+
   else if(testkey == 'h'){window.open("LibDocs/News Points.html");}
   else if(testkey == 'H'){window.open("LibDocs/monitorHSI.html");}
   else if(testkey == 'J'){window.location = '#_jiaoyu';}
