@@ -15,7 +15,7 @@ function chkKey() {
   else if(testkey == 'B'){window.open("http://xh.5156edu.com/bs.html");}
   else if(testkey == 'c'){showChart();}
 // calculator  else if(testkey == 'C'){window.open("https://www.desmos.com/fourfunction");}
-  else if(testkey == 'C'){window.open("LibDocs/clock.html");}
+  else if(testkey == 'C'){alert(showTime() + "\n\n"+showDate());}
   else if(testkey == 'd'){window.open("https://www.youdao.com/");}
   else if(testkey == 'e'){window.location = '#ertong';}
   else if(testkey == 'E'){window.open("LibDocs/English Conversation.html");}
