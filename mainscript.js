@@ -15,7 +15,6 @@ function chkKey() {
   else if(testkey == 'B'){window.open("http://xh.5156edu.com/bs.html");}
   else if(testkey == 'c'){showChart();}
 // calculator  else if(testkey == 'C'){window.open("https://www.desmos.com/fourfunction");}
-  else if(testkey == 'C'){alert(showTime() + "\n\n"+showDate());}
   else if(testkey == 'd'){window.open("https://www.youdao.com/");}
   else if(testkey == 'e'){window.location = '#ertong';}
   else if(testkey == 'E'){window.open("LibDocs/English Conversation.html");}
@@ -71,6 +70,7 @@ function chkOtherKeys(testkey) {
   else if(testkey == '.'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutechart.html");}
   else if(testkey == '/'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutecharttest.html");}
   else if(testkey == 'c'){showChart();}
+  else if(testkey == 'C'){alert(showTime() + "\n\n"+showDate());}
   else if(testkey == 'd'){window.open("https://www.youdao.com/");}
   else if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
   else if(testkey == 'f'){window.open("http://williamkpchan.github.io/ForexChart.htm");}
