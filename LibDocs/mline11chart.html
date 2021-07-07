@@ -8,6 +8,7 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 <script src='..\mainscript.js'></script>
 <script src="stkComments.js"></script>
+<script src="filterResulitLib.txt"></script>
 
 <script src="longHistList.js"></script>
 <script src="./rchart/RGraph.common.core.js" ></script>
@@ -28,11 +29,13 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
 <body onkeypress="chkKey()">
 <center>
 <br>
-<canvas id="cvs" width="1200" height="600">[No canvas support]</canvas>
-<canvas id="动力0" width="1200" height="240">[No canvas support]</canvas>
-<canvas id="动力5" width="1200" height="240">[No canvas support]</canvas>
-<canvas id="巅峰" width="1200" height="240">[No canvas support]</canvas>
-<canvas id="强弱50" width="1200" height="240">[No canvas support]</canvas>
+<canvas id="cvs" width="1150" height="600">[No canvas support]</canvas>
+<br>
+<p id="image"></p>
+<canvas id="动力0" width="1150" height="240">[No canvas support]</canvas>
+<canvas id="动力5" width="1150" height="240">[No canvas support]</canvas>
+<canvas id="巅峰" width="1150" height="240">[No canvas support]</canvas>
+<canvas id="强弱50" width="1150" height="240">[No canvas support]</canvas>
 
 <span id="lastValues"></span>
 <br><span id="turnover"></span>
@@ -47,6 +50,7 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
 <a href="http://www.etnet.com.hk/www/tc/stocks/ah.php" target="_blank" class="bordred1">AH股表現</a>
 <select id="selectList" onchange="assignList()"></select>
 <span onclick="$('#message').toggle();"> 🎌 </span>
+<pre id="filterMarkers"></pre>
 
 <br>
 <pre id="instruction">
@@ -168,10 +172,15 @@ A stk code sample: 000001.sh, 399001.sz
       '<a href="' + shortsellHeader + theCode + '" target="_blank" class="white bordred1 borRad10">沽空</a> '
       );
 
-          if(theCode == "110000"){ theCode = "HSI" }
+
+          if(theCode == "110000"){
+             theCode = "HSI"; imageCode = "110000"
+          }
+
           codewidth = theCode.length
           if(theCode == "HSI"){
               theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,1000,qfq';
+              imageCode = "110000"
           }else{
             if(codewidth <= 5){
               theCode = "00000"+theCode;
@@ -179,29 +188,38 @@ A stk code sample: 000001.sh, 399001.sz
               theCode = theCode.slice(codewidth-5, codewidth);
               codewidth = theCode.length; //update to be used later
               theStartCode = theCode
+              imageCode = theCode
               theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,1000,qfq';
             }else{
               codewidth = theCode.length
               if((codewidth == 6) && !hsReservedCode.includes(theCode)){
                  if (theCode.charAt(0) == "6"){
                     theCode = "sh"+theCode; 
+                    imageCode = theCode+"sh";
                  }else{
                     theCode = "sz"+theCode
+                    imageCode = theCode+"sz";
                  }
                  theStartCode = theCode
                  theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,1000,qfq';
               }else if(codewidth == 9){
+                imageCode = theCode
                 theCode = theCode.substring(7, 9) + theCode.substring(0, 6);
                 theStartCode = theCode
+
                 theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,1000,qfq';
               }else{
                 theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,1000,qfq';
                 theStartCode = theCode
+                imageCode = theCode
               }
             }
           }
-      
+
           theStartCode = theCode;
+        document.getElementById("image").innerHTML = '<img src="http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=3&indpara1=5&indpara2=10&indpara3=15&indpara4=20&indpara5=25&subChart1=3&ref1para1=7&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&subChart3=7&ref3para1=7&ref3para2=5&ref3para3=0&subChart4=7&ref4para1=11&ref4para2=8&ref3para3=0&subChart5=1&ref4para1=0&ref4para2=0&ref4para3=0&scheme=3&com=100&chartwidth=1200&chartheight=760&stockid='+ imageCode +'&period=7&type=1&logoStyle=1">'
+
+
           thestkdata = [];
           thedrawdata = [];
           dateLst = [];
@@ -283,6 +301,7 @@ A stk code sample: 000001.sh, 399001.sz
            showDateTime();
            $("#dateTime").prepend("Item " + (stkPointer+1) + " of " + stkList.length + ", ");
 
+           //showActivity(theCode)
 
       }
 
@@ -291,7 +310,7 @@ A stk code sample: 000001.sh, 399001.sz
        if(testkey == '0'){ theCode = '000001.sh'; collectStkData('000001.sh');}
 
        else if(testkey == '3'){ theCode = '399001.sz'; collectStkData('399001.sz');}
-       else if(testkey == '1'){ theCode = 'HSI'; collectStkData('HSI');}
+       else if(testkey == '1'){ theCode = '110000'; collectStkData('HSI');}
        else if(testkey == '2'){ theCode = '01339'; collectStkData('01339');}
        else if(testkey == '4'){ theCode = '01766'; collectStkData('01766');}
        else if(testkey == '5'){ theCode = '03800'; collectStkData('03800');}
@@ -328,7 +347,8 @@ A stk code sample: 000001.sh, 399001.sz
        else if(testkey == 'C'){chgCloseLst();}
        else if(testkey == 'L'){askList()}
        else if(testkey == 'z'){largeCht()}
-       else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
+       else if(testkey == 'e'){window.location = '#instruction';}
+       else if(testkey == 'E'){window.location = '#filterMarkers';}
        else{chkOtherKeys(testkey)} 
      }
 
@@ -401,6 +421,7 @@ A stk code sample: 000001.sh, 399001.sz
         initIntvSteps()
         titleText = showDate() +" "+ showTime()+", p1: "+intv1+ " p9: "+intv8+" w: "+(thestkdata.length-starti) +"\n"+theStartCode + " " + stkName + " 日線 ";
 
+ 
         RGraph.reset(document.getElementById('cvs'));
 
         if(dataStatus == "C"){ stkpriceDataArr = closeLst
@@ -804,6 +825,38 @@ function showDateTime() {
       return arr.slice(1).map(function(n, i) { return n - arr[i]; });
     }
 
+function showActivity(thecode){
+    markers = filterResult.filter(element => element.includes(thecode));
+    // clean the h2 tags
+    markers = markers.map(element => element.replace(/<\/h2>.*/gi, ""))
+    markers = markers.map(element => element.replace(/<h2>/gi, ""))
+
+    markers = markers.map(element => formatWeekDay(element))
+    if (markers.length > 50) markers.splice(0, markers.length-80);
+
+    $('#filterMarkers').append("<b class='red'>" + thecode + " 日线特征:</b><br>")
+    $('#filterMarkers').append(markers)
+}
+
+// format WeekDay
+function formatWeekDay(element) {
+    dayStr = element.replace(/<.*?>/gi, "") // clean span tags
+    dayStr = dayStr.substr(0,6)
+    dayStr = convertWeekday(dayStr)
+    return(dayStr + " " + element + "<br>")
+}
+
+// convert date string to weekday
+function parse(str) {
+    str = "20" + str
+    var y = str.substr(0,4), m = str.substr(4,2) - 1,
+        d = str.substr(6,2);
+    var D = new Date(y,m,d);
+    return (D.getFullYear() == y && D.getMonth() == m && D.getDate() == d) ? D : 'invalid date';
+}
+function convertWeekday(str) {
+    return ["SUN","MON","TUE","WED","THU","FRI","SAT"][parse(str).getDay()]
+}
 
     collectStkData(theCode);
 </script>
