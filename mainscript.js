@@ -13,7 +13,7 @@ function chkKey() {
   if(testkey == 'a'){window.open("apptechno.html");}
   else if(testkey == 'b'){window.open("LibDocs/listofcharts.html");}
   else if(testkey == 'B'){window.open("http://xh.5156edu.com/bs.html");}
-  else if(testkey == 'c'){showChart();}
+  else if(testkey == 'c'){callCalculator();}
 // calculator  else if(testkey == 'C'){window.open("https://www.desmos.com/fourfunction");}
   else if(testkey == 'd'){window.open("https://www.youdao.com/");}
   else if(testkey == 'e'){window.location = '#ertong';}
@@ -98,6 +98,16 @@ function getChar(event) {
     return null; // special key
   }
 }
+
+function callCalculator() {
+    str = prompt("Calculation Input, + - * / ** (): ", "");
+    if (str != null && str != "") {
+        fstr = str.replace(',','.');
+        eval("var answer = " + fstr);
+        alert(str + " = "+answer);
+    }
+}
+
 
 function showChart() {
     var thecode = prompt("Code Number:", "");
