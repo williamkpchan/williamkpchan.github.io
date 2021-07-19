@@ -23803,6 +23803,69 @@ str_to_title(statement)
 ?stringr and go to index you will get all stringr functions.
 
 
+<h2>to log in to non-standard forms on a webpage</h2>
+library(rvest)
+url = "http://forum.axishistory.com/memberlist.php"
+pgsession <- html_session(url)
+pgform    <- html_form(pgsession)[[2]]
+filled_form <- set_values(pgform, "username" = "username", 
+                      "password" = "password")
+submit_form(pgsession,filled_form)
+memberlist <-  jump_to(pgsession, "http://forum.axishistory.com/memberlist.php")
+page <-  html(memberlist)
+
+usernames <-  html_nodes(x = page, css = "#memberlist .username") 
+
+data_usernames <-  html_text(usernames, trim = TRUE) 
+
+example again:
+
+sc  <-  spark_connect(master = "local")
+
+library(rvest) 
+#Address of the login webpage
+login <- "https://stackoverflow.com/users/login?ssrc=head&returnurl=http%3a%2f%2fstackoverflow.com%2f"
+
+#create a web session with the desired login address
+pgsession <- html_session(login)
+pgform <- html_form(pgsession)[[2]]  #in this case the submit is the 2nd form
+filled_form <- set_values(pgform, email="*****", password="*****")
+
+submit_form(pgsession, filled_form)
+
+# pre allocate the final results dataframe.
+results <- data.frame()  
+
+#loop through all of the pages with the desired info
+for (i in 1:5)
+{
+  #base address of the pages to extract information from
+  url <- "http://stackoverflow.com/users/**********?tab=answers&sort=activity&page="
+  url <- paste0(url, i)
+  page <- jump_to(pgsession, url)
+
+  #collect info on the question votes and question title
+  summary <- html_nodes(page, "div .answer-summary")
+  question <- matrix(html_text(html_nodes(summary, "div"), trim=TRUE), ncol=2, byrow = TRUE)
+
+  #find date answered, hyperlink and whether it was accepted
+  dateans <- html_node(summary, "span") %>% html_attr("title")
+  hyperlink <- html_node(summary, "div a") %>% html_attr("href")
+  accepted <- html_node(summary, "div") %>% html_attr("class")
+
+  #create temp results then bind to final results 
+  rtemp <- cbind(question, dateans, accepted, hyperlink)
+  results <- rbind(results, rtemp)
+}
+
+#Dataframe Clean-up
+names(results) <- c("Votes", "Answer", "Date", "Accepted", "HyperLink")
+results$Votes <- as.integer(as.character(results$Votes))
+results$Accepted <- ifelse(results$Accepted=="answer-votes default", 0, 1)
+
+<a href="https://rvest.tidyverse.org/reference/html_session.html" class="whitebut ">Simulate a session in web browser</a>
+
+
 
 
 <script type='text/javascript' src='readbook.js'></script>
