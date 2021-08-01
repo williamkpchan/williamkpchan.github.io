@@ -33,10 +33,10 @@ function chkKey() {
   else if(testkey == "5"){ randomFlip();}
   else if(testkey == "s"){ showMov();}
   else if(testkey == 't'){window.location = '#toc';
-      window.scrollTo(window.scrollX, window.scrollY - 100);}
+      window.scrollTo(window.scrollX, window.scrollY + 100);}
 
   else if(testkey == '8'){window.location = '#toc';
-      window.scrollTo(window.scrollX, window.scrollY - 100);}
+      window.scrollTo(window.scrollX, window.scrollY + 100);}
   else if(testkey == 'T'){window.scrollTo(0,0);}
   else if(testkey == 'B'){window.open("https://williamkpchan.github.io/LibDocs/汉语字典.html");}
 
