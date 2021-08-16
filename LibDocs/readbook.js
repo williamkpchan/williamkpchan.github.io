@@ -17,15 +17,13 @@ function chkKey() {
   else if(testkey == "6"){ foreward();}
   else if(testkey == "j"){ jumpTo();}
   else if(testkey == "l"){
-    $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1);
-      window.scrollTo(window.scrollX, window.scrollY + 200);}
+    $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-400)}, 1);}
 
   else if(testkey == "2"){
-    $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-600)}, 1);
-      window.scrollTo(window.scrollX, window.scrollY + 200);}
+    $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-400)}, 1);}
 
   else if(testkey == "7"){
-    $('body,html').animate({scrollTop:(divtoc.clientHeight/2 + divtoc.offsetTop-600)}, 1); } //go to middle
+    $('body,html').animate({scrollTop:(divtoc.clientHeight/2 + divtoc.offsetTop-400)}, 1); } //go to middle
   else if(testkey == "m"){ location = '#mustWatch';}
   else if(testkey == "p"){ pause();}
   // else if(testkey == "c"){ continU();}
