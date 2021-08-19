@@ -34,6 +34,7 @@ function chkKey() {
   else if(testkey == 'n'){window.location = '#xinwen';}
   else if(testkey == 'N'){window.location = '#Notes';}
   else if(testkey == 'p'){window.open('LibDocs/temp.html');}
+  else if(testkey == 'P'){window.open("LibDocs/popupRecordReport.html");}
 
   else if(testkey == 'q'){window.open('https://www.quora.com/');}
   else if(testkey == 'Q'){window.open('https://news.qq.com/zt2020/page/feiyan.htm');}
