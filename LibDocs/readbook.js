@@ -103,15 +103,18 @@ function jumpTo() {
 }
 
 var toc = $('#toc');
+if(typeof(topicEnd) == 'undefined'){ var topicEnd = "<br>";}
+
 if(markerName != "h0"){
+
   $(markerName).each(function(i) {
       var topic = $(this), topicNumber = i; topicLength = topicNumber +1;
   
       if (typeof(showTopicNumber) !== 'undefined'){
         if (showTopicNumber == true){
-          toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
+          toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a>'+topicEnd);
         }else{
-          toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
+          toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a>'+topicEnd);
         }
       }else{
         toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
