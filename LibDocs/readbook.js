@@ -103,7 +103,7 @@ function jumpTo() {
 }
 
 var toc = $('#toc');
-if(typeof(topicEnd) == 'undefined'){ var topicEnd = "<br>";}
+if(typeof(topicEnd) == 'undefined'){ topicEnd = "<br>";}
 
 if(markerName != "h0"){
 
