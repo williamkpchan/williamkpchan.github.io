@@ -185,14 +185,14 @@ function addtoWL() {
 	waitList.push(topicpointer)
 	waitList = Array.from(new Set(waitList))
 	localStorage.setItem(waitingList, waitList)
-	alert("waitList: " + waitList)
+	alert("added topic: " +topicpointer+ "\nwaitList: " + waitList)
 }
 function rvFmWL() {
 	ItemIndex = waitList.indexOf(topicpointer);
 	if (ItemIndex > -1) { waitList.splice(ItemIndex, 1); }
 	waitList = [...new Set(waitList)]; // set unique
 	localStorage.setItem(waitingList, waitList)
-	alert("topicpointer "+topicpointer + " removed fm waitList! Remaining: " + waitList)
+	alert("topicpointer "+topicpointer + ", removed fm waitList! Remaining: " + waitList)
 }
 
 function askNum() {
