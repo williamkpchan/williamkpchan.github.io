@@ -20737,6 +20737,521 @@ When you get a few moments, go play around with <code>dat.gui</code> -- it's rea
 <a href="https://github.com/dfahlander/Dexie.js" class="whitebut ">Dexie.js</a>
 <a href="https://dzone.com/articles/dexis-js-holistic-guide" class="whitebut ">Dexie.js guide</a>
 
+<h2>access camera</h2>
+<div id="cameratoc">0 <a href="#cameratopic-0" target="_self">Introduction</a><br>1 <a href="#cameratopic-1" target="_self">Prerequisites</a><br>2 <a href="#cameratopic-2" target="_self">Step 1 — Checking Device Support</a><br>3 <a href="#cameratopic-3" target="_self">Step 2 — Requesting User Permission</a><br>4 <a href="#cameratopic-4" target="_self">Step 3 — Understanding Media Constraints</a><br>5 <a href="#cameratopic-5" target="_self">Step 4 — Using the <code>enumerateDevices</code> Method</a><br>6 <a href="#cameratopic-6" target="_self">Step 5 — Displaying the Video Stream on the Browser</a><br>7 <a href="#cameratopic-7" target="_self">Conclusion</a><br></div></center>
+<br>
+<h3 id="cameratopic-0">Introduction</h3>
+With HTML5 came the introduction of APIs with access to device hardware, including the <a href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices">MediaDevices</a> API. 
+This API provides access to media input devices like audio and video.
+
+With this API's help, developers can access audio and video devices to stream and display live video feeds in the browser. 
+In this tutorial, you'll access the video feed from the user's device and display it in the browser using the <a href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia"><code>getUserMedia</code></a> method.
+
+The <code>getUserMedia</code> API makes use of the media input devices to produce a <a href="https://developer.mozilla.org/en-US/docs/Web/API/MediaStream">MediaStream</a>. 
+This MediaStream contains the requested media types, whether audio or video. 
+Using the stream returned from the API, video feeds can be displayed on the browser, which is useful for real-time communication on the browser.
+
+When used along with the <a href="https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API">MediaStream Recording API</a>, you can record and store media data captured on the browser. 
+This API only works on secure origins like the rest of the newly introduced APIs, but it also works on <code>localhost</code> and file URLs.
+
+<h3 id="cameratopic-1">Prerequisites</h3>
+
+A basic knowledge of JavaScript. 
+If you are new to JavaScript, try checking out the <a href="https://www.digitalocean.com/community/tutorial_series/how-to-code-in-javascript">How To Code in JavaScript</a> series.
+
+This tutorial will first explain concepts and demonstrate examples with <a href="https://codepen.io/">Codepen</a>. 
+In the final step, you will create a functioning video feed for the browser. 
+
+<h3 id="cameratopic-2">Step 1 — Checking Device Support</h3>
+
+First, you will see how to check if the user's browser supports the <code>mediaDevices</code> API. 
+This API exists within the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Navigator">navigator</a> interface and contains the current state and identity of the user agent. 
+The check is performed with the following code that can be pasted into Codepen:
+
+<code>if ('mediaDevices' in navigator &amp;&amp; 'getUserMedia' in navigator.mediaDevices) {
+  console.log("Let's get this party started")
+}
+</code>
+
+First, this checks if the <code>mediaDevices</code> API exists within the <code>navigator</code> and then checks if the <code>getUserMedia</code> API is available within the <code>mediaDevices</code>. 
+If this returns <code>true</code>, you can get started.
+
+<h3 id="cameratopic-3">Step 2 — Requesting User Permission</h3>
+
+After confirming the browser's support for <code>getUserMedia</code>, you need to request permission to make use of the media input devices on the user agent. 
+Typically, after a user grants permission, a <code>Promise</code> is returned which resolves to a media stream. 
+This <code>Promise</code> isn't returned when the permission is denied by the user, which blocks access to these devices.
+
+Paste the following line into Codepen to request permission:
+
+<code>navigator.mediaDevices.getUserMedia({video: true})
+</code>
+
+The object provided as an argument for the <code>getUserMedia</code> method is called <code>constraints</code>. 
+This determines which of the media input devices you are requesting permissions to access. 
+For example, if the object contains <code>audio: true</code>, the user will be asked to grant access to the audio input device.
+
+<h3 id="cameratopic-4">Step 3 — Understanding Media Constraints</h3>
+
+This section will cover the general concept of <em><code>contraints</code></em>. 
+The <code>constraints</code> object is a <a href="https://developer.mozilla.org/en-US/docs/Web/API/MediaStreamConstraints"><code>MediaStreamConstraints</code></a> object that specifies the types of media to request and the requirements of each media type. 
+You can specify requirements for the requested stream using the <code>constraints</code> object, like the resolution of the stream to use (<code>front</code>, <code>back</code>).
+
+You must specify either <code>audio</code> or <code>video</code> when making the request. 
+A <code>NotFoundError</code> will be returned if the requested media types can't be found on the user's browser.
+
+If you intend to request a video stream of <code>1280 x 720</code> resolution, you can update the <code>constraints</code> object to look like this:
+
+<code>{
+  video: {
+    width: 1280,
+    height: 720,
+  }
+}
+</code>
+
+With this update, the browser will try to match the specified quality settings for the stream. 
+If the video device can't deliver this resolution, the browser will return other available resolutions.
+
+To ensure that the browser returns a resolution not lower than the one provided you will have to make use of the <code>min</code> property. 
+Here is how you could update the <code>constraints</code> object to include the <code>min</code> property:
+
+<code>{
+  video: {
+    width: {
+      min: 1280,
+    },
+    height: {
+      min: 720,
+    }
+  }
+}
+</code>
+
+This will ensure that the stream resolution returned will be at least <code>1280 x 720</code>. 
+If this minimum requirement can't be met, the promise will be rejected with an <code>OverconstrainedError</code>.
+
+In some cases you may be concerned about saving data and need the stream to not exceed a set resolution. 
+This can come in handy when the user is on a limited plan. 
+To enable this functionality, update the constraints object to contain a <code>max</code> field:
+
+<code>{
+  video: {
+    width: {
+      min: 1280,
+      max: 1920,
+    },
+    height: {
+      min: 720,
+      max: 1080
+    }
+  }
+}
+</code>
+
+With these settings, the browser will ensure that the return stream doesn't go below <code>1280 x 720</code> and doesn't exceed <code>1920 x 1080</code>. 
+
+Other terms that can be used includes <code>exact</code> and <code>ideal</code>. 
+The <code>ideal</code> setting is typically used along with the <code>min</code> and <code>max</code> properties to find the best possible setting closest to the ideal values provided.
+
+You can update the constraints to use the <code>ideal</code> keyword:
+
+<code>{
+  video: {
+    width: {
+      min: 1280,
+      ideal: 1920,
+      max: 2560,
+    },
+    height: {
+      min: 720,
+      ideal: 1080,
+      max: 1440
+    }
+  }
+}
+</code>
+
+To tell the browser to make use of the front or back (on mobile) camera on devices, you can specify a <code>facingMode</code> property in the <code>video</code> object:
+
+<code>{
+  video: {
+    width: {
+      min: 1280,
+      ideal: 1920,
+      max: 2560,
+    },
+    height: {
+      min: 720,
+      ideal: 1080,
+      max: 1440
+    },
+    facingMode: 'user'
+  }
+}
+</code>
+
+This setting will make use of the front-facing camera at all times in all devices. 
+To make use of the back camera on mobile devices, you can alter the <code>facingMode</code> property to <code>environment</code>.
+
+<code>{
+  video: {
+    ...
+    facingMode: {
+      exact: 'environment'
+    }
+  }
+}
+</code>
+
+<h3 id="cameratopic-5">Step 4 — Using the <code>enumerateDevices</code> Method</h3>
+
+When the <code>enumerateDevices</code> method is called, it returns all of the available input media devices available on the user's PC.
+
+With the method, you can provide the user options on which input media device to use for streaming audio or video content. 
+This method returns a <code>Promise</code> resolved to a <a href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDeviceInfo">MediaDeviceInfo</a> array containing information about each device.
+
+An example of how to make a use of this method is shown in the snippet below:
+
+<code>async function getDevices() {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+}
+</code>
+
+A sample response for each of the devices would look like the following:
+
+<code>{
+  deviceId: "23e77f76e308d9b56cad920fe36883f30239491b8952ae36603c650fd5d8fbgj",
+  groupId: "e0be8445bd846722962662d91c9eb04ia624aa42c2ca7c8e876187d1db3a3875",
+  kind: "audiooutput",
+  label: "",
+}
+</code>
+
+<span class="note"><strong>Note:</strong> A label won't be returned unless an available stream is available, or if the user has granted device access permissions.<br></span>
+
+<h3 id="cameratopic-6">Step 5 — Displaying the Video Stream on the Browser</h3>
+
+You have gone through the process of requesting and getting access to the media devices, configured constraints to include required resolutions, and selected the camera you will need to record video.
+
+After going through all these steps, you'll at least want to see if the stream is delivering based on the configured settings. 
+To ensure this, you will make use of the <code>&lt;video&gt;</code> element to display the video stream on the browser.
+
+Like mentioned earlier, the <code>getUserMedia</code> method returns a <code>Promise</code> that can be resolved to a stream. 
+The returned stream can be converted to an object URL using the <a href="https://developer.mozilla.org/en-US/docs/Web/API/URL/createObjectURL"><code>createObjectURL</code></a> method. 
+This URL will be set as a video source.
+
+You will create a short demo where we let the user choose from their available list of video devices. 
+using the <a href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices"><code>enumerateDevices</code></a> method.
+
+This is a <code>navigator.mediaDevices</code> method. 
+It lists the available media devices, such as microphones and cameras. 
+It returns a <code>Promise</code> resolvable to an array of objects detailing the available media devices.
+
+Create an <code>index.html</code> file and update the contents with the code below:
+
+<div title="index.html">index.html</div><code>&lt;!doctype html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"&gt;
+    &lt;meta http-equiv="X-UA-Compatible" content="ie=edge"&gt;
+    &lt;link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"&gt;
+    &lt;link rel="stylesheet" href="style.css"&gt;
+    &lt;title&gt;Document&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div&gt;
+    &lt;video autoplay&gt;&lt;/video&gt;
+    &lt;canvas&gt;&lt;/canvas&gt;
+
+    &lt;div&gt;
+        &lt;select name=""&gt;
+            &lt;option value=""&gt;Select camera&lt;/option&gt;
+        &lt;/select&gt;
+    &lt;/div&gt;
+
+    &lt;img alt=""&gt;
+
+    &lt;div&gt;
+        &lt;button title="Play"&gt;&lt;i data-feather="play-circle"&gt;&lt;/i&gt;&lt;/button&gt;
+        &lt;button title="Pause"&gt;&lt;i data-feather="pause"&gt;&lt;/i&gt;&lt;/button&gt;
+        &lt;button title="ScreenShot"&gt;&lt;i data-feather="image"&gt;&lt;/i&gt;&lt;/button&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script src="https://unpkg.com/feather-icons"&gt;&lt;/script&gt;
+&lt;script src="script.js"&gt;&lt;/script&gt;gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code>
+
+In the snippet above, you have set up the elements you will need and a couple of controls for the video. 
+Also included is a button for taking screenshots of the current video feed.
+
+Now, let's style up these components a bit.
+
+Create a <code>style.css</code> file and copy the following styles into it. 
+<a href="https://getbootstrap.com/">Bootstrap</a> was included to reduce the amount of CSS you will need to write to get the components going.
+
+<div title="style.css">style.css</div><code>.screenshot-image {
+    width: 150px;
+    height: 90px;
+    border-radius: 4px;
+    border: 2px solid whitesmoke;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+    position: absolute;
+    bottom: 5px;
+    left: 10px;
+    background: white;
+}
+
+.display-cover {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 70%;
+    margin: 5% auto;
+    position: relative;
+}
+
+video {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.video-options {
+    position: absolute;
+    left: 20px;
+    top: 30px;
+}
+
+.controls {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    display: flex;
+}
+
+.controls &gt; button {
+    width: 45px;
+    height: 45px;
+    text-align: center;
+    border-radius: 100%;
+    margin: 0 6px;
+    background: transparent;
+}
+
+.controls &gt; button:hover svg {
+    color: white !important;
+}
+
+@media (min-width: 300px) and (max-width: 400px) {
+    .controls {
+        flex-direction: column;
+    }
+
+    .controls button {
+        margin: 5px 0 !important;
+    }
+}
+
+.controls &gt; button &gt; svg {
+    height: 20px;
+    width: 18px;
+    text-align: center;
+    margin: 0 auto;
+    padding: 0;
+}
+
+.controls button:nth-child(1) {
+    border: 2px solid #D2002E;
+}
+
+.controls button:nth-child(1) svg {
+    color: #D2002E;
+}
+
+.controls button:nth-child(2) {
+    border: 2px solid #008496;
+}
+
+.controls button:nth-child(2) svg {
+    color: #008496;
+}
+
+.controls button:nth-child(3) {
+    border: 2px solid #00B541;
+}
+
+.controls button:nth-child(3) svg {
+    color: #00B541;
+}
+
+.controls &gt; button {
+    width: 45px;
+    height: 45px;
+    text-align: center;
+    border-radius: 100%;
+    margin: 0 6px;
+    background: transparent;
+}
+
+.controls &gt; button:hover svg {
+    color: white;
+}
+</code>
+
+The next step is to add functionality to the demo. 
+Using the <code>enumerateDevices</code> method, you will get the available video devices and set it as the options within the select element. 
+Create a file called <code>script.js</code> and update it with the following snippet:
+
+<div title="script.js">script.js</div><code>feather.replace();
+
+const controls = document.querySelector('.controls');
+const cameraOptions = document.querySelector('.video-options&gt;select');
+const video = document.querySelector('video');
+const canvas = document.querySelector('canvas');
+const screenshotImage = document.querySelector('img');
+const buttons = [...controls.querySelectorAll('button')];
+let streamStarted = false;
+
+const [play, pause, screenshot] = buttons;
+
+const constraints = {
+  video: {
+    width: {
+      min: 1280,
+      ideal: 1920,
+      max: 2560,
+    },
+    height: {
+      min: 720,
+      ideal: 1080,
+      max: 1440
+    },
+  }
+};
+
+const getCameraSelection = async () =&gt; {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const videoDevices = devices.filter(device =&gt; device.kind === 'videoinput');
+  const options = videoDevices.map(videoDevice =&gt; {
+    return `&lt;option value="${videoDevice.deviceId}"&gt;${videoDevice.label}&lt;/option&gt;`;
+  });
+  cameraOptions.innerHTML = options.join('');
+};
+
+play.onclick = () =&gt; {
+  if (streamStarted) {
+    video.play();
+    play.classList.add('d-none');
+    pause.classList.remove('d-none');
+    return;
+  }
+  if ('mediaDevices' in navigator &amp;&amp; navigator.mediaDevices.getUserMedia) {
+    const updatedConstraints = {
+      ...constraints,
+      deviceId: {
+        exact: cameraOptions.value
+      }
+    };
+    startStream(updatedConstraints);
+  }
+};
+
+const startStream = async (constraints) =&gt; {
+  const stream = await navigator.mediaDevices.getUserMedia(constraints);
+  handleStream(stream);
+};
+
+const handleStream = (stream) =&gt; {
+  video.srcObject = stream;
+  play.classList.add('d-none');
+  pause.classList.remove('d-none');
+  screenshot.classList.remove('d-none');
+  streamStarted = true;
+};
+
+getCameraSelection();
+</code>
+
+In the snippet above, there are a couple of things going on. 
+Let's break them down:
+
+<ol>
+<code>feather.replace()</code>: this method call instantiates <a href="https://feathericons.com/">feather</a>, which is an icon set for web development.
+
+The <code>constraints</code> variable holds the initial configuration for the stream. 
+This will be extended to include the media device the user chooses.
+
+<code>getCameraSelection</code>: this function calls the <code>enumerateDevices</code> method. 
+Then, you filter through the array from the resolved <code>Promise</code> and select video input devices. 
+From the filtered results, you create <code>&lt;option&gt;</code> for the <code>&lt;select&gt;</code> element.
+
+Calling the <code>getUserMedia</code> method happens within the <code>onclick</code> listener of the <code>play</code> button. 
+Here, you will check if this method is supported by the user's browser before starting the stream.
+
+Next, you will call the <code>startStream</code> function that takes a <code>constraints</code> argument. 
+It calls the <code>getUserMedia</code> method with the provided <code>constraints</code>. 
+<code>handleStream</code> is called using the stream from the resolved <code>Promise</code>. 
+This method sets the returned stream to the video element's <code>srcObject</code>.
+
+</ol>
+
+Next, you will add click listeners to the button controls on the page to <code>pause</code>, <code>stop</code>, and take <code>screenshots</code>. 
+Also, you will add a listener to the <code>&lt;select&gt;</code> element to update the stream constraints with the selected video device.
+
+Update the <code>script.js</code> file with the code below:
+
+<div title="script.js">script.js</div><code>...
+cameraOptions.onchange = () =&gt; {
+  const updatedConstraints = {
+    ...constraints,
+    deviceId: {
+      exact: cameraOptions.value
+    }
+  };
+  startStream(updatedConstraints);
+};
+
+const pauseStream = () =&gt; {
+  video.pause();
+  play.classList.remove('d-none');
+  pause.classList.add('d-none');
+};
+
+const doScreenshot = () =&gt; {
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  screenshotImage.src = canvas.toDataURL('image/webp');
+  screenshotImage.classList.remove('d-none');
+};
+
+pause.onclick = pauseStream;
+screenshot.onclick = doScreenshot;
+</code>
+
+Now, when you open the <code>index.html</code> file in the browser, clicking the <strong>Play</strong> button will start the stream.
+
+Here is a complete demo:
+
+<a href="https://codepen.io/chrisbeast/pen/ebYwpX">https://codepen.io/chrisbeast/pen/ebYwpX</a>
+
+<h3 id="cameratopic-7">Conclusion</h3>
+
+This tutorial introduced the <code>getUserMedia</code> API. 
+It is an interesting addition to HTML5 that eases the process of capturing media on the web.
+
+The API takes a parameter (<code>constraints</code>) that can be used to configure the access to audio and video input devices. 
+It can also be used to specify the video resolution required for your application.
+
+You can extend the demo further to give the user an option to save the screenshots taken, as well as recording and storing video and audio data with the help of MediaStream Recording API.
+
+
+
 
 
 
