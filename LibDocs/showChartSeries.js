@@ -12,7 +12,7 @@ var notvisitedList = [...Array(totalLength).keys()];
 function maketocList(theStr, index) {
   var topic = theStr.match(patt1)[0];
   topic = topic.replace(patt2, "");
-  tocList.append((index +1) + ' <span class="gray" onclick="jumpto(' + index + ')">' + topic +'</span> ');
+  tocList.append(' <span class="gray" onclick="jumpto(' + index + ')">' + topic +'</span>. ');
 }
 
 function jumpto(index) {

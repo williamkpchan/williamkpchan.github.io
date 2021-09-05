@@ -103,13 +103,21 @@ function jumpTo() {
 }
 
 var toc = $('#toc');
+var markerList = []
+
 if(typeof(topicEnd) == 'undefined'){ topicEnd = "<br>";}
 
 if(markerName != "h0"){
 
   $(markerName).each(function(i) {
+      // prepare for the toc
       var topic = $(this), topicNumber = i; topicLength = topicNumber +1;
+
+      // make a content list
+      var markerContent = $(this).text();
+      markerList.push(markerContent);
   
+      // toc coding here
       if (typeof(showTopicNumber) !== 'undefined'){
         if (showTopicNumber == true){
           toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a>'+topicEnd);
@@ -120,6 +128,8 @@ if(markerName != "h0"){
         toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
       }
       // toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
+
+      // modify the target id
       topic.attr('id', 'topic-' + topicNumber);
   });
 }
@@ -204,6 +214,17 @@ function askNum() {
       return;
     }
 }
+
+// function to jump to content target, jump by this method may f and b
+function findContent(item) {
+  for (let i = 0; i < markerList.length; i++) {
+    if (markerList[i].includes(item)) {
+      topicpointer = i;
+      showTopic()
+    }
+  }
+}
+
 
 // learningMode package complete//
 
