@@ -91,7 +91,7 @@ function chkOtherKeys(testkey) {
   else if(testkey == '"'){window.open("mline11Minutechart.html");}
   else if(testkey == ";"){window.open("otherCode.html");}
   else if(testkey == "'"){window.open("mline11chart.html");}
-
+  else if(testkey == "`"){ readCommand();}
 }
 function getChar(event) {
   if (event.which!=0 && event.charCode!=0) {
@@ -110,6 +110,11 @@ function callCalculator() {
     }
 }
 
+function readCommand() {
+  theCommand = prompt("command console:")
+  alert(theCommand)
+  // commandParser(theCommand)
+}
 
 function showChart() {
     var thecode = prompt("Code Number:", "");
