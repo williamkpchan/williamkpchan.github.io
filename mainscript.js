@@ -79,6 +79,7 @@ function chkOtherKeys(testkey) {
   else if(testkey == 'q'){window.open('https://www.quora.com/');}
 
   else if(testkey == 'r'){randomLinkTo();}
+  else if(testkey == 'R'){window.open("LibDocs/postProcessReport.html");}
   else if(testkey == 's'){window.open("D:/Dropbox/Public/stkListVH.html");}
   else if(testkey == 't'){window.open("https://my.weather.gov.hk/tc/myindex.htm");}
   else if(testkey == 'T'){window.open("https://translate.google.com/#en/zh-CN");}
