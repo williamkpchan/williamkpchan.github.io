@@ -97,7 +97,8 @@ function randomFlip() {
 function jumpTo() {
   var thecode = prompt("Jump to item number:", "");
   if (thecode != null && thecode != "") {
-    topicpointer = notvisitedList[Math.floor(Math.random() * notvisitedList.length)]; // random from not visited list
+    // topicpointer = notvisitedList[Math.floor(Math.random() * notvisitedList.length)]; // random from not visited list
+    topicpointer = thecode;
     showTopic();
   }
 }
