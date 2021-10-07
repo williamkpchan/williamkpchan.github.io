@@ -1,0 +1,2078 @@
+<base target="_blank"><html><head><title>batchTips</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="https://williamkpchan.github.io/lazyload.min.js"></script>
+<script type='text/javascript' src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/commonfunctions.js"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+
+<script>
+  var showTopicNumber = true;
+  var topicEnd = "<br>";
+  var bookid = "batchTips"
+  var markerName = "h2"
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:22px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+pre{width:100%;}
+#toc{color:cyan; font-size:20px;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px; background-color:#044;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>batchTips</h1>
+<a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a>
+<br><br>
+<div id="toc"></div></center>
+<br><br>
+<div id="mustWatch"><center><span class="red">MustWatch</span></center><br>
+</div>
+<pre>
+<br>
+
+PowerShell's great. 
+I'm fired up about the opportunity to use .NET objects from simple scripts. 
+I'll admit I'm still getting up to speed with it, but I'm totally sold on PowerShell. 
+
+However, it's not installed on a lot of servers I work with, and I still do a lot of my "clumsy developer attempting DBA and network admin" <a href="http://www.google.com/search?q=batch+site%3Aweblogs.asp.net%2Fjgalloway">tasks from DOS Batch files</a>. 
+You can do quite a bit with DOS Batch - the silly fact is the my most popular posts (by a huge margin) are <a href="/jgalloway/archive/2005/12/28/434132.aspx">some batch scripts to allow running IE7 and IE6 on the same computer</a>. 
+
+So, by way of tribute to the dying art of the DOS Batch file, I present my top ten batch file tricks: 
+
+<h2>Use PUSHD / POPD to change directories</h2>
+<a href="http://www.hanselman.com/blog/PUSHDReminderItAutomaticallyMapsNetworkDrives.aspx">Read Scott Hanselman's writeup on PUSHD</a>. 
+The basic idea is that it keeps a stack, so at the simplest level you can do something like this:
+
+PUSHD "C:\Working Directory\"
+::DO SOME WORK
+POPD
+
+That allows you to call the batch file from any directory and return to the original directory when you're done. 
+The cool thing is that PUSHD can be nested, so you can move all over the place within your scripts and just POPD your way out when you're done.
+
+<h2>Call FTP scripts</h2>
+This sample prompts for the username and password, but they can of course be hardcoded if you're feeling lucky.
+
+set FTPADDRESS=ftp.myserver.com
+set SITEBACKUPFILE=FileToTransfer.zip
+set /p FTPUSERNAME=Enter FTP User Name: 
+set /p FTPPASSWORD=Enter FTP Password: 
+CLS
+> script.ftp USER
+>script.ftp ECHO %FTPUSERNAME%
+>script.ftp ECHO %FTPPASSWORD%
+>script.ftp ECHO binary
+>script.ftp ECHO prompt n
+:: Use put instead of get to upload the file
+>script.ftp ECHO get %SITEBACKUPFILE%
+>script.ftp ECHO bye
+FTP -v -s:script.ftp %FTPADDRESS%
+TYPE NUL >script.ftp
+DEL script.ftp
+
+<h2>Read from the registry</h2>
+You can make creative use of the FOR command to read from and parse a registry value (see my previous post for more info).
+
+FOR /F "tokens=2* delims=     " %%A IN ('REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Microsoft SQL Server\Instance Names\SQL" /v SQL2005') DO SET SQLINSTANCE=%%B
+
+<h2>Run SQL Commands</h2>
+You can call OSQL (or SQLCMD on servers with SQL 2005 installed) to execute SQL commands: 
+
+osql -E -d master -Q "BACKUP DATABASE [%DATABASENAME%] TO  DISK = N'D:\DataBase\Backups\%DATABASENAME%_backup' WITH  INIT ,  NOUNLOAD ,  NAME = N'%DATABASENAME% backup',  NOSKIP ,  STATS = 10,  NOFORMAT"
+
+<h2>Check if a file or folder exists
+</h2>I used this to do a quick and dirty check to see if a Windows Hotfix had been installed in my IE7 Standalone scripts:
+
+IF EXIST %SystemRoot%\$NtUninstallKB915865$\ GOTO KB_INSTALLED
+ECHO Installing Hotfix (KB915865) to allow tab support
+START /D "%~dp0/Installation/Update/" xmllitesetup.exe
+
+<h2>Pause execution for a number of seconds</h2>
+There are different ways to do this from within a batch file, all with their tradeoffs. 
+I use a ping to an invalid IP address with a timeout. 
+The best way to do this is to find an invalid IP address and then pint it, but 1.1.1.1 is a pretty safe bet:
+
+ECHO Waiting 15 seconds
+PING 1.1.1.1 -n 1 -w 15000 > NUL
+
+<h2>Use defaults for optional parameters
+</h2>It's not really easy to check for a missing parameter. 
+You have to use something like "IF dummy==%1dummy", which will only be true if %1 is empty. 
+So, for example, here we're allowing a user to supply an application path via the third parameter, and defaulting it if it's missing. 
+By the way, beware the IF syntax. 
+The line spacing makes a difference, so this is one that I just copy and paste to avoid figuring it out every time.
+
+IF dummy==dummy%3 (
+SET APPLICATIONPATH="C:\Program Files\MyApp\" 
+) ELSE (
+SET APPLICATIONPATH = %3
+)
+
+<h2>Process each file matching a pattern in a directory
+</h2>I previously posted a script which iterates all files named *.bak in a directory and restores them on the local instance of SQL Server. 
+Here's an excerpt: 
+
+PUSHD %BACKUPDIRECTORY%
+FOR %%A in (*.bak) do CALL :Subroutine %%A
+POPD
+GOTO:EOF
+:Subroutine
+set DBNAME=%~n1
+::RUN SOME OSQL COMMANDS TO RESTORE THE BACKUP
+GOTO:EOF
+
+<h2>Use batch parameter expansion to avoid parsing file or directory info</h2>
+Batch file parameters are read as %1, %2, etc. 
+DOS Command Extensions - available on Windows 2000 and up - add a lot of automatic parsing and expansion that really simplifies reading filenames passed in as parameters. 
+I originally put this at the top of the list, but I moved it because I figured the insane syntax would drive people off. 
+I wrote a simple batch script that shows some examples. 
+I think that makes it a little more readable. 
+Stick with me, I think this is one of the best features in DOS batch and is worth learning.
+First, here's the batch file which just echos the processed parameters:
+
+@echo off
+echo %%~1     =      %~1 
+echo %%~f1     =      %~f1
+echo %%~d1     =      %~d1
+echo %%~p1     =      %~p1
+echo %%~n1     =      %~n1
+echo %%~x1     =      %~x1
+echo %%~s1     =      %~s1
+echo %%~a1     =      %~a1
+echo %%~t1     =      %~t1
+echo %%~z1     =      %~z1
+echo %%~$PATHATH:1     =      %~$PATHATH:1
+echo %%~dp1     =      %~dp1
+echo %%~nx1     =      %~nx1
+echo %%~dp$PATH:1     =      %~dp$PATH:1
+echo %%~ftza1     =      %~ftza1
+
+
+Now we'll call it, passing in "C:\Windows\Notepad.exe" as a parameter:
+
+C:\Temp>batchparams.bat c:\windows\notepad.exe
+%~1     =      c:\windows\notepad.exe
+%~f1     =      c:\WINDOWS\NOTEPAD.EXE
+%~d1     =      c:
+%~p1     =      \WINDOWS\
+%~n1     =      NOTEPAD
+%~x1     =      .EXE
+%~s1     =      c:\WINDOWS\NOTEPAD.EXE
+%~a1     =      --a------
+%~t1     =      08/25/2005 01:50 AM
+%~z1     =      17920
+%~$PATHATH:1     =
+%~dp1     =      c:\WINDOWS\
+%~nx1     =      NOTEPAD.EXE
+%~dp$PATH:1     =      c:\WINDOWS\
+%~ftza1     =      --a------ 08/25/2005 01:50 AM 17920 c:\WINDOWS\NOTEPAD.EXE
+
+
+As I said, the syntax is completely crazy, but it's easy to look them up - just type HELP CALL at a DOS prompt; it gives you this: 
+%~1 - expands %1 removing any surrounding quotes (")
+%~f1 - expands %1 to a fully qualified path name
+%~d1 - expands %1 to a drive letter only
+%~p1 - expands %1 to a path only
+%~n1 - expands %1 to a file name only
+%~x1 - expands %1 to a file extension only
+%~s1 - expanded path contains short names only
+%~a1 - expands %1 to file attributes
+%~t1 - expands %1 to date/time of file
+%~z1 - expands %1 to size of file
+%~$PATH:1 - searches the directories listed in the PATH environment variable and expands %1 to the fully qualified name of the first one found. 
+If the environment variable name is not defined or the file is not found by the search, then this modifier expands to the empty string 
+The modifiers can be combined to get compound results: 
+%~dp1 - expands %1 to a drive letter and path only
+%~nx1 - expands %1 to a file name and extension only
+%~dp$PATH:1 - searches the directories listed in the PATH environment variable for %1 and expands to the drive letter and path of the first one found.
+%~ftza1 - expands %1 to a DIR like output line 
+In the above examples %1 and PATH can be replaced by other valid values. 
+The %~ syntax is terminated by a valid argument number. 
+The %~ modifiers may not be used with %* 
+
+<h2>Learn from the masters</h2>
+By far, my favorite resource for DOS Batch trickery is the <a href="http://www.robvanderwoude.com/batchfiles.html">Batch Files section</a> of Rob van der Woude's Scripting Pages. 
+He's got <a href="http://www.robvanderwoude.com/monad.html">some good PowerShell resources</a>, too.
+
+What about you? Got any favorite DOS Batch tricks?
+
+
+
+Batch files have been around since the early Windows operating system. 
+These are plain text files with .bat|.cmd|.btm file extensions, and when executed, the commands are interpreted by the Windows command-line interface.
+
+While Microsoft released a more advanced command-line tool called <a href="https://docs.microsoft.com/en-us/skypeforbusiness/set-up-your-computer-for-windows-powershell/download-and-install-windows-powershell-5-1">PowerShell</a> (this is not installed by default), the native windows command line remains a popular choice for scripting. 
+Here are some tips and tricks for developers and non-technical people alike:
+
+<strong>Displaying of Comments or Remarks (ECHO and REM)</strong>
+Documentation is important, especially for very long batch files. 
+However, during execution, these could clutter the display and can be difficult to read.
+
+Using &#8216;@REM&#8217; and &#8216;@ECHO OFF There are two differences between ECHO and REM. 
+REM can totally be hidden during execution, while ECHO can at some level be suppressed, but will always be displayed during execution. 
+Here are some tricks on how to change displays of comments and remarks by prepending with &#8216;@&#8217; character:
+
+@REM will hide the remark entirely and will not be shown on the command-line. 
+All REM lines after an @ECHO OFF call will also be hidden. 
+These are suitable for documentation intended for developers writing the script.
+ECHO by default will be displayed during command invocation, as well as on the standard output. 
+Using @ECHO or if preceded by @ECHO OFF will display the command on the standard output only. 
+This is suitable for creating markers during execution to show at which point the command has executed so far.
+
+
+
+
+Consider the following batch file:
+ECHO "ECHO displayed on the command line and on the standard output."
+@ECHO "ECHO is not displayed on the command line but will be displayed on standard output."
+REM "REM displayed on the command line."
+@REM "REM hidden from the command line."
+@ECHO OFF
+ECHO "all ECHO after @ECHO OFF will be shown on the standard output, but not on the command line invocation."
+REM "REM hidden from the command line after @ECHO OFF"
+
+Its corresponding output is:
+
+<a href="https://i1.wp.com/dmnv44fd3imdv.cloudfront.net/www.pushmon.com/files/sites/19/2018/11/16010657/echo-and-rem.png?ssl=1"><img aria-describedby="caption-attachment-3919" class="size-full wp-image-3919" src="//i1.wp.com/dmnv44fd3imdv.cloudfront.net/www.pushmon.com/files/sites/19/2018/11/16010657/echo-and-rem.png?resize=846%2C169&#038;ssl=1" alt="Batch File Tips and Tricks" width="846" height="169" data-recalc-dims="1"></a>
+@REM and @ECHO tips.
+
+
+
+
+<strong>Error Handling</strong>
+In its simplest form, batch files are straightforward in its sequential command execution. 
+However, there are tasks that need error handling, either for notification or cleanup. 
+Batch files, after executing a command, provides an error code called ERRORLEVEL. 
+A non-zero value means an error has occured.
+
+
+ERRORLEVEL vs %ERRORLEVEL%
+
+Both pertain to the current error code, and has the same value. 
+The main difference between the two is that %ERRORLEVEL% is handled just like a variable, while ERRORLEVEL is handled specifically by the if operation. 
+So if you would like to check for errors:
+
+
+if ERRORLEVEL 1 goto :ERROR
+if %ERRORLEVEL% neq 0 goto :ERROR
+The abovementioned snippets would have the same behavior. 
+ERRORLEVEL checks if the value is equal to or greater than the number specified.
+Example error handling in Windows batch files:
+@ECHO OFF
+
+ECHO "Force Error"
+ping -invalid-arg
+if ERRORLEVEL 1 goto ERROR
+REM /B to avoid the command line window to close
+EXIT /B %errorlevel%
+
+:ERROR
+ECHO "An ERROR has occurred."
+ECHO "Proceed with error handling or cleanup."
+
+The output of this would be:
+
+<a href="https://i0.wp.com/dmnv44fd3imdv.cloudfront.net/www.pushmon.com/files/sites/19/2018/11/16052613/Error-Handling.png?ssl=1"><img aria-describedby="caption-attachment-3926" class="size-full wp-image-3926" src="//i0.wp.com/dmnv44fd3imdv.cloudfront.net/www.pushmon.com/files/sites/19/2018/11/16052613/Error-Handling.png?resize=474%2C137&#038;ssl=1" alt="PushMon - Batch File Tips and Tricks" width="474" height="137" data-recalc-dims="1"></a>
+Windows Batch File Error Handling Example
+
+
+
+
+<strong>Use VERIFY as a simple check for copying or moving files.</strong>
+Do you copy files within your batch file? It is worth it to add a one liner command VERIFY ON, to perform a simple check of the destination file. 
+The operation is not comprehensive, as it does not check if the file is corrupted. 
+However, if you are transferring a lot of files (e.g. 
+backups, migration), then this is a first step to ensure integrity of the operation.
+
+
+You can use xcopy or copy as copy operations:
+
+
+@ECHO OFF
+
+REM copy command with /v option; verify is a simple read operation
+copy /v PushMon.bat copy_PushMon.bat
+REM xcopy command /v option; a more advanced version which checks for the file size of the copied files
+xcopy /v PushMon.bat xcopy_PushMon.bat
+
+VERIFY ON
+REM copy command; verify is a simple read operation
+copy PushMon.bat copy2_PushMon.bat
+REM xcopy command; a more advanced version which checks for the file size of the copied files
+copy /v PushMon.bat xcopy2_PushMon.bat
+
+if ERRORLEVEL 1 goto ERROR
+EXIT %errorlevel%
+
+:ERROR
+ECHO "Copying of files have failed."
+
+Do you have other tips and tricks for creating Windows Batch Files? Comment on this page and will add it up to the list.
+
+<a href="https://app.pushmon.com/pushmon/schedule/create">PushMon</a> supports the use of Windows batch files. 
+If you have batch files that are scheduled to execute at specific intervals, you can use PushMon to monitor its execution and notify you if something goes wrong. 
+We have created a separate <a href="https://www.pushmon.com/how-to-monitor-your-windows-server-using-pushmon-2824">blog post</a> on how to monitor your batch files using Windows task scheduler.
+
+
+
+<h2>Trick #1 - Taking user input and doing arithmetic operations</h2>
+
+Often times, it is very important to write interactive scripts that take input from the user and carry arithmetic operations if needed.
+
+
+To read user input, we can use the following syntax:
+
+
+Copy Code
+
+SET /P VarName=The prompt text
+
+So for example, to ask the user for his/her name and display it back again, we can do the following:
+
+
+Copy Code
+
+@echo off
+
+setlocal
+
+SET /P Name="What is your name? "
+echo Welcome %Name%
+
+
+Quote:
+
+It is important not to pollute the environment variables namespace when using the "SET" command and therefore it is a good practice to start your script with the "setlocal" command that will revert the environment variable changes when the script terminates.
+
+
+
+Similarily, to do arithmetic operations, we can use the following syntax:
+
+
+Copy Code
+
+SET /A Number=Expression
+
+For example:
+
+
+Copy Code
+
+SET /A Number=1+2+3+4
+
+Would compute into the variable "Number" the value "10".
+
+
+Now, we can combine those two tricks to create a small integer expression calculator:
+
+
+Copy Code
+
+@echo off
+
+setlocal
+
+:repeat
+    SET /P Expr="Please enter an expression (or &#39;q&#39;) to quit:"
+    SET /A Result=%Expr%
+    if "%Expr%"==""  goto :eof
+    if "%Expr%"=="q" goto :eof
+    echo The result is %Result%
+    goto repeat
+
+Here's a sample output from this script:
+
+
+Copy Code
+
+C:\Temp\Batchography&gt;expr-calc.bat
+Please enter an expression (or &#39;q&#39;) to quit:1+2+3
+The result is 6
+Please enter an expression (or &#39;q&#39;) to quit:-5+2
+The result is -3
+Please enter an expression (or &#39;q&#39;) to quit:q
+
+C:\Temp\Batchography&gt;
+
+<h2>Trick #2 - Number counting</h2>
+
+Number counting can come in handy in many scenarios. It could be used to create numbered dummy folders, write an algorithm that requires counting, or anything else you can think of.
+
+
+In Batch files, to count, you can use the following syntax:
+
+
+Copy Code
+
+FOR /L %variable IN (start, step, end) DO command [command-parameters]
+
+Let's illustrate by writing a small script that creates 10 dummy folders: "folder1" to "folder10":
+
+
+So let's assume we have the following files:
+
+
+Copy Code
+
+@echo off
+for /L %%a in (1, 1, 10) do (
+&#160; &#160; mkdir folder%%a
+)
+
+For example, let us write the sigma function (do the addition from 1 to N):
+
+
+Copy Code
+
+@echo off
+
+setlocal
+
+:repeat
+    SET /P N="Please N for the sigma computation:"
+    SET /A Result=0
+    for /L %%i in (1, 1, %N%) do (
+        SET /A Result=Result+%%i
+    )
+    echo Sigma(%N%)=%Result%
+
+<h2>Trick #3 - Reading a text file line by line in Batch files</h2>
+
+Reading from a text file, one line at a time can be very handy for text scanning and transformation. Use the "FOR /F" syntax like this:
+
+
+Copy Code
+
+@echo off
+for /f "delims=" %%a in (the-file.txt) DO ( 
+  ECHO Line is: %%a
+)
+
+We can implement a very basic non-empty lines counter in text files using the Batch language like this:
+
+
+Copy Code
+
+@echo off
+
+setlocal enabledelayedexpansion
+
+if "%1"=="" (
+    echo Please specify a file name!
+    goto :eof
+)
+
+set /A nlines=0
+for /f "delims=" %%a in (%1) DO ( 
+  set /A nlines+=1
+)
+
+echo Total non-empty lines: %nlines%
+
+
+Quote:
+
+The "FOR /F" will skip empty lines in input text files.
+
+
+
+<h2>Trick #4 - String substitution</h2>
+
+With the Batch scripting language, it is possible to do string substitution. To achieve that, we have to have the string in question inside an environment variable. We can then use the following syntax:
+
+
+Copy Code
+
+%VarName:StringToBeMatched=StringToBeReplacedWith%
+
+Let's write an interactive script that replaces the word "books" with "ebooks" in the file "email.txt":
+
+
+Copy Code
+
+Reading books was the norm during his grandfather&#39;s time.
+People used to carry books with them to school in order to read and study.
+Some say that books will become obsolete one day. Who knows.
+
+The following script will do the string substitution and generate a new file called "new-email.txt":
+
+
+Copy Code
+
+@echo off
+
+setlocal enabledelayedexpansion
+
+if exist new-email.txt del new-email.txt
+
+for /f "delims=" %%a in (email.txt) DO ( 
+  set line=%%a
+  echo !line:books=ebooks! &gt;&gt;new-email.txt
+)
+
+
+Quote:
+
+We use the "setlocal enabledelayedexpansion" and the "!Var!" syntax instead of "%Var%" syntax when we are expanding variables from inside compound statements.
+
+
+
+The "new-email.txt" contents are:
+
+
+Copy Code
+
+Reading ebooks was the norm during his grandfather&#39;s time. 
+People used to carry ebooks with them to school in order to read and study. 
+Some say that ebooks will become obsolete one day. Who knows. 
+
+ 
+
+
+<h2>Trick #5 - Polyglot scripts: Mixing Python and Batch files</h2>
+
+A very fun trick is when we can have a script that runs successfully under two or more languages. Let's illustrate how to do a mixed script for running Python and Batch files:
+
+
+Copy Code
+
+@echo off
+rem = """
+:: From here and on, write any Batch file syntax and it will be ignored by Python
+
+:: 
+:: The Batchography book by Elias Bachaalany
+::
+
+python -x "%~f0" %*
+exit /b %errorlevel%
+:: End of batch file commands
+"""
+
+# Anything here is interpreted by Python
+
+import platform
+import sys
+
+print("Hello world from Python %s!\n" % platform.python_version())
+print("The passed arguments are: %s" % sys.argv[1:])
+
+The above is a Batch script that invokes itself again as a Python script using the "python -x" switch (skip the first line).
+
+
+Such scripts is useful when you first want a Batch script to set up or verify the right environment before invoking its embedded Python code.
+
+
+<h2>Trick #6 - Polyglot scripts: A self-compiling C++ and Batch file</h2>
+
+Similar to Trick #5, we can make a Batch file script that is also a C++ program. Here's how we can make a self-compiling C++ Batch script:
+
+
+Copy Code
+
+/* 2&gt;nul &amp;&amp; echo | set /p=
+@echo off
+setlocal
+echo.                                                                                                     
+::
+:: Self-compiling C++ Batch file!
+::
+:: (c) Batchography book - by Elias Bachaalany
+::
+
+set outfile="%~dpn0.exe"
+
+cl %~dpf0 /TP /EHsc /link /out:%outfile% /nologo &gt; nul
+
+if exist %outfile% (
+    %outfile%
+    del %outfile%
+    del "%~dpn0.obj"
+) else (
+  echo Compilation failed!
+)
+goto :eof
+*/
+
+#include &lt;stdio.h&gt;
+
+int main()
+{
+    printf(
+    	"Hello world! I was self-compiled!\n"
+        "\n"
+        "Checkout the Batchography book!\n");
+    
+    return 0;
+}
+
+There's a slight drawback in this polyglot script. The first line ("/*" a C multi-line comment opening) is not a valid command and it will cause an error but we redirect the error to the nul device. We close the multi-line comment (with "*/") shortly after exiting the Batch file.
+
+
+<h2>Trick #7 - Tokenizing commands output</h2>
+
+It is possible to execute a command then break its output into tokens. To achieve this, we will use the "FOR /F" syntax.
+
+
+From the command prompt, to query the registry and retrieve the <a href="https://docs.microsoft.com/en-us/previous-versions/office/developer/speech-technologies/hh361638(v=office.14)">language ID</a>, we can use the "reg.exe" command like such:
+
+
+Copy Code
+
+C:\Temp\Batchography&gt;reg query "hklm\system\controlset001\control\nls\language" /v Installlanguage
+
+
+HKEY_LOCAL_MACHINE\system\controlset001\control\nls\language
+    Installlanguage    REG_SZ    0409
+
+C:\Temp\Batchography&gt;
+
+We have two lines output. We only care about the second line and the 3rd token (if we tokenize the string using the space character). To retrieve the 0409 value and write a Batch script to detect the system language, we can do the following:
+
+
+Copy Code
+
+@echo off
+
+for /F "usebackq tokens=3" %%a IN (`reg query "hklm\system\controlset001\control\nls\language" /v Installlanguage`) DO (
+  set lang_id=%%a
+)
+
+:: 0409 English ; 0407 German ; 040C French ; 0C0A Spanish
+
+if "%lang_id%"=="0409" (
+      echo English detected
+) else if "%lang_id%" == "040C" (
+      echo French detected
+) else (
+      echo Note: Unknown language ID %lang_id%!
+)
+
+The Batch script above, filters for lines that have at least 3 tokens and it captures the first token only.
+
+
+<h2>Trick #8 - Functions are fun</h2>
+
+Who said the Batch language is a simple language? Did you know that you can write functions (even recursive ones)?
+
+
+To define a function, simply create a label and then call it:
+
+
+Copy Code
+
+@echo off
+
+setlocal
+
+:main
+    echo Hello!
+    set /p a=Enter the   first number:
+    set /p b=Enter thne second number:
+
+    call :add result %a% %b%
+    echo The result is: %result%
+    goto :eof
+
+:add &lt;1=return var&gt; &lt;2=first number&gt; &lt;3=second number&gt;
+    echo Adding &#39;%2&#39; and &#39;%3&#39;. Returning the result into the variable &#39;%1&#39;
+    set /a %1=%2+%3
+    goto :eof
+
+The function "add", is just a label and what comes after it in the same line are ignored / free text. As a convention, we put the argument number and its description. The "add" function is defined to take a return variable name (argument #1) and two numbers "a" (argument #2) and "b" (argument #3).
+
+
+The "main" function calls "add" using the "call :func_name" syntax and passing the arguments thereafter. When "add" returns, it may call "goto :eof" or "exit /b &lt;return_code&gt;".
+
+
+Many clever tricks are mentioned on my other pages, e.g. <a href="altmsdosbatch.php">Solutions found on alt.msdos.batch</a>.
+
+Every now and then a real "jewel" is sent to me by mail or otherwise.
+
+A selection of these tricks will be displayed on this page.
+
+Ever tried something like this?
+
+<code>CMD /C "somecommand" "argument1" "argument2"</code>
+
+It will return an error message like this one:
+
+<code>'somecommand" "argument1" "argument2' is not recognized as an internal or external command, operable program or batch file.</code>
+
+Note the missing outer doublequotes in the error message.
+
+If the command line following <code>CMD /C</code> or <code>CMD /K</code> <em>starts as well as ends</em> with a doublequote, that entire command line is interpreted as a single (command) string.
+
+Jacques Bensimon ran into this quirk when trying to use a batch command in a context menu.
+
+After searching and experimenting for a long time, he came up with a brilliantly simple solution: don't let the first character be a doublequote, just insert an <code>@</code> before the first doublequote (sorry, whitespace won't work):
+
+<code>CMD /C @"somecommand" "argument1" "argument2"</code>
+
+This works flawlessly, as expected.
+
+Based on Jacques' findings I started doing some experiments, and found the following alternative work-arounds:
+
+<code>CMD /C ("somecommand" "argument1" "argument2")
+
+CMD /C ""somecommand" "argument1" "argument2""</code>
+
+The latter in particular surprised me...
+
+Or if you prefer to solve this as complicated as possible, use the short command name:
+
+<code>FOR %%A IN ("somecommand") DO CMD /C %%~sA "argument1" "argument2"</code>
+
+Thanks Jacques
+
+Another brilliantly simple way to check for elevated privileges, by Kevin Ridenhour:
+
+<code>whoami /groups | find "12288" &amp;&amp; echo Elevated</code>
+
+or
+
+<code>whoami /groups | find "12288" || echo Not Elevated</code>
+
+Or I might add:
+
+<code>WHOAMI /GROUPS | FIND "12288" &gt;NUL
+
+SET /A Elevated = 1 - %ErrorLevel%</code>
+
+The great advantage of this method compared to using <code>OPENFILES</code> is that the <code>WHOAMI</code> method will work in both 32-bit or 64-bit processes in 64-bit Windows.
+
+Thanks Kevin
+
+Aaron Thoma had a problem using Denis St-Pierre's elevation check.
+
+I'm not sure the problem could not have been solved (<code>AT</code> depends on a service that is often disabled; I often use <code>OPENFILES</code> instead to check for elevated privileges), but it <em>did</em> make him look for and find a way to not only check elevation level, but raise it as well:
+
+[The] trick for checking for elevation suddenly stopped to work for me:
+
+<code>Microsoft Windows [Version 6.0.6002]
+
+Copyright (c) 2006 Microsoft Corporation.  All rights reserved.
+
+Not enough storage is available to process this command.
+
+14:38:03 C:\Windows\system32&gt;
+
+echo %errorlevel%
+
+0
+
+14:38:08 C:\Windows\system32&gt;
+
+at
+
+14:38:10 C:\Windows\system32&gt;
+
+echo %errorlevel%
+
+1</code>
+
+So it yields the same errorlevel now as when run without Admin privileges.
+(I'm using Windows Vista Enterprise SP2. Maybe some update introduced a bug.)
+
+So I use another trick <a href="http://stackoverflow.com/questions/4051883/batch-script-how-to-check-for-admin-rights/4054937#4054937">http://stackoverflow.com/questions/4051883/batch-script-how-to-check-for-admin-rights/4054937#4054937</a> now.
+Here is how I use it, in Evan's routine <a href="https://sites.google.com/site/eneerge/scripts/batchgotadmin">sites.google.com/site/eneerge/scripts/batchgotadmin</a> that elevates a batch script itself:
+
+<code>:: Ensure ADMIN Privileges
+
+:: adaptation of https://sites.google.com/site/eneerge/home/BatchGotAdmin and http://stackoverflow.com/questions/4051883/batch-script-how-to-check-for-admin-rights/4054937#4054937
+
+@echo off
+
+:: Check for ADMIN Privileges
+&gt;nul 2&gt;&amp;1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
+
+if '%errorlevel%' NEQ '0' (
+
+&nbsp;&nbsp;&nbsp;&nbsp;REM Get ADMIN Privileges
+
+&nbsp;&nbsp;&nbsp;&nbsp;echo Set UAC = CreateObject^("Shell.Application"^) &gt; "%temp%\getadmin.vbs"
+
+&nbsp;&nbsp;&nbsp;&nbsp;echo UAC.ShellExecute "%~s0", "", "", "runas", 1 &gt;&gt; "%temp%\getadmin.vbs"
+
+&nbsp;&nbsp;&nbsp;&nbsp;"%temp%\getadmin.vbs"
+
+&nbsp;&nbsp;&nbsp;&nbsp;del "%temp%\getadmin.vbs"
+
+&nbsp;&nbsp;&nbsp;&nbsp;exit /B
+
+) else (
+
+&nbsp;&nbsp;&nbsp;&nbsp;REM Got ADMIN Privileges
+
+&nbsp;&nbsp;&nbsp;&nbsp;pushd "%cd%"
+
+&nbsp;&nbsp;&nbsp;&nbsp;cd /d "%~dp0"
+
+&nbsp;&nbsp;&nbsp;&nbsp;@echo on
+
+)</code>
+
+Thanks Aaron
+Denis St-Pierre often shares the results of his research.
+
+This time, he sent me a couple of script snippets to check if the current script is running with administative (elevated) privileges:
+
+Sometimes you have to be running with admin privileges to get something done.
+
+With Windows 7 you have 2 security token when you login with admin.
+
+Noobs admins don't always right-click and run as administrator so you must check.
+
+Here are some code snippets to check inside the script.
+
+<strong>In VBS:</strong>
+
+<code>Function IsADM
+
+&nbsp;&nbsp;&nbsp;&nbsp;'detects if admin or Elevated
+
+&nbsp;&nbsp;&nbsp;&nbsp;'Trick: AT &gt; NUL returns %errorlevel% = 0 if you are Administrator/Elevated
+
+&nbsp;&nbsp;&nbsp;&nbsp;Set WshShell = CreateObject( "WScript.Shell" )
+
+&nbsp;&nbsp;&nbsp;&nbsp;Dim iErrNumber : iErrNumber = 0
+
+&nbsp;&nbsp;&nbsp;&nbsp;Dim sErrDescription, sMsgText, iErrorCode
+
+&nbsp;&nbsp;&nbsp;&nbsp;On Error Resume Next    'in case exe fails
+
+&nbsp;&nbsp;&nbsp;&nbsp;iErrorCode = WshShell.Run( "CMD /C AT &gt; NUL", 1, True ) 'True = Wait for completion.
+
+&nbsp;&nbsp;&nbsp;&nbsp;iErrNumber = Err.number
+
+&nbsp;&nbsp;&nbsp;&nbsp;sErrDescription = Err.Description
+
+&nbsp;&nbsp;&nbsp;&nbsp;On Error Goto 0    'Turn error reporting back on (and clears Err object)
+
+&nbsp;&nbsp;&nbsp;&nbsp;If iErrorCode = 0 Then
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;IsADM = True
+
+&nbsp;&nbsp;&nbsp;&nbsp;Else
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'WScript.Echo "you are NOT admin"
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;IsADM = False
+
+&nbsp;&nbsp;&nbsp;&nbsp;End If
+
+End Function</code>
+
+<strong>In CMD:</strong>
+
+<code>@ECHO OFF
+
+::Test If script has Admin Priviledges/is elevated
+
+AT &gt; NUL
+
+IF %ERRORLEVEL% EQU 0 (
+
+&nbsp;&nbsp;&nbsp;&nbsp;ECHO you are Administrator
+
+) ELSE (
+
+&nbsp;&nbsp;&nbsp;&nbsp;ECHO you are NOT Administrator. Exiting...
+
+&nbsp;&nbsp;&nbsp;&nbsp;PING 127.0.0.1 &gt; NUL 2&gt;&amp;1
+
+&nbsp;&nbsp;&nbsp;&nbsp;EXIT /B 1
+
+)</code>
+
+<strong>In PowerShell:</strong>
+
+<code>$currentPrincipal = New-Object Security.Principal.WindowsPrincipal( [Security.Principal.WindowsIdentity]::GetCurrent( ) )
+
+if ( -not ($currentPrincipal.IsInRole( [Security.Principal.WindowsBuiltInRole]::Administrator ) ) )
+
+{
+
+&nbsp;&nbsp;&nbsp;&nbsp;Write-Error "This script must be executed in admin mode." -ErrorAction Stop
+
+}</code>
+
+Thanks Denis
+Remember <a href="#BigNumMathBrian">Brian Williams' big number math batch files</a>?
+
+He is back with <a href="./files/add_nt.txt">Add.bat</a>, a batch file to add 2 positive integers of up to 2000 digits each (I <em>did</em> test that!).
+
+<a href="sourcecode.php?src=add_nt">View the source</a> or <a href="./files/math.zip">download it</a>.
+
+Thanks Brian
+Remember Reinhard Irnberger's <a href="#PUSHD_UNC">PUSHD trick</a> to automatically map a drive if a UNC path is specified?
+
+I use <code>PUSHD&nbsp;"%~dp0"</code> ever since, as the first command in any batch file that <em>could</em> be run from a UNC path.
+
+Without this <code>PUSHD</code> command, the start/working directory of the batch file will be changed to <code>%windir%\System32</code>.
+
+Today Denis St-Pierre informed me that this change of working directory also occurs when a batch file is running in <em>elevated mode</em> in Windows Vista, Windows Server 2008 or Windows&nbsp;7.
+
+I checked, and it occurs too when a script is started with <a href="http://technet.microsoft.com/en-us/library/bb490994.aspx">RUNAS</a> or <a href="https://technet.microsoft.com/en-us/sysinternals/bb897553">PSEXEC</a>.
+
+I suppose that's because <em>my</em> current/working directory is saved in <em>my</em> "volatile environment" in <em>my</em> profile, and thus is <em>not</em> available in the elevated user's environment.
+
+So there you have it, one more reason to <em>specify</em> (as opposed to <em>assume</em>) the working directory in your batch files.
+
+I think <code>PUSHD&nbsp;"%~dp0"</code> is by far the most reliable way to do this, and it will work with <a href="http://technet.microsoft.com/en-us/library/bb490994.aspx">RUNAS</a>, <a href="https://technet.microsoft.com/en-us/sysinternals/bb897553">PSEXEC</a>, UNC paths, UAC and Explorer's "Run&nbsp;as..." option.
+
+Thanks Reinhard and Denis
+A message by Steve Lessard:
+
+Doing basic string substitution as described on <a href="ntset.php">www.robvanderwoude.com/ntset.php</a> was pretty easy when using constant values.
+
+But it took me a while to figure out how to do substitution when the string being substituted was determined programmatically.
+
+Now that I have it figured out I'd like to share it with you so that you might be able to share it with all of your readers...
+
+Prerequisite:
+
+Delayed expansion must be enabled
+
+Script:
+
+<code>SETLOCAL ENABLEDELAYEDEXPANSION
+
+SET HOSTS_FILE=C:\Windows\System32\drivers\etc\hosts
+
+SET VARIABLE_HOSTS_FILE=!HOSTS_FILE:%SystemRoot%=%%SystemRoot%%!
+
+ECHO HOSTS_FILE=%HOSTS_FILE%
+
+ECHO VARIABLE_HOSTS_FILE=%VARIABLE_HOSTS_FILE%
+
+ENDLOCAL
+
+GOTO:EOF</code>
+
+Output:
+
+<code>HOSTS_FILE=C:\Windows\System32\drivers\etc\hosts
+
+VARIABLE_HOSTS_FILE=%SystemRoot%\System32\drivers\etc\hosts</code>
+
+I used this kind of substitution to create machine independent instructions for fellow developers and testers to re-run my unit tests under their machine's source code location.
+
+Here's a sample of my script's output:
+
+<code>ECHO To repeat this test run use the following command: pushd "%_LCSROOT%\dev\server\eps\CollaborationApi\utest\OotyTests\" &amp; runall /run=x&amp; popd</code>
+
+Thanks Steve
+Ever tried <code>SET&nbsp;/A</code> to work with <em>really</em> large numbers?
+
+Then you may already know that numbers in batch math are severely limited in size.
+
+Brian Williams submitted 2 batch files that work with large numbers: IsLarger.cmd and Multiply.cmd:
+
+I want to submit these scripts/subroutines for the world to use, it allows one to multiply two numbers that are much larger than the limitations of <code>SET&nbsp;/A</code>.
+
+I don't know if I have plans to create more math related subroutines, but it seemed to be a necessity to do math in batch and not have to use some third party tool or another script language.
+
+The point of Multiply.cmd and IsLarger.cmd is to work with number beyond the command lines ability.
+
+You can Multiply an integer of hundreds of digits by another integer of many if not hundreds of digits.
+
+Also IsLarger.cmd can compare integers of thousands of digits long.
+
+The best part is this is all native NT Shell scripting tested on Windows XP, Windows 2003, and Windows Vista.
+(It might work on Windows 2000 - don't know haven't tried).
+No third party utilities are needed or reliance upon vbscript or some other language.
+
+I submitted these as batch files, but the subroutines starting with the labels <code>:Multiply</code> and <code>:IsLarger</code> is all you need to paste in your batch file to start using these - one other requirement, <em>you have to have</em> <code>SETLOCAL&nbsp;ENABLEDELAYEDEXPANSION</code> in your script for this to work.
+
+Syntax in your script:
+
+<code>CALL :MULTIPLY <em>CrazyLongNumber OtherCrazyLongNumber MyFavoriteVariable</em></code>
+
+<strong>Do not surround your variables with percents or bangs</strong>
+(you are passing a <em>reference</em> to the variable, not the actual variable)
+
+<code>CALL :MULTIPLY <em>VariableContainingBigNumber OtherVariableConatiningBigNumber_GiveItToMeVariable</em></code>
+
+or if you use my script as is its just
+
+<code>MULTIPLY.CMD 121390487120394780398  123498712304981703948097</code>
+
+and you get the answer.
+
+<code>Multiply.cmd 2 2
+
+4</code>
+
+Same thing with IsLarger, prints TRUE, FALSE, or EQUAL (you are saying, is this first number larger than this second number?)
+
+<code>IsLarger.CMD 2948372948273234234 2342983472938472938472342342342342234234
+
+FALSE
+
+IsLarger.CMD 5 4
+
+TRUE
+
+IsLarger.cmd 1 2
+
+FALSE
+
+IsLarger.cmd 2 2
+
+EQUAL</code>
+
+If you use just the subroutine, <strong>no percents or bangs</strong>:
+
+<code>CALL :IsLarger _BIGNUMBER1 _BIGNUMBER2 _MYVARIABLE</code>
+
+I won't display the complete code here, the ZIPped sources for the batch files can be <a href="./files/math.zip">downloaded here</a>.
+
+I <em>do</em> want to show you the main trick that is used in both batch files:
+
+<code>FOR /L %%B IN (0,1,9) DO SET _NUMVAR=!_NUMVAR:%%B=%%B !</code>
+
+Note the space in the part of the code that was marked red: it means <strong>a space will be inserted after each digit</strong>.
+
+Next each digit is multiplied or compared separately in a "regular" <code>FOR</code> loop.
+
+Brilliant!
+
+Thanks Brian
+&nbsp;
+Leonardo Gutierrez Ramirez found a way to use <em>numbers</em> as variables in a FOR loop:
+
+Hi, I have discovered that we can use numbers in the variable FOR command, like this:
+
+<code>FOR /L %%&circ;6 IN (1 1 10) DO (
+
+&nbsp; &nbsp; ECHO %%&circ;6
+
+)
+
+FOR /D /R %%&circ;2 IN (*) DO (
+
+&nbsp; &nbsp; ECHO %%&circ;2
+
+)
+
+FOR /F "tokens=1,2,3" %%&circ;0 IN ('VER') DO (
+
+&nbsp; &nbsp; ECHO.%%&circ;0 %%&circ;1 %%&circ;2
+
+)
+
+FOR %%&circ;1 IN ("%~nx0") DO (
+
+&nbsp; &nbsp; ECHO %%~nxt&circ;1
+
+)
+
+FOR /F "tokens=1" %%&circ;7 IN ('VER') DO (
+
+&nbsp; &nbsp; ECHO.%%&circ;7
+
+)
+
+FOR %%&circ;1 IN ("%~nx0") DO (
+
+&nbsp; &nbsp; ECHO %%~nxatd&circ;1
+
+)</code>
+
+Combined with <a href="#FORListExtended">Carlos M.'s extension of the available variables in FOR loops</a>, we can now, in theory at least, nest up to 75 FOR loops!
+
+Not that I would want to maintain such code...
+
+Thanks Leo
+Leonardo Gutierrez Ramirez found a way to add <em>any</em> (language) style comments to <code>SET&nbsp;/P</code> commands:
+
+<code>@echo off
+
+set /p "suma=2+2 : " # La suma, my comment
+
+if %suma% equ 4 (
+
+&nbsp;&nbsp;&nbsp;&nbsp;echo.Bien
+
+) else (
+
+&nbsp;&nbsp;&nbsp;&nbsp;echo.Mal
+
+)
+
+set suma
+
+@echo off
+
+set /p "suma=2+2 : "&nbsp;&nbsp;// La suma
+
+if %suma% equ 4 (
+
+&nbsp;&nbsp;&nbsp;&nbsp;echo.Bien
+
+) else (
+
+&nbsp;&nbsp;&nbsp;&nbsp;echo.Mal
+
+)
+
+set suma
+
+@echo off
+
+set /p "suma=2+2 : "&nbsp;&nbsp;/* La suma */
+
+if %suma% equ 4 (
+
+&nbsp;&nbsp;&nbsp;&nbsp;echo.Bien
+
+) else (
+
+&nbsp;&nbsp;&nbsp;&nbsp;echo.Mal
+
+)
+
+set suma
+
+@echo off
+
+set /p "suma=2+2 : "&nbsp;&nbsp;' Comment
+
+if %suma% equ 4 (
+
+&nbsp;&nbsp;&nbsp;&nbsp;echo.Bien
+
+) else (
+
+&nbsp;&nbsp;&nbsp;&nbsp;echo.Mal
+
+)
+
+set suma
+
+@echo off
+
+set /p "suma=2+2 : "&nbsp;&nbsp;Comment
+
+if %suma% equ 4 (
+
+&nbsp;&nbsp;&nbsp;&nbsp;echo.Bien
+
+) else (
+
+&nbsp;&nbsp;&nbsp;&nbsp;echo.Mal
+
+)
+
+set suma
+
+@echo off
+
+for %%. in (H e l l o _ W o r l d) do (
+
+&nbsp;&nbsp;&nbsp;&nbsp;call :show %%.
+
+)
+
+goto:eof
+
+:show
+
+&lt;nul set /p "=%*" // Comentario
+
+ping -n 1 loopback &gt; nul
+
+goto:eof</code>
+
+As a matter of fact, <em>any</em> text after the closing doublequote is ignored.
+
+Thanks Leo
+Carlos M. found a way to <a href="http://ss64.com/nt/for_f.html">increase the <em>number</em> of variables available</a> in a <code>FOR&nbsp;/F</code> loop (I added some highlighting to discriminate between the individual lines):
+I just discovered that you can use more than 26 characters in the command <code>for&nbsp;/f</code>, so we can reach a limit of 31 tokens.
+
+In order <code>for /f "tokens=1"</code> or simply <code>for /f</code> can use the following characters: <code>&amp; : &lt;</code>
+
+We can start from and arrive at characters within this range from low to high: <code>&gt; ? @ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z [ \ ] &circ; _ ` a b c d e f g h i j k l m n o p q r s t u v w x y z { | }</code>
+
+Note: The following characters must be escaped with a caret (&circ;): <code>&circ; &lt; &gt; | &amp;</code> as follows: <code>&circ;&circ; &circ;&lt; &circ;&gt; &circ;| &circ;&amp;</code>
+
+Finally a few examples:
+
+<code>@echo off</code>
+
+<code>set palabras=p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p20 p21 p22 p23 p24 p25 p26 p27 p28 p29 p30 p31 p32 p33 p34 p35</code>
+
+<code>for /f "tokens=1" %%&circ;&amp; in ("%palabras%") do (echo %%&circ;&amp;)</code>
+
+<code>for /f "tokens=1" %%&circ;&lt; in ("%palabras%") do (echo %%&circ;&lt;)</code>
+
+<code>for /f "tokens=1,2,3" %%&circ;&gt; in ("%palabras%") do (echo %%&circ;&gt;%%?%%@)</code>
+
+<code>for /f "tokens=1-31" %%? in ("%palabras%") do (echo %%?%%@%%A%%B%%C%%D%%E%%F%%G%%H%%I%%J%%K%%L%%M%%N%%O%%P%%Q%%R%%S%%T%%U%%V%%W%%X%%Y%%Z%%[%%\%%])</code>
+
+<code>for /f "tokens=1-31" %%&circ;&circ; in ("%palabras%") do (echo %%&circ;&circ;%%_%%`%%a%%b%%c%%d%%e%%f%%g%%h%%i%%j%%k%%l%%m%%n%%o%%p%%q%%r%%s%%t%%u%%v%%w%%x%%y%%z%%{%%&circ;|)</code>
+
+<code>for /f "tokens=1-31" %%_ in ("%palabras%") do (echo %%_%%`%%a%%b%%c%%d%%e%%f%%g%%h%%i%%j%%k%%l%%m%%n%%o%%p%%q%%r%%s%%t%%u%%v%%w%%x%%y%%z%%{%%&circ;|%%})</code>
+
+<code>pause</code>
+
+<strong>updated</strong>
+
+The value of my discovery is that for example if, before declaring:
+
+<code>for /f "tokens=1-4" %%Y in ("p1 p2 p3 p4") do (echo %%Y%%Z...)</code>
+
+and wanted to show the token 1,2,3,4 we could only show the token 1 and 2, because then comes %%Y and %%Z then ... we did not know that letter came.
+
+So now we can do:
+
+<code>for /f "tokens=1-4" %%Y in ("p1 p2 p3 p4") do (echo %%Y%%Z%%[%%\)</code>
+
+The other, the documents said 52 variables, ie 26 + 26 (az) and (AZ) for an inside another for, or for using a single letter of the alphabet any case, but now we have more than 65 variables, for example:
+
+<code>@echo off</code>
+
+<code>for /f "tokens=1-10" %%&circ;&gt; in ("El cmd.exe es el interprete de comandos en OS2 y") do (</code>
+
+<code>&nbsp;&nbsp;&nbsp;&nbsp;for /f "tokens=1-10" %%H in ("sistemas basados en Windows NT incluyendo Windows 2000 Windows XP") do (</code>
+
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for /f "tokens=1-8" %%R in ("Windows Server 2003 y Windows Vista. Es el") do (</code>
+
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for /f "tokens=1-12" %%Z in ("equivalente de command.com en MS-DOS y sistemas de la familia Windows 9x.") do (</code>
+
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for /f "tokens=1-10" %%f in ("A diferencia de su antecesor command.com este programa es tan") do (</code>
+
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for /f "tokens=1-14" %%p in ("solo una aplicacion no es una parte del sistema operativo y no posee la") do (</code>
+
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;echo %%&circ;&gt;%%?%%@%%A%%B%%C%%D%%E%%F%%G%%H%%I%%J%%K%%L%%M%%N%%O%%P%%Q%%R%%S%%T%%U%%V%%W%%X%%Y%%Z%%[%%\%%]%%&circ;&circ;%%_%%`%%a%%b%%c%%d%%e%%f%%g%%h%%i%%j%%k%%l%%m%%n%%o%%p%%q%%r%%s%%t%%u%%v%%w%%x%%y%%z%%{%%&circ;|%%}</code>
+
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)</code>
+
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)</code>
+
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)</code>
+
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)</code>
+
+<code>&nbsp;&nbsp;&nbsp;&nbsp;)</code>
+
+<code>)</code>
+
+<code>pause</code>
+
+So, in summary, my discovery increases the maximum of 26 to 31 tokens, and the maximum for the global variables, from 52 to over 65, more say in the example just because they are used within the range, but not individual characters.
+
+Written by Carlos M.
+
+Wow! I need a wider screen.
+
+Thanks Carlos
+Nushu sent me a message with a nice technique to combine multiple scripting languages in a single script:
+The purpose is to be able to execute AutoIT code directly from inside a batch file (and so not having to worry about .au3 being associated with autoit).
+
+.CMD file begins :
+
+<code>-------------------------------------------
+
+; ::Batch code ,cmd.exe will run the lines beginning with comma and exit
+
+; @echo off
+
+; start C:\AutoIT\AutoIT3.exe %0 %*
+
+; exit
+
+; :: AutoIT code , autoit will ignore the lines beginning with semicolon
+
+MsgBox (0 , "Box" , "Just A Box")
+
+-------------------------------------------
+
+.CMD file ends</code>
+
+Nice trick, and it can be used for KiXtart scripts too!
+
+Try the following code, saved as <em>batch file</em>; if KiXtart is available (and <code>KIX32.EXE</code> is in the PATH) it will display the current date and time in YYYYMMDDHHmmss format:
+
+<code>; @ECHO OFF
+
+; KIX32.EXE "%~f0"
+
+; EXIT
+
+$RC = SetOption( "ASCII", "ON" )
+
+SubStr( @Date, 1, 4 )
+
+SubStr( @Date, 6, 2 )
+
+SubStr( @Date, 9, 2 )
+
+SubStr( @Time, 1, 2 )
+
+SubStr( @Time, 4, 2 )
+
+SubStr( @Time, 7, 2 )</code>
+
+It can even be used in <a href="regedit.php#SelfContained">.REG files</a>!
+
+Thanks Nushu
+One never stops learning, as this new trick by Justin proves:
+Recently I came across a little trick using the REN command (tested on XP).
+
+It is possible to use REN to delete every character after the last occurrence of a character by using the wildcard * followed by the desired character:
+
+<code>REM Rename filename.ext to filena
+
+REN filename.ext *a</code>
+
+If you wanted to use a space or ampersand it would need to be contained in double quotes i.e.
+
+<code>REN "good&amp;bad" "*&amp;"</code>
+
+If you use a dot "*." the dot will also be trimmed off by windows because it doesn't allow file names to end with a dot.
+
+Very simple but seemingly undocumented...............
+
+Marvellous!
+
+Thanks Justin
+I must confess, this tip by Leo Gutierrez Ramirez baffled me.
+
+I didn't <em>expect</em> it to work, but it <em>does.</em>
+
+See for yourself:
+
+<code>@ECHO OFF
+
+REM Code: 
+
+ECHO Hello
+
+REM Comments:
+
+(COMMENT
+
+HELLO!
+
+HI!</code>
+
+The trick is <em>not</em> in the exclamation marks, it is the fact that the parenthesis opens a "code block" which is never closed, and thus seems to be ignored completely by the command interpreter.
+
+As Leo said: a useful way to add comments at the end of a batch file.
+
+Thanks Leo
+
+
+"typewriter" batch file:
+
+<code>:: Copyright (c) 2008 Carlos M.
+
+:: All rights reserved.
+
+::
+
+:: Redistribution and use in source and binary forms, with or without
+
+:: modification, are permitted provided that the following conditions
+
+:: are met:
+
+:: 1. Redistributions of source code must retain the above copyright
+
+::    notice, this list of conditions and the following disclaimer.
+
+:: 2. Redistributions in binary form must reproduce the above copyright
+
+::    notice, this list of conditions and the following disclaimer in the
+
+::    documentation and/or other materials provided with the distribution.
+
+:: 3. Neither the name of copyright holders nor the names of its
+
+::    contributors may be used to endorse or promote products derived
+
+::    from this software without specific prior written permission.
+
+::
+
+:: THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+
+:: ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+
+:: TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+
+:: PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS
+
+:: BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+
+:: CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCU::ENT OF
+
+:: SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+
+:: INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+
+:: CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+
+:: ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+
+:: POSSIBILITY OF SUCH DAMAGE.
+
+::</code>
+</div>
+<code>@ECHO OFF
+
+CALL :Put Me canse de escribir tantas lineas ...
+
+CALL :Put Este es el typewritter effect reloaded
+
+CALL :Put o echo dinamico xD
+
+&gt;NUL PAUSE
+
+GOTO:EOF
+
+:Put
+
+IF NOT DEFINED .m_ SET.m_=%*
+
+IF NOT DEFINED .m_ GOTO:EOF
+
+&lt;NUL SET /P .m_=%.m_:&tilde;0,1%
+
+&gt;NUL PING -n 10
+
+SET .m_=%.m_:&tilde;1%
+
+IF DEFINED .m_ (GOTO:Put) ELSE (ECHO.)
+
+GOTO:EOF</code>
+
+Try it out, and see if you understand how it works.
+
+Thanks Carlos
+Justin wrote:
+
+I was looking at you tips and tricks section and noticed you have a way to get the first and last line of a text file, but what it you want the /nth /line of text...
+
+This trick takes advantage of two features of NT batch, calling batch labels and GOTO :EOF, which of course ends a call(or batch).
+The folowing will get the third line of a text file and set it to the variable TEXT_LINE.
+
+<code>SET NthLine=3
+
+SET /A NthLine-=1
+
+CALL :LINEGRAB
+
+GOTO RESTOFFILE
+
+:LINEGRAB
+
+FOR /F "skip=%NthLine% tokens=*" %%G IN (TEXTFILE.TXT) DO SET TEXT_LINE=%%G&amp;&amp;GOTO :EOF
+
+:RESTOFFILE</code>
+
+There is one limitation to this, because for /f skips blank lines any blank lines will cause the line grabbed to be off.
+
+Thanks Justin.
+
+While adding this tip to this web page, the following idea came up (combining this tip with <a href="#SET_P_Redirect">John Taylor</a>'s):
+
+<code>SET /A NthLine -= 1
+
+TYPE <em>textfile</em> &circ;| MORE /E +%NthLine% &gt; "%Temp%.\~nthline.tmp"
+
+SET /P TextLine= &lt; "%Temp%.\~nthline.tmp"</code>
+
+This will also set the value of variable TextLine to the content of the nth line of <em>textfile</em>.
+
+A big advantage is MORE doesn't ignore empty lines.
+
+Unfortunately it involves the use of a temporary file.
+
+But how about this:
+
+<code>SET NthLine=3
+
+SET /A NthLine -= 1
+
+CALL :LINEGRAB
+
+GOTO RESTOFFILE
+
+:LINEGRAB
+
+FOR /F "tokens=*" %%A IN ('MORE /E +%NthLine% TEXTFILE.TXT') DO (
+
+&nbsp;&nbsp;&nbsp;&nbsp;SET TextLine=%%A
+
+&nbsp;&nbsp;&nbsp;&nbsp;GOTO:EOF
+
+)
+
+:RESTOFFILE</code>
+
+It doesn't use a temporary file.
+
+Any disadvantages, anyone...?
+Jeffrey Ehrhart wrote to me:
+
+&bull; For the DIR command, adding the /S flag to the /B will fully qualify file and directory names. Of course, using the /S flag will search all subdirectories which may not be what you want.
+
+Examples:
+
+<code>DIR /B /S C:\Temp</code>
+
+<code>C:\Temp\A.txt
+
+C:\Temp\B.txt</code>
+
+<code>DIR /B C:\Temp</code>
+
+<code>A.txt
+
+B.txt</code>
+
+&bull; If you add the /S flag when deleting a specific file, you will get a resulting message with the file name fully qualified.
+Again, use the /S flag with caution on a delete.
+Without the /S flag, you do not get a message.
+
+Example:
+
+<code>C:\Temp&gt;</code><code>DEL /S A.txt</code>
+
+<code>Deleted file - C:\Temp\A.txt
+
+C:\Temp&gt;</code>
+
+Thanks Jeffrey, I'll certainly keep that in mind.
+
+But, as Jeffrey states, it <em>is</em> risky, unless of course there are no subdirectories involved.
+A message from Matthew W. Helton:
+
+Rob,
+
+I feel your pain about finding a logged-on user... but there is hope from the most unlikely of places... using Netsh.
+
+<code>netsh diag show computer /v</code>
+
+Checkout near the bottom: <code>UserName&nbsp;=</code>
+
+If there is no username, there is no logged-on user. Sweet!
+
+Programmatically in Batch:
+
+<code>FOR /F "tokens=3" %%a IN ('netsh diag show computer /v &circ;| FIND /i "username"') DO ECHO %%a</code>
+
+Remotely using Batch via Psexec:
+
+<code>SET REMOTE_COMPUTER=%1
+
+FOR /F "tokens=3" %%a IN ('PSEXEC.exe \\%REMOTE_COMPUTER% netsh diag show computer /v &circ;| FIND /i "username"') DO ECHO %%a</code>
+
+Note: this only gets you the locally logged-on user: Windows Server 2003 Terminal Services Users will not show up on this.
+
+Great, thanks Matthew.
+
+In theory, using NETSH's own <code>-r&nbsp;\\%REMOTE_COMPUTER%</code> switch should do the trick without the need for PSEXEC, but my own tests using this switch failed.
+
+PSEXEC <em>will</em> do the trick.
+
+Experiment with the output of the <code>NETSH&nbsp;Diag&nbsp;Show&nbsp;Computer&nbsp;/V</code> command, there is a lot of valuable information available.
+A beautiful feature discovered by John Taylor: how to use <code>SET&nbsp;/P</code> to read the <em>first</em> line of a file and store it in an environment variable.
+
+Try these commands, and notice the differences:
+
+<code>SET /P TestVar=&lt;C:\boot.ini
+
+SET TestVar
+
+FOR /F "tokens=*" %%A IN (C:\boot.ini) DO SET TestVar=%%A
+
+SET TestVar</code>
+
+You see? <code>SET&nbsp;/P</code> reads the <em>first</em> line,
+whereas <code>FOR&nbsp;/F</code> reads the <em>last</em> line!
+
+Thanks, John.
+A great feature discovered by Reinhard Irnberger:
+
+Sometimes it is necessary to get a Driveletter from a mapping.
+
+Normally you will define a fixed Driveletter which you will map to your Remote path.
+
+After you have done all things you will delete the drive mapping.
+
+I found an simple solution for Windows Server 2003.
+Maybe it's also working in Windows 2000.
+
+With <code>PUSHD \\Server\Share\[path]</code> the system automatically creates a driveletter for you and jumps to it.
+
+In the next step you can get the current Drive with %CD%.
+
+When you use <code>POPD</code> you will jump back and the drivemapping is also deleted.
+
+Attention: Because <code>PUSHD</code> can be nested you have to make sure that with <code>POPD</code> you don't delete your current directory!
+
+In my scripts I will use the following lines to Map a remote path:
+
+<code>PUSHD \\Server\Share\path
+
+SET rmt=%CD%
+
+CALL %rmt%\script.cmd</code>
+
+Wow! Great!
+
+This works in Windows NT&nbsp;4 (SP6a), 2000 and XP (Professional) too.
+
+Thanks, Reinhard.
+
+<strong>Update:</strong>
+
+Daniel Schmidt reported that this trick does <em>not</em> work in <em>scheduled tasks</em> in Windows 2000 Server.
+I tried it on my Windows XP machine, and it <em>did</em> work, so this <em>may</em> be a Windows 2000 issue (bug).
+Always test before implementing any script.
+
+Daniel Schmidt also sent me this link to a <a href="http://support.microsoft.com/kb/317379">Microsoft KnowledgeBase article</a> documenting this trick (for Windows 2000 Server!).
+
+Thanks, Daniel.
+
+Here is a simple batch file to test if the PUSHD trick works in scheduled tasks on your computer:
+
+<code>PUSHD \\server\sharename
+
+CD &gt;&gt; C:\pushdtest.log
+
+POPD
+
+CD &gt;&gt; C:\pushdtest.log</code>
+
+Run it twice, first from the command line, and then scheduled with your own credentials.
+C:\pushdtest.log should contain 4 (when run twice) lines like these:
+
+<code>X:\
+
+C:\
+
+X:\
+
+C:\</code>
+A nice tip by Chris Greenbank:
+
+Under XP (And I assume NT/2000 as well) it is possible to create a group of commands from the command line (not a batch file).
+This is useful for, among other things, copy&amp;pasting scripts off of the internet for testing without saving.
+To do this, just type "(" and hit enter, enter each command one by one (or paste a previously copied list of commands), then type ")" and hit enter.
+
+&nbsp;
+
+As well, it allows for groups of commands intended to be executed sequentially to be entered beforehand then allowed to run, useful if you are running external programs that you need to wait for and don't want to write a batch file for that specific job.
+
+&nbsp;
+
+Output for every command may also be redirected at the end of the block, in the same manner as Tip 7 on the Clever Tricks page: ")&nbsp;&gt;&nbsp;log.txt" instead of just ")"
+
+&nbsp;
+
+<code>C:\&gt;(
+
+More? cd
+
+More? echo %windir%
+
+More? echo This may be useful to someone wanting
+
+More? echo to enter multiple commands in a row...
+
+More? )
+
+&nbsp;
+
+C:\
+
+C:\WINDOWS
+
+This may be useful to someone wanting
+
+to enter multiple commands in a row...
+
+C:\&gt;</code>
+
+<strong>Update:</strong> Rev. David Isakson pointed out that <strong>[a]</strong> this works in Windows 8 as well (and I can add to that: in Windows 7 too), and <strong>[b]</strong> instead of writing to a log file, one can also write the commands to a batch file, using <code>ECHO</code> before each command.
+
+I experimented a little and found out the latter can be used to "nest" the trick, allowing to <em>create</em> as well as <em>run</em> a batch file from the command line:
+
+<code>C:\&gt;(
+
+More? (
+
+More? echo @echo off
+
+More? echo echo This may be useful to someone wanting
+
+More? echo echo to enter multiple commands in a row...
+
+More? ) &gt; test.bat
+
+More? test.bat
+
+More? )
+
+This may be useful to someone wanting
+
+to enter multiple commands in a row...
+
+C:\&gt;</code>
+
+Not quite as convenient as Notepad, but it just <em>might</em> be useful some day&nbsp;&mdash;&nbsp;and it is fun to investigate.
+
+Thanks, Chris, and thanks Rev. Isakson.
+And another tip by Chris Greenbank, about <a href="useless.php#EscapeChar">escaping linefeeds</a>:
+
+Well, now I just found something more useful: A way to increase readability.
+
+&nbsp;
+
+After thinking about why this works under NT/etc, I realized its because under windows, a physical linebreak is represented by 2 characters, and the escape character only escapes one of them, leaving the other there.
+My guess is that under OS/2, a linebreak is only a single character.
+
+&nbsp;
+
+After some testing, I found that using just the second half of the linebreak, its possible to make it all neat and non-spaced out (the hex value is shown in notepad as a square, it won't provide a physical linebreak):
+
+&nbsp;
+
+<code>ECHO test&circ;&lt;hex 0A&gt;
+
+test&circ;&lt;0A&gt;
+
+test&circ;&lt;0A&gt;
+
+test</code>
+
+&nbsp;
+
+will result in:
+
+&nbsp;
+
+<code>test
+
+test
+
+test
+
+test</code>
+
+&nbsp;
+
+To use in a SET command:
+
+&nbsp;
+
+<code>SET var=test&circ;&circ;&circ;&lt;0A&gt;&lt;0A&gt;&circ;&lt;0A&gt;
+
+test&circ;&circ;&circ;&lt;0A&gt;&lt;0A&gt;&circ;&lt;0A&gt;
+
+test&circ;&circ;&circ;&lt;0A&gt;&lt;0A&gt;&circ;&lt;0A&gt;
+
+test
+
+&nbsp;
+
+ECHO %var%</code>
+
+&nbsp;
+
+will result in:
+
+&nbsp;
+
+<code>test
+
+test
+
+test
+
+test</code>
+
+&nbsp;
+
+The reason that the &lt;0A&gt; is repeated twice is that the first one is ignored, which would be interpreted as <code>&circ;&circ;&circ;&circ;</code> which is not what is wanted.
+Having a few control codes on the end instead of excessive linebreaks is much more readable, while providing the same behaviour.
+The only requirement is that you be able to enter the correct value.
+
+Thanks, Chris.
+Martin Richards wrote about IBM's <a href="http://www.ibm.com/systems/support/supportsite.wss/docdisplay?brandind=5000008&amp;lndocid=MIGR-4R5VKC" onclick="return getLost();">E-Gatherer</a> tool:
+
+I have [...] discovered that you can run '<code>egather2 -local</code>' to output the native XML file rather than the .eg2 file.
+
+&nbsp;
+
+You can also specify which  information is output by egather2 by specify the probe name on the command line, eg:
+
+<code>egather2 -local -probe SYSTEM_SUMMARY</code>
+
+You can get a list of probe names to specify by running
+
+<code>egather2 -listprobes</code>
+Well, this sure is a nice simple replacement for my (now obsolete) <a href="./files/sndisk2_nt.txt">SNDisk2.bat</a>.
+
+&nbsp;
+
+Thanks, Martin
+
+&nbsp;
+
+Continuing Martin's research I have discovered even more undocumented command line switches.
+
+I used the command:
+<a href="https://technet.microsoft.com/en-us/sysinternals/strings">STRINGS</a> -a EGATHER2.EXE | <a href="findstr.php">FINDSTR</a> /R /B /I /C:"-[A-Z0-9][A-Z0-9]"
+
+to find the following possible switches:
+-Y2
+-ht
+-wB
+-binaryfile
+-xmlfile
+-textfile
+-asciifile
+-dgmlfile
+-vpd
+-stdout
+-local
+-probe
+-probes
+-listprobes
+-html
+-filename
+-level
+-debug
+-step
+-nolimit
+-silent
+-batch
+-help
+-64OS
+-zc
+
+Try the
+<code>-help</code> switch and you'll notice that most of these switches are indeed undocumented.
+
+Experiment with these switches, you may find some are of great value.
+
+My favorite so far:
+
+<code>EGATHER2 -html -batch</code>
+
+which I used in my new <a href="./files/sndisk3_nt.txt">SNDisk3.bat</a>.
+
+Or add this one to your login script:
+
+<code>EGATHER2 -html -batch -filename\\<em>remoteserver</em>\<em>remoteshare</em>\%ComputerName%</code>
+
+(no space between <code>-filename</code> and the actual file name; and no extension, the <code>-html</code> switch will take care of that)
+
+
+
+Note:
+SNDisk3.bat has become obsolete again, as IBM keeps changing the inner workings of EGatherer.
+
+Try <a href="batexamples.php?fc=S#SNDisk4">SNDisk4.bat</a> with EGatherer 2.51.*, which produces a large XML file with the results of a full inventory.
+
+
+From Fred Langa and <a href="http://www.google.com/search?q=enable+compatibility+tab+2000">several other sources</a> came this tip to add a Compatibility Mode tab to all shortcuts' properties in Windows 2000 (SP2 or later).
+
+Run the following command only once:
+REGSVR32 %systemroot%\apppatch\slayerui.dll
+
+From that moment on you can choose to run any program in Windows 95 or NT 4 compatibility mode.
+James Higgs sent me a nice PAUSE replacement using Windows 2000's SET /P:
+ECHO Press Enter to continue . . .
+SET /P =
+
+Unlike PAUSE, which accepts any key, SET /P will only accept the Enter key.
+
+&nbsp;
+
+Josh Murray sent me an improvement, a one-liner with the same functionality:
+SET /P =Press Enter to continue . . .
+
+<a href="http://www.huweb.hu/maques/index.htm">Gabor Funk</a> showed me this undocumented feature of the DIR command:
+DIR,
+
+which is shorthand for:
+DIR /A
+
+Works only in COMMAND.COM (tested in Windows 2000).
+An ingenious way to use CHOICE is demonstrated by <a href="http://web.archive.org/web/20091104082534/http://users.telenor.dk/~dsl645578/batfiles.htm">Laurence Soucy</a>'s version(s) of <a href="bootdrive.php#DOS_Enhancements">BootDriv.bat</a>.
+:: bootdrv1.bat
+@ECHO off
+:: By Laurence Soucy
+:: http://web.archive.org/web/20091104082534/http://users.telenor.dk/~dsl645578/batfiles.htm::
+:: To place drive letter into variable
+ECHO %comspec%|choice.com/n/c%comspec% set bootdrv=&gt;%temp%.\bootdrv$.bat
+FOR %%c in (CALL DEL) do %%c %temp%.\bootdrv$.bat
+ECHO "%bootdrv%"
+
+The same trick could be used to determine the current drive letter:
+@ECHO OFF
+CD | CHOICE /N /C:ABCDEFGHIJKLMNOPQRSTUVWXYZ SET curdrive=&gt;%temp%.\curdrv$.bat
+FOR %%A IN (CALL DEL) DO %%A %temp%.\curdrv$.bat
+ECHO "%curdrive%"
+
+<em style="color: red">Tip (and the bootdrv* batch files themselves) provided by <a href="http://web.archive.org/web/20091104082534/http://users.telenor.dk/~dsl645578/batfiles.htm">Laurence Soucy</a></em>
+&nbsp;
+Group commands for redirection:
+&nbsp;
+
+To log the result of several commands, a commonly used method is
+<em>command1</em> &gt;&nbsp; <em>logfile.log</em>
+<em>command2</em> &gt;&gt; <em>logfile.log</em>
+<em>command3</em> &gt;&gt; <em>logfile.log</em>
+
+In Windows NT4/2000/XP command grouping can be used to simplify the code:
+(
+<em>command1</em>
+<em>command2</em>
+<em>command3</em>
+) &gt; <em>logfile.log</em>
+
+<em style="color: red">Tip provided by Dave Denholm</em>
+Use VER to prevent NET USE asking for a password in NT:
+VER | NET USE * \\<em>server</em>\<em>share</em> [ /USER:<em>domain</em>\<em>user</em> ]
+
+
+Note: this will skip the drive mapping and display an error message if the user ID/password combination is invalid (in other words: if you don't have the rights you just won't get the drive mapping)
+&nbsp;
+
+This trick works because VER's output starts with an empty line, which&nbsp;&mdash;&nbsp;when redirected like this&nbsp;&mdash;&nbsp;has the same result as pressing the <em>Enter</em> key
+&nbsp;
+
+<em style="color: red">Tip provided by Justin F. Kuo</em>
+Check if a server is available:
+&nbsp;
+
+A well known way to check if a server is stil "on the air" is
+PING <em>server</em> | FIND "TTL=" &gt;NUL
+IF ERRORLEVEL 1 ECHO Error pinging <em>server</em>
+
+In Windows 95/98/NT this will result in 4 tries from PING to detect the presence of <em>server</em>.
+
+When checking large amounts of servers, some time could be saved by a fast check, followed by a more thorough check <em>only when the first check fails.</em>
+PING <em>server</em> -n 1 | FIND "TTL=" &gt;NUL
+IF NOT ERRORLEVEL 1 GOTO Next
+PING <em>server</em> -w 3000 | FIND "TTL=" &gt;NUL
+IF ERRORLEVEL 1 ECHO Error pinging <em>server</em>
+:Next
+
+<em style="color: red">Tip provided by Mark Johnson, and improved (using "TTL=" instead of "TTL") by Richard Parvass</em>
+Swap your mouse to left handed use:
+Windows 95:
+RUNDLL USER.EXE,SwapMouseButton
+
+
+Windows NT:
+RUNDLL32 USER32.DLL,SwapMouseButton
+
+
+</ul>
+<em style="color: red">Tip provided by "Speedy Gonzales"</em>
+&nbsp;
+
+I know of no command yet to undo this, but the following will get you close:
+CONTROL MAIN.CPL
+
+
+or:
+RUNDLL32 SHELL32.DLL,Control_RunDLL MAIN.CPL,@0,1
+
+
+Start DialUp Network:
+
+START RUNDLL32 RNAUI.DLL,RnaDial <em>exact name of dialer entry</em>
+TRACERT -h 1 -w 1
+
+
+The RUNDLL command starts DUN, the TRACERT command is supposed to actually start the dialing process.
+Since I do not have access to any PC with DUN installed, I could not test the TRACERT command's effect.
+&nbsp;
+
+<em style="color: red">Tip provided by Michael J. Gregg and <a href="http://replay.waybackmachine.org/20081016011937/http://members.cox.net/tglbatch/">Tom Lavedas</a> on <a href="http://groups.google.com/group/alt.msdos.batch/topics">alt.msdos.batch</a></em>
+Resolve host name for specified IP address (Windows NT):
+FOR /F "tokens=2 delims= " %%A IN ('PING -a %1 &circ;| FIND "[%1]"') DO ECHO.%%A
+
+The <a href="./files/hostname_nt.txt">HostName.bat</a> examples use this trick.
+&nbsp;
+
+Adapt the <code>FIND /V</code> part if you expect host names containing the (sub)string "TTL".
+&nbsp;
+
+<em style="color: red">Tip provided by Marcel van der Wal</em>
+Enclose DEBUG scripts in batch file:
+
+DEBUG &lt; %0.BAT
+GOTO Around
+<em>(do not skip this blank line)</em>
+<em>(original DEBUG script goes here)</em>
+<em>(do not skip this blank line)</em>
+:Around
+
+
+<em style="color: red">Technique first seen at <a href="http://www.mcafee.com/">McAfee</a>'s site</em>
+Check if a scheduled event job is active or not:
+&nbsp;
+
+Oskar B&auml;ckstr&ouml;m sent me this great tip:
+The win98 tasks scheduler creates <strong>.JOB</strong> files when you setup a program to run on a certain occasion.
+
+These .JOB files contain information about some things like the path to the program that should be run and probably <em>when</em> it will run.
+
+I've also seen that there's allways a character that indicates whether the .JOB file is active or not.
+
+Checking if a certain task will be run or not could then be done in a batch file:
+
+TYPE C:\Windows\Tasks\Thejobb.job | FIND "%character%" &gt;NUL
+IF NOT ERRORLEVEL 1 ECHO Job not active!
+IF ERRORLEVEL 1 ECHO Job is active!
+
+
+Where %character% is the one character that will disappear from the .JOB file when it's activated.
+
+I've found that the ASCII <strong>196</strong> is a pretty safe bet, but you should scan the file you want to test, both when you have it activated and when it is inactive.
+
+Then check if it's really this character that differs (I suggest looking at it in notepad, thats how I did it).
+
+If you're really unlucky the active-or-not charcter could be found twice in the file, on its active-or-not position and some other place, this test will then not work.
+
+Check also that your program's name does not contain the control character.
+
+<em style="color: red">Tip provided by
+Oskar B&auml;ckstr&ouml;m</em>
+
+Uncommon use of NT's <code>SET&nbsp;/A</code> switch:
+
+As you may or may not be aware, it isn't necessary to specify a variable when using <code>SET&nbsp;/A</code>.
+
+Try this:
+
+SET /A 0XFF
+
+and you should see the number 255 (the decimal value of the hexadecimal number FF) on screen.
+
+Used without a variable, the result of the mathematical expression is displayed on screen.
+
+As explained on my <a href="useless.php#SETQuirk">"Useless Tips"</a> page in more detail, the result is displayed <strong>without a carriage return/line feed</strong> at the end!
+&nbsp;
+
+<script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+    // ... more custom settings?
+});
+</script>
+</pre></body></html>
