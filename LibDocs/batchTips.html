@@ -19,7 +19,7 @@ body{width:80%;margin-left: 10%; font-size:22px;}
 h1, h2 {color: gold;}
 strong {color: orange;}
 pre{width:100%;}
-#toc{color:cyan; font-size:20px;}
+#toc{color:gold; font-size:20px;}
 img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px; background-color:#044;}
 </style></head><body onkeypress="chkKey()"><center>
 <h1>batchTips</h1>
@@ -2067,6 +2067,339 @@ Used without a variable, the result of the mathematical expression is displayed 
 
 As explained on my <a href="useless.php#SETQuirk">"Useless Tips"</a> page in more detail, the result is displayed <strong>without a carriage return/line feed</strong> at the end!
 &nbsp;
+
+
+<h2>GOTO :EOF</h2>
+to exit a subroutine
+
+:EOF is a predefined label.
+ 
+The help
+goto /? explains also this special label for End Of File. 
+
+The help
+call /? explain both that goto :EOF should be used to exit a subroutine called with call :Label.
+
+goto :EOF as well as exit /B can be both used everywhere to either exit a subroutine or exit the current batch file processing.
+
+Note 1:
+goto EOF without a colon requires that there is really a line starting with :EOF in the batch file, i.e. the label EOF must exist in the file. 
+
+goto :EOF always results in exiting subroutine/batch processing with command extensions enabled even if there is a label EOF in the batch file because of a line starting with :EOF.
+
+Note 2:
+Command EXIT without parameter /B results always in exiting entire command process independent on calling hierarchy and independent on how the Windows command processor was started – with parameter /K to keep cmd.exe running as used when opening a command prompt window or with /C to close after command processing finished as used on double clicking a batch file. 
+
+Therefore exit without /B should be used wisely in a batch file (best: never).
+
+Note 3: exit /B does not work with command extensions disabled as demonstrated by this code:
+
+@echo off
+setlocal DisableExtensions
+echo Use command exit /B with command extensions disabled.
+exit /B
+Executing this batch file from within a command prompt window results in output of the error message:
+
+The system cannot find the batch label specified - EOF
+
+In other words exit /B without an additional exit code is exactly like goto :EOF and depends therefore also on command extensions. 
+exit without /B without or with an exit code works always.
+
+Note 4: ERRORLEVEL is not affected by goto :EOF, but the Microsoft GOTO documentation is mute on this topic. 
+exit /B # sets ERRORLEVEL to # as documented by Microsoft. 
+exit /B # can be also used instead of goto :EOF to exit a subroutine with a specific exit code evaluated on the command line calling the subroutine like on using the operators && or || or on next command after calling command line with if errorlevel X. 
+However, explicitly exiting a batch file or a subroutine with a specific exit code is usually not needed as neither goto :EOF nor exit /B modify the current value of ERRORLEVEL.
+
+Note 5: Do not use goto:EOF or call:Label in a batch file with no space between command GOTO respectively CALL (argument 0) and the label (argument 1). 
+There should be always used goto :EOF and call :Label with a space as argument string separator between command and label. 
+The reason is that goto:EOF results in the attempts to find in current directory first a file with name goto: and next a file with name goto:EOF. 
+The incorrect command call:Label results in searching for a file with name call: and next with name call:Label. 
+The file system returns for both syntactically wrong commands twice to cmd.exe that the name is invalid. 
+Then cmd.exe detects the colon as reason for the invalid name and splits the command up into command and label argument and finally runs the command with success. 
+The usage of goto :EOF and call :Label does not cause any wrong file system accesses as cmd.exe immediately recognizes the string goto respectively call as internal command.
+
+
+<h2>Read file contents into a variable</h2>
+
+for /f "delims=" %%x in (version.txt) do set Build=%%x
+or
+set /p Build=<version.txt
+
+Both will act the same with only a single line in the file,
+
+for more lines the for variant will put the last line into the variable, while set /p will use the first.
+
+Using the variable – just like any other environment variable – it is one, after all:
+
+%Build%
+So to check for existence:
+
+if exist \\fileserver\myapp\releasedocs\%Build%.doc ...
+Although it may well be that no UNC paths are allowed there. Can't test this right now but keep this in mind.
+
+
+<h2>Reading a text file line by line and storing it in an array</h2>
+
+@echo off
+set "file=C:\Users\Admin\Documents\url.txt"
+set /A i=0
+
+for /F "usebackq delims=" %%a in ("%file%") do (
+set /A i+=1
+call echo %%i%%
+call set array[%%i%%]=%%a
+call set n=%%i%%
+)
+
+for /L %%i in (1,1,%n%) do call echo %%array[%%i]%%
+
+another method:
+
+@echo off &setlocal enabledelayedexpansion
+for /F "delims=" %%a in (C:\Users\Admin\Documents\url.txt) do (
+    set /A count+=1
+    set "array[!count!]=%%a"
+)
+for /L %%i in (1,1,%count%) do echo !array[%%i]!
+
+Inside a code block you need delayed expansion and !variables!.
+
+another method:
+
+@ECHO OFF
+SETLOCAL
+FOR /f "tokens=1*delims=:" %%i IN ('findstr /n /r "$" url.txt') DO SET max=%%i&SET array[%%i]=%%j
+FOR /l %%i IN (1,1,%max%) DO CALL ECHO(%%array[%%i]%%
+GOTO :EOF
+provided no line begins ":"
+
+<h2>Arrays</h2>
+
+Arrays are not specifically defined as a type in Batch Script but can be implemented. The following things need to be noted when arrays are implemented in Batch Script.
+
+Each element of the array needs to be defined with the set command.
+
+The ‘for’ loop would be required to iterate through the values of the array.
+
+<h2>Creating an Array</h2>
+An array is created by using the following set command.
+
+set a[0]=1
+
+Where 0 is the index of the array and 1 is the value assigned to the first element of the array.
+Another way to implement arrays is to define a list of values and iterate through the list of values. The following example show how this can be implemented.
+<b>Example</b>
+
+&commat;echo off 
+set list=1 2 3 4 
+(for %%a in (%list%) do ( 
+   echo %%a 
+))
+
+<b>Output</b>
+The above command produces the following output.
+
+1
+2
+3
+4
+
+<h2>Accessing Arrays</h2>
+You can retrieve a value from the array by using subscript syntax, passing the index of the value you want to retrieve within square brackets immediately after the name of the array.
+<b>Example</b>
+
+&commat;echo off 
+set a[0]=1 
+echo %a[0]%
+
+In this example, the index starts from 0 which means the first element can be accessed using index as 0, the second element can be accessed using index as 1 and so on. Let's check the following example to create, initialize and access arrays &minus;
+
+&commat;echo off
+set a[0]=1 
+set a[1]=2 
+set a[2]=3 
+echo The first element of the array is %a[0]% 
+echo The second element of the array is %a[1]% 
+echo The third element of the array is %a[2]%
+
+The above command produces the following output.
+
+The first element of the array is 1 
+The second element of the array is 2 
+The third element of the array is 3
+
+<h2>Modifying an Array</h2>
+To add an element to the end of the array, you can use the set element along with the last index of the array element.
+<b>Example</b>
+
+&commat;echo off 
+set a[0]=1  
+set a[1]=2  
+set a[2]=3 
+Rem Adding an element at the end of an array 
+Set a[3]=4 
+echo The last element of the array is %a[3]%
+
+The above command produces the following output.
+
+The last element of the array is 4
+
+You can modify an existing element of an Array by assigning a new value at a given index as shown in the following example &minus;
+
+&commat;echo off 
+set a[0]=1 
+set a[1]=2  
+set a[2]=3 
+Rem Setting the new value for the second element of the array 
+Set a[1]=5 
+echo The new value of the second element of the array is %a[1]%
+
+The above command produces the following output.
+
+The new value of the second element of the array is 5
+
+<h2>Iterating Over an Array</h2>
+Iterating over an array is achieved by using the ‘for’ loop and going through each element of the array. The following example shows a simple way that an array can be implemented.
+
+&commat;echo off 
+setlocal enabledelayedexpansion 
+set topic[0]=comments 
+set topic[1]=variables 
+set topic[2]=Arrays 
+set topic[3]=Decision making 
+set topic[4]=Time and date 
+set topic[5]=Operators 
+
+for /l %%n in (0,1,5) do ( 
+   echo !topic[%%n]! 
+)
+
+Following things need to be noted about the above program &minus;
+
+Each element of the array needs to be specifically defined using the set command.
+
+The ‘for’ loop with the /L parameter for moving through ranges is used to iterate through the array.
+
+<b>Output</b>
+The above command produces the following output.
+
+Comments 
+variables 
+Arrays 
+Decision making 
+Time and date 
+Operators
+
+<h2>Length of an Array</h2>
+The length of an array is done by iterating over the list of values in the array since there is no direct function to determine the number of elements in an array.
+
+&commat;echo off 
+set Arr[0]=1 
+set Arr[1]=2 
+set Arr[2]=3 
+set Arr[3]=4 
+set "x = 0" 
+:SymLoop 
+
+if defined Arr[%x%] ( 
+   call echo %%Arr[%x%]%% 
+   set /a "x&plus;=1"
+   GOTO :SymLoop 
+)
+echo "The length of the array is" %x%
+
+<b>Output</b>
+Output The above command produces the following output.
+
+1
+2
+3
+4
+"The length of the array is" 4
+
+<h2>Creating Structures in Arrays</h2>
+Structures can also be implemented in batch files using a little bit of an extra coding for implementation. The following example shows how this can be achieved.
+<b>Example</b>
+
+@echo off 
+set obj[0].Name=Joe 
+set obj[0].ID=1 
+set obj[1].Name=Mark 
+set obj[1].ID=2 
+set obj[2].Name=Mohan 
+set obj[2].ID=3 
+FOR /L %%i IN (0 1 2) DO  (
+   call echo Name = %%obj[%%i].Name%%
+   call echo Value = %%obj[%%i].ID%%
+)
+
+The following key things need to be noted about the above code.
+
+Each variable defined using the set command has 2 values associated with each index of the array.
+
+The variable <b>i</b> is set to 0 so that we can loop through the structure will the length of the array which is 3.
+
+We always check for the condition on whether the value of i is equal to the value of <b>len</b> and if not, we loop through the code.
+
+We are able to access each element of the structure using the obj[%i%] notation.
+
+<b>Output</b>
+The above command produces the following output.
+
+Name=Joe 
+Value=1 
+Name=Mark 
+Value=2 
+Name=Mohan 
+Value=3
+
+<h2>Create list or arrays</h2>
+declare a list or array
+
+you may use both ways.
+If you just want to separate the elements and show them in separated lines, a list is simpler:
+
+set list=A B C D
+A list of values separated by space may be easily processed by for command:
+
+(for %%a in (%list%) do (
+   echo %%a
+   echo/
+)) > theFile.txt
+
+You may also create an array this way:
+
+setlocal EnableDelayedExpansion
+set n=0
+for %%a in (A B C D) do (
+   set vector[!n!]=%%a
+   set /A n+=1
+)
+and show the array elements this way:
+
+(for /L %%i in (0,1,3) do (
+   echo !vector[%%i]!
+   echo/
+)) > theFile.txt
+For further details about array management in Batch files, see: Arrays, linked lists and other data structures in cmd.exe (batch) script
+
+ATTENTION! You must know that all characters included in set command are inserted in the variable name (at left of equal sign), or in the variable value. For example, this command:
+
+set list = "A B C D"
+create a variable called list (list-space) with the value "A B C D" (space, quote, A, etc). For this reason, it is a good idea to never insert spaces in set commands. If you need to enclose the value in quotes, you must enclose both the variable name and its value:
+
+set "list=A B C D"
+PS - You should NOT use ECHO. in order to left blank lines! An alternative is ECHO/. For further details about this point, see: http://www.dostips.com/forum/viewtopic.php?f=3&t=774
+
+
+
+
+
+
+
+
+
+
 
 <script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
 <script>
