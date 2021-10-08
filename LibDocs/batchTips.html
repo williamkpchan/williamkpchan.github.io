@@ -2391,6 +2391,59 @@ create a variable called list (list-space) with the value "A B C D" (space, quot
 set "list=A B C D"
 PS - You should NOT use ECHO. in order to left blank lines! An alternative is ECHO/. For further details about this point, see: http://www.dostips.com/forum/viewtopic.php?f=3&t=774
 
+<h2>parse markup language</h2>
+The batch language isn't terribly well-suited to parse markup language like HTML, XML, JSON, etc. 
+In such cases, it can be extremely helpful to use a hybrid script and borrow from JScript or PowerShell methods to scrape the data you need. 
+
+Here's an example. 
+Save it with a .bat extension and give it a run.
+
+@if (@CodeSection == @Batch) @then
+@echo off & setlocal
+
+set "url=http://www.domain.com/data/page/1"
+
+for /f "delims=" %%I in ('cscript /nologo /e:JScript "%~f0" "%url%"') do (
+    rem // do something useful with %%I
+    echo Link found: %%I
+)
+
+goto :EOF
+@end // end batch / begin JScript hybrid code
+
+// returns a DOM root object
+function fetch(url) {
+    var XHR = WSH.CreateObject("Microsoft.XMLHTTP"),
+        DOM = WSH.CreateObject('htmlfile');
+
+    XHR.open("GET",url,true);
+    XHR.setRequestHeader('User-Agent','XMLHTTP/1.0');
+    XHR.send('');
+    while (XHR.readyState!=4) {WSH.Sleep(25)};
+    DOM.write('&lt;meta http-equiv="x-ua-compatible" content="IE=9" />');
+    DOM.write(XHR.responseText);
+    return DOM;
+}
+
+var DOM = fetch(WSH.Arguments(0)),
+    links = DOM.getElementsByTagName('a');
+
+for (var i in links)
+    if (links[i].href && /\/post\/view\//i.test(links[i].href))
+        WSH.Echo(links[i].href);
+
+<h2>Regex to match a variable in Batch scripting</h2>
+
+findstr has no full REGEX Support. 
+Especially no {Count}. 
+You have to use a workaround:
+
+echo %var%|findstr /r "^[a-z][a-z]$ ^[a-z][a-z][a-z]$"
+which searches for ^[a-z][a-z]$ OR ^[a-z][a-z][a-z]$
+
+(Note: there is no space between %var% and | - it would be part of the string)
+
+or use cscript
 
 
 
