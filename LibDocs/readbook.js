@@ -226,6 +226,10 @@ function findContent(item) {
   }
 }
 
+// Make anchor link go some pixels above
+window.addEventListener("hashchange", function () {
+    window.scrollTo(window.scrollX, window.scrollY - 20);
+});
 
 // learningMode package complete//
 
