@@ -1,0 +1,958 @@
+<base target="_blank"><html><head><title>ESP32 Servo Motor Web Server</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="https://williamkpchan.github.io/lazyload.min.js"></script>
+<script type='text/javascript' src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/commonfunctions.js"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+
+<script>
+  var showTopicNumber = true;
+  var topicEnd = "<br>";
+  var bookid = "ESP32 Servo Motor Web Server"
+  var markerName = "h2"
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:22px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+pre{width:100%;}
+#toc{color:cyan; font-size:20px;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px; background-color:#044;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>ESP32 Servo Motor Web Server</h1>
+<a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a>
+<br><br>
+<div id="toc"></div></center>
+<br><br>
+<div id="mustWatch"><center><span class="red">MustWatch</span></center><br>
+</div>
+<pre>
+<br>
+<br>
+https://randomnerdtutorials.com/esp32-servo-motor-web-server-arduino-ide/
+<h2>Connecting the Servo Motor to the ESP32</h2>
+Servo motors have three wires: power, ground, and signal. 
+The power is usually red, the GND is black or brown, and the signal wire is usually yellow, orange, or white.
+
+<img class="lazy" data-src="https://i1.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/05/servo-motor-wires.jpg">
+
+When using a small servo like the S0009 as shown in the figure below, you can power it directly from the ESP32.
+
+<img class="lazy" data-src="https://i2.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/05/servo-motor-s009.jpg">
+
+But if you’re using more than one servo or other type, you’ll probably need to power up your servos using an external power supply.
+
+<img class="lazy" data-src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/05/servo-motors.jpg">
+
+If you’re using a small servo like the S0009, you need to connect:
+
+GND -&gt; ESP32 GND pin;
+Power -&gt; ESP32 VIN pin;
+Signal -&gt; GPIO 13 (or any PWM pin).
+
+<strong>Note: </strong> in this case, you can use any ESP32 GPIO, because any GPIO is able to produce a PWM signal. 
+However, we don’t recommend using GPIOs 9, 10, and 11 that are connected to the integrated SPI flash and are not recommend for other uses.
+
+<strong>Recommended reading:</strong><a href="https://randomnerdtutorials.com/esp32-pinout-reference-gpios/"> ESP32 Pinout Reference: Which GPIO pins should you use?</a>
+
+<h2>Schematic</h2>
+In our examples we’ll connect the signal wire to GPIO 13. 
+So, you can follow the next schematic diagram to wire your servo motor.
+
+<img class="lazy" data-src="https://i1.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/05/servo-esp32-schematic.png">
+
+<em>(This schematic uses the ESP32 DEVKIT V1 module version with 36 GPIOs – if you’re using another model, please check the pinout for the board you’re using.)</em>
+
+<h2>How to Control a Servo Motor?</h2>
+You can position the servo’s shaft in various angles from 0 to 180º. 
+Servos are controlled using a pulse width modulation (PWM) signal. 
+This means that the PWM signal sent to the motor will determine the shaft’s position.
+
+<img class="lazy" data-src="https://i2.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/05/0-180-degrees.png">
+
+To control the motor you can simply use the PWM capabilities of the ESP32 by sending a 50Hz signal with the appropriate pulse width. 
+Or you can use a library to make this task much simpler.
+
+<h2>Preparing the Arduino IDE</h2>
+There’s an add-on for the Arduino IDE allows you to program the ESP32 using the Arduino IDE and its programming language. 
+Follow one of the next tutorials to prepare your Arduino IDE to work with the ESP32, if you haven’t already.
+
+<a href="https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/"><strong>Windows</strong> instructions – ESP32 Board in Arduino IDE</a>
+<a href="https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-mac-and-linux-instructions/"><strong>Mac and Linux</strong> instructions – ESP32 Board in Arduino IDE</a>
+
+After making sure you have the ESP32 add-on installed, you can continue this tutorial.
+
+<h3>Installing the ESP32_Arduino_Servo_Library</h3>
+The <a href="https://github.com/RoboticsBrno/ESP32-Arduino-Servo-Library" target="_blank" rel="noopener noreferrer">ESP32 Arduino Servo Library</a> makes it easier to control a servo motor with your ESP32, using the Arduino IDE. 
+Follow the next steps to install the library in your Arduino IDE:
+
+<a href="https://github.com/RoboticsBrno/ESP32-Arduino-Servo-Library/archive/master.zip" target="_blank" rel="noopener noreferrer">Click here to download the ESP32_Arduino_Servo_Library</a>. 
+You should have a .zip folder in your Downloads folder
+Unzip the .zip folder and you should get <em>ESP32-Arduino-Servo-Library-Master</em> folder
+Rename your folder from <del><em>ESP32-Arduino-Servo-Library-Master</em></del> to <em>ESP32_Arduino_Servo_Library</em>
+Move the <em>ESP32_Arduino_Servo_Library</em> folder to your Arduino IDE installation libraries folder
+Finally, re-open your Arduino IDE
+
+<h2>Testing an Example</h2>
+After installing the library, go to your Arduino IDE. 
+Make sure you have the ESP32 board selected, and then, go to <strong>File</strong> &gt; <strong>Examples</strong> &gt; <strong>ServoESP32</strong> &gt; <strong>Simple Servo</strong>.
+
+<code>/*********
+  Rui Santos
+  Complete project details at https://randomnerdtutorials.com  
+  Written by BARRAGAN and modified by Scott Fitzgerald
+*********/
+
+#include &lt;Servo.h&gt;
+
+Servo myservo;  // create servo object to control a servo
+// twelve servo objects can be created on most boards
+
+int pos = 0;    // variable to store the servo position
+
+void setup() {
+  myservo.attach(13);  // attaches the servo on pin 13 to the servo object
+}
+
+void loop() {
+  for (pos = 0; pos &lt;= 180; pos += 1) { // goes from 0 degrees to 180 degrees
+    // in steps of 1 degree
+    myservo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
+  }
+  for (pos = 180; pos &gt;= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
+    myservo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
+  }
+}
+
+</code>
+	<a class="rntwhite" href="https://github.com/RuiSantosdotme/ESP32-Course/raw/master/code/Servo/Sweep/Sweep.ino" target="_blank">View raw code</a>
+
+<h3>Understanding the code</h3>
+This sketch rotates the servo 180 degrees to one side, and 180 degrees to the other. 
+Let’s see how it works.
+
+First, you need to include the Servo library:
+
+<code>#include &lt;Servo.h&gt;</code>
+Then, you need to create a servo object. 
+In this case it is called myservo.
+
+<code>Servo myservo;</code>
+<h3>setup()</h3>
+In the setup(), you initialize a serial communication for debugging purposes, and attach GPIO 13 to the servo object.
+
+<code>void setup() {  
+  myservo.attach(13); 
+}</code>
+<h3>loop()</h3>
+In the loop(), we change the motor’s shaft position from 0 to 180 degrees, and then from 180 to 0 degrees. 
+To set the shaft to a particular position, you just need to use the write() method in the servo object. 
+You pass as an argument, an integer number with the position in degrees.
+
+<code>myservo.write(pos);</code>
+<h3>Testing the Sketch</h3>
+Upload the code to your ESP32. 
+After uploading the code, you should see the motor’s shaft rotating to one side and then, to the other.
+
+<img class="lazy" data-src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/05/giphy.gif">
+
+<h2>Creating the ESP32 Web Server</h2>
+Now that you know how to control a servo with the ESP32, let’s create the web server to control it (learn more about building an <a href="https://randomnerdtutorials.com/esp32-web-server-arduino-ide/">ESP32 Web Server</a>). 
+The web server we’ll build:
+
+Contains a slider from 0 to 180, that you can adjust to control the servo’s shaft position;
+The current slider value is automatically updated in the web page, as well as the shaft position, without the need to refresh the web page. 
+For this, we use AJAX to send HTTP requests to the ESP32 on the background;
+Refreshing the web page doesn’t change the slider value, neither the shaft position.
+
+<img class="lazy" data-src="https://i2.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/05/esp32-servo-web-server-browser.png">
+
+<h2>Creating the HTML Page</h2>
+Let’s start by taking a look at the HTML text the ESP32 needs to send to your browser.
+
+<code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
+  &lt;link rel="icon" href="data:,"&gt;
+  &lt;style&gt;
+    body {
+      text-align: center;
+      font-family: "Trebuchet MS", Arial;
+      margin-left:auto;
+      margin-right:auto;
+    }
+    .slider {
+      width: 300px;
+    }
+  &lt;/style&gt;
+  &lt;script data-src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;ESP32 with Servo&lt;/h1&gt;
+  &lt;p&gt;Position: &lt;span id="servoPos"&gt;&lt;/span&gt;&lt;/p&gt;
+  &lt;input type="range" min="0" max="180" class="slider" id="servoSlider" onchange="servo(this.value)"/&gt;
+  &lt;script&gt;
+    var slider = document.getElementById("servoSlider");
+    var servoP = document.getElementById("servoPos");
+    servoP.innerHTML = slider.value;
+    slider.oninput = function() {
+      slider.value = this.value;
+      servoP.innerHTML = this.value;
+    }
+    $.ajaxSetup({timeout:1000});
+    function servo(pos) {
+      $.get("/?value=" + pos + "&amp;");
+      {Connection: close};
+    }
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code>
+	<a class="rntwhite" href="https://github.com/RuiSantosdotme/ESP32-Course/raw/master/code/Servo/slider.html" target="_blank">View raw code</a>
+
+<h3>Creating a Slider</h3>
+The HTML page for this project involves creating a slider. 
+To create a slider in HTML you use the &lt;input&gt; tag. 
+The &lt;input&gt; tag specifies a field where the user can enter data.
+
+There are a wide variety of input types. 
+To define a slider, use the “<strong>type</strong>” attribute with the “<strong>range</strong>” value. 
+In a slider, you also need to define the minimum and the maximum range using the “<strong>min</strong>” and “<strong>max</strong>” attributes.
+
+<code>&lt;input type="range" min="0" max="180" class="slider" id="servoSlider" onchange="servo(this.value)"/&gt;</code>
+You also need to define other attributes like:
+
+the <strong>class</strong> to style the slider
+the <strong>id</strong> to update the current position displayed on the web page
+And finally, the <strong>onchange</strong> attribute to call the servo function to send an HTTP request to the ESP32 when the slider moves.
+
+<h3>Adding JavaScript to the HTML File</h3>
+Next, you need to add some JavaScript code to your HTML file using the &lt;script&gt; and &lt;/script&gt; tags. 
+This snippet of the code updates the web page with the current slider position:
+
+<code>var slider = document.getElementById("servoSlider");
+    var servoP = document.getElementById("servoPos");
+    servoP.innerHTML = slider.value;
+    slider.oninput = function() {
+      slider.value = this.value;
+      servoP.innerHTML = this.value;
+    }</code>
+And the next lines make an HTTP GET request on the ESP IP address in this specific URL path /?value=[SLIDER_POSITION]&amp;.
+
+$.ajaxSetup({timeout:1000});
+function servo(pos) {
+  $.get("/?value=" + pos + "&amp;");
+}
+For example, when the slider is at <strong>0</strong>, you make an HTTP GET request on the following URL:
+
+http://192.168.1.135/?value=<strong>0</strong>&amp;
+And when the slider is at <strong>180</strong> degrees, you’ll have something as follows:
+
+http://192.168.1.135/?value=<strong>180</strong>&amp;
+This way, when the ESP32 receives the GET request, it can retrieve the value parameter in the URL and move the servo motor to the right position.
+
+<h2>Code</h2>
+Now, we need to include the previous HTML text in the sketch and rotate the servo accordingly. 
+This next sketch does precisely that.
+
+<strong>Note</strong>: as we’ve mentioned previously, you need to have the ESP32 add-on installed in your Arduino IDE. 
+Follow one of the following tutorials to install the ESP32 board in the Arduino IDE, if you haven’t already:
+
+<a href="https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/"><strong>Windows</strong> instructions – ESP32 Board in Arduino IDE</a>
+<a href="https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-mac-and-linux-instructions/"><strong>Mac and Linux</strong> instructions – ESP32 Board in Arduino IDE</a>
+
+Copy the following code to your Arduino IDE, but don’t upload it yet. 
+First, we’ll take a quick look on how it works.
+
+<code>/*********
+  Rui Santos
+  Complete project details at https://randomnerdtutorials.com  
+*********/
+
+#include &lt;WiFi.h&gt;
+#include &lt;Servo.h&gt;
+
+Servo myservo;  // create servo object to control a servo
+// twelve servo objects can be created on most boards
+
+// GPIO the servo is attached to
+static const int servoPin = 13;
+
+// Replace with your network credentials
+const char* ssid     = "REPLACE_WITH_YOUR_SSID";
+const char* password = "REPLACE_WITH_YOUR_PASSWORD";
+
+// Set web server port number to 80
+WiFiServer server(80);
+
+// Variable to store the HTTP request
+String header;
+
+// Decode HTTP GET value
+String valueString = String(5);
+int pos1 = 0;
+int pos2 = 0;
+
+// Current time
+unsigned long currentTime = millis();
+// Previous time
+unsigned long previousTime = 0; 
+// Define timeout time in milliseconds (example: 2000ms = 2s)
+const long timeoutTime = 2000;
+
+void setup() {
+  Serial.begin(115200);
+
+  myservo.attach(servoPin);  // attaches the servo on the servoPin to the servo object
+
+  // Connect to Wi-Fi network with SSID and password
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  // Print local IP address and start web server
+  Serial.println("");
+  Serial.println("WiFi connected.");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+  server.begin();
+}
+
+void loop(){
+  WiFiClient client = server.available();   // Listen for incoming clients
+
+  if (client) {                             // If a new client connects,
+    currentTime = millis();
+    previousTime = currentTime;
+    Serial.println("New Client.");          // print a message out in the serial port
+    String currentLine = "";                // make a String to hold incoming data from the client
+    while (client.connected() &amp;&amp; currentTime - previousTime &lt;= timeoutTime) { // loop while the client's connected
+      currentTime = millis();
+      if (client.available()) {             // if there's bytes to read from the client,
+        char c = client.read();             // read a byte, then
+        Serial.write(c);                    // print it out the serial monitor
+        header += c;
+        if (c == '\n') {                    // if the byte is a newline character
+          // if the current line is blank, you got two newline characters in a row.
+          // that's the end of the client HTTP request, so send a response:
+          if (currentLine.length() == 0) {
+            // HTTP headers always start with a response code (e.g. 
+HTTP/1.1 200 OK)
+            // and a content-type so the client knows what's coming, then a blank line:
+            client.println("HTTP/1.1 200 OK");
+            client.println("Content-type:text/html");
+            client.println("Connection: close");
+            client.println();
+
+            // Display the HTML web page
+            client.println("&lt;!DOCTYPE html&gt;&lt;html&gt;");
+            client.println("&lt;head&gt;&lt;meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"&gt;");
+            client.println("&lt;link rel=\"icon\" href=\"data:,\"&gt;");
+            // CSS to style the on/off buttons 
+            // Feel free to change the background-color and font-size attributes to fit your preferences
+            client.println("&lt;style&gt;body { text-align: center; font-family: \"Trebuchet MS\", Arial; margin-left:auto; margin-right:auto;}");
+            client.println(".slider { width: 300px; }&lt;/style&gt;");
+            client.println("&lt;script data-src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js\"&gt;&lt;/script&gt;");
+                     
+            // Web Page
+            client.println("&lt;/head&gt;&lt;body&gt;&lt;h1&gt;ESP32 with Servo&lt;/h1&gt;");
+            client.println("&lt;p&gt;Position: &lt;span id=\"servoPos\"&gt;&lt;/span&gt;&lt;/p&gt;");          
+            client.println("&lt;input type=\"range\" min=\"0\" max=\"180\" class=\"slider\" id=\"servoSlider\" onchange=\"servo(this.value)\" value=\""+valueString+"\"/&gt;");
+            
+            client.println("&lt;script&gt;var slider = document.getElementById(\"servoSlider\");");
+            client.println("var servoP = document.getElementById(\"servoPos\"); servoP.innerHTML = slider.value;");
+            client.println("slider.oninput = function() { slider.value = this.value; servoP.innerHTML = this.value; }");
+            client.println("$.ajaxSetup({timeout:1000}); function servo(pos) { ");
+            client.println("$.get(\"/?value=\" + pos + \"&amp;\"); {Connection: close};}&lt;/script&gt;");
+           
+            client.println("&lt;/body&gt;&lt;/html&gt;");     
+            
+            //GET /?value=180&amp; HTTP/1.1
+            if(header.indexOf("GET /?value=")&gt;=0) {
+              pos1 = header.indexOf('=');
+              pos2 = header.indexOf('&amp;');
+              valueString = header.substring(pos1+1, pos2);
+              
+              //Rotate the servo
+              myservo.write(valueString.toInt());
+              Serial.println(valueString); 
+            }         
+            // The HTTP response ends with another blank line
+            client.println();
+            // Break out of the while loop
+            break;
+          } else { // if you got a newline, then clear currentLine
+            currentLine = "";
+          }
+        } else if (c != '\r') {  // if you got anything else but a carriage return character,
+          currentLine += c;      // add it to the end of the currentLine
+        }
+      }
+    }
+    // Clear the header variable
+    header = "";
+    // Close the connection
+    client.stop();
+    Serial.println("Client disconnected.");
+    Serial.println("");
+  }
+}
+</code>
+	<a class="rntwhite" href="https://github.com/RuiSantosdotme/ESP32-Course/raw/master/code/Servo/WiFi_Web_Server_Servo/WiFi_Web_Server_Servo.ino" target="_blank">View raw code</a>
+
+<h2>How the Code Works</h2>
+First, we include the Servo library, and create a servo object called myservo.
+
+<code>#include &lt;Servo.h&gt; 
+Servo myservo; // create servo object to control a servo</code>
+We also create a variable to hold the GPIO number the servo is connected to. 
+In this case, GPIO 13.
+
+<code>const int servoPin = 13;</code>
+Don’t forget that you need to modify the following two lines to include your network credentials.
+
+<code>// Replace with your network credentials const char* ssid = ""; 
+const char* password = "";</code>
+Then, create a couple of variables that will be used to extract the slider position from the HTTP request.
+
+<code>// Decode HTTP GET value 
+String valueString = String(5); 
+int pos1 = 0; 
+int pos2 = 0;</code>
+<h3>setup()</h3>
+In the setup(), you need to attach the servo to the GPIO it is connected to, with myservo.attach().
+
+<code>myservo.attach(servoPin); // attaches the servo on the servoPin to the servo object</code>
+<h3>loop()</h3>
+The first part of the loop() creates the web server and sends the HTML text to display the web page. 
+We use the same method we’ve used <a href="https://randomnerdtutorials.com/esp8266-web-server/">in this web server project</a>.
+
+The following part of the code retrieves the slider value from the HTTP request.
+
+//GET /?value=180&amp; HTTP/1.1 if(header.indexOf("GET /?value=")&gt;=0) { pos1 = header.indexOf('=');   pos2 = header.indexOf('&amp;');   valueString = header.substring(pos1+1, pos2); 
+When you move the slider, you make an HTTP request on the following URL, that contains the slider position between the = and &amp; signs.
+
+http://your-esp-ip-address/?value=<strong>[SLIDER_POSITION]</strong>&amp;
+The slider position value is saved in the valueString variable.
+
+Then, we set the servo to that specific position using myservo.write() with the valueString variable as an argument. 
+The valueString variable is a string, so we need to use the toInt() method to convert it into an integer number – the data type accepted by the write() method.
+
+<code>myservo.write(valueString.toInt());</code>
+<h3>Testing the Web Server</h3>
+Now you can upload the code to your ESP32 – make sure you have the right board and COM port selected. 
+Also don’t forget to modify the code to include your network credentials.
+
+After uploading the code, open the Serial Monitor at a baud rate of 115200.
+
+<img class="lazy" data-src="https://i0.wp.com/rntlab.com/wp-content/uploads/2016/09/serial-monitor.png">
+
+Press the ESP32 “Enable” button to restart the board, and copy the ESP32 IP address that shows up on the Serial Monitor.
+
+<img class="lazy" data-src="https://i1.wp.com/rntlab.com/wp-content/uploads/2018/01/ESP-IP-address-1.png">
+
+Open your browser, paste the ESP IP address, and you should see the web page you’ve created previously. 
+Move the slider to control the servo motor.
+
+<img class="lazy" data-src="https://i2.wp.com/rntlab.com/wp-content/uploads/2018/02/move-slider.jpg">
+
+In the Serial Monitor, you can also see the HTTP requests you’re sending to the ESP32 when you move the slider.
+
+<img class="lazy" data-src="https://i0.wp.com/rntlab.com/wp-content/uploads/2018/02/servo-motor-esp32-serial-monitor.png">
+
+Experiment with your web server for a while to see if it’s working properly.
+
+<h2>Wrapping Up</h2>
+In summary, in this tutorial you’ve learned how to control a servo motor with the ESP32 and how to create a web server with a slider to control its position.
+
+This is just an example on how to control a servo motor. 
+Instead of a slider, you can use a text input field, several buttons with predefined angles, or any other suitable input fields.
+
+<em>This is an excerpt from our course: <a href="https://randomnerdtutorials.com/learn-esp32-with-arduino-ide/">Learn ESP32 with Arduino IDE</a>. 
+If you like ESP32 and you want to learn more about it, we recommend enrolling in <a href="https://randomnerdtutorials.com/learn-esp32-with-arduino-ide/">Learn ESP32 with Arduino IDE course</a>.</em>
+
+<h2><span class="orange">ESP32 Web Server – Arduino IDE</span></h2>
+In this project you’ll create a standalone web server with an ESP32 that controls outputs (two LEDs) using the Arduino IDE programming environment. 
+The web server is mobile responsive and can be accessed with any device that as a browser on the local network. 
+We’ll show you how to create the web server and how the code works step-by-step.<span id="more-36542">
+
+<img class="lazy" data-src="https://i2.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/07/esp32-we-server.jpg">
+
+If you want to learn more about the ESP32, read <a href="https://randomnerdtutorials.com/getting-started-with-esp32/">Getting Started Guide with ESP32</a>.
+
+<h2>Watch the Video Tutorial</h2>
+<em>This tutorial is available in video format (watch below) and in written format (continue reading this page). 
+</em>
+
+<h2>Project Overview</h2>
+Before going straight to the project, it is important to outline what our web server will do, so that it is easier to follow the steps later on.
+
+The web server you’ll build controls two LEDs connected to the ESP32 <span class="rnthl rntclgreen">GPIO 26 and <span class="rnthl rntclblue">GPIO 27;
+You can access the ESP32 web server by typing the ESP32 IP address on a browser in the local network;
+By clicking the buttons on your web server you can instantly change the state of each LED.
+
+This is just a simple example to illustrate how to build a web server that controls outputs, the idea is to replace those LEDs with a <a href="https://makeradvisor.com/tools/5v-2-channel-relay-module-optocoupler/" target="_blank" rel="noopener noreferrer">relay</a>, or any other electronic components you want.
+
+<h2>Installing the ESP32 board in Arduino IDE</h2>
+There’s an add-on for the Arduino IDE that allows you to program the ESP32 using the Arduino IDE and its programming language. 
+Follow one of the following tutorials to prepare your Arduino IDE:
+
+<a href="https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/"><strong>Windows instructions</strong> – Installing the ESP32 Board in Arduino IDE</a>
+<a href="https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-mac-and-linux-instructions/"><strong>Mac and Linux instructions</strong> – Installing the ESP32 Board in Arduino IDE</a>
+
+<h2>Parts Required</h2>
+For this tutorial you’ll need the following parts:
+
+<img class="lazy" data-src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/07/esp32-web-server-arduino-ide-parts-required.jpg">
+
+<a href="https://makeradvisor.com/tools/esp32-dev-board-wi-fi-bluetooth/" target="_blank" rel="noopener noreferrer">ESP32 development board</a> –  <a href="https://makeradvisor.com/esp32-development-boards-review-comparison/" target="_blank" rel="noopener noreferrer">read ESP32 Development Boards Review and Comparison</a>
+<a href="https://makeradvisor.com/tools/3mm-5mm-leds-kit-storage-box/" target="_blank" rel="noopener noreferrer">2x 5mm LED</a>
+<a href="https://makeradvisor.com/tools/resistors-kits/" target="_blank" rel="noopener noreferrer">2x 330 Ohm resistor</a>
+<a href="https://makeradvisor.com/tools/mb-102-solderless-breadboard-830-points/" target="_blank" rel="noopener noreferrer">Breadboard</a>
+<a href="https://makeradvisor.com/tools/jumper-wires-kit-120-pieces/" target="_blank" rel="noopener noreferrer">Jumper wires</a>
+
+You can use the preceding links or go directly to <a href="https://makeradvisor.com/tools/?utm_source=rnt&amp;utm_medium=post&amp;utm_campaign=post" target="_blank">MakerAdvisor.com/tools</a> to find all the parts for your projects at the best price!
+<a href="https://makeradvisor.com/tools/?utm_source=rnt&amp;utm_medium=post&amp;utm_campaign=post" target="_blank"><img src="https://i1.wp.com/randomnerdtutorials.com/wp-content/uploads/2017/10/header-200.png?w=828&amp;quality=100&amp;strip=all&amp;ssl=1" data-recalc-dims="1" loading="eager"></a>
+
+<h2>Schematic</h2>
+Start by building the circuit. 
+Connect two LEDs to the ESP32 as shown in the following schematic diagram – one LED connected to <span class="rnthl rntclgreen">GPIO 26, and the other to <span class="rnthl rntclblue">GPIO 27.
+
+<strong>Note</strong>: We’re using the ESP32 DEVKIT DOIT board with 36 pins. 
+Before assembling the circuit, make sure you check the pinout for the board you’re using.
+
+<img class="size-full wp-image-67732 aligncenter" src="https://i2.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/07/esp32_web_server_schematic.png">
+
+<h2>ESP32 Web Server Code</h2>
+Here we provide the code that creates the ESP32 web server. 
+Copy the following code to your Arduino IDE, but don’t upload it yet. 
+You need to make some changes to make it work for you.
+
+<code>/*********
+  Rui Santos
+  Complete project details at https://randomnerdtutorials.com  
+*********/
+
+// Load Wi-Fi library
+#include &lt;WiFi.h&gt;
+
+// Replace with your network credentials
+const char* ssid = "REPLACE_WITH_YOUR_SSID";
+const char* password = "REPLACE_WITH_YOUR_PASSWORD";
+
+// Set web server port number to 80
+WiFiServer server(80);
+
+// Variable to store the HTTP request
+String header;
+
+// Auxiliar variables to store the current output state
+String output26State = "off";
+String output27State = "off";
+
+// Assign output variables to GPIO pins
+const int output26 = 26;
+const int output27 = 27;
+
+// Current time
+unsigned long currentTime = millis();
+// Previous time
+unsigned long previousTime = 0; 
+// Define timeout time in milliseconds (example: 2000ms = 2s)
+const long timeoutTime = 2000;
+
+void setup() {
+  Serial.begin(115200);
+  // Initialize the output variables as outputs
+  pinMode(output26, OUTPUT);
+  pinMode(output27, OUTPUT);
+  // Set outputs to LOW
+  digitalWrite(output26, LOW);
+  digitalWrite(output27, LOW);
+
+  // Connect to Wi-Fi network with SSID and password
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  // Print local IP address and start web server
+  Serial.println("");
+  Serial.println("WiFi connected.");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+  server.begin();
+}
+
+void loop(){
+  WiFiClient client = server.available();   // Listen for incoming clients
+
+  if (client) {                             // If a new client connects,
+    currentTime = millis();
+    previousTime = currentTime;
+    Serial.println("New Client.");          // print a message out in the serial port
+    String currentLine = "";                // make a String to hold incoming data from the client
+    while (client.connected() &amp;&amp; currentTime - previousTime &lt;= timeoutTime) {  // loop while the client's connected
+      currentTime = millis();
+      if (client.available()) {             // if there's bytes to read from the client,
+        char c = client.read();             // read a byte, then
+        Serial.write(c);                    // print it out the serial monitor
+        header += c;
+        if (c == '\n') {                    // if the byte is a newline character
+          // if the current line is blank, you got two newline characters in a row.
+          // that's the end of the client HTTP request, so send a response:
+          if (currentLine.length() == 0) {
+            // HTTP headers always start with a response code (e.g. 
+HTTP/1.1 200 OK)
+            // and a content-type so the client knows what's coming, then a blank line:
+            client.println("HTTP/1.1 200 OK");
+            client.println("Content-type:text/html");
+            client.println("Connection: close");
+            client.println();
+            
+            // turns the GPIOs on and off
+            if (header.indexOf("GET /26/on") &gt;= 0) {
+              Serial.println("GPIO 26 on");
+              output26State = "on";
+              digitalWrite(output26, HIGH);
+            } else if (header.indexOf("GET /26/off") &gt;= 0) {
+              Serial.println("GPIO 26 off");
+              output26State = "off";
+              digitalWrite(output26, LOW);
+            } else if (header.indexOf("GET /27/on") &gt;= 0) {
+              Serial.println("GPIO 27 on");
+              output27State = "on";
+              digitalWrite(output27, HIGH);
+            } else if (header.indexOf("GET /27/off") &gt;= 0) {
+              Serial.println("GPIO 27 off");
+              output27State = "off";
+              digitalWrite(output27, LOW);
+            }
+            
+            // Display the HTML web page
+            client.println("&lt;!DOCTYPE html&gt;&lt;html&gt;");
+            client.println("&lt;head&gt;&lt;meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"&gt;");
+            client.println("&lt;link rel=\"icon\" href=\"data:,\"&gt;");
+            // CSS to style the on/off buttons 
+            // Feel free to change the background-color and font-size attributes to fit your preferences
+            client.println("&lt;style&gt;html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
+            client.println(".button { background-color: #4CAF50; border: none; color: white; padding: 16px 40px;");
+            client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}");
+            client.println(".button2 {background-color: #555555;}&lt;/style&gt;&lt;/head&gt;");
+            
+            // Web Page Heading
+            client.println("&lt;body&gt;&lt;h1&gt;ESP32 Web Server&lt;/h1&gt;");
+            
+            // Display current state, and ON/OFF buttons for GPIO 26  
+            client.println("&lt;p&gt;GPIO 26 - State " + output26State + "&lt;/p&gt;");
+            // If the output26State is off, it displays the ON button       
+            if (output26State=="off") {
+              client.println("&lt;p&gt;&lt;a href=\"/26/on\"&gt;&lt;button class=\"button\"&gt;ON&lt;/button&gt;&lt;/a&gt;&lt;/p&gt;");
+            } else {
+              client.println("&lt;p&gt;&lt;a href=\"/26/off\"&gt;&lt;button class=\"button button2\"&gt;OFF&lt;/button&gt;&lt;/a&gt;&lt;/p&gt;");
+            } 
+               
+            // Display current state, and ON/OFF buttons for GPIO 27  
+            client.println("&lt;p&gt;GPIO 27 - State " + output27State + "&lt;/p&gt;");
+            // If the output27State is off, it displays the ON button       
+            if (output27State=="off") {
+              client.println("&lt;p&gt;&lt;a href=\"/27/on\"&gt;&lt;button class=\"button\"&gt;ON&lt;/button&gt;&lt;/a&gt;&lt;/p&gt;");
+            } else {
+              client.println("&lt;p&gt;&lt;a href=\"/27/off\"&gt;&lt;button class=\"button button2\"&gt;OFF&lt;/button&gt;&lt;/a&gt;&lt;/p&gt;");
+            }
+            client.println("&lt;/body&gt;&lt;/html&gt;");
+            
+            // The HTTP response ends with another blank line
+            client.println();
+            // Break out of the while loop
+            break;
+          } else { // if you got a newline, then clear currentLine
+            currentLine = "";
+          }
+        } else if (c != '\r') {  // if you got anything else but a carriage return character,
+          currentLine += c;      // add it to the end of the currentLine
+        }
+      }
+    }
+    // Clear the header variable
+    header = "";
+    // Close the connection
+    client.stop();
+    Serial.println("Client disconnected.");
+    Serial.println("");
+  }
+}
+</code></pre>
+	<a class="rntwhite" href="https://github.com/RuiSantosdotme/ESP32-Course/raw/master/code/WiFi_Web_Server_Outputs/WiFi_Web_Server_Outputs.ino" target="_blank">View raw code</a>
+
+<h3>Setting Your Network Credentials</h3>
+You need to modify the following lines with your network credentials: SSID and password. 
+The code is well commented on where you should make the changes.
+
+<code>// Replace with your network credentials
+const char* ssid     = "REPLACE_WITH_YOUR_SSID";
+const char* password = "REPLACE_WITH_YOUR_PASSWORD";</code></pre>
+<h3>Uploading the Code</h3>
+Now, you can upload the code and and the web server will work straight away. 
+Follow the next steps to upload code to the ESP32:
+
+<strong>1)</strong> Plug your ESP32 board in your computer;
+
+<strong>2)</strong> In the Arduino IDE select your board in <strong>Tools</strong> &gt; <strong>Board</strong> (in our case we’re using the ESP32 DEVKIT DOIT board);
+
+<img class="lazy" data-src="https://i2.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/07/windows-select-board.png">
+
+3) Select the COM port in <strong>Tools</strong> &gt; <strong>Port</strong>.
+
+<img class="lazy" data-src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/07/windows-select-com-port.png">
+
+4) Press the <strong>Upload</strong> button in the Arduino IDE and wait a few seconds while the code compiles and uploads to your board.
+
+<img class="lazy" data-src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2016/12/arduino-ide-upload-button.png">
+
+5) Wait for the “<strong>Done uploading</strong>” message.
+
+<img class="lazy" data-src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2016/12/windows-arduino-ide-done-uploading.png">
+
+<h3>Finding the ESP IP Address</h3>
+After uploading the code, open the Serial Monitor at a baud rate of 115200.
+
+<img class="lazy" data-src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/05/serial-monitor.png">
+
+Press the ESP32 EN button (reset). 
+The ESP32 connects to Wi-Fi, and outputs the ESP IP address on the Serial Monitor. 
+Copy that IP address, because you need it to access the ESP32 web server.
+
+<img class="lazy" data-src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/07/ESP-IP-address-1.png">
+
+<h2>Accessing the Web Server</h2>
+To access the web server, open your browser, paste the ESP32 IP address, and you’ll see the following page. 
+In our case it is <strong>192.168.1.135</strong>.
+
+<img class="lazy" data-src="https://i2.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/07/esp32-web-server-outputs.png">
+
+If you take a look at the Serial Monitor, you can see what’s happening on the background. 
+The ESP receives an HTTP request from a new client (in this case, your browser).
+
+<img class="lazy" data-src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/07/new-client.png">
+
+You can also see other information about the HTTP request.
+
+<h2>Testing the Web Server</h2>
+Now you can test if your web server is working properly. 
+Click the buttons to control the LEDs.
+
+<img class="lazy" data-src="https://i1.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/07/esp32-web-server-control-outputs.png">
+
+At the same time, you can take a look at the Serial Monitor to see what’s going on in the background. 
+For example, when you click the button to turn <span class="rnthl rntclgreen">GPIO 26 ON, ESP32 receives a request on the <strong>/26/on</strong> URL.
+
+<img class="lazy" data-src="https://i1.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/07/serial-monitor-fpio-16-on.png">
+
+When the ESP32 receives that request, it turns the LED attached to <span class="rnthl rntclgreen">GPIO 26 ON and updates its state on the web page.
+
+<img class="lazy" data-src="https://i1.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/07/gpio-26-on-web-server.png">
+
+The button for <span class="rnthl rntclblue">GPIO 27 works in a similar way. 
+Test that it is working properly.
+
+<h2>How the Code Works</h2>
+In this section will take a closer look at the code to see how it works.
+
+The first thing you need to do is to include the WiFi library.
+
+<code>#include &lt;WiFi.h&gt;</code></pre>
+As mentioned previously, you need to insert your ssid and password in the following lines inside the double quotes.
+
+<code>const char* ssid = "";
+const char* password = "";</code></pre>
+Then, you set your web server to port 80.
+
+<code>WiFiServer server(80);</code></pre>
+The following line creates a variable to store the header of the HTTP request:
+
+<code>String header;</code></pre>
+Next, you create auxiliar variables to store the current state of your outputs. 
+If you want to add more outputs and save its state, you need to create more variables.
+
+<code>String output26State = "off";
+String output27State = "off";</code></pre>
+You also need to assign a GPIO to each of your outputs. 
+Here we are using <span class="rnthl rntclgreen">GPIO 26 and <span class="rnthl rntclblue">GPIO 27. 
+You can use any other suitable GPIOs.
+
+<code>const int output26 = 26;
+const int output27 = 27;</code></pre>
+<h3>setup()</h3>
+Now, let’s go into the <span class="rnthl rntliteral">setup(). 
+First, we start a serial communication at a baud rate of 115200 for debugging purposes.
+
+<code>Serial.begin(115200);</code></pre>
+You also define your GPIOs as OUTPUTs and set them to LOW.
+
+<code>// Initialize the output variables as outputs
+pinMode(output26, OUTPUT);
+pinMode(output27, OUTPUT);
+
+// Set outputs to LOW
+digitalWrite(output26, LOW);
+digitalWrite(output27, LOW);</code></pre>
+The following lines begin the Wi-Fi connection with <span class="rnthl rntliteral">WiFi.begin(ssid, password), wait for a successful connection and print the ESP IP address in the Serial Monitor.
+
+<code>// Connect to Wi-Fi network with SSID and password
+Serial.print("Connecting to ");
+Serial.println(ssid);
+WiFi.begin(ssid, password);
+while (WiFi.status() != WL_CONNECTED) {
+  delay(500);
+  Serial.print(".");
+}
+// Print local IP address and start web server
+Serial.println("");
+Serial.println("WiFi connected.");
+Serial.println("IP address: ");
+Serial.println(WiFi.localIP());
+server.begin();</code></pre>
+<h3>loop()</h3>
+In the <span class="rnthl rntliteral">loop() we program what happens when a new client establishes a connection with the web server.
+
+The ESP32 is always listening for incoming clients with the following line:
+
+<code>WiFiClient client = server.available(); // Listen for incoming clients</code></pre>
+When a request is received from a client, we’ll save the incoming data. 
+The while loop that follows will be running as long as the client stays connected. 
+We don’t recommend changing the following part of the code unless you know exactly what you are doing.
+
+<code>if (client) { // If a new client connects,
+  Serial.println("New Client."); // print a message out in the serial port
+  String currentLine = ""; // make a String to hold incoming data from the client
+  while (client.connected()) { // loop while the client's connected
+    if (client.available()) { // if there's bytes to read from the client,
+      char c = client.read(); // read a byte, then
+      Serial.write(c); // print it out the serial monitor
+      header += c;
+      if (c == '\n') { // if the byte is a newline character
+      // if the current line is blank, you got two newline characters in a row.
+      / that's the end of the client HTTP request, so send a response:
+        if (currentLine.length() == 0) {
+        // HTTP headers always start with a response code (e.g. 
+HTTP/1.1 200 OK)
+        // and a content-type so the client knows what's coming, then a blank line:
+          client.println("HTTP/1.1 200 OK");
+          client.println("Content-type:text/html");
+          client.println("Connection: close");
+          client.println();</code></pre>
+The next section of if and else statements checks which button was pressed in your web page, and controls the outputs accordingly. 
+As we’ve seen previously, we make a request on different URLs depending on the button pressed.
+
+<code>// turns the GPIOs on and off
+if (header.indexOf("GET /26/on") &gt;= 0) {
+  Serial.println("GPIO 26 on");
+  output26State = "on";
+  digitalWrite(output26, HIGH);
+} else if (header.indexOf("GET /26/off") &gt;= 0) {
+  Serial.println("GPIO 26 off");
+  output26State = "off";
+  digitalWrite(output26, LOW);
+} else if (header.indexOf("GET /27/on") &gt;= 0) {
+  Serial.println("GPIO 27 on");
+  output27State = "on";
+  digitalWrite(output27, HIGH);
+} else if (header.indexOf("GET /27/off") &gt;= 0) {
+  Serial.println("GPIO 27 off");
+  output27State = "off";
+  digitalWrite(output27, LOW);
+}</code></pre>
+For example, if you’ve press the GPIO 26 ON button, the ESP32 receives a request on the <strong>/26/ON URL</strong> (we can see that that information on the HTTP header on the Serial Monitor). 
+So, we can check if the header contains the expression<strong> GET /26/on</strong>. 
+If it contains, we change the <span class="rnthl rntliteral">output26state variable to ON, and the ESP32 turns the LED on.
+
+This works similarly for the other buttons. 
+So, if you want to add more outputs, you should modify this part of the code to include them.
+
+<h3>Displaying the HTML web page</h3>
+The next thing you need to do, is creating the web page. 
+The ESP32 will be sending a response to your browser with some HTML code to build the web page.
+
+The web page is sent to the client using this expressing <span class="rnthl rntliteral">client.println(). 
+You should enter what you want to send to the client as an argument.
+
+The first thing we should send is always the following line, that indicates that we are sending HTML.
+
+<code>&lt;!DOCTYPE HTML&gt;&lt;html&gt;</code></pre>
+Then, the following line makes the web page responsive in any web browser.
+
+<code>client.println("&lt;head&gt;&lt;meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"&gt;");</code></pre>
+And the following is used to prevent requests on the favicon. 
+– You don’t need to worry about this line.
+
+<code>client.println("&lt;link rel=\"icon\" href=\"data:,\"&gt;");</code></pre>
+<h3>Styling the Web Page</h3>
+Next, we have some CSS text to style the buttons and the web page appearance. 
+We choose the Helvetica font, define the content to be displayed as a block and aligned at the center.
+
+<code>client.println("&lt;style&gt;html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");</code></pre>
+We style our buttons with the #4CAF50 color, without border, text in white color, and with this padding: 16px 40px. 
+We also set the text-decoration to none, define the font size, the margin, and the cursor to a pointer.
+
+<code>client.println(".button { background-color: #4CAF50; border: none; color: white; padding: 16px 40px;");
+client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}");</code></pre>
+We also define the style for a second button, with all the properties of the button we’ve defined earlier, but with a different color. 
+This will be the style for the off button.
+
+<code>client.println(".button2 {background-color: #555555;}&lt;/style&gt;&lt;/head&gt;");</code></pre>
+<h3>Setting the Web Page First Heading</h3>
+In the next line you can set the first heading of your web page. 
+Here we have “<strong>ESP32 Web Server</strong>”, but you can change this text to whatever you like.
+
+<code>// Web Page Heading
+client.println("&lt;h1&gt;ESP32 Web Server&lt;/h1&gt;");</code></pre>
+<h3>Displaying the Buttons and Corresponding State</h3>
+Then, you write a paragraph to display the <span class="rnthl rntclgreen">GPIO 26 current state. 
+As you can see we use the <span class="rnthl rntliteral">output26State variable, so that the state updates instantly when this variable changes.
+
+<code>client.println("&lt;p&gt;GPIO 26 - State " + output26State + "&lt;/p&gt;");</code></pre>
+Then, we display the on or the off button, depending on the current state of the GPIO. 
+If the current state of the GPIO is off, we show the ON button, if not, we display the OFF button.
+
+<code>if (output26State=="off") {
+  client.println("&lt;p&gt;&lt;a href=\"/26/on\"&gt;&lt;button class=\"button\"&gt;ON&lt;/button&gt;&lt;/a&gt;&lt;/p&gt;");
+} else {
+  client.println("&lt;p&gt;&lt;a href=\"/26/off\"&gt;&lt;button class=\"button button2\"&gt;OFF&lt;/button&gt;&lt;/a&gt;&lt;/p&gt;");
+}</code></pre>
+We use the same procedure for <span class="rnthl rntclblue">GPIO 27.
+
+<h3>Closing the Connection</h3>
+Finally, when the response ends, we clear the <span class="rnthl rntliteral">header variable, and stop the connection with the client with <span class="rnthl rntliteral">client.stop().
+
+<code>// Clear the header variable
+header = "";
+// Close the connection
+client.stop();</code></pre>
+<h2>Wrapping Up</h2>
+In this tutorial we’ve shown you how to build a web server with the ESP32. 
+We’ve shown you a simple example that controls two LEDs, but the idea is to replace those LEDs with a relay, or any other output you want to control. 
+For more projects with ESP32, check the following tutorials:
+
+<a href="https://randomnerdtutorials.com/build-an-all-in-one-esp32-weather-station-shield/">Build an All-in-One ESP32 Weather Station Shield</a>
+<a href="https://randomnerdtutorials.com/esp32-servo-motor-web-server-arduino-ide/">ESP32 Servo Motor Web Server</a>
+<a href="https://randomnerdtutorials.com/esp32-bluetooth-low-energy-ble-arduino-ide/">Getting Started with ESP32 Bluetooth Low Energy (BLE)</a>
+<a href="https://randomnerdtutorials.com/category/esp32/">More ESP32 tutorials</a>
+
+<script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+});
+</script>
