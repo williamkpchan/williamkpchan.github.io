@@ -25,6 +25,12 @@ img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; bor
 <div id="toc"></div></center>
 <br><br>
 <div id="mustWatch"><center><span class="red">MustWatch</span></center><br>
+<a href="https://rvest.tidyverse.org/reference/html_element.html" class="whitebut ">Select elements from an HTML document</a>
+
+<a href="https://jtr13.github.io/cc19/web-scraping-using-rvest.html" class="whitebut ">web-scraping-using-rvest</a>
+
+<a href="https://dcl-wrangle.stanford.edu/rvest.html" class="whitebut ">data wrangle</a>
+
 <a href="R for Data Science.html" class="redbut gold whitebs">R for Data Science</a>
 <a href="https://www.youtube.com/watch?v=OCQU6M4pPiw" class="whitebut ">build R package</a>
 <a href="https://www.youtube.com/watch?v=kL6L2MNqPHg" class="whitebut ">use Git and GitHub with R</a>
@@ -4651,6 +4657,668 @@ toString(x)
 toString(x, width = 8)
 
 
+<h2>rvest: scraping the web using R</h2>
+<h3>What can you do using rvest?</h3>
+Create an html document from a url, a file on disk or a string containing html with html().
+Select parts of an html document using css selectors: html_nodes(). 
+Learn more about it using vignette(“selectorgadget”) after installing and loading rvest in R. 
+CSS selectors are used to select elements based on properties such as id, class, type, etc.
+
+<a href="http://selectorgadget.com/">Selector Gadget website</a>
+Extract components with html_tag() (the name of the tag), html_text() (all text inside the tag), html_attr() (contents of a single attribute) and html_attrs() (all attributes). 
+These are done after using html_nodes().
+
+HTML tags normally come in pairs like &lt;tagname&gt;content&lt;/tagname&gt;. 
+In the examples we go through below, the content is usually contained between the
+ 
+tags.
+You can also use rvest with XML files: parse with xml(), then extract components using xml_node(), xml_attr(), xml_attrs(), xml_text() and xml_tag().
+Parse tables into data frames with html_table().
+Extract, modify and submit forms with html_form(), set_values() and submit_form().
+Detect and repair encoding problems with guess_encoding() and repair_encoding(). 
+Then pass the correct encoding into html() as an argument.
+Navigate around a website as if you’re in a browser with html_session(), jump_to(), follow_link(), back(), forward(), submit_form() and so on. 
+(This is still a work in progress).
+The package also supports using magrittr for commands.
+
+Also have a look at the three links below for some more information:
+
+<a href="https://github.com/hadley/rvest">rvest package on Github</a>
+<a href="http://cran.r-project.org/web/packages/rvest/index.html">rvest documentation on CRAN</a>
+<a href="http://blog.rstudio.org/2014/11/24/rvest-easy-web-scraping-with-r/">rstudio blog on rvest</a>
+
+
+<h3>Starting off simple: Scraping The Lego Movie on imdb</h3>
+<code>#install.packages("rvest")
+
+library(rvest)
+
+# Store web url
+lego_movie &lt;- html("http://www.imdb.com/title/tt1490017/")
+
+#Scrape the website for the movie rating
+rating &lt;- lego_movie %&gt;% 
+  html_nodes("strong span") %&gt;%
+  html_text() %&gt;%
+  as.numeric()
+rating
+## [1] 7.8
+# Scrape the website for the cast
+cast &lt;- lego_movie %&gt;%
+  html_nodes("#titleCast .itemprop span") %&gt;%
+  html_text()
+cast
+##  [1] "Will Arnett"     "Elizabeth Banks" "Craig Berry"    
+##  [4] "Alison Brie"     "David Burrows"   "Anthony Daniels"
+##  [7] "Charlie Day"     "Amanda Farinos"  "Keith Ferguson" 
+## [10] "Will Ferrell"    "Will Forte"      "Dave Franco"    
+## [13] "Morgan Freeman"  "Todd Hansen"     "Jonah Hill"
+#Scrape the website for the url of the movie poster
+poster &lt;- lego_movie %&gt;%
+  html_nodes("#img_primary img") %&gt;%
+  html_attr("src")
+poster
+## [1] "http://ia.media-imdb.com/images/M/MV5BMTg4MDk1ODExN15BMl5BanBnXkFtZTgwNzIyNjg3MDE@._V1_SX214_AL_.jpg"
+
+# Extract the first review
+review &lt;- lego_movie %&gt;%
+  html_nodes("#titleUserReviewsTeaser p") %&gt;%
+  html_text()
+review</code>
+## [1] "The stand out feature of the Lego Movie for me would be the way the Lego Universe was created. 
+The movie paid great attention to detail making everything appear as it would made from Lego, including the water and clouds, and the surfaces people walked on all had the circles sticking upwards a Lego piece would have. 
+Combined with all the yellow faces, and Lego part during building, I was convinced action took place in the Lego Universe.A combination of adult and child friendly humour should entertain all, the movie has done well to ensure audiences of all ages are catered to. 
+The voice cast were excellent, especially Liam Neeson's split personality police officer, making the 2 personalities sound distinctive, and giving his Bad Cop the usual Liam Neeson tough guy. 
+The plot is about resisting an over-controlling ruler, highlighted by the name of the hero's \"resistance piece\". 
+It is well thought through, well written, and revealing at the right times. 
+Full of surprises, The Lego Movie won't let You see what's coming. 
+Best animated film since Wreck it Ralph! Please let there be sequels."
+
+
+<h3>Scraping indeed.com for jobs</h3>
+<code># Submit the form on indeed.com for a job description and location using html_form() and set_values()
+query = "data science"
+loc = "New York"
+session &lt;- html_session("http://www.indeed.com")
+form &lt;- html_form(session)[[1]]
+form &lt;- set_values(form, q = query, l = loc)
+
+# The rvest submit_form function is still under construction and does not work for web sites which build URLs (i.e. 
+GET requests. 
+It does seem to work for POST requests). 
+
+#url &lt;- submit_form(session, indeed)
+
+# Version 1 of our submit_form function
+submit_form2 &lt;- function(session, form){
+  library(XML)
+  url &lt;- XML::getRelativeURL(form$url, session$url)
+  url &lt;- paste(url,'?',sep='')
+  values &lt;- as.vector(rvest:::submit_request(form)$values)
+  att &lt;- names(values)
+  if (tail(att, n=1) == "NULL"){
+    values &lt;- values[1:length(values)-1]
+    att &lt;- att[1:length(att)-1]
+  }
+  q &lt;- paste(att,values,sep='=')
+  q &lt;- paste(q, collapse = '&amp;')
+  q &lt;- gsub(" ", "+", q)
+  url &lt;- paste(url, q, sep = '')
+  html_session(url)
+}
+
+# Version 2 of our submit_form function
+library(httr)
+# Appends element of a list to another without changing variable type of x
+# build_url function uses the httr package and requires a variable of the url class
+appendList &lt;- function (x, val)
+{
+  stopifnot(is.list(x), is.list(val))
+  xnames &lt;- names(x)
+  for (v in names(val)) {
+    x[[v]] &lt;- if (v %in% xnames &amp;&amp; is.list(x[[v]]) &amp;&amp; is.list(val[[v]]))
+      appendList(x[[v]], val[[v]])
+    else c(x[[v]], val[[v]])
+  }
+  x
+}
+ 
+# Simulating submit_form for GET requests
+submit_geturl &lt;- function (session, form)
+{
+  query &lt;- rvest:::submit_request(form)
+  query$method &lt;- NULL
+  query$encode &lt;- NULL
+  query$url &lt;- NULL
+  names(query) &lt;- "query"
+ 
+  relativeurl &lt;- XML::getRelativeURL(form$url, session$url)
+  basepath &lt;- parse_url(relativeurl)
+ 
+  fullpath &lt;- appendList(basepath,query)
+  fullpath &lt;- build_url(fullpath)
+  fullpath
+}
+
+# Submit form and get new url
+session1 &lt;- submit_form2(session, form)
+
+# Get reviews of last company using follow_link()
+session2 &lt;- follow_link(session1, css = "#more_9 li:nth-child(3) a")
+reviews &lt;- session2 %&gt;% html_nodes(".description") %&gt;% html_text()
+reviews
+## [1] "Custody Client Services"                                       
+## [2] "An exciting position on a trading floor"                       
+## [3] "Great work environment"                                        
+## [4] "A company that helps its employees to advance career."         
+## [5] "Decent Company to work for while you still have the job there."
+# Get average salary for each job listing based on title and location
+salary_links &lt;- html_nodes(session1, css = "#resultsCol li:nth-child(2) a") %&gt;% html_attr("href")
+salary_links &lt;- paste(session$url, salary_links, sep='')
+salaries &lt;- lapply(salary_links, . 
+%&gt;% html() %&gt;% html_nodes("#salary_display_table .salary") %&gt;% html_text())
+salary &lt;- unlist(salaries)
+
+# Store web url
+data_sci_indeed &lt;- session1
+
+# Get job titles
+job_title &lt;- data_sci_indeed %&gt;% 
+  html_nodes("[itemprop=title]") %&gt;%
+  html_text()
+
+# Get companies
+company &lt;- data_sci_indeed %&gt;%
+  html_nodes("[itemprop=hiringOrganization]") %&gt;%
+  html_text()
+
+# Get locations
+location &lt;- data_sci_indeed %&gt;%
+  html_nodes("[itemprop=addressLocality]") %&gt;%
+  html_text()
+
+# Get descriptions
+description &lt;- data_sci_indeed %&gt;%
+  html_nodes("[itemprop=description]") %&gt;%
+  html_text()
+
+# Get the links
+link &lt;- data_sci_indeed %&gt;%
+  html_nodes("[itemprop=title]") %&gt;%
+  html_attr("href")
+link &lt;- paste('[Link](https://www.indeed.com', link, sep='')
+link &lt;- paste(link, ')', sep='')
+
+indeed_jobs &lt;- data.frame(job_title,company,location,description,salary,link)
+
+library(knitr)
+kable(indeed_jobs, format = "html")</code>
+<table>
+ <thead><tr><th>job_title</th><th>company</th><th>location</th><th>description</th><th>salary</th><th>link</th></tr>
+ </thead>
+<tbody><tr><td>Data Scientist</td><td>Career Path Group</td><td>New York, NY 10018 (Clinton area)</td><td>Or higher in Computer Science or related field. 
+Design, develop, and optimize our data and analytics system….</td><td>$109,000</td><td><a href="https://www.indeed.com/rc/clk?jk=a2a76f399d9da571">Link</a></td></tr><tr><td>Data Scientist or Statistician</td><td>Humana</td><td>New York, NY</td><td>Experience with unstructured data analysis. 
+Humana is seeking an experienced statistician with demonstrated health and wellness data analysis expertise to join…</td><td>$60,000</td><td><a href="https://www.indeed.com/rc/clk?jk=25cf421c9eeba56d">Link</a></td></tr><tr><td>Analyst</td><td>1010data</td><td>New York, NY</td><td>Data providers can also use 1010data to share and monetize their data. 
+1010data is the leading provider of Big Data Discovery and data sharing solutions….</td><td>$81,000</td><td><a href="https://www.indeed.com/rc/clk?jk=2cea6a727056a108">Link</a></td></tr><tr><td>Data Scientist &amp; Visualization Engineer</td><td>Enstoa</td><td>New York, NY</td><td>2+ years professional experience analyzing complex data sets, modeling, machine learning, and/or large-scale data mining….</td><td>$210,000</td><td><a href="https://www.indeed.com/rc/clk?jk=a3f522a4a2d9c317">Link</a></td></tr><tr><td>Data Scientist - Intelligent Solutions</td><td>JPMorgan Chase</td><td>New York, NY</td><td>Experience managing and growing a data science team. 
+Data Scientist - Intelligent Solutions. 
+Analyze communications data and Utilize statistical natural…</td><td>$109,000</td><td><a href="https://www.indeed.com/rc/clk?jk=79b3ac9ca7865c94">Link</a></td></tr><tr><td>Analytics Program Lead</td><td>AIG</td><td>New York, NY</td><td>Lead the analytical team for Data Solutions. 
+Graduate degree from a renowned institution in any advanced quantitative modeling oriented discipline including but…</td><td>$126,000</td><td><a href="https://www.indeed.com/rc/clk?jk=8baf5b98905c68f6">Link</a></td></tr><tr><td>Data Engineer</td><td>Standard Analytics</td><td>New York, NY</td><td>Code experience in a production environment (familiar with data structures, parallelism, and concurrency). 
+We aim to organize the world’s scientific information…</td><td>$122,000</td><td><a href="https://www.indeed.com/rc/clk?jk=af931bd8281d19e7">Link</a></td></tr><tr><td>Summer Intern - Network Science and Big Data Analytics</td><td>IBM</td><td>Yorktown Heights, NY</td><td>The Network Science and Big Data Analytics department at the IBM T. 
+Our lab has access to large computing resources and data….</td><td>$36,000</td><td><a href="https://www.indeed.com/rc/clk?jk=d20c6a677eda7671">Link</a></td></tr><tr><td>Data Scientist</td><td>The Nielsen Company</td><td>New York, NY</td><td>As a Data Scientist in the Data Integration group, you will be involved in the process of integrating data to enable analyses of patterns and relationships…</td><td>$109,000</td><td><a href="https://www.indeed.com/rc/clk?jk=8bfb40468f28c10c">Link</a></td></tr><tr><td>Data Analyst, IM Data Science</td><td>BNY Mellon</td><td>New York, NY</td><td>The Data Analyst will support a wide variety of projects and initiatives of the Data Science Group, including the creation of back-end data management tools,…</td><td>$84,000</td><td><a href="https://www.indeed.com/rc/clk?jk=779dc28f2010c4c6">Link</a></td></tr>
+</tbody>
+</table>
+
+Some more on CSS and HTML:
+
+<a href="http://code.tutsplus.com/tutorials/the-30-css-selectors-you-must-memorize--net-16048">Useful CSS Rules</a>
+<a href="http://www.w3.org/TR/microdata/#names:-the-itemprop-attribute">HTML5 microdata itemprop property</a>
+
+
+<h3>More examples with LinkedIn</h3>
+<code># Attempt to crawl LinkedIn, requires useragent to access Linkedin Sites
+uastring &lt;- "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36"
+session &lt;- html_session("https://www.linkedin.com/job/", user_agent(uastring))
+form &lt;- html_form(session)[[1]]
+form &lt;- set_values(form, keywords = "Data Science", location="New York")
+ 
+new_url &lt;- submit_geturl(session,form)
+new_session &lt;- html_session(new_url, user_agent(uastring))
+jobtitle &lt;- new_session %&gt;% html_nodes(".job [itemprop=title]") %&gt;% html_text
+company &lt;- new_session %&gt;% html_nodes(".job [itemprop=name]") %&gt;% html_text
+location &lt;- new_session %&gt;% html_nodes(".job [itemprop=addressLocality]") %&gt;% html_text
+description &lt;- new_session %&gt;% html_nodes(".job [itemprop=description]") %&gt;% html_text
+url &lt;- new_session %&gt;% html_nodes(".job [itemprop=title]") %&gt;% html_attr("href")
+url &lt;- paste(url, ')', sep='')
+url &lt;- paste('[Link](', url, sep='')
+df &lt;- data.frame(jobtitle, company, location, url)
+
+df %&gt;% kable</code>
+<table class="table table-condensed">
+<thead>
+<tr><th>jobtitle</th><th>company</th><th>location</th><th>url</th></tr>
+</thead>
+<tbody>
+<tr><td>Data Science Lead: Metis</td><td>Kaplan</td><td>New York City, NY, US</td><td><a href="https://www.linkedin.com/jobs2/view/51429397?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Data Science Lead: Metis</td><td>Kaplan Test Prep</td><td>New York, NY</td><td><a href="https://www.linkedin.com/jobs2/view/38695388?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Think Big Senior Data Scientist</td><td>Think Big, A Teradata Company</td><td>US-NY-New York</td><td><a href="https://www.linkedin.com/jobs2/view/32056808?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Think Big Principal Data Scientist</td><td>Think Big, A Teradata Company</td><td>US-NY-New York</td><td><a href="https://www.linkedin.com/jobs2/view/32057641?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Data Scientist - Professional Services Consultant (East …</td><td>MapR Technologies</td><td>Greater New York City Area</td><td><a href="https://www.linkedin.com/jobs2/view/35995187?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Think Big Senior Data Scientist</td><td>Teradata</td><td>New York City, NY, US</td><td><a href="https://www.linkedin.com/jobs2/view/51068145?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Think Big Principal Data Scientist</td><td>Teradata</td><td>New York City, NY, US</td><td><a href="https://www.linkedin.com/jobs2/view/51068162?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Sr. Software Engineer - Data Science - HookLogic</td><td>HookLogic, Inc.</td><td>New York City, NY, US</td><td><a href="https://www.linkedin.com/jobs2/view/49975389?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Think Big Data Scientist</td><td>Think Big, A Teradata Company</td><td>US-NY-New York</td><td><a href="https://www.linkedin.com/jobs2/view/32057645?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Director of Data Science Programs</td><td>DataKind</td><td>New York City, NY, US</td><td><a href="https://www.linkedin.com/jobs2/view/35605329?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Lead Data Scientist - VP - Intelligent Solutions</td><td>JPMorgan Chase &amp; Co.</td><td>US-NY-New York</td><td><a href="https://www.linkedin.com/jobs2/view/40828814?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Senior Data Scientist for US Quantitative Fund, NYC</td><td>GQR Global Markets</td><td>Greater New York City Area</td><td><a href="https://www.linkedin.com/jobs2/view/38602287?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Google Cloud Solutions Practice, Google Data Solution …</td><td>PricewaterhouseCoopers</td><td>New York City, NY, US</td><td><a href="https://www.linkedin.com/jobs2/view/53729956?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Senior Data Scientist</td><td>Dun and Bradstreet</td><td>Short Hills, NJ, US</td><td><a href="https://www.linkedin.com/jobs2/view/53796892?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Senior data scientist</td><td>Mezzobit</td><td>New York City, NY, US</td><td><a href="https://www.linkedin.com/jobs2/view/38019145?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Think Big Data Scientist</td><td>Teradata</td><td>New York City, NY, US</td><td><a href="https://www.linkedin.com/jobs2/view/51066835?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Data Scientist - Intelligent Solutions</td><td>JPMorgan Chase &amp; Co.</td><td>US-NY-New York</td><td><a href="https://www.linkedin.com/jobs2/view/40855034?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Technical Trainer EMEA</td><td>Datameer</td><td>New York</td><td><a href="https://www.linkedin.com/jobs2/view/41600114?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Elementary School Science Teacher</td><td>Success Academy Charter Schools</td><td>Greater New York City Area</td><td><a href="https://www.linkedin.com/jobs2/view/38634099?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Middle School Science Teacher</td><td>Success Academy Charter Schools</td><td>Greater New York City Area</td><td><a href="https://www.linkedin.com/jobs2/view/38633208?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Data Scientist (various levels)</td><td>Burtch Works</td><td>Greater New York City Area</td><td><a href="https://www.linkedin.com/jobs2/view/41672840?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Sr. Data Scientist – Big Data, Online Advertising, Search</td><td>Magnetic</td><td>New York, NY</td><td><a href="https://www.linkedin.com/jobs2/view/33977941?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Sr. Big Data Engineer FlexGraph</td><td>ADP</td><td>New York, NY</td><td><a href="https://www.linkedin.com/jobs2/view/18708583?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Data Science Lead Instructor - Data Science, Teaching</td><td>CyberCoders</td><td>New York City, NY</td><td><a href="https://www.linkedin.com/jobs2/view/40896475?trk=jserp_job_details_text">Link</a></td></tr>
+<tr><td>Director, Data Consulting</td><td>Havas Media</td><td>Greater New York City Area</td><td><a href="https://www.linkedin.com/jobs2/view/41671585?trk=jserp_job_details_text">Link</a></td></tr>
+</tbody>
+</table>
+
+<h3>Attemping to scrape Columbia LionShare</h3>
+<code># Attempt to crawl Columbia Lionshare for jobs
+session &lt;- html_session("http://www.careereducation.columbia.edu/lionshare")
+form &lt;- html_form(session)[[1]]
+form &lt;- set_values(form, username = "uni")
+#Below code commented out in Markdown
+
+#pw &lt;- .rs.askForPassword("Password?")
+#form &lt;- set_values(form, password = pw)
+#rm(pw)
+#session2 &lt;- submit_form(session, form)
+#session2 &lt;- follow_link(session2, "Job")
+#form2 &lt;- html_form(session2)[[1]]
+#form2 &lt;- set_values(form2, PositionTypes = 7, Keyword = "Data")
+#session3 &lt;- submit_form(session2, form2)
+
+# Unable to scrape because the table containing the job data uses javascript and doesn't load soon enough for rvest to collect information</code>
+There isn't any equivalent to checking if the document finishes loading before scraping the data. 
+The general recommendation appears to be using something entirely different such as Selenium to scrape web data.
+
+<a href="http://www.seleniumhq.org/">Selenium, automating web browsers</a>
+
+If you are webscraping with Python chances are that you have already tried urllib, httplib, requests, etc. 
+These are excellent libraries, but some websites don’t like to be webscraped. 
+In these cases you may need to disguise your webscraping bot as a human being. 
+Selenium is just the tool for that. 
+Selenium is a webdriver: it takes control of your browser, which then does all the work. 
+Hence what the website “sees” is Chrome or Firefox or IE; it does not see Python or Selenium. 
+That makes it a lot harder for the website to tell your bot from a human being.
+
+<a href="http://thiagomarzagao.com/2013/11/12/webscraping-with-selenium-part-1/">Selenium tutorial</a>
+
+<h2>4 Types of Classification Tasks in Machine Learning</h2>
+https://machinelearningmastery.com/types-of-classification-in-machine-learning/
+<h3>Tutorial Overview</h3>
+This tutorial is divided into five parts; they are:
+
+Classification Predictive Modeling
+Binary Classification
+Multi-Class Classification
+Multi-Label Classification
+Imbalanced Classification
+
+<h3>Classification Predictive Modeling</h3>
+There are many different types of classification algorithms for modeling classification predictive modeling problems.
+
+There is no good theory on how to map algorithms onto problem types; instead, it is generally recommended that a practitioner use controlled experiments and discover which algorithm and algorithm configuration results in the best performance for a given classification task.
+
+Classification predictive modeling algorithms are evaluated based on their results. Classification accuracy is a popular metric used to evaluate the performance of a model based on the predicted class labels. <a href="https://machinelearningmastery.com/failure-of-accuracy-for-imbalanced-class-distributions/">Classification accuracy is not perfect</a> but is a good starting point for many classification tasks.
+
+Instead of class labels, some tasks may require the prediction of a <a href="https://machinelearningmastery.com/probability-metrics-for-imbalanced-classification/">probability of class membership</a> for each example. This provides additional uncertainty in the prediction that an application or user can then interpret. A popular diagnostic for evaluating predicted probabilities is the <a href="https://machinelearningmastery.com/roc-curves-and-precision-recall-curves-for-classification-in-python/">ROC Curve</a>.
+
+There are perhaps four main types of classification tasks that you may encounter; they are:
+
+Binary Classification
+Multi-Class Classification
+Multi-Label Classification
+Imbalanced Classification
+
+Let's take a closer look at each in turn.
+
+<h3>Binary Classification</h3>
+The class for the normal state is assigned the class label 0 and the class with the abnormal state is assigned the class label 1.
+
+It is common to model a binary classification task with a model that predicts a <a href="https://machinelearningmastery.com/discrete-probability-distributions-for-machine-learning/">Bernoulli probability distribution</a> for each example.
+
+The Bernoulli distribution is a discrete probability distribution that covers a case where an event will have a binary outcome as either a 0 or 1. For classification, this means that the model predicts a probability of an example belonging to class 1, or the abnormal state.
+
+Popular algorithms that can be used for binary classification include:
+
+Logistic Regression
+k-Nearest Neighbors
+Decision Trees
+Support Vector Machine
+Naive Bayes
+
+Some algorithms are specifically designed for binary classification and do not natively support more than two classes; examples include Logistic Regression and Support Vector Machines.
+
+Next, let's take a closer look at a dataset to develop an intuition for binary classification problems.
+
+We can use the <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_blobs.html">make_blobs() function</a> to generate a synthetic binary classification dataset.
+
+The example below generates a dataset with 1,000 examples that belong to one of two classes, each with two input features.
+
+# example of binary classification task
+from numpy import where
+from collections import Counter
+from sklearn.datasets import make_blobs
+from matplotlib import pyplot
+# define dataset
+X, y = make_blobs(n_samples=1000, centers=2, random_state=1)
+# summarize dataset shape
+print(X.shape, y.shape)
+# summarize observations by class label
+counter = Counter(y)
+print(counter)
+# summarize first few examples
+for i in range(10):
+	print(X[i], y[i])
+# plot the dataset and color the by class label
+for label, _ in counter.items():
+	row_ix = where(y == label)[0]
+	pyplot.scatter(X[row_ix, 0], X[row_ix, 1], label=str(label))
+pyplot.legend()
+pyplot.show()
+
+Running the example first summarizes the created dataset showing the 1,000 examples divided into input (<em>X</em>) and output (<em>y</em>) elements.
+
+The distribution of the class labels is then summarized, showing that instances belong to either class 0 or class 1 and that there are 500 examples in each class.
+
+Next, the first 10 examples in the dataset are summarized, showing the input values are numeric and the target values are integers that represent the class membership.
+
+(1000, 2) (1000,)
+
+Counter({0: 500, 1: 500})
+
+[-3.05837272  4.48825769] 0
+[-8.60973869 -3.72714879] 1
+[1.37129721 5.23107449] 0
+[-9.33917563 -2.9544469 ] 1
+[-11.57178593  -3.85275513] 1
+[-11.42257341  -4.85679127] 1
+[-10.44518578  -3.76476563] 1
+[-10.44603561  -3.26065964] 1
+[-0.61947075  3.48804983] 0
+[-10.91115591  -4.5772537 ] 1
+
+Finally, a scatter plot is created for the input variables in the dataset and the points are colored based on their class value.
+
+We can see two distinct clusters that we might expect would be easy to discriminate.
+
+<img class="lazy" data-src="https://3qeqpr26caki16dnhd19sv6by6v-wpengine.netdna-ssl.com/wp-content/uploads/2020/01/Scatter-Plot-of-Binary-Classification-Dataset.png">
+Scatter Plot of Binary Classification Dataset
+
+<h3>Multi-Class Classification</h3>
+<a href="https://en.wikipedia.org/wiki/Multiclass_classification">Multi-class classification</a> refers to those classification tasks that have more than two class labels.
+
+Examples include:
+
+Face classification.
+Plant species classification.
+Optical character recognition.
+
+Unlike binary classification, multi-class classification does not have the notion of normal and abnormal outcomes. Instead, examples are classified as belonging to one among a range of known classes.
+
+The number of class labels may be very large on some problems. For example, a model may predict a photo as belonging to one among thousands or tens of thousands of faces in a face recognition system.
+
+Problems that involve predicting a sequence of words, such as text translation models, may also be considered a special type of multi-class classification. Each word in the sequence of words to be predicted involves a multi-class classification where the size of the vocabulary defines the number of possible classes that may be predicted and could be tens or hundreds of thousands of words in size.
+
+It is common to model a multi-class classification task with a model that predicts a <a href="https://machinelearningmastery.com/discrete-probability-distributions-for-machine-learning/">Multinoulli probability distribution</a> for each example.
+
+The Multinoulli distribution is a discrete probability distribution that covers a case where an event will have a categorical outcome, e.g. <em>K</em> in {1, 2, 3, &#8230;, <em>K</em>}. For classification, this means that the model predicts the probability of an example belonging to each class label.
+
+Many algorithms used for binary classification can be used for multi-class classification.
+
+Popular algorithms that can be used for multi-class classification include:
+
+k-Nearest Neighbors.
+Decision Trees.
+Naive Bayes.
+Random Forest.
+Gradient Boosting.
+
+Algorithms that are designed for binary classification can be adapted for use for multi-class problems.
+
+This involves using a strategy of fitting multiple binary classification models for each class vs. all other classes (called one-vs-rest) or one model for each pair of classes (called one-vs-one).
+
+<strong>One-vs-Rest</strong>: Fit one binary classification model for each class vs. all other classes.
+<strong>One-vs-One</strong>: Fit one binary classification model for each pair of classes.
+
+Binary classification algorithms that can use these strategies for multi-class classification include:
+
+Logistic Regression.
+Support Vector Machine.
+
+Next, let's take a closer look at a dataset to develop an intuition for multi-class classification problems.
+
+We can use the <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_blobs.html">make_blobs() function</a> to generate a synthetic multi-class classification dataset.
+
+The example below generates a dataset with 1,000 examples that belong to one of three classes, each with two input features.
+
+# example of multi-class classification task
+from numpy import where
+from collections import Counter
+from sklearn.datasets import make_blobs
+from matplotlib import pyplot
+# define dataset
+X, y = make_blobs(n_samples=1000, centers=3, random_state=1)
+# summarize dataset shape
+print(X.shape, y.shape)
+# summarize observations by class label
+counter = Counter(y)
+print(counter)
+# summarize first few examples
+for i in range(10):
+	print(X[i], y[i])
+# plot the dataset and color the by class label
+for label, _ in counter.items():
+	row_ix = where(y == label)[0]
+	pyplot.scatter(X[row_ix, 0], X[row_ix, 1], label=str(label))
+pyplot.legend()
+pyplot.show()
+
+Running the example first summarizes the created dataset showing the 1,000 examples divided into input (<em>X</em>) and output (<em>y</em>) elements.
+
+The distribution of the class labels is then summarized, showing that instances belong to class 0, class 1, or class 2 and that there are approximately 333 examples in each class.
+
+Next, the first 10 examples in the dataset are summarized showing the input values are numeric and the target values are integers that represent the class membership.
+
+(1000, 2) (1000,)
+
+Counter({0: 334, 1: 333, 2: 333})
+
+[-3.05837272  4.48825769] 0
+[-8.60973869 -3.72714879] 1
+[1.37129721 5.23107449] 0
+[-9.33917563 -2.9544469 ] 1
+[-8.63895561 -8.05263469] 2
+[-8.48974309 -9.05667083] 2
+[-7.51235546 -7.96464519] 2
+[-7.51320529 -7.46053919] 2
+[-0.61947075  3.48804983] 0
+[-10.91115591  -4.5772537 ] 1
+
+Finally, a scatter plot is created for the input variables in the dataset and the points are colored based on their class value.
+
+We can see three distinct clusters that we might expect would be easy to discriminate.
+
+<img class="lazy" data-src="https://3qeqpr26caki16dnhd19sv6by6v-wpengine.netdna-ssl.com/wp-content/uploads/2020/01/Scatter-Plot-of-Multi-Class-Classification-Dataset.png">
+Scatter Plot of Multi-Class Classification Dataset
+
+<h3>Multi-Label Classification</h3>
+<a href="https://en.wikipedia.org/wiki/Multi-label_classification">Multi-label classification</a> refers to those classification tasks that have two or more class labels, where one or more class labels may be predicted for each example.
+
+Consider the example of <a href="https://machinelearningmastery.com/object-recognition-with-deep-learning/">photo classification</a>, where a given photo may have multiple objects in the scene and a model may predict the presence of multiple known objects in the photo, such as &#8220;<em>bicycle</em>,&#8221; &#8220;<em>apple</em>,&#8221; &#8220;<em>person</em>,&#8221; etc.
+
+This is unlike binary classification and multi-class classification, where a single class label is predicted for each example.
+
+It is common to model multi-label classification tasks with a model that predicts multiple outputs, with each output taking predicted as a Bernoulli probability distribution. This is essentially a model that makes multiple binary classification predictions for each example.
+
+Classification algorithms used for binary or multi-class classification cannot be used directly for multi-label classification. Specialized versions of standard classification algorithms can be used, so-called multi-label versions of the algorithms, including:
+
+Multi-label Decision Trees
+Multi-label Random Forests
+Multi-label Gradient Boosting
+
+Another approach is to use a separate classification algorithm to predict the labels for each class.
+
+Next, let's take a closer look at a dataset to develop an intuition for multi-label classification problems.
+
+We can use the <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_classification.html">make_multilabel_classification() function</a> to generate a synthetic multi-label classification dataset.
+
+The example below generates a dataset with 1,000 examples, each with two input features. There are three classes, each of which may take on one of two labels (0 or 1).
+
+# example of a multi-label classification task
+from sklearn.datasets import make_multilabel_classification
+# define dataset
+X, y = make_multilabel_classification(n_samples=1000, n_features=2, n_classes=3, n_labels=2, random_state=1)
+# summarize dataset shape
+print(X.shape, y.shape)
+# summarize first few examples
+for i in range(10):
+	print(X[i], y[i])
+
+Running the example first summarizes the created dataset showing the 1,000 examples divided into input (<em>X</em>) and output (<em>y</em>) elements.
+
+Next, the first 10 examples in the dataset are summarized showing the input values are numeric and the target values are integers that represent the class label membership.
+
+(1000, 2) (1000, 3)
+
+[18. 35.] [1 1 1]
+[22. 33.] [1 1 1]
+[26. 36.] [1 1 1]
+[24. 28.] [1 1 0]
+[23. 27.] [1 1 0]
+[15. 31.] [0 1 0]
+[20. 37.] [0 1 0]
+[18. 31.] [1 1 1]
+[29. 27.] [1 0 0]
+[29. 28.] [1 1 0]
+
+<h3>Imbalanced Classification</h3>
+<a href="https://machinelearningmastery.com/what-is-imbalanced-classification/">Imbalanced classification</a> refers to classification tasks where the number of examples in each class is unequally distributed.
+
+Typically, imbalanced classification tasks are binary classification tasks where the majority of examples in the training dataset belong to the normal class and a minority of examples belong to the abnormal class.
+
+Examples include:
+
+Fraud detection.
+Outlier detection.
+Medical diagnostic tests.
+
+These problems are modeled as binary classification tasks, although may require specialized techniques.
+
+Specialized techniques may be used to change the composition of samples in the training dataset by undersampling the majority class or oversampling the minority class.
+
+Examples include:
+
+<a href="https://machinelearningmastery.com/random-oversampling-and-undersampling-for-imbalanced-classification/">Random Undersampling</a>.
+<a href="https://machinelearningmastery.com/smote-oversampling-for-imbalanced-classification/">SMOTE Oversampling</a>.
+
+Specialized modeling algorithms may be used that pay more attention to the minority class when fitting the model on the training dataset, such as cost-sensitive machine learning algorithms.
+
+Examples include:
+
+<a href="https://machinelearningmastery.com/cost-sensitive-logistic-regression/">Cost-sensitive Logistic Regression</a>.
+Cost-sensitive Decision Trees.
+Cost-sensitive Support Vector Machines.
+
+Finally, alternative performance metrics may be required as reporting the classification accuracy may be misleading.
+
+Examples include:
+
+Precision.
+Recall.
+F-Measure.
+
+Next, let's take a closer look at a dataset to develop an intuition for imbalanced classification problems.
+
+We can use the <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_classification.html">make_classification() function</a> to generate a synthetic imbalanced binary classification dataset.
+
+The example below generates a dataset with 1,000 examples that belong to one of two classes, each with two input features.
+
+# example of an imbalanced binary classification task
+from numpy import where
+from collections import Counter
+from sklearn.datasets import make_classification
+from matplotlib import pyplot
+# define dataset
+X, y = make_classification(n_samples=1000, n_features=2, n_informative=2, n_redundant=0, n_classes=2, n_clusters_per_class=1, weights=[0.99,0.01], random_state=1)
+# summarize dataset shape
+print(X.shape, y.shape)
+# summarize observations by class label
+counter = Counter(y)
+print(counter)
+# summarize first few examples
+for i in range(10):
+	print(X[i], y[i])
+# plot the dataset and color the by class label
+for label, _ in counter.items():
+	row_ix = where(y == label)[0]
+	pyplot.scatter(X[row_ix, 0], X[row_ix, 1], label=str(label))
+pyplot.legend()
+pyplot.show()
+
+Running the example first summarizes the created dataset showing the 1,000 examples divided into input (<em>X</em>) and output (<em>y</em>) elements.
+
+The distribution of the class labels is then summarized, showing the severe class imbalance with about 980 examples belonging to class 0 and about 20 examples belonging to class 1.
+
+Next, the first 10 examples in the dataset are summarized showing the input values are numeric and the target values are integers that represent the class membership. In this case, we can see that most examples belong to class 0, as we expect.
+
+(1000, 2) (1000,)
+
+Counter({0: 983, 1: 17})
+
+[0.86924745 1.18613612] 0
+[1.55110839 1.81032905] 0
+[1.29361936 1.01094607] 0
+[1.11988947 1.63251786] 0
+[1.04235568 1.12152929] 0
+[1.18114858 0.92397607] 0
+[1.1365562  1.17652556] 0
+[0.46291729 0.72924998] 0
+[0.18315826 1.07141766] 0
+[0.32411648 0.53515376] 0
+
+Finally, a scatter plot is created for the input variables in the dataset and the points are colored based on their class value.
+
+We can see one main cluster for examples that belong to class 0 and a few scattered examples that belong to class 1. The intuition is that datasets with this property of imbalanced class labels are more challenging to model.
+
+<img class="lazy" data-src="https://3qeqpr26caki16dnhd19sv6by6v-wpengine.netdna-ssl.com/wp-content/uploads/2020/01/Scatter-Plot-of-Imbalanced-Binary-Classification-Dataset.png">
+Scatter Plot of Imbalanced Binary Classification Dataset
+
+<h3>Further Reading</h3>
+This section provides more resources on the topic if you are looking to go deeper.
+
+<a href="https://en.wikipedia.org/wiki/Statistical_classification">Statistical classification, Wikipedia</a>.
+<a href="https://en.wikipedia.org/wiki/Binary_classification">Binary classification, Wikipedia</a>.
+<a href="https://en.wikipedia.org/wiki/Multiclass_classification">Multiclass classification, Wikipedia</a>.
+<a href="https://en.wikipedia.org/wiki/Multi-label_classification">Multi-label classification, Wikipedia</a>.
+<a href="https://scikit-learn.org/stable/modules/multiclass.html">Multiclass and multilabel algorithms, scikit-learn API</a>.
+
+<h3>Summary</h3>
+In this tutorial, you discovered different types of classification predictive modeling in machine learning.
+
+Specifically, you learned:
+
+Classification predictive modeling involves assigning a class label to input examples.
+Binary classification refers to predicting one of two classes and multi-class classification involves predicting one of more than two classes.
+Multi-label classification involves predicting one or more classes for each example and imbalanced classification refers to classification tasks where the distribution of examples across the classes is not equal.
+
+
+
 <h2>html_node, html_nodes</h2>
 html_node retrieves the first element it encounter, 
 while html_nodes returns each matching element in the page as a list.
@@ -4678,6 +5346,68 @@ testpost &lt;- pagesource %>%
   as.character %>%
   toString
 
+<h2>view all xml_nodeset class object (output of rvest::html_nodes)</h2>
+print.AsIs(keywordList)
+
+<h2>unable to install rvest package</h2>
+Error: package or namespace load failed for ‘xml2’ in loadNamespace
+
+install.packages("tidyverse")  # might need other dependencies installed in Rstudio
+
+
+<h2>Rvest Limitations and CasperJS for R</h2>
+<a href="https://www.r-bloggers.com/2019/11/when-rvest-is-not-enough/" class="whitebut ">When rvest is not enough</a>
+
+
+<h2><span class="orange">Using rvest when login is required</span></h2>
+The overall flow is to login, go to a web page collect information, add it a dataframe and then move to the next page.
+
+library(rvest) 
+
+#Address of the login webpage
+login = "https://stackoverflow.com/users/login?ssrc=head&returnurl=http%3a%2f%2fstackoverflow.com%2f"
+
+#create a web session with the desired login address
+
+pgsession = html_session(login)
+pgform = html_form(pgsession)[[2]]  #in this case the submit is the 2nd form
+filled_form = set_values(pgform, email="*****", password="*****")
+submit_form(pgsession, filled_form)
+
+#pre allocate the final results dataframe.
+results = data.frame()  
+
+#loop through all of the pages with the desired info
+for (i in 1:5)
+{
+  #base address of the pages to extract information from
+  url = "http://stackoverflow.com/users/**********?tab=answers&sort=activity&page="
+  url = paste0(url, i)
+  page = jump_to(pgsession, url)
+
+  #collect info on the question votes and question title
+  summary = html_nodes(page, "div .answer-summary")
+  question = matrix(html_text(html_nodes(summary, "div"), trim=TRUE), ncol=2, byrow = TRUE)
+
+  #find date answered, hyperlink and whether it was accepted
+  dateans = html_node(summary, "span") %>% html_attr("title")
+  hyperlink = html_node(summary, "div a") %>% html_attr("href")
+  accepted = html_node(summary, "div") %>% html_attr("class")
+
+  #create temp results then bind to final results 
+  rtemp = cbind(question, dateans, accepted, hyperlink)
+  results = rbind(results, rtemp)
+}
+
+#Dataframe Clean-up
+names(results) = c("Votes", "Answer", "Date", "Accepted", "HyperLink")
+results$Votes = as.integer(as.character(results$Votes))
+results$Accepted = ifelse(results$Accepted=="answer-votes default", 0, 1)
+
+The loop in this case is limited to only 5 pages.
+User specific values is ******.
+
+
 <h2>xml_remove()</h2>
 By using xml_remove(), you can literally remove any nodes
 
@@ -4703,9 +5433,51 @@ xml_remove(close_nodes)
 
 html_tree %>% html_table()
 
+<h2>filter out nodes with rvest</h2>
+By using xml_remove(), you can literally remove those nodes
 
-<h2>view all xml_nodeset class object (output of rvest::html_nodes)</h2>
-print.AsIs(keywordList)
+text = '<table>
+    <tr class="alt">
+        <td>1</td>
+        <td>2</td>
+        <td class="hidden">3</td>
+   </tr>
+   <tr class="tr0 close notule">
+        <td colspan="9">4</td>
+    </tr>
+</table>'
+
+pageSource = read_html(text)
+
+#select nodes you want to remove
+hidden_nodes = pageSource %>% html_nodes(".hidden")
+close_nodes = pageSource %>% html_nodes(".tr0.close.notule")
+
+#remove those nodes
+xml_remove(hidden_nodes)
+xml_remove(close_nodes)
+
+pageSource %>% html_table()
+
+Sample:
+itemList = html_nodes(pagesource, className)
+
+syz = itemList %>% html_nodes(".syz")
+searchBox = itemList %>% html_nodes("#searchBox")
+friendlink = itemList %>% html_nodes(".friendlink")
+clear = itemList %>% html_nodes(".clear")
+footer = itemList %>% html_nodes(".footer")
+
+#remove those nodes
+xml_remove(syz)
+xml_remove(searchBox)
+xml_remove(friendlink)
+xml_remove(clear)
+xml_remove(footer)
+
+itemList = as.character(itemList)
+
+
 
 <h2>Install package loaclly</h2>
 # 安装export包
@@ -6681,11 +7453,6 @@ These compute the orthogonal projection of <code>y</code> onto the range of <cod
 <code>cbind()</code> forms matrices by binding matrices horizontally (column-wise), and <code>rbind()</code> binds matrices vertically (row-wise).
 In the assignment <code>X &lt;- cbind(arg_1, arg_2, arg_3, …)</code> the arguments to <code>cbind()</code> must be either vectors of any length, or columns with the same column size (the same number of rows).
 <code>rbind()</code> performs a corresponding operation for rows.
-
-<h2>unable to install rvest package</h2>
-Error: package or namespace load failed for ‘xml2’ in loadNamespace
-
-install.packages("tidyverse")  # might need other dependencies installed in Rstudio
 
 <h2>tcl/tk package to create messageBox</h2>
 library(tcltk)
@@ -17684,54 +18451,6 @@ Commenting the following lines in "RStudio\R\Tools.R"
 <h2>Prototype PVC Instrument - HitPipes(tm)</h2><a href="https://www.youtube.com/watch?v=LdrNOB1dA28">
 <img class="lazy" data-src="https://i.ytimg.com/vi/LdrNOB1dA28/hqdefault.jpg"></a>
 
-<h2><span class="orange">Using rvest when login is required</span></h2>
-The overall flow is to login, go to a web page collect information, add it a dataframe and then move to the next page.
-
-library(rvest) 
-
-#Address of the login webpage
-login = "https://stackoverflow.com/users/login?ssrc=head&returnurl=http%3a%2f%2fstackoverflow.com%2f"
-
-#create a web session with the desired login address
-
-pgsession = html_session(login)
-pgform = html_form(pgsession)[[2]]  #in this case the submit is the 2nd form
-filled_form = set_values(pgform, email="*****", password="*****")
-submit_form(pgsession, filled_form)
-
-#pre allocate the final results dataframe.
-results = data.frame()  
-
-#loop through all of the pages with the desired info
-for (i in 1:5)
-{
-  #base address of the pages to extract information from
-  url = "http://stackoverflow.com/users/**********?tab=answers&sort=activity&page="
-  url = paste0(url, i)
-  page = jump_to(pgsession, url)
-
-  #collect info on the question votes and question title
-  summary = html_nodes(page, "div .answer-summary")
-  question = matrix(html_text(html_nodes(summary, "div"), trim=TRUE), ncol=2, byrow = TRUE)
-
-  #find date answered, hyperlink and whether it was accepted
-  dateans = html_node(summary, "span") %>% html_attr("title")
-  hyperlink = html_node(summary, "div a") %>% html_attr("href")
-  accepted = html_node(summary, "div") %>% html_attr("class")
-
-  #create temp results then bind to final results 
-  rtemp = cbind(question, dateans, accepted, hyperlink)
-  results = rbind(results, rtemp)
-}
-
-#Dataframe Clean-up
-names(results) = c("Votes", "Answer", "Date", "Accepted", "HyperLink")
-results$Votes = as.integer(as.character(results$Votes))
-results$Accepted = ifelse(results$Accepted=="answer-votes default", 0, 1)
-
-The loop in this case is limited to only 5 pages.
-User specific values is ******.
-
 <h2>unname</h2>
 Remove the names or dimnames attribute of an R object.
 unname(obj, force = FALSE)
@@ -17758,54 +18477,6 @@ for(i in 0:7){
   cat("\n")
 }
 sink()
-
-<h2>filter out nodes with rvest</h2>
-By using xml_remove(), you can literally remove those nodes
-
-text = '<table>
-    <tr class="alt">
-        <td>1</td>
-        <td>2</td>
-        <td class="hidden">3</td>
-   </tr>
-   <tr class="tr0 close notule">
-        <td colspan="9">4</td>
-    </tr>
-</table>'
-
-pageSource = read_html(text)
-
-#select nodes you want to remove
-hidden_nodes = pageSource %>% html_nodes(".hidden")
-close_nodes = pageSource %>% html_nodes(".tr0.close.notule")
-
-#remove those nodes
-xml_remove(hidden_nodes)
-xml_remove(close_nodes)
-
-pageSource %>% html_table()
-
-Sample:
-itemList = html_nodes(pagesource, className)
-
-syz = itemList %>% html_nodes(".syz")
-searchBox = itemList %>% html_nodes("#searchBox")
-friendlink = itemList %>% html_nodes(".friendlink")
-clear = itemList %>% html_nodes(".clear")
-footer = itemList %>% html_nodes(".footer")
-
-#remove those nodes
-xml_remove(syz)
-xml_remove(searchBox)
-xml_remove(friendlink)
-xml_remove(clear)
-xml_remove(footer)
-
-itemList = as.character(itemList)
-
-<h2>Rvest Limitations and CasperJS for R</h2>
-<a href="https://www.r-bloggers.com/2019/11/when-rvest-is-not-enough/" class="whitebut ">When rvest is not enough</a>
-
 <h2>find repeated characters on same line</h2>
     for(i in 1:length(jsPrep)){
       MultiBracket = length(unlist(gregexpr("\\(", jsPrep[i])))
@@ -18796,995 +19467,6 @@ https://stackoverflow.com/questions/41638558/how-to-call-python-script-from-r-wi
 x = rnorm(1000)
 hx = hist(x, breaks=10, plot=FALSE)
 plot(hx, col=ifelse(abs(hx$breaks) < 1.669, 4, 2))
-
-<h2>rvest: scraping the web using R</h2>
-<h3>What can you do using rvest?</h3>
-<li>Create an html document from a url, a file on disk or a string containing html with html().</li>
-<li>Select parts of an html document using css selectors: html_nodes(). 
-Learn more about it using vignette(“selectorgadget”) after installing and loading rvest in R. 
-CSS selectors are used to select elements based on properties such as id, class, type, etc.
-
-<li><a href="http://selectorgadget.com/">Selector Gadget website</a></li></li>
-<li>Extract components with html_tag() (the name of the tag), html_text() (all text inside the tag), html_attr() (contents of a single attribute) and html_attrs() (all attributes). 
-These are done after using html_nodes().
-
-<li>HTML tags normally come in pairs like &lt;tagname&gt;content&lt;/tagname&gt;. 
-In the examples we go through below, the content is usually contained between the
- 
-tags.</li></li>
-<li>You can also use rvest with XML files: parse with xml(), then extract components using xml_node(), xml_attr(), xml_attrs(), xml_text() and xml_tag().</li>
-<li>Parse tables into data frames with html_table().</li>
-<li>Extract, modify and submit forms with html_form(), set_values() and submit_form().</li>
-<li>Detect and repair encoding problems with guess_encoding() and repair_encoding(). 
-Then pass the correct encoding into html() as an argument.</li>
-<li>Navigate around a website as if you’re in a browser with html_session(), jump_to(), follow_link(), back(), forward(), submit_form() and so on. 
-(This is still a work in progress).</li>
-<li>The package also supports using magrittr for commands.</li>
-
-Also have a look at the three links below for some more information:
-
-<li><a href="https://github.com/hadley/rvest">rvest package on Github</a></li>
-<li><a href="http://cran.r-project.org/web/packages/rvest/index.html">rvest documentation on CRAN</a></li>
-<li><a href="http://blog.rstudio.org/2014/11/24/rvest-easy-web-scraping-with-r/">rstudio blog on rvest</a></li>
-
-</div>
-<div id="starting-off-simple-scraping-the-lego-movie-on-imdb" class="section level2">
-<h3>Starting off simple: Scraping The Lego Movie on imdb</h3>
-<code class="r"><span class="pink">#install.packages("rvest")</span>
-
-<span class="orange">library</span><span class="blue">(</span><span class="pink">rvest</span><span class="blue">)</span>
-
-<span class="pink"># Store web url</span>
-<span class="pink">lego_movie</span> <span class="operator">&lt;-</span> <span class="pink">html</span><span class="blue">(</span><span class="string">"http://www.imdb.com/title/tt1490017/"</span><span class="blue">)</span>
-
-<span class="pink">#Scrape the website for the movie rating</span>
-<span class="pink">rating</span> <span class="operator">&lt;-</span> <span class="pink">lego_movie</span> <span class="operator">%&gt;%</span> 
-  <span class="pink">html_nodes</span><span class="blue">(</span><span class="string">"strong span"</span><span class="blue">)</span> <span class="operator">%&gt;%</span>
-  <span class="pink">html_text</span><span class="blue">(</span><span class="blue">)</span> <span class="operator">%&gt;%</span>
-  <span class="pink">as.numeric</span><span class="blue">(</span><span class="blue">)</span>
-<span class="pink">rating</span></code>
-<code>## [1] 7.8</code>
-<code class="r"><span class="pink"># Scrape the website for the cast</span>
-<span class="pink">cast</span> <span class="operator">&lt;-</span> <span class="pink">lego_movie</span> <span class="operator">%&gt;%</span>
-  <span class="pink">html_nodes</span><span class="blue">(</span><span class="string">"#titleCast .itemprop span"</span><span class="blue">)</span> <span class="operator">%&gt;%</span>
-  <span class="pink">html_text</span><span class="blue">(</span><span class="blue">)</span>
-<span class="pink">cast</span></code>
-<code>##  [1] "Will Arnett"     "Elizabeth Banks" "Craig Berry"    
-##  [4] "Alison Brie"     "David Burrows"   "Anthony Daniels"
-##  [7] "Charlie Day"     "Amanda Farinos"  "Keith Ferguson" 
-## [10] "Will Ferrell"    "Will Forte"      "Dave Franco"    
-## [13] "Morgan Freeman"  "Todd Hansen"     "Jonah Hill"</code>
-<code class="r"><span class="pink">#Scrape the website for the url of the movie poster</span>
-<span class="pink">poster</span> <span class="operator">&lt;-</span> <span class="pink">lego_movie</span> <span class="operator">%&gt;%</span>
-  <span class="pink">html_nodes</span><span class="blue">(</span><span class="string">"#img_primary img"</span><span class="blue">)</span> <span class="operator">%&gt;%</span>
-  <span class="pink">html_attr</span><span class="blue">(</span><span class="string">"src"</span><span class="blue">)</span>
-<span class="pink">poster</span></code>
-<code>## [1] "http://ia.media-imdb.com/images/M/MV5BMTg4MDk1ODExN15BMl5BanBnXkFtZTgwNzIyNjg3MDE@._V1_SX214_AL_.jpg"</code>
-
-<code class="r"><span class="pink"># Extract the first review</span>
-<span class="pink">review</span> <span class="operator">&lt;-</span> <span class="pink">lego_movie</span> <span class="operator">%&gt;%</span>
-  <span class="pink">html_nodes</span><span class="blue">(</span><span class="string">"#titleUserReviewsTeaser p"</span><span class="blue">)</span> <span class="operator">%&gt;%</span>
-  <span class="pink">html_text</span><span class="blue">(</span><span class="blue">)</span>
-<span class="pink">review</span></code>
-## [1] "The stand out feature of the Lego Movie for me would be the way the Lego Universe was created. 
-The movie paid great attention to detail making everything appear as it would made from Lego, including the water and clouds, and the surfaces people walked on all had the circles sticking upwards a Lego piece would have. 
-Combined with all the yellow faces, and Lego part during building, I was convinced action took place in the Lego Universe.A combination of adult and child friendly humour should entertain all, the movie has done well to ensure audiences of all ages are catered to. 
-The voice cast were excellent, especially Liam Neeson's split personality police officer, making the 2 personalities sound distinctive, and giving his Bad Cop the usual Liam Neeson tough guy. 
-The plot is about resisting an over-controlling ruler, highlighted by the name of the hero's \"resistance piece\". 
-It is well thought through, well written, and revealing at the right times. 
-Full of surprises, The Lego Movie won't let You see what's coming. 
-Best animated film since Wreck it Ralph! Please let there be sequels."
-
-</div>
-<div id="scraping-indeed.com-for-jobs" class="section level2">
-<h3>Scraping indeed.com for jobs</h3>
-<code class="r"><span class="pink"># Submit the form on indeed.com for a job description and location using html_form() and set_values()</span>
-<span class="pink">query</span> <span class="operator">=</span> <span class="string">"data science"</span>
-<span class="pink">loc</span> <span class="operator">=</span> <span class="string">"New York"</span>
-<span class="pink">session</span> <span class="operator">&lt;-</span> <span class="pink">html_session</span><span class="blue">(</span><span class="string">"http://www.indeed.com"</span><span class="blue">)</span>
-<span class="pink">form</span> <span class="operator">&lt;-</span> <span class="pink">html_form</span><span class="blue">(</span><span class="pink">session</span><span class="blue">)</span><span class="blue">[</span><span class="blue">[</span><span class="number">1</span><span class="blue">]</span><span class="blue">]</span>
-<span class="pink">form</span> <span class="operator">&lt;-</span> <span class="pink">set_values</span><span class="blue">(</span><span class="pink">form</span>, <span class="pink">q</span> <span class="operator">=</span> <span class="pink">query</span>, <span class="pink">l</span> <span class="operator">=</span> <span class="pink">loc</span><span class="blue">)</span>
-
-<span class="pink"># The rvest submit_form function is still under construction and does not work for web sites which build URLs (i.e. 
-GET requests. 
-It does seem to work for POST requests). 
-</span>
-<span class="pink">#url &lt;- submit_form(session, indeed)</span>
-
-<span class="pink"># Version 1 of our submit_form function</span>
-<span class="pink">submit_form2</span> <span class="operator">&lt;-</span> <span class="orange">function</span><span class="blue">(</span><span class="pink">session</span>, <span class="pink">form</span><span class="blue">)</span><span class="blue">{</span>
-  <span class="orange">library</span><span class="blue">(</span><span class="pink">XML</span><span class="blue">)</span>
-  <span class="pink">url</span> <span class="operator">&lt;-</span> <span class="pink">XML</span><span class="operator">:</span><span class="operator">:</span><span class="pink">getRelativeURL</span><span class="blue">(</span><span class="pink">form</span><span class="operator">$</span><span class="pink">url</span>, <span class="pink">session</span><span class="operator">$</span><span class="pink">url</span><span class="blue">)</span>
-  <span class="pink">url</span> <span class="operator">&lt;-</span> <span class="pink">paste</span><span class="blue">(</span><span class="pink">url</span>,<span class="string">'?'</span>,<span class="pink">sep</span><span class="operator">=</span><span class="string">''</span><span class="blue">)</span>
-  <span class="pink">values</span> <span class="operator">&lt;-</span> <span class="pink">as.vector</span><span class="blue">(</span><span class="pink">rvest</span><span class="operator">:</span><span class="operator">:</span><span class="operator">:</span><span class="pink">submit_request</span><span class="blue">(</span><span class="pink">form</span><span class="blue">)</span><span class="operator">$</span><span class="pink">values</span><span class="blue">)</span>
-  <span class="pink">att</span> <span class="operator">&lt;-</span> <span class="pink">names</span><span class="blue">(</span><span class="pink">values</span><span class="blue">)</span>
-  <span class="orange">if</span> <span class="blue">(</span><span class="pink">tail</span><span class="blue">(</span><span class="pink">att</span>, <span class="pink">n</span><span class="operator">=</span><span class="number">1</span><span class="blue">)</span> <span class="operator">==</span> <span class="string">"NULL"</span><span class="blue">)</span><span class="blue">{</span>
-    <span class="pink">values</span> <span class="operator">&lt;-</span> <span class="pink">values</span><span class="blue">[</span><span class="number">1</span><span class="operator">:</span><span class="pink">length</span><span class="blue">(</span><span class="pink">values</span><span class="blue">)</span><span class="operator">-</span><span class="number">1</span><span class="blue">]</span>
-    <span class="pink">att</span> <span class="operator">&lt;-</span> <span class="pink">att</span><span class="blue">[</span><span class="number">1</span><span class="operator">:</span><span class="pink">length</span><span class="blue">(</span><span class="pink">att</span><span class="blue">)</span><span class="operator">-</span><span class="number">1</span><span class="blue">]</span>
-  <span class="blue">}</span>
-  <span class="pink">q</span> <span class="operator">&lt;-</span> <span class="pink">paste</span><span class="blue">(</span><span class="pink">att</span>,<span class="pink">values</span>,<span class="pink">sep</span><span class="operator">=</span><span class="string">'='</span><span class="blue">)</span>
-  <span class="pink">q</span> <span class="operator">&lt;-</span> <span class="pink">paste</span><span class="blue">(</span><span class="pink">q</span>, <span class="pink">collapse</span> <span class="operator">=</span> <span class="string">'&amp;'</span><span class="blue">)</span>
-  <span class="pink">q</span> <span class="operator">&lt;-</span> <span class="pink">gsub</span><span class="blue">(</span><span class="string">" "</span>, <span class="string">"+"</span>, <span class="pink">q</span><span class="blue">)</span>
-  <span class="pink">url</span> <span class="operator">&lt;-</span> <span class="pink">paste</span><span class="blue">(</span><span class="pink">url</span>, <span class="pink">q</span>, <span class="pink">sep</span> <span class="operator">=</span> <span class="string">''</span><span class="blue">)</span>
-  <span class="pink">html_session</span><span class="blue">(</span><span class="pink">url</span><span class="blue">)</span>
-<span class="blue">}</span>
-
-<span class="pink"># Version 2 of our submit_form function</span>
-<span class="orange">library</span><span class="blue">(</span><span class="pink">httr</span><span class="blue">)</span>
-<span class="pink"># Appends element of a list to another without changing variable type of x</span>
-<span class="pink"># build_url function uses the httr package and requires a variable of the url class</span>
-<span class="pink">appendList</span> <span class="operator">&lt;-</span> <span class="orange">function</span> <span class="blue">(</span><span class="pink">x</span>, <span class="pink">val</span><span class="blue">)</span>
-<span class="blue">{</span>
-  <span class="pink">stopifnot</span><span class="blue">(</span><span class="pink">is.list</span><span class="blue">(</span><span class="pink">x</span><span class="blue">)</span>, <span class="pink">is.list</span><span class="blue">(</span><span class="pink">val</span><span class="blue">)</span><span class="blue">)</span>
-  <span class="pink">xnames</span> <span class="operator">&lt;-</span> <span class="pink">names</span><span class="blue">(</span><span class="pink">x</span><span class="blue">)</span>
-  <span class="orange">for</span> <span class="blue">(</span><span class="pink">v</span> <span class="orange">in</span> <span class="pink">names</span><span class="blue">(</span><span class="pink">val</span><span class="blue">)</span><span class="blue">)</span> <span class="blue">{</span>
-    <span class="pink">x</span><span class="blue">[</span><span class="blue">[</span><span class="pink">v</span><span class="blue">]</span><span class="blue">]</span> <span class="operator">&lt;-</span> <span class="orange">if</span> <span class="blue">(</span><span class="pink">v</span> <span class="operator">%in%</span> <span class="pink">xnames</span> <span class="operator">&amp;&amp;</span> <span class="pink">is.list</span><span class="blue">(</span><span class="pink">x</span><span class="blue">[</span><span class="blue">[</span><span class="pink">v</span><span class="blue">]</span><span class="blue">]</span><span class="blue">)</span> <span class="operator">&amp;&amp;</span> <span class="pink">is.list</span><span class="blue">(</span><span class="pink">val</span><span class="blue">[</span><span class="blue">[</span><span class="pink">v</span><span class="blue">]</span><span class="blue">]</span><span class="blue">)</span><span class="blue">)</span>
-      <span class="pink">appendList</span><span class="blue">(</span><span class="pink">x</span><span class="blue">[</span><span class="blue">[</span><span class="pink">v</span><span class="blue">]</span><span class="blue">]</span>, <span class="pink">val</span><span class="blue">[</span><span class="blue">[</span><span class="pink">v</span><span class="blue">]</span><span class="blue">]</span><span class="blue">)</span>
-    <span class="orange">else</span> <span class="pink">c</span><span class="blue">(</span><span class="pink">x</span><span class="blue">[</span><span class="blue">[</span><span class="pink">v</span><span class="blue">]</span><span class="blue">]</span>, <span class="pink">val</span><span class="blue">[</span><span class="blue">[</span><span class="pink">v</span><span class="blue">]</span><span class="blue">]</span><span class="blue">)</span>
-  <span class="blue">}</span>
-  <span class="pink">x</span>
-<span class="blue">}</span>
- 
-<span class="pink"># Simulating submit_form for GET requests</span>
-<span class="pink">submit_geturl</span> <span class="operator">&lt;-</span> <span class="orange">function</span> <span class="blue">(</span><span class="pink">session</span>, <span class="pink">form</span><span class="blue">)</span>
-<span class="blue">{</span>
-  <span class="pink">query</span> <span class="operator">&lt;-</span> <span class="pink">rvest</span><span class="operator">:</span><span class="operator">:</span><span class="operator">:</span><span class="pink">submit_request</span><span class="blue">(</span><span class="pink">form</span><span class="blue">)</span>
-  <span class="pink">query</span><span class="operator">$</span><span class="pink">method</span> <span class="operator">&lt;-</span> <span class="literal">NULL</span>
-  <span class="pink">query</span><span class="operator">$</span><span class="pink">encode</span> <span class="operator">&lt;-</span> <span class="literal">NULL</span>
-  <span class="pink">query</span><span class="operator">$</span><span class="pink">url</span> <span class="operator">&lt;-</span> <span class="literal">NULL</span>
-  <span class="pink">names</span><span class="blue">(</span><span class="pink">query</span><span class="blue">)</span> <span class="operator">&lt;-</span> <span class="string">"query"</span>
- 
-  <span class="pink">relativeurl</span> <span class="operator">&lt;-</span> <span class="pink">XML</span><span class="operator">:</span><span class="operator">:</span><span class="pink">getRelativeURL</span><span class="blue">(</span><span class="pink">form</span><span class="operator">$</span><span class="pink">url</span>, <span class="pink">session</span><span class="operator">$</span><span class="pink">url</span><span class="blue">)</span>
-  <span class="pink">basepath</span> <span class="operator">&lt;-</span> <span class="pink">parse_url</span><span class="blue">(</span><span class="pink">relativeurl</span><span class="blue">)</span>
- 
-  <span class="pink">fullpath</span> <span class="operator">&lt;-</span> <span class="pink">appendList</span><span class="blue">(</span><span class="pink">basepath</span>,<span class="pink">query</span><span class="blue">)</span>
-  <span class="pink">fullpath</span> <span class="operator">&lt;-</span> <span class="pink">build_url</span><span class="blue">(</span><span class="pink">fullpath</span><span class="blue">)</span>
-  <span class="pink">fullpath</span>
-<span class="blue">}</span>
-
-<span class="pink"># Submit form and get new url</span>
-<span class="pink">session1</span> <span class="operator">&lt;-</span> <span class="pink">submit_form2</span><span class="blue">(</span><span class="pink">session</span>, <span class="pink">form</span><span class="blue">)</span>
-
-<span class="pink"># Get reviews of last company using follow_link()</span>
-<span class="pink">session2</span> <span class="operator">&lt;-</span> <span class="pink">follow_link</span><span class="blue">(</span><span class="pink">session1</span>, <span class="pink">css</span> <span class="operator">=</span> <span class="string">"#more_9 li:nth-child(3) a"</span><span class="blue">)</span>
-<span class="pink">reviews</span> <span class="operator">&lt;-</span> <span class="pink">session2</span> <span class="operator">%&gt;%</span> <span class="pink">html_nodes</span><span class="blue">(</span><span class="string">".description"</span><span class="blue">)</span> <span class="operator">%&gt;%</span> <span class="pink">html_text</span><span class="blue">(</span><span class="blue">)</span>
-<span class="pink">reviews</span></code>
-<code>## [1] "Custody Client Services"                                       
-## [2] "An exciting position on a trading floor"                       
-## [3] "Great work environment"                                        
-## [4] "A company that helps its employees to advance career."         
-## [5] "Decent Company to work for while you still have the job there."</code>
-<code class="r"><span class="pink"># Get average salary for each job listing based on title and location</span>
-<span class="pink">salary_links</span> <span class="operator">&lt;-</span> <span class="pink">html_nodes</span><span class="blue">(</span><span class="pink">session1</span>, <span class="pink">css</span> <span class="operator">=</span> <span class="string">"#resultsCol li:nth-child(2) a"</span><span class="blue">)</span> <span class="operator">%&gt;%</span> <span class="pink">html_attr</span><span class="blue">(</span><span class="string">"href"</span><span class="blue">)</span>
-<span class="pink">salary_links</span> <span class="operator">&lt;-</span> <span class="pink">paste</span><span class="blue">(</span><span class="pink">session</span><span class="operator">$</span><span class="pink">url</span>, <span class="pink">salary_links</span>, <span class="pink">sep</span><span class="operator">=</span><span class="string">''</span><span class="blue">)</span>
-<span class="pink">salaries</span> <span class="operator">&lt;-</span> <span class="pink">lapply</span><span class="blue">(</span><span class="pink">salary_links</span>, . 
-<span class="operator">%&gt;%</span> <span class="pink">html</span><span class="blue">(</span><span class="blue">)</span> <span class="operator">%&gt;%</span> <span class="pink">html_nodes</span><span class="blue">(</span><span class="string">"#salary_display_table .salary"</span><span class="blue">)</span> <span class="operator">%&gt;%</span> <span class="pink">html_text</span><span class="blue">(</span><span class="blue">)</span><span class="blue">)</span>
-<span class="pink">salary</span> <span class="operator">&lt;-</span> <span class="pink">unlist</span><span class="blue">(</span><span class="pink">salaries</span><span class="blue">)</span>
-
-<span class="pink"># Store web url</span>
-<span class="pink">data_sci_indeed</span> <span class="operator">&lt;-</span> <span class="pink">session1</span>
-
-<span class="pink"># Get job titles</span>
-<span class="pink">job_title</span> <span class="operator">&lt;-</span> <span class="pink">data_sci_indeed</span> <span class="operator">%&gt;%</span> 
-  <span class="pink">html_nodes</span><span class="blue">(</span><span class="string">"[itemprop=title]"</span><span class="blue">)</span> <span class="operator">%&gt;%</span>
-  <span class="pink">html_text</span><span class="blue">(</span><span class="blue">)</span>
-
-<span class="pink"># Get companies</span>
-<span class="pink">company</span> <span class="operator">&lt;-</span> <span class="pink">data_sci_indeed</span> <span class="operator">%&gt;%</span>
-  <span class="pink">html_nodes</span><span class="blue">(</span><span class="string">"[itemprop=hiringOrganization]"</span><span class="blue">)</span> <span class="operator">%&gt;%</span>
-  <span class="pink">html_text</span><span class="blue">(</span><span class="blue">)</span>
-
-<span class="pink"># Get locations</span>
-<span class="pink">location</span> <span class="operator">&lt;-</span> <span class="pink">data_sci_indeed</span> <span class="operator">%&gt;%</span>
-  <span class="pink">html_nodes</span><span class="blue">(</span><span class="string">"[itemprop=addressLocality]"</span><span class="blue">)</span> <span class="operator">%&gt;%</span>
-  <span class="pink">html_text</span><span class="blue">(</span><span class="blue">)</span>
-
-<span class="pink"># Get descriptions</span>
-<span class="pink">description</span> <span class="operator">&lt;-</span> <span class="pink">data_sci_indeed</span> <span class="operator">%&gt;%</span>
-  <span class="pink">html_nodes</span><span class="blue">(</span><span class="string">"[itemprop=description]"</span><span class="blue">)</span> <span class="operator">%&gt;%</span>
-  <span class="pink">html_text</span><span class="blue">(</span><span class="blue">)</span>
-
-<span class="pink"># Get the links</span>
-<span class="pink">link</span> <span class="operator">&lt;-</span> <span class="pink">data_sci_indeed</span> <span class="operator">%&gt;%</span>
-  <span class="pink">html_nodes</span><span class="blue">(</span><span class="string">"[itemprop=title]"</span><span class="blue">)</span> <span class="operator">%&gt;%</span>
-  <span class="pink">html_attr</span><span class="blue">(</span><span class="string">"href"</span><span class="blue">)</span>
-<span class="pink">link</span> <span class="operator">&lt;-</span> <span class="pink">paste</span><span class="blue">(</span><span class="string">'[Link](https://www.indeed.com'</span>, <span class="pink">link</span>, <span class="pink">sep</span><span class="operator">=</span><span class="string">''</span><span class="blue">)</span>
-<span class="pink">link</span> <span class="operator">&lt;-</span> <span class="pink">paste</span><span class="blue">(</span><span class="pink">link</span>, <span class="string">')'</span>, <span class="pink">sep</span><span class="operator">=</span><span class="string">''</span><span class="blue">)</span>
-
-<span class="pink">indeed_jobs</span> <span class="operator">&lt;-</span> <span class="pink">data.frame</span><span class="blue">(</span><span class="pink">job_title</span>,<span class="pink">company</span>,<span class="pink">location</span>,<span class="pink">description</span>,<span class="pink">salary</span>,<span class="pink">link</span><span class="blue">)</span>
-
-<span class="orange">library</span><span class="blue">(</span><span class="pink">knitr</span><span class="blue">)</span>
-<span class="pink">kable</span><span class="blue">(</span><span class="pink">indeed_jobs</span>, <span class="pink">format</span> <span class="operator">=</span> <span class="string">"html"</span><span class="blue">)</span></code>
-<table>
- <thead>
-  <tr>
-   <th style="text-align:left;"> 
-job_title
-</th>
-   <th style="text-align:left;"> 
-company
-</th>
-   <th style="text-align:left;"> 
-location
-</th>
-   <th style="text-align:left;"> 
-description
-</th>
-   <th style="text-align:left;"> 
-salary
-</th>
-   <th style="text-align:left;"> 
-link
-</th>
-  </tr>
- </thead>
-<tbody>
-  <tr>
-   <td style="text-align:left;"> 
-Data Scientist
-</td>
-   <td style="text-align:left;"> 
-Career Path Group
-</td>
-   <td style="text-align:left;"> 
-New York, NY 10018 (Clinton area)
-</td>
-   <td style="text-align:left;"> 
-Or higher in Computer Science or related field. 
-Design, develop, and optimize our data and analytics system….
-</td>
-   <td style="text-align:left;"> 
-$109,000
-</td>
-   <td style="text-align:left;"> 
-<a href="https://www.indeed.com/rc/clk?jk=a2a76f399d9da571">Link</a>
-</td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> 
-Data Scientist or Statistician
-</td>
-   <td style="text-align:left;"> 
-Humana
-</td>
-   <td style="text-align:left;"> 
-New York, NY
-</td>
-   <td style="text-align:left;"> 
-Experience with unstructured data analysis. 
-Humana is seeking an experienced statistician with demonstrated health and wellness data analysis expertise to join…
-</td>
-   <td style="text-align:left;"> 
-$60,000
-</td>
-   <td style="text-align:left;"> 
-<a href="https://www.indeed.com/rc/clk?jk=25cf421c9eeba56d">Link</a>
-</td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> 
-Analyst
-</td>
-   <td style="text-align:left;"> 
-1010data
-</td>
-   <td style="text-align:left;"> 
-New York, NY
-</td>
-   <td style="text-align:left;"> 
-Data providers can also use 1010data to share and monetize their data. 
-1010data is the leading provider of Big Data Discovery and data sharing solutions….
-</td>
-   <td style="text-align:left;"> 
-$81,000
-</td>
-   <td style="text-align:left;"> 
-<a href="https://www.indeed.com/rc/clk?jk=2cea6a727056a108">Link</a>
-</td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> 
-Data Scientist &amp; Visualization Engineer
-</td>
-   <td style="text-align:left;"> 
-Enstoa
-</td>
-   <td style="text-align:left;"> 
-New York, NY
-</td>
-   <td style="text-align:left;"> 
-2+ years professional experience analyzing complex data sets, modeling, machine learning, and/or large-scale data mining….
-</td>
-   <td style="text-align:left;"> 
-$210,000
-</td>
-   <td style="text-align:left;"> 
-<a href="https://www.indeed.com/rc/clk?jk=a3f522a4a2d9c317">Link</a>
-</td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> 
-Data Scientist - Intelligent Solutions
-</td>
-   <td style="text-align:left;"> 
-JPMorgan Chase
-</td>
-   <td style="text-align:left;"> 
-New York, NY
-</td>
-   <td style="text-align:left;"> 
-Experience managing and growing a data science team. 
-Data Scientist - Intelligent Solutions. 
-Analyze communications data and Utilize statistical natural…
-</td>
-   <td style="text-align:left;"> 
-$109,000
-</td>
-   <td style="text-align:left;"> 
-<a href="https://www.indeed.com/rc/clk?jk=79b3ac9ca7865c94">Link</a>
-</td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> 
-Analytics Program Lead
-</td>
-   <td style="text-align:left;"> 
-AIG
-</td>
-   <td style="text-align:left;"> 
-New York, NY
-</td>
-   <td style="text-align:left;"> 
-Lead the analytical team for Data Solutions. 
-Graduate degree from a renowned institution in any advanced quantitative modeling oriented discipline including but…
-</td>
-   <td style="text-align:left;"> 
-$126,000
-</td>
-   <td style="text-align:left;"> 
-<a href="https://www.indeed.com/rc/clk?jk=8baf5b98905c68f6">Link</a>
-</td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> 
-Data Engineer
-</td>
-   <td style="text-align:left;"> 
-Standard Analytics
-</td>
-   <td style="text-align:left;"> 
-New York, NY
-</td>
-   <td style="text-align:left;"> 
-Code experience in a production environment (familiar with data structures, parallelism, and concurrency). 
-We aim to organize the world’s scientific information…
-</td>
-   <td style="text-align:left;"> 
-$122,000
-</td>
-   <td style="text-align:left;"> 
-<a href="https://www.indeed.com/rc/clk?jk=af931bd8281d19e7">Link</a>
-</td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> 
-Summer Intern - Network Science and Big Data Analytics
-</td>
-   <td style="text-align:left;"> 
-IBM
-</td>
-   <td style="text-align:left;"> 
-Yorktown Heights, NY
-</td>
-   <td style="text-align:left;"> 
-The Network Science and Big Data Analytics department at the IBM T. 
-Our lab has access to large computing resources and data….
-</td>
-   <td style="text-align:left;"> 
-$36,000
-</td>
-   <td style="text-align:left;"> 
-<a href="https://www.indeed.com/rc/clk?jk=d20c6a677eda7671">Link</a>
-</td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> 
-Data Scientist
-</td>
-   <td style="text-align:left;"> 
-The Nielsen Company
-</td>
-   <td style="text-align:left;"> 
-New York, NY
-</td>
-   <td style="text-align:left;"> 
-As a Data Scientist in the Data Integration group, you will be involved in the process of integrating data to enable analyses of patterns and relationships…
-</td>
-   <td style="text-align:left;"> 
-$109,000
-</td>
-   <td style="text-align:left;"> 
-<a href="https://www.indeed.com/rc/clk?jk=8bfb40468f28c10c">Link</a>
-</td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> 
-Data Analyst, IM Data Science
-</td>
-   <td style="text-align:left;"> 
-BNY Mellon
-</td>
-   <td style="text-align:left;"> 
-New York, NY
-</td>
-   <td style="text-align:left;"> 
-The Data Analyst will support a wide variety of projects and initiatives of the Data Science Group, including the creation of back-end data management tools,…
-</td>
-   <td style="text-align:left;"> 
-$84,000
-</td>
-   <td style="text-align:left;"> 
-<a href="https://www.indeed.com/rc/clk?jk=779dc28f2010c4c6">Link</a>
-</td>
-  </tr>
-</tbody>
-</table>
-
-Some more on CSS and HTML:
-
-<li><a href="http://code.tutsplus.com/tutorials/the-30-css-selectors-you-must-memorize--net-16048">Useful CSS Rules</a></li>
-<li><a href="http://www.w3.org/TR/microdata/#names:-the-itemprop-attribute">HTML5 microdata itemprop property</a></li>
-
-</div>
-<div id="more-examples-with-linkedin" class="section level2">
-<h3>More examples with LinkedIn</h3>
-<code class="r"><span class="pink"># Attempt to crawl LinkedIn, requires useragent to access Linkedin Sites</span>
-<span class="pink">uastring</span> <span class="operator">&lt;-</span> <span class="string">"Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36"</span>
-<span class="pink">session</span> <span class="operator">&lt;-</span> <span class="pink">html_session</span><span class="blue">(</span><span class="string">"https://www.linkedin.com/job/"</span>, <span class="pink">user_agent</span><span class="blue">(</span><span class="pink">uastring</span><span class="blue">)</span><span class="blue">)</span>
-<span class="pink">form</span> <span class="operator">&lt;-</span> <span class="pink">html_form</span><span class="blue">(</span><span class="pink">session</span><span class="blue">)</span><span class="blue">[</span><span class="blue">[</span><span class="number">1</span><span class="blue">]</span><span class="blue">]</span>
-<span class="pink">form</span> <span class="operator">&lt;-</span> <span class="pink">set_values</span><span class="blue">(</span><span class="pink">form</span>, <span class="pink">keywords</span> <span class="operator">=</span> <span class="string">"Data Science"</span>, <span class="pink">location</span><span class="operator">=</span><span class="string">"New York"</span><span class="blue">)</span>
- 
-<span class="pink">new_url</span> <span class="operator">&lt;-</span> <span class="pink">submit_geturl</span><span class="blue">(</span><span class="pink">session</span>,<span class="pink">form</span><span class="blue">)</span>
-<span class="pink">new_session</span> <span class="operator">&lt;-</span> <span class="pink">html_session</span><span class="blue">(</span><span class="pink">new_url</span>, <span class="pink">user_agent</span><span class="blue">(</span><span class="pink">uastring</span><span class="blue">)</span><span class="blue">)</span>
-<span class="pink">jobtitle</span> <span class="operator">&lt;-</span> <span class="pink">new_session</span> <span class="operator">%&gt;%</span> <span class="pink">html_nodes</span><span class="blue">(</span><span class="string">".job [itemprop=title]"</span><span class="blue">)</span> <span class="operator">%&gt;%</span> <span class="pink">html_text</span>
-<span class="pink">company</span> <span class="operator">&lt;-</span> <span class="pink">new_session</span> <span class="operator">%&gt;%</span> <span class="pink">html_nodes</span><span class="blue">(</span><span class="string">".job [itemprop=name]"</span><span class="blue">)</span> <span class="operator">%&gt;%</span> <span class="pink">html_text</span>
-<span class="pink">location</span> <span class="operator">&lt;-</span> <span class="pink">new_session</span> <span class="operator">%&gt;%</span> <span class="pink">html_nodes</span><span class="blue">(</span><span class="string">".job [itemprop=addressLocality]"</span><span class="blue">)</span> <span class="operator">%&gt;%</span> <span class="pink">html_text</span>
-<span class="pink">description</span> <span class="operator">&lt;-</span> <span class="pink">new_session</span> <span class="operator">%&gt;%</span> <span class="pink">html_nodes</span><span class="blue">(</span><span class="string">".job [itemprop=description]"</span><span class="blue">)</span> <span class="operator">%&gt;%</span> <span class="pink">html_text</span>
-<span class="pink">url</span> <span class="operator">&lt;-</span> <span class="pink">new_session</span> <span class="operator">%&gt;%</span> <span class="pink">html_nodes</span><span class="blue">(</span><span class="string">".job [itemprop=title]"</span><span class="blue">)</span> <span class="operator">%&gt;%</span> <span class="pink">html_attr</span><span class="blue">(</span><span class="string">"href"</span><span class="blue">)</span>
-<span class="pink">url</span> <span class="operator">&lt;-</span> <span class="pink">paste</span><span class="blue">(</span><span class="pink">url</span>, <span class="string">')'</span>, <span class="pink">sep</span><span class="operator">=</span><span class="string">''</span><span class="blue">)</span>
-<span class="pink">url</span> <span class="operator">&lt;-</span> <span class="pink">paste</span><span class="blue">(</span><span class="string">'[Link]('</span>, <span class="pink">url</span>, <span class="pink">sep</span><span class="operator">=</span><span class="string">''</span><span class="blue">)</span>
-<span class="pink">df</span> <span class="operator">&lt;-</span> <span class="pink">data.frame</span><span class="blue">(</span><span class="pink">jobtitle</span>, <span class="pink">company</span>, <span class="pink">location</span>, <span class="pink">url</span><span class="blue">)</span>
-
-<span class="pink">df</span> <span class="operator">%&gt;%</span> <span class="pink">kable</span></code>
-<table class="table table-condensed">
-<thead>
-<tr class="header">
-<th align="left">jobtitle</th>
-<th align="left">company</th>
-<th align="left">location</th>
-<th align="left">url</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">Data Science Lead: Metis</td>
-<td align="left">Kaplan</td>
-<td align="left">New York City, NY, US</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/51429397?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="even">
-<td align="left">Data Science Lead: Metis</td>
-<td align="left">Kaplan Test Prep</td>
-<td align="left">New York, NY</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/38695388?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="odd">
-<td align="left">Think Big Senior Data Scientist</td>
-<td align="left">Think Big, A Teradata Company</td>
-<td align="left">US-NY-New York</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/32056808?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="even">
-<td align="left">Think Big Principal Data Scientist</td>
-<td align="left">Think Big, A Teradata Company</td>
-<td align="left">US-NY-New York</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/32057641?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="odd">
-<td align="left">Data Scientist - Professional Services Consultant (East …</td>
-<td align="left">MapR Technologies</td>
-<td align="left">Greater New York City Area</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/35995187?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="even">
-<td align="left">Think Big Senior Data Scientist</td>
-<td align="left">Teradata</td>
-<td align="left">New York City, NY, US</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/51068145?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="odd">
-<td align="left">Think Big Principal Data Scientist</td>
-<td align="left">Teradata</td>
-<td align="left">New York City, NY, US</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/51068162?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="even">
-<td align="left">Sr. 
-Software Engineer - Data Science - HookLogic</td>
-<td align="left">HookLogic, Inc.</td>
-<td align="left">New York City, NY, US</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/49975389?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="odd">
-<td align="left">Think Big Data Scientist</td>
-<td align="left">Think Big, A Teradata Company</td>
-<td align="left">US-NY-New York</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/32057645?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="even">
-<td align="left">Director of Data Science Programs</td>
-<td align="left">DataKind</td>
-<td align="left">New York City, NY, US</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/35605329?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="odd">
-<td align="left">Lead Data Scientist - VP - Intelligent Solutions</td>
-<td align="left">JPMorgan Chase &amp; Co.</td>
-<td align="left">US-NY-New York</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/40828814?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="even">
-<td align="left">Senior Data Scientist for US Quantitative Fund, NYC</td>
-<td align="left">GQR Global Markets</td>
-<td align="left">Greater New York City Area</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/38602287?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="odd">
-<td align="left">Google Cloud Solutions Practice, Google Data Solution …</td>
-<td align="left">PricewaterhouseCoopers</td>
-<td align="left">New York City, NY, US</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/53729956?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="even">
-<td align="left">Senior Data Scientist</td>
-<td align="left">Dun and Bradstreet</td>
-<td align="left">Short Hills, NJ, US</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/53796892?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="odd">
-<td align="left">Senior data scientist</td>
-<td align="left">Mezzobit</td>
-<td align="left">New York City, NY, US</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/38019145?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="even">
-<td align="left">Think Big Data Scientist</td>
-<td align="left">Teradata</td>
-<td align="left">New York City, NY, US</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/51066835?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="odd">
-<td align="left">Data Scientist - Intelligent Solutions</td>
-<td align="left">JPMorgan Chase &amp; Co.</td>
-<td align="left">US-NY-New York</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/40855034?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="even">
-<td align="left">Technical Trainer EMEA</td>
-<td align="left">Datameer</td>
-<td align="left">New York</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/41600114?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="odd">
-<td align="left">Elementary School Science Teacher</td>
-<td align="left">Success Academy Charter Schools</td>
-<td align="left">Greater New York City Area</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/38634099?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="even">
-<td align="left">Middle School Science Teacher</td>
-<td align="left">Success Academy Charter Schools</td>
-<td align="left">Greater New York City Area</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/38633208?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="odd">
-<td align="left">Data Scientist (various levels)</td>
-<td align="left">Burtch Works</td>
-<td align="left">Greater New York City Area</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/41672840?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="even">
-<td align="left">Sr. 
-Data Scientist – Big Data, Online Advertising, Search</td>
-<td align="left">Magnetic</td>
-<td align="left">New York, NY</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/33977941?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="odd">
-<td align="left">Sr. 
-Big Data Engineer FlexGraph</td>
-<td align="left">ADP</td>
-<td align="left">New York, NY</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/18708583?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="even">
-<td align="left">Data Science Lead Instructor - Data Science, Teaching</td>
-<td align="left">CyberCoders</td>
-<td align="left">New York City, NY</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/40896475?trk=jserp_job_details_text">Link</a></td>
-</tr>
-<tr class="odd">
-<td align="left">Director, Data Consulting</td>
-<td align="left">Havas Media</td>
-<td align="left">Greater New York City Area</td>
-<td align="left"><a href="https://www.linkedin.com/jobs2/view/41671585?trk=jserp_job_details_text">Link</a></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div id="attemping-to-scrape-columbia-lionshare" class="section level2">
-<h3>Attemping to scrape Columbia LionShare</h3>
-<code class="r"><span class="pink"># Attempt to crawl Columbia Lionshare for jobs</span>
-<span class="pink">session</span> <span class="operator">&lt;-</span> <span class="pink">html_session</span><span class="blue">(</span><span class="string">"http://www.careereducation.columbia.edu/lionshare"</span><span class="blue">)</span>
-<span class="pink">form</span> <span class="operator">&lt;-</span> <span class="pink">html_form</span><span class="blue">(</span><span class="pink">session</span><span class="blue">)</span><span class="blue">[</span><span class="blue">[</span><span class="number">1</span><span class="blue">]</span><span class="blue">]</span>
-<span class="pink">form</span> <span class="operator">&lt;-</span> <span class="pink">set_values</span><span class="blue">(</span><span class="pink">form</span>, <span class="pink">username</span> <span class="operator">=</span> <span class="string">"uni"</span><span class="blue">)</span>
-<span class="pink">#Below code commented out in Markdown</span>
-
-<span class="pink">#pw &lt;- .rs.askForPassword("Password?")</span>
-<span class="pink">#form &lt;- set_values(form, password = pw)</span>
-<span class="pink">#rm(pw)</span>
-<span class="pink">#session2 &lt;- submit_form(session, form)</span>
-<span class="pink">#session2 &lt;- follow_link(session2, "Job")</span>
-<span class="pink">#form2 &lt;- html_form(session2)[[1]]</span>
-<span class="pink">#form2 &lt;- set_values(form2, PositionTypes = 7, Keyword = "Data")</span>
-<span class="pink">#session3 &lt;- submit_form(session2, form2)</span>
-
-<span class="pink"># Unable to scrape because the table containing the job data uses javascript and doesn't load soon enough for rvest to collect information</span></code>
-There isn't any equivalent to checking if the document finishes loading before scraping the data. 
-The general recommendation appears to be using something entirely different such as Selenium to scrape web data.
-
-<li><a href="http://www.seleniumhq.org/">Selenium, automating web browsers</a></li>
-
-If you are webscraping with Python chances are that you have already tried urllib, httplib, requests, etc. 
-These are excellent libraries, but some websites don’t like to be webscraped. 
-In these cases you may need to disguise your webscraping bot as a human being. 
-Selenium is just the tool for that. 
-Selenium is a webdriver: it takes control of your browser, which then does all the work. 
-Hence what the website “sees” is Chrome or Firefox or IE; it does not see Python or Selenium. 
-That makes it a lot harder for the website to tell your bot from a human being.
-
-<li><a href="http://thiagomarzagao.com/2013/11/12/webscraping-with-selenium-part-1/">Selenium tutorial</a></li>
-
-
-<h2>4 Types of Classification Tasks in Machine Learning</h2>
-https://machinelearningmastery.com/types-of-classification-in-machine-learning/
-<h3>Tutorial Overview</h3>
-This tutorial is divided into five parts; they are:
-
-<ol><li>Classification Predictive Modeling</li><li>Binary Classification</li><li>Multi-Class Classification</li><li>Multi-Label Classification</li><li>Imbalanced Classification</li>
-</ol>
-<h3>Classification Predictive Modeling</h3>
-There are many different types of classification algorithms for modeling classification predictive modeling problems.
-
-There is no good theory on how to map algorithms onto problem types; instead, it is generally recommended that a practitioner use controlled experiments and discover which algorithm and algorithm configuration results in the best performance for a given classification task.
-
-Classification predictive modeling algorithms are evaluated based on their results. Classification accuracy is a popular metric used to evaluate the performance of a model based on the predicted class labels. <a href="https://machinelearningmastery.com/failure-of-accuracy-for-imbalanced-class-distributions/">Classification accuracy is not perfect</a> but is a good starting point for many classification tasks.
-
-Instead of class labels, some tasks may require the prediction of a <a href="https://machinelearningmastery.com/probability-metrics-for-imbalanced-classification/">probability of class membership</a> for each example. This provides additional uncertainty in the prediction that an application or user can then interpret. A popular diagnostic for evaluating predicted probabilities is the <a href="https://machinelearningmastery.com/roc-curves-and-precision-recall-curves-for-classification-in-python/">ROC Curve</a>.
-
-There are perhaps four main types of classification tasks that you may encounter; they are:
-
-<ul><li>Binary Classification</li><li>Multi-Class Classification</li><li>Multi-Label Classification</li><li>Imbalanced Classification</li>
-</ul>
-Let's take a closer look at each in turn.
-
-<h3>Binary Classification</h3>
-The class for the normal state is assigned the class label 0 and the class with the abnormal state is assigned the class label 1.
-
-It is common to model a binary classification task with a model that predicts a <a href="https://machinelearningmastery.com/discrete-probability-distributions-for-machine-learning/">Bernoulli probability distribution</a> for each example.
-
-The Bernoulli distribution is a discrete probability distribution that covers a case where an event will have a binary outcome as either a 0 or 1. For classification, this means that the model predicts a probability of an example belonging to class 1, or the abnormal state.
-
-Popular algorithms that can be used for binary classification include:
-
-<ul><li>Logistic Regression</li><li>k-Nearest Neighbors</li><li>Decision Trees</li><li>Support Vector Machine</li><li>Naive Bayes</li>
-</ul>
-Some algorithms are specifically designed for binary classification and do not natively support more than two classes; examples include Logistic Regression and Support Vector Machines.
-
-Next, let's take a closer look at a dataset to develop an intuition for binary classification problems.
-
-We can use the <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_blobs.html">make_blobs() function</a> to generate a synthetic binary classification dataset.
-
-The example below generates a dataset with 1,000 examples that belong to one of two classes, each with two input features.
-
-# example of binary classification task
-from numpy import where
-from collections import Counter
-from sklearn.datasets import make_blobs
-from matplotlib import pyplot
-# define dataset
-X, y = make_blobs(n_samples=1000, centers=2, random_state=1)
-# summarize dataset shape
-print(X.shape, y.shape)
-# summarize observations by class label
-counter = Counter(y)
-print(counter)
-# summarize first few examples
-for i in range(10):
-	print(X[i], y[i])
-# plot the dataset and color the by class label
-for label, _ in counter.items():
-	row_ix = where(y == label)[0]
-	pyplot.scatter(X[row_ix, 0], X[row_ix, 1], label=str(label))
-pyplot.legend()
-pyplot.show()
-
-Running the example first summarizes the created dataset showing the 1,000 examples divided into input (<em>X</em>) and output (<em>y</em>) elements.
-
-The distribution of the class labels is then summarized, showing that instances belong to either class 0 or class 1 and that there are 500 examples in each class.
-
-Next, the first 10 examples in the dataset are summarized, showing the input values are numeric and the target values are integers that represent the class membership.
-
-(1000, 2) (1000,)
-
-Counter({0: 500, 1: 500})
-
-[-3.05837272  4.48825769] 0
-[-8.60973869 -3.72714879] 1
-[1.37129721 5.23107449] 0
-[-9.33917563 -2.9544469 ] 1
-[-11.57178593  -3.85275513] 1
-[-11.42257341  -4.85679127] 1
-[-10.44518578  -3.76476563] 1
-[-10.44603561  -3.26065964] 1
-[-0.61947075  3.48804983] 0
-[-10.91115591  -4.5772537 ] 1
-
-Finally, a scatter plot is created for the input variables in the dataset and the points are colored based on their class value.
-
-We can see two distinct clusters that we might expect would be easy to discriminate.
-
-
-<img class="lazy" data-src="https://3qeqpr26caki16dnhd19sv6by6v-wpengine.netdna-ssl.com/wp-content/uploads/2020/01/Scatter-Plot-of-Binary-Classification-Dataset.png">
-Scatter Plot of Binary Classification Dataset
-
-<h3>Multi-Class Classification</h3>
-<a href="https://en.wikipedia.org/wiki/Multiclass_classification">Multi-class classification</a> refers to those classification tasks that have more than two class labels.
-
-Examples include:
-
-<ul><li>Face classification.</li><li>Plant species classification.</li><li>Optical character recognition.</li>
-</ul>
-Unlike binary classification, multi-class classification does not have the notion of normal and abnormal outcomes. Instead, examples are classified as belonging to one among a range of known classes.
-
-The number of class labels may be very large on some problems. For example, a model may predict a photo as belonging to one among thousands or tens of thousands of faces in a face recognition system.
-
-Problems that involve predicting a sequence of words, such as text translation models, may also be considered a special type of multi-class classification. Each word in the sequence of words to be predicted involves a multi-class classification where the size of the vocabulary defines the number of possible classes that may be predicted and could be tens or hundreds of thousands of words in size.
-
-It is common to model a multi-class classification task with a model that predicts a <a href="https://machinelearningmastery.com/discrete-probability-distributions-for-machine-learning/">Multinoulli probability distribution</a> for each example.
-
-The Multinoulli distribution is a discrete probability distribution that covers a case where an event will have a categorical outcome, e.g. <em>K</em> in {1, 2, 3, &#8230;, <em>K</em>}. For classification, this means that the model predicts the probability of an example belonging to each class label.
-
-Many algorithms used for binary classification can be used for multi-class classification.
-
-Popular algorithms that can be used for multi-class classification include:
-
-<ul><li>k-Nearest Neighbors.</li><li>Decision Trees.</li><li>Naive Bayes.</li><li>Random Forest.</li><li>Gradient Boosting.</li>
-</ul>
-Algorithms that are designed for binary classification can be adapted for use for multi-class problems.
-
-This involves using a strategy of fitting multiple binary classification models for each class vs. all other classes (called one-vs-rest) or one model for each pair of classes (called one-vs-one).
-
-<ul><li><strong>One-vs-Rest</strong>: Fit one binary classification model for each class vs. all other classes.</li><li><strong>One-vs-One</strong>: Fit one binary classification model for each pair of classes.</li>
-</ul>
-Binary classification algorithms that can use these strategies for multi-class classification include:
-
-<ul><li>Logistic Regression.</li><li>Support Vector Machine.</li>
-</ul>
-Next, let's take a closer look at a dataset to develop an intuition for multi-class classification problems.
-
-We can use the <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_blobs.html">make_blobs() function</a> to generate a synthetic multi-class classification dataset.
-
-The example below generates a dataset with 1,000 examples that belong to one of three classes, each with two input features.
-
-# example of multi-class classification task
-from numpy import where
-from collections import Counter
-from sklearn.datasets import make_blobs
-from matplotlib import pyplot
-# define dataset
-X, y = make_blobs(n_samples=1000, centers=3, random_state=1)
-# summarize dataset shape
-print(X.shape, y.shape)
-# summarize observations by class label
-counter = Counter(y)
-print(counter)
-# summarize first few examples
-for i in range(10):
-	print(X[i], y[i])
-# plot the dataset and color the by class label
-for label, _ in counter.items():
-	row_ix = where(y == label)[0]
-	pyplot.scatter(X[row_ix, 0], X[row_ix, 1], label=str(label))
-pyplot.legend()
-pyplot.show()
-
-Running the example first summarizes the created dataset showing the 1,000 examples divided into input (<em>X</em>) and output (<em>y</em>) elements.
-
-The distribution of the class labels is then summarized, showing that instances belong to class 0, class 1, or class 2 and that there are approximately 333 examples in each class.
-
-Next, the first 10 examples in the dataset are summarized showing the input values are numeric and the target values are integers that represent the class membership.
-
-(1000, 2) (1000,)
-
-Counter({0: 334, 1: 333, 2: 333})
-
-[-3.05837272  4.48825769] 0
-[-8.60973869 -3.72714879] 1
-[1.37129721 5.23107449] 0
-[-9.33917563 -2.9544469 ] 1
-[-8.63895561 -8.05263469] 2
-[-8.48974309 -9.05667083] 2
-[-7.51235546 -7.96464519] 2
-[-7.51320529 -7.46053919] 2
-[-0.61947075  3.48804983] 0
-[-10.91115591  -4.5772537 ] 1
-
-Finally, a scatter plot is created for the input variables in the dataset and the points are colored based on their class value.
-
-We can see three distinct clusters that we might expect would be easy to discriminate.
-
-
-<img class="lazy" data-src="https://3qeqpr26caki16dnhd19sv6by6v-wpengine.netdna-ssl.com/wp-content/uploads/2020/01/Scatter-Plot-of-Multi-Class-Classification-Dataset.png">
-Scatter Plot of Multi-Class Classification Dataset
-
-<h3>Multi-Label Classification</h3>
-<a href="https://en.wikipedia.org/wiki/Multi-label_classification">Multi-label classification</a> refers to those classification tasks that have two or more class labels, where one or more class labels may be predicted for each example.
-
-Consider the example of <a href="https://machinelearningmastery.com/object-recognition-with-deep-learning/">photo classification</a>, where a given photo may have multiple objects in the scene and a model may predict the presence of multiple known objects in the photo, such as &#8220;<em>bicycle</em>,&#8221; &#8220;<em>apple</em>,&#8221; &#8220;<em>person</em>,&#8221; etc.
-
-This is unlike binary classification and multi-class classification, where a single class label is predicted for each example.
-
-It is common to model multi-label classification tasks with a model that predicts multiple outputs, with each output taking predicted as a Bernoulli probability distribution. This is essentially a model that makes multiple binary classification predictions for each example.
-
-Classification algorithms used for binary or multi-class classification cannot be used directly for multi-label classification. Specialized versions of standard classification algorithms can be used, so-called multi-label versions of the algorithms, including:
-
-<ul><li>Multi-label Decision Trees</li><li>Multi-label Random Forests</li><li>Multi-label Gradient Boosting</li>
-</ul>
-Another approach is to use a separate classification algorithm to predict the labels for each class.
-
-Next, let's take a closer look at a dataset to develop an intuition for multi-label classification problems.
-
-We can use the <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_classification.html">make_multilabel_classification() function</a> to generate a synthetic multi-label classification dataset.
-
-The example below generates a dataset with 1,000 examples, each with two input features. There are three classes, each of which may take on one of two labels (0 or 1).
-
-# example of a multi-label classification task
-from sklearn.datasets import make_multilabel_classification
-# define dataset
-X, y = make_multilabel_classification(n_samples=1000, n_features=2, n_classes=3, n_labels=2, random_state=1)
-# summarize dataset shape
-print(X.shape, y.shape)
-# summarize first few examples
-for i in range(10):
-	print(X[i], y[i])
-
-Running the example first summarizes the created dataset showing the 1,000 examples divided into input (<em>X</em>) and output (<em>y</em>) elements.
-
-Next, the first 10 examples in the dataset are summarized showing the input values are numeric and the target values are integers that represent the class label membership.
-
-(1000, 2) (1000, 3)
-
-[18. 35.] [1 1 1]
-[22. 33.] [1 1 1]
-[26. 36.] [1 1 1]
-[24. 28.] [1 1 0]
-[23. 27.] [1 1 0]
-[15. 31.] [0 1 0]
-[20. 37.] [0 1 0]
-[18. 31.] [1 1 1]
-[29. 27.] [1 0 0]
-[29. 28.] [1 1 0]
-
-
-<h3>Imbalanced Classification</h3>
-<a href="https://machinelearningmastery.com/what-is-imbalanced-classification/">Imbalanced classification</a> refers to classification tasks where the number of examples in each class is unequally distributed.
-
-Typically, imbalanced classification tasks are binary classification tasks where the majority of examples in the training dataset belong to the normal class and a minority of examples belong to the abnormal class.
-
-Examples include:
-
-<ul><li>Fraud detection.</li><li>Outlier detection.</li><li>Medical diagnostic tests.</li>
-</ul>
-These problems are modeled as binary classification tasks, although may require specialized techniques.
-
-Specialized techniques may be used to change the composition of samples in the training dataset by undersampling the majority class or oversampling the minority class.
-
-Examples include:
-
-<ul><li><a href="https://machinelearningmastery.com/random-oversampling-and-undersampling-for-imbalanced-classification/">Random Undersampling</a>.</li><li><a href="https://machinelearningmastery.com/smote-oversampling-for-imbalanced-classification/">SMOTE Oversampling</a>.</li>
-</ul>
-Specialized modeling algorithms may be used that pay more attention to the minority class when fitting the model on the training dataset, such as cost-sensitive machine learning algorithms.
-
-Examples include:
-
-<ul><li><a href="https://machinelearningmastery.com/cost-sensitive-logistic-regression/">Cost-sensitive Logistic Regression</a>.</li><li>Cost-sensitive Decision Trees.</li><li>Cost-sensitive Support Vector Machines.</li>
-</ul>
-Finally, alternative performance metrics may be required as reporting the classification accuracy may be misleading.
-
-Examples include:
-
-<ul><li>Precision.</li><li>Recall.</li><li>F-Measure.</li>
-</ul>
-Next, let's take a closer look at a dataset to develop an intuition for imbalanced classification problems.
-
-We can use the <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_classification.html">make_classification() function</a> to generate a synthetic imbalanced binary classification dataset.
-
-The example below generates a dataset with 1,000 examples that belong to one of two classes, each with two input features.
-
-# example of an imbalanced binary classification task
-from numpy import where
-from collections import Counter
-from sklearn.datasets import make_classification
-from matplotlib import pyplot
-# define dataset
-X, y = make_classification(n_samples=1000, n_features=2, n_informative=2, n_redundant=0, n_classes=2, n_clusters_per_class=1, weights=[0.99,0.01], random_state=1)
-# summarize dataset shape
-print(X.shape, y.shape)
-# summarize observations by class label
-counter = Counter(y)
-print(counter)
-# summarize first few examples
-for i in range(10):
-	print(X[i], y[i])
-# plot the dataset and color the by class label
-for label, _ in counter.items():
-	row_ix = where(y == label)[0]
-	pyplot.scatter(X[row_ix, 0], X[row_ix, 1], label=str(label))
-pyplot.legend()
-pyplot.show()
-
-Running the example first summarizes the created dataset showing the 1,000 examples divided into input (<em>X</em>) and output (<em>y</em>) elements.
-
-The distribution of the class labels is then summarized, showing the severe class imbalance with about 980 examples belonging to class 0 and about 20 examples belonging to class 1.
-
-Next, the first 10 examples in the dataset are summarized showing the input values are numeric and the target values are integers that represent the class membership. In this case, we can see that most examples belong to class 0, as we expect.
-
-(1000, 2) (1000,)
-
-Counter({0: 983, 1: 17})
-
-[0.86924745 1.18613612] 0
-[1.55110839 1.81032905] 0
-[1.29361936 1.01094607] 0
-[1.11988947 1.63251786] 0
-[1.04235568 1.12152929] 0
-[1.18114858 0.92397607] 0
-[1.1365562  1.17652556] 0
-[0.46291729 0.72924998] 0
-[0.18315826 1.07141766] 0
-[0.32411648 0.53515376] 0
-
-Finally, a scatter plot is created for the input variables in the dataset and the points are colored based on their class value.
-
-We can see one main cluster for examples that belong to class 0 and a few scattered examples that belong to class 1. The intuition is that datasets with this property of imbalanced class labels are more challenging to model.
-
-
-<img class="lazy" data-src="https://3qeqpr26caki16dnhd19sv6by6v-wpengine.netdna-ssl.com/wp-content/uploads/2020/01/Scatter-Plot-of-Imbalanced-Binary-Classification-Dataset.png">
-Scatter Plot of Imbalanced Binary Classification Dataset
-
-<h3>Further Reading</h3>
-This section provides more resources on the topic if you are looking to go deeper.
-
-<ul><li><a href="https://en.wikipedia.org/wiki/Statistical_classification">Statistical classification, Wikipedia</a>.</li><li><a href="https://en.wikipedia.org/wiki/Binary_classification">Binary classification, Wikipedia</a>.</li><li><a href="https://en.wikipedia.org/wiki/Multiclass_classification">Multiclass classification, Wikipedia</a>.</li><li><a href="https://en.wikipedia.org/wiki/Multi-label_classification">Multi-label classification, Wikipedia</a>.</li><li><a href="https://scikit-learn.org/stable/modules/multiclass.html">Multiclass and multilabel algorithms, scikit-learn API</a>.</li>
-</ul>
-<h3>Summary</h3>
-In this tutorial, you discovered different types of classification predictive modeling in machine learning.
-
-Specifically, you learned:
-
-<ul><li>Classification predictive modeling involves assigning a class label to input examples.</li><li>Binary classification refers to predicting one of two classes and multi-class classification involves predicting one of more than two classes.</li><li>Multi-label classification involves predicting one or more classes for each example and imbalanced classification refers to classification tasks where the distribution of examples across the classes is not equal.</li>
-</ul>
 
 <h2>to remove empty list items</h2>
 emptyItems = numeric()
