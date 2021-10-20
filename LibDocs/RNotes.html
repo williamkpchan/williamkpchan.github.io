@@ -26085,6 +26085,228 @@ The &nbsp stands for "non-breaking space" which, in the unicode space, has it's 
 charToRaw(" foo")
 # [1] 20 66 6f 6f
 
+<h2>R to call C function</h2>
+use the Rcpp package.
+It allows you to write C++ functions directly in R.
+
+http://adv-r.had.co.nz/Rcpp.html.
+C++ functions can be done very fast with these instructions.
+
+library("Rcpp")
+cppFunction("
+NumericVector addOneToVector(NumericVector vector) {
+  int n = vector.size();
+
+  for (int i = 0; i < n; ++i)
+    vector[i] = vector[i] + 1.0;
+
+  return vector;
+}")
+
+
+Here's a small C code
+
+Step 1: Write the C Program
+#include <stdio.h>
+int func_test() {
+    for(int i = 0; i < 5; i++) {
+        printf("The value of i is: %d\n", i);
+    }
+    return 0;
+}
+
+Step 2: Compile the program using
+R CMD SHLIB func_test.c
+This will produce a func_test.so file
+
+Step 3: Now write the R Code that invokes this C function from within R Studio
+dyn.load("/users/my_home_dir/xxx/ccode/ac.so")
+.C("func_test")
+
+Step 4: Output:
+.C("func_test")
+The value of i is: 0
+The value of i is: 1
+The value of i is: 2
+The value of i is: 3
+The value of i is: 4
+list()
+
+Then tried the direct method
+library("Rcpp")
+cppFunction("
+NumericVector addOneToVector(NumericVector vector) {
+  int n = vector.size();
+  for (int i = 0; i < n; ++i)
+    vector[i] = vector[i] + 1.0;
+  return vector;
+}")
+
+# Test code to test the function
+addOneToVector(c(1,2,3))
+Both methods worked superbly. I can now start writing functions in C or C++ and use them in R
+
+
+<h2>Three ways to call C/C++ from R</h2>
+<img src="https://i0.wp.com/1.bp.blogspot.com/-TuuDIWPa0BE/Ush1COW99KI/AAAAAAAAAMg/wrtcDh9kQXY/s1600/C1.PNG?w=578"> 
+the function f(<em>x</em>)= 2<em>x</em>. 
+<h2>The .C function interface</h2>
+Inside a running R session, the .C interface allows objects to be directly accessed in an R session's active memory. 
+Thus, to write a compatible C function, <em>all arguments must be pointers</em>. 
+No matter the nature of your function's return value, it too must be handled using pointers. 
+The C function you will write is effectively a subroutine. 
+Our function f(<em>x</em>)= 2<em>x</em>, implemented as double_me in the file doubler.c, is shown below. 
+void double_me(int* x) {
+ // Doubles the value at the memory location pointed to by x
+ *x = *x + *x;
+}
+ To compile the C code, run the following line at your terminal:
+$ R CMD SHLIB doubler.c 
+In an R interactive session, run:
+dyn.load(&quot;doubler.so&quot;)
+.C(&quot;double_me&quot;, x = as.integer(5))
+$x
+[1] 10
+Notice that the output of .C is a list with names corresponding to the arguments. 
+While the above code is pure C, adding C++ code (instead of C) is made possible by using the <a href="https://cran.r-project.org/doc/manuals/R-exts.html#Interfacing-C_002b_002b-code">extern wrapper</a>. 
+<h2>.Call </h2>
+The .Call interface is the more fully featured and complex cousin of the .C interface. 
+Unlike .C, .Call requires header files that come standard with every R installation. 
+These header files provide access to a new data type, SEXP. 
+The following code, stored in the file, doubler2.c, illustrates its use. 
+#include &lt;R.h>
+#include &lt;Rdefines.h>
+SEXP double_me2(SEXP x) {
+ // Doubles the value of the first integer element of the SEXP input
+ SEXP result;
+ PROTECT(result = NEW_INTEGER(1)); // i.e., a scalar quantity
+ INTEGER(result)[0] = INTEGER(x)[0] * 2;
+ UNPROTECT(1); // Release the one item that was protected
+ return result;
+}
+Unlike our experience with the .C interface, double_me2 is a function and  does return a value. 
+While that appeals to intuition, no matter what the native input and output types, they must now live in a SEXP object. 
+To code double_me2, you must know that there's an integer in the input x, and extract it as if it were the first item in a C array. 
+For the return value, you must add your integer result to a SEXP object in an equally unnatural way. 
+The PROTECT function must be used to prevent R's automatic garbage collection from destroying all the objects. 
+
+As before, use R at the command line to compile doubler2.c:
+$ R CMD SHLIB doubler2.c 
+ Back in the R interactive console, the steps are very similar. 
+dyn.load(&quot;doubler2.so&quot;)
+.Call(&quot;double_me2&quot;, as.integer(5))
+
+[1] 10
+Notice now that the output is an integer vector instead of a list. 
+ 
+<h2>Rcpp and the sourceCpp function</h2>
+The .C and .Call examples above owe a debt to Jonathan Callahan's entries <a href="http://mazamascience.com/WorkingWithData/?p=1067">8</a> and <a href="http://mazamascience.com/WorkingWithData/?p=1099">10</a> of his <a href = "http://mazamascience.com/WorkingWithData/?series=using-r">Using R</a> series. 
+When the examples started working, I tweeted to share my excitement.
+Let's check it out. 
+ 
+In terms of the code alone, it's easy to see where Hadley is coming from. 
+It's readable, looks just like standard C++ code, and features data types that make intuitive sense. 
+Our simple function is implemented below, saved in the final static file doubler3.cpp (though, in all humility, it's really just C). 
+#include &lt;Rcpp.h>
+using namespace Rcpp;
+// [[Rcpp::export]]
+int double_me3(int x) {
+ // takes a numeric input and doubles it
+ return 2 * x;
+}
+I'll refer you to Hadley's article <a href="http://adv-r.had.co.nz/Rcpp.html">High performance functions with Rcpp</a> for details on Rcpp, but for now, note the &#8220;// [[Rcpp::export]]&#8221; comment, necessary before each C/C++ function, and the updated #include statement. 
+Most importantly, notice how the pointers and SEXP objects have been replaced. 
+Just like our original function f(<em>x</em>), double_me3 takes one integer input and returns one integer output. 
+ 
+After installing the Rcpp package, we're back to the console one final time. 
+library(Rcpp)
+sourceCpp(&quot;doubler3.cpp&quot;)
+double_me3(5)
+
+[1] 10
+With Rcpp, the function is waiting for us in the global environment, without even compiling at the command line. 
+Pretty convenient!  
+
+<h2>run Python in R</h2>
+In addition to reticulate, you need Python installed on your system. 
+You also need any Python modules, packages, and files your Python code depends on.
+
+If you'd like to follow along, install and load reticulate with <code>install.packages("reticulate")</code> and <code>library(reticulate)</code>.
+
+To keep things simple, let's start with just two lines of Python code to import the <a href="http://www.numpy.org/" rel="noopener nofollow" target="_blank" title="NumPy">NumPy package</a> for basic scientific computing and create an array of four numbers. 
+The Python code looks like this:
+import numpy as np
+my_python_array = np.array([2,4,6,8])
+
+And here’s one way to do that right in an R script:
+
+py_run_string("import numpy as np")
+py_run_string("my_python_array = np.array([2,4,6,8])")
+
+The <code>py_run_string()</code> function executes whatever Python code is within the parentheses and quotation marks. 
+
+If you run that code in R, it may look like nothing happened. 
+Nothing shows up in your RStudio environment pane, and no value is returned. 
+If you run <code>print(my_python_array)</code> in R, you get an error that <code>my_python_array</code> doesn't exist.
+
+But if you run a <em>Python</em> print command inside the <code>py_run_string()</code> function such as 
+py_run_string("for item in my_python_array: print(item)")
+
+you should see a result. 
+
+It’s going to get annoying running Python code line by line like this, though, if you have more than a couple of lines of code. 
+So there are a few other ways to run Python in R and reticulate.
+
+One is to put all the Python code in a regular .py file, and use the <code>py_run_file()</code> function. 
+Another way I like is to use an R Markdown document. 
+
+<aside class="nativo-promo nativo-promo-2 tablet desktop smartphone" id=""> </aside>
+R Markdown lets you combine text, code, code results, and visualizations in a single document. 
+You can create a new R Markdown document in RStudio by choosing File &gt; New File &gt; R Markdown.
+
+Code chunks start with three backticks (<code>```</code>) and end with three backticks, and they have a gray background by default in RStudio.
+
+This first chunk is for R code—you can see that with the <code>r</code> after the opening bracket. 
+It loads the reticulate package and then you specify the version of Python you want to use. 
+(If you don’t specify, it’ll use your system default.)
+```{r setup, include=FALSE, echo=TRUE}
+library(reticulate)
+use_python("/usr/bin/python")
+```
+
+This second chunk below is for Python code. 
+You can type the Python like you would in a Python file. 
+The code below imports NumPy, creates an array, and prints the array.
+<aside class="nativo-promo nativo-promo-3 tablet desktop smartphone" id=""> </aside>```{python}
+import numpy as np
+my_python_array = np.array([2,4,6,8])
+for item in my_python_array:
+    print(item)
+```
+
+Here’s the cool part: You can use that array in R by referring to it as <code>py$my_python_array</code> (in general, <code>py$objectname</code>).
+
+In this next code chunk, I store that Python array in an R variable called <code>my_r_array</code>. 
+And then I check the class of that array.
+```{r}
+my_r_array &lt;- py$my_python_array
+class(my_r_array)
+``
+
+It’s a class “array,” which isn’t exactly what you’d expect for an R object like this. 
+But I can turn it into a regular vector with <code>as.vector(my_r_array)</code> and run whatever R operations I’d like on it, such as  multiplying each item by 2. 
+
+```{r}
+my_r_vector &lt;- as.vector(py$my_python_array)
+class(my_r_vector)
+my_r_vector &lt;- my_r_vector * 2
+```
+
+Next cool part: I can use that R variable back in Python, as <code>r.my_r_array</code> (more generally, <code>r.variablename</code>), such as 
+```{python}
+my_python_array2 = r.my_r_vector
+print(my_python_array2)
+```
 
 
 
