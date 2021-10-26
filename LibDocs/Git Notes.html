@@ -628,6 +628,94 @@ Since its name starts with “git-”, we can use the simple syntax for the conf
 As you can see, extending this system is pretty straightforward, and can solve some common problems for you and your team.
 
 
+<h2>use a github repo from a same account but different computers</h2>
+
+supplying --force as an argument to the git push command
+
+first fetch those changes from the remote, and then pull them into your local repository on computer 1. 
+
+$ git fetch origin
+$ git pull origin master
+In these commands, origin is the name of your github remote and master is the name of the branch you are currently tracking. 
+
+These names can be changed, but these are the defaults which appear to be the names in your case.
+
+Note, you will likely need to revert the new changes you made to computer 1. 
+
+Git will have a hard time trying to merge the changes from computer 2 with the changes you made to computer 1 when you were trying to commit the second time.
+
+pull is fetch + merge.
+If you've already run fetch, there's no need to run pull, merge should be enough.
+Or just run pull without fetching first, as it fetches on its own.
+
+<h2>Use Multiple GitHub Accounts With One Computer</h2>
+<h3>How to set up and change SSH keys to use multiple GitHub accounts on one machine</h3>
+I currently have two GitHub accounts: a personal and a work one. 
+Obviously, my work computer is set up with my work account. 
+
+I wanted to figure out how to push to GitHub with my personal account whenever I’m working on side projects via my work computer.
+At first glance, for the seemingly simple task of switching between two accounts, the process seemed a little involved. 
+
+But once you break things down into steps, it’s less daunting.
+<h3>Quick Note on <strong><em>SSH</em></strong></h3>
+<a href="https://www.ssh.com/ssh/protocol/#strong-authentication-with-ssh-keys">SSH</a><strong> </strong>(or secure shell) is a network protocol which, among <a href="https://www.ssh.com/ssh/protocol/#typical-uses-of-the-ssh-protocol">other things</a>, allows one computer to communicate with another over an unsecured network like the internet.
+Without encryption, data travels over the web in plain text form. 
+Consequently, it would be easy for someone to intercept valuable data, like user names or passwords, for wicked intent.SSH allows encryption of your data by way of a <a href="https://www.ssh.com/ssh/tunneling/"><em>tunnel</em></a>, which permits your computer to securely connect to another.
+This is done via the use of <a href="https://www.ssh.com/ssh/key/">SSH keys</a> and <a href="https://en.wikipedia.org/wiki/Public-key_cryptography">public-key cryptography </a>(aka asymmetric cryptography) which are used for authentication purposes between said computers, in order to decrypt the information being shared.
+<a href="https://www.youtube.com/watch?v=AQDCe585Lnc">Here’s a great video</a> explaining the concept of asymmetric cryptography further.SSH is commonly implemented using the client-server model.
+<img src="https://miro.medium.com/max/1400/1*On6fpv0NVHnmqZs7Dn6DqQ.png">
+Client-server model with asymmetric cryptography
+When running any remote commands from our computer(e.g., git push or git pull) to a remote repository (GitHub), it’s this protocol that enables us to do so without having to supply a password and username each time.
+Let’s now look at the configuration for it.
+<h3>Configuration</h3>The configuration can essentially be broken down into four steps:
+Generate an SSH key for the new account.
+Attach this new key to your GitHub account.
+Register the new key with the SSH agent.
+Create an SSH config file.
+
+<h3><strong>Step 1. Generate an <em>SSH</em> key for the new account</strong></h3>Using the SSH protocol, we’ll have to generate a key for any new account we’d like to use.
+Hop onto your terminal, run the following command, and attach your GitHub email address:$ ssh-keygen -t rsa -C "uremail@gmail.com" A new key pair will be generated. 
+At this point, you want to be careful not to overwrite your existing key pair, which would look like the following:({your home Directory}/.ssh/id_rsa):Instead, you can copy the directory and modify the file name to include your account name, as in the screenshot below:
+<img src="https://miro.medium.com/max/875/1*tKXjK-bNH8wwkKOFJT_6tg.png">
+You will then be prompted to enter a passphrase. 
+Your new SSH key will be found at a directory similar to this:{your home Directory}/.ssh/id_rsa_uraccount
+<h3><strong>Step 2. Attach the new key to your GitHub account</strong></h3>We’ve just created a public key, and now we need to allow our GitHub account to trust it. 
+This allows you to not have to authenticate every time you run a remote command (git push, git pull).
+Copy the public key via the following command <code>pbcopy &lt; ~/.ssh/id_rsa.pub</code> and then log in to your personal GitHub account:
+Go to <code>Settings</code>.
+From the left side navigation, click <code>SSH and GPG keys</code>.
+Click on <code>New SSH key</code>, name it (it's a good idea to name it after the computer you’re using it in), and paste the key you previously copied.
+Click <code>Add key</code>.
+
+<h3><strong>Step 3. Register the new key with the <em>SSH agent</em></strong></h3>We now need to register our key with the <a href="https://www.ssh.com/ssh/agent">SSH agent</a>. 
+
+The SSH agent keeps track of user identity keys and passphrases and works as an additional layer of security.
+In your terminal, write the command <code>ssh-add</code> and add the path to the files containing your keys. 
+As shown below, we are adding keys for our main account and the second account we just created.ssh-add ~/.ssh/id_rsassh-add ~/.ssh/id_rsa_uraccount
+<h3><strong>Step 4. Create an <em>SSH</em> config file</strong></h3>The SSH config file allows us to set configuration rules that will specify when we want to push to our work account versus our personal account. 
+
+This is done by defining which identity file to use ( the ones we’ve added to our SSH agent ) on which domain.
+If the file has already been created, it should be at <code>~/.ssh/config</code>. 
+But by default, it will not exist, so we’ll need to create it by running the command <code>touch ~/.ssh/config</code>.
+You can use any text editor or IDE to open and edit the file. 
+I went with the terminal’s text editor <a href="https://www.vim.org/">vim</a><strong>. 
+
+</strong>I don’t use it frequently, and it does have a bit of a learning curve, so I tend to use a <a href="https://devhints.io/vim">cheat sheet</a> to navigate through it<strong>.
+</strong>To open the file, use <code>vim config</code>.# Account 1 (work or personal) - the default configHost github.com   HostName github.com   User git   IdentityFile ~/.ssh/id_rsa   # Account 2 (work or personal) - the config we are addingHost github-uraccount      HostName github.com   User git   IdentityFile ~/.ssh/id_rsa_uraccountThe top part is the default configuration. 
+It comprises the following:<ul><li>the<strong> host</strong>(<code>github.com</code>)
+Its <strong>host name </strong>(<code>github.com</code>)
+a <strong>user ID </strong>(<code>git</code>)
+its<strong> identity file</strong> (<code>~/.ssh/id_rsa</code>)</li></ul>We can basically duplicate the default configuration; we’ll only need to changes two things: the host (<code>github-uraccount</code>) and the identity file (to the key we created earlier, <code>~/.ssh/id_rsa_uraccount</code>).
+And that should do it. 
+Save and close the file using <code>:wq</code> (if you are using vim).
+<h3>Create a new repository</h3>Now that we’re done with the configuration, let’s push to GitHub with our new account.
+In your project’s working directory, start by initializing git using <code>git init </code>then go to GitHub and create a new repository.
+When you get to the instructions under Existing Git Repo, you’d normally just copy and paste the commands to your terminal to add the repo as the remote to your local repo, but for this case, we need to replace “github.com” with the host we set up in our config file earlier. 
+
+So instead of the default host <code>git@github.com</code>, we use <code>git@github-uraccount</code>.git remote add origin git@github-uraccount:uraccount/repo_name.gitNow you can push to GitHub using, for example, the following:git add .git commit -m "Initial commit"git push -u origin master
+<h3>Associate your commits with a particular username</h3>For a single repository, if you’d like to change the name associated with your commits, you’ll also need to change your user name and email to reflect the GitHub account you want the repository to be associated with by using <code><a href="https://help.github.com/en/github/using-git/setting-your-username-in-git">git config</a></code> as shown below (to do it globally, add the flag <code>-g</code> before <code>user</code>).git config user.name "uraccount"git config user.email "uraccount@gmail.com"
+
+
 
 
 
