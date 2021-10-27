@@ -1,10 +1,11 @@
 $("img").click(function() {
  $('img').css('max-height', $(window).height());
+ $('img').css('width', 'auto');
  window.location = "#topic-" + topicpointer;
 })
 
 $("img").dblclick(function() {
- $('img').css('height', 'auto');
- $('img').css('width', 'auto');
+ $('img').css('max-height', "100%y");
  window.location = "#topic-" + topicpointer;
 })
+
