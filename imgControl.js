@@ -5,7 +5,7 @@ $("img").click(function() {
 })
 
 $("img").dblclick(function() {
- $('img').css('max-height', "100%y");
+ $('img').css('max-height', "100%");
  window.location = "#topic-" + topicpointer;
 })
 
