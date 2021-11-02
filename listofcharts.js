@@ -166,6 +166,7 @@ function chkKey() { testkey = getChar(event);
 
   if(testkey == '.'){showNextPage();}
   if(testkey == ','){showPrevPage();}
+  if(testkey == "'"){window.open("mline11chart.html");}
 }
 
 function getChar(event) {
