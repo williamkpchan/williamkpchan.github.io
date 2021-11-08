@@ -2947,6 +2947,305 @@ Example – stranger things, Avengers.
 SELECT title FROM movies_tbl WHERE REGEXP '[:alpha:]' ;
 
 
+<h2><span class="orange">SQL Server Sample Database</span></h2>
+The following illustrates the BikeStores database diagram:
+
+<img class="lazy" data-src="https://www.sqlservertutorial.net/wp-content/uploads/SQL-Server-Sample-Database.png">
+
+As you can see from the diagram, the BikeStores sample database has two schemas sales and production, and these schemas have nine tables.
+<h3><span class="orange">Database Tables</span></h3><h3>Table sales.stores</h3>
+The <code>sales.stores</code> table includes the store's information. Each store has a store name, contact information such as phone and email, and an address including street, city, state, and zip code.
+
+<code>CREATE TABLE sales.stores (
+	store_id INT IDENTITY (1, 1) PRIMARY KEY,
+	store_name VARCHAR (255) NOT NULL,
+	phone VARCHAR (25),
+	email VARCHAR (255),
+	street VARCHAR (255),
+	city VARCHAR (255),
+	state VARCHAR (10),
+	zip_code VARCHAR (5)
+);</code>
+Code language: SQL (Structured Query Language) (sql)
+<h3>Table sales.staffs</h3>
+The  <code>sales.staffs</code> table stores the essential information of staffs including first name, last name. It also contains the communication information such as email and phone.
+
+A staff works at a store specified by the value in the <code>store_id</code> column. A store can have one or more staffs.
+
+A staff reports to a store manager specified by the value in the <code>manager_id</code> column. If the value in the manager_id is null, then the staff is the top manager.
+
+If a staff no longer works for any stores, the value in the active column is set to zero.
+<code>CREATE TABLE sales.staffs (
+	staff_id INT IDENTITY (1, 1) PRIMARY KEY,
+	first_name VARCHAR (50) NOT NULL,
+	last_name VARCHAR (50) NOT NULL,
+	email VARCHAR (255) NOT NULL UNIQUE,
+	phone VARCHAR (25),
+	active tinyint NOT NULL,
+	store_id INT NOT NULL,
+	manager_id INT,
+	FOREIGN KEY (store_id) 
+        REFERENCES sales.stores (store_id) 
+        ON DELETE CASCADE ON UPDATE CASCADE,
+	FOREIGN KEY (manager_id) 
+        REFERENCES sales.staffs (staff_id) 
+        ON DELETE NO ACTION ON UPDATE NO ACTION
+);</code>
+Code language: SQL (Structured Query Language) (sql)
+<h3>Table production.categories</h3>
+The <code>production.categories</code> table stores the bike's categories such as children bicycles, comfort bicycles, and electric bikes.
+<code>CREATE TABLE production.categories (
+	category_id INT IDENTITY (1, 1) PRIMARY KEY,
+	category_name VARCHAR (255) NOT NULL
+);</code>
+Code language: SQL (Structured Query Language) (sql)
+<h3>Table production.brands</h3>
+The  <code>production.brands</code> table stores the brand's information of bikes, for example, Electra, Haro, and Heller.
+<code>CREATE TABLE production.brands (
+	brand_id INT IDENTITY (1, 1) PRIMARY KEY,
+	brand_name VARCHAR (255) NOT NULL
+);</code>
+Code language: SQL (Structured Query Language) (sql)
+<h3>Table production.products</h3>
+The <code>production.products</code> table stores the product's information such as name, brand, category, model year, and list price.
+
+Each product belongs to a brand specified by the <code>brand_id</code> column. Hence, a brand may have zero or many products.
+
+Each product also belongs a category specified by the <code>category_id</code> column. Also, each category may have zero or many products.
+<code>CREATE TABLE production.products (
+	product_id INT IDENTITY (1, 1) PRIMARY KEY,
+	product_name VARCHAR (255) NOT NULL,
+	brand_id INT NOT NULL,
+	category_id INT NOT NULL,
+	model_year SMALLINT NOT NULL,
+	list_price DECIMAL (10, 2) NOT NULL,
+	FOREIGN KEY (category_id) 
+        REFERENCES production.categories (category_id) 
+        ON DELETE CASCADE ON UPDATE CASCADE,
+	FOREIGN KEY (brand_id) 
+        REFERENCES production.brands (brand_id) 
+        ON DELETE CASCADE ON UPDATE CASCADE
+);</code>
+Code language: SQL (Structured Query Language) (sql)
+<h3>Table sales.customers</h3>
+The  <code>sales.customers</code> table stores customer's information including first name, last name, phone, email, street, city, state and zip code.
+<code>CREATE TABLE sales.customers (
+	customer_id INT IDENTITY (1, 1) PRIMARY KEY,
+	first_name VARCHAR (255) NOT NULL,
+	last_name VARCHAR (255) NOT NULL,
+	phone VARCHAR (25),
+	email VARCHAR (255) NOT NULL,
+	street VARCHAR (255),
+	city VARCHAR (50),
+	state VARCHAR (25),
+	zip_code VARCHAR (5)
+);</code>
+Code language: SQL (Structured Query Language) (sql)
+<h3>Table sales.orders</h3>
+The <code>sales.orders</code> table stores the sales order's header information including customer, order status, order date, required date, shipped date.
+
+It also stores the information on where the sales transaction was created (store) and who created it (staff).
+
+Each sales order has a row in the sales_orders table. A sales order has one or many line items stored in the <code>sales.order_items</code> table.
+<code>CREATE TABLE sales.orders (
+	order_id INT IDENTITY (1, 1) PRIMARY KEY,
+	customer_id INT,
+	order_status tinyint NOT NULL,
+	-- Order status: 1 = Pending; 2 = Processing; 3 = Rejected; 4 = Completed
+	order_date DATE NOT NULL,
+	required_date DATE NOT NULL,
+	shipped_date DATE,
+	store_id INT NOT NULL,
+	staff_id INT NOT NULL,
+	FOREIGN KEY (customer_id) 
+        REFERENCES sales.customers (customer_id) 
+        ON DELETE CASCADE ON UPDATE CASCADE,
+	FOREIGN KEY (store_id) 
+        REFERENCES sales.stores (store_id) 
+        ON DELETE CASCADE ON UPDATE CASCADE,
+	FOREIGN KEY (staff_id) 
+        REFERENCES sales.staffs (staff_id) 
+        ON DELETE NO ACTION ON UPDATE NO ACTION
+);</code>
+Code language: SQL (Structured Query Language) (sql)
+<h3>Table sales.order_items</h3>
+The <code>sales.order_items</code> table stores the line items of a sales order. Each line item belongs to a sales order specified by the <code>order_id</code> column.
+
+A sales order line item includes product, order quantity, list price, and discount.
+<code>CREATE TABLE sales.order_items(
+	order_id INT,
+	item_id INT,
+	product_id INT NOT NULL,
+	quantity INT NOT NULL,
+	list_price DECIMAL (10, 2) NOT NULL,
+	discount DECIMAL (4, 2) NOT NULL DEFAULT 0,
+	PRIMARY KEY (order_id, item_id),
+	FOREIGN KEY (order_id) 
+        REFERENCES sales.orders (order_id) 
+        ON DELETE CASCADE ON UPDATE CASCADE,
+	FOREIGN KEY (product_id) 
+        REFERENCES production.products (product_id) 
+        ON DELETE CASCADE ON UPDATE CASCADE
+);</code>
+Code language: SQL (Structured Query Language) (sql)
+<h3>Table production.stocks</h3>
+The <code>production.stocks</code> table stores the inventory information i.e. the quantity of a particular product in a specific store.
+<code>CREATE TABLE production.stocks (
+	store_id INT,
+	product_id INT,
+	quantity INT,
+	PRIMARY KEY (store_id, product_id),
+	FOREIGN KEY (store_id) 
+        REFERENCES sales.stores (store_id) 
+        ON DELETE CASCADE ON UPDATE CASCADE,
+	FOREIGN KEY (product_id) 
+        REFERENCES production.products (product_id) 
+        ON DELETE CASCADE ON UPDATE CASCADE
+);</code>
+Code language: SQL (Structured Query Language) (sql)
+
+Click the following link to download the sample database script:
+
+<a href="https://www.sqlservertutorial.net/wp-content/uploads/SQL-Server-Sample-Database.zip">Download SQL Server Sample Database</a>
+
+Now, you should be familiar with the BikeStores sample database and ready to load it into the SQL Server.
+
+<h2>SQL examples: SQL SELECT statement usage</h2>
+SQLSELECT statements are used to retrieve data from the database and also, they populate the result of the query into the result-sets. 
+The SQL examples of this article discourse and explain the fundamental usage of the <strong>SELECT</strong> statement in the queries. 
+<a href="https://en.wikipedia.org/wiki/SQL"> SQL (Structured Query Language)</a> queries can be used to select, update and delete data from the database. 
+If anyone desires to learn SQL, to learn the <strong>SELECT</strong> statements can be the best starting point. 
+On the other hand, we can use <strong>T-SQL</strong> query language particularly for SQL Server databases and it is a proprietary extension form of the SQL. 
+<h3>SELECT statement overview</h3>
+
+The most basic form of the SQL <strong>SELECT</strong> statement must be include <strong>SELECT</strong>, <strong>FROM</strong> clauses. 
+In addition, if we want to filter the result set of the query, we should use the <strong>WHERE</strong> clause.
+
+SELECT column1, column2 FROM table 
+
+The above query template specifies a very basic SQL <strong>SELECT</strong> statement. 
+As you can see, column names are placed after the <strong>SELECT </strong>clause and these columns are separated with a comma sign with <strong>(,)</strong>. 
+After the <strong>FROM</strong> clause, we add the table name in which we want to populate the data into the result set. 
+In addition, the following query template illustrates the usage of the <strong>WHERE</strong> clause in the <strong>SELECT</strong> query.
+
+SELECT column1, column2 FROM table WHERE column1='value'
+
+With the <strong>WHERE</strong> clause, we can filter the result set of the select statement. 
+Filtering patterns are used after the <strong>WHERE</strong> clause. 
+Now, we will make some SQL examples of the SQL <strong>SELECT</strong> statement and reinforce these theoretical notions.
+
+<h3>Basic SQL examples: Your first step into a SELECT statement</h3>
+
+Assume that, we have a fruits table which likes the below and includes the following rows;
+
+<strong>ID</strong>
+
+<strong>Fruit_Name</strong>
+
+<strong>Fruit_Color</strong>
+1 Banana Yellow
+2 Apple Red
+3 Lemon Yellow
+4 Strawberry Red
+5 Watermelon Green
+6 Lime Green
+
+We want to get all data of the <strong>Fruit_Name</strong> from the <strong>Fruits</strong> table. 
+In this case, we must write a SQL <strong>SELECT</strong> statement which looks like the below.SQL Server database engine processes this query and then returns the result-set of the query.
+
+SELECT Fruit_Name FROM Fruits
+
+<img src="https://www.sqlshack.com/wp-content/uploads/2019/05/sql-select-statement-result-set.png" />
+As you can see, the query returns only <strong>Fruit_Name</strong> column data. 
+Now, we will practice other SQL examples which are related to the <strong>SELECT</strong> statement. 
+In this example first example, we will retrieve all columns of the table. 
+If we want to return all columns of the table, we can use a <strong>(*) asterisk</strong> sign instead of writing whole columns of the table. 
+Through the following query, we can return all columns of the table.
+
+SELECT * FROM Fruits
+
+<img src="https://www.sqlshack.com/wp-content/uploads/2019/05/sql-examples-which-is-using-asterisk-wildcard-.png" />
+At the same time, to retrieve all columns, we can do this by writing them all separately. 
+However, this will be a very cumbersome operation. 
+SELECT ID,Fruit_Name ,Fruit_Color FROM Fruits
+
+<img src="https://www.sqlshack.com/wp-content/uploads/2019/05/sql-select-statement-multiple-columns-result-set.png" />
+<h3>SQL examples: How to filter a SELECT statement</h3>
+
+In this section, we will take a glance at simple clause usage of the <strong>WHERE </strong>clause. 
+If we want to filter the result set of the SQL <strong>SELECT</strong> statement, we have to use the <strong>WHERE</strong> clause. 
+For example, we want to filter the fruits whose colors are red. 
+In order to filter results of the query, at first we add the column name which we want to filter and then specify the filtering condition. 
+In the below SQL example, we will filter the red fruits of the <strong>Fruits</strong> table.
+
+SELECT * FROM Fruits WHERE Fruit_Color='Red'
+
+<img src="https://www.sqlshack.com/wp-content/uploads/2019/05/sql-select-example-which-is-using-equal-opera.png" />
+
+As you can see that, the result set only includes the red fruits data. 
+However, in this example, we filter the exact values of the columns with (<strong>=</strong>) equal operator. 
+In some circumstances, we want to compare the similarity of the filtered condition. 
+<strong>LIKE</strong> clause and <strong>(%) </strong>percent sign operator combination helps us to overcome these type of issues. 
+For example, we can filter the fruits who start with the letter “L” character. 
+The following query will apply a filter to <strong>Fruit_Name</strong> and this filter enables to retrieve fruits who start with “L” chracter.
+
+SELECT * FROM Fruits WHERE Fruit_Name LIKE 'L%'
+
+  
+<img src="https://www.sqlshack.com/wp-content/uploads/2019/05/filtering-sql-select-statement-with-like-clause-wi.png" alt="Filtering SQL SELECT statement with LIKE clause with single '%' percentage sign. 
+" /><noscript><img style="margin: 0px auto; display: block;" src="https://www.sqlshack.com/wp-content/uploads/2019/05/filtering-sql-select-statement-with-like-clause-wi.png" alt="Filtering SQL SELECT statement with LIKE clause with single '%' percentage sign. 
+" /></noscript>
+
+At the same time, we can apply <strong>(%) </strong>percentage<strong> </strong>operator at any place or multiple times to thw filter pattern. 
+In the following example, we will filter the fruits name which includes ‘n’ chracter.
+
+SELECT * FROM Fruits WHERE Fruit_Name LIKE '%n%'
+
+<img src="https://www.sqlshack.com/wp-content/uploads/2019/05/filtering-select-statement-with-like-clause-with-m.png" alt="Filtering SELECT statement with LIKE clause with multiple '%' percentage sign. 
+" /><noscript><img style="margin: 0px auto; display: block;" src="https://www.sqlshack.com/wp-content/uploads/2019/05/filtering-select-statement-with-like-clause-with-m.png" alt="Filtering SELECT statement with LIKE clause with multiple '%' percentage sign. 
+" /></noscript>
+
+Another commonly used operator is (<strong>_</strong>)<strong> </strong>the underscore operator. 
+This operator represents any character in the filter pattern. 
+Assume that, we want to apply a filter to the fruit names which meet the following criterias:
+
+<ul>
+<li>
+ The first character of the fruit name could be any character
+</li>
+<li>
+ The second character of the fruit name must be ‘a’
+</li>
+<li>
+ The remaining part of the fruit name can contain any character
+</li>
+</ul>
+
+The following SQL example will meet all criteria. 
+SELECT * FROM Fruits WHERE Fruit_Name LIKE '_a%'
+
+<img src="https://www.sqlshack.com/wp-content/uploads/2019/05/filtering-select-statement-with-like-clause-with.png" alt="Filtering SELECT statement with LIKE clause with '_' underscore sign. 
+" /><noscript><img style="margin: 0px auto; display: block;" src="https://www.sqlshack.com/wp-content/uploads/2019/05/filtering-select-statement-with-like-clause-with.png" alt="Filtering SELECT statement with LIKE clause with '_' underscore sign. 
+" /></noscript>
+
+<h3>SQL examples: SELECT TOP statement</h3>
+
+The<strong> SELECT TOP</strong> statement is used to limit the number of rows which returns the result of the query. 
+For example, if want to retrieve only two rows from the table we can use the following query. 
+Therefore, we can limit the result set of the query. 
+In the following SQL examples, we will limit the result set of the query. 
+Normally, the result of the query without <strong>TOP</strong> operator can returns much more rows but we force to limit returning row numbers of the query with <strong>TOP</strong> clause.
+
+SELECT TOP (2) * FROM Fruits
+<img src="https://www.sqlshack.com/wp-content/uploads/2019/05/sql-examples-which-is-using-top-clause-.png" />
+At the same time, we can limit the result set of the SQL SELECT statement with a percent value. 
+Such as, the following query returns only %60 percentage of result set. 
+SELECT TOP (60) PERCENT * FROM Fruits
+
+<img src="https://www.sqlshack.com/wp-content/uploads/2019/05/sql-examples-which-is-using-top-percent-combinati.png" />
+As you can see we added <strong>PERCENT</strong> expression to <strong>TOP</strong> operator and limit the result set of the query.
+
+
 
 
 
