@@ -153,7 +153,7 @@ function loadBookmark(objName) {
 
 
 randomFlip();
-$("#mustWatch").append('<pre><br><span class="silver">快捷键: <br>r, 5 跳任意题目 b, 4 前一题目 f, 6 下一题目<br><br>t, 8 目录顶 l, 2 目录底 7 目录中部<br><br>T 网页顶 e 网页底 m 必看<br><br>K 设定书签 k 跳到书签</span><br>多书签管理- R 跳任意书签; + 加书签; - 减书签; a 手动书签</pre>');
+$("#mustWatch").append('<pre><br><span class="silver">快捷键: <br>r, 5 跳任意题目 b, 4 前一题目 f, 6 下一题目<br><br>t, 8 目录顶 l, 2 目录底 7 目录中部<br><br>T 网页顶 e 网页底 m 必看<br><br>K 设定书签 k 跳到书签</span><br>多书签管理- R 跳任意书签; + 加书签; - 减书签; a 手动书签<br>按space 继续往下</pre>');
 
 
 
