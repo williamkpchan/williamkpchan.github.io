@@ -191,6 +191,7 @@ function askaList() {
   if (theList != null && theList != "") {
     localStorage.setItem("stkListArr",theList); // this is the shareList
     localStorage.setItem("titlebar","temp list");
+    $('#titlebar').text("temp list");
     location.reload();
   }
 }
@@ -199,7 +200,7 @@ function _stkChartInit() {  // this is the shareList init
   if (localStorage.getItem("stkListArr") === null) {
     theList = "00700";
     $("#titlebar").empty();
-    $('#titlebar').text()= "BigChip"
+    $('#titlebar').text("BigChip")
   }
   else { fullStkChartInit(); }
 }
