@@ -190,7 +190,7 @@ function askaList() {
   var theList = prompt("Enter stk list seperated by space:", "");
   if (theList != null && theList != "") {
     localStorage.setItem("stkListArr",theList); // this is the shareList
-    localStorage.setItem("titlebar","temp list");
+    localStorage.setItem("titleBar","temp list");
     $('#titlebar').text("temp list");
     location.reload();
   }
