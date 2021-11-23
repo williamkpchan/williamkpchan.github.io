@@ -26,6 +26,7 @@ function chkKey() {
   else if(testkey == 'h'){window.open("LibDocs/News Points.html");}
   else if(testkey == 'H'){window.open("LibDocs/monitorHSI.html");}
   else if(testkey == 'J'){window.location = '#_jiaoyu';}
+  else if(testkey == 'i'){window.open("LibDocs/InspectChart.html");}
   else if(testkey == 'l'){window.location = '#dushu';}
   //if(testkey == 'L'){openLogFile();}
   else if(testkey == 'L'){window.open("LibDocs/mlinechart.html");}
