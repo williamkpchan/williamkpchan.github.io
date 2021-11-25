@@ -69,7 +69,7 @@ if (typeof markerName == 'undefined') {
 }
 
 function changeTopic() {
- if (topicpointer >= topicLength) { topicpointer = 1;}
+ if (topicpointer >= topicLength) { topicpointer = 0;}
  else if (topicpointer < 0) { topicpointer = topicLength;}
  else { topicpointer = topicpointer + 1;}
  showTopic()
