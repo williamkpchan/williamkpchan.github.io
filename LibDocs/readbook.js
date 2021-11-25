@@ -70,8 +70,9 @@ if (typeof markerName == 'undefined') {
 
 function changeTopic() {
  if (topicpointer >= topicLength) { topicpointer = 0;}
- else if (topicpointer < 0) { topicpointer = topicLength;}
+ else if (topicpointer < 0) { topicpointer = topicLength-1;}
  else { topicpointer = topicpointer + 1;}
+console.log(topicpointer)
  showTopic()
 }
 function backward() { topicpointer = topicpointer - 2; changeTopic();}
