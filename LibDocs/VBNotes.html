@@ -4892,7 +4892,7 @@ Here is sample code that demonstrates how to work with the string lists returned
 <b>End</b> <b>Sub</b>
 
 
-<h2>tp dispaly an image</h2>
+<h2>to dispaly an image</h2>
 Set objHtml = CreateObject("InternetExplorer.Application")
 With objHtml
     .Navigate "about:blank"
@@ -4905,6 +4905,36 @@ With objHtml
     .Width=300
     .Document.Body.InnerHTML = "<body onkeypress='window.close()'><img src='https://media.tenor.com/images/eff22afc2220e9df92a7aa2f53948f9f/tenor.gif' style='height:100%'>"
 End With
+
+
+objHtml.navigate(surl) 'Navigate to the website
+
+'Set the browser to fullscreen and theatermode
+objHtml.Fullscreen=true
+'This makes the window not closable until the user exits the page using a script on the html
+'page that has a window.close command or they use Alt-F4
+'Setting the TheaterMode on and then off makes the object show properly.
+
+objHtml.TheaterMode=true
+objHtml.TheaterMode=false
+
+'Turn off the status bar
+objHtml.statusbar=false
+
+'Turn off the toolbar
+objHtml.toolbar=false
+
+'Turn off Resizable
+objHtml.Resizable=false
+
+objHtml.document.focus()
+'Set the browser to focus which brings it to the top.
+' dont work
+
+objHtml.top =0
+objHtml.Left=0
+'Sets the window to the upper left hand corner
+
 
 <h2>vbs now function</h2>
 The now function returns the current date and time
@@ -6647,6 +6677,77 @@ For i = 0 to 50
     WshShell.SendKeys(chr(175))
 Next
 WshShell.run "CMD /C start chrome.exe " & URL & "",0,False
+
+<h2>Keep a VBScript window on top</h2>
+' as well as adding a logoff button
+
+Dim Title,ws,nMinutes,nSeconds,sMessage,Command,Executer
+Title = "Session Timer"
+Set ws = CreateObject("wscript.Shell")
+nMinutes = 0
+nSeconds = 10
+sMessage = "&lt;font color=Red size=2>&lt;b>You have"
+'Open a chromeless window with message
+with HTABox("lightBlue",130,300,1070,600)
+.document.title = "Session Timer"
+.msg.innerHTML = sMessage
+do until .done.value or (nMinutes + nSeconds &lt; 1)
+    .msg.innerHTML = sMessage & "&lt;br>" & nMinutes & ":" &   Right("0"&nSeconds, 2) _
+    & " minutes of session time remaining&lt;/b>&lt;/font>&lt;br>"
+    wsh.sleep 1000 ' milliseconds
+    nSeconds = nSeconds - 1
+    if nSeconds &lt; 0 then 
+        if nMinutes > 0 then
+            nMinutes = nMinutes - 1
+            nSeconds = 59
+        end if
+    end if
+loop
+.done.value = true
+.close
+end with
+ws.Popup "Your session time has finished. You will now be logged off.","5",Title,0+48
+'Command ="cmd /c Shutdown.exe -l -f"
+'Executer = WS.Run(Command,0,False) 
+'*****************************************************************
+Function HTABox(sBgColor,h, w, l, t)
+Dim IE, HTA, sCmd, nRnd
+randomize : nRnd = Int(1000000 * rnd)
+sCmd = "mshta.exe ""javascript:{new " _
+& "ActiveXObject(""InternetExplorer.Application"")" _
+& ".PutProperty('" & nRnd & "',window);" _
+& "window.resizeTo(" & w & "," & h & ");" _
+& "window.moveTo(" & l & "," & t & ")}"""
+with CreateObject("WScript.Shell")
+    .Run sCmd, 1, False
+    do until .AppActivate("javascript:{new ") : WSH.sleep 10 : loop
+    end with  'WSHShell
+    For Each IE In CreateObject("Shell.Application").windows
+        If IsObject(IE.GetProperty(nRnd)) Then
+            set HTABox = IE.GetProperty(nRnd)
+            IE.Quit
+            HTABox.document.title = "HTABox"
+            HTABox.document.write _
+            "&lt;HTA:Application contextMenu=no border=thin " _
+            & "minimizebutton=no maximizebutton=no sysmenu=no SHOWINTASKBAR=no >" _
+            & "&lt;body scroll=no style='background-color:" _
+            & sBgColor & ";font:normal 10pt Arial;" _
+            & "border-Style:inset;border-Width:3px'" _
+            & "onbeforeunload='vbscript:if not done.value then " _
+            & "window.event.cancelBubble=true:" _
+            & "window.event.returnValue=false:" _
+            & "done.value=true:end if'>" _
+            & "&lt;input type=hidden id=done value=false>" _
+            & "&lt;center>&lt;span id=msg>&nbsp;&lt;/span>&lt;br>" _
+            & "&lt;input type=button id=btn1 value=' Log Off ' "_
+            & "onclick=done.value=true>&lt;center>&lt;/body>"
+            HTABox.btn1.focus
+            Exit Function
+        End If
+    Next
+    MsgBox "HTA window not found."
+    wsh.quit
+End Function
 
 
 
