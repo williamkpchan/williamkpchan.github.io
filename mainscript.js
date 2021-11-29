@@ -75,6 +75,7 @@ function chkOtherKeys(testkey) {
   else if(testkey == 'd'){window.open("https://www.youdao.com/");}
   else if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
   else if(testkey == 'f'){window.open("http://williamkpchan.github.io/ForexChart.htm");}
+  else if(testkey == 'G'){window.open("https://keep.google.com/");}
   else if(testkey == 'm'){window.open("http://williamkpchan.github.io/medical.html");}
   else if(testkey == 'M'){window.open("https://www.google.com.hk/maps/");}
   else if(testkey == 'q'){window.open('https://www.quora.com/');}
