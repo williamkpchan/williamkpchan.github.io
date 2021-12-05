@@ -77,6 +77,7 @@ function changeTopic() {
 function backward() { topicpointer = topicpointer - 2; changeTopic();}
 function foreward() { changeTopic();}
 function showTopic() {
+  if(topicpointer>topicLength){topicpointer = topicLength}
   window.location = "#topic-" + topicpointer;
   notvisitedList = notvisitedList.filter(item => item !== topicpointer) // remove topicpointer
   if(notvisitedList.length == 0){
