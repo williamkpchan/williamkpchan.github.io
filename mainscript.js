@@ -24,7 +24,7 @@ function chkKey() {
   else if(testkey == 'g'){window.open("https://mail.google.com/");}
 
   else if(testkey == 'h'){window.open("LibDocs/News Points.html");}
-  else if(testkey == 'H'){window.open("LibDocs/monitorHSI.html");}
+  else if(testkey == 'H'){window.open("https://williamkpchanHP.github.io/");}
   else if(testkey == 'J'){window.location = '#_jiaoyu';}
   else if(testkey == 'i'){window.open("LibDocs/InspectChart.html");}
   else if(testkey == 'l'){window.location = '#dushu';}

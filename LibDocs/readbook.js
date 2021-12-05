@@ -27,8 +27,8 @@ function chkKey() {
   else if(testkey == "m"){ location = '#mustWatch';}
   else if(testkey == "p"){ pause();}
   // else if(testkey == "c"){ continU();}
-  else if(testkey == "r"){ randomFlip();}
-  else if(testkey == "5"){ randomFlip();}
+  else if(testkey == "r"){ randomWL();}
+  else if(testkey == "5"){ randomWL();}
   else if(testkey == "s"){ showMov();}
   else if(testkey == 't'){window.location = '#toc';
       window.scrollTo(window.scrollX, window.scrollY - 200);}
@@ -49,7 +49,7 @@ function chkKey() {
   }
   else if(testkey == 'd'){window.open("https://www.youdao.com/");}
   else if(testkey == 'u'){window.open("https://www.worldometers.info/coronavirus/");}
-  else if(testkey == "R"){ randomWL();}
+  else if(testkey == "R"){ randomFlip();}
   else if(testkey == "+"){ addtoWL();}
   else if(testkey == "-"){ rvFmWL();}
   else if(testkey == "a"){ askNum();}
@@ -72,7 +72,6 @@ function changeTopic() {
  if (topicpointer >= topicLength-1) { topicpointer = 0;}
  else if (topicpointer < 0) { topicpointer = topicLength-1;}
  else { topicpointer = topicpointer + 1;}
-console.log(topicpointer)
  showTopic()
 }
 function backward() { topicpointer = topicpointer - 2; changeTopic();}
@@ -83,6 +82,7 @@ function showTopic() {
   if(notvisitedList.length == 0){
    notvisitedList = [...Array(totalLength).keys()];
   }
+  console.log(topicpointer)
 }
 function jumpto(index) { topicpointer = index; showTopic();}
 function randomFlip() {
@@ -106,6 +106,7 @@ function jumpTo() {
 
 var toc = $('#toc');
 var markerList = []
+waitList = []
 
 if(typeof(topicEnd) == 'undefined'){ topicEnd = "<br>";}
 
@@ -122,12 +123,12 @@ if(markerName != "h0"){
       // toc coding here
       if (typeof(showTopicNumber) !== 'undefined'){
         if (showTopicNumber == true){
-          toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a>'+topicEnd);
+          toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self" onclick="jumpto(' + topicNumber + ')">'+topic.html()+'</a>'+topicEnd);
         }else{
-          toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a>'+topicEnd);
+          toc.append('<a href="#topic-'+topicNumber+'" target="_self" onclick="jumpto(' + topicNumber + ')">'+topic.html()+'</a>'+topicEnd);
         }
       }else{
-        toc.append('<a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
+        toc.append('<a href="#topic-'+topicNumber+'" target="_self" onclick="jumpto(' + topicNumber + ')">'+topic.html()+'</a><br>');
       }
       // toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
 
@@ -151,13 +152,6 @@ function loadBookmark(objName) {
   $('body').animate({scrollTop: pos}, 0);
 }
 
-
-
-randomFlip();
-$("#mustWatch").append('<pre><br><span class="silver">快捷键: <br>r, 5 跳任意题目 b, 4 前一题目 f, 6 下一题目<br><br>t, 8 目录顶 l, 2 目录底 7 目录中部<br><br>T 网页顶 e 网页底 m 必看<br><br>K 设定书签 k 跳到书签</span><br>多书签管理- R 跳任意书签; + 加书签; - 减书签; a 手动书签<br>按space 继续往下</pre>');
-
-
-
 // learningMode package //
 // totalLength already exist
 
@@ -177,16 +171,27 @@ var waitListName = "waitingList"
 window[waitListName] = window["bookid"] + " waitList" // waitingList is variable name now
 
 if (localStorage.getItem(waitingList) === null) {
-    localStorage.setItem(waitingList, [0,1,2,3,4])
-    waitList = [1,2,3,4,5]
+    initWaitList()
 }else{
     waitList = localStorage.getItem(waitingList).split(",").map(Number)
+    if(waitList == [0]){ initWaitList() }
+}
+
+function initWaitList() {
+    // generate random pointers
+    waitList = Array(10).fill().map(() => Math.round(Math.random() * totalLength))
+    waitList = [...new Set(waitList)]    // set unique
+    localStorage.setItem(waitingList, waitList)
 }
 
 function randomWL() {
-  newPointer = waitList[Math.floor(Math.random() * waitList.length)];
+  pointerList = waitList
+  if(waitList.length > 10){
+    pointerList.splice(10, (pointerList.length - 10));
+  }
+  newPointer = pointerList[Math.floor(Math.random() * pointerList.length)];
   while(newPointer == topicpointer){
-    newPointer = waitList[Math.floor(Math.random() * waitList.length)];
+    newPointer = pointerList[Math.floor(Math.random() * pointerList.length)];
   }
   topicpointer = newPointer;
   showTopic();
@@ -234,3 +239,5 @@ window.addEventListener("hashchange", function () {
 
 // learningMode package complete//
 
+randomWL();
+$("#mustWatch").append('<pre><br><span class="silver">快捷键: <br>r, 5 跳任意题目 b, 4 前一题目 f, 6 下一题目<br><br>t, 8 目录顶 l, 2 目录底 7 目录中部<br><br>T 网页顶 e 网页底 m 必看<br><br>K 设定书签 k 跳到书签</span><br>多书签管理- R 跳任意书签; + 加书签; - 减书签; a 手动书签<br>按space 继续往下</pre>');

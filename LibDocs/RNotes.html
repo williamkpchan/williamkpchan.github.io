@@ -39,6 +39,7 @@ img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; bor
 <a href="https://www.youtube.com/watch?v=kL6L2MNqPHg" class="whitebut ">use Git and GitHub with R</a>
 
 <a href="../Component Analysis PCA.html">&#x25B2;<b class="redword bordred1 borRad15">Component Analysis PCA</b></a>
+<a href="Principal Component Analysis.html" class="goldbut red whitebs">Principal Component Analysis</a>
 <a href="http://uc-r.github.io/ann_classification" class="whitebut ">Classification Artificial Neural Network</a>
 <br>
 <a href="http://adv-r.had.co.nz/Rcpp.html" class="whitebut ">High performance functions with Rcpp</a>
@@ -26706,6 +26707,275 @@ remDr$close()
 rm(rD)
 gc()
 
+
+<h2>Integration between R and php</h2>
+There are several options, but one option is to use RApache. 
+Install RApache as indicated in http://rapache.net/manual.html
+
+Set the Apache directive in httpd.conf which will make sure all files under /var/www/brew are parsed as R scripts
+
+<Directory /var/www/brew>
+  SetHandler r-script
+  RHandler brew::brew
+</Directory>
+
+Make your R script with your API with file name plot.R and put it under the /var/www/brew folder. 
+
+This R script file can e.g. look as follows:
+<%
+library(rjson)
+args <- GET
+tmp <- lapply(args, FUN=function(x) strsplit(x, " "))
+typeOfData <- tmp[[1]][1]
+month <- tmp[[2]][1]
+year <- tmp[[3]][1]
+output <- list(imgname="imgs/tmax.tiff")
+cat(toJSON(output))
+%>
+
+Mark the GET
+
+Now you can call your API from PHP as you would call any other webservice by calling http://localhost/brew/plot.R?typeOfData=1&month=2&year=2014. 
+Replace localhost with the IP of the server where you are hosting the API.
+
+When using RApache, each time you get GET, POST, COOKIES, FILES, SERVER variables which were passed on to the API call. 
+So if you want to use POST in your call instead of the GET example, go ahead. 
+See the documentation in http://rapache.net/manual.html for these variables.
+
+Check out <a href="https://github.com/cturbelin/rserve-php" class="whitebut ">Rserve-php</a>. 
+It uses Rserve as a backend which is a TCP/IP server for R.
+
+Have a look at <a href="https://github.com/kachkaev/php-r" class="whitebut ">php-r</a> library on github, it lets you execute R code from PHP (having R interpreter installed on your machine).
+
+<h2>How to Integrate R with PHP</h2>
+This tutorial explains how to integrate R with PHP.
+
+Online reporting tools have gained popularity in recent years. 
+There is a growing demand to implement advanced analytics in these tools. 
+Use of advanced analytics help to solve various organization problems such as retaining existing customers or acquiring new customers, increasing customer satisfaction etc.
+
+PHP is one of the most popular programming language to develop websites and online reporting tools. 
+It has rich functionality to write business logic, however they are not effective when it comes to data science and machine learning. 
+In the field of data science, R dominates in terms of popularity among statisticians and data scientists with over 10k number of packages.
+
+<b>How to make PHP communicate with R</b>
+There are times when you want to showcase the output of R program like charts that you create based on the user inputted data from a web page. 
+In that case you might want your PHP based web application to communicate with the R script.
+
+<b>When it comes to PHP, it has a very useful function called</b> <b>exec().</b> 
+It lets you execute the outside program you provide as the source. 
+We will be using the very same function to execute the R script you created. 
+The then generates the graph and we will show the graph in our web page.
+
+The <b>exec function</b> can be used on both the Linux and Windows environments.
+On the Linux environment it will open the terminal window to execute the command you set and arguments you specify. 
+
+While on the Windows environment it will open the CMD to execute the command you provide along with the arguments you specify.
+
+I will walk you through the process of integrating the R code with PHP web page with code and explanation.&#8195;
+
+<b>Let's first create a PHP based web form:</b>
+
+<b>index.php:</b>
+<blockquote>
+&lt;html>
+  &lt;head>
+    &lt;title>PHP and R Integration Sample&lt;/title>
+  &lt;/head>
+  &lt;body>
+    &lt;div id=&#8221;r-output&#8221; id=&#8221;width: 100%; padding: 25px;&#8221;>
+    &lt;?php
+      // Execute the R script within PHP code
+      // Generates output as test.png image.
+      exec("sample.R");
+    ?>
+    &lt;img src=&#8221;test.png?var1.1&#8221; alt=&#8221;R Graph&#8221; />
+    &lt;/div>
+  &lt;/body>
+&lt;/html></blockquote>
+Now save the file as index.php under your <b>/htdocs/PROJECT-NAME/index.php.</b>
+
+<b>Let's create a sample chart using R code.</b>
+Write the following code and save it as <b>sample.R file</b>.
+<blockquote>
+x &lt;- rnorm(6,0,1)
+png(filename="test.png", width=500, height=500)
+hist(x, col="red")
+dev.off()</blockquote>
+
+<img src="https://3.bp.blogspot.com/-35PXxfvHn5o/WOpvdiPrIgI/AAAAAAAAGHA/AQndI2BK3ZEQJjT2ccfsX8z8ConCuelvACLcB/s1600/Histogram.png">
+Histogram
+<b>rnorm(6, 0 ,1)</b> means generating 6 random values with mean 0 and standard deviation 1. 
+The dev.off() command is used to close the graph. 
+Once chart created it will save it as the test.png file.
+<blockquote>
+The only downside of this code is that it will create the same test.png file for all the incoming requests. 
+Meaning if you are creating charts based on user specified inputs, there will always be one test.png file created for various purpose.</blockquote>
+<b>Let's understand the code</b>
+As specified earlier the exec('<b>sample.R'</b>); will execute the R script. 
+It in turn generates the test.png graph image.
+
+In the very next line we used the HTML &lt;img /> tag to display the R program generated image on the page. 
+We used the src=test.png?ver1.1 where ver1.1 is used to invalidate the browser cache and download the new image from server.
+
+All modern browsers supports the browser caching. 
+You might have experienced some website loads way faster on your repetitive visits. 
+It's due to the fact that browsers cache the image and other static resources for brief period of time.
+
+<b>How to serve concurrent requests?</b>
+
+<b>sample2.R</b>
+<blockquote>
+args &lt;- commandArgs(TRUE)
+cols &lt;- args[1]
+fname &lt;- args[2]
+x &lt;- rnorm(cols,0,1)
+fname = paste(fname, "png", sep = ".")
+png(filename=fname, width=500, height=500)
+hist(x, col="red") dev.off()</blockquote>
+<b>Index.php</b>
+<blockquote>
+&lt;html>
+  &lt;head>
+    &lt;title>PHP and R Integration Sample&lt;/title>
+  &lt;/head>
+  &lt;body>
+    &lt;div id=&#8221;r-output&#8221; id=&#8221;width: 100%; padding: 25px;&#8221;>
+    &lt;?php
+      // Execute the R script within PHP code
+      // Generates output as test.png image.
+      $filename = &#8220;samplefile&#8221;.rand(1,100);
+      exec("sample2.R 6 &#8220;.$filename.");
+    ?>
+    &lt;img src=&#8221;.$filename.&#8221;.png?var1.1&#8221; alt=&#8221;R Graph&#8221; />
+    &lt;/div>
+  &lt;/body>
+&lt;/html></blockquote>
+It will help you eliminate the need to using the same test.png file name. 
+I have used the $filename=&#8221;samplefile&#8221;. 
+You can use any random sequence as I have used in the end of the samplefile name. 
+rand(min, max) will help you generate a random number.
+
+It will help you fix the file overwriting issue. 
+And you will be able to handle the concurrent requests and server each with unique set of image(s).
+
+You might need to take care of old file removals. 
+If you are on a linux machine you can setup a cron job which will find and delete the chart image files those are older than 24 hours.
+
+<b>Here is the code to find and remove files:</b>
+
+<b>Delete.php</b>
+<blockquote>
+&lt;?php
+// set the path to your chart image directory
+$dir = "images/temp/";
+// loop through all the chart png files inside the directory.
+foreach (glob($dir."*.png") as $file) {
+// if file is 24 hours old then delete it
+if (filemtime($file) &lt; time() - 86400) {
+    unlink($file);
+    }
+}
+?></blockquote>
+<b>Conclusion</b>
+Making PHP communicate with R and showcase the result is very simple. 
+You might need to understand the exec() function and some PHP code if in-case you want to delete those residual files/images generated by your R program.
+
+
+<h2>PHP 呼叫 R 整合教學，線上資料分析與繪圖工具開發</h2>
+如果您想要開發一個線上分析資料的工具，網頁部份可以使用 PHP、HTML、JavaScript 與 CSS 等傳統技術來處理，而資料的統計分析與繪圖則可以借重 R 語言來解決，以下是常見的幾種 PHP 與 R 語言的整合方式與範例程式碼。
+
+<h3>PHP 執行外部 R 指令稿</h3>
+建立一個 PHP 指令稿，將其命名為 <code>r.php</code>，內容如下：
+&lt;html>
+&lt;body>
+&lt;form action='r.php' method='get'>
+輸入 N 值: &lt;input type='text' name='n' />
+&lt;input type='submit' />
+&lt;/form>
+&lt;?php
+if(isset($_GET['n'])) {
+  $n = $_GET['n'];
+  // 以外部指令的方式呼叫 R 進行繪圖
+  exec("Rscript script.R $n");
+  // 產生亂數
+  $nocache = rand();
+  // 輸出圖檔
+  echo("&lt;img src='output/hist.png?$nocache' />");
+}
+?>
+&lt;/body>&lt;/html>
+
+上面這段程式碼的上半部是一個普通的 HTML form，可以用來送出使用者所輸入的參數，而下半部則是 PHP 的程式碼，在接收使用者輸入的 <code>n</code> 值之後，透過 PHP 的 <code>exec</code> 執行外部程式，而 <code>Rscript</code> 這個程式則是附屬在 R 中的一個程式，只要安裝好 R 之後系統上就會有這個程式，它是專門用來執行 R 指令稿的工具程式。
+
+最後在執行完 R 指令稿之後，要顯示繪圖的結果，由於我們每一次所繪製的圖檔檔名都一樣，所以需要在圖檔後方加上一串亂數，強迫讓瀏覽器重新抓取新的圖檔（也就是不要使用瀏覽器的快取），這樣每次送出新的 <code>n</code> 值才會顯示新的結果。
+
+以下是 <code>script.R</code> 這一個 R 指令稿的內容：
+args &lt;- commandArgs(TRUE)
+# 取得使用者輸入的 N 值
+n &lt;- args[1]
+# 產生資料
+x &lt;- rnorm(n, 0, 1)
+# 繪製直方圖
+png(filename="output/hist.png", width = 500, height = 300)
+hist(x, col = "orange")
+dev.off()
+
+在 R 中我們透過 <code>commandArgs</code> 取得從 shell 中傳入的參數，其中第一個參數就是使用者輸入的 <code>n</code> 值，藉由這樣的方式就可以取得從 PHP 傳過來的資料。
+接著產生一些常態分佈的亂數資料，並繪製一張直方圖，我們將圖形儲存至 <code>output</code> 這個目錄中，然後再讓網頁直接讀取這個圖檔，這樣就可以將結果傳給使用者。
+
+這裡我是規劃 <code>output</code> 目錄專門用來放置輸出的圖檔，由於 R 的指令稿會以執行網頁伺服器的使用者（在 Ubuntu Linux 中通常是 <code>www-data</code>）權限來執行，所以請注意目錄權限的設定，要讓伺服器有權限可以寫入這個目錄。
+
+執行的結果會像這樣：
+<img class="lazy" data-src="https://blog.gtwang.org/wp-content/uploads/2016/11/integrating-php-and-r-20161101-1.png">
+
+PHP 呼叫 R 的網頁
+<h3>PHP 開啟管線執行 R 指令稿</h3>
+
+以 PHP 的 <code>exec</code> 執行外部的 R 指令稿是一個比較簡單的方式，不過缺點就是它需要另外建立一個單獨的 R 指令稿，如果不想要另外建立一個 R 檔案，可以改用 <code>proc_open</code> 的方式，直接把 R 的指令從 PHP 中透過 Linux 的管線（pipe）寫到 R 的行程（process）中，這樣就可以省去建立 R 檔案的麻煩，以下是一個簡單的範例：
+&lt;html>&lt;body>
+&lt;form action='r.php' method='get'>
+輸入 N 值: &lt;input type='text' name='n' />
+&lt;input type='submit' />
+&lt;/form>
+&lt;?php
+if(isset($_GET['n'])) {
+  $n = $_GET['n'];
+
+  $descriptorspec = array(
+    0 => array(&quot;pipe&quot;, &quot;r&quot;),             // stdin
+    1 => array(&quot;file&quot;, &quot;/tmp/output.txt&quot;, &quot;w&quot;),// stdout
+    2 => array(&quot;file&quot;, &quot;/tmp/error.txt&quot;, &quot;w&quot;) // stderr
+  );
+
+  // 以管線的方式執行 R 指令稿進行繪圖
+  $rproc = proc_open(&quot;R --vanilla&quot;, $descriptorspec, $pipes);
+
+  if (is_resource($rproc)) {
+
+    fwrite($pipes[0], &quot;x &lt;- rnorm($n, 0, 1);&quot;);
+    fwrite($pipes[0], &quot;png(filename='output/hist.png', width = 500, height = 300);&quot;);
+    fwrite($pipes[0], &quot;hist(x, col = 'orange');&quot;);
+    fwrite($pipes[0], &quot;dev.off();&quot;);
+
+    fclose($pipes[0]);
+
+    proc_close($rproc);
+
+    // 產生亂數
+    $nocache = rand();
+
+    // 輸出圖檔
+    echo(&quot;&lt;img src='output/hist.png?$nocache' />&quot;);
+  }
+}
+?>
+&lt;/body>&lt;/html>
+
+這個範例我們利用 <code>proc_open</code> 從 PHP 中開啟一個 R 的行程，在開啟新的行程之前，要先以 <code>$descriptorspec</code> 設定好新行程的標準輸入、標準輸出與標準錯誤，此處我們將新 R 行程的標準輸入指定為管線，方便我們直接從 PHP 寫入資料，而 R 的輸出與錯訊息則是導入兩個暫存檔中，通常在開發階段這樣可以方便我們檢視程式是否有正確執行，除錯也比較方便。
+
+將 R 的指令都寫入 R 的行程之後，在呼叫 <code>proc_close</code> 關閉 R 行程之前，要記得先將所有的管線關閉，避免造成 deadlock。
+最後一樣照舊將圖檔顯示在網頁上，不管是使用 <code>proc_close</code> 還是 <code>exec</code> 來整合 PHP 與 R，顯示出來的效果看起來都相同，只有內部的程式結構上有些差異而已。
 
 
 
