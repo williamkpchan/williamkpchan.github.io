@@ -53,6 +53,7 @@ function chkKey() {
   else if(testkey == "+"){ addtoWL();}
   else if(testkey == "-"){ rvFmWL();}
   else if(testkey == "a"){ askNum();}
+  else if(testkey == "w"){ setwaitListSize();}
 
   else{chkOtherKeys(testkey)} 
 }
@@ -167,6 +168,19 @@ if (localStorage.getItem(removeList) === null) {
     rMList = localStorage.getItem(removeList).split(",").map(Number)
 }
 
+// init waitListSize
+var waitListSizeName = "waitListSize"
+window[waitListSizeName] = window["bookid"] + " waitSize" // waitListSize is variable name now
+
+if (localStorage.getItem(waitListSize) === null) {
+    localStorage.setItem(waitListSize, 10)
+    waitListSize = 10
+}else{
+    waitListSize = parseInt(localStorage.getItem(waitListSize))
+    if(waitListSize == 0){ waitListSize = 10 }
+}
+
+
 // init waitingList
 var waitListName = "waitingList"
 window[waitListName] = window["bookid"] + " waitList" // waitingList is variable name now
@@ -180,15 +194,15 @@ if (localStorage.getItem(waitingList) === null) {
 
 function initWaitList() {
     // generate random pointers
-    waitList = Array(10).fill().map(() => Math.round(Math.random() * totalLength))
+    waitList = Array(waitListSize).fill().map(() => Math.round(Math.random() * totalLength))
     waitList = [...new Set(waitList)]    // set unique
     localStorage.setItem(waitingList, waitList)
 }
 
 function randomWL() {
   pointerList = waitList
-  if(waitList.length > 10){
-    pointerList.splice(10, (pointerList.length - 10));
+  if(waitList.length > waitListSize){
+    pointerList.splice(waitListSize, (pointerList.length - waitListSize));
   }
   newPointer = pointerList[Math.floor(Math.random() * pointerList.length)];
   while(newPointer == topicpointer){
@@ -223,6 +237,17 @@ function askNum() {
     }
 }
 
+
+function setwaitListSize() {
+    thecode = prompt("Set buffer Size:", "");
+    if (thecode != null && thecode != "") {
+      localStorage.setItem(waitListSize, thecode)
+      waitListSize = parseInt(thecode)
+    }else{
+      return;
+    }
+}
+
 // function to jump to content target, jump by this method may f and b
 function findContent(item) {
   for (let i = 0; i < markerList.length; i++) {
@@ -241,4 +266,4 @@ window.addEventListener("hashchange", function () {
 // learningMode package complete//
 
 randomWL();
-$("#mustWatch").append('<pre><br><span class="silver">快捷键: <br>r, 5 跳任意书签 R, 跳任意题目 b, 4 前一题目 f, 6 下一题目<br><br>t, 8 目录顶 l, 2 目录底 7 目录中部<br><br>T 网页顶 e 网页底 m 必看<br><br>K 设特定书签 k 跳到特定书签</span><br>多书签管理- R 跳任意书签; + 目前题目加入书签; - 目前题目删除书签; a 手动书签<br>按space 继续往下</pre>');
+$("#mustWatch").append('<pre><br><span class="silver">快捷键: <br>r, 5 跳任意书签 R, 跳任意题目 b, 4 前一题目 f, 6 下一题目<br><br>t, 8 目录顶 l, 2 目录底 7 目录中部<br><br>T 网页顶 e 网页底 m 必看<br><br>K 设特定书签 k 跳到特定书签</span><br>多书签管理- R 跳任意书签; + 目前题目加入书签; - 目前题目删除书签; a 手动书签<br>w 设定多书签容量<br>按space 继续往下</pre>');
