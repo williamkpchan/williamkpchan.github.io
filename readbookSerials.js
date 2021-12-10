@@ -177,6 +177,24 @@ if (localStorage.getItem(waitListBuf) === null) {
     if(waitListSize == 0){ waitListSize = 10 }
 }
 
+// init waitingList
+var waitListName = "waitingList"
+window[waitListName] = window["bookid"] + " waitList" // waitingList is variable name now
+
+if (localStorage.getItem(waitingList) === null) {
+    initWaitList()
+}else{
+    waitList = localStorage.getItem(waitingList).split(",").map(Number)
+    if(waitList == [0]){ initWaitList() }
+}
+
+function initWaitList() {
+    // generate random pointers
+    waitList = Array(waitListSize).fill().map(() => Math.round(Math.random() * totalLength))
+    waitList = [...new Set(waitList)]    // set unique
+    localStorage.setItem(waitingList, waitList)
+}
+
 function setwaitListSize() {
     thecode = prompt("Current buffer size: " + waitListSize + ", Set new buffer size: ", "");
     if (thecode != null && thecode != "") {
