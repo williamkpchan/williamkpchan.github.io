@@ -45,6 +45,7 @@ function chkKey() {
   else if(testkey == "5"){ randomWL();}
   else if(testkey == "s"){ showMov();}
   else if(testkey == "0"){ showMov();}
+  else if(testkey == "w"){ setwaitListSize();}
   else if(testkey == 't'){window.location = '#toc';
       window.scrollTo(window.scrollX, window.scrollY - 150);}
   else if(testkey == '8'){window.location = '#toc';
@@ -164,15 +165,26 @@ if (localStorage.getItem(removeList) === null) {
     rMList = localStorage.getItem(removeList).split(",").map(Number)
 }
 
-// init waitingList
-var waitListName = "waitingList"
-window[waitListName] = window["bookid"] + " waitList" // waitingList is variable name now
+// init waitListSize
+var waitListSizeName = "waitListBuf"
+window[waitListSizeName] = window["bookid"] + " waitSize" // waitListSize is variable name now
 
-if (localStorage.getItem(waitingList) === null) {
-    initWaitList()
+if (localStorage.getItem(waitListBuf) === null) {
+    localStorage.setItem(waitListBuf, 10)
+    waitListSize = 10
 }else{
-    waitList = localStorage.getItem(waitingList).split(",").map(Number)
-    if(waitList == [0]){ initWaitList() }
+    waitListSize = parseInt(localStorage.getItem(waitListBuf))
+    if(waitListSize == 0){ waitListSize = 10 }
+}
+
+function setwaitListSize() {
+    thecode = prompt("Current buffer size: " + waitListSize + ", Set new buffer size: ", "");
+    if (thecode != null && thecode != "") {
+      localStorage.setItem(waitListBuf, thecode)
+      waitListSize = parseInt(thecode)
+    }else{
+      return;
+    }
 }
 
 function initWaitList() {
