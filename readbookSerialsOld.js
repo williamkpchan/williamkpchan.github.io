@@ -1,7 +1,4 @@
 var toc = $('#toc');
-var markerList = []
-waitList = []
-
 var patt1 = /(<h2>).*(<\/h2>)/i;
 var patt2 = /(<h2[^>]*>|<\/h2>)/g;
 var divtoc = document.getElementById("toc");
@@ -19,7 +16,7 @@ function makeTOC(theStr, index) {
 
 function jumpto(index) {
   topicpointer = index;
-  showTopic();
+  showImg();
 }
 function chkKey() {
   var testkey = getChar(event);
@@ -41,8 +38,8 @@ function chkKey() {
   else if(testkey == "m"){ location = '#mustWatch';}
   else if(testkey == "p"){ pause();}
   else if(testkey == "c"){ continU();}
-  else if(testkey == "r"){ randomWL();}
-  else if(testkey == "5"){ randomWL();}
+  else if(testkey == "r"){ randomFlip();}
+  else if(testkey == "5"){ randomFlip();}
   else if(testkey == "s"){ showMov();}
   else if(testkey == "0"){ showMov();}
   else if(testkey == 't'){window.location = '#toc';
@@ -59,7 +56,7 @@ function chkKey() {
     if(typeof bookid != 'undefined') {loadBookmark(bookid);}
     else{alert("No BookId!")}
   }
-  else if(testkey == "R"){ randomFlip();}
+  else if(testkey == "R"){ randomWL();}
   else if(testkey == "+"){ addtoWL();}
   else if(testkey == "-"){ rvFmWL();}
   else if(testkey == "a"){ askNum();}
@@ -86,23 +83,22 @@ function changeImg() {
  else if (topicpointer < 0) { topicpointer = ImgList.length - 1;} 
  else { topicpointer = topicpointer + 1;}
  // console.log(topicpointer);
- showTopic();
+ showImg();
 }
 function backward() { topicpointer = topicpointer - 2; changeImg();}
 function foreward() { changeImg();}
 function pause() { clearInterval(myVar);}
 function continU() { myVar = setInterval(changeImg, timer); foreward()}
-function showTopic() {
-  var thePointerImg = document.querySelector(".imagearea");
-  thePointerImg.innerHTML = ImgList[topicpointer];
-  // console.log(thePointerImg.innerHTML);
-  scroll(0,0);
-  //lazyLoadInstance.update();
-  notvisitedList = notvisitedList.filter(item => item !== topicpointer) // remove topicpointer
-  if(notvisitedList.length==0){
-    notvisitedList = [...Array(ImgList.length).keys()];
-  }
-  console.log(topicpointer);
+function showImg() { var thePointerImg = document.querySelector(".imagearea");
+ thePointerImg.innerHTML = ImgList[topicpointer];
+ // console.log(thePointerImg.innerHTML);
+ scroll(0,0);
+ lazyLoadInstance.update();
+ notvisitedList = notvisitedList.filter(item => item !== topicpointer) // remove topicpointer
+ if(notvisitedList.length==0){
+  notvisitedList = [...Array(ImgList.length).keys()];
+ }
+ console.log("now notvisitedList.length "+ notvisitedList.length);
 }
 function showMov() { var imgAdr = ImgList[topicpointer];
  var start = imgAdr.indexOf('<a href="');
@@ -123,7 +119,7 @@ function randomFlip() {
  console.log("notvisitedList.length " + notvisitedList.length)
  topicpointer = notvisitedList[Math.floor(Math.random() * notvisitedList.length)]; // random from not visited list
  console.log("topicpointer " + topicpointer);
- showTopic();
+ showImg();
 }
 
 function storeBookmark(objName, chapterNum) {
@@ -133,7 +129,7 @@ function storeBookmark(objName, chapterNum) {
 }
 function loadBookmark(objName) {
   topicpointer = parseInt(localStorage.getItem(objName))
-  showTopic();
+  showImg();
 }
 function LoadJs(src, callback) {
     var script = document.createElement('script');
@@ -147,11 +143,20 @@ function reTOC() {
   notvisitedList = [...Array(ImgList.length).keys()];
   topicpointer = ImgList.length -1
   ImgList.forEach(makeTOC);
-  randomWL();
+  randomFlip();
   changeImg();
     return false;
 }
 
+
+randomFlip();
+changeImg();
+retstr = ' '.repeat(80);
+$("#mustWatch").prepend('<pre><br>===============<br><br>');
+$("#mustWatch").append('<pre><br><span class="silver">keys: <br>t top of table<br>8 top of table<br>l last of table<br>2 last of table<br>7 go to table middle<br><br>T Top of page<br>e end of page<br>m mustWatch<br><br>r random mustWatch<br>5 random mustWatch<br>f foreward<br>6 foreward<br>b backward<br>4 backward<br><br>p pause<br>c continU<br>s showPage<br>0 showPage<br><br>K set bookmark<br>k open bookmark</span><br>多书签管理- R 跳任意书签; + 加书签; - 减书签; a 手动书签</pre>');
+
+// learningMode package //
+// totalLength already exist
 
 // init the removeList
 var rvListName = "removeList"
@@ -169,30 +174,19 @@ var waitListName = "waitingList"
 window[waitListName] = window["bookid"] + " waitList" // waitingList is variable name now
 
 if (localStorage.getItem(waitingList) === null) {
-    initWaitList()
+    localStorage.setItem(waitingList, [0,1,2,3,4])
+    waitList = [1,2,3,4,5]
 }else{
     waitList = localStorage.getItem(waitingList).split(",").map(Number)
-    if(waitList == [0]){ initWaitList() }
-}
-
-function initWaitList() {
-    // generate random pointers
-    waitList = Array(10).fill().map(() => Math.round(Math.random() * totalLength))
-    waitList = [...new Set(waitList)]    // set unique
-    localStorage.setItem(waitingList, waitList)
 }
 
 function randomWL() {
-  pointerList = waitList
-  if(waitList.length > 10){
-    pointerList.splice(10, (pointerList.length - 10));
-  }
-  newPointer = pointerList[Math.floor(Math.random() * pointerList.length)];
+  newPointer = waitList[Math.floor(Math.random() * waitList.length)];
   while(newPointer == topicpointer){
-    newPointer = pointerList[Math.floor(Math.random() * pointerList.length)];
+    newPointer = waitList[Math.floor(Math.random() * waitList.length)];
   }
   topicpointer = newPointer;
-  showTopic();
+  showImg();
 }
 
 function addtoWL() {
@@ -200,14 +194,14 @@ function addtoWL() {
 	waitList.push(topicpointer)
 	waitList = Array.from(new Set(waitList))
 	localStorage.setItem(waitingList, waitList)
-	alert("added topic: " +topicpointer+ "\nwaitList: " + waitList)
+	alert("waitList: " + waitList)
 }
 function rvFmWL() {
 	ItemIndex = waitList.indexOf(topicpointer);
 	if (ItemIndex > -1) { waitList.splice(ItemIndex, 1); }
 	waitList = [...new Set(waitList)]; // set unique
 	localStorage.setItem(waitingList, waitList)
-	alert("topicpointer "+topicpointer + ", removed fm waitList! Remaining: " + waitList)
+	alert("topicpointer "+topicpointer + " removed fm waitList! Remaining: " + waitList)
 }
 
 function askNum() {
@@ -220,26 +214,5 @@ function askNum() {
     }
 }
 
-// function to jump to content target, jump by this method may f and b
-function findContent(item) {
-  for (let i = 0; i < markerList.length; i++) {
-    if (markerList[i].includes(item)) {
-      topicpointer = i;
-      showTopic()
-    }
-  }
-}
-
-// Make anchor link go some pixels above
-window.addEventListener("hashchange", function () {
-    window.scrollTo(window.scrollX, window.scrollY - 20);
-});
-
 // learningMode package complete//
-
-retstr = ' '.repeat(80);
-randomWL();
-changeImg();
-
-$("#mustWatch").append('<pre><br><span class="silver">快捷键: <br>r, 5 跳任意书签 R, 跳任意题目 b, 4 前一题目 f, 6 下一题目<br><br>t, 8 目录顶 l, 2 目录底 7 目录中部<br><br>T 网页顶 e 网页底 m 必看<br><br>K 设特定书签 k 跳到特定书签</span><br>多书签管理- R 跳任意书签; + 目前题目加入书签; - 目前题目删除书签; a 手动书签<br>按space 继续往下</pre>');
 
