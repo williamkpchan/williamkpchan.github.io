@@ -239,7 +239,7 @@ function askNum() {
 
 
 function setwaitListSize() {
-    thecode = prompt("Set buffer Size:", "");
+    thecode = prompt("Current buffer size: " + waitListSize + ", Set new buffer size: ", "");
     if (thecode != null && thecode != "") {
       localStorage.setItem(waitListBuf, thecode)
       waitListSize = parseInt(thecode)
