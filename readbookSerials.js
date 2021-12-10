@@ -177,7 +177,7 @@ if (localStorage.getItem(waitingList) === null) {
 
 function initWaitList() {
     // generate random pointers
-    waitList = Array(10).fill().map(() => Math.round(Math.random() * totalLength))
+    waitList = Array(10).fill().map(() => Math.round(Math.random() * ImgList.length))
     waitList = [...new Set(waitList)]    // set unique
     localStorage.setItem(waitingList, waitList)
 }
