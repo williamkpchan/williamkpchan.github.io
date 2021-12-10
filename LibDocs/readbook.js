@@ -169,14 +169,14 @@ if (localStorage.getItem(removeList) === null) {
 }
 
 // init waitListSize
-var waitListSizeName = "waitListSize"
+var waitListSizeName = "waitListBuf"
 window[waitListSizeName] = window["bookid"] + " waitSize" // waitListSize is variable name now
 
-if (localStorage.getItem(waitListSize) === null) {
-    localStorage.setItem(waitListSize, 10)
+if (localStorage.getItem(waitListBuf) === null) {
+    localStorage.setItem(waitListBuf, 10)
     waitListSize = 10
 }else{
-    waitListSize = parseInt(localStorage.getItem(waitListSize))
+    waitListSize = parseInt(localStorage.getItem(waitListBuf))
     if(waitListSize == 0){ waitListSize = 10 }
 }
 
@@ -241,7 +241,7 @@ function askNum() {
 function setwaitListSize() {
     thecode = prompt("Set buffer Size:", "");
     if (thecode != null && thecode != "") {
-      localStorage.setItem(waitListSize, thecode)
+      localStorage.setItem(waitListBuf, thecode)
       waitListSize = parseInt(thecode)
     }else{
       return;
