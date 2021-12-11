@@ -215,9 +215,9 @@ function randomWL() {
 function addtoWL() {
      console.log(topicpointer)
 	waitList.push(topicpointer)
-	waitList = Array.from(new Set(waitList))
+	waitList = Array.from(new Set(waitList)).sort(function(a, b){return a - b});
 	localStorage.setItem(waitingList, waitList)
-	alert("added topic: " +topicpointer+ "\nwaitList: " + waitList)
+	alert("added topic: " +topicpointer+ "\nwaitList: " + waitList + "topic length: " + waitList.length)
 }
 function rvFmWL() {
 	ItemIndex = waitList.indexOf(topicpointer);
