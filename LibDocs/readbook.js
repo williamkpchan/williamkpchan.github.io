@@ -185,7 +185,7 @@ if (localStorage.getItem(waitListBuf) === null) {
 var waitListName = "waitingList"
 window[waitListName] = window["bookid"] + " waitList" // waitingList is variable name now
 
-if (localStorage.getItem(waitingList) === null) {
+if (localStorage.getItem(waitingList) === null | localStorage.getItem(waitingList) === "NaN") {
     initWaitList()
 }else{
     waitList = localStorage.getItem(waitingList).split(",").map(Number)
