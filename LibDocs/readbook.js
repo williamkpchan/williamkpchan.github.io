@@ -217,7 +217,7 @@ function addtoWL() {
 	waitList.push(topicpointer)
 	waitList = Array.from(new Set(waitList)).sort(function(a, b){return a - b});
 	localStorage.setItem(waitingList, waitList)
-	alert("added topic: " +topicpointer + "\ntopic length: " + waitList.length + " topic quota: " + waitListSize + "\nwaitList: " + waitList)
+	alert("added topic: " +topicpointer + "\ntopic length: " + waitList.length + ", topic quota: " + waitListSize + "\nwaitList: " + waitList)
 }
 function rvFmWL() {
 	ItemIndex = waitList.indexOf(topicpointer);
