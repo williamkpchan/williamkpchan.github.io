@@ -151,6 +151,7 @@ function chkKey() { testkey = getChar(event);
   if(testkey == 'F'){window.open("ForexChart.htm");}
   if(testkey == 'f'){forewardList();} // go forward to next list
   if(testkey == 'b'){backwardList();}
+  if(testkey == 'i'){window.open("InspectChart.html", "_blank");}
 
   if(testkey == 'H'){window.open("monitorHSI.html");}
   if(testkey == 'A'){window.open("monitorA.html");}
