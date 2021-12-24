@@ -258,6 +258,13 @@ function findContent(item) {
   }
 }
 
+
+function showMov() {
+  idstring = "#topic-" + topicpointer;
+  $(idstring).click()
+}
+
+
 // Make anchor link go some pixels above
 window.addEventListener("hashchange", function () {
     window.scrollTo(window.scrollX, window.scrollY - 20);
