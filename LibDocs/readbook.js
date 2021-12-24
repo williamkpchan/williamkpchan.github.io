@@ -54,6 +54,7 @@ function chkKey() {
   else if(testkey == "-"){ rvFmWL();}
   else if(testkey == "a"){ askNum();}
   else if(testkey == "w"){ setwaitListSize();}
+  else if(testkey == "z"){ dblClickIt();}
 
   else{chkOtherKeys(testkey)} 
 }
@@ -262,6 +263,11 @@ function findContent(item) {
 function showMov() {
   idstring = "#topic-" + topicpointer;
   $(idstring).click()
+}
+
+function dblClickIt() {
+  idstring = "#topic-" + topicpointer;
+  $(idstring).dblclick();
 }
 
 

@@ -120,6 +120,13 @@ function showMov() { var imgAdr = ImgList[topicpointer];
  //console.log(list);
  window.open(list);
 }
+
+
+function dblClickIt() {
+  idstring = "#topic-" + topicpointer;
+  $(idstring).dblclick();
+}
+
 function randomFlip() {
  console.log("notvisitedList.length " + notvisitedList.length)
  topicpointer = notvisitedList[Math.floor(Math.random() * notvisitedList.length)]; // random from not visited list
@@ -230,7 +237,7 @@ function addtoWL() {
 	waitList.push(topicpointer)
 	waitList = Array.from(new Set(waitList))
 	localStorage.setItem(waitingList, waitList)
-	alert("added topic: " +topicpointer+ "\nwaitList: " + waitList)
+	alert("added topic: " +topicpointer + "\ntopic length: " + waitList.length + ", topic quota: " + waitListSize + "\nwaitList: " + waitList)
 }
 function rvFmWL() {
 	ItemIndex = waitList.indexOf(topicpointer);
