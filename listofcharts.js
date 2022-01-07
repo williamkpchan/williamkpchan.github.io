@@ -148,9 +148,10 @@ function chkKey() { testkey = getChar(event);
   if(testkey == '1'){thisImgPCode= "&period=5000"; showAllCharts();}
 
   if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
-  if(testkey == 'F'){window.open("ForexChart.htm");}
-  if(testkey == 'f'){forewardList();} // go forward to next list
+  if(testkey == 'f'){forwardChart();} // go forward to next list
+  if(testkey == 'F'){forewardList();} // go forward to next list
   if(testkey == 'b'){backwardList();}
+  if(testkey == 'B'){backwardList();}
   if(testkey == 'i'){window.open("InspectChart.html", "_blank");}
 
   if(testkey == 'H'){window.open("monitorHSI.html");}

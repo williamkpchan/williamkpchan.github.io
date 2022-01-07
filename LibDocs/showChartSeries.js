@@ -8,6 +8,7 @@ ImgList.forEach(maketocList);
 
 var totalLength = ImgList.length - 1
 var notvisitedList = [...Array(totalLength).keys()];
+chartrtpointer = 0
 
 function maketocList(theStr, index) {
   var topic = theStr.match(patt1)[0];
@@ -59,6 +60,25 @@ function randomChartinList() {
 
   var index = notvisitedList.indexOf(topicpointer);
   notvisitedList.splice(index, 1);
+
+  window.location = chartrtpointerImg;
+}
+
+function forwardChart() {
+  chartrtpointer = chartrtpointer + 1;
+  if (chartrtpointer >= theList.length) {chartrtpointer = 0}
+
+  chartrtpointerImg = "#imgp" + chartrtpointer;
+  chartPtCode = theList[chartrtpointer]
+
+  window.location = chartrtpointerImg;
+}
+function backwardList() {
+  chartrtpointer = chartrtpointer - 1;
+  if (chartrtpointer < 0) {chartrtpointer = theList.length-1}
+
+  chartrtpointerImg = "#imgp" + chartrtpointer;
+  chartPtCode = theList[chartrtpointer]
 
   window.location = chartrtpointerImg;
 }
