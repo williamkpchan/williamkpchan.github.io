@@ -57,9 +57,8 @@ function chkKey() {
   else if(testkey == 'z'){showTenYear();}
   else if(testkey == 'Z'){window.open("LibDocs/minBor.html", "_blank");}
 
-  else if(testkey == '"'){window.open("LibDocs/mline11Minutechart.html");}
   else if(testkey == "'"){window.open("LibDocs/mline11chart.html");}
-  else if(testkey == ">"){window.open("LibDocs/dayLayers.html");}
+  else if(testkey == '"'){window.open("LibDocs/dayLayers.html");}
   else if(testkey == ";"){window.open("LibDocs/otherCode.html");}
   else if(testkey == ":"){window.open("LibDocs/minuteLayers.html");}
 
