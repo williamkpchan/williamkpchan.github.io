@@ -23,6 +23,7 @@ img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; bor
 <div id="mustWatch"><center><span class="red">MustWatch</span></center><br>
 <a href="Zombie.js.html" class="whitebut ">Zombie.js</a>
 <a href="Puppeteer.html" class="whitebut ">Puppeteer</a>
+<a href="https://nodejs.org/en/knowledge/" class="whitebut ">nodejs Knowledge Base</a>
 
 
 </div>
@@ -4786,6 +4787,126 @@ In this tutorial we learned how to start a browser with <a href="https://playwri
 But we’ve only scratched the surface of what’s possible with Playwright. 
 You can log into websites, fill forms, intercept network communication, and most importantly, use almost any browser in existence. 
 Where will you take this project next? How about turning it into a command-line interface (CLI) tool that takes a Playwrighttopic and number of repositories on input and outputs a file with the repositories? You can do it now.
+
+
+<h2>Nodejs to parse command line arguments</h2>
+Passing in arguments via the command line is an extremely basic programming task, and a necessity for anyone trying to write a simple Command-Line Interface (CLI). 
+In Node.js, as in C and many related environments, all command-line arguments received by the shell are given to the process in an array called <code>argv</code> (short for 'argument values').
+
+Node.js exposes this array for every running process in the form of <code>process.argv</code> - let's take a look at an example. 
+Make a file called <code>argv.js</code> and add this line:
+
+<code>console.log(process.argv);</code>
+
+Now save it, and try the following in your shell:
+
+<code>$ node argv.js one two three four five
+[ 'node',
+  '/home/avian/argvdemo/argv.js',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five' ]</code>
+
+There you have it - an array containing any arguments you passed in. 
+Notice the first two elements - <code>node</code> and the path to your script. 
+These will always be present - even if your program takes no arguments of its own, your script's interpreter and path are still considered arguments to the shell you're using.
+
+Where everyday CLI arguments are concerned, you'll want to skip the first two. 
+Now try this in <code>argv.js</code>:
+
+<code>const myArgs = process.argv.slice(2);
+console.log('myArgs: ', myArgs);</code>
+
+This yields:
+
+<code>$ node argv.js one two three four five
+myArgs:  [ 'one', 'two', 'three', 'four', 'five' ]</code>
+
+Now let's actually do something with the args:
+
+<code>const myArgs = process.argv.slice(2);
+console.log('myArgs: ', myArgs);
+
+switch (myArgs[0]) {
+  case 'insult':
+    console.log(myArgs[1], 'smells quite badly.');
+    break;
+  case 'compliment':
+    console.log(myArgs[1], 'is really cool.');
+    break;
+  default:
+    console.log('Sorry, that is not something I know how to do.');
+}</code>
+
+JS PRO TIP: Remember to <code>break</code> after each <code>case</code> - otherwise you'll run the next case too!
+
+Referring to your command-line arguments by array index isn't very clean, and can quickly turn into a nightmare when you start working with flags and the like - imagine you made a server, and it needed a lot of arguments. 
+Imagine having to deal with something like <code>myapp -h host -p port -r -v -b --quiet -x -o outfile</code> - some flags need to know about what comes next, some don't, and most CLIs let users specify arguments in any order they want. 
+Sound like a fun string to parse?
+
+Luckily, there are many third party modules that makes all of this trivial - one of which is <a href="https://www.npmjs.com/package/yargs">yargs</a>. 
+It's available via <code>npm</code>. 
+Use this command from your app's base path:
+
+<code>npm i yargs</code>
+
+Once you have it, give it a try - it can really be a life-saver. 
+Lets test it with little fun Leap Year checker and Current Time teller
+
+<code>const yargs = require('yargs');
+
+const argv = yargs
+  .command('lyr', 'Tells whether an year is leap year or not', {
+    year: {
+      description: 'the year to check for',
+      alias: 'y',
+      type: 'number'
+    }
+  })
+  .option('time', {
+    alias: 't',
+    description: 'Tell the present Time',
+    type: 'boolean'
+  })
+  .help()
+  .alias('help', 'h').argv;
+
+if (argv.time) {
+  console.log('The current time is: ', new Date().toLocaleTimeString());
+}
+
+if (argv._.includes('lyr')) {
+  const year = argv.year || new Date().getFullYear();
+  if ((year % 4 == 0 &amp;&amp; year % 100 != 0) || year % 400 == 0) {
+    console.log(`${year} is a Leap Year`);
+  } else {
+    console.log(`${year} is NOT a Leap Year`);
+  }
+}
+
+console.log(argv);</code>
+
+The last line was included to let you see how <code>yargs</code> handles your arguments. 
+Here's a quick reference:
+
+
+<li><code>argv.$0</code> contains the name of the script file which is executed like: <code>'$0': 'myapp.js'</code>.</li>
+<li><code>argv._</code> is an array containing each element not attached to an option(or flag) these elements are referred as <code>commands</code> in yargs.</li>
+<li>Individual options(flags) become properties of <code>argv</code>, such as with <code>argv.h</code> and <code>argv.time</code>. 
+Note that non-single-letter flags must be passed in as <code>--flag</code> like: <code>node myapp.js --time</code>.</li>
+
+A summary of elements used in the program:
+
+
+<li><strong>argv</strong>: This is the modified <code>process.argv</code> which we have configured with yargs.</li>
+<li><strong>command()</strong>: This method is used to add commands, their description and options which are specific to these commands only, like in the above code <code>lyr</code> is the command and <code>-y</code> is lyr specific option: <code>node myapp.js lyr -y 2016</code></li>
+<li><strong>option()</strong>: This method is used to add global options(flags) which can be accessed by all commands or without any command.</li>
+<li><strong>help()</strong>: This method is used to display a help dialogue when <code>--help</code> option is encountered which contains description of all the <code>commands</code> and <code>options</code> available.</li>
+<li><strong>alias()</strong>: This method provides an alias name to an option, like in the above code both <code>--help</code> and <code>-h</code> triggers the help dialogue.</li>
+
+For more information on yargs and the many, many other things it can do for your command-line arguments, please visit <a href="http://yargs.js.org/docs/">http://yargs.js.org/docs/</a>
 
 
 
