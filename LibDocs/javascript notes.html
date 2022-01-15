@@ -24534,6 +24534,1254 @@ fruits.get("apples");  // Returns undefined
   }
   return cloneObj
 
+<h2>maps vs. sets data structure</h2>
+<div id="mapsVsSetstoc"><a href="#mapsVsSetstopic-0" target="_self">maps vs. sets data structure</a><br><a href="#mapsVsSetstopic-1" target="_self">Defining and understanding <code>Map</code> objects</a><br><a href="#mapsVsSetstopic-2" target="_self">Making equality comparisons with <code>SameValueZero</code></a><br><a href="#mapsVsSetstopic-3" target="_self">What are Map entries?</a><br><a href="#mapsVsSetstopic-4" target="_self">Creating a Map object in JavaScript</a><br><a href="#mapsVsSetstopic-5" target="_self"><code>Map</code> object instance properties and methods</a><br><a href="#mapsVsSetstopic-6" target="_self">Iterating <code>Map</code> objects with the <code>forEach()</code> method</a><br><a href="#mapsVsSetstopic-7" target="_self"><span class="orange">What is a JavaScript <code>Set</code> object?</span></a><br><a href="#mapsVsSetstopic-8" target="_self">Maps vs. Sets</a><br><a href="#mapsVsSetstopic-9" target="_self">Creating a Set object</a><br><a href="#mapsVsSetstopic-10" target="_self"><code>Set</code> object instance properties and methods</a><br><a href="#mapsVsSetstopic-11" target="_self">Iterating keyed collections</a><br><a href="#mapsVsSetstopic-12" target="_self">Accidental <code>undefined</code> — what does it mean?</a><br><a href="#mapsVsSetstopic-13" target="_self">Removing duplicates from <code>Set</code> objects</a><br><a href="#mapsVsSetstopic-14" target="_self"><code>Map</code> or <code>set</code>?</a><br><a href="#mapsVsSetstopic-15" target="_self">Other <code>Map</code> and <code>Set</code> uses</a><br><a href="#mapsVsSetstopic-16" target="_self">Data caching with <code>Map</code> objects</a><br><a href="#mapsVsSetstopic-17" target="_self">Graphical representation with map and set</a><br><a href="#mapsVsSetstopic-18" target="_self">Disjoint-sets and dynamic connectivity</a><br><a href="#mapsVsSetstopic-19" target="_self">Conclusion</a><br><a href="#mapsVsSetstopic-20" target="_self"></a><a href="https://logrocket.com/signup/" target="_blank" rel="noopener noreferrer">LogRocket</a>: Debug JavaScript errors more easily by understanding the context<br></div></center>
+<h3 id="mapsVsSetstopic-0">maps vs. sets data structure</h3>
+
+The way in which data is structured plays a vital role in our ability to efficiently perform certain operations on data, or to solve certain problems in relation to the data. 
+For example, you can delete any item from a doubly-linked list in constant time, whereas that could take linear time if the list is represented as an array. 
+Similarly, searching for the presence of a key in an array of keys can be done more efficiently in logarithmic time when the array is sorted, as opposed to when it is not sorted.
+
+Some very popular programming languages like Java and Python provide lots of useful data structure implementations out of the box, whereas the ubiquitous JavaScript programming language appears to be pretty lean in that regard. 
+However, like most programming languages, JavaScript ships with some very basic data types — such as arrays, strings, objects, sets, maps, etc.
+
+<h3>Keyed collections</h3>
+Prior to the ECMAScript 2015 specification updates (popularly known as ES6), JavaScript provided <code>Array</code> objects as the only standard, inbuilt indexed collections — although there were other exotic objects such as the <code>arguments</code> and <code>String</code> objects, which behaved like arrays with special handling for integer index property keys, usually referred to as array-like objects, but were not really indexed collections.
+Starting with ES2015, a handful of new standard inbuilt types have been added to JavaScript, such as:
+
+<code>Symbol</code>
+<code>Promise</code>
+<code>Proxy</code>
+
+A number of typed array objects were also added, which, just like arrays, are also indexed collections themselves. 
+In addition to these, a new category known as <a href="https://blog.logrocket.com/es6-keyed-collections-maps-and-sets/" target="_blank" rel="noopener">keyed collections</a> has also been added to the language, with these inbuilt object types:
+
+<code>Map</code>
+<code>Set</code>
+<code>WeakMap</code>
+<code>WeakSet</code>
+
+Just as the name implies, every element (known as an entry) in a keyed collection can be identified by some kind of key, such that the keys in the collection are distinct — meaning that every key maps exactly to one entry in the collection. 
+If you are familiar with <a href="https://blog.logrocket.com/know-your-javascript-data-structures/" target="_blank" rel="noopener">hash tables</a>, then you may have already inferred their usefulness here in ensuring that the average access time is sublinear on the number of elements in the collection.
+
+In this post, we’ll take a peek at how we can use JavaScript’s <code>Map</code> and <code>Set</code> objects to efficiently solve problems. 
+Before we jump right in, let’s consider a sample problem.
+
+Below is a sample problem:
+<blockquote>
+<img draggable="false" role="img" alt="💡" src="https://s.w.org/images/core/emoji/13.1.0/svg/1f4a1.svg"> <strong>Contains Duplicates</strong>
+Given an array of integers <code>nums</code>, return <code>true</code> if any element appears at least twice in the array, and return <code>false</code> if every element is distinct.
+</blockquote>
+
+Pause for a moment and try solving this problem on your own, before you proceed. 
+If the <code>nums</code> array was sorted, will that simplify the solution?
+
+Now, here is a working solution to the problem:
+
+function hasDuplicates(nums) { 
+  // 1. Sort the array in-place (sorting makes it easier) 
+  nums.sort((a, b) =&gt; a - b);
+
+  if (nums.length &gt; 1) { 
+    // 2. Loop through the sorted array until a duplicate is found 
+    for (let i = 1, len = nums.length; i &lt; len; i++) { 
+      // If a duplicate is found, return immediately 
+      if (nums[i] == nums[i - 1]) return true; 
+    } 
+  }
+
+  // 3. If it ever gets here, no duplicate was found 
+  return false; 
+}
+
+There is no doubt that this solution works, for the given constraints of our problem. 
+The reasoning behind why it should work is quite straightforward — if the array of integers is already sorted, then it is possible to check in a <a href="https://en.wikipedia.org/wiki/One-pass_algorithm" target="_blank" rel="noopener">single pass</a> whether or not two consecutive, equal integers exist in the array. 
+Since there isn’t any guarantee that the array of integers will already be sorted, the solution first tries to sort the array, before checking for duplicate integers.
+
+Let’s analyze our solution. 
+The <a href="https://en.wikipedia.org/wiki/Time_complexity" target="_blank" rel="noopener">running time</a> of the above solution will grow in a linearithmic fashion as the size of the input array grows. 
+While this isn’t a bad thing, it’s not so great either because, even for a pre-sorted array, it would still take a significant amount of time to process, as a lot of time is spent trying to sort the array first.
+
+The solution also uses <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort" target="_blank" rel="noopener"><code>Array.prototype.sort</code></a> to sort the input array <a href="https://en.wikipedia.org/wiki/In-place_algorithm" target="_blank" rel="noopener">in-place</a> — modifying the original input array as a result. 
+Hence, no additional memory is required for the sort.
+
+It is important to note that, if the problem required that the original order of the input array remain unchanged, then a copy of the input array must be made before using this solution. 
+This is tantamount to the use of additional memory that will grow in linear fashion as the size of the input array grows.
+
+Now, whether this is an acceptable solution or not is subject to a number of factors — including but not limited to:
+
+The constraints on the problem, such as the maximum size of the problem’s input
+The constraints on computational resources, such as the machine’s available memory
+Acceptable trade-offs, such as accepting the use of auxiliary space if that will potentially improve the running time, etc.
+
+If we are certain that the array of integers might not already be sorted, and we also don’t mind using some auxiliary space — provided we can get a faster running time — then this solution is not the best. 
+As we progress, we will soon see that we can actually come up with a solution whose running time grows linearly, rather than linearithmically, with the size of the input.
+
+<h3 id="mapsVsSetstopic-1">Defining and understanding <code>Map</code> objects</h3>
+We can summarize the ECMAScript 2015 specification definition of a <code>Map</code> object as follows:
+
+It is a collection of key/value pairs where both the keys and values may be arbitrary ECMAScript language values
+It is an ordered collection, which means that the insertion order of its elements matters and is followed when iterating the collection
+Keys in the collection are distinct or unique, and may only occur in one key/value pair within the Map’s collection
+Every key in the collection may occur only once with respect to the ECMAScript <a href="https://tc39.es/ecma262/#sec-samevaluezero" target="_blank" rel="noopener">SameValueZero</a> comparison algorithm
+
+That means any valid JavaScript value — both <a href="https://developer.mozilla.org/en-US/docs/Glossary/Primitive" target="_blank" rel="noopener">primitive values</a> and object references, including unseemly values like <code>NaN</code> and <code>undefined</code> — can be used as a key in a <code>Map</code> object collection.
+
+<h3 id="mapsVsSetstopic-2">Making equality comparisons with <code>SameValueZero</code></h3>
+To determine whether a key already exists in the <code>Map</code> object collection — in other words, ensuring that keys are distinct — the <a href="https://tc39.es/ecma262/#sec-samevaluezero" target="_blank" rel="noopener">ECMAScript SameValueZero comparison algorithm</a> is used.
+We use this comparison algorithm because, if one of the listed algorithms were used:
+
+Strict Equality comparison algorithm: this would make it impossible to determine whether a key of value <code>NaN</code> already exists in the collection, since <code>NaN === NaN</code> always evaluates to <code>false</code>
+SameValue comparison algorithm: this makes it possible to determine whether a key of value <code>NaN</code> already exists in the collection, but the keys <code>+0</code> and <code>-0</code> are different keys and will be treated as such, despite that <code>+0 === -0</code> always evaluates to <code>true</code>
+
+The SameValueZero comparison algorithm, however, behaves like the SameValue comparison algorithm, except that it considers both <code>+0</code> and <code>-0</code> to be the same key. 
+If the SameValueZero comparison algorithm were to be implemented as a JavaScript function, it would look like this:
+
+function SameValueZero(x, y) {
+  return x === y || (Number.isNaN(x) &amp;&amp; Number.isNaN(y)); 
+}
+
+<h3 id="mapsVsSetstopic-3">What are Map entries?</h3>
+Each key/value pair contained in a <code>Map</code> object collection is usually referred to as an entry object, or entry. 
+An entry object is usually represented using a two-element array — more like <a href="https://blog.logrocket.com/the-javascript-record-and-tuple-proposal-an-overview/" target="_blank" rel="noopener">a tuple in most other programming languages</a> — whose first element is the key and whose second element is the value.
+
+The type definition for a generic <code>Map</code> object entry should look like this (in TypeScript):
+type MapEntry&lt;Key, Value&gt; = [Key, Value];
+That said, you can use JavaScript syntax, such as a <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment" target="_blank" rel="noopener">destructuring assignment</a>, on a <code>Map</code> object entry like you would with an array, as demonstrated in the following <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...of" target="_blank" rel="noopener"><code>for...of</code> loop</a> example:
+
+/**
+ * Iterating over entries of `Map` object using a 
+ * `for...of` loop — assuming that `map` has been 
+ * defined already as a `Map` object. 
+ */
+for (const [key, value] of map) { 
+  console.log(key, value); 
+}
+
+Both <code>Map</code> and <code>Set</code> objects inherit an <code>entries()</code> method from their corresponding constructors’ <code>prototype</code> objects. 
+This <code>entries()</code> method returns an <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#the_iterator_protocol" target="_blank" rel="noopener">iterator</a> for all of the entries contained in the collection with respect to their insertion order.
+
+For <code>Map</code> objects, however, the iterator returned by the <code>entries()</code> method also serves as the default iterator of the collection.
+
+<h3 id="mapsVsSetstopic-4">Creating a Map object in JavaScript</h3>
+At the time of this article’s publication, the only way to create a <code>Map</code> object is by invoking the global <code>Map</code> constructor function. 
+The constructor function must be invoked with the <code>new</code> keyword — otherwise, a <code>TypeError</code> will be thrown.
+
+When the <code>Map</code> constructor function is invoked without arguments, an empty <code>Map</code> object of 0 <code>size</code> is returned.
+
+// Throws a`TypeError` — when invoked without `new` keyword 
+const throwTypeErrorMap = Map();
+
+// Creates an empty `Map` object of 0 `size`
+const mapA = new Map();
+
+// Omitting the parentheses — when invoked without arguments
+// Also creates an empty `Map` object of 0 `size`
+const mapB = new Map;
+
+console.log(mapA.size); // 0 
+console.log(mapB.size); // 0
+
+The <code>Map</code> constructor function can also be invoked with an optional <code>iterable</code> argument. 
+When specified, <code>iterable</code> must be a JavaScript object that:
+
+properly implements the <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#the_iterable_protocol" target="_blank" rel="noopener">iterable protocol</a> — many inbuilt JavaScript objects implement this protocol, such as <code>Array</code>, <code>String</code>, and <code>Set</code>, as well as <code>Map</code>
+returns an iterator object that produces a two-element, array-like (entry) object whose first element is a value that will be used as a <code>Map</code> key, and whose second element is the value to associate with that key
+
+If the <code>iterable</code> argument does not meet these two requirements, a <code>TypeError</code> will be thrown — the only exception being when <code>iterable</code> is the value <code>null</code> or <code>undefined</code>, in which case the effect is the same as calling the <code>Map</code> constructor function without any argument, and an empty <code>Map</code> object of 0 <code>size</code> is created.
+
+Let’s pay more attention to the second requirement stated above. 
+It is obvious that a new <code>Map</code> object cannot be created from a string primitive, even though <code>String</code> objects are iterable objects themselves.
+
+// Map from String — throws a `TypeError` 
+const throwTypeErrorMap = new Map("programming");
+
+When we create a new <code>Map</code> object from another iterable object, an empty <code>Map</code> object is first created, and then the following steps are taken for each entry object produced by the iterator object, which is returned by the iterable:
+
+Extract the first and second elements from the entry object as <code>key</code> and <code>value</code>, respectively
+Check if an entry with <code>key</code> already exists in the <code>Map</code> object collection using <code>SameValueZero</code> comparison
+
+If it exists, update the entry’s current value to <code>value</code>
+If it does not exist, append a new entry to the end of the <code>Map</code> object collection with that <code>key</code> and <code>value</code> (if the <code>key</code> is <code>0</code>, change it to <code>+0</code> before appending a new entry to the collection)
+
+const pairs = [[1, 3], [3, 3], [4, 2], [2, 2]];
+
+// (1) Map from Array or Set
+// Here a set is created from the <code>pairs</code> array and
+// used to create the map. 
+However, the map can also
+// be created directly from the <code>pairs</code> array.
+const mapA = new Map(new Set(pairs));
+
+console.log(mapA.size); // 4
+console.log(…mapA); // [1, 3] [3, 3] [4, 2] [2, 2]
+
+// (2) Map from Map
+// New map contains all the items of the original map
+// However, both maps are entirely different objects.
+// Think of it as creating a clone of a map.
+const mapB = new Map(mapA);
+
+console.log(…mapA); // [1, 3] [3, 3] [4, 2] [2, 2]
+console.log(…mapB); // [1, 3] [3, 3] [4, 2] [2, 2]
+console.log(mapA === mapB); // false
+console.log(mapA.size === mapB.size); // true
+
+// (3) Map from Object
+// In ES6, the <code>Object.entries()</code> method was added,
+// and it returns an array of entries representing
+// key/value pairs for every key in an object.
+const mapC = new Map(Object.entries({
+language: “JavaScript”,
+hello: “world”
+}));
+
+console.log(mapC.size); // 2
+console.log(…mapC); // [“language”, “JavaScript”] [“hello”, “world”]
+
+</ol>
+
+Now that we are able to create new <code>Map</code> objects, let’s go ahead to explore their instance properties and methods.
+
+<h3 id="mapsVsSetstopic-5"><code>Map</code> object instance properties and methods</h3>
+<h3>Checking the size</h3>
+
+We’ve already seen the <code>size</code> property in action a couple of times. 
+Just as the name implies, <code>size</code>returns the number of entries in the <code>Map</code> object at any instant.
+
+It might interest you to know that the <code>size</code> property is an accessor property and not a data property. 
+Also, it only has a <code>get accessor</code> function, and not a <code>set accessor</code> function. 
+That’s the reason why its value cannot be overridden by an assignment operation.
+
+Whenever you access the <code>size</code> property of a <code>Map</code> object, its <code>get accessor</code> function will be invoked, which basically counts and returns the number of elements (entries) currently in the <code>Map</code> object.
+
+<h3>Looking up a key</h3>
+
+There are several cases where it is sufficient to know only whether or not an entry with a particular key is present in a <code>Map</code> object. 
+Every <code>Map</code> object will originally have a <code>has()</code> method — which can be called to assert whether or not an entry with a specified key is present in the <code>Map</code> object. 
+The <code>has()</code> method returns a boolean value — <code>true</code> if the specified key is present, and <code>false</code> otherwise.
+
+const M = new Map(Object.entries({ 
+  language: "JavaScript", 
+  hello: "world" 
+}));
+
+console.log(M.has("hello")); // true 
+console.log(M.has("Hello")); // false 
+console.log(M.has("language")); // true 
+console.log(M.has("world")); // false
+
+Beyond checking whether a key exists in a <code>Map</code> object, being able to read the value of the entry associated with that key is also very important. 
+As such, every <code>Map</code> object initially has a <code>get()</code> method for this purpose.
+
+When the <code>get()</code> method is called with a key for which no entry exists, it returns <code>undefined</code>.
+
+const M = new Map(Object.entries({ 
+  language: "JavaScript", 
+  hello: "world" 
+}));
+
+console.log(M.get("hello")); // "world" 
+console.log(M.get("Hello")); // undefined 
+console.log(M.get("language")); // "JavaScript" 
+console.log(M.get("world")); // undefined 
+
+Although the <code>get()</code> method returns <code>undefined</code> for nonexistent keys, it should not be relied upon when checking for the existence of a key in a <code>Map</code> collection because it’s also possible for a key in the collection to have a value of <code>undefined</code>.
+
+The most accurate way to determine the existence of a key in the collection is to use the <code>has()</code> method.
+
+<h3>Adding, updating, and removing entries</h3>
+
+The ability to add, update, or remove one or more entries from a <code>Map</code> object is essential, and every <code>Map</code> object will have <code>set()</code>, <code>delete()</code>, and <code>clear()</code> methods.
+
+The <code>set()</code> method takes a JavaScript value as its argument and will append that value to the end of the <code>Set</code> object, provided it isn’t already in the <code>Set</code> object. 
+If the specified value is already in the <code>Set</code> object, it is ignored.
+
+The <code>add()</code> method returns the same <code>Set</code> object with the added value, making it amenable to <a href="https://en.wikipedia.org/wiki/Method_chaining" target="_blank" rel="noopener">method chaining</a>, or the process of invoking multiple <code>add()</code> calls at once.
+
+The <code>delete()</code> method, on the other hand, will remove the entry associated with the specified key from the <code>Map</code> object — provided there is such an entry in the <code>Map</code> object. 
+If an entry is actually removed from the <code>Map</code> object as a result of this delete operation, it returns <code>true</code>; otherwise it returns <code>false</code>.
+
+It might be useful in some cases to completely remove all of the entries in a given <code>Map</code> object. 
+While this can be achieved by making multiple <code>delete()</code> calls to the <code>Map</code> object, obviously it will make more sense if this is done in a single method call.
+
+This is exactly what the <code>clear()</code> method does. 
+Calling the <code>clear()</code> method empties the <code>Map</code> object and returns <code>undefined</code>.
+
+// Convert object to map 
+const M = new Map(Object.entries({ 
+  language: "JavaScript" 
+}));
+
+console.log(M.size); // 1 
+console.log(...M); // ["language", "JavaScript"]
+
+// (1) Add and update some map entries 
+M.set("year", 1991); 
+M.set("language", "Python");
+
+console.log(M.size); // 2 
+console.log(...M); // \["language", "Python"\] ["year", 1991]
+
+// (2) Add or update several values at once (using chaining) 
+M.set("version", 3) 
+  .set("year", 2000) 
+  .set("version", "2.0");
+
+console.log(M.size); // 3 
+console.log(...M); // \["language", "Python"\] ["year", 2000] ["version", "2.0"]
+
+// Delete some entries from the map 
+console.log(M.delete("Year")); // false 
+console.log(M.delete("year")); // true 
+console.log(M.delete("year")); // false 
+console.log(M.delete("version")); // true
+
+console.log(M.size); // 1 
+console.log(...M); // ["language", "JavaScript"]
+
+// Empty the map 
+M.clear();
+
+console.log(M.size); // 0
+
+<h3>Iterating the collection</h3>
+
+One other thing we might want to do with a <code>Map</code> object is view the keys, values, or entries that are in it.
+
+You can loop through each entry in a <code>Map</code> object (in insertion order) using the <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...of" target="_blank" rel="noopener"><code>for...of</code> loop</a>. 
+This is because every iterable has a <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/iterator" target="_blank" rel="noopener"><code>Symbol.iterator()</code>&nbsp;method</a> that returns its default <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#the_iterator_protocol" target="_blank" rel="noopener">iterator</a> — which is responsible for producing the sequence of values for the loop.
+
+Besides the <code>for...of</code> loop we looked at earlier, the same sequence of values returned by the default iterator is what the <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax" target="_blank" rel="noopener">spread operator (<code>...</code>)</a>, the <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/yield*" target="_blank" rel="noopener"><code>yield*</code>&nbsp;statement</a>, and <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment" target="_blank" rel="noopener">destructuring assignment</a> are based on.
+
+We’ve already seen the <code>entries()</code> method, which returns an iterator for all the entries in a <code>Map</code> object with respect to their insertion order. 
+As stated earlier, the iterator returned by the <code>entries()</code> method also serves as the default iterator of a <code>Map</code> object.
+
+That said, the two <code>for...of</code> loops shown in the following code snippet are the same and will produce the exact same sequence of values:
+
+const M = new Map([[1, 3], [3, 3], [4, 2], [2, 2]]);
+
+// (a) Iteration using the default iterator ([Symbol.iterator]) 
+for (const [key, value] of M) { 
+  console.log(key, value);
+}
+
+// (b) Iteration using the `entries()` iterator 
+for (const [key, value] of M.entries()) { 
+  console.log(key, value); 
+} 
+
+It is important to note that an iterable object can provide other iterators besides the default iterator provided by its <code>[Symbol.iterator]</code> method. 
+This holds true for most inbuilt iterables in JavaScript, including <code>Map</code> objects.
+
+In fact, every <code>Map</code> object originally has three methods that return iterators, namely:
+
+<code>entries()</code>
+<code>keys()</code>
+<code>values()</code>
+
+The <code>keys()</code> method, as the name implies, returns an iterator that yields the keys associated with each entry of the <code>Map</code> object (in insertion order). 
+The <code>values()</code> method returns an iterator that yields the values associated with each entry of the <code>Map</code> object.
+
+The following code snippet demonstrates a couple of ways we can leverage the iterable behavior of a <code>Map</code> object to access the values or keys of each element in it.
+
+const M = new Map([[1, 3], [3, 3], [4, 2], [2, 2]]);
+
+// Using the spread operator (...) to pass values 
+// in the Map object as function arguments. 
+console.log(...M.values()); // 3 3 2 2
+
+// Using the spread operator in building an array 
+// with the unique keys of the Map object. 
+const arr = [...M.keys()];
+
+console.log(arr); // [1, 3, 4, 2] 
+console.log(arr[0]); // 1 
+console.log(arr[3]); // 2 
+console.log(arr.length); // 4
+
+// Using destructuring assignment with a `Map` object 
+// to extract the first, second and remaining keys. 
+const [first, second, ...remainingKeys] = M.keys();
+
+console.log(first); // 1 
+console.log(second); // 3 
+console.log(remainingKeys); // [4, 2] 
+console.log(remainingKeys.length); // 2
+
+// Iteration using a for...of loop 
+// to read all the keys in the collection. 
+for (const key of M.keys()) { 
+  console.log(key); 
+}
+
+// 1 
+// 3 
+// 4 
+// 2
+
+<h3 id="mapsVsSetstopic-6">Iterating <code>Map</code> objects with the <code>forEach()</code> method</h3>
+
+We’ve been able to explore quite a number of ways in which we can iterate over a <code>Map</code> object. 
+However, there remains one more very useful iteration method — the <code>forEach()</code> method.
+
+Just as with arrays, the <code>forEach()</code> method of a <code>Map</code> object accepts a callback function as its first argument, which is triggered for each entry of the <code>Map</code> object. 
+The <code>forEach()</code> method also accepts an optional second argument, which represents the <code>this</code> value that will be used when executing the callback function.
+
+The <code>forEach()</code> callback function is called with three arguments for every entry of the <code>Map</code> object:
+
+The first argument is the value associated with the current entry in the iteration
+The second argument is the key associated with the current entry in the iteration
+The third argument is the <code>Map</code> object itself
+
+const M = new Map([[1, 4], [3, 5], [4, 0], [2, 2]]);
+M.forEach(function _callback(value, key, map) {
+   console.log([...map]);
+   const replacement = this[value];
+   if (replacement) map.set(key, replacement);
+   else if (Number.isInteger(value)) map.delete(key);
+}, "hello");
+
+console.log([...M]);
+
+// [[1, 4], [3, 5], [4, 0], [2, 2]]
+// [[1, "o"], [3, 5], [4, 0], [2, 2]]
+// [[1, "o"], [4, 0], [2, 2]]
+// [[1, "o"], [4, "h"], [2, 2]]
+// [[1, "o"], [4, "h"], [2, "l"]]
+
+To be clear, the <code>forEach()</code> method call in the previous code snippet results in the following <code>_callback()</code> calls:
+
+_callback.call("hello", 1, 4, M); 
+_callback.call("hello", 3, 5, M); 
+_callback.call("hello", 4, 0, M); 
+_callback.call("hello", 2, 2, M);
+
+<h3 id="mapsVsSetstopic-7"><span class="orange">What is a JavaScript <code>Set</code> object?</span></h3>
+
+A <code>Set</code> object is an ordered collection of unique JavaScript values.
+
+For every <code>Set</code> object, there exists the following invariants:
+
+It is an ordered collection: The insertion order of its elements matters, and is followed when iterating the collection
+Values in the collection are distinct or unique: Every value may occur only once in the collection with respect to the <a href="https://tc39.es/ecma262/#sec-samevaluezero" target="_blank" rel="noopener">ECMAScript SameValueZero comparison algorithm</a>
+
+Any valid JavaScript value can be contained in the collection — both <a href="https://developer.mozilla.org/en-US/docs/Glossary/Primitive" target="_blank" rel="noopener">primitive values</a> and object references, including unseemly values like <code>NaN</code> and <code>undefined</code>.
+
+<h3 id="mapsVsSetstopic-8">Maps vs. Sets</h3>
+Since we’ve already explored <code>Map</code> objects in the previous section, let’s look at how they compare with <code>Set</code> objects before we continue.
+
+<table><thead>
+<tr><th>Set objects</th><th>Map objects</th></tr></thead>
+<tbody>
+<tr><td>one-dimensional collections: they store only unique values</td><td>two-dimensional collections: they store records as key/value pairs, and each key is unique in the collection</td></tr>
+<tr><td>Both key and value point to the same value or reference for every entry</td><td>Both key and value point to the same value or reference for every entry</td></tr>
+<tr><td>The default iterator ([Symbol.iterator]) of a Set object is the one returned from its values() method</td><td>The default iterator is obtained from the entries() method</td></tr>
+<tr><td>set() and get() methods are not defined in the Set.prototype object; the Set.prototype object defines an add () method</td><td>The set() and get() methods are defined in the Set.prototype object</td></tr>
+</tbody>
+</table>
+
+As we progress in our exploration of JavaScript <code>Set</code> objects, we will find out more ways in which <code>Set</code> objects differ from <code>Map</code> objects and some ways in which they are similar.
+
+<h3 id="mapsVsSetstopic-9">Creating a Set object</h3>
+
+Just as with <code>Map</code> objects, the only way to create a <code>Set</code> object is by invoking the global <code>Set</code> constructor function. 
+The constructor function must be invoked with the <code>new</code> keyword — otherwise, a <code>TypeError</code> will be thrown. 
+When the <code>Set</code> constructor function is invoked without arguments, an empty <code>Set</code> object of 0 <code>size</code> is returned.
+
+// Throws a `TypeError` — when invoked without `new` keyword 
+const throwTypeErrorSet = Set();
+
+// Creates an empty `Set` object of 0 `size` 
+const setA = new Set();
+
+// Omitting the parentheses — when invoked without arguments 
+// Also creates an empty `Set` object of 0 `size`
+const setB = new Set;
+
+console.log(setA.size); // 0 
+console.log(setB.size); // 0 
+
+The <code>Set</code> constructor function can also be invoked with an optional <code>iterable</code> argument. 
+When specified, <code>iterable</code> must be a JavaScript object that properly implements the <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#the_iterable_protocol" target="_blank" rel="noopener">iterable protocol</a>. 
+Many inbuilt JavaScript objects implement this protocol — such as <code>Array</code>, <code>String</code>, and <code>Map</code>, as well as <code>Set</code> — which means that these are all valid objects and can be passed to the <code>Set</code> constructor function as the <code>iterable</code> argument.
+
+If the <code>iterable</code> is the value <code>null</code> or <code>undefined</code>, then the effect is the same as calling the <code>Set</code> constructor function without any argument — an empty <code>Set</code> object of 0 <code>size</code> will be created. 
+Otherwise, a <code>TypeError</code> will be thrown for any other <code>iterable</code> value that does not properly implement the iterable protocol.
+
+Unlike with <code>Map</code> objects, creating a new <code>Set</code> object from another iterable object has the effect of de-duping, i.e., eliminating redundant duplicate values from the values yielded by the internal <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/iterator" target="_blank" rel="noopener">iterator</a> of the iterable object. 
+This is because of one important attribute of a <code>Set</code> object, which is that it must contain only distinct, discrete values.
+
+// (1) Set from String 
+// Set contains all the unique characters of the string 
+const testString = "programming"; 
+const uniqueChars = new Set(testString);
+
+console.log(testString.length); // 11 
+console.log(uniqueChars.size); // 8 
+console.log(...uniqueChars); // p r o g a m i n
+
+// (2) Set from Array 
+// Set contains all the distinct elements of the array 
+const integers = [1,1,1,3,3,4,3,2,4,2]; 
+const distinctIntegers = new Set(integers);
+
+console.log(integers.length); // 10 
+console.log(distinctIntegers.size); // 4 
+console.log(...distinctIntegers); // 1 3 4 2
+
+// (3) Set from Set 
+// New set contains all the items of the original set 
+// However, both sets are entirely different objects. 
+// Think of it as creating a clone of a set. 
+const setA = new Set([1,1,1,3,3,4,3,2,4,2]); 
+const setB = new Set(setA);
+
+console.log(...setA); // 1 3 4 2 
+console.log(...setB); // 1 3 4 2 
+console.log(setA === setB); // false 
+console.log(setA.size === setB.size); // true 
+
+Let’s take another shot at our sample problem from earlier and employ what we’ve learned so far about <code>Set</code> objects. 
+This time, we will be creating a new <code>Set</code> object from the <code>nums</code> array, containing only distinct integers (no duplicates). 
+We can then determine whether the <code>nums</code> array contains duplicates by comparing the size of the <code>Set</code> object with the length of the <code>nums</code> array.
+
+Here is what the new solution looks like:
+
+function hasDuplicates(nums) { 
+  // Create a new set from `nums` containing only its distinct 
+  // integers (i.e de-duplicate the `nums` array). 
+  const distinct = new Set(nums);
+
+  // If the size of the distinct set matches the length of the 
+  // nums array, then there are no duplicates, and vice-versa. 
+  return distinct.size != nums.length; 
+}
+
+In using a <code>Set</code> object, we have been able to implement a solution whose running time is guaranteed to grow linearly with the size of the input array, even though it will require some additional memory to perform. 
+When it comes to storing unique items in memory, a set of items with duplicates will use less space than one without duplicates.
+
+In other words, the worst case scenario in terms of memory usage happens when the set contains only unique items and no duplicates — in that case, the amount of space used matches the number of items.
+
+<h3 id="mapsVsSetstopic-10"><code>Set</code> object instance properties and methods</h3>
+<h3>Checking the size</h3>
+
+Just as with <code>Map</code> objects, the <code>size</code> property returns the number of values in a <code>Set</code> object at any instant. 
+Again, the <code>size</code> property of the <code>Set.prototype</code> object is an accessor property, not a data property.
+
+<code>Set</code> also only has a get accessor function and not a set accessor function — hence, it cannot be overridden by an assignment operation.
+
+Whenever you access the <code>size</code> property of a <code>Set</code> object, its get accessor function will be invoked, and it will count and return the number of elements (values) that are currently in the <code>Set</code> object.
+
+<h3>Checking whether a value is present</h3>
+
+Every <code>Set</code> object will originally have a <code>has()</code> method that can be called to assert whether or not an element with a specified value is present in the <code>Set</code> object. 
+Like with <code>Map</code> objects, the <code>has()</code> method returns a boolean value — <code>true</code> if the specified value is present, and <code>false</code> otherwise.
+
+const uniqueChars = new Set("programming");
+
+console.log(...uniqueChars); // p r o g a m i n
+
+console.log(uniqueChars.has("p")); // true 
+console.log(uniqueChars.has("A")); // false 
+console.log(uniqueChars.has("a")); // true 
+console.log(uniqueChars.has("t")); // false 
+
+Since <code>Set</code> objects are one-dimensional (storing only unique values), it is impractical for them to have a <code>get()</code> method, unlike with <code>Map</code> objects. 
+As a result, the <code>Set.prototype</code> object does not define a <code>get()</code> method.
+
+<h3>Adding and removing values</h3>
+
+It is very important to be able to add or remove one or more values from a <code>Set</code> object, and every <code>Set</code> object will initially have <code>add()</code>, <code>delete()</code>, and <code>clear()</code> methods.
+
+The <code>add()</code> method takes a JavaScript value as its argument, and will append that value to the end of the <code>Set</code> object, provided that it isn’t already in the <code>Set</code> object. 
+If the specified value is already in the <code>Set</code> object, it is ignored.
+
+The <code>add()</code> method returns the same <code>Set</code> object, with the added value, which makes it amenable to <a href="https://en.wikipedia.org/wiki/Method_chaining" target="_blank" rel="noopener">method chaining</a>, or the familiar process of invoking multiple <code>add()</code> calls at once.
+
+Just like with <code>Map</code> objects, the <code>delete()</code> method of a <code>Set</code> object will remove the element associated with the specified value from the <code>Set</code> object, provided that such an element is present in the <code>Set</code> object. 
+If an element is actually removed from the <code>Set</code> object as a result of this delete operation, it returns <code>true</code>; otherwise it returns <code>false</code>.
+
+Also, a call to the <code>clear()</code> method empties the <code>Set</code> object and returns <code>undefined</code>.
+
+// Create new set of integers 
+const integers = new Set([1,1,1,3,3,4,3,2,4,2]);
+
+console.log(integers.size); // 4 
+console.log(...integers); // 1 3 4 2
+
+// Add some values to the set 
+integers.add(5); 
+integers.add(1);
+
+console.log(integers.size); // 5 
+console.log(...integers); // 1 3 4 2 5
+
+// Add several values at once (using chaining) 
+integers.add(7).add(2).add(9);
+
+console.log(integers.size); // 7 
+console.log(...integers); // 1 3 4 2 5 7 9
+
+// Delete some values from the set 
+console.log(integers.delete(3)); // true 
+console.log(integers.delete(8)); // false 
+console.log(integers.delete(3)); // false 
+console.log(integers.delete(1)); // true
+
+console.log(integers.size); // 5 
+console.log(...integers); // 4 2 5 7 9
+
+// Empty the set 
+integers.clear();
+
+console.log(integers.size); // 0
+
+Now that we’ve learned a few more things we can do with <code>Set</code> objects, let’s return to our previous solution to our original sample problem and see if we can optimize it even further. 
+(As you might have rightly guessed, we can.)
+
+A careful examination of our previous solution will show that it’s doing a little too much. 
+It always considers every integer in the input array, adding them to the <code>Set</code> object (just like using the <code>add()</code> method multiple times) and then checking its size, which counts and returns the number of elements in the <code>Set</code> object by going through each element.
+
+The problem with this solution is that it isn’t conservative. 
+It is very possible that a duplicate integer might be found by considering the first few integers in the array, and so the act of considering the remaining integers in the array becomes redundant.
+
+To optimize this solution, we can decide to be lazy about adding integers to the <code>Set</code> object, and only continue as long as we haven’t encountered an integer that has already been added to the <code>Set</code> object.
+
+Here is what the optimized solution looks like:
+
+function hasDuplicates(nums) { 
+  // 1. Create an empty set to hold distinct integers
+  const distinct = new Set();
+
+  // 2. Loop through the integers until a duplicate is found
+  for (const int of nums) {
+    // 2a. 
+If a duplicate is found, return immediately
+    if (distinct.has(int)) return true;
+
+    // 2b. 
+Otherwise, add the integer to the distinct set
+    distinct.add(int);
+  }
+
+  // 3. If it ever gets here, no duplicate was found
+  return false;
+}
+
+<h3 id="mapsVsSetstopic-11">Iterating keyed collections</h3>
+
+It is often necessary to have a view into the values that are contained in a <code>Set</code> object. 
+This is very attainable with arrays or <a href="https://tc39.es/ecma262/#sec-indexed-collections" target="_blank" rel="noopener">indexed collections</a> — hence, we can easily access the element of an array (<code>arr</code>), at some index (<code>i</code>), using the property access bracket notation (<code>arr[i]</code>).
+
+Unfortunately, this kind of element access is <a href="https://tc39.es/ecma262/#sec-keyed-collections" target="_blank" rel="noopener">not directly possible with <code>Set()</code> objects</a> because <code>Set</code> objects are keyed collections.
+
+However, just like with arrays and other iterables, you can loop through the values for each element in a <code>Set</code> object (in insertion order) using the <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...of" target="_blank" rel="noopener"><code>for...of</code> loop</a>, or you could use the sequence of values it produces with the <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax" target="_blank" rel="noopener">spread operator (<code>...</code>)</a>, the <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/yield*" target="_blank" rel="noopener"><code>yield*</code> statement</a>, or <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment" target="_blank" rel="noopener">destructuring assignment</a>.
+
+The following code snippet demonstrates a couple of ways we can leverage the iterable behavior of a <code>Set</code> object to access the values of each element in it.
+
+const integers = new Set([1,1,1,3,3,4,3,2,4,2]);
+
+// Using the spread operator (...) to pass values
+// in the Set object as function arguments.
+console.log(...integers); // 1 3 4 2
+
+// Using the spread operator in building an array
+// with the unique values from the Set object.
+const arr = [...integers];
+
+console.log(arr); // [1, 3, 4, 2]
+console.log(arr[0]); // 1
+console.log(arr[3]); // 2
+console.log(arr.length); // 4
+
+// Using destructuring assignment with a `Set` object
+const [first, second, ...remainingIntegers] = integers;
+
+console.log(first); // 1
+console.log(second); // 3
+console.log(remainingIntegers); // [4, 2]
+console.log(remainingIntegers.length); // 2
+
+// Iteration using a `for...of` loop
+for (const integer of integers) {
+  console.log(integer);
+}
+
+// 1
+// 3
+// 4
+// 2
+
+Just like with <code>Map</code> objects, every <code>Set</code> object originally has three methods that return iterators — <code>values()</code>, <code>keys()</code>, and <code>entries()</code>.
+
+The <code>values()</code> method, as the name implies, returns a new iterator that yields the values for each element in the <code>Set</code> object (in insertion order). 
+The iterator returned by the <code>values()</code> method yields the exact same sequence of values as the default iterator returned by the <code>[Symbol.iterator]</code> method.
+
+For iteration purposes, the <code>keys()</code> method of a <code>Set</code> object behaves exactly like the <code>values()</code> method, and they can be used interchangeably. 
+In fact, the <code>values</code>, <code>keys</code>, and <code>[Symbol.iterator]</code> properties of a <code>Set</code> object all point to the same value (function) initially. 
+Hence, the following <code>for...of</code> loops will log the exact same sequence of values.
+
+const integers = new Set([1,1,1,3,3,4,3,2,4,2]);
+
+// (a) Iteration using the default iterator (`[Symbol.iterator]`)
+for (const integer of integers) {
+  console.log(integer);
+}
+
+// (b) Iteration using the `values()` iterator
+for (const integer of integers.values()) {
+  console.log(integer);
+}
+
+// (c) Iteration using the `keys()` iterator
+for (const integer of integers.keys()) {
+  console.log(integer);
+}
+
+Some basic set operations can be implemented by iterating over one or more <code>Set</code> objects. 
+For example, the following code snippet shows how to implement the <code>union</code> and <code>intersection</code> set operations.
+
+function union(setA, setB) {
+  const setUnion = new Set(setA);
+
+  for (const value of setB) {
+    setUnion.add(value);
+  }
+
+  return setUnion;
+}
+
+function intersection(setA, setB) { 
+  const setIntersection = new Set();
+
+  for (const value of setB) {
+    if (setA.has(value)) {
+      setIntersection.add(value);
+    }
+  }
+
+  return setIntersection;
+}
+
+Just as with <code>Map</code> objects, <code>Set</code> objects also have a <code>forEach()</code> method with a similar call signature. 
+However, to account for the one-dimensional nature of <code>Set</code> objects, the <code>forEach()</code> callback function is called with three arguments:
+
+The first argument is the value for the current element in the iteration
+The second argument is always the same as the first argument
+The third argument is the <code>Set</code> object itself
+
+const S = new Set([1,1,1,3,3,4,3,2,4,2]);
+
+S.forEach(function _callback(value, _, set) {
+   console.log([...set]);
+   const replacement = this[value];
+   if (replacement) set.add(${value}${replacement});
+   if (Number.isInteger(value)) set.delete(value);
+}, "hello");
+
+// [1, 3, 4, 2]
+// [3, 4, 2, '1e']
+// [4, 2, '1e', '3l']
+// [2, '1e', '3l', '4o']
+// ['1e', '3l', '4o', '2l']
+// ['1e', '3l', '4o', '2l']
+// ['1e', '3l', '4o', '2l']
+// ['1e', '3l', '4o', '2l']
+
+console.log(...S); // 1e 3l 4o 2l
+
+To be clear, the <code>forEach()</code> method call in the previous code snippet results in the following <code>_callback()</code> calls:
+
+_callback.call("hello", 1, 1, S);
+_callback.call("hello", 3, 3, S);
+_callback.call("hello", 4, 4, S);
+_callback.call("hello", 2, 2, S);
+_callback.call("hello", '1e', '1e', S);
+_callback.call("hello", '3l', '3l', S);
+_callback.call("hello", '4o', '4o', S);
+_callback.call("hello", '2l', '2l', S);
+
+<h3 id="mapsVsSetstopic-12">Accidental <code>undefined</code> — what does it mean?</h3>
+
+When the <code>Set</code> constructor function is called without any argument, you already know that it creates an empty <code>Set</code> object. 
+The same, however, does not hold true for the <code>add()</code> method.
+
+When the <code>add()</code> method of a <code>Set</code> object is called without any argument, it actually adds an element to the collection with a value of <code>undefined</code>, if it does not already exist.
+
+In other words, for a given <code>Set</code> object <code>S</code>, <code>S.add()</code> is exactly the same as <code>S.add(undefined)</code>. 
+This is what I’d like to refer to as an accidental <code>undefined</code> — because it might not be intended.
+
+You might have already inferred the behavior of the <code>has()</code> and <code>delete()</code> methods when they’re called without any argument. 
+As with the <code>add()</code> method, calling these methods without any argument is exactly the same as calling them with <code>undefined</code> as the first argument. 
+Hence, for a given <code>Set</code> object <code>S</code>, <code>S.has()</code> checks whether <code>undefined</code> exists as a value in the <code>Set</code> object, while <code>S.delete()</code> removes the value <code>undefined</code> from the collection, if it exists.
+
+// Creates an empty set object 
+const S = new Set();
+
+// Add some items to the set object 
+S.add(5); 
+S.add("hello"); console.log(...S); // 5 'hello'
+
+// Adds undefined to the set object 
+S.add(); console.log(...S); // 5 'hello' undefined
+
+console.log(S.has(5)); // true 
+console.log(S.has("world")); // false
+
+// Logs `true` because `undefined` exists in the set 
+console.log(S.has()); // true
+
+// Logs `true` because `undefined` was removed from the set 
+console.log(S.delete()); // true
+
+// Logs `false` because `undefined` does not exist in the set 
+console.log(S.has()); // false 
+
+That said, always be sure to explicitly call the <code>add()</code>, <code>delete()</code>, and <code>has()</code> methods of a <code>Set</code> object with at least one argument to avoid dealing with an accidental <code>undefined</code> value.
+
+<h3 id="mapsVsSetstopic-13">Removing duplicates from <code>Set</code> objects</h3>
+
+Before we finish this section on JavaScript <code>Set</code> objects, let’s see how we can solve a modified version of the sample problem from before, using all we’ve learned so far.
+
+<blockquote>
+<img draggable="false" role="img" alt="💡" src="https://s.w.org/images/core/emoji/13.1.0/svg/1f4a1.svg"> <strong>Contains Duplicates (2)</strong> Given an array of integers <code>nums</code>, return the number of elements that appear at least twice in the array, and return <code>0</code> if every element is distinct.
+</blockquote>
+
+Pause for a moment and try solving this problem on your own, before you proceed. 
+The solution could be a little tricky — how can you ensure a duplicate integer is not counted more than once?
+
+Now, here is a working solution to the problem:
+
+function countDuplicates(nums) { 
+  // Create an empty set for distinct integers 
+  // (i.e integers appearing only once) 
+  const distinct = new Set();
+
+  // Create an empty set for duplicate integers 
+  const duplicates = new Set();
+
+  // Create a variable to keep track of the duplicates count 
+  let count = 0;
+
+  // Loop through the integers while counting duplicates 
+  for (const int of nums) { 
+    // If duplicate integer is found (it has already been counted), 
+    // continue with the iteration to the next integer. 
+    if (duplicates.has(int)) continue;
+
+    if (distinct.delete(int)) {
+      // If integer was successfully deleted from the `distinct` set,
+      // that means it has been seen once before. 
+Hence add it, to
+      // the `duplicates` set and increment `count`.
+      duplicates.add(int);
+      count++;
+    } else {
+      // Integer is being seen for the first time and should be added
+      // to the `distinct` set.
+      distinct.add(int);
+    }
+  }
+
+  // Finally, return the duplicates count 
+  return count; 
+}
+
+<h3 id="mapsVsSetstopic-14"><code>Map</code> or <code>set</code>?</h3>
+
+So far, we have been able to explore JavaScript <code>Map</code> and <code>Set</code> objects in detail. 
+But in addition to that, we also need to be able to determine when it is sufficient to use one instead of the other in solving problems.
+
+Earlier on, we saw that <code>Set</code> objects are one-dimensional collections, whereas <code>Map</code> objects are two-dimensional. 
+That could serve as a cue in determining which one is best suited for a particular problem.
+
+In other words, a <code>Map</code> object should be used over a <code>Set</code> object in cases where additional information is needed aside from just the key. 
+Most times, that additional information is required to make decisions or to compute the final output of the program.
+
+To further demonstrate this, let’s consider another popular problem.
+
+<blockquote>
+<img draggable="false" role="img" alt="💡" src="https://s.w.org/images/core/emoji/13.1.0/svg/1f4a1.svg"><strong>Two Sum</strong> Given an array of integers and a specific target, return <code>true</code> if two numbers exist in the array that add up to the target, and <code>false</code> otherwise.
+</blockquote>
+
+If the array were to be sorted, then it would be possible to come up with a linear time solution to this problem without any need for auxiliary space. 
+But since there is a possibility that the array is not already sorted, we need to use a <code>Set</code> object to provide some auxiliary space where we can solve the problem in linear time without taking on the expensive task of sorting the array first.
+
+function twoSum(nums, target) { 
+  // 1. Create an empty set for complements 
+  // (i.e complement = target - num) 
+  const complements = new Set();
+
+  // 2. Loop through integers until a complement is found 
+  for (const num of nums) { 
+    // 2a. 
+If a complement is found, return immediately 
+    if (complements.has(target - num)) return true;
+
+    // 2b. 
+Otherwise, add the integer to the complements set
+    complements.add(num);
+  }
+
+  // 3. If it ever gets here, no complement was found 
+  return false; 
+}
+
+Here, we are required to return <code>true</code> if there are two numbers that sum up to the specified target, and <code>false</code> otherwise. 
+As such, we are only interested in the numbers themselves, which is why we only need to use one <code>Set</code> object to solve the problem.
+
+Now, let’s instead say we modify the problem to return the array indices of the two numbers. 
+We would be better off using a <code>Map</code> object. 
+That’s because, in addition to the numbers themselves, we are now also interested in their corresponding indices in the array — both of which cannot be contained in a singular <code>Set</code> object.
+
+function twoSum(nums, target) { 
+  // 1. Create an empty map for integers against indices 
+  // (i.e Map&lt;integer, index&gt;) 
+  const indices = new Map();
+
+  // 2. Loop through integers until a complement is found 
+  for (let i = 0, len = nums.length; i &lt; len; i++) { 
+    // 2a. 
+Compute the complement of the current integer 
+    const complement = target - nums[i];
+
+    // 2b. 
+If the complement already exists in the map,
+    // get the complement index from the indices map and
+    // return early ([complement index, current index])
+    if (indices.has(complement)) {
+      return [indices.get(complement), i];
+    }
+
+    // 2c. 
+Otherwise, add the current integer and index
+    // to the indices map
+    indices.set(nums[i], i);
+   }
+
+  // 3. If it ever gets here, no complement was found 
+  return null; 
+}
+
+<h3 id="mapsVsSetstopic-15">Other <code>Map</code> and <code>Set</code> uses</h3>
+
+<code>Map</code> and <code>Set</code> objects can be very useful when modeling <a href="https://blog.logrocket.com/the-javascript-record-and-tuple-proposal-an-overview/" target="_blank" rel="noopener">compound data structures</a> to solve certain kinds of problems.
+
+In general, whenever you need to be able to look up or check for the existence of an item with an average access time that is sublinear on the number of available items (approximately constant time), you should consider using a <code>Set</code> or <code>Map</code> object.
+
+<h3 id="mapsVsSetstopic-16">Data caching with <code>Map</code> objects</h3>
+
+When modeling data structures for the purpose of caching data, a <code>Map</code> object can be used as a lookup table to check for the existence of a key in the cache before performing <code>get()</code> or <code>put()</code> operations.
+
+Usually, cache implementations include some kind of strategy for removing items from the cache in order to free up space — the most popular cache eviction strategies being: least frequently used (LFU) and least recently used (LRU).
+
+Consider the <code>get()</code> operation of an LRU cache, for example: the expectation is to be able to fetch a record from the cache using its cache key in approximately constant time, and in the process, the record gets ranked as the most recently used record because it is the most recently accessed.
+
+In order to meet the above stated expectation, a fast lookup of the cache key is required — and that is where a <code>Map</code> object or any other form of hash table shines. 
+To maintain a proper ranking of recently accessed records, a priority queue can be used.
+
+However, most implementations use a doubly-linked list instead, since it is capable of both removing the record from its current position in the list and re-inserting it to the head position of the list, all in constant time.
+
+A minimalist implementation blueprint of a typical LRU cache could look somewhat like this (the full implementation details have been omitted for brevity):
+
+interface ICache&lt;K, V&gt; { 
+  get: (key: K) =&gt; V; 
+  put: (key: K, data: V) =&gt; void; 
+}
+
+class LRUCache&lt;K, V&gt; implements ICache&lt;K, V&gt; { 
+  /** 
+   * A DLL is used to maintain the order of the items 
+   * in the cache according to how recently they were 
+   * used (accessed or added). 
+   *
+   * Using a DLL makes it possible to remove an item 
+   * from any position in the list (in constant time). 
+   */ 
+  protected list = new DoublyLinkedList&lt;V&gt;();
+
+  /** 
+   * A Map object is used as a lookup table to check 
+   * for the existence of a key in the cache with an 
+   * average access time that is sublinear on the 
+   * number of cache items (approximately constant 
+   * time). 
+   */ 
+  protected table = new Map&lt;K, V&gt;();
+
+  /** 
+   * @param size {number} The number of items that 
+   * can be stored in the cache. 
+   */ 
+  constructor(protected size: number) {}
+
+  get(key: K): V {} 
+  put(key: K, data: V): void {} 
+}
+
+<h3 id="mapsVsSetstopic-17">Graphical representation with map and set</h3>
+
+Most connectivity problems are better solved when the problem data is represented as a graph, using either of two forms of graph representation:
+
+Adjacency Matrix
+Adjacency List
+
+For most problems, an adjacency list representation should suffice — and for that, <code>Map</code> and <code>Set</code> objects can be used.
+
+Most adjacency list implementations use arrays and/or linked lists, but it is also possible to use <code>Map</code> and <code>Set</code> objects. 
+The <code>Map</code> object stores each vertex in the graph as its keys, with their corresponding list of neighboring vertices in <code>Set</code> objects as its values.
+
+A typical implementation of an undirected graph represented as an Adjacency List (using <code>Map</code> and <code>Set</code> objects) should look somewhat like this:
+
+interface IGraph&lt;V&gt; { 
+  addVertex: (vertex: V) =&gt; void; 
+  addEdge: (fromVertex: V, toVertex: V) =&gt; void; 
+  removeVertex: (vertex: V) =&gt; void; 
+  removeEdge: (fromVertex: V, toVertex: V) =&gt; void; 
+}
+
+class UndirectedGraph&lt;V&gt; implements IGraph&lt;V&gt; { 
+  /** 
+   * A Map object is used to map each vertex in the 
+   * graph to a set of vertices that are connected 
+   * to it. 
+   */ 
+  protected list = new Map&lt;V, Set&lt;V&gt;&gt;();
+
+  addVertex(vertex: V): void { 
+    if (!this.list.has(vertex)) { 
+      // An array can be used to represent the set 
+      // of vertices — but in this implementation, 
+      // a Set object is used instead. 
+      this.list.set(vertex, new Set&lt;V&gt;()); 
+    } 
+  }
+
+  addEdge(fromVertex: V, toVertex: V): void { 
+    this.addVertex(fromVertex); 
+    this.addVertex(toVertex); 
+    (this.list.get(fromVertex) as Set&lt;V&gt;).add(toVertex); 
+    (this.list.get(toVertex) as Set&lt;V&gt;).add(fromVertex); 
+  }
+
+  removeVertex(vertex: V): void { 
+    if (this.list.has(vertex)) { 
+      for (const toVertex of this.list.get(vertex) as Set&lt;V&gt;) {
+        this.removeEdge(vertex, toVertex); 
+      }
+      this.list.delete(vertex); 
+    } 
+  }
+
+  removeEdge(fromVertex: V, toVertex: V): void { 
+    if (this.list.has(fromVertex) &amp;&amp; this.list.has(toVertex)) { 
+      (this.list.get(fromVertex) as Set&lt;V&gt;).delete(toVertex); 
+      (this.list.get(toVertex) as Set&lt;V&gt;).delete(fromVertex); 
+    } 
+  } 
+}
+
+<h3 id="mapsVsSetstopic-18">Disjoint-sets and dynamic connectivity</h3>
+
+A niche of connectivity problems can be solved using special data structures called disjoint-sets. 
+A disjoint-set is used to maintain a set of elements (nodes) that are partitioned into a number of non-overlapping (disjointed) subsets, also known as connected components.
+
+Disjoint-sets are structured in such a way as to efficiently perform two operations, namely:
+
+<code>find</code>: checks for the subset an element or node belongs to
+<code>union</code>: merges two subsets into a single subset; can also be used for detecting cycles in undirected graphs
+
+The following Disjoint-Set implementation uses a <code>Map</code> object to maintain its non-overlapping subsets (the implementation is detailed):
+
+interface IDisjointSet&lt;T&gt; { 
+  find: (node: T) =&gt; T; 
+  union: (nodeA: T, nodeB: T) =&gt; void; 
+}
+
+class DisjointSet&lt;T&gt; implements IDisjointSet&lt;T&gt; { 
+  /** 
+   * A Map object is used to link each node to the 
+   * root of its corresponding connected component 
+   * subset (using a disjoint-set data structure). 
+   */ 
+  protected subsets = new Map&lt;T, T | number&gt;();
+
+  addNode(node: T): void { 
+    if (!this.subsets.has(node)) { 
+      this.subsets.set(node, -1); 
+    } 
+  }
+
+  find(node: T): T { 
+    let root = node;
+
+    while (true) {
+      const parent = this.subsets.get(root) as T;
+
+      if (!this.subsets.has(parent)) {
+        if (node !== root) {
+          this.subsets.set(node, root);
+        }
+
+        return root;
+      }
+
+      root = parent;
+    }
+  }
+
+  union(nodeA: T, nodeB: T): void { 
+    const rootA = this.find(nodeA); 
+    const rootB = this.find(nodeB);
+
+    const sizeA = this.subsets.get(rootA) as number;
+    const sizeB = this.subsets.get(rootB) as number;
+    const sizeAB = sizeA + sizeB;
+
+    if (sizeA &lt; sizeB) {
+      this.subsets.set(rootB, rootA);
+      this.subsets.set(rootA, sizeAB);
+    } else {
+      this.subsets.set(rootA, rootB);
+      this.subsets.set(rootB, sizeAB);
+    }
+  }
+
+  isConnected(nodeA: T, nodeB: T): boolean { 
+    return this.find(nodeA) === this.find(nodeB); 
+  }
+}
+
+<h3 id="mapsVsSetstopic-19">Conclusion</h3>
+
+Maps and sets in JavaScript can come in very handy for quite a number of applications and when trying to solve a number of problems efficiently — especially when efficient lookups are required. 
+In fact, they are specialized hash table implementations for JavaScript, akin to the <code>HashMap</code> and <code>HashSet</code> types in Java — albeit, with some subtle differences.
+
+For safe garbage collection guarantees, consider using the even more restrictive <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap" target="_blank" rel="noopener"><code>WeakMap</code></a> and <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakSet" target="_blank" rel="noopener"><code>WeakSet</code> keyed collections.</a>
+<h3 id="mapsVsSetstopic-20"><a href="https://logrocket.com/signup/" target="_blank" rel="noopener noreferrer">LogRocket</a>: Debug JavaScript errors more easily by understanding the context</h3>
+
+Debugging code is always a tedious task. 
+But the more you understand your errors the easier it is to fix them.
+
+<a href="https://logrocket.com/signup/" target="_blank" rel="noopener noreferrer">LogRocket</a> allows you to understand these errors in new and unique ways. 
+Our frontend monitoring solution tracks user engagement with your JavaScript frontends to give you the ability to find out exactly what the user did that led to an error.
+
+LogRocket records console logs, page load times, stacktraces, slow network requests/responses with headers + bodies, browser metadata, and custom logs. 
+Understanding the impact of your JavaScript code will never be easier!
+
+<h2>Introduction to Map Data Structure</h2>
+https://flaviocopes.com/javascript-data-structures-map/
+A <code>Map</code> is a collection of <code>key — value</code> pairs, similar to an object. 
+It stores the <code>key — value</code> pairs in the insertion order.
+
+We can create a <code>Map</code> by passing an iterable object whose elements are in the form of <code>key — value</code> (Eg. 
+<code>[ [1,”one”], [2,”two”] ]</code> ), 
+or you can create an empty <code>Map</code>, then insert entries.
+<h3>Why we need Map if we have Object s</h3>
+1. A Map is similar to Object, but any value can be used as key in maps, but keys in objects are only Strings and Symbols
+
+<img src="https://miro.medium.com/max/1400/1*FeRuZyr7PZpgWVrLJATQCg.png">
+2. The<code> key — value</code> pairs in <code>Map</code> maintains the insertion order, whereas Object don’t.
+
+3. You can get the <code>size</code> of the <code>Map</code>, but we don’t have a built-in method to get size in Object (but we can do it manually).
+
+4. Maps are iterable, whereas an Object is not iterable by-default.
+
+5. Maps have additional methods not available to normal objects
+<h3>Methods in Maps</h3>
+
+<img src="https://miro.medium.com/max/1400/1*9qa6KOy0EtF53Wypx48PSQ.png">
+Map cheatsheet
+
+Example:
+Different Ways to create maps
+
+<img src="https://miro.medium.com/max/1400/1*4lCYor7BuJW3_gfCsIaLGQ.png">
+
+2. Map methods
+Let’s create simple Map:
+// creating a map 
+var fruits = new Map();
+fruits.set('🍎', "Apple");
+fruits.set('🍋', "Mango");
+fruits; //{"🍎" => "Apple", "🍋" => "Mango"}
+Map has a property <code>size</code> which returns the current Map size (total number of entries).
+
+// size
+fruits.size; // 2
+<code>set(, value)</code> → Set the value for the key in the Map and returns the Map. 
+If the key is already present in the map, then the value is overwritten.
+
+// set(key , value) method
+fruits.set( '🍇', "Grapes");
+fruits; // {"🍎" => "Apple", "🍋" => "Mango", "🍇" => "Grapes"}
+<code>get()</code> → Returns the value associated to the key, or returns undefined if there is no key on the Map that matches the passed key.
+// get(key)
+fruits.get('🍇'); // GRAPES.
+fruits.get('🍊'); //undefined.
+<code>delete()</code> → Delete the entry matching the key and returns true. 
+If the key is not found in the map, then it returns false.
+// delete(key)
+fruits.delete('🍊') //false
+fruits.delete('🍇'); // true
+<code>has()</code> → Returns true if the map has the key provided, else return false.
+//HAS(key)
+fruits.has('🍇'); // true
+fruits.has('🍊'); //false
+<code>keys()</code> → Returns a new iterator that contains the keys in insertion order.
+//keys
+fruits.keys() // MapIterator {"🍎", "🍋"}
+<code>values()</code> → Returns a new iterator that contains the values in insertion order.
+// values
+fruits.values() // MapIterator {"Apple", "Mango"}
+<code>entries()</code> → Returns an iterator which has an array of [-value] pair in insertion order.
+//entries --> returns key value pair
+fruits.entries() // MapIterator {"🍎" => "Apple", "🍋" => "Mango"}
+<code>clear()</code> → Delete all key-value pairs from the Map.
+// clear
+fruits.clear(); // deletes all elementfruits; // Map(0) {}
+<h3>Things you should know about Map</h3>
+You can use any value (object or function or primitive ) as a key in the <code>Map</code> . 
+<code>Map</code> uses the <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Equality_comparisons_and_sameness#Same-value-zero_equality" rel="noopener ugc nofollow" target="_blank">SameValueZero</a> algorithm. 
+It is similar to strict equality (<code>===</code>) but the difference is that <code>NaN</code> is considered equal to <code>NaN</code> (i.e, NaN === NaN → true. In normal JS, this is not true. 
+In this case <code>NaN</code> can be used as key and we don’t have any duplicate NaN).
+var map = new Map()var obj = {};
+var arr = [];
+var nan = NaN;
+var fun = function() {}map.set(obj, "object");
+map.set(arr , "array");
+map.set(fun, "function");
+map.set(nan, "Wrong number");
+map.keys(); // MapIterator {{…}, Array(0), ƒ, NaN}map.values(); // MapIterator {"object", "array", "function","Wrong number"}
+<h3>Iterating through Map</h3>
+Using <code>for…of</code>
+// creating a map 
+var fruits = new Map();
+fruits.set('🍎', "Apple");
+fruits.set('🍋', "Mango");
+fruits; //{"🍎" => "Apple", "🍋" => "Mango"}
+
+Method 1:
+for(var [key, val] of fruits) { console.log(key, value);}
+🍎 Apple
+🍋 Mango
+
+Method 4 --> using entriesfor (var [key, val] of 
+fruits.entries()) {  console.log(key , val); }
+🍎 Apple
+🍋 Mango
+
+Method 2 --> using keys
+for(var key of fruits.keys()) {
+  console.log(key, fruits.get(key)); }
+🍎 Apple
+🍋 Mango
+
+Method 3 --> using valuesfor(var val of 
+fruits.values()) {   console.log(val); }Apple Mango
+
+
 
 
 
