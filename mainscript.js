@@ -59,7 +59,7 @@ function chkKey() {
 
   else if(testkey == "'"){window.open("LibDocs/mline11chart.html");}
   else if(testkey == '"'){window.open("LibDocs/dayLayers.html");}
-  else if(testkey == ";"){window.open("LibDocs/otherCode.html");}
+  else if(testkey == ";"){window.open("LibDocs/minuteLayersAcc.html");}
   else if(testkey == ":"){window.open("LibDocs/minuteLayers.html");}
 
   else if(testkey == ','){window.open("LibDocs/mlinechart.html");}
