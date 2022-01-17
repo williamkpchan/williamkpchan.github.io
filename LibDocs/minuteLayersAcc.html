@@ -20,7 +20,7 @@
 <link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
 
 <style>
-body { margin: auto; width: 90%; font-size: 18px; background-color: #000000; color: #20C030;}
+body { margin: auto; width: 90%; font-size: 16px; background-color: #000000; color: #20C030;}
 
 button, input, select {color: gray; background-color: #001010;  font-size: 18px; }
 select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
@@ -50,7 +50,7 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
     display: inline-block;
     border-radius:8%;
     right: 2%;
-    position: absolute;
+    position: left;
 }
 
 .dropdown-content {
@@ -65,7 +65,7 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
 
 .dropdown-content a {
     color: black;
-    padding: 12px 16px;
+    padding: 12px 12px;
     text-decoration: none;
     display: block;
 }
@@ -102,11 +102,21 @@ let openLst = [];
 let highLst = [];
 let lowLst = [];
 let closeLst = [];
-chartColor = ['red','green','blue','brown', 'orange','gold','yellow', 'cyan', 'violet','silver'];
+chartColor = ['red','green','blue','brown', 'orange','gold','yellow', 'cyan', 'violet','silver', 'coral'];
 minSteps = [];
 var theMax, theMin;
 var intv1, intv2, intv3, intv4, intv5, intv6, intv7, showWidth, datawidth;
-var baseIdx = 2
+
+      if (localStorage.getItem("subtractIdx") === null) {
+        baseSubIdx = 1
+        baseMinuIdx = 4
+      } else{
+        subtractIdx = JSON.parse(localStorage.getItem("subtractIdx"));
+        baseSubIdx = subtractIdx[0]
+        baseMinuIdx = subtractIdx[1]
+      }
+
+
 var stkPointer = 0
 
 function startToRoll(theCode) {
@@ -232,9 +242,12 @@ function startToRoll(theCode) {
 		thedrawdata[6] = thedrawdata[6].slice(intv7+1);
 		thedrawdata[7] = thedrawdata[7].slice(intv7+1);
 		thedrawdata[8] = thedrawdata[8].slice(intv7+1);
+		//thedrawdata[9] = thedrawdata[9].slice(intv7+1);
+
 		// thedrawdata[9] = thedrawdata[9].slice(intv7+1);
-		theMax = Math.max(Math.max(...thedrawdata[0]),Math.max(...thedrawdata[1]),Math.max(...thedrawdata[2]),Math.max(...thedrawdata[3]),Math.max(...thedrawdata[4]),Math.max(...thedrawdata[5]),Math.max(...thedrawdata[6]),Math.max(...thedrawdata[6]),Math.max(...thedrawdata[7]),Math.max(...thedrawdata[8]));
-		theMin = Math.min(Math.min(...thedrawdata[0]),Math.min(...thedrawdata[1]),Math.min(...thedrawdata[2]),Math.min(...thedrawdata[3]),Math.min(...thedrawdata[4]),Math.min(...thedrawdata[5]),Math.min(...thedrawdata[6]),Math.min(...thedrawdata[6]),Math.min(...thedrawdata[7]),Math.min(...thedrawdata[8]));
+		theMax = Math.max(...[].concat.apply([], thedrawdata));
+		theMin = Math.min(...[].concat.apply([], thedrawdata));
+
 		// create datalog table
 		 transp = transpose(thedrawdata);
 
@@ -252,11 +265,6 @@ function startToRoll(theCode) {
 		wAvemin = Math.min(...wAveTrendRange);
 		drawTrend(wAveTrendRange, wAvemax, wAvemin, '癫疯');
 
-		// accel
-		accel = thedrawdata[1].map(function(item, index) {
-                   return item - thedrawdata[baseIdx][index];
-                  })
-		// thedrawdata.push(accel)
 
 		// find derivative
 		derivative = diff(makeMovAve(thedrawdata[2], 3));
@@ -281,6 +289,12 @@ function startToRoll(theCode) {
 		stochmax1 = Math.max(...stoch1);
 		stochmin1 = Math.min(...stoch1);
 		drawTrend(stoch1, stochmax1, stochmin1, '强弱120');
+
+		// diffaccel
+		diffaccel = thedrawdata[baseSubIdx].map(function(item, index) { return item - thedrawdata[baseMinuIdx][index]; })
+		diffaccMax1 = Math.max(...diffaccel);
+		diffaccMin1 = Math.min(...diffaccel);
+		drawTrend(diffaccel, diffaccMax1, diffaccMin1, 'accel');
 
 		drawchart(thedrawdata);
 		showStatus();
@@ -570,6 +584,7 @@ function chkKey() {
      if(testkey == 'X'){storeCode(theCode); window.open("Random Charts.html");}
 	if(testkey == 'f'){jpforward();}
 	if(testkey == 'b'){jpback();}
+	if(testkey == 'B'){baseIdx();}
 	if(testkey == 'T'){jpTop();}
 	if(testkey == 'I'){fullinit();}
 	if(testkey == 'R'){jprandom();}
@@ -624,21 +639,17 @@ function FormatNumberLength(num) {
 </head>
 
 <body onkeypress="chkKey()">
-<center>
-<h4>
+<select id="selectList" onchange="assignList()"></select>
 
 <span id="alertMsg" class="bordred1 borRad15 blinkred whiteback goldbs">提防老千 !!! </span>
 <span class="orangebut gold brownblackgrad embossts" onclick="localStorage.setItem('randomcode', theCode);
        window.open('Random Charts.html');">尋寶</span>
-
-<a href="listofcharts.html" target="_blank"><b class="greenbut white blueblackgrad">板块</b></a>
 
 <span class="pinkbut blue2bs orange" onclick="localStorage.setItem('stkCode', theCode);
        window.open('Hour STK Charts.html');">隨風擺柳</b></span>
 
 <span class="goldbut redbs lime" onclick="localStorage.setItem('stkCode', theCode);
        window.open('minMACharts.html');">追風逐浪</span>
-
 
 <a href="OHLCOtherCode.html" target="_blank"><span class="bordwhite1 borRad10 brownblackgrad white blackts"><span class="glare"></span>OtherDaily</span></a>
 <a href="OHLCOtherCode2.html" target="_blank" class="bordred1 borRad10 gold brownblackgrad gold2bs">OD2</a>
@@ -661,11 +672,11 @@ function FormatNumberLength(num) {
         <span onclick=changeCode("03690")>3690</span><br>
   </div>
 </div>
-
-</h4>
-<select id="selectList" onchange="assignList()"></select>
+<center>
+<br>
 
 <canvas id="cvs" width="1250" height="600">[No canvas support]</canvas>
+<canvas id="accel" width="1250" height="240">[No canvas support]</canvas>
 <canvas id="动力2" width="1250" height="240">[No canvas support]</canvas>
 <canvas id="动力7" width="1250" height="240">[No canvas support]</canvas>
 <canvas id="癫疯" width="1250" height="240">[No canvas support]</canvas>
@@ -719,7 +730,7 @@ function drawchart(thedrawdata) {
 	line = new RGraph.Line({
 		id:'cvs', data:thedrawdata,
 		options: {
-			title: showTime()+" " + showDate()+" " + theStartCode + " " + stkName + " 分钟层 ~p1: " + intv1+ "  ~w: "+ datawidth + ", ~C: "+ closeLst[closeLst.length-1] ,
+			title: showTime()+" " + showDate()+". " + theStartCode + " " + stkName + " 分钟层 ~p1: " + intv1+ "  ~w: "+ datawidth + ", ~C: "+ closeLst[closeLst.length-1] ,
 			titleColor: 'grey', 
 			titleSize: 16,
 			colors: chartColor, scaleDecimals: 2,
@@ -871,6 +882,18 @@ function chgIntv(newIntv) {
           localStorage.setItem("minSteps", JSON.stringify(minSteps));
 		window.location.reload(true);
 }
+function baseIdx(newIntv) {
+		var baseSubIdx = prompt("to subtract line number(1-7):", "");
+		var baseMinuIdx = prompt("to be subtracted line number(2-8):", "");
+
+          baseSubIdx = Number(baseSubIdx);
+          baseMinuIdx = Number(baseMinuIdx);
+          if(baseSubIdx>0 &baseSubIdx<8 & baseMinuIdx>1 & baseMinuIdx<9){
+            subtractIdx = [baseSubIdx, baseMinuIdx]
+            localStorage.setItem("subtractIdx", JSON.stringify(subtractIdx));
+		  window.location.reload(true);
+		}
+}
 
 function toggleMinPeriod() {
  	if (intv1 == 10) { minSteps = [20,30,40,50,60,70,80];}
@@ -929,6 +952,7 @@ function changeCode(thecode) {
 		if (thecode != "HSI") { thecode = FormatNumberLength5(thecode);}
 		theCode = thecode
 		storeCode(thecode);
+console.log(thecode)
 		startToRoll(thecode);
 }
 function toggleButton() {

@@ -1,0 +1,2151 @@
+<base target="_blank"><html><head><title>Bash Scripting Tutorial</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="https://williamkpchan.github.io/lazyload.min.js"></script>
+<script type='text/javascript' src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/commonfunctions.js"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+
+<script>
+  var showTopicNumber = false;
+  var topicEnd = "&emsp;";
+  var bookid = "Bash Scripting Tutorial"
+  var markerName = "h2,h3"
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:22px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+pre{width:100%;}
+#toc{color:cyan; font-size:20px;}
+img {max-width:120%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px; background-color:#044;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>Bash Scripting Tutorial</h1>
+<a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a>
+<br><br>
+<div id="toc"></div></center>
+
+<pre>
+<h2><span class="orange">What is a Bash Script?</span></h2>
+Think of a script for a play, or a movie, or a TV show.  
+The script tells the actors what they should say and do.  
+A script for a computer tells the computer what it should do or say.  
+In the context of Bash scripts we are telling the Bash shell what it should do.
+A Bash script is a plain text file which contains a series of commands.  
+These commands are a mixture of commands we would normally type ouselves on the command line (such as <i>ls</i> or <i>cp</i> for example) and commands we could type on the command line but generally wouldn't (you'll discover these over the next few pages).  
+An important point to remember though is:
+<i>Anything you can run normally on the command line can be put into a script and it will do exactly the same thing.  
+Similarly, anything you can put into a script can also be run normally on the command line and it will do exactly the same thing.</i>
+You don't need to change anything.  
+Just type the commands as you would normally and they will behave as they would normally.  
+It's just that instead of typing them at the command line we are now entering them into a plain text file.  
+In this sense, if you know how to do stuff at the command line then you already know a fair bit in terms of Bash scripting.
+It is convention to give files that are Bash scripts an extension of <i>.sh</i> (myscript.sh for example). As you would be aware (and if you're not maybe you should consider reviewing our <a href="/linuxtutorial/">Linux Tutorial</a>), Linux is an extensionless system so a script doesn't necessarily have to have this characteristic in order to work.
+
+<h2>How do they work?</h2>
+This is just a little bit of background knowledge.  
+It's not necessary to understand this in order to write scripts but it can be useful to know once you start getting into more complex scripts (and scripts that call and rely on other scripts once you start getting really fancy).
+In the realm of Linux (and computers in general) we have the concept of programs and processes.  
+A program is a blob of binary data consisting of a series of instructions for the CPU and possibly other resources (images, sound files and such) organised into a package and typically stored on your hard disk.  
+When we say we are running a program we are not really running the program but a copy of it which is called a process.  
+What we do is copy those instructions and resources from the hard disk into working memory (or RAM).  
+We also allocate a bit of space in RAM for the process to store variables (to hold temporary working data) and a few flags to allow the operating system (OS) to manage and track the process during it's execution.
+<i>Essentially a process is a running instance of a program.</i>
+There could be several processes representing the same program running in memory at the same time.  
+For example I could have two terminals open and be running the command <i>cp</i> in both of them.  
+In this case there would be two cp processes currently existing on the system.  
+Once they are finished running the system then destroys them and there are no longer any processes representing the program cp.
+When we are at the terminal we have a Bash process running in order to give us the Bash shell.  
+If we start a script running it doesn't actually run in that process but instead starts a new process to run inside.  
+We'll demonstrate this in the next section on variables and it's implications should become clearer.  
+For the most part you don't need to worry too much about this phenomenon however.
+
+<h2>How do we run them?</h2>
+Running a Bash script is fairly easy.  
+Another term you may come across is <i>executing</i> the script (which means the same thing).  
+Before we can execute a script it must have the execute permission set (for safety reasons this permission is generally not set by default).  
+If you forget to grant this permission before running the script you'll just get an error message telling you as such and no harm will be done.
+./myscript.sh
+bash: ./myscript.sh: Permission denied
+
+ls -l myscript.sh
+-rw-r--r-- 18 ryan users 4096 Feb 17 09:12 myscript.sh
+
+chmod 755 myscript.sh
+
+ls -l myscript.sh
+-rwxr-xr-x 18 ryan users 4096 Feb 17 09:12 myscript.sh
+
+./myscript.sh
+Hello World!
+
+The shorthand 755 is often used for scripts as it allows you the owner to write or modify the script and for everyone to execute the script.
+Here are the contents of myscript.sh
+<h4>myscript.sh</h4>
+
+#!/bin/bash
+# A sample Bash script, by Ryan
+
+echo Hello World!
+
+Let's break it down:
+
+<i>Line 1</i> - Is what's referred to as the <i>shebang</i>. See below for what this is.
+
+<i>Line 2</i> - This is a comment.  
+Anything after <i>#</i> is not executed.  
+It is for our reference only.
+
+<i>Line 4</i> - Is the command echo which will print a message to the screen.  
+You can type this command yourself on the command line and it will behave exactly the same.
+The syntax highlighting is there only to make it easier to read and is not something you need to do in your own files (remember they are just plain text files).
+
+<h3>Why the ./</h3>
+
+You've possibly noticed that when we run a normal command (such as <i>ls</i>) we just type its name but when running the script above I put a ./ in front of it.  
+When you just type a name on the command line Bash tries to find it in a series of directories stored in a variable called $PATH. We can see the current value of this variable using the command <i>echo</i> (you'll learn more about variables in the next section).
+echo $PATH
+/home/ryan/bin:/usr/local/bin:/usr/bin:/bin
+
+The directories are separated by " <i>:</i> "
+Bash only looks in those specific directories and doesn't consider sub directories or your current directory.  
+It will look through those directories in order and execute the first instance of the program or script that it finds.
+The $PATH variable is an individual user variable so each user on a system may set it to suit themselves.
+This is done for a few different reasons.
+It allows us to have several different versions of a program installed.  
+We can control which one gets executed based on where it sits in our $PATH.
+It allows for convenience.  
+As you saw above, the first directory for myself is a <i>bin</i> directory in my home directory.  
+This allows me to put my own scripts and programs there and then I can use them no matter where I am in the system by just typing their name.  
+I could even create a script with the same name as a program (to act as a wrapper) if I wanted slightly different behaviour.
+It increases safety - For example a malicious user could create a script called <i>ls</i> which actually deletes everything in your home directory.  
+You wouldn't want to inadvertantly run that script.  
+But as long as it's not in your $PATH that won't happen.
+If a program or script is not in one of the directories in your $PATH then you can run it by telling Bash where it should look to find it.  
+You do so by including either an absolute or relative path in front of the program or script name.  
+You'll remember that dot ( . ) is actually a reference to your current directory.  
+Assuming this script is in my home directory I could also have run it by using an absolute path.
+/home/ryan/myscript.sh
+Hello World!
+
+<h3>The Shebang (#!)</h3>
+
+<i>#!/bin/bash</i>
+This is the first line of the script above.  
+The hash exclamation mark ( #! ) character sequence is referred to as the Shebang.  
+Following it is the path to the interpreter (or program) that should be used to run (or interpret) the rest of the lines in the text file. (For Bash scripts it will be the path to Bash, but there are many other types of scripts and they each have their own interpreter.)
+Formatting is important here.  
+The shebang must be on the very first line of the file (line 2 won't do, even if the first line is blank).  
+There must also be no spaces before the <i>#</i> or between the <i>!</i> and the path to the interpreter.
+Whilst you could use a relative path for the interpreter, most of the time you are going to want to use an absolute path.  
+You will probably be running the script from a variety of locations so absolute is the safest (and often shorter than a relative path too in this particular case).
+It is possible to leave out the line with the shebang and still run the script but it is unwise.  
+If you are at a terminal and running the Bash shell and you execute a script without a shebang then Bash will assume it is a Bash script.  
+So this will only work assuming the user running the script is running it in a Bash shell and there are a variety of reasons why this may not be the case, which is dangerous.
+You can also run Bash, passing the script as an argument.
+bash myscript.sh
+Hello World!
+
+Whilst this is safe it also involves unnecessary typing every time you want to run the script.
+Given the observations above it is best to always include the shebang ( <i>#!</i> ).  
+It is the most reliable and convenient approach.
+
+<h2>Formatting</h2>
+As we saw above, formatting for the shebang was important (ie no spaces, must be on first line).  
+There are many areas in Bash scripts where formatting is important.  
+Typically it involves spaces and either the presence or absence of a space can be the difference between the command working or not.  
+I'll point these out as we encounter them.  
+Also get in the habit of being mindful of the presence or absence of spaces when looking at code.
+The main reason for this is that Bash was originally developed as an interface for Users to interact with the system and later extended to have more powerful scripting capabilities.  
+Many decisions regarding it's behaviour were made considering only the needs of the user and then scripting capabilities had to be worked in, later,  around those decisions.  
+People generally don't mind this however as Bash scripts are still an awesome tool for quickly and easily joining existing programs into more powerful solutions.
+I have seen students spend quite a bit of time in frustration that a piece of code that looks perfectly fine isn't working.  
+They get quite embarassed when they find out the culprit (a space that either should or shouldn't be there).  
+You will probably make this mistake a few times yourself before it sinks in so don't worry too much but the sooner you get the hang of it the happier you will be :)
+Indenting of code is another area of formatting that is important.  
+We'll look at <a href="bash-if-statements.php#indenting">indenting of code</a> in section 5 (If Statements) when it becomes relevant.  
+Indenting is not required but it does make your code easier to read and make it harder to make simple errors.
+
+<h2><br><span class="orange">Variables</span></h2>
+Temporary stores of information
+<h2>Introduction</h2>
+For those of you that have dabbled in programming before, you'll be quite familiar with variables.  
+For those of you that haven't, think of a variable as a temporary store for a simple piece of information.  
+These variables can be very useful for allowing us to manage and control the actions of our Bash Script.  
+We'll go through a variety of different ways that variables have their data set and ways we can then use them.
+Variables are one of those things that are actually quite easy to use but are also quite easy to get yourself into trouble with if you don't properly understand how they work.  
+As such there is a bit of reading in this section but if you take the time to go through and understand it you will be thankful you did later on when we start dabbling in more complex scripts.
+
+<h2>How do they Work?</h2>
+A variable is a temporary store for a piece of information.  
+There are two actions we may perform for variables:
+Setting a value for a variable.
+Reading the value for a variable.
+Variables may have their value set in a few different ways.  
+The most common are to set the value directly and for its value to be set as the result of processing by a command or program.  
+You will see examples of both below.
+To read the variable we then place its name (preceded by a $ sign) anywhere in the script we would like.  
+Before Bash interprets (or runs) every line of our script it first checks to see if any variable names are present.  
+For every variable it has identified, it replaces the variable name with its value.  
+Then it runs that line of code and begins the process again on the next line.
+Here are a few quick points on syntax.  
+They will be elaborated on and demonstrated as we go into more detail below.
+When referring to or reading a variable we place a $ sign before the variable name.
+When setting a variable we leave out the $ sign.
+Some people like to always write variable names in uppercase so they stand out.  
+It's your preference however.  
+They can be all uppercase,  all lowercase, or a mixture.
+A variable may be placed anywhere in a script (or on the command line for that matter) and, when run, Bash will replace it with the value of the variable.  
+This is made possible as the substitution is done before the command is run.
+<h2>Command line arguments</h2>
+Command line arguments are commonly used and easy to work with so they are a good place to start.
+When we run a program on the command line you would be familiar with supplying arguments after it to control its behaviour.  
+For instance we could run the command <i>ls -l /etc</i>.  
+<i>-l</i> and <i>/etc</i> are both command line arguments to the command <i>ls</i>.  
+We can do similar with our bash scripts.  
+To do this we use the variables <i>$1</i> to represent the first command line argument, <i>$2</i> to represent the second command line argument and so on.  
+These are automatically set by the system when we run our script so all we need to do is refer to them.
+Let's look at an example.
+<h4>mycopy.sh</h4>
+
+#!/bin/bash
+# A simple copy script
+
+cp $1 $2
+
+# Let's verify the copy worked
+
+echo Details for $2
+ls -lh $2
+
+Let's break it down:
+
+<i>Line 4</i> - run the command <i>cp</i> with the first command line argument as the source and the second command line argument as the destination.
+
+<i>Line 8</i> - run the command <i>echo</i> to print a message.
+
+<i>Line 9</i> - After the copy has completed, run the command <i>ls</i> for the destination just to verify it worked.  
+We have included the options <i>l</i> to show us extra information and <i>h</i> to make the size human readable so we may verify it copied correctly.
+./mycopy.sh /projects/file1.data ./results.data
+Details for ./results.data
+-rw-r--r-- 18 ryan users 3.4M Feb 14 07:18 results.data
+
+We'll discuss their usage a little more in the next section ( <a href="bash-input.php">3. Input</a> ).
+
+<h2>Other Special Variables</h2>
+There are a few other variables that the system sets for you to use as well.
+
+<i>$0</i> - The name of the Bash script.
+
+<i>$1 - $9</i> - The first 9 arguments to the Bash script. (As mentioned above.)
+
+<i>$#</i> - How many arguments were passed to the Bash script.
+
+<i>$@</i> - All the arguments supplied to the Bash script.
+
+<i>$?</i> - The exit status of the most recently run process.
+
+<i>$$</i> - The process ID of the current script.
+
+<i>$USER</i> - The username of the user running the script.
+
+<i>$HOSTNAME</i> - The hostname of the machine the script is running on.
+
+<i>$SECONDS</i> - The number of seconds since the script was started.
+
+<i>$RANDOM</i> - Returns a different random number each time is it referred to.
+
+<i>$LINENO</i> - Returns the current line number in the Bash script.
+
+If you type the command <i>env</i> on the command line you will see a listing of other variables which you may also refer to.
+Some of these variables may seem useful to you now.  
+Others may not.  
+As we progress to more complex scripts in later sections you will see examples of how they can be useful.
+
+<h2>Setting Our Own Variables</h2>
+As well as variables that are preset by the system, we may also set our own variables.  
+This can be useful for keeping track of results of commands and being able to refer to and process them later.
+There are a few ways in which variables may be set (such as part of the execution of a command) but the basic form follows this pattern:
+variable=value
+This is one of those areas where formatting is important.  
+Note there is no space on either side of the equals ( = ) sign.  
+We also leave off the $ sign from the beginning of the variable name when setting it.
+Variable names may be uppercase or lowercase or a mixture of both but Bash is a case sensitive environment so whenever you refer to a variable you must be consistent in your use of uppercase and lowercase letters.  
+You should always make sure variable names are descriptive.  
+This makes their purpose easier for you to remember.
+Here is a simple example to illustrate their usage.
+<h4>simplevariables.sh</h4>
+
+#!/bin/bash
+# A simple variable example
+
+myvariable=Hello
+
+anothervar=Fred
+
+echo $myvariable $anothervar
+echo 
+
+sampledir=/etc
+
+ls $sampledir
+
+Let's break it down:
+
+<i>Lines 4 and 6</i> - set the value of the two variables myvariable and anothervar.
+
+<i>Line 8</i> - run the command <i>echo</i> to check the variables have been set as intended.
+
+<i>Line 9</i> - run the command <i>echo</i> this time with no arguments.  
+This is a good way to get a blank line on the screen to help space things out.
+
+<i>Line 11</i> - set another variable, this time as the path to a particular directory.
+
+<i>Line 13</i> - run the command <i>ls</i> substituting the value of the variable sampledir as its first command line argument.
+./simplevariables.sh
+Hello Fred
+
+a2ps.cfg aliases alsa.d ...
+
+It is important to note that in the example above we used the command <i>echo</i> simply because it is a convenient way to demonstrate that the variables have actually been set. echo is not needed to make use of variables and is only used when you wish to print a specific message to the screen. (Pretty much all commands print output to the screen as default so you don't need to put echo in front of them.)
+Variables can be useful for making our scripts easier to manage.  
+Maybe our script is going to run several commands, several of which will refer to a particular directory.  
+Rather than type that directory out each time we can set it once in a variable then refer to that variable.  
+Then if the required directory changes in the future we only need to update one variable rather than every instance within the script.
+
+<h2>Quotes</h2>
+In the example above we kept things nice and simple.  
+The variables only had to store a single word.  
+When we want variables to store more complex values however, we need to make use of quotes.  
+This is because under normal circumstances Bash uses a space to determine separate items.
+myvar=Hello World
+-bash: World: command not found
+
+Remember, commands work exactly the same on the command line as they do within a script.
+Because commands work exactly the same on the command line as in a script it can sometimes be easier to experiment on the command line.
+When we enclose our content in quotes we are indicating to Bash that the contents should be considered as a single item.  
+You may use single quotes ( ' ) or double quotes ( " ).
+Single quotes will treat every character literally.
+Double quotes will allow you to do substitution (that is include variables within the setting of the value).
+myvar='Hello World'
+
+echo $myvar
+Hello World
+
+newvar="More $myvar"
+
+echo $newvar
+More Hello World
+
+newvar='More $myvar'
+
+echo $newvar
+More $myvar
+
+<h2>Command Substitution</h2>
+Command substitution allows us to take the output of a command or program (what would normally be printed to the screen) and save it as the value of a variable.  
+To do this we place it within brackets, preceded by a $ sign.
+myvar=$( ls /etc | wc -l )
+
+echo There are $myvar entries in the directory /etc
+
+Command substitution is nice and simple if the output of the command is a single word or line.  
+If the output goes over several lines then the newlines are simply removed and all the output ends up on a single line.
+ls
+bin Documents Desktop ...
+Downloads public_html ...
+
+myvar=$( ls )
+
+echo $myvar
+bin Documents Desktop Downloads public_html ...
+
+Let's break it down:
+
+<i>Line 1</i> - We run the command <i>ls</i>.  
+Normally its output would be over several lines.  
+I have shortened it a bit in the example above just to save space.
+
+<i>Line 4</i> - When we save the command to the variable <i>myvar</i> all the newlines are  stripped out and the output is now all on a single line.
+When playing about with command substitution it's a good idea to test your output rather than just assuming it will behave in a certain way.  
+The easiest way to do that is simply to <i>echo</i> the variable and see what has happened.  
+(You can then remove the echo command once you are happy.)
+
+<h2>Exporting Variables</h2>
+Remember how in the previous section we talked about <a href="bash-script.php#how">scripts being run in their own process</a>?  This introduces a phenomenon known as scope which affects variables amongst other things.  
+The idea is that variables are limited to the process they were created in.  
+Normaly this isn't an issue but sometimes, for instance, a script may run another script as one of its commands.  
+If we want the variable to be available to the second script then we need to export the variable.
+<h4>script1.sh</h4>
+
+#!/bin/bash
+# demonstrate variable scope 1.
+
+var1=blah
+var2=foo
+
+# Let's verify their current value
+
+echo $0 :: var1 : $var1, var2 : $var2
+
+export var1
+./script2.sh
+
+# Let's see what they are now
+
+echo $0 :: var1 : $var1, var2 : $var2
+
+<h4>script2.sh</h4>
+
+#!/bin/bash
+# demonstrate variable scope 2
+
+# Let's verify their current value
+
+echo $0 :: var1 : $var1, var2 : $var2
+
+# Let's change their values
+
+var1=flop
+var2=bleh
+
+Now lets run it and see what happens.
+./script1.sh
+script1.sh :: var1 : blah, var2 : foo
+script2.sh :: var1 : blah, var2 : 
+script1.sh :: var1 : blah, var2 : foo
+
+The output above may seem unexpected.  
+What actually happens when we export a variable is that we are telling Bash that every time a new process is created (to run another script or such) then make a copy of the variable and hand it over to the new process.  
+So although the variables will have the same name they exist in separate processes and so are unrelated to each other.
+Exporting variables is a one way process.  
+The original process may pass variables over to the new process but anything that process does with the copy of the variables has no impact on the original variables.
+Exporting variables is something you probably won't need to worry about for most Bash scripts you'll create.  
+Sometimes you may wish to break a particular task down into several separate scripts however to make it easier to manage or to allow for reusability (which is always good).  
+For instance you could create a script which will make a dated (ie todays date prepended to the filename) copy of all filenames exported on a certain variable.  
+Then you could easily call that script from within other scripts you create whenever you would like to take a snapshot of a set of files.
+<h2>Summary</h2>
+<dt>$1, $2, ...</dt>
+<dd>The first, second, etc command line arguments to the script.</dd>
+
+<dt>variable=value</dt>
+<dd>To set a value for a variable. Remember, no spaces on either side of =</dd>
+
+<dt>Quotes " '</dt>
+<dd>Double will do variable substitution, single will not.</dd>
+
+<dt>variable=$( command )</dt>
+<dd>Save the output of a command into a variable</dd>
+
+<dt>export var1</dt>
+<dd>Make the variable var1 available to child processes.</dd>
+
+<dt>Formatting</dt>
+<dd>The presence or absence of spaces is important.</dd>
+
+<dt>Manageability</dt>
+<dd>If a particular value is used several times within a script (eg a file or directory name) then using a variable can make it easier to manage.</dd>
+
+<h2>Activities</h2>
+Let's explore variables.
+A good place to start is to create a simple script which will accept some command line arguments and <i>echo</i> out some details about them (eg, how many are there, what is the secone one etc).
+Create a script which will print a random word.  
+There is a file containing a list of words on your system (usually /usr/share/dict/words or /usr/dict/words).  
+Hint: <a href="/linuxtutorial/piping.php#piping">Piping</a> will be useful here.
+Expand the previous activity so that if a number is supplied as the first command line argument then it will select from only words with that many characters.  
+Hint: <a href="/linuxtutorial/grep.php">Grep</a> may be useful here.
+Take a copy of the two files script1.sh and script2.sh above then experiment by tweaking them and running them and observing the output.  
+This will help you get a feel for how exporting variables works.
+Now let's create a script which will take a filename as its first argument and create a dated copy of the file.  
+eg. if our file was named file1.txt it would create a copy such as 2022-01-16_file1.txt.  
+(To achieve this you will probably want to play with command substitution and the command <i>date</i>)
+
+<i>Challenge:</i>  To make it a bit harder,  see if you can get it so that the date is after the name of the file (eg. file1_2022-01-16.txt (The command <i>basename</i> can be useful here.)
+
+<i>Challenge:</i>  Now see if you can expand the previous question to accept a list of files on the command line and it will create a named copy of all of them.  
+(The command <a href="/linuxtutorial/bonus.php#xargs">xargs</a> may be useful here.)
+
+<h2><br><span class="orange">User Input</span></h2>
+Let's make our scripts interactive.
+<h2>Introduction</h2>
+We looked at one form of user input (<a href="bash-variables.php#arguments">command line arguments</a>) in the previous section.  
+Now we would like to introduce other ways the user may provide input to the Bash script. Following this we'll have a discussion on when and where is best to use each method. 
+
+After the mammoth previous section this one is much easier to get through.
+
+<h2>Ask the User for Input</h2>
+If we would like to ask the user for input then we use a command called <i>read</i>. This command takes the input and will save it into a variable.
+read var1
+Let's look at a simple example:
+<h4>introduction.sh</h4>
+
+#!/bin/bash
+# Ask the user for their name
+
+echo Hello, who am I talking to?
+
+read varname
+
+echo It\'s nice to meet you $varname
+
+Let's break it down:
+
+<i>Line 4</i> - Print a message asking the user for input.
+
+<i>Line 6</i> - Run the command <i>read</i> and save the users response into the variable <i>varname</i>
+
+<i>Line 8</i> - <i>echo</i> another message just to verify the read command worked. Note: I had to put a backslash ( \ ) in front of the ' so that it was escaped.
+./introduction.sh
+Hello, who am I talking to?
+<i>Ryan</i>
+It's nice to meet you Ryan
+
+Note:  Ryan above is in italics just to show that it was something I typed in.  
+On your terminal input will show up normally.
+<h3>More with Read</h3>
+
+You are able to alter the behaviour of <i>read</i> with a variety of command line options.  
+(See the man page for read to see all of them.)  Two commonly used options however are <i>-p</i> which allows you to specify a prompt and <i>-s</i> which makes the input silent.  
+This can make it easy to ask for a username and password combination like the example below:
+<h4>login.sh</h4>
+
+#!/bin/bash
+# Ask the user for login details
+
+read -p 'Username: ' uservar
+read -sp 'Password: ' passvar
+echo
+echo Thankyou $uservar we now have your login details
+
+On lines 4 and 5 above we include the prompt within quotes so we can have a space included with it.  
+Otherwise the user input will start straight after the last character of the prompt which isn't ideal from a readability point of view.
+./login.sh
+Username: <i>ryan</i>
+
+Password:
+Thankyou ryan we now have your login details
+
+<h3>More variables</h3>
+
+So far we have looked at a single word as input.  
+We can do more than that however.
+<h4>cars.sh</h4>
+
+#!/bin/bash
+# Demonstrate how read actually works
+
+echo What cars do you like?
+
+read car1 car2 car3
+
+echo Your first car was: $car1
+echo Your second car was: $car2
+echo Your third car was: $car3
+
+./cars.sh
+What cars do you like?
+<i>Jaguar Maserati Bentley</i>
+Your first car was: Jaguar
+Your second car was: Maserati
+Your third car was: Bentley
+
+./cars.sh
+What cars do you like?
+<i>Jaguar Maserati Bentley Lotus</i>
+Your first car was: Jaguar
+Your second car was: Maserati
+Your third car was: Bentley Lotus
+
+The general mechanism is that you can supply several variable names to <i>read</i>.  
+Read will then take your input and split it on whitespace.  
+The first item will then be assigned to the first variable name, the second item to the second variable name and so on.  
+If there are more items than variable names then the remaining items will all be added to the last variable name.  
+If there are less items than variable names then the remaining variable names will be set to blank or null.
+
+<h2>Reading from STDIN</h2>
+It's common in Linux to <a href="/linuxtutorial/piping.php#piping">pipe</a> a series of simple, single purpose commands together to create a larger solution tailored to our exact needs.  
+The ability to do this is one of the real strenghs of Linux.  
+It turns out that we can easily accommodate this mechanism with our scripts also.  
+By doing so we can create scripts that act as filters to modify data in specific ways for us.
+Bash accomodates piping and redirection by way of special files.  
+Each process gets it's own set of files (one for STDIN, STDOUT and STDERR respectively) and they are linked when piping or redirection is invoked.  
+Each process gets the following files:
+
+<i>STDIN</i> - /proc/&lt;processID&gt;/fd/0
+
+<i>STDOUT</i> - /proc/&lt;processID&gt;/fd/1
+
+<i>STDERR</i> - /proc/&lt;processID&gt;/fd/2
+To make life more convenient the system creates some shortcuts for us:
+
+<i>STDIN</i> - /dev/stdin or /proc/self/fd/0
+
+<i>STDOUT</i> - /dev/stdout or /proc/self/fd/1
+
+<i>STDERR</i> - /dev/stderr or /proc/self/fd/2
+<i>fd</i> in the paths above stands for file descriptor.
+
+So if we would like to make our script able to process data that is piped to it all we need to do is read the relevant file.  
+All of the files mentioned above behave like normal files.
+<h4>summary</h4>
+
+#!/bin/bash
+# A basic summary of my sales report
+
+echo Here is a summary of the sales data:
+echo ====================================
+echo
+
+cat /dev/stdin | cut -d' ' -f 2,3 | sort
+
+Let's break it down:
+
+<i>Lines 4, 5, 6</i> - Print a title for the output
+
+<i>Line 8</i> - <i>cat</i> the file representing STDIN, <i>cut</i> setting the delimiter to a space, fields 2 and 3 then sort the output.
+cat salesdata.txt
+Fred apples 20 January 4
+Susy oranges 5 January 7
+Mark watermelons 12 January 10
+Terry peaches 7 January 15
+
+cat salesdata.txt | ./summary
+Here is a summary of the sales data:
+====================================
+
+apples 20
+oranges 5
+peaches 7
+watermelons 12
+
+
+<h2>So which should I use?</h2>
+So we now have 3 methods for getting input from the user:
+Command line arguments
+Read input during script execution
+Accept data that has been redirected into the Bash script via STDIN
+Which method is best depends on the situation.
+You should normally favor command line arguments wherever possible.  
+They are the most convenient for users as the data will be stored in their command history so they can easily return to it.  
+It is also the best approach if your script may be called by other scripts or processes (eg. maybe you want it to run periodically using CRON).
+Sometimes the nature of the data is such that it would not be ideal for it to be stored in peoples command histories etc.  
+A good example of this is login credentials (username and password). In these circumstances it is best to <i>read</i> the data during script execution.
+If all the script is doing is processing data in a certain way then it is probably best to work with STDIN.  
+This way it can easily be added into a pipeline.
+Sometimes you may find that a combination is ideal.  
+The user may supply a filename as a command line argument and if not then the script will process what it finds on STDIN (when we look at If statements we'll see how this may be achieved).  
+Or maybe command line arguments define certain behaviour but <i>read</i> is also used to ask for more information if required.
+Ultimatately you should think about 3 factors when deciding how users will supply data to your Bash script:
+
+<i>Ease of use</i> - which of these methods will make it easiest for users to use my script?
+
+<i>Security</i> - Is there sensitive data which I should handle appropriately?
+
+<i>Robustness</i> - Can I make it so that my scripts operation is intuitive and flexible and also make it harder to make simple mistakes?
+<h2>Summary</h2>
+<dl>
+<dt>read varName</dt>
+<dd>Read input from the user and store it in the variable varName.</dd>
+
+<dt>/dev/stdin</dt>
+<dd>A file you can read to get the STDIN for the Bash script</dd>
+</dl>
+
+<dl>
+<dt>Usability</dt>
+<dd>Your choice of input methods will have an impact on how useable your script is.</dd>
+</dl>
+
+<h2>Activities</h2>
+Let's dabble with input.
+Create a simple script which will ask the user for a few pieces of information then combine this into a message which is echo'd to the screen.
+Add to the previous script to add in some data coming from command line arguments and maybe some of the other system variables.
+Create a script which will take data from STDIN and print the 3rd line only.
+Now play about with creating a script which will behave as a filter.  
+Create a script which will rearrange the output of the command <i>ls -l</i> in a useful way (eg maybe you only print the filename, size and owner) (Hint: <a href="/linuxtutorial/bonus.php#awk">awk</a> can be useful here).
+
+<h2><br><span class="orange">Arithmetic</span></h2>
+It all adds up.
+<h2>Introduction</h2>
+Depending on what type of work you want your scripts to do you may end up using arithmetic a lot or not much at all.  
+It's a reasonable certainty however that you will need to use arithmetic at some point.  
+Like variables, they are reasonably easy to implement and knowing how to do so is an essential skill in Bash scripting mastery. 
+
+There are several ways to go about arithmetic in Bash scripting.  
+We'll cover them for completeness but the recommended approach is arithmetic expansion (covered last).
+
+<h2>Let</h2>
+<i>let</i> is a builtin function of Bash that allows us to do simple arithmetic.  
+It follows the basic format:
+let &lt;arithmetic expression&gt;
+The arithmetic expression can take a variety of formats which we'll outline below.  
+The first part is generally always a variable which the result is saved into however.
+Let's look at a simple example:
+<h4>let_example.sh</h4>
+
+#!/bin/bash
+# Basic arithmetic using let
+
+let a=5+4
+echo $a # 9
+
+let "a = 5 + 4"
+echo $a # 9
+
+let a++
+echo $a # 10
+
+let "a = 4 * 5"
+echo $a # 20
+
+let "a = $1 + 30"
+echo $a # 30 + first command line argument
+
+Let's break it down:
+
+<i>Line 4</i> - This is the basic format.  
+Note that if we don't put quotes around the expression then it must be written with no spaces.
+
+<i>Line 7</i> - This time we have used quotes which allow us to space out the expression to make it more readable.
+
+<i>Line 10</i> - This is a shorthand for increment the value of the variable a by 1.  
+It is the same as writing "a = a + 1".
+
+<i>Line 16</i> - We may also include other variables in the expression.
+./let_example.sh 15
+9
+9
+10
+20
+45
+
+Here is a table with some of the basic expressions you may perform.  
+There are others but these are the most commonly used.
+<table>
+<tr>
+<th>Operator</th>
+<th>Operation</th>
+</tr>
+<tr>
+<td>+, -, \*, /</td>
+<td>addition, subtraction, multiply, divide</td>
+</tr>
+<tr>
+<td>var++</td>
+<td>Increase the variable var by 1</td>
+</tr>
+<tr>
+<td>var--</td>
+<td>Decrease the variable var by 1</td>
+</tr>
+<tr>
+<td>%</td>
+<td>Modulus (Return the remainder after division)</td>
+</tr>
+</table>
+These operators may be used in the other mechanisms described below as well.
+
+<h2>Expr</h2>
+<i>expr</i> is similar to let except instead of saving the result to a variable it instead prints the answer.  
+Unlike <i>let</i> you don't need to enclose the expression in quotes.  
+You also must have spaces between the items of the expression.  
+It is also common to use <i>expr</i> within command substitution to save the output to a variable.
+expr item1 operator item2
+Let's look at a simple example:
+<h4>expr_example.sh</h4>
+
+#!/bin/bash
+# Basic arithmetic using expr
+
+expr 5 + 4
+
+expr "5 + 4"
+
+expr 5+4
+
+expr 5 \* $1
+
+expr 11 % 2
+
+a=$( expr 10 - 3 )
+echo $a # 7
+
+Let's break it down:
+
+<i>Line 4</i> - This is the basic format.  
+Note that there must be spaces between the items and no quotes.
+
+<i>Line 6</i> - If we do put quotes around the expression then the expression will not be evaluated but printed instead.
+
+<i>Line 8</i> - If we do not put spaces between the items of the expression then the expression will not be evaluated but printed instead.
+
+<i>Line 10</i> - Some characters have a special meaning to Bash so we must escape them (put a backslash in front of) to remove their special meaning.
+
+<i>Line 12</i> - Here we demonstrate the operator <i>modulus</i>. The modulus is the remainder when the first item is divided by the second item.
+
+<i>Line 14</i> - This time we're using expr within command substitution in order to save the result to the variable <i>a</i>.
+
+./expr_example.sh 12
+9
+5 + 4
+5+4
+60
+1
+7
+
+<h2>Double Parentheses</h2>
+In the section on Variables we saw that we could save the output of a command easily to a variable.  
+It turns out that this mechanism is also able to do basic arithmetic for us if we tweak the syntax a little.  
+We do so by using double brackets like so:
+$(( expression ))
+Here's an example to illustrate:
+<h4>expansion_example.sh</h4>
+
+#!/bin/bash
+# Basic arithmetic using double parentheses
+
+a=$(( 4 + 5 ))
+echo $a # 9
+
+a=$((3+5))
+echo $a # 8
+
+b=$(( a + 3 ))
+echo $b # 11
+
+b=$(( $a + 4 ))
+echo $b # 12
+
+(( b++ ))
+echo $b # 13
+
+(( b += 3 ))
+echo $b # 16
+
+a=$(( 4 * 5 ))
+echo $a # 20
+
+Let's break it down:
+
+<i>Line 4</i> - This is the basic format.  
+As you can see we may space it out nicely for readability without the need for quotes.
+
+<i>Line 7</i> - As you can see, it works just the same if we take spacing out.
+
+<i>Line 10</i> - We may include variables without the preceding $ sign.
+
+<i>Line 13</i> - Variables can be included with the $ sign if you prefer.
+
+<i>Line 16</i> - This is a slightly different form.  
+Here the value of the variable b is incremented by 1 (using the same mechanism illustrated under <i>let</i>). When we do this we don't need the $ sign preceding the brackets.
+
+<i>Line 19</i> - This is a slightly different form of the previous example.  
+Here the value of the variable b is incremented by 3.  
+It is a shorthand for <i>b = b + 3</i>.
+
+<i>Line 19</i> - Unlike other methods, when we do multiplication we don't need to escape the <i>*</i> sign.
+./expansion_example.sh
+9
+8
+11
+12
+13
+16
+20
+
+So as you can see double parenthese is quite flexible in how you format it's expression.  
+This is part of why we prefer this method.  
+As double parentheses is builtin to Bash it also runs slighly more efficiently (though to be honest, with the raw computing power of machines these days the difference in performance is really insignificant).
+
+<h2>Length of a Variable</h2>
+This isn't really arithmetic but it can be quite useful.  
+If you want to find out the lengh of a variable (how many characters) you can do the following:
+${#variable}
+Here's an example:
+<h4>length_example.sh</h4>
+
+#!/bin/bash
+# Show the length of a variable.
+
+a='Hello World'
+echo ${#a} # 11
+
+b=4953
+echo ${#b} # 4
+
+./length_example.sh
+11
+4
+
+<h2>Summary</h2>
+<dl>
+<dt>let expression</dt>
+<dd>Make a variable equal to an expression.</dd>
+
+<dt>expr expression</dt>
+<dd>print out the result of the expression.</dd>
+
+<dt>$(( expression ))</dt>
+<dd>Return the result of the expression.</dd>
+
+<dt>${#var}</dt>
+<dd>Return the length of the variable var.</dd>
+</dl>
+
+<dl>
+<dt>Arithmetic</dt>
+<dd>There are several ways in which to do arithmetic in Bash scripts. Double parentheses is the preferred method.</dd>
+
+<dt>Formatting</dt>
+<dd>When doing arithmetic, the presence or absence of spaces (and quotes) is often important.</dd>
+</dl>
+
+<h2>Activities</h2>
+Let's dive in with arithmetic.
+Create a simple script which will take two command line arguments and then multiply them together using each of the methods detailed above.
+Write a Bash script which will print tomorrows date. (Hint: use the command <i>date</i>)
+Remember when we looked at variables we discovered $RANDOM will return a random number. This number is between 0 and 32767 which is not always the most useful.  
+Let's write a script which will use this variable and some arithmetic (hint: play with modulus) to return a random number between 0 and 100.
+Now let's play with the previous script.  
+Modify it so that you can specify as a command line argument the upper limit of the random number.  
+Can you make it so that a lower limit can be specified also?  eg. if I ran ./random.sh 10 45 it would only return random numbers between 10 and 45.
+
+<h2><br><span class="orange">If Statements</span></h2>
+Decisions, decisions.
+<h2>Introduction</h2>
+Bash if statements are very useful. In this section of our Bash Scripting Tutorial you will learn the ways you may use if statements in your Bash scripts to help automate tasks.
+<i>If</i> statements (and, closely related, <i>case</i> statements) allow us to make decisions in our Bash scripts.  
+They allow us to decide whether or not to run a piece of code based upon conditions that we may set. If statements, combined with <a href="bash-loops.php">loops</a> (which we'll look at in the next section) allow us to make much more complex scripts which may solve larger tasks.
+Like what we have looked at in previous sections, their syntax is very specific so stay on top of all the little details.
+
+<h2>Basic If Statements</h2>
+A basic if statement effectively says, <i>if</i> a particular test is true, then perform a given set of actions.  
+If it is not true then don't perform those actions.  
+If follows the format below:
+if [ &lt;some test&gt; ]<br>then<br>&lt;commands&gt;<br>fi
+Anything between <i>then</i> and <i>fi</i> (if backwards) will be executed only if the test (between the square brackets) is true.
+Let's look at a simple example:
+<h4>if_example.sh</h4>
+
+#!/bin/bash
+# Basic if statement
+
+if [ $1 -gt 100 ] 
+then
+
+echo Hey that\'s a large number.
+
+pwd
+fi
+
+date
+
+Let's break it down:
+
+<i>Line 4</i> - Let's see if the first command line argument is greater than 100
+
+<i>Line 6 and 7</i> - Will only get run if the test on line 4 returns true. You can have as many commands here as you like.
+
+<i>Line 6</i> - The backslash ( \ ) in front of the single quote ( ' ) is needed as the single quote has a special meaning for bash and we don't want that special meaning.  
+The backslash escapes the special meaning to make it a normal plain single quote again.
+
+<i>Line 8</i> - fi signals the end of the if statement.  
+All commands after this will be run as normal.
+
+<i>Line 10</i> - Because this command is outside the if statement it will be run regardless of the outcome of the if statement.
+./if_example.sh 15
+Sun 16 Jan 2:34:34 2022
+
+./if_example.sh 150
+Hey that's a large number.
+/home/ryan/bin
+Sun 16 Jan 2:34:34 2022
+
+It is always good practice to test your scripts with input that covers the different scenarios that are possible.
+
+<h2>Test</h2>
+The square brackets ( [ ] ) in the <i>if</i> statement above are actually a reference to the command <i>test</i>.  
+This means that all of the operators that test allows may be used here as well.  
+Look up the man page for test to see all of the possible operators (there are quite a few) but some of the more common ones are listed below.
+<table>
+<tr>
+<th>Operator</th>
+<th>Description</th>
+</tr>
+<tr>
+<td>! EXPRESSION</td>
+<td>The EXPRESSION is false.</td>
+</tr>
+<tr>
+<td>-n STRING</td>
+<td>The length of STRING is greater than zero.</td>
+</tr>
+<tr>
+<td>-z STRING</td>
+<td>The lengh of STRING is zero (ie it is empty).</td>
+</tr>
+<tr>
+<td>STRING1 = STRING2</td>
+<td>STRING1 is equal to STRING2</td>
+</tr>
+<tr>
+<td>STRING1 != STRING2</td>
+<td>STRING1 is not equal to STRING2</td>
+</tr>
+<tr>
+<td>INTEGER1 -eq INTEGER2</td>
+<td>INTEGER1 is numerically equal to INTEGER2</td>
+</tr>
+<tr>
+<td>INTEGER1 -gt INTEGER2</td>
+<td>INTEGER1 is numerically greater than INTEGER2</td>
+</tr>
+<tr>
+<td>INTEGER1 -lt INTEGER2</td>
+<td>INTEGER1 is numerically less than INTEGER2</td>
+</tr>
+<tr>
+<td>-d FILE</td>
+<td>FILE exists and is a directory.</td>
+</tr>
+<tr>
+<td>-e FILE</td>
+<td>FILE exists.</td>
+</tr>
+<tr>
+<td>-r FILE</td>
+<td>FILE exists and the read permission is granted.</td>
+</tr>
+<tr>
+<td>-s FILE</td>
+<td>FILE exists and it's size is greater than zero (ie. it is not empty).</td>
+</tr>
+<tr>
+<td>-w FILE</td>
+<td>FILE exists and the write permission is granted.</td>
+</tr>
+<tr>
+<td>-x FILE</td>
+<td>FILE exists and the execute permission is granted.</td>
+</tr>
+</table>
+A few points to note:
+
+<i>=</i> is slightly different to <i>-eq</i>.  
+[ 001 = 1 ] will return false as = does a string comparison (ie. character for character the same) whereas -eq does a numerical comparison meaning [ 001 -eq 1 ] will return true.
+When we refer to FILE above we are actually meaning a <a href="/linuxtutorial/navigation.php">path</a>.  
+Remember that a path may be absolute or relative and may refer to a file or a directory.
+Because [ ] is just a reference to the command <i>test</i> we may experiment and trouble shoot with test on the command line to make sure our understanding of its behaviour is correct.
+test 001 = 1
+
+echo $?
+1
+
+test 001 -eq 1
+
+echo $?
+0
+
+touch myfile
+
+test -s myfile
+
+echo $?
+1
+
+ls /etc &gt; myfile
+
+test -s myfile
+
+echo $?
+0
+
+Let's break it down:
+
+<i>Line 1</i> - Perform a string based comparison.  
+Test doesn't print the result so instead we check it's exit status which is what we will do on the next line.
+
+<i>Line 2</i> - The variable <i>$?</i> holds the exit status of the previously run command (in this case test).  
+0 means TRUE (or success). 1 = FALSE (or failure).
+
+<i>Line 4</i> - This time we are performing a numerical comparison.
+
+<i>Line 7</i> - Create a new blank file <i>myfile</i> (assuming that myfile doesn't already exist).
+
+<i>Line 8</i> - Is the size of <i>myfile</i> greater than zero?
+
+<i>Line 11</i> - <a href="/linuxtutorial/piping.php">Redirect</a> some content into myfile so it's size is greater than zero.
+
+<i>Line 12</i> - Test the size of <i>myfile</i> again. This time it is TRUE.
+<h2>Indenting</h2>
+You'll notice that in the <i>if</i> statement above we indented the commands that were run if the statement was true.  
+This is referred to as indenting and is an important part of writing good, clean code (in any language, not just Bash scripts).  
+The aim is to improve readability and make it harder for us to make simple, silly mistakes.  
+There aren't any rules regarding indenting in Bash so you may indent or not indent however you like and your scripts will still run exactly the same.  
+I would highly recommend you do indent your code however (especially as your scripts get larger) otherwise you will find it increasingly difficult to see the structure in your scripts.
+
+<h2>Nested If statements</h2>
+Talking of indenting.  
+Here's a perfect example of when it makes life easier for you.  
+You may have as many <i>if</i> statements as necessary inside your script.  
+It is also possible to have an if statement inside of another if statement.  
+For example, we may want to analyse a number given on the command line like so:
+<h4>nested_if.sh</h4>
+
+#!/bin/bash
+# Nested if statements
+
+if [ $1 -gt 100 ] 
+then
+
+echo Hey that\'s a large number.
+
+if (( $1 % 2 == 0 )) 
+
+then
+
+echo And is also an even number.
+
+fi
+fi
+
+Let's break it down:
+
+<i>Line 4</i> - Perform the following, only if the first command line argument is greater than 100.
+
+<i>Line 8</i> - This is a light variation on the <i>if</i> statement.  
+If we would like to check an expression then we may use the double brackets just like we did for variables.
+
+<i>Line 10</i> - Only gets run if both if statements are true.
+Yo dawg, I herd you like <i>if</i> statements so I put an <i>if</i> statement inside your <i>if</i> statement.<i>Xzibit</i>
+(<a href="http://knowyourmeme.com/memes/xzibit-yo-dawg">Xzibit</a> didn't actually say that but I'm sure he would have, had he hosted Pimp My Bash Script.)
+
+You can nest as many if statements as you like but as a general rule of thumb if you need to nest more than 3 levels deep you should probably have a think about reorganising your logic.
+
+<h2>If Else</h2>
+Sometimes we want to perform a certain set of actions if a statement is true, and another set of actions if it is false.  
+We can accommodate this with the <i>else</i> mechanism.
+if [ &lt;some test&gt; ]<br>then<br>&lt;commands&gt;<br>else<br>&lt;other commands&gt;<br>fi
+Now we could easily read from a file if it is supplied as a command line argument, <i>else</i> read from STDIN.
+<h4>else.sh</h4>
+
+#!/bin/bash
+# else example
+
+if [ $# -eq 1 ] 
+then
+
+nl $1
+else
+
+nl /dev/stdin
+fi
+
+<h2>If Elif Else</h2>
+Sometimes we may have a series of conditions that may lead to different paths.
+if [ &lt;some test&gt; ]<br>then<br>&lt;commands&gt;<br>elif [ &lt;some test&gt; ] <br>then<br>&lt;different commands&gt;<br>else<br>&lt;other commands&gt;<br>fi
+For example it may be the case that if you are 18 or over you may go to the party.  
+If you aren't but you have a letter from your parents you may go but must be back before midnight.  
+Otherwise you cannot go.
+<h4>if_elif.sh</h4>
+
+#!/bin/bash
+# elif statements
+
+if [ $1 -ge 18 ] 
+then
+
+echo You may go to the party.
+elif [ $2 == 'yes' ] 
+then
+
+echo You may go to the party but be back before midnight.
+else
+
+echo You may not go to the party.
+fi
+
+You can have as many elif branches as you like.  
+The final else is also optional.
+
+<h2>Boolean Operations</h2>
+Sometimes we only want to do something if multiple conditions are met.  
+Other times we would like to perform the action if one of several condition is met.  
+We can accommodate these with <i>boolean operators</i>.
+
+<i>and</i> - &amp;&amp;
+
+<i>or</i> - ||
+For instance maybe we only want to perform an operation if the file is readable <i>and</i> has a size greater than zero.
+<h4>and.sh</h4>
+
+#!/bin/bash
+# and example
+
+if [ -r $1 ] &amp;&amp; [ -s $1 ] 
+then
+
+echo This file is useful.
+fi
+
+Maybe we would like to perform something slightly different if the user is either bob or andy.
+<h4>or.sh</h4>
+
+#!/bin/bash
+# or example
+
+if [ $USER == 'bob' ] || [ $USER == 'andy' ] 
+then
+
+ls -alh
+else
+
+ls
+fi
+
+<h2>Case Statements</h2>
+Sometimes we may wish to take different paths based upon a variable matching a series of patterns.  
+We could use a series of <i>if</i> and <i>elif</i> statements but that would soon grow to be unweildly.  
+Fortunately there is a <i>case</i> statement which can make things cleaner.  
+It's a little hard to explain so here are some examples to illustrate:
+case &lt;variable&gt; in<br>
+&lt;pattern 1&gt;)<br>&lt;commands&gt;<br>;;<br>
+&lt;pattern 2&gt;)<br>&lt;other commands&gt;<br>;;<br>
+esac
+Here is a basic example:
+<h4>case.sh</h4>
+
+#!/bin/bash
+# case example
+
+case $1 in
+
+start)
+
+echo starting
+
+;;
+
+stop)
+
+echo stoping
+
+;;
+
+restart)
+
+echo restarting
+
+;;
+
+*)
+
+echo don\'t know
+
+;;
+esac
+
+Let's break it down:
+
+<i>Line 4</i> - This line begins the <i>case</i>mechanism.
+
+<i>Line 5</i> - If $1 is equal to 'start' then perform the subsequent actions. the ) signifies the end of the pattern.
+
+<i>Line 7</i> - We identify the end of this set of statements with a double semi-colon ( ;; ). Following this is the next case to consider.
+
+<i>Line 14</i> - Remember that the test for each case is a pattern.  
+The <i>*</i> represents any number of any character.  
+It is essentialy a catch all if for if none of the other cases match.  
+It is not necessary but is often used.
+
+<i>Line 17</i> - esac is case backwards and indicates we are at the end of the case statement.  
+Any other statements after this will be executed normally.
+./case.sh start
+starting
+
+./case.sh restart
+restarting
+
+./case.sh blah
+don't know
+
+Now let's look at a slightly more complex example where patterns are used a bit more.
+<h4>disk_useage.sh</h4>
+
+#!/bin/bash
+# Print a message about disk useage.
+
+space_free=$( df -h | awk '{ print $5 }' | sort -n | tail -n 1 | sed 's/%//' )
+
+case $space_free in
+
+[1-5]*)
+
+echo Plenty of disk space available
+
+;;
+
+[6-7]*)
+
+echo There could be a problem in the near future
+
+;;
+
+8*)
+
+echo Maybe we should look at clearing out old files
+
+;;
+
+9*)
+
+echo We could have a serious problem on our hands soon
+
+;;
+
+*)
+
+echo Something is not quite right here
+
+;;
+esac
+
+<h2>Summary</h2>
+<dl>
+<dt>if</dt>
+<dd>Perform a set of commands if a test is true.</dd>
+
+<dt>else</dt>
+<dd>If the test is not true then perform a different set of commands.</dd>
+
+<dt>elif</dt>
+<dd>If the previous test returned false then try this one.</dd>
+
+<dt>&amp;&amp;</dt>
+<dd>Perform the and operation.</dd>
+
+<dt>||</dt>
+<dd>Perform the or operation.</dd>
+
+<dt>case</dt>
+<dd>Choose a set of commands to execute depending on a string matching a particular pattern.</dd>
+</dl>
+
+<dl>
+<dt>Indenting</dt>
+<dd>Indenting makes your code much easier to read. It get's increasingly important as your Bash scripts get longer.</dd>
+
+<dt>Planning</dt>
+<dd>Now that your scripts are getting a little more complex you will probably want to spend a little bit of time thinking about how you structure them before diving in.</dd>
+</dl>
+
+<h2>Activities</h2>
+Now let's make some decisions.
+Create a Bash script which will take 2 numbers as command line arguments.  
+It will print to the screen the larger of the two numbers.
+Create a Bash script which will accept a file as a command line argument and analyse it in certain ways. eg. you could check if the file is executable or writable.  
+You should print a certain message if true and another if false.
+Create a Bash script which will print a message based upon which day of the week it is (eg. 'Happy hump day' for Wedensday, 'TGIF' for Friday etc).
+
+<h2><br><span class="orange">Loops</span></h2>
+Round and round we go.
+<h2>Introduction</h2>
+Bash loops are very useful. In this section of our Bash Scripting Tutorial we'll look at the different loop formats available to us as well as discuss when and why you may want to use each of them.
+Loops allow us to take a series of commands and keep re-running them until a particular situation is reached.  
+They are useful for automating repetitive tasks.
+There are 3 basic loop structures in Bash scripting which we'll look at below.  
+There are also a few statements which we can use to control the loops operation.
+
+<h2>While Loops</h2>
+One of the easiest loops to work with is <i>while</i> loops.  
+They say, while an expression is true, keep executing these lines of code.  
+They have the following format:
+while [ &lt;some test&gt; ]<br>
+do<br>&lt;commands&gt;<br>
+done
+You'll notice that similar to <a href="bash-if-statements.php"><i>if</i> statements</a> the test is placed between square brackets [ ].
+
+<img alt="While loop diagram" src="./img/while_loop.png">
+In the example below we will print the numbers 1 through to 10:
+<h4>while_loop.sh</h4>
+
+#!/bin/bash
+# Basic while loop
+
+counter=1
+
+while [ $counter -le 10 ] 
+do
+
+echo $counter
+
+((counter++))
+done
+
+echo All done
+
+Let's break it down:
+
+<i>Line 4</i> - We'll initialise the variable <i>counter</i> with it's starting value.
+
+<i>Line 5</i> - While the test is true (counter is less than or equal to 10) let's do the following commands.
+
+<i>Line 7</i> - We can place any commands here we like.  
+Here <i>echo</i> is being used as it's an easy way to illustrate what is going on.
+
+<i>Line 8</i> - Using the double brackets we can increase the value of <i>counter</i> by 1.
+
+<i>Line 9</i> - We're at the bottom of the loop so go back to line 5 and perform the test again.  
+If the test is true then execute the commands.  
+If the test is false then continue executing any commands following <i>done</i>.
+./while_loop.sh
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+All done
+
+A common mistake is what's called an <i>off by one</i> error.  
+In the example above we could have put -lt as opposed to -le  (less than as opposed to less than or equal). Had we done this it would have printed up until 9.  
+These mistakes are easy to make but also easy to fix once you've identified it so don't worry too much if you make this error.
+
+<h2>Until Loops</h2>
+The <i>until</i> loop is fairly similar to the while loop.  
+The difference is that it will execute the commands within it until the test becomes true.
+until [ &lt;some test&gt; ]<br>
+do<br>&lt;commands&gt;<br>
+done
+<h4>until_loop.sh</h4>
+
+#!/bin/bash
+# Basic until loop
+
+counter=1
+
+until [ $counter -gt 10 ] 
+do
+
+echo $counter
+
+((counter++))
+done
+
+echo All done
+
+As you can see in the example above, the syntax is almost exactly the same as the while loop (just replace while with until).  
+We can also create a script that does exactly the same as the while example above just by changing the test accordingly.
+So you may be asking, 'Why bother having the two different kinds of loops?'.  
+We don't necessarily.  
+The while loop would be able to handle every scenario.  
+Sometimes, however, it just makes it a little easier to read if we phrase it with <i>until</i> rather than <i>while</i>.  
+Think about the following statement:
+<i>Leave the towel on the line until it's dry.</i>
+We could have said:
+<i>Leave the towel on the line while it is not dry.</i>
+Or:
+<i>Leave the towel on the line while it is wet.</i>
+But they just don't seem as elegant and easy to understand.  
+So by having both <i>while</i> and <i>until</i> we can pick whichever one makes the most sense to us and as a result, end up with code that is easier for us to understand when we read it.
+We should always strive for <i>clean</i>, <i>obvious</i> and <i>elegant</i> code when writing our Bash scripts.
+
+<h2>For Loops</h2>
+The <i>for</i> loop is a little bit different to the previous two loops.  
+What it does is say for each of the items in a given list, perform the given set of commands. It has the following syntax.
+for var in &lt;list&gt;<br>
+do<br>&lt;commands&gt;<br>
+done
+The for loop will take each item in the list (in order, one after the other), assign that item as the value of the variable <i>var</i>, execute the commands between do and done then go back to the top, grab the next item in the list and repeat over.
+The list is defined as a series of strings, separated by spaces.
+Here is a simple example to illustrate:
+<h4>for_loop.sh</h4>
+
+#!/bin/bash
+# Basic for loop
+
+names='Stan Kyle Cartman'
+
+for name in $names
+do
+
+echo $name
+done
+
+echo All done
+
+Let's break it down:
+
+<i>Line 4</i> - Create a simple list which is a series of names.
+
+<i>Line 6</i> - For each of the items in the list <i>$names</i> assign the item to the variable <i>$name</i> and do the following commands.
+
+<i>Line 8</i> - echo the name to the screen just to show that the mechanism works.  
+We can have as many commands here as we like.
+
+<i>Line 11</i> - echo another command to show that the bash script continued execution as normal after all the items in the list were processed.
+./for_loop.sh
+Stan
+Kyle
+Cartman
+All done
+
+<h3>Ranges</h3>
+
+We can also process a series of numbers
+<h4>for_loop_series.sh</h4>
+
+#!/bin/bash
+# Basic range in for loop
+
+for value in {1..5}
+do
+
+echo $value
+done
+
+echo All done
+
+<i>Line 4</i> - It's important when specifying a range like this that there are no spaces present between the curly brackets { }. If there are then it will not be seen as a range but as a list of items.
+./for_loop_series.sh
+1
+2
+3
+4
+5
+All done
+
+When specifying a range you may specify any number you like for both the starting value and ending value.  
+The first value may also be larger than the second in which case it will count down.
+It is also possible to specify a value to increase or decrease by each time.  
+You do this by adding another two dots ( .. ) and the value to step by.
+<h4>for_loop_stepping.sh</h4>
+
+#!/bin/bash
+# Basic range with steps for loop
+
+for value in {10..0..2}
+do
+
+echo $value
+done
+
+echo All done
+
+./for_loop.sh
+10
+8
+6
+4
+2
+0
+All done
+
+One of the more useful applications of <i>for</i> loops is in the processing of a set of files.  
+To do this we may use <a href="/linuxtutorial/wildcards.php">wildcards</a>. Let's say we want to convert a series of .html files over to .php files.
+<h4>convert_html_to_php.sh</h4>
+
+#!/bin/bash
+# Make a php copy of any html files
+
+for value in $1/*.html
+do
+
+cp $value $1/$( basename -s .html $value ).php
+done
+
+<h2>Controlling Loops: Break and Continue</h2>
+Most of the time your loops are going to through in a smooth and ordely manner.  
+Sometimes however we may need to intervene and alter their running slightly.  
+There are two statements we may issue to do this.
+
+<h3>Break</h3>
+
+The <i>break</i> statement tells Bash to leave the loop straight away. It may be that there is a normal situation that should cause the loop to end but there are also exceptional situations in which it should end as well. For instance, maybe we are copying files but if the free disk space get's below a certain level we should stop copying.
+<h4>copy_files.sh</h4>
+
+#!/bin/bash
+# Make a backup set of files
+
+for value in $1/*
+do
+
+used=$( df $1 | tail -1 | awk '{ print $5 }' | sed 's/%//' )
+
+if [ $used -gt 90 ]
+
+then
+
+echo Low disk space 1&gt;&amp;2
+
+break
+
+fi
+
+cp $value $1/backup/
+done
+
+<h3>Continue</h3>
+
+The <i>continue</i> statement tells Bash to stop running through this iteration of the loop and begin the next iteration.  
+Sometimes there are circumstances that stop us from going any further.  
+For instance, maybe we are using the loop to process a series of files but if we happen upon a file which we don't have the read permission for we should not try to process it.
+<h4>copy_check.sh</h4>
+
+#!/bin/bash
+# Make a backup set of files
+
+for value in $1/*
+do
+
+if [ ! -r $value ]
+
+then
+
+echo $value not readable 1&gt;&amp;2
+
+continue
+
+fi
+
+cp $value $1/backup/
+done
+
+<h2>Select</h2>
+The <i>select</i> mechanism allows you to create a simple menu system.  
+It has the following format:
+select var in &lt;list&gt;<br>
+do<br>&lt;commands&gt;<br>
+done
+When invoked it will take all the items in <i>list</i> (similar to other loops this is a space separated set of items) and present them on the screen with a number before each item.  
+A prompt will be printed after this allowing the user to select a number.  
+When they select a number and hit <i>enter</i> the corresponding item will be assigned to the variable <i>var</i> and the commands between do and done are run. Once finished a prompt will be displayed again so the user may select another option. 
+
+A few points to note:
+No error checking is done.  
+If the user enters something other than a number or a number not corresponding to an item then <i>var</i> becomes null (empty)
+If the user hits <i>enter</i> without entering any data then the list of options will be displayed again.
+The loop will end when an EOF signal is entered or the break statement is issued.
+You may change the system variable <i>PS3</i> to change the prompt that is displayed.
+Here is a simple example to illustrate it's usage:
+<h4>select_example.sh</h4>
+
+#!/bin/bash
+# A simple menu system
+
+names='Kyle Cartman Stan Quit'
+
+PS3='Select character: '
+
+select name in $names
+do
+
+if [ $name == 'Quit' ]
+
+then
+
+break
+
+fi
+
+echo Hello $name
+done
+
+echo Bye
+
+Let's break it down:
+
+<i>Line 4</i> - Set up a variable with the list of characters and a last option which we may select to quit.  
+Note that the items are separated by a space.
+
+<i>Line 6</i> - Change the value of the system variable <i>PS3</i> so that the prompt is set to something a little more descriptive.  
+(By default it is #?)
+
+<i>Lines 10 - 13</i> - If the last option, 'Quit', is selected then <i>break</i> out of the <i>select</i> loop.
+
+<i>Line 14</i> - Print out a message just to demonstrate the mechanism has worked.  
+You may have as many commands here as you like.
+
+<i>Line 17</i> - Print a message just to show that the script has continued as normal after the select loop.
+And now let's run the Bash script:
+./select_example.sh
+1) Kyle     3) Stan
+2) Cartman  4) Quit
+Select character: <i>2</i>
+
+Hello Cartman
+Select Character: <i>1</i>
+
+Hello Kyle
+Select character: <i>4</i>
+
+Bye
+
+<!--The above example was nice as a demonstration but not particularly useful.  
+-->
+
+<h2>Summary</h2>
+<dl>
+<dt>while do done</dt>
+<dd>Perform a set of commands while a test is true.</dd>
+
+<dt>until do done</dt>
+<dd>Perform a set of commands until a test is true.</dd>
+
+<dt>for do done</dt>
+<dd>Perform a set of commands for each item in a list.</dd>
+
+<dt>break</dt>
+<dd>Exit the currently running loop.</dd>
+
+<dt>continue</dt>
+<dd>Stop this iteration of the loop and begin the next iteration.</dd>
+
+<dt>select do done</dt>
+<dd>Display a simple menu system for selecting items from a list.</dd>
+</dl>
+
+<dl>
+<dt>Clarity</dt>
+<dd>There are several Bash loop mechanisms. Pick the one which makes your code the easiest to follow.</dd>
+
+<dt>Planning</dt>
+<dd>Now that your scripts are getting a little more complex you will probably want to spend a little bit of time thinking about how you structure them before diving in.</dd>
+</dl>
+
+<h2>Activities</h2>
+Now we have quite a collection of tools under our belt, we can tackle some more interesting problems.
+Create a simple script which will print the numbers 1 - 10 (each on a separate line) and whether they are even or odd.
+Write a Bash script which will take a single command line argument (a directory) and will print each entry in that directory.  
+If the entry is a file it will print it's size.  
+If the entry is a directory it will print how many items are in that directory.
+Create a command line version of the game <a href="http://codebreaker.creativitygames.net">Mastermind</a>. Instead of coloured marbles you could use letters or numbers or be creative and find another way.
+Create a command line version of the game Tic Tac Toe.  
+Make it so you can play against the computer.
+
+<h2><br><span class="orange">Functions</span></h2>
+Divide and Conquer.
+<h2>Introduction</h2>
+Functions in Bash Scripting are a great way to reuse code.  
+In this section of our Bash scripting tutorial you'll learn how they work and what you can do with them.
+Think of a function as a small script within a script.  
+It's a small chunk of code which you may call multiple times within your script.  
+They are particularly useful if you have certain tasks which need to be performed several times.  
+Instead of writing out the same code over and over you may write it once in a function then call that function every time.
+
+<h2>Functions</h2>
+Creating a function is fairly easy.  
+They may be written in two different formats:
+function_name () {<br>&lt;commands&gt;<br>
+}
+or
+function function_name {<br>&lt;commands&gt;<br>
+}
+A few points to note:
+Either of the above methods of specifying a function is valid.  
+Both operate the same and there is no advantage or disadvantage to one over the other.  
+It's really just personal preference.
+In other programming languages it is common to have arguments passed to the function listed inside the brackets ().  
+In Bash they are there only for decoration and you never put anything inside them.
+The function definition ( the actual function itself) must appear in the script before any calls to the function.
+Let's look at a simple example:
+<h4>function_example.sh</h4>
+
+#!/bin/bash
+# Basic function
+
+print_something () {
+
+echo Hello I am a function
+}
+
+print_something
+print_something
+
+Let's break it down:
+
+<i>Line 4</i> - We start defining the function by giving it a name.
+
+<i>Line 5</i> - Within the curly brackets we may have as many commands as we like.
+
+<i>Lines 8 and 9</i> - Once the function has been defined, we may call it as many times as we like and it will execute those commands.
+./function_example.sh
+Hello I am a function
+Hello I am a function
+
+You should pick function names that are descriptive.  
+That way it is obvious what task the function serves.
+
+<h3>Passing Arguments</h3>
+
+It is often the case that we would like the function to process some data for us.  
+We may send data to the function in a similar way to passing command line arguments to a script.  
+We supply the arguments directly after the function name.  
+Within the function they are accessible as <i>$1, $2, etc</i>.
+<h4>arguments_example.sh</h4>
+
+#!/bin/bash
+# Passing arguments to a function
+
+print_something () {
+
+echo Hello $1
+}
+
+print_something Mars
+print_something Jupiter
+
+./arguments_example.sh
+Hello Mars
+Hello Jupiter
+
+<h3>Return Values</h3>
+
+Most other programming languages have the concept of a return value for functions,  a means for the function to send data back to the original calling location.  
+Bash functions don't allow us to do this.  
+They do however allow us to set a return status.  
+Similar to how a program or command exits with an exit status which indicates whether it succeeded or not.  
+We use the keyword <i>return</i> to indicate a return status.
+<h4>return_status_example.sh</h4>
+
+#!/bin/bash
+# Setting a return status for a function
+
+print_something () {
+
+echo Hello $1
+
+return 5
+}
+
+print_something Mars
+print_something Jupiter
+echo The previous function has a return value of $?
+
+Let's break it down
+
+<i>Line 6</i> - The return status doesn't have to be hardcoded.  
+It may be a variable
+
+<i>Line 11</i> - Remember that the variable <a href="bash-variables.php#others">$?</a> contains the return status of the previously run command or function.
+./return_status_example.sh
+Hello Mars
+Hello Jupiter
+The previous function has a return value of 5
+
+Typically a return status of 0 indicates that everything went successfully.  
+A non zero value indicates an error occurred.
+If all you want to do is return a number (eg. the result of a calculation) then you can consider using the return status to achieve this.  
+It is not it's intended purpose but it will work.
+One way to get around this is to use <a href="bash-variables.php#commandsubstitution">Command Substitution</a> and have the function print the result (and only the result).
+<h4>return_hack.sh</h4>
+
+#!/bin/bash
+# Setting a return value to a function
+
+lines_in_file () {
+
+cat $1 | wc -l
+}
+
+num_lines=$( lines_in_file $1 )
+
+echo The file $1 has $num_lines lines in it.
+
+Let's break it down:
+
+<i>Line 5</i> - This command will print the number of lines in the file referred to by $1.
+
+<i>Line 8</i> - We use command substitution to take what would normally be printed to the screen and assign it to the variable <i>num_lines</i>
+
+cat myfile.txt
+Tomato
+Lettuce
+Capsicum
+
+./return_hack.sh myfile.txt
+The file myfile.txt has 3 lines in it.
+
+Just be wary if you take this approach as if you don't call the function with command substitution then it will print the result to the screen.  
+Sometimes that is ok because that is what you want. Other times that may be undesireable.
+
+<h2>Variable Scope</h2>
+Scope refers to which parts of a script can see which variables.  
+By default a variable is <i>global</i>.  
+This means that it is visible everywhere in the script.  
+We may also create a variable as a <i>local</i> variable.  
+When we create a local variable within a function, it is only visible within that function.  
+To do that we use the keyword <i>local</i> in front of the variable the first time we set it's value.
+local var_name=&lt;var_value&gt;
+It is generally considered good practice to use local variables within functions so as to keep everything within the function contained.  
+This way variables are safer from being inadvertently modified by another part of the script which happens to have a variable with the same name (or vice versa).
+<h4>local_variables.sh</h4>
+
+#!/bin/bash
+# Experimenting with variable scope
+
+var_change () {
+
+local var1='local 1'
+
+echo Inside function: var1 is $var1 : var2 is $var2
+
+var1='changed again'
+
+var2='2 changed again'
+
+}
+
+var1='global 1'
+var2='global 2'
+
+echo Before function call: var1 is $var1 : var2 is $var2
+
+var_change
+
+echo After function call: var1 is $var1 : var2 is $var2
+
+./local_variables.sh
+Before function call: var1 is global 1 : var2 is global 2
+Inside function: var1 is local 1 : var2 is global 2
+After function call: var1 is global 1 : var2 is 2 changed again
+
+Always use local variables within functions.  
+Use global variables as a last resort and consider if there is a better way to do it before using them.
+
+Scope can sometimes be hard to get your head around at first.  
+If it seems a bit confusing, the best approach is to create a Bash script similar to the one above and tweak it several times setting and changing variables in different places then observing the behaviour when you run it.
+
+<h2>Overriding Commands</h2>
+It is possible to name a function as the same name as a command you would normally use on the command line.  
+This allows us to create a wrapper.  
+eg. Maybe every time we call the command <i>ls</i> in our script, what we actually want is <i>ls -lh</i>.  
+We could do the following:
+<h4>override.sh</h4>
+
+#!/bin/bash
+# Create a wrapper around the command ls
+
+ls () {
+
+command ls -lh
+}
+
+ls
+
+Let's break it down:
+
+<i>Line 5</i> - When we have a function with the same name as a command we need to put the keyword <i>command</i> in front of the the name when we want the command as opposed to the function as the function normally takes precedence.
+In the example above, if we didn't put the keyword <i>command</i> in front of ls on line 5 we would end up in an endless loop.  
+Even though we are inside the function ls when we call ls it would have called another instance of the function ls which in turn would have done the same and so on.
+It's easy to forget the <i>command</i> keyword and end up in an endless loop.  
+If you encounter this then you can cancel the script from running by pressing the keys <i>CTRL c</i> at the same time on your keyboard.  
+<i>CTRL c</i> is a good way to cancel your script (or a program) whenever you get into trouble on the command line.
+
+<h2>Design</h2>
+Creating functions in your Bash scripts is easy.  
+Creating good functions that make your scripts easier to write and maintain takes time and experience however.  
+As with most things with computers when you get to this level of complexity, there will be several ways you could achieve the desired outcome.  
+Some will be better than others so take the time to think about different ways you could write your code and which way may be better.
+Sometimes better is least lines of code, sometimes better is easiest to modify later if requirements change. Sometimes better is the approach which is least prone to errors.
+If a particular task needs to be performed several times then it is a good candidate for placing within a function.
+Sometimes it is good to put ancillary tasks within functions too so that they are logically separate from the main part of the script.  
+A common example is validating input (eg. making sure a specified file exists and is readable).
+A function is most reuseable when it performs a single task and a single task only.  
+Instead of having a large function, consider breaking it up into several functions and breaking the task up.
+You need to find the right balance however.  
+If the functions are too large and take on too much processing then you don't get the full benefit.  
+If you divide up into too many functions then your code can easily grow and become silly.  
+With experience you will find that sweet spot in the middle.
+
+<h2>Summary</h2>
+<dl>
+<dt>function &lt;name&gt; or &lt;name&gt; ()</dt>
+<dd>Create a function called <i>name</i>.</dd>
+
+<dt>return &lt;value&gt;</dt>
+<dd>Exit the function with a return status of value.</dd>
+
+<dt>local &lt;name&gt;=&lt;value&gt;</dt>
+<dd>Create a local variable within a function.</dd>
+
+<dt>command &lt;command&gt;</dt>
+<dd>Run the command with that name as opposed to the function with the same name.</dd>
+</dl>
+
+<dl>
+<dt>Re-use</dt>
+<dd>Functions allow us to easily re-use code making the code easier to manage and read.</dd>
+
+<dt>Planning</dt>
+<dd>Now that your scripts are getting a little more complex you will probably want to spend a little bit of time thinking about how you structure them before diving in.</dd>
+</dl>
+
+<h2>Activities</h2>
+For this section there aren't any activities.  
+What I suggest you do is go back to the <a href="bash-loops.php#activities">activities from the previous section</a> and redo them using functions.
+
+<h2><br><span class="orange">User Interface</span></h2>
+Beauty is more than skin deep.
+<h2>Introduction</h2>
+This is the final section in the tutorial and I'd like to use it to discuss a very important topic (which is often neglected) the user interface.  
+I've touched on various points regarding the user interface throughout the tutorial but here I'll bring them all together and introduce a few other concepts as well.
+When most people think about the user interface they think about the bits the end user sees and how they interact with the tool.  
+For Bash scripts I like to think about the layout and structure of the commands inside the script as well.  
+Bash scripts are often small tools used to automate tedious and repetitive tasks.  
+They are always readable by the end user and often modified to suit changing requirements.  
+Therefore the ease with which the user (often yourself) may modify and extend the script is also very important.
+
+<h2>TPut</h2>
+tput is a command which allows you to control the cursor on the terminal and the format of content that is printed.  
+It is quite a powerful and complex tool so I'll introduce some of the basics here but leave it up to you to do further research.
+Here is an example printing a message in the center of the screen.
+<h4>center_message.sh</h4>
+
+#!/bin/bash
+# Print message in center of terminal
+
+cols=$( tput cols )
+rows=$( tput lines )
+
+message=$@
+
+input_length=${#message}
+
+half_input_length=$(( $input_length / 2 ))
+
+middle_row=$(( $rows / 2 ))
+middle_col=$(( ($cols / 2) - $half_input_length ))
+
+tput clear
+
+tput cup $middle_row $middle_col
+tput bold
+echo $@
+tput sgr0
+tput cup $( tput lines ) 0
+
+Let's break it down:
+
+<i>Line 4</i> - <i>tput cols</i> will tell us how many columns the terminal has.
+
+<i>Line 5</i> - <i>tput lines</i> will tell us how many lines (or rows) the terminal has.
+
+<i>Line 7</i> - Take all the command line arguments and assign them to a single variable <i>message</i>.
+
+<i>Line 9</i> - Find out how many characters are in the string <i>message</i>.  
+We had to assign all the input values to the variable <i>message</i> first as ${#@} would tell us how many command line arguments there were instead of the number of characters combined.
+
+<i>Line 11</i> - We need to know what 1/2 the length of the string <i>message</i> is in order to center it.
+
+<i>Lines 13 and 14</i> - Calculate where to place the message for it to be centered.
+
+<i>Line 16</i> - <i>tput clear</i> will clear the terminal.
+
+<i>Line 18</i> - <i>tput cup</i> will place the cursor at the given row and column.
+
+<i>Line 19</i> - <i>tput bold</i> will make everything printed to the screen bold.
+
+<i>Line 20</i> - Now we have everything set up let's print our message.
+
+<i>Line 21</i> - <i>tput sgr0</i> will turn bold off (and any other changes we may have made).
+
+<i>Line 22</i> - Place the prompt at the bottom of the screen.
+
+./center_message.sh Hello there
+
+Hello there</div>
+
+
+<i>Note:</i> Normally the first prompt (where we run the script) would be removed with the clear command.  
+We have left it here only so you can see that it was run to get the script started.
+With <i>tput</i> and a bit of creativity you can create some really interesting effects.  
+Especially so if you delay actions using the command <i>sleep</i>.  
+Only use it when appropriate however.  
+Most of the time just printing the processed data (without formatting) is more convenient for the user.
+
+<h2>Supplying Data</h2>
+Remember there are 3 ways in which you may supply data to a Bash script:
+As command line arguments
+Redirected in as STDIN
+Read interactively during script execution
+Your script may use one or a combination of these but should always aim to be the most convenient for the user. 
+
+Command line arguments are good as they will be retained in the users history making it easy for them to rerun commands.  
+Command line arguments are also convenient when the script is not run directly by the user (eg, as part of another script or a cron task etc).
+Redirected from STDIN is good when your script is behaving like a filter and just modifying or reformatting data that is fed to it.
+Reading interactively is good when you don't know what data may be required until the script is already running. eg. You may need to clarify some suspicious or erroneous input.  
+Passwords are also ideally asked for this way so they aren't kept as plain text in the users history.
+
+<h3>Input Flexibility</h3>
+
+Think about how strict you are going to be with supplied data as well.  
+The more flexible you can be the happier the end user is going to be.  
+Think of someone supplying a date as an argument.  
+They could supply the date as:
+<i>16-01-2022</i>
+or
+<i>16/01/2022</i>
+or
+<i>16:01:2022</i>
+We could write our script to insist on input in only one particular format.  
+This would be easiest for us but potentially not convenient for the end user.  
+What if they want to feed the date in as provided from another command or source that provides it in a different format?
+We should always aim to be most convenient for the end user as oposed to ourselves.  
+After all, we'll write it once but they will run it many times.
+The command <a href="/linuxtutorial/filters.php#sed">sed</a> can easily allow us to accommodate many formats for input data.
+<h4>flexible_date.sh</h4>
+
+#!/bin/bash
+# A date is the first command line argument
+
+clean_date=$( echo $1 | sed 's/[ /:\^#]/-/g' )
+
+echo $clean_date
+
+<h2>Presenting Data</h2>
+Remember that the terminal and the nature of the commands you use there are typically a little different to your normal interaction with computers in a graphical user interface.  
+Again we want what is most convenient for the user.  
+Often this is just to print the output as a plain result, without any formatting or fancy messages surrounding it.  
+Then it is easiest for the user to redirect the output into other commands for further processing or to a file for saving.
+
+<h2>Organising Your Code</h2>
+Presentation of your code is very important and you should take pride in it.  
+Good structure makes it easier for you to see what the code is doing and harder to make silly mistakes (which can easily waste a lot of time or potentially worse if you don't realise the mistake).
+It's common to take the approach of <i>'yeah yeah, that's other people though, I don't make those silly mistakes so I can be lazy and write sloppy code and it'll be fine.'</i>  Everyone can make mistakes, even <a href="http://en.wikipedia.org/wiki/Mars_Climate_Orbiter#Cause_of_failure">NASA</a>. Take the time to structure your code well and later on you'll be thankful you did.
+Indent your code and space it out well so that different sections are easily distinguished.
+Name variables and functions with descriptive names so it is clear what they represent and do.
+Use comments where appropriate to explain a bit of code who's operation is not immediately obvious.
+<h2>Final Word</h2>
+Ok so you've worked through my Bash tutorial.  
+Congratulations, you've now aquired some very powerful and useful skills and knowledge.  
+Next you need to gain experience.  
+Your Bash scripting foo is no doubt reasonably good now but it will only get better with practice.
+Speaking of practice,  why not try some of our <a href="/programming-challenges">programming challenges</a>.
+Remember too that this tutorial is not a complete reference on Bash scripting.  
+I've tried to cover the most important and essential bits.  
+For a lot of you this will be more than enough to automate tasks and make your interaction with Linux much happier.  
+For others, you will want to take things further and there is much more to Bash that you can learn.  
+You now have a solid foundation to launch from and should have no troubles extending your abilities.  
+Either way, I hope your experiences with Linux are, and continue to be, <i>awesome</i> and I wish you the best of luck.
+Also, if you have any feedback on this tutorial (or any of my others)  I would be happy to hear from you.  
+It could be a typo you have spotted, or some other error,  a bit you feel could be written more clearly, or just that you found it useful.  
+While I can't guarantee to act upon all feedback I do very much appreciate it.
+More importantly (especially if you found this tutorial useful), <i>don't keep it a secret</i>. The best way to say thank you is to make sure you share this tutorial on social media (Twitter, Facebook, Google Plus or whatever the hip and happening social platform of today is), give us a shout out on your blog, tell your friends and co-workers, etc.
+Cheers
+Ryan
+
+<script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+    // ... more custom settings?
+});
+</script>
+</pre></body></html>
