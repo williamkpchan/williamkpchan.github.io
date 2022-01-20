@@ -74,11 +74,10 @@ function changeTopic() {
  if (topicpointer >= topicLength-1) { topicpointer = 0;}
  else if (topicpointer < 0) { topicpointer = topicLength-1;}
  else { topicpointer = topicpointer + 1;}
- console.log("changetopic ", topicpointer)
  showTopic()
 }
 function backward() { topicpointer = topicpointer - 2; changeTopic();}
-function foreward() { topicpointer = topicpointer + 1; changeTopic();}
+function foreward() { topicpointer = topicpointer + 1; showTopic();}
 function showTopic() {
   if(topicpointer>topicLength){topicpointer = topicLength}
   window.location = "#topic-" + topicpointer;
