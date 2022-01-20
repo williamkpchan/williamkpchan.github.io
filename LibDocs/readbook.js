@@ -15,7 +15,7 @@ function chkKey() {
   else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
   else if(testkey == "f"){ foreward();}
   else if(testkey == "6"){ foreward();}
-  else if(testkey == "j"){ jumpTo();}
+  else if(testkey == "j"){ jumpToAsk();}
   else if(testkey == "l"){
     $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-400)}, 1);}
 
@@ -64,7 +64,7 @@ function getChar(event){
   else {return null;}}
 
 var topicLength;
-var topicpointer = topicLength;
+topicpointer = topicLength;
 
 if (typeof markerName == 'undefined') {
   markerName = 'h2';
@@ -74,10 +74,11 @@ function changeTopic() {
  if (topicpointer >= topicLength-1) { topicpointer = 0;}
  else if (topicpointer < 0) { topicpointer = topicLength-1;}
  else { topicpointer = topicpointer + 1;}
+ console.log("changetopic ", topicpointer)
  showTopic()
 }
 function backward() { topicpointer = topicpointer - 2; changeTopic();}
-function foreward() { changeTopic();}
+function foreward() { topicpointer = topicpointer + 1; changeTopic();}
 function showTopic() {
   if(topicpointer>topicLength){topicpointer = topicLength}
   window.location = "#topic-" + topicpointer;
@@ -98,11 +99,11 @@ function randomFlip() {
   showTopic();
 }
 
-function jumpTo() {
+function jumpToAsk() {
   var thecode = prompt("Jump to item number:", "");
   if (thecode != null && thecode != "") {
     // topicpointer = notvisitedList[Math.floor(Math.random() * notvisitedList.length)]; // random from not visited list
-    topicpointer = thecode;
+    topicpointer = Number(thecode);
     showTopic();
   }
 }
