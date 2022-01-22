@@ -26,7 +26,6 @@ function chkKey() {
   else if(testkey == 'h'){window.open("LibDocs/News Points.html");}
   else if(testkey == 'H'){window.open("https://williamkpchanHP.github.io/");}
   else if(testkey == 'J'){window.location = '#_jiaoyu';}
-  else if(testkey == 'i'){window.open("LibDocs/InspectChart.html");}
   else if(testkey == 'l'){window.location = '#dushu';}
   //if(testkey == 'L'){openLogFile();}
   else if(testkey == 'L'){window.open("LibDocs/mlinechart.html");}
@@ -80,6 +79,7 @@ function chkOtherKeys(testkey) {
   else if(testkey == 'm'){window.open("http://williamkpchan.github.io/medical.html");}
   else if(testkey == 'M'){window.open("https://www.google.com.hk/maps/");}
   else if(testkey == 'q'){window.open('https://www.quora.com/');}
+  else if(testkey == 'i'){window.open("LibDocs/InspectChart.html");}
 
   else if(testkey == 'r'){randomLinkTo();}
   else if(testkey == 'R'){window.open("LibDocs/postProcessReport.html");}

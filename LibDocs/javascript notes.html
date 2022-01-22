@@ -26082,6 +26082,508 @@ function handleLeft( event ){ $(".box").append(" left") }
   }
 
 
+<h2>javascript fetch a file</h2>
+fetch(urladdr)
+  .then(x => x.text())
+  .then(function(response) {
+    alert(response);
+  })
+
+
+<h2>Hacking HTTP CORS</h2>
+https://developer.mozilla.org/zh-CN/docs/Web/HTTP/CORS
+<div id="CORStoc"><a href="#CORStopic-0" target="_self">Same Origin Policy (SOP)</a><br><a href="#CORStopic-1" target="_self">SOP variations</a><br><a href="#CORStopic-2" target="_self">HTTP CORS Fundamentals</a><br><a href="#CORStopic-3" target="_self">Simple Request</a><br><a href="#CORStopic-4" target="_self">Preflight HTTP Request</a><br><a href="#CORStopic-5" target="_self">CORS basic headers</a><br><a href="#CORStopic-6" target="_self">Allowing too much is not cool at all</a><br><a href="#CORStopic-7" target="_self">The Docker-based proposed scenario</a><br><a href="#CORStopic-8" target="_self">Project structure</a><br><a href="#CORStopic-9" target="_self">Docker images and network settings overview</a><br><a href="#CORStopic-10" target="_self">A glance at the Apache Server CORS rules</a><br><a href="#CORStopic-11" target="_self">Running the containerized environment</a><br><a href="#CORStopic-12" target="_self">Trusted Site</a><br><a href="#CORStopic-13" target="_self">Evil Site</a><br><a href="#CORStopic-14" target="_self">Playing with CORS rules using XHR and Fetch requests</a><br><a href="#CORStopic-15" target="_self">CORS rules for XHR requests</a><br><a href="#CORStopic-16" target="_self">CORS rules for Fetch requests</a><br><a href="#CORStopic-17" target="_self">Understanding the requests cycle in practice</a><br><a href="#CORStopic-18" target="_self">Bypassing CORS through proxy interception (Manual)</a><br><a href="#CORStopic-19" target="_self">Setting up your snoopy proxy tool</a><br><a href="#CORStopic-20" target="_self">Bypassing CORS by HTTP Response tampering</a><br><a href="#CORStopic-21" target="_self">Hacking homework</a><br><a href="#CORStopic-22" target="_self">Tips for bypassing the Alert script + JavaScript FETCH</a><br><a href="#CORStopic-23" target="_self">Automatic bypassing and other CORS interesting projects</a><br><a href="#CORStopic-24" target="_self">Concluding remarks</a><br></div></center>
+https://infosecwriteups.com/hacking-http-cors-from-inside-out-512cb125c528
+<h3 id="CORStopic-0">Same Origin Policy (SOP)</h3>
+
+Before we get to the CORS matter, it is essential to comprehend an underlying concept of web resources access protection. 
+I’m talking about the <b>Same Origin Policy</b>, also known for the acronym SOP.
+
+As to avoid unauthorized use of resources by external parties, the browsers count on an origin-based restriction policy. 
+Formally, the said external parties are identified by their origin (domain) and accessed through URLs.
+
+A document held by a given <b>origin A</b> will only be accessible by other documents from the SAME <b>origin A</b>. 
+This rule is valid if the SOP is effectively in place (and depends on the browser implementation). 
+This policy aims to reduce the chances of a possible attack vector.
+
+But let’s depict what an origin looks like. 
+One origin could be understood as the tuple:
+
+<b>&lt;schema (or protocol)&gt;</b> — <b>&lt;hostname&gt;</b> — <b>&lt;port&gt;</b>
+
+So two URLs represent the same origin only if they share the same tuple. 
+Examples of origin variations and categories for the URL `<b>http://hacking.cors.com/mr_robots.txt</b>`:
+
+<img src="https://miro.medium.com/max/1312/1*zj6HKCKg3YRlF8k7vvnA9g.png">
+
+Domain types differentiation
+
+Additionally, keep in mind that the SOP allows inter-origin HTTP requests with GET and POST methods. 
+But it forbids inter-origin PUT and DELETE. 
+Besides that, sending custom HTTP headers is permitted only in the context of inter-origin requests, being denied to foreigners.
+
+<h3 id="CORStopic-1">SOP variations</h3>
+
+There are some different types of Same Origin Policy. 
+In practice, they are applied under particular rules given the technology in place.
+
+The primary SOP policy developed was towards the <b>DOM (Document Object Model) access</b>. 
+It is a mechanism that handles JavaScript and other scripting languages’ ability to access DOM properties and methods across domains.
+
+The <b>DOM access</b> is based mainly on the `document.domain` <b>DOM</b>’s property state. 
+But the same is not valid for the <b>JavaScript’s XMLHttpRequest API,</b> which does not take `document.domain` property into account. 
+For now, don’t worry too much about these details. 
+We should be back to this subject soon.
+
+So if we take SOP as a sandboxing concept, it becomes reasonable to have the same origin implementations for other web technologies as well. 
+It is the case of <b>cookies, Java, old-R.I.P Flash</b>, and their respective SOP policy feature.
+
+<h3 id="CORStopic-2">HTTP CORS Fundamentals</h3>
+
+The SOP technology was certainly a considerable jump towards more secure web applications. 
+But it applies the deny rule by default.
+
+The true nature of the World Wide Web is that pages could communicate with other resources all across the network. 
+Web applications are meant to access external resources.
+
+So how do we relax the same-origin rules while maintaining the security access of restricted resources? You got it: <b>CORS</b>.
+
+In simple terms, <b>Cross-Origin Resource Sharing</b> allows the pages from a specific domain/origin to consume the resources from another domain/origin. 
+The consent of who can access a resource is the resource’s owner (server) responsibility.
+
+The browser-server trust relationship takes form through a family of CORS HTTP Headers. 
+In the average case, they are added to the HTTP requests and responses by the resource’s web server (like Nginx, Apache, IIS, etc.), by the application, or the browser. 
+The CORS headers then instruct the soliciting browser whether or not to trust the origin and proceed with the response processing.
+
+Let’s take a breath here. 
+Note that the browser fully trusts the response returned from the server. 
+Keep this in mind.
+
+<h3 id="CORStopic-3">Simple Request</h3>
+
+In contrast to Preflight requests, there are simple ones. 
+<b>Simple requests </b>are those who respect the following conditions:
+
+<img src="https://miro.medium.com/max/1312/1*9EzxYcrn8c9ZiHEfPjWNSQ.png">
+
+Simple requests composition
+
+When making asynchronous HTTP requests, we often use the already presented <b>XMLHttpRequest</b> or the new <b>Fetch</b> JavaScript APIs.
+
+<h3 id="CORStopic-4">Preflight HTTP Request</h3>
+
+Sometimes a <b>preflight HTTP request</b> is launched by the browser. 
+It intents to query the server about what CORS attributes are authorized and supported by it. 
+However, this does not change the trustiness relationship between server and browser.
+
+The preflight HTTP request (which takes the form of an <b>HTTP OPTIONS request</b>) results in an equally trusted HTTP response. 
+The only difference resides in the headers, that indicate the browser how to proceed to get the intended cross-origin resource.
+
+<img src="https://miro.medium.com/max/1400/0*9CZmsSo4w5VBzBFt">
+Pre-request flight flow for deletion of <b>avatar.org</b>
+As we move to the hands-on sections of this article, this will get more palatable.
+
+<h3 id="CORStopic-5">CORS basic headers</h3>
+
+Achieving origin control by the CORS involves the following headers’ family:
+
+<img src="https://miro.medium.com/max/1256/1*tgLKBLQ6XAtcLIFREtZmZw.png">
+
+CORS headers family and their respective HTTP type
+
+The headers marked with <b>YES</b> at the “<b>Used for Preflight HTTP </b>” column play crucial preflight functions.
+
+It goes from denoting which specific headers (<b>Access-Control-Allow-Headers</b>) and HTTP methods (<b>Access-Control-Allow-Methods</b>) are allowed, the maximum amount of seconds the browser should cache the Preflight request (<b>Access-Control-Max-Age</b>), request source (<b>Origin</b>), to the allowance (<b>Access-Control-Allow-Credentials</b>) of cookies to be sent by browsers in the actual request.
+
+In the overall context, the <b>Access-Control-Allow-Origin (ACAO) </b>stands as the most relevant header regarding cross-origin authorization. 
+Through this header, the server is able to tell the browser which domains it should trust.
+
+This great power comes with significant responsibilities, though.
+
+<h3 id="CORStopic-6">Allowing too much is not cool at all</h3>
+
+It is clear to us that CORS is a useful way to extend SOP policies. 
+However, we should take into account the impact of a full nonrestrictive rule. 
+Let’s take the following statement:
+
+<b>Access-Control-Allow-Origin: *</b>
+
+The above header means that every origin could access the desired resource. 
+This would be equivalent to the earlier configuration of older browsers before SOP was in place. 
+But be aware of the other side of the story, as cautiously depicted by the application security literature.
+<blockquote>
+“Obviously there might be cases where a wildcard value for the Access-Control-Allow-Origin <b>isn’t insecure</b>. 
+For instance, if a permissive policy is only used to provide content that <b>doesn’t contain</b> sensitive information.”
+
+The Browser Hacker’s Handbook 2nd Ed. 
+— Chapter 4 Bypassing the Same Origin Policy
+</blockquote>
+You should be careful with the wildcards, though. 
+Indeed, the recommended approach is make the access permission explicit for the authorized origins. 
+If the server does not provide the CORS headers whatsoever, the browsers will assume the <b>Same Origin Policy (SOP)</b> posture.
+
+<h3 id="CORStopic-7">The Docker-based proposed scenario</h3>
+
+First, lets clone the `<b>hacking-cors</b>` repository so we can get this party started!
+
+$ git clone git@github.com:lvrosa/hacking-cors.git
+
+<img src="https://miro.medium.com/max/1370/0*KvTctQkLweLQfYTj">
+
+Tree directory representation of the hacking-cors docker project
+
+The above structure breaks down the docker containers and files that compose the server images.
+
+The `<b>node_modules</b>` directory (omitted from the `<b>tree</b>` command output above) is pushed to the `<b>hacking-cors</b>` repository as well. 
+It has a short size. 
+However, if you have any problems regarding JavaScript dependencies, please run the `npm` tool at the project root directory.
+
+$ cd hacking-cors; npm install
+
+It is also crucial to have `<b>docker</b>` and ` installed on your system. 
+The docker-compose file uses version 3 format. 
+My current versions for both dependencies are:
+
+<img src="https://miro.medium.com/max/1006/0*Qvcgo-fa95YjVp_G">
+
+Docker and Docker Compose versions
+
+<h3 id="CORStopic-8">Project structure</h3>
+
+We have two distinct docker projects. 
+They are represented by their respective configuration <b>Dockerfile</b> at the root directory.
+
+<img src="https://miro.medium.com/max/1158/1*rhLfU0SXzYidnD81P_7MaQ.png">
+
+Docker files respective to each web server
+
+Interesting files are at the `<b>static`</b> and `<b>img`</b> directories. 
+They hold the resources that will eventually be solicited by other web pages. 
+JavaScript files are under the `<b>static`</b> directory. 
+You can open them in your favorite code editor and play around.
+
+The `<b>img`</b> directory from the <b>Trusted Site</b> stores the `<b>owasp_bug.png`</b> resource. 
+In our experiment, this image resource will be requested by the <b>Evil Site,</b> which will then try to load it. 
+The same applies to the `<b>static/hello_script.js` </b>file, but to execute/evaluate the script content, and not load an image.
+
+<h3 id="CORStopic-9">Docker images and network settings overview</h3>
+
+<img src="https://miro.medium.com/max/1214/0*UsBn9vTzlncv6ZI9">
+
+docker-compose.yml content
+
+Take a look at the `<b>docker-compose.yml`</b> file above. 
+We can identify important things about the environment like:
+
+We’ll create two containers (namely `<b>evil_site`</b> and `<b>trusted_site`</b>)
+
+The containers are attached to the `<b>cors_hack_net</b>` bridged network interface
+
+The `<b>cors_hack_net</b>` interface determines the subnet by the <b>CIDR 10.5.0.0/16</b>
+
+As a useful link to the containers’ network addresses, I’d recommend setting your static lookup table for hostnames file (`<b>/etc/hosts</b>`) to the following settings:
+
+<img src="https://miro.medium.com/max/1176/0*Rojj1rJ_tasNTWqg">
+
+/etc/hosts file mapping
+
+<h3 id="CORStopic-10">A glance at the Apache Server CORS rules</h3>
+
+★ Identify the <b>Trusted Site</b> container’s name:
+
+<img src="https://miro.medium.com/max/1228/0*8H637WHubCaU4JBs">
+docker-compose ps output
+
+★ Log into the container:
+
+$ docker exec -it <b>trusted_site</b> /bin/bash
+
+★ Dump the Apache `.<b>htaccess`</b> configuration file to the screen:
+
+<img src="https://miro.medium.com/max/1192/0*MPIsycKL6vIaYlO9">
+
+.htaccess Apache CORS extension rules
+
+As highlighted in the picture above, the Apache Web Server will serve the <b>ACAO (Access-Control-Allow-Origin)</b> header when the file-matching rule applies. 
+In other words, if the web browser requests an image (<b>.gif, .png, .ico</b>, etc.) or even a JavaScript <b>.js</b> file, the resource’s content will only be authorized to be loaded/consumed by the page if the origin matches `<a href="http://trustedsite.com" rel="noopener ugc nofollow" target="_blank">http://trustedsite.com</a>`.
+
+Note that the `<b>.htaccess</b>` file is sourced at `<b>htdocs</b>` directory, thus impacting all the files under its substructure.
+
+<h3 id="CORStopic-11">Running the containerized environment</h3>
+
+To get these environment live, follow the steps:
+
+★ Build the container from the root project directory
+
+$ docker-compose build — no-cache; (note the double minus before the no-cache argument)
+
+★ Up the containers through `docker-compose`
+
+$ docker-compose up
+
+<img src="https://miro.medium.com/max/1400/0*UQgjrrZ2_-DdLbxj">
+docker-compose up output
+
+If you run into any trouble with the docker environment, I suggest you clean it by killing and removing the current active docker images. 
+Just ensure you don’t have other containers that should have their state saved before being killed.
+
+$ docker kill $(docker ps -a -q)
+
+$ docker rm $(docker ps -a -q)
+
+Well, I hope everything has been ok so far. 
+Let’s take a look at the two created web servers. 
+Open your browser and drive to the `<a href="http://trustedsite.com" rel="noopener ugc nofollow" target="_blank">http://trustedsite.com</a>` and `<a href="http://evilsite.com" rel="noopener ugc nofollow" target="_blank">http://evilsite.com</a>`.
+<h3 id="CORStopic-12">Trusted Site</h3>
+
+<img src="https://miro.medium.com/max/1400/0*6YbCYaPb7so6iutE">
+Trusted Site Web Server menu
+<h3 id="CORStopic-13">Evil Site</h3>
+
+<img src="https://miro.medium.com/max/1400/0*omcGP-PUR8J2tPZz">
+Evil Site Web Server Menu
+
+<h3 id="CORStopic-14">Playing with CORS rules using XHR and Fetch requests</h3>
+
+<h3 id="CORStopic-15">CORS rules for XHR requests</h3>
+
+The <b>XMLHttpRequest Standard</b><a href="https://xhr.spec.whatwg.org/" rel="noopener ugc nofollow" target="_blank">[11]</a> defines an API that provides scripted client functionality for transferring data between a <b>client</b> and a <b>server</b>.
+
+Regarding its security aspects, we should be aware of some warning facts, as stated by the <b>Browser Security Handbook, part2</b><a href="https://code.google.com/archive/p/browsersec/wikis/Part2.wiki" rel="noopener ugc nofollow" target="_blank">[12]</a>.
+<blockquote>
+“The set of security-relevant features provided by XMLHttpRequest, and not seen in other browser mechanisms, is as follows:
+</blockquote>
+The ability to specify an arbitrary HTTP request method (via the <b>open()</b> method),
+
+The ability to set custom HTTP headers on a request (via <b>setRequestHeader()</b>),
+
+The ability to read back full response headers (via <b>getResponseHeader()</b> and <b>getAllResponseHeaders()</b>),
+
+<blockquote>
+The ability to read back the full response body as a JavaScript string (via <b>responseText</b> property).
+
+Since all requests sent via XMLHttpRequest include a browser-maintained set of cookies for the target site and given that the mechanism provides a far greater ability to interact with server-side components than any other feature available to scripts, <b>it is extremely important to build in proper security controls.”</b>
+</blockquote>
+It’s essential to observe the following browser protections against origin tampering upon handling XHR requests.
+
+When trying to <b>change/poison</b> the `<b>origin</b>` header via <b>setRequestHeader(), the original header is preserved.</b>
+
+When trying to <b>change/poison </b>the additional headers (passed as arguments to the <b>xhr.send()</b>), <b>the original header is preserved.</b>
+
+<h3 id="CORStopic-16">CORS rules for Fetch requests</h3>
+<blockquote>
+“Numerous APIs provide the ability to fetch a resource, e.g. 
+<b>HTML’s img</b> and <b>script</b> <b>element</b>, <b>CSS’ cursor</b> and <b>list-style-image</b>, the <b>navigator.sendBeacon()</b> and <b>self.importScripts()</b> JavaScript APIs. 
+<b>The Fetch Standard</b> provides a unified architecture for these features so they are all consistent when it comes to various aspects of fetching, such as redirects and the <b>CORS</b> protocol.” — <a href="https://fetch.spec.whatwg.org/" rel="noopener ugc nofollow" target="_blank">https://fetch.spec.whatwg.org/</a>
+</blockquote>
+Although The Fetch Standard supersedes the `origin` element semantics (originally defined in <b>The Web Origin Concept</b> — RFC6454), the same effect of the XHR tampering protections applies here.
+
+When trying to <b>change/poison</b> the `<b>origin</b>` header via <b>fetch()</b> arguments, <b>the original header is preserved.</b>
+
+<h3 id="CORStopic-17">Understanding the requests cycle in practice</h3>
+
+Now that you already know the fundamentals of <b>SOP, CORS, XHR</b> and <b>Fetch</b> requests, we’re ready to play with the proposed scenario.
+
+Both <b>Trusted Site</b> and <b>Evil Site</b> pages have similar menus. 
+Firstly, try the four requests options of the <b>Trusted Site</b>.
+
+Note that the requested resources, the <b>OWASP bug image</b> or the script that displays “<b>All your base belong to us ;D</b>”, are successfully loaded and consumed by the page. 
+This is a classical case of local resources invoked by one page belonging to the same domain.
+
+<img src="https://miro.medium.com/max/846/0*Nx9KI78YER8jrhVc">
+
+The hello_script.js’ content executed after one same domain page request
+
+Now, let’s change the scope to the <b>Evil Site</b>.
+
+Open the `<a href="http://evilsite.com" rel="noopener ugc nofollow" target="_blank">http://evilsite.com</a>` website
+
+Bring up the <b>Web Developer Tools</b> window (press <b>F12</b> in Firefox or Chrome)
+
+Click the anchor link associated with the <b>OWASP image + JavaScript XHR</b>
+
+Click the anchor link associated with the <b>Alert script + JavaScript Fetch</b>
+
+Get your focus on the Console tab from <b>Web Developer Tools</b>. 
+We should be looking at something like the screen below.
+
+<img src="https://miro.medium.com/max/1400/0*YJNGyvmi1zq2s2pf">
+
+The third and fourth steps generate the messages from the screen above. 
+They are transcripted below for accessibility purposes.
+<blockquote>
+<b>Cross-Origin Request Blocked</b>: The Same Origin Policy disallows reading the remote resource at <a href="http://trustedsite.com/img/owasp_bug.png." rel="noopener ugc nofollow" target="_blank"><b>http://trustedsite.com/img/owasp_bug.png</b>.</a> (Reason: CORS header ‘Access-Control-Allow-Origin’ does not match ‘<a href="http://trustedsite.com" rel="noopener ugc nofollow" target="_blank">http://trustedsite.com</a>’).
+
+<b>Cross-Origin Request Blocked</b>: The Same Origin Policy disallows reading the remote resource at <a href="http://trustedsite.com/static/hello_script.js." rel="noopener ugc nofollow" target="_blank"><b>http://trustedsite.com/static/hello_script.js</b>.</a> (Reason: CORS header ‘Access-Control-Allow-Origin’ does not match ‘<a href="http://trustedsite.com" rel="noopener ugc nofollow" target="_blank">http://trustedsite.com</a>’).
+</blockquote>
+From here, it’s possible to understand why the browser has prohibited the requested resource. 
+Remember the <b>Apache Server .htaccess </b>configuration, which adds the <b>ACAO (Access-Control-Allow-Origin) </b>CORS header to specific HTTP responses (image files and <b>.js</b> scripts).
+
+Now, we are going to investigate the requests in more detail. 
+Click the <b>Network</b> tab from the <b>Web Developer Tools</b>. 
+Then, select the <b>OPTIONS</b> request for the `<b>hello_script.js</b>` resource. 
+On the right side of the screen, you should see the following HTTP request and response.
+
+<img src="https://miro.medium.com/max/1002/0*UAvaat5BKGYeiEdZ">
+
+OPTIONS HTTP request and response for hello_script.js resource
+
+Take note of the `<b>Origin</b>` header from above. 
+It reads `<a href="http://evilsite.com" rel="noopener ugc nofollow" target="_blank">http://evilsite.com</a>`. 
+But if we dive into the `<b>script_fetch.js</b>` implementation of the <b>Evil Site</b>, something stands out about the `<b>Origin</b>` header.
+
+<img src="https://miro.medium.com/max/1096/0*MPPcUg2plhAvpW6Q">
+
+`<b>evil_site_public_html/static/script_fetch.js</b>` content
+
+Although we try to overlap the `<b>Origin</b>` header (line 7) with the authorized address of <b>Trusted Site</b>‘s domain — `<a href="http://trustedite.com" rel="noopener ugc nofollow" target="_blank">http://trustedite.com</a>`, the Fetch API implemented by the browser prevents this from taking effect.
+
+That’s why we see `<a href="http://evilsite.com" rel="noopener ugc nofollow" target="_blank">http://evilsite.com</a>` as `<b>Origin</b>` in the <b>Web Developer Tools’ Network</b> tab — HTTP OPTIONS request.
+
+<h3 id="CORStopic-18">Bypassing CORS through proxy interception (Manual)</h3>
+
+It’s been a long road so far. 
+So if you made it here, it’s time to put some salt in the soup.
+
+The main principle behind the <b>CORS</b> (and policies like CSP — Content Security Policy) is the trust-based relationship between browser and web server. 
+The web server instructs the web browser about which domains it can further trust. 
+In practice, the HTTP security headers set this instruction.
+
+Now, let’s think from a malicious perspective. 
+To bypass the <b>CORS</b> rules, the attacker has to <b>intercept</b> the <b>server’s HTTP response</b>, which contains the <b>CORS ACAO (Access-Control-Allow-Origin</b>)<b> </b>header. 
+Secondly<b>,</b> he/she changes its value to reflect the attacker’s page origin or to allow arbitrary domains (using the character *).
+
+When it’s said <b>“to intercept”</b>, it can be a proxy server filtering the HTTP request-response cycle automatically (see the next section for more on this). 
+Or a manual approach through a proxy tool like <b>Burp Suite</b>, as we will do right after.
+
+<h3 id="CORStopic-19">Setting up your snoopy proxy tool</h3>
+
+If you are already familiarized with proxy tools like ZAP, Burp Suite, feel free to move to the next section. 
+Here we are going to use <b>Burp Suite Community</b><a href="https://portswigger.net/burp/releases/professional-community-2020-9-2" rel="noopener ugc nofollow" target="_blank">[14]</a> from PortSwagger.
+
+Install the Burp Suite according to your platform/architecture and run it.
+
+★ At the <b>Options</b> tab, edit the <b>Interface</b> column at the <b>Proxy Listeners</b> settings as below (“<b>127.0.0.1:10001</b>”):
+
+<img src="https://miro.medium.com/max/1400/0*gMvDXNllGvHTeHYV">
+
+★ At the same tab, set the <b>Intercept Client Requests </b>settings as following:
+
+<img src="https://miro.medium.com/max/1400/0*f65nMVYn6AKZRCrs">
+
+★ Still at the <b>Options</b> tab, set the <b>Intercept Server Responses</b> settings as following:
+
+<img src="https://miro.medium.com/max/1400/0*tOizoXyNERD00u71">
+
+★ Ensure that the “<b>Intercept is on</b>” button from <b>Intercept</b> tab is <b>active</b>
+
+<img src="https://miro.medium.com/max/1350/0*9tMMwXZcQiaSzRsc">
+
+Finally, on your browser, you will configure it to pass the requests through our proxy. 
+Note that the proxy is listening on <b>port 10001.</b> Here we have two configuration options. 
+I usually set my proxies using the <b>FoxyProxy</b> extension<a href="https://getfoxyproxy.org/" rel="noopener ugc nofollow" target="_blank">[15]</a>. 
+But you can do it manually by the Network Settings<a href="https://support.mozilla.org/en-US/kb/connection-settings-firefox" rel="noopener ugc nofollow" target="_blank">[16]</a> from your browser.
+
+<img src="https://miro.medium.com/max/1342/0*yCgRPt-GUjK2oY7s">
+
+My Firefox’s FoxyProxy burp proxy settings
+
+Ok, that’s all. 
+We’re ready to go.
+
+<h3 id="CORStopic-20">Bypassing CORS by HTTP Response tampering</h3>
+
+★ Open the <b>Evil Site </b>(`<a href="http://evilsite.com" rel="noopener ugc nofollow" target="_blank"><b>http://evilsite.com</b></a>`)
+
+As previously observed, resources from the <b>Trusted Site</b> requested by the <b>Evil Site</b> are not authorized to be consumed by the corresponding page. 
+It results from the fact that the <b>CORS ACAO (Access-Control-Allow-Origin)</b> header only allows the `<a href="http://trustedsite.com" rel="noopener ugc nofollow" target="_blank">http://trustedsite.com</a>` domain.
+
+★ <b>Activate</b> your Burp proxy at your browser
+
+<img src="https://miro.medium.com/max/744/0*HBblbnNI6wUEjhGf">
+
+★ Click/request <b>OWASP image</b> resource <b>via XHR Request</b>
+
+<img src="https://miro.medium.com/max/1400/0*gd5GoLrrMeywtMx4">
+
+Stop and look to the <b>Burp Suite dialog</b> respective to the <b>HTTP Request</b>
+
+<img src="https://miro.medium.com/max/1400/0*NUOGhcOm1C4skenP">
+
+★ Proceed with the request without further edition by clicking in “<b>Forward</b>”
+
+★ Stop at the <b>HTTP Response</b> which contains the <b>CORS headers</b>
+
+<img src="https://miro.medium.com/max/1332/0*scTInJZfSpPJEVwI">
+
+★ Edit the <b>CORS ACAO</b> header value to `<b>*</b>`
+
+<img src="https://miro.medium.com/max/1400/0*yiNlr2h7rj3t3cvv">
+
+★ <b>Submit</b> the response to the browser by clicking in “<b>Forward</b>”
+
+★ The protected resource (OWASP bug image) content is <b>displayed (</b>note the absence of the CORS error message):
+
+<img src="https://miro.medium.com/max/1400/0*qRpaKs3zVTyO6riS">
+
+<h3 id="CORStopic-21">Hacking homework</h3>
+
+In the earlier scenario, we intercepted and tampered with one JavaScript XHR request via Burp proxy. 
+One important aspect of this outside the box approach is to analyze the HTTP request-response cycle thoroughly. 
+Which headers are demanded and what error messages you got at your browser console when they are missing or misconfigured.
+
+Now it’s time to let you apply by yourself the knowledge exposed ‘till here. 
+The next section will also present some hints about the CORS bypassing for the <b>Alert script + JavaScript FETCH </b>combination.
+
+Since the sky’s the limit, feel free to try the bypassing against the remaining options from the <b>Evil Site</b> menu.
+<h3 id="CORStopic-22">Tips for bypassing the Alert script + JavaScript FETCH</h3>
+Besides changing the <b>Access-Control-Allow-Origin</b> header, you will also have to add the <b>Access-Control-Allow-Headers</b> in the HTTP OPTIONS request (use the Add button from the Burp request edit dialog).
+
+This is necessary because the client (the <b>.js</b> script which launches the XHR request) adds the headers `<b>cache-control</b>` and `<b>pragma</b>` in the subsequent GET request by default. 
+So you will want to reflect this in the <b>HTTP OPTIONS response</b>.
+
+Remember, here we have a <b>HTTP Preflight</b> scenario (review the Preflight HTTP Request section when in doubts), where a HTTP OPTIONS request precedes the actual resource retrieval request.
+
+<img src="https://miro.medium.com/max/1222/0*_gLYQy-CrptUnEux">
+
+<b>HTTP Options response</b> edited to reflect the CORS headers for bypassing
+
+<img src="https://miro.medium.com/max/1200/0*V-URxmvjcoT-HQBi">
+
+<b>HTTP GET response</b> from <b>`hello_script.js</b>` resource retrieval (note the ACAO CORS header)
+
+<img src="https://miro.medium.com/max/1400/0*VJVL1dpVj1CWKwtC">
+<b>Successful</b> CORS hacking get us the nice dialog above
+
+<h3 id="CORStopic-23">Automatic bypassing and other CORS interesting projects</h3>
+
+In the previous section, we saw how to bypass the CORS rules protection manually. 
+However, this is not very efficient from a practical standpoint.
+
+One feasible way to automate the bypassing process is by deploying a proxy server like <b>CORS Anywhere</b> API. 
+The proxy server will act as an intermediary, filtering the request and response headers to reflect the allow and deny rules specified at proxy configuration time.
+
+Please, refer to the project’s Github page<a href="https://github.com/Rob--W/cors-anywhere" rel="noopener ugc nofollow" target="_blank">[18]</a> for more details and precautions when setting a proxy facing the web (be careful with open proxies, friend). 
+You can test the live API here<a href="https://robwu.nl/cors-anywhere.html" rel="noopener ugc nofollow" target="_blank">[19]</a>.
+
+<h3 id="CORStopic-24">Concluding remarks</h3>
+
+If you’ve got this far, congratulations. 
+HTTP Headers by itself is a very vast CORStopic, as the protocol tries to evolve to get close to web applications reality. 
+This reality becomes more and more pervasive, especially with the popularization of APIs through technologies like REST.
+
+The set of CORS headers are intricate and full of nuances. 
+When implementing a solution that deals with inter-domain communication, pay attention to the common pitfalls that can arise. 
+
+The final message about CORS and its weaknesses is that the trust between browser and application should be explicitly guaranteed by secure configurations. 
+The right choice for which AJAX method and CORS headers to deploy will positively impact your APIs’ overall security.
+
+Remember our four proposed resource consumption scenarios. 
+They are simple. 
+Indeed, there are other options and combinations for resource sharing. 
+But maybe (and I hope we got there) the theory and practice exposed here can be taken as a foundation to design more complex and secure by-default web applications.
+
+
 
 
 
