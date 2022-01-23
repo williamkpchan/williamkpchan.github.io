@@ -1,0 +1,923 @@
+
+<!DOCTYPE html>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<html>
+<head>
+<title>Stk Line swipe chart</title>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/LibDocs/stkComments.js"></script>
+<script src="https://williamkpchanhp.github.io/LibDocs/filterResulitLib.txt"></script>
+<script src="https://code.jquery.com/mobile/1.5.0-alpha.1/jquery.mobile-1.5.0-alpha.1.min.js"></script>
+
+<script src="https://williamkpchan.github.io/LibDocs/longHistList.js"></script>
+<script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.common.core.js" ></script>
+<script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.line.js"></script>
+<script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.drawing.yaxis.js"></script>
+<script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.common.dynamic.js"></script>
+<script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.common.tooltips.js"></script>
+<script src="https://williamkpchanhp.github.io/codeList.js"></script>
+
+<style>
+#dateTime {  text-align: left;}
+#cmtNote, #instruction, #message, #usstock{display:none;}
+select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
+</style>
+
+</head>
+<body onkeypress="chkKey()">
+<center>
+<br>
+<canvas id="cvs" width="1150" height="600">[No canvas support]</canvas>
+<br>
+K线图日数与趋势图不同
+<p id="image"></p>
+<canvas id="accel" width="1150" height="240">[No canvas support]</canvas>
+<canvas id="动力5" width="1150" height="240">[No canvas support]</canvas>
+<canvas id="TP" width="1150" height="240">[No canvas support]</canvas>
+<canvas id="强弱50" width="1150" height="240">[No canvas support]</canvas>
+
+<span id="lastValues"></span>
+<br><span id="turnover"></span>
+</center>
+
+<div id="dateTime" style="margin-left:5%;" class="lime"> </div>
+<span onclick="$('#instruction').toggle();"> 🎌 </span>
+<a href="AStkList.txt" class="whitebut" target="_blank">A股清单</a>
+
+<a href="http://www.etnet.com.hk/www/tc/stocks/industry_adu.php" target="_blank" class="bordred1">行業板塊</a>
+<a href="http://www.etnet.com.hk/www/tc/stocks/indexes_detail.php?subtype=HSI" target="_blank" class="bordred1">指數成分股表現</a>
+<a href="http://www.etnet.com.hk/www/tc/stocks/ah.php" target="_blank" class="bordred1">AH股表現</a>
+<select id="selectList" onchange="assignList()"></select>
+<span onclick="$('#message').toggle();"> 🎌 </span>
+<pre id="filterMarkers"></pre>
+
+<br>
+<pre id="instruction">
+</pre>
+<pre id="commands">
+commands:
+d fillLineData, paste one set data to redraw with std dev
+c askforCode
+
+z large chart
+
+R Random Charts.html
+m mlineMinutechart.html
+
+f jpforward	b jpback
+r jprandom	t jpTo 0
+
+h chgHighList	l chgLowList	m chgMidList	C chgCloseLst
+
+a useAttentionList
+
+i chgIntv
+L askList
+5 lines: data, WAve5, WAve10, sd+, sd-
+A stk code sample: 000001.sh, 399001.sz
+</pre>
+<pre id="message">
+
+</pre>
+<span onclick="$('#usstock').toggle();">usstock 🎌 </span>
+<pre id="usstock">
+<b onclick='fetchUsCode("usAAPL.OQ")'>AAPL.OQ 苹果</b> . <b onclick='fetchUsCode("usAAXJ.OQ")'>AAXJ.OQ 亚洲ETF-iShares MSCI</b> . <b onclick='fetchUsCode("usABT.N")'>ABT.N 雅培</b> . <b onclick='fetchUsCode("usADSK.OQ")'>ADSK.OQ 欧特克</b> . <b onclick='fetchUsCode("usAGQ.AM")'>AGQ.AM 白银现货ETF两倍做多</b> . <b onclick='fetchUsCode("usALL.N")'>ALL.N 好事达</b> . <b onclick='fetchUsCode("usAMBA.OQ")'>AMBA.OQ 安霸</b> . <b onclick='fetchUsCode("usAMGN.OQ")'>AMGN.OQ 安进</b> . <b onclick='fetchUsCode("usAMRC.N")'>AMRC.N 阿梅雷斯克公司</b> . <b onclick='fetchUsCode("usAPH.N")'>APH.N 安诺电子</b> . <b onclick='fetchUsCode("usASHR.AM")'>ASHR.AM 沪深300ETF-德银嘉实</b> . <b onclick='fetchUsCode("usASHS.AM")'>ASHS.AM 中证500ETF-德银嘉实</b> . <b onclick='fetchUsCode("usATI.N")'>ATI.N 阿利根尼</b> . <b onclick='fetchUsCode("usATSG.OQ")'>ATSG.OQ 美国航空运输服务集团</b> . <b onclick='fetchUsCode("usATVI.OQ")'>ATVI.OQ 动视暴雪</b> . <b onclick='fetchUsCode("usBAX.N")'>BAX.N 百特国际</b> . <b onclick='fetchUsCode("usBCACU.OQ")'>BCACU.OQ 野牛资本收购公司-Units</b> . <b onclick='fetchUsCode("usBIDU.OQ")'>BIDU.OQ 百度</b> . <b onclick='fetchUsCode("usBK.N")'>BK.N 纽约梅隆银行</b> . <b onclick='fetchUsCode("usBYSI.OQ")'>BYSI.OQ 万春医药</b> . <b onclick='fetchUsCode("usC.N")'>C.N 花旗集团</b> . <b onclick='fetchUsCode("usCAF.N")'>CAF.N 摩根士丹利中国A股指数基金</b> . <b onclick='fetchUsCode("usCAJ.N")'>CAJ.N 佳能</b> . <b onclick='fetchUsCode("usCANG.N")'>CANG.N 灿谷</b> . <b onclick='fetchUsCode("usCAT.N")'>CAT.N 卡特彼勒</b> . <b onclick='fetchUsCode("usCHAD.AM")'>CHAD.AM 沪深300指数做空ETF</b> . <b onclick='fetchUsCode("usCHAU.AM")'>CHAU.AM 沪深300指数两倍做多</b> . <b onclick='fetchUsCode("usCMCSA.OQ")'>CMCSA.OQ 康卡斯特</b> . <b onclick='fetchUsCode("usCNXT.AM")'>CNXT.AM 离岸创业板100指数ETF</b> . <b onclick='fetchUsCode("usCNYA.AM")'>CNYA.AM 安硕中国A股ETF</b> . <b onclick='fetchUsCode("usCOF.N")'>COF.N 第一资本信贷</b> . <b onclick='fetchUsCode("usCOP.N")'>COP.N 康菲石油</b> . <b onclick='fetchUsCode("usCOST.OQ")'>COST.OQ 好市多</b> . <b onclick='fetchUsCode("usCPHI.AM")'>CPHI.AM 惠普森医药</b> . <b onclick='fetchUsCode("usCREE.OQ")'>CREE.OQ 克里科技</b> . <b onclick='fetchUsCode("usCRM.N")'>CRM.N 赛富时</b> . <b onclick='fetchUsCode("usCSIQ.OQ")'>CSIQ.OQ 阿特斯太阳能</b> . <b onclick='fetchUsCode("usCYB.AM")'>CYB.AM 人民币ETF</b> . <b onclick='fetchUsCode("usDAL.N")'>DAL.N 达美航空</b> . <b onclick='fetchUsCode("usDB.N")'>DB.N 德意志银行</b> . <b onclick='fetchUsCode("usDBA.AM")'>DBA.AM 多元化农业指数ETF</b> . <b onclick='fetchUsCode("usDBC.AM")'>DBC.AM 商品指数ETF（德银）</b> . <b onclick='fetchUsCode("usDDM.AM")'>DDM.AM 道指两倍做多ETF</b> . <b onclick='fetchUsCode("usDELL.N")'>DELL.N 戴尔科技</b> . <b onclick='fetchUsCode("usDGP.AM")'>DGP.AM 黄金两倍做多ETN</b> . <b onclick='fetchUsCode("usDIG.AM")'>DIG.AM 美国油气指数两倍做多</b> . <b onclick='fetchUsCode("usDOG.AM")'>DOG.AM 道琼斯30指数做空</b> . <b onclick='fetchUsCode("usDRN.AM")'>DRN.AM </b> . <b onclick='fetchUsCode("usDRV.AM")'>DRV.AM 房地产指数三倍做空</b> . <b onclick='fetchUsCode("usDUG.AM")'>DUG.AM 石油和天然气两倍做空</b> . <b onclick='fetchUsCode("usDUK.N")'>DUK.N 杜克能源</b> . <b onclick='fetchUsCode("usDUST.AM")'>DUST.AM 黄金矿业指数三倍做空</b> . <b onclick='fetchUsCode("usDXCM.OQ")'>DXCM.OQ 德康医疗</b> . <b onclick='fetchUsCode("usDXD.AM")'>DXD.AM 道指ETF-ProShares两倍做空</b> . <b onclick='fetchUsCode("usDXJ.AM")'>DXJ.AM 日本股利指数ETF</b> . <b onclick='fetchUsCode("usDZZ.AM")'>DZZ.AM 黄金两倍做空ETN（德银）</b> . <b onclick='fetchUsCode("usEA.OQ")'>EA.OQ 电子艺界</b> . <b onclick='fetchUsCode("usEBAY.OQ")'>EBAY.OQ eBay</b> . <b onclick='fetchUsCode("usEDC.AM")'>EDC.AM 新兴市场每日三倍做多</b> . <b onclick='fetchUsCode("usEEM.AM")'>EEM.AM 新兴市场指数ETF-MSCI</b> . <b onclick='fetchUsCode("usEFA.AM")'>EFA.AM 欧澳远东指数ETF-MSCI</b> . <b onclick='fetchUsCode("usENV.N")'>ENV.N Envestnet Inc</b> . <b onclick='fetchUsCode("usEQIX.OQ")'>EQIX.OQ 易昆尼克斯</b> . <b onclick='fetchUsCode("usERX.AM")'>ERX.AM 二倍做多能源ETF-Direxion</b> . <b onclick='fetchUsCode("usERY.AM")'>ERY.AM 2倍做空能源ETF-Direxion</b> . <b onclick='fetchUsCode("usETR.N")'>ETR.N 安特吉</b> . <b onclick='fetchUsCode("usEUO.AM")'>EUO.AM 欧元ETF两倍做空</b> . <b onclick='fetchUsCode("usEWA.AM")'>EWA.AM 澳大利亚指数ETF-MSCI</b> . <b onclick='fetchUsCode("usEWC.AM")'>EWC.AM 加拿大指数ETF-MSCI</b> . <b onclick='fetchUsCode("usEWD.AM")'>EWD.AM 瑞典指数-MSCI</b> . <b onclick='fetchUsCode("usEWG.AM")'>EWG.AM 德国指数-iShares</b> . <b onclick='fetchUsCode("usEWH.AM")'>EWH.AM 香港ETF-MSCI</b> . <b onclick='fetchUsCode("usEWI.AM")'>EWI.AM 意大利ETF-iShares MSCI</b> . <b onclick='fetchUsCode("usEWJ.AM")'>EWJ.AM 日本指数ETF-MSCI</b> . <b onclick='fetchUsCode("usEWK.AM")'>EWK.AM 比利时ETF-iShares MSCI</b> . <b onclick='fetchUsCode("usEWM.AM")'>EWM.AM 马来西亚ETF-MSCI</b> . <b onclick='fetchUsCode("usEWN.AM")'>EWN.AM 荷兰ETF-iShares MSCI</b> . <b onclick='fetchUsCode("usEWO.AM")'>EWO.AM 奥地利ETF-iShares MSCI</b> . <b onclick='fetchUsCode("usEWP.AM")'>EWP.AM 西班牙ETF-iShares MSCI</b> . <b onclick='fetchUsCode("usEWQ.AM")'>EWQ.AM 法国ETF-iShares MSCI</b> . <b onclick='fetchUsCode("usEWT.AM")'>EWT.AM 台湾ETF-iShares</b> . <b onclick='fetchUsCode("usEWU.AM")'>EWU.AM 英国ETF-iShares MSCI</b> . <b onclick='fetchUsCode("usEWY.AM")'>EWY.AM 韩国ETF-iShares MSCI</b> . <b onclick='fetchUsCode("usEWZ.AM")'>EWZ.AM 巴西ETF-iShares MSCI</b> . <b onclick='fetchUsCode("usEZU.AM")'>EZU.AM 欧盟国家ETF-MSCI</b> . <b onclick='fetchUsCode("usFAMI.OQ")'>FAMI.OQ 农米良品</b> . <b onclick='fetchUsCode("usFANH.OQ")'>FANH.OQ 泛华金控</b> . <b onclick='fetchUsCode("usFAS.AM")'>FAS.AM 罗素金融股三倍做多</b> . <b onclick='fetchUsCode("usFAZ.AM")'>FAZ.AM 三倍做空金融ETF-Direxion</b> . <b onclick='fetchUsCode("usFB.OQ")'>FB.OQ Facebook Inc</b> . <b onclick='fetchUsCode("usFDX.N")'>FDX.N 联邦快递</b> . <b onclick='fetchUsCode("usFEDU.N")'>FEDU.N 四季教育</b> . <b onclick='fetchUsCode("usFEYE.OQ")'>FEYE.OQ Fireeye Inc</b> . <b onclick='fetchUsCode("usFRI.AM")'>FRI.AM 美国REIT指数</b> . <b onclick='fetchUsCode("usFTNT.OQ")'>FTNT.OQ 飞塔信息</b> . <b onclick='fetchUsCode("usFXA.AM")'>FXA.AM 澳大利亚元ETF</b> . <b onclick='fetchUsCode("usFXC.AM")'>FXC.AM 加拿大元ETF</b> . <b onclick='fetchUsCode("usFXE.AM")'>FXE.AM 欧元ETF</b> . <b onclick='fetchUsCode("usFXF.AM")'>FXF.AM 瑞士法郎ETF</b> . <b onclick='fetchUsCode("usFXP.AM")'>FXP.AM 富时中国50ETF两倍做空</b> . <b onclick='fetchUsCode("usFXY.AM")'>FXY.AM 日元ETF</b> . <b onclick='fetchUsCode("usGAME.OQ")'>GAME.OQ Engine Media Holdings Inc</b> . <b onclick='fetchUsCode("usGD.N")'>GD.N 通用动力</b> . <b onclick='fetchUsCode("usGDOT.N")'>GDOT.N Green Dot Corp</b> . <b onclick='fetchUsCode("usGDS.OQ")'>GDS.OQ 万国数据</b> . <b onclick='fetchUsCode("usGDX.AM")'>GDX.AM VanEck Vectors金矿开采商ETF</b> . <b onclick='fetchUsCode("usGDXJ.AM")'>GDXJ.AM 小型黄金矿业ETF</b> . <b onclick='fetchUsCode("usGHG.N")'>GHG.N 格林酒店</b> . <b onclick='fetchUsCode("usGLD.AM")'>GLD.AM 黄金现货-SPDR</b> . <b onclick='fetchUsCode("usGLL.AM")'>GLL.AM 黄金现货两倍做空</b> . <b onclick='fetchUsCode("usGLW.N")'>GLW.N 康宁</b> . <b onclick='fetchUsCode("usGOGO.OQ")'>GOGO.OQ Gogo Inc</b> . <b onclick='fetchUsCode("usGRPN.OQ")'>GRPN.OQ Groupon Inc</b> . <b onclick='fetchUsCode("usH.N")'>H.N 凯悦酒店</b> . <b onclick='fetchUsCode("usHUYA.N")'>HUYA.N 虎牙</b> . <b onclick='fetchUsCode("usIBB.OQ")'>IBB.OQ 纳斯达克生物技术指数</b> . <b onclick='fetchUsCode("usICF.AM")'>ICF.AM 不动产指数ETF-iShares</b> . <b onclick='fetchUsCode("usIFMK.OQ")'>IFMK.OQ 中国城超市</b> . <b onclick='fetchUsCode("usILMN.OQ")'>ILMN.OQ Illumina Inc</b> . <b onclick='fetchUsCode("usINTC.OQ")'>INTC.OQ 英特尔</b> . <b onclick='fetchUsCode("usINTU.OQ")'>INTU.OQ 财捷</b> . <b onclick='fetchUsCode("usIRBT.OQ")'>IRBT.OQ Irobot Corp</b> . <b onclick='fetchUsCode("usITB.AM")'>ITB.AM 房屋建筑指数ETF-iShares Dow </b> . <b onclick='fetchUsCode("usIVV.AM")'>IVV.AM 标普500指数ETF-iShares</b> . <b onclick='fetchUsCode("usIWO.AM")'>IWO.AM 罗素2000成长股指数ETF</b> . <b onclick='fetchUsCode("usIYF.AM")'>IYF.AM 金融指数ETF-iShares Dow </b> . <b onclick='fetchUsCode("usIYM.AM")'>IYM.AM 美国基础材料ETF</b> . <b onclick='fetchUsCode("usIYR.AM")'>IYR.AM 美国房地产指数ETF</b> . <b onclick='fetchUsCode("usIYT.AM")'>IYT.AM 道琼斯交通平均指数</b> . <b onclick='fetchUsCode("usIYZ.AM")'>IYZ.AM 安硕美国电信ETF</b> . <b onclick='fetchUsCode("usJNJ.N")'>JNJ.N 强生</b> . <b onclick='fetchUsCode("usJOBS.OQ")'>JOBS.OQ 前程无忧</b> . <b onclick='fetchUsCode("usJT.N")'>JT.N 简普科技</b> . <b onclick='fetchUsCode("usKBE.AM")'>KBE.AM 银行指数ETF-SPDR</b> . <b onclick='fetchUsCode("usKIE.AM")'>KIE.AM 标普保险行业指数</b> . <b onclick='fetchUsCode("usKWEB.AM")'>KWEB.AM 中国海外互联网ETF</b> . <b onclick='fetchUsCode("usKWT.AM")'>KWT.AM 全球太阳能指数ETF</b> . <b onclick='fetchUsCode("usLMT.N")'>LMT.N 洛克希德马丁</b> . <b onclick='fetchUsCode("usLRCX.OQ")'>LRCX.OQ 拉姆研究</b> . <b onclick='fetchUsCode("usLYL.OQ")'>LYL.OQ 龙运国际</b> . <b onclick='fetchUsCode("usMAT.OQ")'>MAT.OQ 美泰</b> . <b onclick='fetchUsCode("usMET.N")'>MET.N 大都会人寿</b> . <b onclick='fetchUsCode("usMON.OQ")'>MON.OQ Monument Circle </b> . <b onclick='fetchUsCode("usMOO.AM")'>MOO.AM 农业指数ETF-Market Vectors</b> . <b onclick='fetchUsCode("usMS.N")'>MS.N 摩根士丹利</b> . <b onclick='fetchUsCode("usMSFT.OQ")'>MSFT.OQ 微软</b> . <b onclick='fetchUsCode("usNFLX.OQ")'>NFLX.OQ 奈飞</b> . <b onclick='fetchUsCode("usNKE.N")'>NKE.N 耐克</b> . <b onclick='fetchUsCode("usNLR.AM")'>NLR.AM 核能指数ETF-Market Vectors</b> . <b onclick='fetchUsCode("usNTAP.OQ")'>NTAP.OQ 美国网存</b> . <b onclick='fetchUsCode("usNTES.OQ")'>NTES.OQ 网易</b> . <b onclick='fetchUsCode("usNUGT.AM")'>NUGT.AM </b> . <b onclick='fetchUsCode("usNVDA.OQ")'>NVDA.OQ 英伟达</b> . <b onclick='fetchUsCode("usNVFY.OQ")'>NVFY.OQ 诺华家具有限公司</b> . <b onclick='fetchUsCode("usNVS.N")'>NVS.N 诺华制药</b> . <b onclick='fetchUsCode("usOIH.AM")'>OIH.AM 美国上市石油服务ETF</b> . <b onclick='fetchUsCode("usOIL.AM")'>OIL.AM 标普高盛原油指数ETN</b> . <b onclick='fetchUsCode("usORCL.N")'>ORCL.N 甲骨文</b> . <b onclick='fetchUsCode("usPANW.N")'>PANW.N Palo Alto Networks Inc</b> . <b onclick='fetchUsCode("usPEP.OQ")'>PEP.OQ 百事可乐</b> . <b onclick='fetchUsCode("usPETZ.OQ")'>PETZ.OQ 青岛天地荟食品</b> . <b onclick='fetchUsCode("usPFE.N")'>PFE.N 辉瑞制药</b> . <b onclick='fetchUsCode("usPGF.AM")'>PGF.AM 优先金融股指数ETF</b> . <b onclick='fetchUsCode("usPGJ.OQ")'>PGJ.OQ 金龙中国组合ETF-PowerShares</b> . <b onclick='fetchUsCode("usPLUG.OQ")'>PLUG.OQ 普拉格能源</b> . <b onclick='fetchUsCode("usPSQ.AM")'>PSQ.AM 纳斯达克100指数做空</b> . <b onclick='fetchUsCode("usQCOM.OQ")'>QCOM.OQ 高通</b> . <b onclick='fetchUsCode("usQD.N")'>QD.N 趣店</b> . <b onclick='fetchUsCode("usQID.AM")'>QID.AM 纳斯达克100两倍做空</b> . <b onclick='fetchUsCode("usQLD.AM")'>QLD.AM 纳斯达克100两倍做多</b> . <b onclick='fetchUsCode("usQQQ.OQ")'>QQQ.OQ 纳指100ETF</b> . <b onclick='fetchUsCode("usRENN.N")'>RENN.N 人人网</b> . <b onclick='fetchUsCode("usRF.N")'>RF.N 地区金融</b> . <b onclick='fetchUsCode("usRJA.AM")'>RJA.AM 罗杰斯农业指数ETN-ELEMENTS</b> . <b onclick='fetchUsCode("usRJI.AM")'>RJI.AM 商品指数ETF-Elements</b> . <b onclick='fetchUsCode("usROK.N")'>ROK.N 罗克韦尔</b> . <b onclick='fetchUsCode("usRSX.AM")'>RSX.AM 俄罗斯ETF-MarketVectors</b> . <b onclick='fetchUsCode("usRUSL.AM")'>RUSL.AM 俄罗斯ETF三倍做多</b> . <b onclick='fetchUsCode("usRWM.AM")'>RWM.AM 罗素2000做空-ProShares</b> . <b onclick='fetchUsCode("usRYB.N")'>RYB.N 红黄蓝教育</b> . <b onclick='fetchUsCode("usSAP.N")'>SAP.N SAP</b> . <b onclick='fetchUsCode("usSBUX.OQ")'>SBUX.OQ 星巴克</b> . <b onclick='fetchUsCode("usSCO.AM")'>SCO.AM Proshares两倍做空彭博原油ETF</b> . <b onclick='fetchUsCode("usSDOW.AM")'>SDOW.AM 道指ETF-Proshares三倍做空</b> . <b onclick='fetchUsCode("usSDS.AM")'>SDS.AM 标普500指数两倍做空</b> . <b onclick='fetchUsCode("usSGOC.OQ")'>SGOC.OQ 上为集团</b> . <b onclick='fetchUsCode("usSH.AM")'>SH.AM </b> . <b onclick='fetchUsCode("usSIMO.OQ")'>SIMO.OQ 慧荣科技</b> . <b onclick='fetchUsCode("usSKF.AM")'>SKF.AM 金融股指数两倍做空</b> . <b onclick='fetchUsCode("usSLV.AM")'>SLV.AM 白银ETF-iShares</b> . <b onclick='fetchUsCode("usSMFG.N")'>SMFG.N 三井住友金融</b> . <b onclick='fetchUsCode("usSMN.AM")'>SMN.AM 基础材料指数两倍做空</b> . <b onclick='fetchUsCode("usSNP.N")'>SNP.N 中石化</b> . <b onclick='fetchUsCode("usSOGO.N")'>SOGO.N 搜狗</b> . <b onclick='fetchUsCode("usSOL.N")'>SOL.N 昱辉阳光</b> . <b onclick='fetchUsCode("usSOXL.AM")'>SOXL.AM 半导体ETF三倍做多</b> . <b onclick='fetchUsCode("usSPI.OQ")'>SPI.OQ 阳光动力</b> . <b onclick='fetchUsCode("usSPLK.OQ")'>SPLK.OQ Splunk Inc</b> . <b onclick='fetchUsCode("usSPWR.OQ")'>SPWR.OQ Sunpower Corp</b> . <b onclick='fetchUsCode("usSPXU.AM")'>SPXU.AM 标普500指数三倍做空</b> . <b onclick='fetchUsCode("usSQQQ.OQ")'>SQQQ.OQ 纳斯达克100三倍做空</b> . <b onclick='fetchUsCode("usSRS.AM")'>SRS.AM 地产指数两倍做空</b> . <b onclick='fetchUsCode("usSSO.AM")'>SSO.AM 标普500指数两倍做多</b> . <b onclick='fetchUsCode("usSSYS.OQ")'>SSYS.OQ Stratasys</b> . <b onclick='fetchUsCode("usSVXY.AM")'>SVXY.AM 做空VIX短期期货ETF</b> . <b onclick='fetchUsCode("usTAN.AM")'>TAN.AM 全球太阳能指数ETF</b> . <b onclick='fetchUsCode("usTER.OQ")'>TER.OQ 泰瑞达</b> . <b onclick='fetchUsCode("usTGT.N")'>TGT.N 塔吉特</b> . <b onclick='fetchUsCode("usTKAT.AM")'>TKAT.AM 大公文交所</b> . <b onclick='fetchUsCode("usTME.N")'>TME.N 腾讯音乐</b> . <b onclick='fetchUsCode("usTNA.AM")'>TNA.AM 罗素2000每日三倍做多</b> . <b onclick='fetchUsCode("usTQQQ.OQ")'>TQQQ.OQ 纳斯达克100三倍做多</b> . <b onclick='fetchUsCode("usTRIP.OQ")'>TRIP.OQ 猫途鹰</b> . <b onclick='fetchUsCode("usTUR.OQ")'>TUR.OQ 土耳其投资市场指数</b> . <b onclick='fetchUsCode("usTWM.AM")'>TWM.AM 罗素2000指数两倍做空</b> . <b onclick='fetchUsCode("usTWTR.N")'>TWTR.N 推特</b> . <b onclick='fetchUsCode("usTXN.OQ")'>TXN.OQ 德州仪器</b> . <b onclick='fetchUsCode("usTYHT.OQ")'>TYHT.OQ 尚高公司</b> . <b onclick='fetchUsCode("usTZA.AM")'>TZA.AM Direxion每日小盘看空3倍股票</b> . <b onclick='fetchUsCode("usUCO.AM")'>UCO.AM 原油指数ETF-ProShares </b> . <b onclick='fetchUsCode("usUDN.AM")'>UDN.AM 做空美元指数</b> . <b onclick='fetchUsCode("usUDOW.AM")'>UDOW.AM 道指平均指数三倍做多</b> . <b onclick='fetchUsCode("usUGL.AM")'>UGL.AM 黄金现货ETF两倍做多</b> . <b onclick='fetchUsCode("usUNG.AM")'>UNG.AM 美国即月天然气ETF</b> . <b onclick='fetchUsCode("usUNH.N")'>UNH.N 联合健康</b> . <b onclick='fetchUsCode("usUPRO.AM")'>UPRO.AM 标普500指数三倍做多</b> . <b onclick='fetchUsCode("usURE.AM")'>URE.AM 房地产ETF两倍做多</b> . <b onclick='fetchUsCode("usUSNA.N")'>USNA.N 优莎娜</b> . <b onclick='fetchUsCode("usUSO.AM")'>USO.AM 美国原油ETF</b> . <b onclick='fetchUsCode("usUUP.AM")'>UUP.AM 美元ETF-PowerShares</b> . <b onclick='fetchUsCode("usUVXY.AM")'>UVXY.AM VIX短期期货两倍做多</b> . <b onclick='fetchUsCode("usUWM.AM")'>UWM.AM 罗素2000指数两倍做多</b> . <b onclick='fetchUsCode("usUYG.AM")'>UYG.AM 金融股ETF两倍做多</b> . <b onclick='fetchUsCode("usUYM.AM")'>UYM.AM 基础材料指数两倍做多</b> . <b onclick='fetchUsCode("usV.N")'>V.N 维萨卡</b> . <b onclick='fetchUsCode("usVEA.AM")'>VEA.AM 新华富时发达市场ETF</b> . <b onclick='fetchUsCode("usVGK.AM")'>VGK.AM 新华富时欧洲发展ETF</b> . <b onclick='fetchUsCode("usVIXY.AM")'>VIXY.AM 短期期货波动指数ETF</b> . <b onclick='fetchUsCode("usVMW.N")'>VMW.N 威睿</b> . <b onclick='fetchUsCode("usVNQ.AM")'>VNQ.AM 美国不动产信托指数ETF</b> . <b onclick='fetchUsCode("usVWO.AM")'>VWO.AM 新华富时新兴市场ETF</b> . <b onclick='fetchUsCode("usVXX.AM")'>VXX.AM 短期VIX指数期货ETN</b> . <b onclick='fetchUsCode("usVXZ.AM")'>VXZ.AM 恐慌中期做多ETN-iPath S</b> . <b onclick='fetchUsCode("usWBA.OQ")'>WBA.OQ 沃尔格林</b> . <b onclick='fetchUsCode("usWDAY.OQ")'>WDAY.OQ 工时公司</b> . <b onclick='fetchUsCode("usWDC.OQ")'>WDC.OQ 西部数据</b> . <b onclick='fetchUsCode("usX.N")'>X.N 美国钢铁</b> . <b onclick='fetchUsCode("usXHB.AM")'>XHB.AM 标普房产行业指数</b> . <b onclick='fetchUsCode("usXLB.AM")'>XLB.AM 基础材料ETF-SPRD</b> . <b onclick='fetchUsCode("usXLE.AM")'>XLE.AM 能源指数ETF</b> . <b onclick='fetchUsCode("usXLF.AM")'>XLF.AM 金融行业ETF</b> . <b onclick='fetchUsCode("usXLI.AM")'>XLI.AM 工业指数ETF</b> . <b onclick='fetchUsCode("usXLNX.OQ")'>XLNX.OQ 赛灵思</b> . <b onclick='fetchUsCode("usXLP.AM")'>XLP.AM 消费品指数ETF-SPDR</b> . <b onclick='fetchUsCode("usXLU.AM")'>XLU.AM 公共事业指数ETF</b> . <b onclick='fetchUsCode("usXLV.AM")'>XLV.AM 健康照护类股ETF</b> . <b onclick='fetchUsCode("usXLY.AM")'>XLY.AM 消费品指数-SPDR</b> . <b onclick='fetchUsCode("usXME.AM")'>XME.AM 金属与采矿指数ETF</b> . <b onclick='fetchUsCode("usXPP.AM")'>XPP.AM 富时中国50指数两倍做多</b> . <b onclick='fetchUsCode("usXRT.AM")'>XRT.AM 标普零售行业指数ETF</b> . <b onclick='fetchUsCode("usY.N")'>Y.N Alleghany Corp</b> . <b onclick='fetchUsCode("usYANG.AM")'>YANG.AM FTSE中国三倍做空ETF</b> . <b onclick='fetchUsCode("usYCS.AM")'>YCS.AM 日元ETF两倍做空</b> . <b onclick='fetchUsCode("usYELP.N")'>YELP.N Yelp</b> . <b onclick='fetchUsCode("usYINN.AM")'>YINN.AM FTSE中国三倍做多</b> . <b onclick='fetchUsCode("usYUMC.N")'>YUMC.N 百胜中国</b> . <b onclick='fetchUsCode("usYXI.AM")'>YXI.AM 中国50指数做空</b> . <b onclick='fetchUsCode("usZKIN.OQ")'>ZKIN.OQ 正康国际</b> . <b onclick='fetchUsCode("usZNGA.OQ")'>ZNGA.OQ Zynga</b> . <b onclick='fetchUsCode("usZSL.AM")'>ZSL.AM 白银现货价格两倍做空</b> . <b onclick='fetchUsCode("usZTO.N")'>ZTO.N 中通快递</b> . <b onclick='fetchUsCode("usTSLA.OQ")'>usTSLA.OQ 特斯拉</b> . </pre>
+<script>
+      let thestkdata = [];
+      let dateLst = [];
+      let openLst = [];
+      let highLst = [];
+      let lowLst = [];
+      let midLst = [];
+      let closeLst = [];
+      let amtLst = [];
+      let startIntv = 5;
+
+      if (localStorage.getItem("daychartWidth") === null) {
+        localStorage.setItem("daychartWidth", 75);
+        period = 75;
+      } else{
+        period = localStorage.getItem("daychartWidth");
+      }
+      dataStatus = "L"
+      intv1 = startIntv
+      intv2 = 2*intv1
+      intv3 = 3*intv1
+      intv4 = 4*intv1
+      intv5 = 5*intv1
+      intv6 = 6*intv1
+      intv7 = 7*intv1
+      intv8 = 8*intv1
+      intv9 = 9*intv1
+      stkpriceDataArr = [];
+      stkList = codeList.split(' ');
+      stkPointer = 0;
+      theCode = localStorage.randomcode;
+      titleText = "";
+      starti = 0;
+      chartColor = ['red','green','blue','#0ad','#900','#990','#fff','#0f0','#0aa','#0ff','purple','yellow','#885']
+
+      attentionList = ""
+
+      var options = '';  // build the List select option
+      for (var i = 0; i < allListNames.length; i++) {
+         options += '<option value="' + allListNames[i]+ '">' + allListNames[i] + '</option>';
+      }
+      $("#selectList").html(options);
+
+
+      if (localStorage.getItem("attentionList") === null) {
+        localStorage.attentionList = "07500";
+      } else{
+        attentionList = localStorage.getItem("attentionList").split(',');
+      }
+      //console.log(attentionList)
+
+      // load localStorage.savedCodeList
+      if (localStorage.getItem("savedCodeList") === null) {
+        quickCodeList = ["110000"];
+        localStorage.savedCodeList = quickCodeList;
+      } else{
+        quickCodeList = localStorage.getItem("savedCodeList").split(',');
+      }
+
+
+      // added extra links
+      bigVolHeader = "http://www.etnet.com.hk/www/tc/stocks/realtime/quote_transaction.php?code="
+      shortsellHeader = "http://www.aastocks.com/tc/stocks/analysis/stock-short-selling-ratio.aspx?symbol="
+      newshead = "http://www.aastocks.com/tc/stocks/analysis/stock-aafn/"
+      newstail = "/0/all/1"
+
+      function askforCode() {
+        var tempCode = prompt("Code Number:", "");
+        if (tempCode != null && tempCode != ""){
+
+            codewidth = tempCode.length
+            if(codewidth <= 5){
+              theCode = "00000"+tempCode;
+              codewidth = theCode.length;
+              theCode = theCode.slice(codewidth-5, codewidth);
+              codewidth = theCode.length; //update to be used later
+            }else{
+              theCode = tempCode
+            }
+
+           storeCode(theCode)
+           collectStkData(theCode)  // show turnover and draw
+        }
+      }
+
+      function collectStkData(theCode) {
+      $("#turnover").html(
+       '<br><span class="randomBut gold bordred1 borRad10" onclick="askforCode()">号码</span> ' +
+       '<span class="randomBut gold bordred1 borRad10" onclick="jpforward()">Next</span> ' +
+      '<a href="' + bigVolHeader + theCode +'" target="_blank" class="white bordred1 borRad10">大戶</a>' +
+      '<a href="' + newshead + theCode + newstail +'" target="_blank" class="white bordred1 borRad10">資料</a>' +
+      '<a href="' + shortsellHeader + theCode + '" target="_blank" class="white bordred1 borRad10">沽空</a> '
+      );
+
+        //if(isNaN(theCode.substring(0, 1))){  // is it character}
+        if( theCode.substring(0, 2) == "us"){
+              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/usfqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,1000,qfq';
+              imageCode = theCode
+        }else{
+
+          if(theCode == "110000"){
+             theCode = "HSI"; imageCode = "110000"
+          }
+
+          codewidth = theCode.length
+          if(theCode == "HSI"){
+              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,1000,qfq';
+              imageCode = "110000"
+          }else{
+            if(codewidth <= 5){
+              theCode = "00000"+theCode;
+              codewidth = theCode.length;
+              theCode = theCode.slice(codewidth-5, codewidth);
+              codewidth = theCode.length; //update to be used later
+              theStartCode = theCode
+              imageCode = theCode
+              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,1000,qfq';
+            }else{
+              codewidth = theCode.length
+              if((codewidth == 6) && !hsReservedCode.includes(theCode)){
+                 if (theCode.charAt(0) == "6"){
+                    theCode = "sh"+theCode; 
+                    imageCode = theCode+"sh";
+                 }else{
+                    theCode = "sz"+theCode
+                    imageCode = theCode+"sz";
+                 }
+                 theStartCode = theCode
+                 theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,1000,qfq';
+              }else if(codewidth == 9){
+                imageCode = theCode
+                theCode = theCode.substring(7, 9) + theCode.substring(0, 6);
+                theStartCode = theCode
+
+                theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,1000,qfq';
+              }else{
+                theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,1000,qfq';
+                theStartCode = theCode
+                imageCode = theCode
+              }
+            }
+          }
+        }
+          theStartCode = theCode;
+        document.getElementById("image").innerHTML = '<img src="http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=3&indpara1=3&indpara2=6&indpara3=9&indpara4=12&indpara5=15&subChart1=3&ref1para1=7&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&subChart3=7&ref3para1=7&ref3para2=5&ref3para3=0&subChart4=7&ref4para1=11&ref4para2=8&ref3para3=0&subChart5=1&ref4para1=0&ref4para2=0&ref4para3=0&scheme=3&com=100&chartwidth=1200&chartheight=760&stockid='+ imageCode +'&period=7&type=1&logoStyle=1">'
+
+
+          thestkdata = [];
+          thedrawdata = [];
+          dateLst = [];
+          openLst = [];
+          highLst = [];
+          lowLst = [];
+          midLst = [];
+          closeLst = [];
+          amtLst.length = 0;
+      
+          RGraph.AJAX.getJSON(theurl, function (rawJSON){
+              var keys = Object.keys(rawJSON); // read the structure keys ["code", "msg", "data"]
+
+              var insideDatakey = Object.keys(rawJSON)[2] //
+              // myobj[Object.keys(myobj)[0]] this is the extract method
+      
+              var thedata = rawJSON[Object.keys(rawJSON)[2]]
+              thestkkey = Object.keys(thedata)[0] // this is the stk key name
+              var tempdata = thedata[Object.keys(thedata)[0]];
+              thestkdata = tempdata[Object.keys(tempdata)[0]]; // real data here, this is whole dataset
+
+              if(thestkdata.length == 0){alert("no data in: " + thestkkey)}
+
+              for(i=(thestkdata.length-12);i<thestkdata.length;i++){
+                    thedate = thestkdata[i][0];  // date
+                    if(codewidth <= 5){
+                      theAmtIdx = 8;
+                    }else{
+                      theAmtIdx = 5;
+                    }
+                    theamt = Math.round(Number(thestkdata[i][theAmtIdx]));
+                    if(codewidth > 5){
+                      if(theCode.slice(0, 5) == "sh688"){
+                        theamt = Math.round(theamt * Number(thestkdata[i][2])/10000);
+                      }else{
+                        theamt = Math.round(theamt * Number(thestkdata[i][2])/100);
+                      }
+                    }
+                    theamt = theamt.toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",");
+                    $("#turnover").prepend( theamt,"w ");
+                  }
+      
+              theNameObj = tempdata[Object.keys(tempdata)[1]];
+              theNameObjName  = theNameObj[Object.keys(theNameObj)[0]];
+              stkName = theNameObjName[1]
+      
+              /* data is arranged in days array, tempdata[320] is last set
+              tempdata[320][0]  // date
+              tempdata[320][1]  // open
+              tempdata[320][3]  // high
+              tempdata[320][4]  // low
+              tempdata[320][2]  // close */
+      
+                //period + intv1, the chartwidth + max trend interval
+              starti = thestkdata.length - (parseInt(period) + parseInt(intv1)) -5; 
+              if(starti <= 0){
+                  alert(theStartCode + " " + stkName +" not enough data! dataLength: " + thestkdata.length);
+                  return;
+              }
+
+              for (let i = starti; i < thestkdata.length; i++) {
+                  dateLst.push(thestkdata[i][0]);
+                  openLst.push(Number(thestkdata[i][1]));
+                  highLst.push(Number(thestkdata[i][3]));
+                  lowLst.push(Number(thestkdata[i][4]));
+                  midLst.push((Number(thestkdata[i][3]) + Number(thestkdata[i][4]))/2);
+                  closeLst.push(Number(thestkdata[i][2]));
+                  amtvalue = "&emsp;" + Math.round(Number(thestkdata[i][8])).toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",") +"w ";
+                  amtLst.push(amtvalue);
+              }
+              if(dataStatus == "C"){ stkpriceDataArr = closeLst
+              }else if(dataStatus == "L"){ stkpriceDataArr = lowLst
+              }else if(dataStatus == "M"){ stkpriceDataArr = midLst
+              }else { stkpriceDataArr = highLst}
+
+              redraw();  // this line must be inside the AJAX because AJAX run last
+           });
+
+           showDateTime();
+           $("#dateTime").prepend("Item " + (stkPointer+1) + " of " + stkList.length + ", ");
+
+           //showActivity(theCode)
+
+      }
+
+     function chkKey() {
+       var testkey = getChar(event);
+       if(testkey == '0'){ theCode = '000001.sh'; collectStkData('000001.sh');}
+
+       else if(testkey == '3'){ theCode = '399001.sz'; collectStkData('399001.sz');}
+       else if(testkey == '1'){ theCode = '110000'; collectStkData('HSI');}
+       else if(testkey == '2'){ theCode = '01339'; collectStkData('01339');}
+       else if(testkey == '4'){ theCode = '01766'; collectStkData('01766');}
+       else if(testkey == '5'){ theCode = '03800'; collectStkData('03800');}
+       else if(testkey == '6'){ theCode = '00371'; collectStkData('00371');}
+       else if(testkey == '7'){ theCode = '00788'; collectStkData('00788');}
+       else if(testkey == '8'){ theCode = '00308'; collectStkData('00308');}
+       else if(testkey == '9'){ theCode = '00390'; collectStkData('00390');}
+       else if(testkey == 'u'){ theCode = 'us.DJI'; collectStkData('us.DJI');}
+       else if(testkey == 'n'){ theCode = 'us.IXIC'; collectStkData('us.IXIC');}
+       else if(testkey == 'J'){ theCode = 'us.INX'; collectStkData('us.INX');}
+       else if(testkey == 'U'){ $('#usstock').toggle(); window.location = '#usstock';}
+       else if(testkey == 'd'){fillLineData();}
+       else if(testkey == 'c'){askforCode();}
+       else if(testkey == '+'){addToquickCodeList();}
+       else if(testkey == 'q'){myfavor();}
+       else if(testkey == 'Q'){usequickCodeList();}
+
+       // if(testkey == '+'){addToAttentionList();}
+       else if(testkey == '-'){removeFmquickCodeList();}
+       else if(testkey == 'X'){storeCode(theCode); window.open("Random Charts.html");}
+       else if(testkey == '.'){storeCode(theCode); window.open("mlineMinutechart.html");}
+
+       else if(testkey == 'a'){useAttentionList();}
+       else if(testkey == 'f'){jpforward();}
+       else if(testkey == ']'){jpforward();}
+       else if(testkey == 'b'){jpback();}
+       else if(testkey == '['){jpback();}
+       else if(testkey == 'r'){jprandom();}
+       else if(testkey == 't'){jpTo0();}
+       else if(testkey == 'h'){chgHighList();}
+       else if(testkey == 'l'){chgLowList();}
+       else if(testkey == 'm'){chgMidList();}
+       else if(testkey == 'i'){chgIntv();}
+       else if(testkey == 'w'){chgchartWidth();}
+       else if(testkey == 'j'){period = 300; intv1 = 30; collectStkData(theCode);}
+       else if(testkey == 'k'){period = 50; intv1 = 2; collectStkData(theCode);}
+
+       else if(testkey == 'C'){chgCloseLst();}
+       else if(testkey == 'L'){askList()}
+       else if(testkey == 'z'){largeCht()}
+       else if(testkey == 'e'){window.location = '#commands';
+            window.scrollTo(window.scrollX, window.scrollY - 300);}
+       else if(testkey == 'E'){window.location = '#filterMarkers';}
+       else{chkOtherKeys(testkey)} 
+     }
+
+     function getChar(event) {
+       if (event.which!=0 && event.charCode!=0) {
+         return String.fromCharCode(event.which)   // the rest
+       } else {
+         return null // special key
+       }
+     }
+
+	function fillLineData() {
+      var dataArr = prompt("Enter data array sep by space:", "");
+      if (dataArr != null && dataArr != "") {
+        dataArrArr = dataArr.split(' ');
+
+        stkpriceDataArr = dataArrArr.map(Number);
+        redraw()
+      }
+     }
+
+      function addToquickCodeList() {
+        codewidth = theCode.length
+        if(codewidth <= 5){
+          theCode = "00000"+theCode;
+          codewidth = theCode.length;
+          theCode = theCode.slice(codewidth-5, codewidth);
+        }
+        if (!quickCodeList.includes(theCode)) {
+          quickCodeList.push(theCode);
+          quickCodeList = Array.from(new Set(quickCodeList)); // set unique
+          localStorage.savedCodeList = quickCodeList;
+          alert(theCode + " added to quickCodeList")
+        }else{alert(theCode + " already exist!")}
+      }
+
+    function usequickCodeList() {
+        stkList = quickCodeList;
+        alert("quickCodeList Total: " + quickCodeList.length + "\ndetails see end of this page.\nremember to modify mustadd list!")
+        $("#message").text("quickCodeList Total: " + quickCodeList.length + "\n"+stkList);
+    }
+
+	function addToAttentionList() {
+            codewidth = theCode.length
+            if(codewidth <= 5){
+              theCode = "00000"+theCode;
+              codewidth = theCode.length;
+              theCode = theCode.slice(codewidth-5, codewidth);
+              codewidth = theCode.length; //update to be used later
+            }
+
+        attentionList.push(theCode)
+        attentionList = [...new Set(attentionList)]; // set unique
+
+        ItemIndex = attentionList.indexOf("");  // remove empty items
+        if (ItemIndex > -1) { attentionList.splice(ItemIndex, 1); }
+
+        localStorage.setItem("attentionList", attentionList);
+        alert(theCode + " added to attentionList!")
+     }
+	function removeFmquickCodeList() {
+        ItemIndex = quickCodeList.indexOf(theCode);
+        if (ItemIndex > -1) { quickCodeList.splice(ItemIndex, 1); }
+        quickCodeList = [...new Set(quickCodeList)]; // set unique
+        localStorage.setItem("quickCodeList", quickCodeList);
+        alert(theCode + " removed fm quickCodeList!")
+   }
+
+     function redraw() {
+        initIntvSteps()
+        titleText = showDate() +" "+ showTime()+", p1: "+intv1+ " p9: "+intv9+" w: "+(thestkdata.length-starti) +"\n"+theStartCode + " " + stkName + " 日線 ";
+
+ 
+        RGraph.reset(document.getElementById('cvs'));
+
+        if(dataStatus == "C"){ stkpriceDataArr = closeLst
+        }else if(dataStatus == "L"){ stkpriceDataArr = lowLst
+        }else if(dataStatus == "M"){ stkpriceDataArr = midLst
+        }else { stkpriceDataArr = highLst}
+
+        stdDevH = makeStd(highLst, intv3)
+        stdDevL = makeStd(lowLst, intv3)
+        newDevadd = makeMovAve(stkpriceDataArr, intv3).map((a, i) => a + stdDevH[i]);
+        newDevminus = makeMovAve(stkpriceDataArr, intv3).map((a, i) => a - stdDevL[i]);
+
+        mydata= [
+          stkpriceDataArr, 
+          makeMovAve(stkpriceDataArr, intv1),
+          makeMovAve(stkpriceDataArr, intv2),
+          makeMovAve(stkpriceDataArr, intv3),
+          makeMovAve(stkpriceDataArr, intv4),
+          makeMovAve(stkpriceDataArr, intv5),
+          makeMovAve(stkpriceDataArr, intv6),
+          makeMovAve(stkpriceDataArr, intv7),
+          makeMovAve(stkpriceDataArr, intv8),
+          makeMovAve(stkpriceDataArr, intv9),
+          newDevadd, newDevminus,
+        ];
+        theMax = Math.max(...[].concat(...mydata));
+        theMin = Math.min(...[].concat(...mydata));
+
+        thedrawdata = mydata
+        thedrawdata.push(makeMovAve(thedrawdata[1], intv1));  // add one line to check results
+
+        thedrawdata[1] = thedrawdata[1].fill(null,0,intv1)
+        thedrawdata[2] = thedrawdata[2].fill(null,0,intv2)
+        thedrawdata[3] = thedrawdata[3].fill(null,0,intv3)
+        thedrawdata[4] = thedrawdata[4].fill(null,0,intv4)
+        thedrawdata[5] = thedrawdata[5].fill(null,0,intv5)
+        thedrawdata[6] = thedrawdata[6].fill(null,0,intv6)
+        thedrawdata[7] = thedrawdata[7].fill(null,0,intv7)
+        thedrawdata[8] = thedrawdata[8].fill(null,0,intv8)
+        thedrawdata[9] = thedrawdata[9].fill(null,0,intv9)
+        thedrawdata[10] = thedrawdata[10].fill(null,0,intv3)
+        thedrawdata[11] = thedrawdata[11].fill(null,0,intv3)
+        thedrawdata[12] = thedrawdata[12].fill(null,0,intv1)  // add one line 
+
+statusMsg = '<br><span class="red">price '+ mydata[0].slice(-1)[0].toFixed(3) +
+'</span>, <span class="darkgreen">intvS '+ mydata[1].slice(-1)[0].toFixed(3) +
+'</span>, <span class="blue">intvL '+ mydata[2].slice(-1)[0].toFixed(3) +
+'</span>, <span class="purple">Top '+ mydata[3].slice(-1)[0].toFixed(3) +
+'</span>, <span class="yellow">Bottom '+ mydata[4].slice(-1)[0].toFixed(3) +
+'</span>, <span class="darkgreen">IntvS '+ intv1 +
+'</span>, <span class="blue">IntvL '+ intv2 +
+'</span>'
+
+$("#lastValues").text("");
+$("#lastValues").append(statusMsg);
+
+       drawchart()
+
+		// create datalog table
+		 transp = transpose(mydata);
+            wAveTrendRange = [];  // this is the gap diff
+		  for (var row=0; row < transp.length; row++) {
+		    rowRange = transp[row].slice(1, mydata.length);
+      	    rowMax = Math.max(...rowRange);
+      	    rowMin = Math.min(...rowRange);
+      	    var rowDiff = rowMax - rowMin;
+      	    wAveTrendRange.push(rowDiff);
+      	  }
+
+		wAveTrendRange.fill(null,0,intv9);
+		wAvemax = Math.max(...wAveTrendRange);
+		wAvemin = Math.min(...wAveTrendRange);
+		drawTrend(wAveTrendRange, wAvemax, wAvemin, 'TP');
+
+		// find derivative
+		derivative = diff(makeMovAve(mydata[0], 3));
+		derivative.unshift(0);
+		derivative.fill(null,0,intv1+3); //array.fill(value, start, end)
+
+		// diffaccel
+		// diffaccel = thedrawdata[baseSubIdx].map(function(item, index) { return item - thedrawdata[baseMinuIdx][index]; })
+		diffaccel = []
+		diffaccel.push(thedrawdata[1].map(function(item, index) { return item - thedrawdata[8][index]; }))
+		diffaccel.push(thedrawdata[2].map(function(item, index) { return item - thedrawdata[8][index]; }))
+		diffaccel.push(thedrawdata[3].map(function(item, index) { return item - thedrawdata[8][index]; }))
+		diffaccel.push(thedrawdata[4].map(function(item, index) { return item - thedrawdata[8][index]; }))
+		diffaccel.push(thedrawdata[5].map(function(item, index) { return item - thedrawdata[8][index]; }))
+		diffaccel.push(thedrawdata[6].map(function(item, index) { return item - thedrawdata[8][index]; }))
+		diffaccel[0].fill(null,0,intv8); //array.fill(value, start, end)
+		diffaccel[1].fill(null,0,intv8); //array.fill(value, start, end)
+		diffaccel[2].fill(null,0,intv8); //array.fill(value, start, end)
+		diffaccel[3].fill(null,0,intv8); //array.fill(value, start, end)
+		diffaccel[4].fill(null,0,intv8); //array.fill(value, start, end)
+		diffaccel[5].fill(null,0,intv8); //array.fill(value, start, end)
+
+		diffaccMax = Math.max(...[].concat.apply([], diffaccel));
+		diffaccMin = Math.min(...[].concat.apply([], diffaccel));
+		drawTrend(diffaccel, diffaccMax, diffaccMin, 'accel');
+
+
+		// find derivative9
+		derivative9 = diff(makeMovAve(mydata[5], 3));
+		derivative9.unshift(0);
+		derivative9.fill(null,0,intv5+3);
+		derivmax9 = Math.max(...derivative9);
+		derivmin9 = Math.min(...derivative9);
+		drawTrend(derivative9, derivmax9, derivmin9, '动力5');
+
+		// find stoch
+		stoch1 = makeStoch(mydata[0], 50)
+		stochmax1 = Math.max(...stoch1);
+		stochmin1 = Math.min(...stoch1);
+		drawTrend(stoch1, stochmax1, stochmin1, '强弱50');
+
+     }
+
+	function makeMovAve(bigArray, intv) {
+	     // the intv-1 is correct
+		return bigArray.slice(0, intv-1).concat(calcMovAve(bigArray, intv));
+	}
+	function calcAve(aveArray) {
+		add = (a, b) =>  a + b;
+		return aveArray.reduce(add) / aveArray.length;
+	}
+	
+	function calcMovAve(bigArray, intv) {
+		var ma = [];
+		for (var i =0 ; i < (bigArray.length-intv+1); i++) {ma[i] = calcWAve(bigArray.slice(i, i+intv));} // points to indicator
+		return ma;
+	}
+	function calcWAve(aveArray) {
+		var sum = 0
+		for( var i = 1; i <= aveArray.length; i++ ) {
+			sum += aveArray[i-1] * i;
+		}
+		return (sum / ((1 + aveArray.length)*aveArray.length/2))
+	}
+
+	function makeStoch(bigArray, intv) {
+	     tempArr = bigArray.slice(0, intv-1).concat(calcStoch(bigArray, intv));
+		return tempArr.fill(50,0,intv-1)
+	}
+
+	function calcStoch(bigArray, intv) {
+		var stc = [];
+		for (var i =0 ; i < (bigArray.length-intv+1); i++) {
+			stc[i] = calc1Stoch(bigArray.slice(i, i+intv));
+		}
+		return stc;
+	}
+
+	function calc1Stoch(stcArray) {
+			stcMax = Math.max(...stcArray)
+			stcMin = Math.min(...stcArray)
+			lastVal = stcArray[stcArray.length - 1]
+			stcRange = stcMax - stcMin
+			if(stcRange == 0){
+				stcVal = 50
+			}else{
+				stcVal = 100*(lastVal - stcMin) / stcRange
+			}
+			return stcVal
+	}
+
+	function makeStd(bigArray, intv) {
+	     // the intv-1 is correct
+          newArray = new Array(intv-1).fill(0)
+		newArray = newArray.concat(calcStd(bigArray, intv));
+		return newArray
+	}
+
+	function calcStd(bigArray, intv) {
+		var stdArrar = [];
+		for (var i =0 ; i < (bigArray.length-intv+1); i++) {stdArrar[i] = Std(bigArray.slice(i, i+intv));} // points to indicator
+		return stdArrar;
+	}
+
+	function Std(array) {
+	  const n = array.length
+	  const mean = array.reduce((a, b) => a + b) / n
+	  return Math.sqrt(array.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n)
+	}
+
+	function transpose(thisArr) { // Swap rows with columns of a matrix
+	    return Object.keys(thisArr[0]).map(function(column) {
+	        return thisArr.map(function(row) { return row[column]; });
+	    });
+	}
+
+    function useAttentionList() {
+        stkList = attentionList;
+        alert("AttentionList Total: " + attentionList.length + "\ndetails see end of this page.\nremember to modify mustadd list!")
+        $("#message").text("Total: " + attentionList.length + "\n"+stkList);
+    }
+
+    function myfavor() {
+        myfavorLst = mychips.split(" ");
+        stkList = myfavorLst;
+        alert("mychips Total: " + myfavorLst.length + "\ndetails see end of this page.\nremember to modify mustadd list!")
+        $("#message").text("mychips Total: " + myfavorLst.length + "\n"+stkList);
+    }
+
+    function askList() {
+        var theList = prompt("CodeList, Number (5 digits) sep by space： ", "");
+        if (theList != null && theList != "HSI" && theList != "") {
+            stkList = theList.split(" ");
+            alert("Supplied List Total: " + stkList.length + "\ndetails see end of this page.\nremember to modify mustadd list!")
+            $("#message").text("Supplied List Total: " + stkList.length + "\n"+stkList);
+        }
+    }
+
+    function FormatNumberLength5(num) {
+        var r = "" + num;
+        while (r.length < 5) { r = "0" + r; }
+        return r;
+    }
+
+    function jpforward() {
+        if (stkPointer < stkList.length-1) {
+            stkPointer = stkPointer + 1;
+        } else {
+            stkPointer = 0;
+        }
+        theCode = stkList[stkPointer];
+         collectStkData(theCode)
+    }
+
+    function jpback() {
+        if (stkPointer > 0) {
+            stkPointer = stkPointer - 1;
+        } else {
+            stkPointer = stkList.length-1;
+        }
+        theCode = stkList[stkPointer];
+         collectStkData(theCode)
+    }
+    function jprandom() {
+        stkPointer = Math.floor(Math.random() * (stkList.length-1))
+        theCode = stkList[stkPointer]
+         collectStkData(theCode)
+    }
+
+    function jpTo0() {
+        stkPointer = 0;
+        theCode = stkList[stkPointer]
+        collectStkData(theCode)
+    }
+
+    function storeCode(theCode) {
+        if(typeof(Storage) !== "undefined") {
+            localStorage.randomcode = theCode;
+        }
+    }
+
+
+    function chgchartWidth() {
+        newChartWidth = prompt("enter chart width:", "");
+        if (newChartWidth != null && newChartWidth != "" && newChartWidth < (1000 - 2*intv1)){
+          period = parseInt(newChartWidth);
+          localStorage.setItem("daychartWidth", period);
+          collectStkData(theCode);
+        }
+
+    }
+    function chgIntv() {
+        intv = prompt("intv1 value:", "");
+        if (theCode != null && intv1 != ""){
+          intv1 = parseInt(intv);
+          initIntvSteps()
+          redraw()
+        }
+    }
+    function initIntvSteps() {
+      intv2 = 2*intv1
+      intv3 = 3*intv1
+      intv4 = 4*intv1
+      intv5 = 5*intv1
+      intv6 = 6*intv1
+      intv7 = 7*intv1
+      intv8 = 8*intv1
+      intv9 = 9*intv1
+    }
+    function chgHighList() {
+        dataStatus = "H"
+        redraw()
+    }
+    function chgLowList() {
+        dataStatus = "L"
+        redraw()
+    }
+    function chgMidList() {
+        dataStatus = "M"
+        redraw()
+    }
+    function chgCloseLst() {
+        dataStatus = "C"
+        redraw()
+    }
+
+    function largeCht() {
+        imgHead = "http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=3&indpara1=3&indpara2=5&indpara3=10&indpara4=15&indpara5=20&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&subChart3=12&ref3para1=0&ref3para2=0&ref3para3=0&scheme=3&com=100&chartwidth=1600&chartheight=900&stockid=";
+
+        imgTail = "&period=2060&type=1&logoStyle=1"
+        imgURL = imgHead + theCode + imgTail
+        window.open(imgURL, "_blank")
+    }
+
+function assignList(){
+  newList = eval(document.getElementById("selectList").value).split(" ");
+  stkList = newList;
+  codeList = newList;
+  // console.log(newList)
+
+  document.getElementById("message").focus();
+  alert(" Total: " + stkList.length + "\ndetails see end of this page.\nremember to modify mustadd list!\n" + newList)
+        $("#message").text("Total: " + stkList.length + "\n"+stkList);
+  $('#selectList').blur()
+
+}
+
+function showDateTime() {
+    cmtCode = theCode // use another name not to interfere other parts
+    var cmtcodewidth = cmtCode.length
+    if(cmtcodewidth <= 5){
+      cmtCode = "00000"+cmtCode;
+      cmtcodewidth = cmtCode.length;
+      cmtCode = cmtCode.slice(cmtcodewidth-5, cmtcodewidth);
+    }
+    else if(cmtcodewidth == 8){ cmtCode = cmtCode.slice(2, 8); }
+    else if(cmtcodewidth == 9){ cmtCode = cmtCode.slice(0, 6); }
+    commentName = "j" + cmtCode;
+
+    CommentListNames = Object.keys(theCommentList); // extract the names from comments
+    // to show comments
+    if(CommentListNames.includes(commentName)){
+      cmtLocation = CommentListNames.indexOf(commentName);
+      commentTxt = theCommentList[Object.keys(theCommentList)[cmtLocation]]
+    }else{commentTxt = "No data!";}
+
+    document.getElementById("dateTime").innerHTML ="<span class='orange'>" + commentTxt + "</span>";
+}
+
+    function drawchart() {
+
+      if(dataStatus == "C"){ tooltips = closeLst
+      }else if(dataStatus == "L"){ tooltips = lowLst
+      }else if(dataStatus == "M"){ tooltips = midLst
+      }else { tooltips = highLst}
+
+      dataTooltips = tooltips.map(item => Math.round(item * 1000) / 1000)
+      dataTooltips = dataTooltips.map(String)
+
+      var line = new RGraph.Line({
+        id:'cvs',
+        data: thedrawdata,
+        options: {
+			title: titleText + " " + dataStatus,
+			titleColor: 'grey',
+			titleSize: 20,
+               colors: chartColor,
+            backgroundGrid: true, backgroundGridVlines: true,
+            backgroundGridColor: '#001000', backgroundGridBorder: false,
+            // backgroundGridDotted: true,
+            backgroundGridDashed: true, 
+            axisColor: '#864',  scaleDecimals: 2,
+            xaxis: true,
+            //xaxisLabels: ["a","b","c","d"],
+            textColor: '#ccc',
+            tickmarks: 'plus',
+            ticksize: 1,
+            linewidth:1,
+			ymax: theMax,
+			ymin: theMin,
+      // labels control the number of grids
+            // labels: ['2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018'],
+            spline: false,
+            shadow: false,
+            tooltips: dataTooltips,
+            gutterLeft: 0, gutterRight: 50,
+            gutterTop: 25, gutterBottom: 25
+            }
+          }).trace();
+
+		yminpct = 100 - (theMax-theMin)*100/theMax,
+		ymaxpct = 100,
+
+          yaxis1 = new RGraph.Drawing.YAxis('cvs', 1200)
+                .Set('colors', ['gold'])
+                .Set('text.color', 'gray')
+                .Set('text.size', 8)
+                .Set('max', ymaxpct)
+                .Set('min', yminpct)
+                .Set('linewidth', 2)
+                .Set('tickmarkslength', 5)
+                .Set('title', '% pct')
+                .Draw();
+
+    };
+
+    function drawTrend(therange,maxValue, minValue, chartID) {
+       // dataTooltips = therange.map(item => Math.round(item * 1000) / 1000)
+       // dataTooltips = dataTooltips.map(String)
+       RGraph.reset(document.getElementById(chartID));
+       line = new RGraph.Line({
+       	id:chartID, data:therange,
+       	options: {
+       		title: chartID + ", "+theStartCode + " " + stkName,
+    			titleColor: 'grey', 
+    			titleSize: 10,
+       		backgroundGrid: true, axisColor: '#864', textColor: '#ccc',
+    		numxticks: 0, colors: chartColor, scaleDecimals: 2,
+
+       		tickmarksDotLinewidth: 0,ticksize: 1, linewidth: 1, 
+       		ymax: maxValue, ymin: minValue,
+               tickmarks: 'plus',
+
+       		spline: false, shadow: false,
+              // tooltips: dataTooltips,
+			backgroundGridVlines: true,
+			backgroundGridDashed: true, 
+       		backgroundGridColor: '#001000',
+       		gutterLeft: 0, gutterRight: 50, gutterTop: 25, gutterBottom: 25
+       	}
+       }).trace();
+    };
+    
+    function diff(arr) {
+      return arr.slice(1).map(function(n, i) { return n - arr[i]; });
+    }
+
+function showActivity(thecode){
+    markers = filterResult.filter(element => element.includes(thecode));
+    // clean the h2 tags
+    markers = markers.map(element => element.replace(/<\/h2>.*/gi, ""))
+    markers = markers.map(element => element.replace(/<h2>/gi, ""))
+
+    markers = markers.map(element => formatWeekDay(element))
+    if (markers.length > 50) markers.splice(0, markers.length-80);
+
+    $('#filterMarkers').append("<b class='red'>" + thecode + " 日线特征:</b><br>")
+    $('#filterMarkers').append(markers)
+}
+
+// format WeekDay
+function formatWeekDay(element) {
+    dayStr = element.replace(/<.*?>/gi, "") // clean span tags
+    dayStr = dayStr.substr(0,6)
+    dayStr = convertWeekday(dayStr)
+    return(dayStr + " " + element + "<br>")
+}
+
+// convert date string to weekday
+function parse(str) {
+    str = "20" + str
+    var y = str.substr(0,4), m = str.substr(4,2) - 1,
+        d = str.substr(6,2);
+    var D = new Date(y,m,d);
+    return (D.getFullYear() == y && D.getMonth() == m && D.getDate() == d) ? D : 'invalid date';
+}
+function convertWeekday(str) {
+    return ["SUN","MON","TUE","WED","THU","FRI","SAT"][parse(str).getDay()]
+}
+function fetchUsCode(str) {
+    theCode = str; collectStkData(str); window.location = '#cvs';
+    $('#usstock').toggle();
+}
+
+function handleRight( event ){
+    codeListPtr = codeListPtr +1
+    theCode = codeList[codeListPtr];
+    collectStkData(theCode);
+}
+
+    codeList = codeList.split(' ')
+    codeListPtr = 0
+
+    $( "html" ).on( "swiperight", handleRight );
+    $( "html" ).on( "swipeleft", askforCode );
+    collectStkData(theCode);
+</script>
+</body>
+</html>
