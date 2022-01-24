@@ -35,7 +35,7 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
 K线图日数与趋势图不同
 <p id="image"></p>
 <canvas id="accel" width="1150" height="240">[No canvas support]</canvas>
-<canvas id="动力5" width="1150" height="240">[No canvas support]</canvas>
+<canvas id="accaccel" width="1150" height="240">[No canvas support]</canvas>
 <canvas id="TP" width="1150" height="240">[No canvas support]</canvas>
 <canvas id="强弱50" width="1150" height="240">[No canvas support]</canvas>
 
@@ -206,11 +206,11 @@ A stk code sample: 000001.sh, 399001.sz
               codewidth = theCode.length
               if((codewidth == 6) && !hsReservedCode.includes(theCode)){
                  if (theCode.charAt(0) == "6"){
+                    imageCode = theCode+".sh"; // note this comes before following line
                     theCode = "sh"+theCode; 
-                    imageCode = theCode+"sh";
                  }else{
+                    imageCode = theCode+".sz";
                     theCode = "sz"+theCode
-                    imageCode = theCode+"sz";
                  }
                  theStartCode = theCode
                  theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,1000,qfq';
@@ -451,19 +451,18 @@ A stk code sample: 000001.sh, 399001.sz
         newDevadd = makeMovAve(stkpriceDataArr, intv3).map((a, i) => a + stdDevH[i]);
         newDevminus = makeMovAve(stkpriceDataArr, intv3).map((a, i) => a - stdDevL[i]);
 
-        mydata= [
-          stkpriceDataArr, 
-          makeMovAve(stkpriceDataArr, intv1),
-          makeMovAve(stkpriceDataArr, intv2),
-          makeMovAve(stkpriceDataArr, intv3),
-          makeMovAve(stkpriceDataArr, intv4),
-          makeMovAve(stkpriceDataArr, intv5),
-          makeMovAve(stkpriceDataArr, intv6),
-          makeMovAve(stkpriceDataArr, intv7),
-          makeMovAve(stkpriceDataArr, intv8),
-          makeMovAve(stkpriceDataArr, intv9),
-          newDevadd, newDevminus,
-        ];
+        mydata = [ stkpriceDataArr]
+          mydata.push(makeMovAve(stkpriceDataArr, intv1/2))
+          mydata.push(makeMovAve(mydata[1], intv1))
+          mydata.push(makeMovAve(mydata[1], intv2))
+          mydata.push(makeMovAve(mydata[1], intv3))
+          mydata.push(makeMovAve(mydata[1], intv4))
+          mydata.push(makeMovAve(mydata[1], intv5))
+          mydata.push(makeMovAve(mydata[1], intv6))
+          mydata.push(makeMovAve(mydata[1], intv7))
+          mydata.push(makeMovAve(mydata[1], intv8))
+          mydata.push(newDevadd)
+          mydata.push(newDevminus)
         theMax = Math.max(...[].concat(...mydata));
         theMin = Math.min(...[].concat(...mydata));
 
@@ -521,31 +520,40 @@ $("#lastValues").append(statusMsg);
 		// diffaccel
 		// diffaccel = thedrawdata[baseSubIdx].map(function(item, index) { return item - thedrawdata[baseMinuIdx][index]; })
 		diffaccel = []
-		diffaccel.push(thedrawdata[1].map(function(item, index) { return item - thedrawdata[8][index]; }))
-		diffaccel.push(thedrawdata[2].map(function(item, index) { return item - thedrawdata[8][index]; }))
-		diffaccel.push(thedrawdata[3].map(function(item, index) { return item - thedrawdata[8][index]; }))
-		diffaccel.push(thedrawdata[4].map(function(item, index) { return item - thedrawdata[8][index]; }))
-		diffaccel.push(thedrawdata[5].map(function(item, index) { return item - thedrawdata[8][index]; }))
-		diffaccel.push(thedrawdata[6].map(function(item, index) { return item - thedrawdata[8][index]; }))
-		diffaccel[0].fill(null,0,intv8); //array.fill(value, start, end)
-		diffaccel[1].fill(null,0,intv8); //array.fill(value, start, end)
-		diffaccel[2].fill(null,0,intv8); //array.fill(value, start, end)
-		diffaccel[3].fill(null,0,intv8); //array.fill(value, start, end)
-		diffaccel[4].fill(null,0,intv8); //array.fill(value, start, end)
-		diffaccel[5].fill(null,0,intv8); //array.fill(value, start, end)
+		diffaccel.push(thedrawdata[1].map(function(item, index) { return item - thedrawdata[9][index]; }))
+		diffaccel.push(thedrawdata[2].map(function(item, index) { return item - thedrawdata[9][index]; }))
+		diffaccel.push(thedrawdata[3].map(function(item, index) { return item - thedrawdata[9][index]; }))
+		diffaccel.push(thedrawdata[4].map(function(item, index) { return item - thedrawdata[9][index]; }))
+		diffaccel.push(thedrawdata[5].map(function(item, index) { return item - thedrawdata[9][index]; }))
+		diffaccel.push(thedrawdata[6].map(function(item, index) { return item - thedrawdata[9][index]; }))
+		diffaccel[0].fill(null,0,intv9); //array.fill(value, start, end)
+		diffaccel[1].fill(null,0,intv9); //array.fill(value, start, end)
+		diffaccel[2].fill(null,0,intv9); //array.fill(value, start, end)
+		diffaccel[3].fill(null,0,intv9); //array.fill(value, start, end)
+		diffaccel[4].fill(null,0,intv9); //array.fill(value, start, end)
+		diffaccel[5].fill(null,0,intv9); //array.fill(value, start, end)
 
 		diffaccMax = Math.max(...[].concat.apply([], diffaccel));
 		diffaccMin = Math.min(...[].concat.apply([], diffaccel));
 		drawTrend(diffaccel, diffaccMax, diffaccMin, 'accel');
 
 
-		// find derivative9
-		derivative9 = diff(makeMovAve(mydata[5], 3));
-		derivative9.unshift(0);
-		derivative9.fill(null,0,intv5+3);
-		derivmax9 = Math.max(...derivative9);
-		derivmin9 = Math.min(...derivative9);
-		drawTrend(derivative9, derivmax9, derivmin9, '动力5');
+		// ddiffaccel
+		ddiffaccel = []
+		ddiffaccel.push(diffaccel[0].map(function(item, index) { return item - diffaccel[4][index]; }))
+		ddiffaccel.push(diffaccel[1].map(function(item, index) { return item - diffaccel[4][index]; }))
+		ddiffaccel.push(diffaccel[2].map(function(item, index) { return item - diffaccel[4][index]; }))
+		ddiffaccel.push(diffaccel[3].map(function(item, index) { return item - diffaccel[4][index]; }))
+		ddiffaccel.push(diffaccel[4].map(function(item, index) { return item - diffaccel[4][index]; }))
+		ddiffaccel[0].fill(null,0,intv8); //array.fill(value, start, end)
+		ddiffaccel[1].fill(null,0,intv8); //array.fill(value, start, end)
+		ddiffaccel[2].fill(null,0,intv8); //array.fill(value, start, end)
+		ddiffaccel[3].fill(null,0,intv8); //array.fill(value, start, end)
+		ddiffaccel[4].fill(null,0,intv8); //array.fill(value, start, end)
+
+		ddiffaccMax = Math.max(...[].concat.apply([], ddiffaccel));
+		ddiffaccMin = Math.min(...[].concat.apply([], ddiffaccel));
+		drawTrend(ddiffaccel, ddiffaccMax, ddiffaccMin, 'accaccel');
 
 		// find stoch
 		stoch1 = makeStoch(mydata[0], 50)
