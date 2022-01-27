@@ -26615,6 +26615,385 @@ function getGlobalTimezone(__stringArea) {
 }
 
 
+<h2>Guide To Server-Sent Events</h2>
+https://www.html5rocks.com/en/tutorials/eventsource/basics/
+<div id="Server-Senttoc"><a href="#Server-Senttopic-0" target="_self" onclick="jumpto(0)">Server-Sent Events</a>,  <a href="#Server-Senttopic-1" target="_self" onclick="jumpto(1)">The API</a>,  <a href="#Server-Senttopic-2" target="_self" onclick="jumpto(2)">Server-Side Implementation</a>,  <a href="#Server-Senttopic-3" target="_self" onclick="jumpto(3)">Client-Side Implementation</a>,  <a href="#Server-Senttopic-4" target="_self" onclick="jumpto(4)">Putting It All Together</a>,  <a href="#Server-Senttopic-5" target="_self" onclick="jumpto(5)">Custom Event Types</a>,  <a href="#Server-Senttopic-6" target="_self" onclick="jumpto(6)">Auto Reconnect</a>,  <a href="#Server-Senttopic-7" target="_self" onclick="jumpto(7)">Last-Event-Id Header</a>,  <a href="#Server-Senttopic-8" target="_self" onclick="jumpto(8)">Browser Support</a>,  <a href="#Server-Senttopic-9" target="_self" onclick="jumpto(9)">Sever-Sent Events vs. WebSockets</a>,  </div></center>
+
+When it comes to developing an application that enables real-time operations, the first thing that comes to mind is WebSockets, which is fine, but there are other options that need to be considered.
+
+One of them is <strong>Server-Sent Events</strong>, which enable a unidirectional communication flow between server and client.
+
+<h3 id="Server-Senttopic-0">Server-Sent Events</h3>
+<strong>Server-Sent Events</strong> is a server push technology that allows a client to receive automatic updates from the server via an HTTP connection.
+
+They are very easy to implement, but there are some important things you should know before choosing them for your application:
+
+<li>The technology is based on the plain HTTP</li>
+<li>Allows only unidirectional data flow (as already mentioned)</li>
+<li>It is limited to pure text data, no binaries allowed</li>
+
+<h3 id="Server-Senttopic-1">The API</h3>
+The Server-Sent Event API is contained in the <strong>EventSource</strong> interface.
+
+<h4>Open a connection (same domain)</h4>
+To open the connection to a server, create a new EventSource object with the URL of the script that generates the events:
+
+<code>const eventSource = new EventSource("/api/events");</code>
+
+<h4>Open a connection (other domain)</h4>
+If the URL passed to the EventSource is on the other domain, a second parameter can be specified and a <strong>withCredentials</strong> property can be set to <strong>true</strong>, which means that the Cookie will be sent together:
+
+<code>const eventSource = new EventSource("http://localhost:8000/api/events", { withCredentials: true });</code>
+
+<h4>Listen for messages</h4>
+Once the connection is instantiated, we need to listen to the events coming from the server:
+
+<code>eventSource.addEventListener("message", (event) =&gt; {
+  // "event.data" is a string
+  const data = JSON.parse(event.data);
+  
+  // Prints whatever was sent by the server
+  console.log(data);
+});</code>
+
+<strong>Important note:</strong> As the server only sends text data, we have to <strong>stringify</strong> it on the server-side and <strong>parse</strong> it on the client.
+
+<h4>Listen for errors</h4>
+If an error occurs (network timeout or something), an <strong>error</strong> event is generated and we can listen for it:
+
+<code>eventSource.addEventListener("error", (error) =&gt; {
+  // Prints the information about an error
+  console.log(error);
+});</code>
+
+<h4>Listen for an open connection</h4>
+When the connection is opened, an <strong>open</strong> event is generated and we can listen for it as well:
+
+<code>eventSource.addEventListener("open", (event) =&gt; {
+  // Prints the information about an event
+  console.log(event);
+});</code>
+
+<h4>Check the state of the connection</h4>
+The state of the connection is stored in the <strong>readyState</strong> property of the EventSource:
+
+<li>0 - EventSource.CONNECTING</li>
+<li>1 - EventSource.OPEN</li>
+<li>2 - EventSource.CLOSED </li>
+
+<code>const connectionState = eventSource.readyState;</code>
+
+<h4>Close the connection</h4>
+When the connection between the server and the client interrupts, it is automatically restarted. 
+
+However, it can be terminated with the <strong>close</strong> method:
+
+<code>eventSource.close();</code>
+
+<h3 id="Server-Senttopic-2">Server-Side Implementation</h3>
+To establish a connection with the client, we have to send <strong>200</strong> status code together with the <strong>Content-Type: text/event-stream</strong> and <strong>Connection: keep-alive</strong> headers.
+
+Let's take a look at the complete example with Node.js and explain each line of code in the comment above:
+
+<code>const express = require("express");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+
+const app = express();
+
+const PORT = 3000;
+
+// Store all connected clients
+let clients = [];
+
+const addSubscriber = (req, res) =&gt; {
+  // Set necessary headers to establish a stream of events
+  const headers = {
+    "Content-Type": "text/event-stream",
+    Connection: "keep-alive",
+  };
+  res.writeHead(200, headers);
+
+  // Add a new client that just connected
+  // Store the id and the whole response object
+  const id = Date.now();
+  const client = {
+    id,
+    res,
+  };
+  clients.push(client);
+
+  console.log(`Client connected: ${id}`);
+
+  // When the connection is closed, remove the client from the subscribers
+  req.on("close", () =&gt; {
+    console.log(`Client disconnected: ${id}`);
+    clients = clients.filter((client) =&gt; client.id !== id);
+  });
+};
+
+const notifySubscribers = (message) =&gt; {
+  // Send a message to each subscriber
+  clients.forEach((client) =&gt;
+    client.res.write(`data: ${JSON.stringify(message)}\n\n`)
+  );
+};
+
+// Add a new message and send it to all subscribed clients
+const addMessage = (req, res) =&gt; {
+  const message = req.body;
+
+  // Return the message as a response for the "/message" call
+  res.json(message);
+
+  return notifySubscribers(message);
+};
+
+// Get a number of the clients subscribed
+const getSubscribers = (_req, res) =&gt; {
+  return res.json(clients.length);
+};
+
+app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+
+// Define endpoints
+app.get("/subscribe", addSubscriber);
+app.post("/message", addMessage);
+app.get("/status", getSubscribers);
+
+// Start the app
+app.listen(PORT, () =&gt; {
+  console.log(`App listening on port ${PORT}`);
+});</code>
+
+The main purpose of this code is to track all connected clients and inform them about the data sent to the <strong>/message</strong> endpoint.
+
+<strong>Important note:</strong> <code>\n</code> does a line break. <code>\n\n</code> means the end of the message, do not forget to add that.
+
+<h3 id="Server-Senttopic-3">Client-Side Implementation</h3>
+On the client-side, we create a simple React component using the EventSource API to connect to the event stream and display the real-time data:
+
+<code>const App = () =&gt; {
+  const [data, setData] = useState([]);
+
+  useEffect(() =&gt; {
+    // Subscribe to the event stream
+    const eventSource = new EventSource("http://localhost:3000/subscribe");
+    eventSource.addEventListener("message", handleReceiveMessage);
+    return () =&gt; {
+      // Remove event listener and close the connection on unmount
+      eventSource.removeEventListener("message", handleReceiveMessage);
+      eventSource.close();
+    };
+  }, []);
+
+  // Get the message and store it in the state
+  const handleReceiveMessage = (event: any) =&gt; {
+    const eventData = JSON.parse(event.data);
+    setData((data) =&gt; data.concat(eventData));
+  };
+
+  // Send 5 random chars to the server
+  const handleSendMessage = () =&gt; {
+    axios.post("http://localhost:3000/message", {
+      message: generateRandomChars(5),
+    });
+  };
+
+  return (
+    &lt;div style={{ padding: "0 20px" }}&gt;
+      &lt;div&gt;
+        &lt;h4&gt;Click to send a message&lt;/h4&gt;
+        &lt;button onClick={handleSendMessage}&gt;Send&lt;/button&gt;
+      &lt;/div&gt;
+      &lt;div&gt;
+        &lt;h4&gt;Message List&lt;/h4&gt;
+        &lt;p&gt;Number of messages: {data.length}&lt;/p&gt;
+        {data.map((item, index) =&gt; (
+          &lt;div key={index}&gt;{item.message}&lt;/div&gt;
+        ))}
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+};</code>
+
+<h3 id="Server-Senttopic-4">Putting It All Together</h3>
+To see our example in action, start the client (your start script may look different):
+
+<code>yarn start</code>
+
+And the server:
+
+<code>node server.js</code>
+
+You should see the app running:
+
+<img src="https://vhudyma-blog.eu/img/screenshot-2020-12-05-at-11.18.44.png" alt="Client-Side App" title="Client-Side App">
+
+And the server:
+
+<img src="https://vhudyma-blog.eu/img/screenshot-2020-12-05-at-11.13.50.png" alt="Server-Side App" title="Server-Side App">
+
+Notice the log <strong>Client connected: 1607163222261</strong> which means that the connection has been established and we can use the channel to send events.
+
+Click on the <strong>Send</strong> button on the UI (which <strong>POST</strong>s 5 random characters to the <strong>/message</strong> endpoint) and notice how they appear in the list:
+
+<img src="https://vhudyma-blog.eu/img/ezgif.com-gif-maker-6-.gif" alt="Working App" title="Working App">
+
+<h3 id="Server-Senttopic-5">Custom Event Types</h3>
+The default event type used by Server-Sent Events is a <strong>message</strong>.
+
+A custom event can be sent by specifying the <strong>event</strong> at the start:
+
+<code>client.res.write(`event: join\ndata: ${JSON.stringify(message)}\n\n`);</code>
+
+And then the client can listen for this event:
+
+<code>eventSource.addEventListener("join", handleReceiveMessage);</code>
+
+<h3 id="Server-Senttopic-6">Auto Reconnect</h3>
+If the server crashes or the connection is lost, the <strong>EventSource</strong> tries to reconnect, we do not need to worry about it. 
+
+There is usually a delay of a few seconds between reconnections:
+
+<img src="https://vhudyma-blog.eu/img/ezgif.com-gif-maker-5-.gif" alt="Auto Reconnect" title="Auto Reconnect">
+
+The server can specify a recommended delay by specifying the <strong>retry</strong> at the beginning of an event:
+
+<code>// Retry each 5 seconds
+client.res.write(`retry:5000\ndata: ${JSON.stringify(message)}\n\n`);</code>
+
+If the browser knows that there is no Internet connection at the moment, it will try again to reconnect once the Internet connection is established.
+
+<h3 id="Server-Senttopic-7">Last-Event-Id Header</h3>
+It is essential that the connection is resumed at the same point where it was interrupted so that no messages are lost.
+
+This can be achieved with the <strong>Last-Event-Id</strong> header, which is automatically added when a certain condition is met.
+
+Each message from the server should contain a unique <strong>id</strong> field:
+
+<code>client.res.write(`data: ${JSON.stringify(message)}\nid:500\n\n`);</code>
+
+When the browser receives a message with a set <strong>id</strong>, it sets the <code>eventSource.lastEventId</code> property to its value and sends this value in the <strong>Last-Event-Id</strong> header when reconnected:
+
+<img src="https://vhudyma-blog.eu/img/screenshot-2020-12-05-at-11.47.03.png" alt="Last-Event-Id header" title="Last-Event-Id header">
+
+<strong>Important note:</strong> the <strong>id</strong> should be appended by the server after the <strong>data</strong> to ensure that the <strong>eventSource.lastEventId</strong> is updated after the message is received.
+
+<h3 id="Server-Senttopic-8">Browser Support</h3>
+According to <a href="https://caniuse.com/?search=eventsource">caniuse</a>, Server-Sent Events are available for more than 96% of the users as of 06.12.2020:
+
+<img src="https://vhudyma-blog.eu/img/screenshot-2020-12-05-at-14.54.45.png" alt="Browser Support Image" title="Browser Support Image">
+
+The following code can be used to check if the browser supports the feature:
+
+<code>if ("EventSource" in window) {
+  // Implement it
+}</code>
+
+<h3 id="Server-Senttopic-9">Sever-Sent Events vs. WebSockets</h3>
+The WebSocket protocol enables the exchange of events between the server and the client. The data can be sent in both directions.
+
+What are the main differences between the two technologies?
+
+<li>Server-Sent Events are based on HTTP, WebSockets on the WebSocket protocol</li>
+<li>Server-Sent Events do not allow bidirectional data flow, WebSockets do</li>
+<li>Server-Sent Events do not allow sending binary data, WebSockets do</li>
+<li>Server-Sent Events provide an automatic reconnection if the connection is lost, WebSockets do not (you have to implement it manually)</li>
+<li>Server-Sent Events have a limited maximum number of open connections (6), which can be painful if you need to open more tabs, WebSockets have no limitations</li>
+
+When you see all these disadvantages of using Server-Sent Events, are they really a competitor to WebSockets?
+They are much easier and faster to implement. So if you need a quick way to set up the real-time unidirectional communication between server and client and are aware of all the potential risks, this is the best way to go.
+However, be aware that there is a high probability that the solution will eventually be refactored to the WebSockets.
+
+<h2>Server-Sent Events - One Way Messaging</h2>
+A server-sent event is when a web page automatically gets updates from a server.
+
+This was also possible before, but the web page would have to ask if any updates were available. With server-sent events, the updates come automatically.
+
+<h3>Receive Server-Sent Event Notifications</h3>
+The EventSource object is used to receive server-sent event notifications:
+
+Example
+var source = new EventSource("demo_sse.php");
+source.onmessage = function(event) {
+  document.getElementById("result").innerHTML += event.data + "<br>";
+};
+
+Example explained:
+Create a new EventSource object, and specify the URL of the page sending the updates (in this example "demo_sse.php")
+Each time an update is received, the onmessage event occurs
+When an onmessage event occurs, put the received data into the element with id="result"
+
+&lt;!DOCTYPE html>
+&lt;html>
+&lt;body>
+
+&lt;h1>Getting server updates&lt;/h1>
+&lt;div id="result">&lt;/div>
+
+&lt;script>
+if(typeof(EventSource) !== "undefined") {
+  var source = new EventSource("demo_sse.php");
+  source.onmessage = function(event) {
+    document.getElementById("result").innerHTML += event.data + "&lt;br>";
+  };
+} else {
+  document.getElementById("result").innerHTML = "Sorry, your browser does not support server-sent events...";
+}
+&lt;/script>
+
+&lt;/body>
+&lt;/html>
+
+<h3>Check Server-Sent Events Support</h3>
+In the tryit example above there were some extra lines of code to check browser support for server-sent events:
+
+if(typeof(EventSource) !== "undefined") {
+  // Yes! Server-sent events support!
+  // Some code.....
+} else {
+  // Sorry! No server-sent events support..
+}
+
+<h3>Server-Side Code Example</h3>
+For the example above to work, you need a server capable of sending data updates (like PHP or ASP).
+
+The server-side event stream syntax is simple. Set the "Content-Type" header to "text/event-stream". Now you can start sending event streams.
+
+<b>Code in PHP (demo_sse.php):</b>
+<?php
+header('Content-Type: text/event-stream');
+header('Cache-Control: no-cache');
+
+$time = date('r');
+echo "data: The server time is: {$time}\n\n";
+flush();
+?>
+
+<b>Code in ASP (VB) (demo_sse.asp):</b>
+<%
+Response.ContentType = "text/event-stream"
+Response.Expires = -1
+Response.Write("data: The server time is: " & now())
+Response.Flush()
+%>
+
+<b>Code explained:</b>
+Set the "Content-Type" header to "text/event-stream"
+Specify that the page should not cache
+Output the data to send (Always start with "data: ")
+Flush the output data back to the web page
+The EventSource Object
+In the examples above we used the onmessage event to get messages. But other events are also available:
+
+Events	Description
+onopen	When a connection to the server is opened
+onmessage	When a message is received
+onerror	When an error occurs
+
 
 
 
