@@ -39,5 +39,8 @@ proverbList = [
 "每人都有自身的經歷，會影響到他的認識，分析和處事方法。",
 "忙碌，是世间最珍贵的良药",
 "不争辩是修养 不是所有人都配得起你的解释。\n争论里并没有真正的赢家，在浪费时间、消耗感情的同时，只会让彼此更加坚定自己的立场。",
+"人的高低层次，不在财富地位，而在格局和修养。\n你把时间花在哪里，你就会成为什么样的人。\n层次越低的人，越喜欢被欲望摆布，越喜欢得理不饶人，越喜欢谈论是非\n要懂得该放下就得放下，懂得宽恕别人，懂得专注于自己的事",
+"不能帮不知感恩的人\n无底线的善良，只会助长恶人的气焰；\n太过仁慈，只会招来他人的挖苦和埋怨。\n善良要有原则，帮忙要看对象，不知感恩的人，不能帮，得寸进尺的人，别惯着。",
+"Darkness is the absence of light. Evil is the absence of good.\nIgnorance is the absence of understanding.\nLight overcomes darkness. Goodness overcomes evil. Understanding overcomes ignorance.",
 
 ]
