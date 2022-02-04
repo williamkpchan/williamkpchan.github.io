@@ -1,0 +1,321 @@
+<base target="_blank"><html><head><title>Single Line Chart</title>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.common.core.js" ></script>
+<script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.common.csv.js" ></script>
+<script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.line.js" ></script>
+<script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.drawing.yaxis.js"></script>
+<script type='text/javascript' src='https://williamkpchan.github.io/mainscript.js'></script>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<style>
+</style>
+
+<script>
+var stkChangeArr = [];
+var toFixedLen = 2;
+function dispTime() {
+	document.getElementById("dateAndTime").innerHTML = showTime();
+}
+
+function checkTime() {
+	var d = new Date(); // current time
+	var hours = d.getHours();
+	var mins = d.getMinutes();
+	var day = d.getDay();
+	return day >= 1
+		&& day <= 5
+		&& (
+			(hours >= 10  || hours === 9 && mins >= 30) && (hours < 12)
+			|| (hours >= 13) && (hours < 16)
+			);
+}
+
+function setTimer() {
+	document.getElementById("msg").innerHTML = "<br><br>";
+	clearInterval(mytimer);
+	mytimer = setInterval(function(){ alarm(); }, timerValue* 1000);
+
+}
+
+function alarm() {
+	dispTime();
+	if(checkTime()){
+		$.get("http://qt.gtimg.cn/r=2&q=r_hk" + theCode, function(data, status){process(data);})
+
+//    setTimeout(window.onload, 2000); // 2000 millisec, this is to replace setInterval
+	}
+}
+function process(data) {
+	extractData(data);
+	reportStatus()
+}
+
+function extractData(data) {
+	theString = data;
+	var arr = theString.split("=");
+	theString = arr[1];
+	var arr = theString.split("~");
+	stkCode = arr[2];
+	stkName = arr[1];
+	stkTime = arr[30];
+
+	stkPrice = Number(arr[3]).toFixed(toFixedLen);
+	stkMaxprice = Number(arr[33]).toFixed(toFixedLen);
+	stkMinprice = Number(arr[34]).toFixed(toFixedLen);
+	stkChange = Number(arr[31]).toFixed(toFixedLen);
+
+	stkVol = (Number(arr[37])/10000).toFixed(0);
+}
+
+function consecutiveDiff(srcArray) {
+  return srcArray.slice(1).map(function(n, i) { return n - srcArray[i]; });
+}
+
+function reportStatus() {
+	dataArr.push(Number(stkPrice));
+	stkChangeArr.push(stkChange);
+	finalString = showTime() + " " + "<span class='greyword'>" + stkCode + "</span>" + "&emsp;" + stkName + "&emsp;" + stkTime + "&emsp;" + "<span class='redword'>"  + stkPrice + "</span>" + "&emsp;" + stkChange  + "&emsp;" + calstkChangechg() +  "&emsp;" + stkMaxprice + "&emsp;" + stkMinprice + "&emsp;" + stkVol + "<br>" ;
+	
+	$("#msg").prepend(finalString);
+
+	RGraph.reset(document.getElementById('cvs'));
+	RGraph.reset(document.getElementById('diff'));
+
+//	RGraph.clear(document.getElementById("cvs", 'white'));
+	theMax = Math.max(...dataArr);
+	theMin = Math.min(...dataArr);
+
+	drawchart();
+//	alarmSound.play();
+}
+
+function chkKey() {
+  var testkey = getChar(event);
+  if(testkey == 'l'){loadLineData();}
+}
+
+function getChar(event) {
+  if (event.which!=0 && event.charCode!=0) {
+    return String.fromCharCode(event.which)   // the rest
+  } else {
+    return null // special key
+  }
+}
+
+function showTime() {
+	var d = new Date();
+	var secs=d.getSeconds();
+	var mins=d.getMinutes();
+	var hr=d.getHours();
+	var timemsg = FormatNumberLength(hr) + ":" + FormatNumberLength(mins) + ":" + FormatNumberLength(secs)
+	return(timemsg)
+}
+
+function FormatNumberLength(num) {
+    var r = "" + num;
+    while (r.length < 2) {
+	r = "0" + r;
+    }
+    return r;
+}
+function calstkChangechg() {
+	if (dataArr.length>1){
+		stkChangechgval = stkChangeArr.slice(-1) - stkChangeArr.slice(-2)[0];
+		return stkChangechgval.toFixed(toFixedLen);
+	} else {
+		return 0;
+	}
+}
+</script>
+
+</head>
+
+<body onkeypress="chkKey()">
+<h3><span id="dateAndTime""><script>dispTime();</script></span></h3>
+<center>
+<canvas id="cvs" width="1300" height="550">[No canvas support]</canvas>
+<div id="msg"></div><br>
+
+<canvas id="diff" width="1300" height="550">[No canvas support]</canvas>
+</center>
+<script>
+	dataArr = [31,6,9,9,6,4,5,5,0,21,1,0,0,2,6,1,5,9,1,0,3,0,1,2,0,0,2,0,1,1,0,1,0,1,3,0,0,1,3,1,2,2,0,0,1,0,2,1,2,-1,-2];
+	theMax = Math.max(...dataArr);
+	theMin = Math.min(...dataArr);
+
+	startPt = 1
+	endPt = 7
+
+
+
+	
+	function loadLineData() {
+      var dataStr = prompt("Enter stk list seperated by space:", "");
+      if (dataStr != null && dataStr != "") {
+        dataArrArr = dataStr.split(' ');
+
+        dataArr = dataArrArr.map(Number);
+
+        theMax = Math.max(...dataArr);
+        theMin = Math.min(...dataArr);
+
+        RGraph.reset(document.getElementById("cvs"));
+        RGraph.reset(document.getElementById('diff'));
+        drawchart()
+        $("#dataset").text(dataArr);
+
+      }
+     }
+
+
+	function drawchart() {
+	    var line = new RGraph.Line({
+		id: 'cvs',
+		data: dataArr,
+		options: {
+			title: 'Single Line Chart', titleColor: 'grey',
+			titleSize: 25, titleVpos: 0.1,
+			spline: true,
+			textAccessible: true,
+			hmargin: 0,
+               marginLeft: 25, 
+               marginBottom: 5,
+
+			gutterBottom: 35, gutterLeft: 0,
+			ylabels: true, noyaxis: false,
+			numticks: null, numlabels: 15,
+			linewidth: 0.5,
+			shadow: false,
+			colors: ['blue'], tickmarks: 'triangle',
+			ticksize: 2, textSize: 10,
+			ymax: theMax, ymin: theMin,
+
+			backgroundGrid: true, backgroundGridColor:  '#242',
+			backgroundGridVlines: false, backgroundGridHlines: true,
+			backgroundGridBorder: true,
+//			backgroundGridAutofitNumhlines: 7,
+
+			axisColor: '#392', textColor: 'grey',
+		}
+	    }).draw()
+
+		  yminpct = theMin*100/(theMax-theMin), ymaxpct = 100,
+
+            yaxis1 = new RGraph.Drawing.YAxis('cvs', 1300)
+                .Set('colors', ['red'])
+                .Set('text.color', 'gray') .Set('text.size', 10)
+                .Set('max', ymaxpct) .Set('min', yminpct)
+                .Set('linewidth', 2) .Set('tickmarkslength', 5)
+                .Set('title', '% pct')
+                .Draw();
+
+    marginLeft = 25;
+		  ydiffminpct = theMin*100/(theMax-theMin), ydiffmaxpct = 100,
+            yaxis1 = new RGraph.Drawing.YAxis('diff', 1300)
+                .Set('colors', ['gray'])
+                .Set('text.color', 'green') .Set('text.size', 10)
+                .Set('max', ydiffmaxpct) .Set('min', ydiffminpct)
+//                .Set('units.post', "...")
+                .Set('linewidth', 1) .Set('tickmarkslength', 5)
+                .Set('title', '% pct')
+                .Draw();
+
+
+        dataArrDiff = consecutiveDiff(dataArr)
+        theDiffMax = Math.max(...dataArrDiff);
+        theDiffMin = Math.min(...dataArrDiff);
+
+    line = new RGraph.Line({
+        id: 'diff',
+
+        data: dataArrDiff,
+        options: {
+		  title: 'successive differences', titleColor: 'grey',
+            tickmarksStyle: 'filledcircle',
+            tickmarksSize: 7,
+            shadow: false,
+            linewidth: 1,
+		  hmargin: 0,
+            marginLeft:25, 
+            marginBottom: 5,
+            xaxis: false,
+            yaxis: false,
+            yaxisLabels: false, colors: ['red', 'gray'],
+            yaxisScaleMax: 20,
+            yaxisScale: true,
+			ylabels: true,
+			ymax: theDiffMax,
+			ymin: theDiffMin,
+
+            backgroundGrid: true,
+			backgroundGridColor:  '#242',
+				backgroundGridVlines: false,
+				backgroundGridHlines: true,
+				backgroundGridBorder: true,
+		  axisColor: '#392',
+
+        }
+    }).trace().responsive([
+        {maxWidth: null, options: {linewidth: 5,tickmarksSize: 7,marginInner: 55}},
+        {maxWidth: 900, options: {linewidth: 3,tickmarksSize: 3,marginInner: 30}}
+    ]);
+
+	};
+
+	function drawStLine(startPt, endPt) {
+	    var line1 = new RGraph.Line({
+		id: 'cvs',
+		data: [startPt, endPt],
+		options: {
+			spline: false,
+			hmargin: 0,
+               marginLeft: 25, 
+               marginBottom: 5,
+
+			gutterBottom: 35, gutterLeft: 0,
+			ylabels: true, noyaxis: false,
+			numticks: null,
+			numlabels: 15,
+			noyaxis: false,
+			linewidth: 1,
+			colors: ['red'],
+			tickmarks: 'triangle',
+			ticksize: 3,
+			textSize: 10,
+			ymax: theMax,
+			ymin: theMin,
+
+			backgroundGrid: true,
+			backgroundGridColor:  '#242',
+				backgroundGridVlines: false,
+				backgroundGridHlines: true,
+				backgroundGridBorder: true,
+//				backgroundGridAutofitNumhlines: 7,
+
+				axisColor: '#392',
+			textColor: 'grey',
+		}
+	    }).draw()
+
+	};
+drawchart();
+</script>
+<br>
+<div id="dataset"></div>
+<pre>
+command: l, paste data array to redraw chart
+https://github.com/vivekgalatage/RGraph
+https://demo.huihoo.com/rgraph/docs/line.html
+https://demo.huihoo.com/rgraph/docs/index.html
+http://plustensandbox.com/apps/careerdashboard/docs/index.html
+
+We can use the Object.getOwnPropertyNames() function to get all the property names linked to an object.
+https://flaviocopes.com/how-to-list-object-methods-javascript/
+
+Object.keys(myObject);
+(36) ["id", "canvas", "context", "x", "coords", "coordsText", "original_colors", "maxLabelLength", "firstDraw", "type", "isRGraph", "uid", "properties", "$0", "Set", "set", "Get", "get", "Draw", "draw", "exec", "getObjectByXY", "getShape", "Highlight", "highlight", "parseColors", "reset", "parseSingleColorForGradient", "DrawYAxis", "drawYAxis", "getWidth", "on", "firstDrawFunc", "gutterTop", "gutterBottom", "colorsParsed"]
+
+</pre>
+</body>
+</html>
