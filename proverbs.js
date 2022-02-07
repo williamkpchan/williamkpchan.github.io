@@ -16,7 +16,7 @@ proverbList = [
 "Theodore Roosevelt once said, “I believe that the more you know about the past, the better you are prepared for the future.”",
 "Knowing what you don’t know is knowledge.",
 "人都是有很多面的，每个人都有不同评价，都只是一部分而已。",
-"解决善忘的办法是重复 只是要重复的项目太多了 连重复都善忘的办法是把太多的重复集中在菜单上\n菜单比较不善忘",
+"解决善忘的办法是重复 只是要重复的项目太多了 连重复都忘记\n解决的办法是把很多需要的重复事件集中在菜单上 并放在桌面当眼处",
 "調控失衡導致 浪費 欠缺 貧富懸殊 供求失衡， 調控以外 教育為本 仇恨 偏見 源於無知 無知源於教育",
 "英国前首相Lord Palmerston 一句话“没有永远的朋友，也没有永远的敌人，只有永远的利益”\n将这句话反过来理解，那就是： 只要利益始终存在，那么朋友关系也将长久持续。",
 "有了永久利益，自然就有永久的朋友，利不可独享，共享利益，就能够组建互利互惠的共同体。",
