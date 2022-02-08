@@ -42,5 +42,7 @@ proverbList = [
 "人的高低层次，不在财富地位，而在格局和修养。\n你把时间花在哪里，你就会成为什么样的人。\n层次越低的人，越喜欢被欲望摆布，越喜欢得理不饶人，越喜欢谈论是非\n要懂得该放下就得放下，懂得宽恕别人，懂得专注于自己的事",
 "不能帮不知感恩的人\n无底线的善良，只会助长恶人的气焰；\n太过仁慈，只会招来他人的挖苦和埋怨。\n善良要有原则，帮忙要看对象，不知感恩的人，不能帮，得寸进尺的人，别惯着。",
 "Darkness is the absence of light. Evil is the absence of good.\nIgnorance is the absence of understanding.\nLight overcomes darkness. Goodness overcomes evil. Understanding overcomes ignorance.",
-
+"生活不是战场，无需一较高下。\n人与人之间，多一份理解就会少一些误会；\n心与心之间，多一份包容就会少一些纷争。\n不要背后说人，不要在意被说。包容越多，得到越多",
+"健康是最大的利益 满足是最好的财产\n信赖是最佳的缘分 心安是最大的幸福",
+"让你幸福的好习惯\n保持微笑 学会拒绝 控制情绪 努力存钱 投资自己 早睡早起",
 ]
