@@ -1485,8 +1485,186 @@ $ git log
 Reverting a commit that has been pushed to the remote
 git checkout [commit ID] filename
 
+<h2>git push --set-upstream origin branch</h2>
+If you do not have upstream for the current branch, Git changes its behavior on <code>git push</code>, and on other commands as well.
 
+The complete push story here is long and boring.  
+To shorten it a whole lot, <code>git push</code> was implemented poorly.
+<h3>What is an upstream?</h3>
+An <em>upstream</em> is simply another branch name, usually a remote-tracking branch, associated with a (regular, local) branch.
 
+Every branch has the option of having one (1) upstream set.  
+That is, every branch either has an upstream, or does not have an upstream.  
+No branch can have more than one upstream.
+
+The upstream <em>should</em>, but does not have to be, a valid branch (whether remote-tracking like <code>origin/<em>B</em></code> or local like <code>master</code>).  
+That is, if the current branch <em>B</em> has upstream <em>U</em>, <code>git rev-parse <em>U</em></code> <em>should</em> work.  
+If it does not work—if it complains that <em>U</em> does not exist—then most of Git acts as though the upstream is not set at all.  
+A few commands, like <code>git branch -vv</code>, will show the upstream setting but mark it as "gone".
+
+<h3>What good is an upstream?</h3>
+If your <code>push.default</code> is set to <code>simple</code> or <code>upstream</code>, the upstream setting will make <code>git push</code>, used with no additional arguments, just work.
+
+That's it—that's all it does for <code>git push</code>.  
+But that's fairly significant, since <code>git push</code> is one of the places where a simple typo causes major headaches.
+
+If your <code>push.default</code> is set to <code>nothing</code>, <code>matching</code>, or <code>current</code>, setting an upstream does nothing at all for <code>git push</code>.
+
+(All of this assumes your Git version is at least 2.0.)
+
+<h3>The upstream affects <code>git fetch</code></h3>
+
+If you run <code>git fetch</code> with no additional arguments, Git figures out <em>which</em> remote to fetch from by consulting the current branch's upstream.  
+If the upstream is a remote-tracking branch, Git fetches from that remote.  
+(If the upstream is not set or is a local branch, Git tries fetching <code>origin</code>.)
+
+<h3>The upstream affects <code>git merge</code> and <code>git rebase</code> too</h3>
+
+If you run <code>git merge</code> or <code>git rebase</code> with no additional arguments, Git uses the current branch's upstream.  
+So it shortens the use of these two commands.
+
+<h3>The upstream affects <code>git pull</code></h3>
+
+You should never
+2. use <code>git pull</code> anyway, but if you do, <code>git pull</code> uses the upstream setting to figure out which remote to fetch from, and then which branch to merge or rebase with.  
+That is, <code>git pull</code> does the same thing as <code>git fetch</code>—because it actually <em>runs</em> <code>git fetch</code>—and then does the same thing as <code>git merge</code> or <code>git rebase</code>, because it actually <em>runs</em> <code>git merge</code> or <code>git rebase</code>.
+
+(You should usually just do these two steps manually, at least until you know Git well enough that when either step fails, which they will eventually, you recognize what went wrong and know what to do about it.)
+
+<h3>The upstream affects <code>git status</code></h3>
+
+This may actually be the most important.  
+Once you have an upstream set, <code>git status</code> can report the difference between your current branch and its upstream, in terms of commits.
+
+If, as is the normal case, you are on branch <em><code>B</code></em> with its upstream set to <code>origin/<em>B</em></code>, and you run <code>git status</code>, you will immediately see whether you have commits you can push, and/or commits you can merge or rebase onto.
+
+This is because <code>git status</code> runs:
+
+<code>git rev-list --count @{u}..HEAD</code>: how many commits do you have on <em><code>B</code></em> that are not on <code>origin/<em>B</em></code>?
+
+<code>git rev-list --count HEAD..@{u}</code>: how many commits do you have on <code>origin/<em>B</em></code> that are not on <em><code>B</code></em>?
+
+Setting an upstream gives you all of these things.
+
+<h3>How come <code>master</code> already has an upstream set?</h3>
+
+When you first clone from some remote, using:
+
+<code>$ git clone git://some.host/path/to/repo.git</code>
+
+or similar, the last step Git does is, essentially, <code>git checkout master</code>.  
+This checks out your local branch <code>master</code>—only you don't <em>have</em> a local branch <code>master</code>.
+
+On the other hand, you <em>do</em> have a remote-tracking branch named <code>origin/master</code>, because you just cloned it.
+
+Git guesses that you must have meant: "make me a new local <code>master</code> that points to the same commit as remote-tracking <code>origin/master</code>, and, while you're at it, set the upstream for <code>master</code> to <code>origin/master</code>."
+
+This happens for <em>every</em> branch you <code>git checkout</code> that you do not already have.  
+Git creates the branch <em>and</em> makes it "track" (have as an upstream) the corresponding remote-tracking branch.
+
+<h3>But this doesn't work for <em>new</em> branches, i.e., branches with no remote-tracking branch <em>yet</em>.</h3>
+
+If you create a <em>new</em> branch:
+
+<code>$ git checkout -b solaris</code>
+
+there is, as yet, no <code>origin/solaris</code>.  
+Your local <code>solaris</code> <em>cannot</em> track remote-tracking branch <code>origin/solaris</code> because it does not exist.
+
+When you first push the new branch:
+
+<code>$ git push origin solaris</code>
+
+that <em>creates</em> <code>solaris</code> on <code>origin</code>, and hence also creates <code>origin/solaris</code> in your own Git repository.  
+But it's too late: you already have a local <code>solaris</code> that <em>has no upstream</em>.
+
+3.
+<h3>Shouldn't Git just set that, now, as the upstream automatically?</h3>
+
+Probably.  
+See "implemented poorly" and footnote 1.  
+It's hard to change <em>now</em>: There are millions
+
+4. of scripts that use Git and some may well depend on its current behavior.  
+Changing the behavior requires a new major release, nag-ware to force you to set some configuration field, and so on.  
+In short, Git is a victim of its own success: whatever mistakes it has in it, today, can only be fixed if the change is either mostly invisible, clearly-much-better, or done slowly over time.
+
+The fact is, it doesn't today, <em>unless</em> you use <code>--set-upstream</code> or <code>-u</code> during the <code>git push</code>.  
+That's what the message is telling you.
+
+You don't have to do it like that.  
+Well, as we noted above, you don't have to do it at all, but let's say you <em>want</em> an upstream.  
+You have already created branch <code>solaris</code> on <code>origin</code>, through an earlier push, and as your <code>git branch</code> output shows, you already <em>have</em> <code>origin/solaris</code> in your local repository.
+
+You just don't have it set as the upstream for <code>solaris</code>.
+
+To set it now, rather than during the first push, use <code>git branch --set-upstream-to</code>.  
+The <code>--set-upstream-to</code> sub-command takes the name of any existing branch, such as <code>origin/solaris</code>, and sets the current branch's upstream to that other branch.
+
+That's it—that's all it does—but it has all those implications noted above.  
+It means you can just run <code>git fetch</code>, then look around, then run <code>git merge</code> or <code>git rebase</code> as appropriate, then make new commits and run <code>git push</code>, without a bunch of additional fussing-around.
+
+1.To be fair, it was not clear back then that the initial implementation was error-prone.  
+That only became clear when every new user made the same mistakes every time.  
+It's now "less poor", which is not to say "great".
+
+2."Never" is a bit strong, but I find that Git newbies understand things a lot better when I separate out the steps, especially when I can show them what <code>git fetch</code> actually did, and they can then see what <code>git merge</code> or <code>git rebase</code> will do next.
+
+3.If you run your <em>first</em> <code>git push</code> as <code>git push -u origin solaris</code>—i.e., if you add the <code>-u</code> flag—Git will set <code>origin/solaris</code> as the upstream for your current branch if (and only if) the push succeeds.  
+So you should supply <code>-u</code> on the <em>first</em> push.  
+In fact, you can supply it on any later push, and it will set <em>or change</em> the upstream at that point.  
+But I think <code>git branch --set-upstream-to</code> is easier, if you forgot.
+
+4.Measured by the Austin Powers / Dr Evil method of simply saying "one MILLLL-YUN", anyway.
+
+<h2>Push to github without typing user name / password</h2>
+<h3><strong>1. Using SSH</strong></h3>If you need to do a push without username and password prompt, but you are always prompted, then your origin remote is pointing at the https url rather than the ssh url.
+A way to skip typing my username/password when using https://github, is by changing the HTTPs origin remote which pointing to an HTTP url into an SSH url.
+
+For example,
+https url: https://github.com/&lt;Username&gt;/&lt;Project&gt;.git
+ssh url: git@github.com:&lt;Username&gt;/&lt;Project&gt;.git
+You can do:
+git remote set-url origin git@github.com:&lt;Username&gt;/&lt;Project&gt;.git
+to change the url.
+
+<strong>Switching remote URLs from HTTPS to SSH</strong>
+Open Terminal (for Mac and Linux users) or the command prompt (for Windows).
+Change the current working directory to your local project.
+List your existing remotes in order to get the name of the remote you want to change.
+git remote -v
+$ origin https://github.com/USERNAME/REPOSITORY.git (fetch)
+$ origin https://github.com/USERNAME/REPOSITORY.git (push)
+Change your remote’s URL from HTTPS to SSH with the git remote set-url command.
+git remote set-url origin git@github.com:USERNAME/OTHERREPOSITORY.git
+Verify that the remote URL has changed.
+
+git remote -v
+$ Verify new remote URL
+$ origin git@github.com:USERNAME/OTHERREPOSITORY.git (fetch)
+$ origin git@github.com:USERNAME/OTHERREPOSITORY.git (push)
+
+<h3><strong>2. Using Static configuration</strong></h3>Static configuration of usernames for a given authentication context.
+It is generally configured by adding this to your config:
+
+[credential “https://example.com&quot;] username = me
+
+The password was not declared because of security reasons. It is not advisable to store your password on an unsecure storage.
+
+<h3>3. <strong>Credential helpers to cache or store passwords, or to interact with a system password wallet or keychain</strong>.</h3>These are external programs from which Git can request both usernames and passwords
+To use a helper, you must first select one to use. Git currently includes the following helpers:
+cache: Cache credentials in memory for a short period of time.
+store: Store credentials indefinitely on disk.
+
+Steps:
+a.Find a helper.
+$ git help -a | grep credential-credential-foo
+
+b.Read its description.
+$ git help credential-foo
+
+c.Tell Git to use it.
+$ git config — global credential.helper foo
 
 
 
