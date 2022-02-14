@@ -4736,7 +4736,8 @@ Logistic Regression有幾項要點，
 
 
 以鐵達尼號乘客名單的資料作為範例分析
-model1&lt;-glm data="titanic_passenger," family="binomial(link=" formula="survival~fare," logit="" na.action="na.exclude)&lt;/p"&gt;summary(model1)
+model1 &lt;- glm(data = titanic_passenger, family = binomial(link= formula = survival~fare, logit = "" na.action="na.exclude) &lt;
+summary(model1)
 其中fare 對 survival 的對數機率為 0.013108
 勝算比為exp(0.013108)=1.013085
 多一英鎊，多1%生還率。
@@ -27858,6 +27859,702 @@ To learn more about data science using R, please refer to the following guides:
 <a href="/guides/working-data-types-r/">Working with Data Types in R</a>
 <a href="/guides/splitting-combining-data-r/">Splitting and Combining Data with R</a>
 <a href="/guides/linear-lasso-and-ridge-regression-with-r/">Linear, Lasso, and Ridge Regression with R</a>
+
+
+
+
+<h2>How to perform a Logistic Regression in R</h2>
+Logistic Regression is similar to linear regression
+<div id="LogisticRegressiontoc"><a href="#LogisticRegressiontopic-0" target="_self" onclick="jumpto(0)">How to perform a Logistic Regression in R</a><br><a href="#LogisticRegressiontopic-1" target="_self" onclick="jumpto(1)"><span class="orange">Logistic regression implementation in R</span></a><br><a href="#LogisticRegressiontopic-2" target="_self" onclick="jumpto(2)">The dataset</a><br><a href="#LogisticRegressiontopic-3" target="_self" onclick="jumpto(3)">The data cleaning process</a><br><a href="#LogisticRegressiontopic-4" target="_self" onclick="jumpto(4)">Taking care of the missing values</a><br><a href="#LogisticRegressiontopic-5" target="_self" onclick="jumpto(5)"><span class="orange">Model fitting</span></a><br><a href="#LogisticRegressiontopic-6" target="_self" onclick="jumpto(6)">Interpreting the results of our logistic regression model</a><br><a href="#LogisticRegressiontopic-7" target="_self" onclick="jumpto(7)"><span class="orange">Assessing the predictive ability of the model</span></a><br><a href="#LogisticRegressiontopic-8" target="_self" onclick="jumpto(8)"><span class="orange">Generalized Linear Models</span></a><br><a href="#LogisticRegressiontopic-9" target="_self" onclick="jumpto(9)"><span class="orange">Logistic Regression</span></a><br><a href="#LogisticRegressiontopic-10" target="_self" onclick="jumpto(10)"><span class="orange">Poisson Regression</span></a><br><a href="#LogisticRegressiontopic-11" target="_self" onclick="jumpto(11)"><span class="orange">Survival Analysis</span></a><br></div>
+
+Logistic regression is a method for fitting a regression curve, <b>y = f(x)</b>, when y is a categorical variable. 
+The typical use of this model is predicting <b>y</b> given a set of predictors <b>x</b>. 
+The predictors can be continuous, categorical or a mix of both.
+
+The categorical variable <b>y</b>, in general, can assume different values. 
+In the simplest case scenario <b>y</b> is binary meaning that it can assume either the value 1 or 0. 
+A classical example used in machine learning is email classification: given a set of attributes for each email such as number of words, links and pictures, the algorithm should decide whether the email is spam (1) or not (0). 
+In this post we call the model <strong>“binomial logistic regression”</strong>, since the variable to predict is binary, however, logistic regression can also be used to predict a dependent variable which can assume more than 2 values. 
+In this second case we  call the model “multinomial logistic regression”. 
+A typical example for instance, would be classifying films between “Entertaining”, “borderline” or “boring”.
+
+<h3 id="LogisticRegressiontopic-1"><span class="orange">Logistic regression implementation in R</span></h3>
+
+R makes it very easy to fit a logistic regression model. 
+The function to be called is <code>glm()</code> and the fitting process is not so different from the one used in linear regression. 
+In this post I am going to fit a binary logistic regression model and explain each step.
+
+<h4 id="LogisticRegressiontopic-2">The dataset</h4>
+We’ll be working on the <b>Titanic dataset</b>. 
+There are different versions of this datasets freely available online, however I suggest to use the one available at <a href="https://www.kaggle.com/c/titanic" rel="nofollow" target="_blank">Kaggle</a>, since it is almost ready to be used (in order to download it you need to sign up to Kaggle).
+
+The dataset (training) is a collection of data about some of the passengers (889 to be precise), and the goal of the competition is to predict the survival (either 1 if the passenger survived or 0 if they did not) based on some features such as the <b>class of service</b>, the <b>sex</b>, the <b>age</b> etc. 
+As you can see, we are going to use both categorical and continuous variables.
+
+<h4 id="LogisticRegressiontopic-3">The data cleaning process</h4>
+
+When working with a real dataset we need to take into account the fact that some data might be missing or corrupted, therefore we need to prepare the dataset for our analysis. 
+As a first step we <a href="http://datascienceplus.com/importing-csv-files-into-r/" rel="nofollow" target="_blank">load the csv data</a> using the <code>read.csv()</code> function.
+
+Make sure that the parameter <code>na.strings</code> is equal to <code>c("")</code> so that each missing value is coded as a <code>NA</code>. 
+This will help us in the next steps.
+
+<b>training.data.raw &lt;- read.csv('train.csv',header=T,na.strings=c(""))</b>
+
+Now we need to check for missing values and look how many unique values there are for each variable using the <code>sapply()</code> function which applies the function passed as argument to each column of the dataframe.
+
+<b>sapply(training.data.raw,function(x) sum(is.na(x)))</b>
+
+PassengerId    Survived      Pclass        Name         Sex 
+          0           0           0           0           0 
+        Age       SibSp       Parch      Ticket        Fare 
+        177           0           0           0           0 
+      Cabin    Embarked 
+        687           2 
+
+<b>sapply(training.data.raw, function(x) length(unique(x)))</b>
+
+PassengerId    Survived      Pclass        Name         Sex 
+        891           2           3         891           2 
+        Age       SibSp       Parch      Ticket        Fare 
+         89           7           7         681         248 
+      Cabin    Embarked 
+        148           4
+
+A visual take on the missing values might be helpful: the Amelia package has a special plotting function <code>missmap()</code> that will plot your dataset and highlight missing values:
+
+<b>library(Amelia)
+missmap(training.data.raw, main = "Missing values vs observed")</b>
+
+<img class="lazy" src="https://i1.wp.com/datascienceplus.com/wp-content/uploads/2015/09/Rplot1-490x431.png?w=450">
+
+The variable cabin has too many missing values, we will not use it. 
+We will also drop PassengerId since it is only an index and Ticket.
+
+Using the <code>subset()</code> function we subset the original dataset selecting the relevant columns only.
+
+<b>data &lt;- subset(training.data.raw,select=c(2,3,5,6,7,8,10,12))</b>
+
+<h4 id="LogisticRegressiontopic-4">Taking care of the missing values</h4>
+
+Now we need to account for the other missing values. 
+R can easily deal with them when fitting a generalized linear model by setting a parameter inside the fitting function. 
+However, personally I prefer to replace the <code>NAs</code> “by hand”, when is possible. 
+There are different ways to do this, a typical approach is to replace the missing values with the average, the median or the mode of the existing one. 
+I’ll be using the average.
+
+<b>data$Age[is.na(data$Age)] &lt;- mean(data$Age,na.rm=T)</b>
+
+As far as categorical variables are concerned, using the <code>read.table()</code> or <code>read.csv()</code> by default will encode the categorical variables as factors. 
+A factor is how R deals categorical variables.
+
+We can check the encoding using the following lines of code
+
+<b>is.factor(data$Sex)</b>
+TRUE
+
+<b>is.factor(data$Embarked)</b>
+TRUE
+
+For a better understanding of how R is going to deal with the categorical variables, we can use the <code>contrasts()</code> function. 
+This function will show us how the variables have been dummyfied by R and how to interpret them in a model.
+
+<b>contrasts(data$Sex)</b>
+       male
+female    0
+male      1
+
+<b>contrasts(data$Embarked)</b>
+  Q S
+C 0 0
+Q 1 0
+S 0 1
+
+For instance, you can see that in the variable sex, female will be used as the reference. 
+As for the missing values in Embarked, since there are only two, we will discard those two rows (we could also have replaced the missing values with the mode and keep the datapoints).
+
+<b>data &lt;- data[!is.na(data$Embarked),]
+rownames(data) &lt;- NULL</b>
+
+Before proceeding to the fitting process, let me remind you how important is <b>cleaning and formatting of the data</b>. 
+This preprocessing step often is crucial for obtaining a good fit of the model and better predictive ability. 
+
+<h3 id="LogisticRegressiontopic-5"><span class="orange">Model fitting</span></h3>
+
+We split the data into two chunks: training and testing set. 
+The training set will be used to fit our model which we will be testing over the testing set.
+
+<b>train &lt;- data[1:800,]
+test &lt;- data[801:889,]</b>
+
+Now, let’s fit the model. 
+Be sure to specify the parameter <code>family=binomial</code> in the <code>glm()</code> function.
+
+<b>model &lt;- glm(Survived ~.,family=binomial(link='logit'),data=train)</b>
+
+By using function <code>summary()</code> we obtain the results of our model:
+
+<b>summary(model)</b>
+Call:
+glm(formula = Survived ~ ., family = binomial(link = "logit"), 
+    data = train)
+
+Deviance Residuals: 
+    Min       1Q   Median       3Q      Max  
+-2.6064  -0.5954  -0.4254   0.6220   2.4165  
+
+Coefficients:
+             Estimate Std. 
+Error z value Pr(&gt;|z|)    
+(Intercept)  5.137627   0.594998   8.635  &lt; 2e-16 ***
+Pclass      -1.087156   0.151168  -7.192 6.40e-13 ***
+Sexmale     -2.756819   0.212026 -13.002  &lt; 2e-16 ***
+Age         -0.037267   0.008195  -4.547 5.43e-06 ***
+SibSp       -0.292920   0.114642  -2.555   0.0106 *  
+Parch       -0.116576   0.128127  -0.910   0.3629    
+Fare         0.001528   0.002353   0.649   0.5160    
+EmbarkedQ   -0.002656   0.400882  -0.007   0.9947    
+EmbarkedS   -0.318786   0.252960  -1.260   0.2076    
+---
+Signif. 
+codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 1065.39  on 799  degrees of freedom
+Residual deviance:  709.39  on 791  degrees of freedom
+AIC: 727.39
+
+Number of Fisher Scoring iterations: 5
+
+<h4 id="LogisticRegressiontopic-6">Interpreting the results of our logistic regression model</h4>
+
+Now we can analyze the fitting and interpret what the model is telling us.
+
+First of all, we can see that <b>SibSp</b>, <b>Fare</b> and <b>Embarked</b> are not statistically significant. 
+As for the statistically significant variables, sex has the lowest p-value suggesting a strong association of the sex of the passenger with the probability of having survived. 
+The negative coefficient for this predictor suggests that all other variables being equal, the male passenger is less likely to have survived. 
+Remember that in the logit model the response variable is log odds: ln(odds) = ln(p/(1-p)) = a*x1 + b*x2 + … + z*xn. 
+Since male is a dummy variable, being male reduces the log odds by 2.75 while a unit increase in age reduces the log odds by 0.037.
+
+Now we can run the <code>anova()</code> function on the model to analyze the table of deviance
+
+<b>anova(model, test="Chisq")</b>
+
+Analysis of Deviance Table
+Model: binomial, link: logit
+Response: Survived
+Terms added sequentially (first to last)
+
+         Df Deviance Resid. 
+Df Resid. 
+Dev  Pr(&gt;Chi)    
+NULL                       799    1065.39              
+Pclass    1   83.607       798     981.79 &lt; 2.2e-16 ***
+Sex       1  240.014       797     741.77 &lt; 2.2e-16 ***
+Age       1   17.495       796     724.28 2.881e-05 ***
+SibSp     1   10.842       795     713.43  0.000992 ***
+Parch     1    0.863       794     712.57  0.352873    
+Fare      1    0.994       793     711.58  0.318717    
+Embarked  2    2.187       791     709.39  0.334990    
+---
+Signif. 
+codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+The difference between the null deviance and the residual deviance shows how our model is doing against the null model (a model with only the intercept). 
+The wider this gap, the better. 
+Analyzing the table we can see the drop in deviance when adding each variable one at a time. 
+Again, adding <b>Pclass</b>, <b>Sex</b> and <b>Age</b> significantly reduces the residual deviance. 
+The other variables seem to improve the model less even though <b>SibSp</b> has a low p-value. 
+A large p-value here indicates that the model without the variable explains more or less the same amount of variation. 
+Ultimately what you would like to see is a significant drop in deviance and the <code>AIC</code>.
+
+While no exact equivalent to the R<sup>2</sup> of linear regression exists, the McFadden R<sup>2</sup> index can be used to assess the model fit.
+
+<b>library(pscl)
+pR2(model)</b>
+
+         llh      llhNull           G2     McFadden         r2ML         r2CU 
+-354.6950111 -532.6961008  356.0021794    0.3341513    0.3591775    0.4880244
+
+<h3 id="LogisticRegressiontopic-7"><span class="orange">Assessing the predictive ability of the model</span></h3>
+In the steps above, we briefly evaluated the fitting of the model, now we would like to see how the model is doing when predicting <b>y</b> on a new set of data. 
+By setting the parameter <code>type='response'</code>, R will output probabilities in the form of P(y=1|X). 
+Our decision boundary will be 0.5. 
+If P(y=1|X) &gt; 0.5 then y = 1 otherwise y=0. 
+Note that for some applications different thresholds could be a better option.
+
+<b>fitted.results &lt;- predict(model,newdata=subset(test,select=c(2,3,4,5,6,7,8)),type='response')
+fitted.results &lt;- ifelse(fitted.results &gt; 0.5,1,0)
+
+misClasificError &lt;- mean(fitted.results != test$Survived)
+print(paste('Accuracy',1-misClasificError))</b>
+
+"Accuracy 0.842696629213483"
+
+The 0.84 accuracy on the test set is quite a good result. 
+However, keep in mind that this result is somewhat dependent on the manual split of the data that I made earlier, therefore if you wish for a more precise score, you would be better off running some kind of cross validation such as k-fold cross validation.
+
+As a last step, we are going to plot the <b>ROC curve</b> and calculate the <b>AUC</b> (area under the curve) which are typical performance measurements for a binary classifier.
+
+The ROC is a curve generated by plotting the true positive rate (TPR) against the false positive rate (FPR) at various threshold settings while the AUC is the area under the ROC curve. 
+As a rule of thumb, a model with good predictive ability should have an AUC closer to 1 (1 is ideal) than to 0.5.
+
+<b>library(ROCR)
+p &lt;- predict(model, newdata=subset(test,select=c(2,3,4,5,6,7,8)), type="response")
+pr &lt;- prediction(p, test$Survived)
+prf &lt;- performance(pr, measure = "tpr", x.measure = "fpr")
+plot(prf)
+
+auc &lt;- performance(pr, measure = "auc")
+auc &lt;- [email&nbsp;protected][[1]]
+auc</b>
+
+0.8647186
+
+And here is the ROC plot:
+<img class="lazy" src="https://i0.wp.com/datascienceplus.com/wp-content/uploads/2015/09/Rplot011.png">
+
+<h3 id="LogisticRegressiontopic-8"><span class="orange">Generalized Linear Models</span></h3>
+The form of the glm function is
+glm(formula, family=familytype(link=linkfunction), data=)
+
+Family	Default Link Function
+binomial	(link = "logit")
+gaussian	(link = "identity")
+Gamma	(link = "inverse")
+inverse.gaussian	(link = "1/mu^2")
+poisson	(link = "log")
+quasi	(link = "identity", variance = "constant")
+quasibinomial	(link = "logit")
+quasipoisson	(link = "log")
+
+<h3 id="LogisticRegressiontopic-9"><span class="orange">Logistic Regression</span></h3>
+Logistic regression is useful when you are predicting a binary outcome from a set of continuous predictor variables.
+It is frequently preferred over discriminant function analysis because of its less restrictive assumptions.
+
+# Logistic Regression
+# where F is a binary factor and x1-x3 are continuous predictors
+
+<b>fit &lt;- glm(F~x1+x2+x3, data=mydata, family=binomial())
+summary(fit) # display results
+confint(fit) # 95% CI for the coefficients
+exp(coef(fit)) # exponentiated coefficients
+exp(confint(fit)) # 95% CI for exponentiated coefficients
+predict(fit, type="response") # predicted values
+residuals(fit, type="deviance") # residuals</b>
+
+<h3 id="LogisticRegressiontopic-10"><span class="orange">Poisson Regression</span></h3>
+Poisson regression is useful when predicting an outcome variable representing counts from a set of continuous predictor variables.
+
+# Poisson Regression
+# where count is a count and x1-x3 are continuous predictors
+
+<b>fit &lt;- glm(count ~ x1+x2+x3, data=mydata, family=poisson())
+summary(fit) display results</b>
+
+If you have overdispersion (see if residual deviance is much larger than degrees of freedom), you may want to use quasipoisson() instead of poisson().
+
+<h3 id="LogisticRegressiontopic-11"><span class="orange">Survival Analysis</span></h3>
+Survival analysis (also called event history analysis or reliability analysis) covers a set of techniques for modeling the time to an event.
+Data may be right censored - the event may not have occured by the end of the study or we may have incomplete information on an observation but know that up to a certain time the event had not occured (e.g. the participant dropped out of study in week 10 but was alive at that time).
+
+While generalized linear models are typically analyzed using the glm( ) function, survival analyis is typically carried out using functions from the survival package.
+The survival package can handle one and two sample problems, parametric accelerated failure models, and the Cox proportional hazards model.
+
+Data are typically entered in the format start time, stop time, and status (1=event occured, 0=event did not occur). Alternatively, the data may be in the format time to event and status (1=event occured, 0=event did not occur).
+A status=0 indicates that the observation is right cencored. Data are bundled into a Surv object via the Surv( ) function prior to further analyses.
+
+survfit( ) is used to estimate a survival distribution for one or more groups.
+survdiff( ) tests for differences in survival distributions between two or more groups.
+coxph( ) models the hazard function on a set of predictor variables.
+
+# Mayo Clinic Lung Cancer Data
+library(survival)
+
+# learn about the dataset
+help(lung)
+
+# create a Surv object
+<b>survobj &lt;- with(lung, Surv(time,status))</b>
+
+# Plot survival distribution of the total sample
+# Kaplan-Meier estimator
+<b>fit0 &lt;- survfit(survobj~1, data=lung)
+summary(fit0)
+plot(fit0, xlab="Survival Time in Days",
+   ylab="% Surviving", yscale=100,
+   main="Survival Distribution (Overall)")</b>
+
+# Compare the survival distributions of men and women
+<b>fit1 &lt;- survfit(survobj~sex,data=lung)</b>
+
+# plot the survival distributions by sex
+<b>plot(fit1, xlab="Survival Time in Days",
+  ylab="% Surviving", yscale=100, col=c("red","blue"),
+  main="Survival Distributions by Gender")
+  legend("topright", title="Gender", c("Male", "Female"),
+  fill=c("red", "blue"))</b>
+
+# test for difference between male and female
+# survival curves (logrank test)
+<b>survdiff(survobj~sex, data=lung)</b>
+
+# predict male survival from age and medical scores
+<b>MaleMod &lt;- coxph(survobj~age+ph.ecog+ph.karno+pat.karno,
+  data=lung, subset=sex==1)</b>
+
+# display results
+MaleMod
+
+# evaluate the proportional hazards assumption
+cox.zph(MaleMod)
+
+
+<h2>R to count freq</h2>
+to find numbers > 100
+numbers <- c(4,23,4,23,5,43,54,56,657,67,67,435,453,435,324,34,456,56,567,65,34,435)
+sum(numbers > 100)
+length(which(numbers>100))
+s = summary(as.factor(numbers))
+names(s)
+
+sum(titanic_train$Age>50, na.rm = TRUE)
+sapply(titanic_train, function(x) sum(is.na(x)))
+
+length(grep(435, numbers))
+table(numbers)
+table(numbers)['435']
+
+<h2>to convert table into a data.frame</h2>
+as.data.frame(table(numbers))
+
+<h2>to convert factor into a data.frame</h2>
+as.data.frame(cbind(Number = names(s),Freq = s), stringsAsFactors=F, row.names = 1:length(s))
+
+<h2>check how many unique values for each variable</h2>
+sapply(titanic_train, function(x) length(unique(x)))
+<h2>plot dataset and highlight missing values</h2>
+library(Amelia)
+missmap(training.data.raw, main = "Missing values vs observed")
+
+<h2>drop some columns using the subset() function</h2>
+data <- subset(training.data.raw, select=c(2,3,5,6,7,8,10,12))
+<h2>typical approach to replace the NAs</h2>
+with the average, the median or the mode
+
+data$Age[is.na(data$Age)] <- mean(data$Age,na.rm=T)
+
+<h2>change language settings in R</h2>
+Sys.getenv() gives you a list of all the environment variables that are set,
+Sys.setenv sets environment variables
+Sys.setenv(LANG = "en")
+
+D:\R-3.5.1\etc\Rprofile.site
+Sys.setlocale("LC_ALL","English")
+options(scipen=999)
+Sys.setenv(LANG = "en")
+
+<h2>Linear Regression in R</h2>
+<div id="LRegressiontoc"><a href="#LRegressiontopic-1" target="_self">What is a linear regression?</a><br><a href="#LRegressiontopic-2" target="_self">Creating a Linear Regression in R.</a><br><a href="#LRegressiontopic-3" target="_self">Coefficients.</a><br><a href="#LRegressiontopic-4" target="_self">Residuals</a><br><a href="#LRegressiontopic-5" target="_self">How to test if your linear model has a good fit?</a><br><a href="#LRegressiontopic-6" target="_self">Don’t forget to look at the residuals!</a><br><a href="#LRegressiontopic-7" target="_self">Detect Influential Points.</a><br><a href="#LRegressiontopic-8" target="_self">Conclusion</a><br></div>
+<h3 id="LRegressiontopic-1">What is a linear regression?</h3>
+A linear regression is a statistical model that analyzes the relationship between a response variable (often called y) and one or more variables and their interactions (often called x or explanatory variables). 
+You make this kind of relationships in your head all the time, for example when you calculate the age of a child based on her height, you are assuming the older she is, the taller she will be. 
+Linear regression is one of the most basic statistical models out there, its results can be interpreted by almost everyone, and it has been around since the 19th century. 
+This is precisely what makes linear regression so popular. 
+It’s simple, and it has survived for hundreds of years. 
+Even though it is not as sophisticated as other algorithms like artificial neural networks or random forests, according to a survey made by KD Nuggets, regression was the algorithm most used by data scientists in <a href="https://www.kdnuggets.com/2016/09/poll-algorithms-used-data-scientists.html">2016</a> and <a href="https://www.kdnuggets.com/2017/12/top-data-science-machine-learning-methods.html">2017</a>. 
+It’s even predicted it’s still going to be the used in year <a href="https://www.kdnuggets.com/2018/02/machine-learning-algorithm-2118.html">2118</a>!
+
+<h3 id="LRegressiontopic-2">Creating a Linear Regression in R.</h3>
+
+Not every problem can be solved with the same algorithm. 
+In this case, linear regression assumes that there exists a linear relationship between the response variable and the explanatory variables. 
+This means that you can fit a line between the two (or more variables). 
+In the previous example, it is clear that there is a relationship between the age of children and their height.
+
+<img class="lazy" data-src="http://res.cloudinary.com/dydmodel1 &lt;- glm(data = titanic_passenger, family = binomial(link= formula = survival~fare, logit = "" na.action="na.exclude) &lt;
+summary(model1)
+911kmh/image/upload/f_auto,q_auto:best/v1526911465/1_afqiyx.png">
+
+In this particular example, you can calculate the height of a child if you know her age:
+
+$\text{Height} = a + \text{Age} * b$
+
+In this case, “a” and “b” are called the intercept and the slope respectively. 
+With the same example, “a” or the intercept, is the value from where you start measuring. 
+Newborn babies with zero months are not zero centimeters necessarily; this is the function of the intercept. 
+The slope measures the change of height with respect to the age in months. 
+In general, for every month older the child is, his or her height will increase with “b”.
+
+A linear regression can be calculated in R with the command <code>lm</code>. 
+In the next example, use this command to calculate the height based on the age of the child.
+
+First, import the library <code>readxl</code> to read Microsoft Excel files, it can be any kind of format, as long R can read it. 
+To know more about importing data to R, you can take <a href="https://www.datacamp.com/courses/importing-data-in-r-part-1">this DataCamp course</a>.
+
+The data to use for this tutorial can be downloaded <a href="https://drive.google.com/drive/folders/1TcO4eVmpAn7gt4DbZ31HCz0t_gkca1Fp">here</a>. 
+Download the data to an object called <code>ageandheight</code> and then create the linear regression in the third line. 
+The <code>lm</code> command takes the variables in the format:
+
+<code>lm([target variable] ~ [predictor variables], data = [data source])</code>
+
+With the command <code>summary(lmHeight)</code> you can see detailed information on the model’s performance and coefficients.
+
+<code>library(readxl)
+ageandheight &lt;- read_excel("ageandheight.xls", sheet = "Hoja2") #Upload the data
+lmHeight = lm(height~age, data = ageandheight) #Create the linear regression
+summary(lmHeight) #Review the results</code>
+
+<img class="lazy" data-src="http://res.cloudinary.com/dyd911kmh/image/upload/f_auto,q_auto:best/v1526911465/2_asteeq.png  ">
+
+<h3 id="LRegressiontopic-3">Coefficients.</h3>
+
+In the red square, you can see the values of the intercept (“a” value) and the slope (“b” value) for the age. 
+These “a” and “b” values plot a line between all the points of the data. 
+So in this case, if there is a child that is 20.5 months old, a is 64.92 and b is 0.635, the model predicts (on average) that its height in centimeters is around 64.92 + (0.635 * 20.5) = 77.93 cm.
+
+When a regression takes into account two or more predictors to create the linear regression, it’s called multiple linear regression. 
+By the same logic you used in the simple example before, the height of the child is going to be measured by:
+
+<em>Height = a + Age × b<sub>1</sub> + (Number of Siblings} × b<sub>2</sub></em>
+
+You are now looking at the height as a function of the age in months and the number of siblings the child has. 
+In the image above, the red rectangle indicates the coefficients (b1 and b2). 
+You can interpret these coefficients in the following way:
+
+When comparing children with the same number of siblings, the average predicted height increases in 0.63 cm for every month the child has. 
+The same way, when comparing children with the same age, the height decreases (because the coefficient is negative) in -0.01 cm for each increase in the number of siblings.
+
+In R, to add another coefficient, add the symbol "+" for every additional variable you want to add to the model.
+
+<code>lmHeight2 = lm(height~age + no_siblings, data = ageandheight) #Create a linear regression with two variables
+summary(lmHeight2) #Review the results</code>
+
+<img class="lazy" data-src="http://res.cloudinary.com/dyd911kmh/image/upload/f_auto,q_auto:best/v1526911465/3_yaepnf.png">
+
+As you might notice already, looking at the number of siblings is a silly way to predict the height of a child. 
+Another aspect to pay attention to your linear models is the p-value of the coefficients.
+In the previous example, the blue rectangle indicates the p-values for the coefficients age and number of siblings. 
+In simple terms, a p-value indicates whether or not you can reject or accept a hypothesis. 
+The hypothesis, in this case, is that the predictor is not meaningful for your model.
+
+The p-value for age is 4.34*e-10 or 0.000000000434. 
+A very small value means that age is probably an excellent addition to your model.
+
+The p-value for the number of siblings is 0.85. 
+In other words, there’s 85% chance that this predictor is not meaningful for the regression.
+
+A standard way to test if the predictors are not meaningful is looking if the p-values smaller than 0.05.
+
+<h3 id="LRegressiontopic-4">Residuals</h3>
+A good way to test the quality of the fit of the model is to look at the residuals or the differences between the real values and the predicted values. 
+The straight line in the image above represents the predicted values. 
+The red vertical line from the straight line to the observed data value is the residual.
+
+<img class="lazy" data-src="http://res.cloudinary.com/dyd911kmh/image/upload/f_auto,q_auto:best/v1526911465/4_pjp8qf.png">
+
+The idea in here is that the sum of the residuals is approximately zero or as low as possible. 
+In real life, most cases will not follow a perfectly straight line, so residuals are expected. 
+In the R summary of the lm function, you can see descriptive statistics about the residuals of the model, following the same example, the red square shows how the residuals are approximately zero.
+
+<img class="lazy" data-src="http://res.cloudinary.com/dyd911kmh/image/upload/f_auto,q_auto:best/v1526911465/5_nbcx2m.png">
+
+<h3 id="LRegressiontopic-5">How to test if your linear model has a good fit?</h3>
+
+One measure very used to test how good is your model is the coefficient of determination or R². 
+This measure is defined by the proportion of the total variability explained by the regression model.
+
+$R^2 = \frac{\text{Explained Variation of the model}}{\text{Total variation of the model}}$
+
+This can seem a little bit complicated, but in general, for models that fit the data well, R² is near 1. 
+Models that poorly fit the data have R² near 0. 
+In the examples below, the first one has an R² of 0.02; this means that the model explains only 2% of the data variability. 
+The second one has an R² of 0.99, and the model can explain 99% of the total variability.**
+
+<img class="lazy" data-src="http://res.cloudinary.com/dyd911kmh/image/upload/f_auto,q_auto:best/v1526911465/6.1_tnja1z.png">
+<img class="lazy" data-src="http://res.cloudinary.com/dyd911kmh/image/upload/f_auto,q_auto:best/v1526911466/7_uyik0q.png">
+
+However, it’s essential to keep in mind that sometimes a high R² is not necessarily good every single time (see below residual plots) and a low R² is not necessarily always bad. 
+In real life, events don’t fit in a perfectly straight line all the time. 
+For example, you can have in your data taller or smaller children with the same age. 
+In some fields, an R² of 0.5 is considered good.
+
+With the same example as above, look at the summary of the linear model to see its R².
+
+<img class="lazy" data-src="http://res.cloudinary.com/dyd911kmh/image/upload/f_auto,q_auto:best/v1526911466/8_udtgwq.png">
+
+In the blue rectangle, notice that there’s two different R², one multiple and one adjusted. 
+The multiple is the R² that you saw previously. 
+One problem with this R² is that it cannot decrease as you add more independent variables to your model, it will continue increasing as you make the model more complex, even if these variables don’t add anything to your predictions (like the example of the number of siblings). 
+For this reason, the adjusted R² is probably better to look at if you are adding more than one variable to the model, since it only increases if it reduces the overall error of the predictions.
+
+<h3 id="LRegressiontopic-6">Don’t forget to look at the residuals!</h3>
+
+You can have a pretty good R² in your model, but let’s not rush to conclusions here. 
+Let’s see an example. 
+You are going to predict the pressure of a material in a laboratory based on its temperature.
+
+Let’s plot the data (in a simple scatterplot) and add the line you built with your linear model. 
+In this example, let R read the data first, again with the <code>read_excel</code> command, to create a dataframe with the data, then create a linear regression with your new data. 
+The command <code>plot</code> takes a data frame and plots the variables on it. 
+In this case, it plots the pressure against the temperature of the material. 
+Then, add the line made by the linear regression with the command <code>abline</code>.
+
+<code>pressure &lt;- read_excel("pressure.xlsx") #Upload the data
+lmTemp = lm(Pressure~Temperature, data = pressure) #Create the linear regression
+plot(pressure, pch = 16, col = "blue") #Plot the results
+abline(lmTemp) #Add a regression line</code>
+
+<img class="lazy" data-src="http://res.cloudinary.com/dyd911kmh/image/upload/f_auto,q_auto:best/v1526911467/output_13_0_utufts.png">
+
+If you see the summary of your new model, you can see that it has pretty good results (look at the R²and the adjusted R²)
+
+<code>summary(lmTemp)</code>
+<code>Call:
+lm(formula = Pressure ~ Temperature, data = pressure)
+
+Residuals:
+   Min     1Q Median     3Q    Max
+-41.85 -34.72 -10.90  24.69  63.51
+
+Coefficients:
+            Estimate Std. 
+Error t value Pr(&gt;|t|)    
+(Intercept) -81.5000    29.1395  -2.797   0.0233 *  
+Temperature   4.0309     0.4696   8.583 2.62e-05 ***
+---
+Signif. 
+codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 42.66 on 8 degrees of freedom
+Multiple R-squared:  0.902,    Adjusted R-squared:  0.8898
+F-statistic: 73.67 on 1 and 8 DF,  p-value: 2.622e-05</code>
+Ideally, when you plot the residuals, they should look random. 
+Otherwise means that maybe there is a hidden pattern that the linear model is not considering.
+To plot the residuals, use the command <code>plot(lmTemp$residuals)</code>.
+
+<code>plot(lmTemp$residuals, pch = 16, col = "red")</code>
+
+<img class="lazy" data-src="http://res.cloudinary.com/dyd911kmh/image/upload/f_auto,q_auto:best/v1526911466/output_17_0_niceec.png">
+
+This can be a problem. 
+If you have more data, your simple linear model will not be able to generalize well. 
+In the previous picture, notice that there is a pattern (like a curve on the residuals). 
+This is not random at all.
+
+What you can do is a transformation of the variable. 
+Many possible transformations can be performed on your data such as adding a quadratic term $(x^2)$, a cubic $(x^3)$ or even more complex such as ln(X), ln(X+1), sqrt(X), 1/x, Exp(X). 
+The choice of the correct transformation will come with some knowledge of algebraic functions, practice, trial, and error.
+
+Let’s try with a quadratic term. 
+For this, add the term “I” (capital "I") before your transformation, for example, this will be the normal linear regression formula:
+
+<code>lmTemp2 = lm(Pressure~Temperature + I(Temperature^2), data = pressure) #Create a linear regression with a quadratic coefficient
+summary(lmTemp2) #Review the results</code>
+<code>Call:
+lm(formula = Pressure ~ Temperature + I(Temperature^2), data = pressure)
+
+Residuals:
+    Min      1Q  Median      3Q     Max
+-4.6045 -1.6330  0.5545  1.1795  4.8273
+
+Coefficients:
+                  Estimate Std. 
+Error t value Pr(&gt;|t|)    
+(Intercept)      33.750000   3.615591   9.335 3.36e-05 ***
+Temperature      -1.731591   0.151002 -11.467 8.62e-06 ***
+I(Temperature^2)  0.052386   0.001338  39.158 1.84e-09 ***
+---
+Signif. 
+codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 3.074 on 7 degrees of freedom
+Multiple R-squared:  0.9996,    Adjusted R-squared:  0.9994
+F-statistic:  7859 on 2 and 7 DF,  p-value: 1.861e-12</code>
+Notice that the model improved significantly. 
+If you plot the residuals of the new model, they will look like this:
+
+<code>plot(lmTemp2$residuals, pch = 16, col = "red")</code>
+
+<img class="lazy" data-src="http://res.cloudinary.com/dyd911kmh/image/upload/f_auto,q_auto:best/v1526911467/output_21_0_cur6lb.png">
+
+Now you don’t see any clear patterns on your residuals, which is good!
+
+<h3 id="LRegressiontopic-7">Detect Influential Points.</h3>
+
+In your data, you may have influential points that might skew your model, sometimes unnecessarily. 
+Think of a mistake on the data entry and instead of writing “2.3” the value was “23”. 
+The most common kind of influential point are the outliers, which are data points where the observed response does not appear to follow the pattern established by the rest of the data.
+
+You can detect influential points by looking at the object containing the linear model, using the function <code>cooks.distance</code> and then plot these distances. 
+Change a value on purpose to see how it looks on the Cooks Distance plot. 
+To change a specific value, you can directly point at it with <code>ageandheight[row number, column number] = [new value]</code>. 
+In this case, the height is changed to 7.7 of the second example:
+
+<code>ageandheight[2, 2] = 7.7
+head(ageandheight)</code>
+
+<table>
+<thead><tr><th scope="col">age</th><th scope="col">height</th><th scope="col">no_siblings</th></tr></thead>
+<tbody>
+    <tr><td>18  </td><td>76.1</td><td>0   </td></tr>
+    <tr><td>19  </td><td> 7.7</td><td>2   </td></tr>
+    <tr><td>20  </td><td>78.1</td><td>0   </td></tr>
+    <tr><td>21  </td><td>78.2</td><td>3   </td></tr>
+    <tr><td>22  </td><td>78.8</td><td>4   </td></tr>
+    <tr><td>23  </td><td>79.7</td><td>1   </td></tr>
+</tbody>
+</table>
+
+
+You create again the model and see how the summary is giving a bad fit, and then plot the Cooks Distances. 
+For this, after creating the linear regression, use the command <code>cooks.distance([linear model]</code> and then if you want you can plot these distances with the command <code>plot</code>.
+
+<code>lmHeight3 = lm(height~age, data = ageandheight)#Create the linear regression
+summary(lmHeight3)#Review the results
+plot(cooks.distance(lmHeight3), pch = 16, col = "blue") #Plot the Cooks Distances.</code>
+<code>Call:
+lm(formula = height ~ age, data = ageandheight)
+
+Residuals:
+    Min      1Q  Median      3Q     Max
+-53.704  -2.584   3.609   9.503  17.512
+
+Coefficients:
+            Estimate Std. 
+Error t value Pr(&gt;|t|)
+(Intercept)    7.905     38.319   0.206    0.841
+age            2.816      1.613   1.745    0.112
+
+Residual standard error: 19.29 on 10 degrees of freedom
+Multiple R-squared:  0.2335,    Adjusted R-squared:  0.1568
+F-statistic: 3.046 on 1 and 10 DF,  p-value: 0.1115</code>
+<img class="lazy" data-src="http://res.cloudinary.com/dyd911kmh/image/upload/f_auto,q_auto:best/v1526911467/output_26_1_tk3u9f.png">
+
+<strong>Notice</strong> that there is a point that does not follow the pattern, and it might be affecting the model. 
+Here you can make decisions on this point, in general, there are three reasons why a point is so influential:
+
+Someone made a recording error
+
+Someone made a fundamental mistake collecting the observation
+
+The data point is perfectly valid, in which case the model cannot account for the behavior.
+
+If the case is 1 or 2, then you can remove the point (or correct it). 
+If it's 3, it's not worthy to delete a valid point; maybe you can try on a non-linear model rather than a linear model like linear regression.
+
+Beware that an influential point can be a valid point, be sure to check the data and its source before deleting it. 
+It’s common to see on statistics books this quote: “Sometimes we throw out perfectly good data when we should be throwing out questionable models.”
+
+<h3 id="LRegressiontopic-8">Conclusion</h3>
+
+You made it to the end! Linear regression is a big LRegressiontopic, and it's here to stay. 
+Here I presented a few tricks that can help to tune and take the most advantage of such powerful algorithm, yet so simple. 
+You also learned how to understand what's behind this simple statistical model and how you can modify it according to your needs. 
+You can also explore other options by typing “?lm” on the R console and looking at the different parameters not covered in here. 
+If you are interested in diving into statistical models, go ahead and check the course on <a href="https://www.datacamp.com/courses/statistical-modeling-in-r-part-1">Statistical Modeling in R</a>.
+
 
 
 
