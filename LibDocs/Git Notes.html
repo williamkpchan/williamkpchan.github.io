@@ -1667,6 +1667,119 @@ c.Tell Git to use it.
 $ git config — global credential.helper foo
 
 
+<h2>Multiple Branches in Git</h2>
+<div id="MultipleBranchestoc"><a href="#MultipleBranchestopic-0" target="_self"><span class="orange">Introduction</span></a><br><a href="#MultipleBranchestopic-1" target="_self"><span class="orange">Worktree</span></a><br><a href="#MultipleBranchestopic-2" target="_self"><span class="orange">Example</span></a><br><a href="#MultipleBranchestopic-3" target="_self">Create a new repo</a><br><a href="#MultipleBranchestopic-4" target="_self">Create a new branch</a><br><a href="#MultipleBranchestopic-5" target="_self">Create new worktree branch</a><br><a href="#MultipleBranchestopic-6" target="_self">Make changes in new worktree branch</a><br><a href="#MultipleBranchestopic-7" target="_self">Merge my hotfix back into master</a><br><a href="#MultipleBranchestopic-8" target="_self">Removing the worktree</a><br><a href="#MultipleBranchestopic-9" target="_self">Continuing working on my feature branch</a><br></div>
+<h3 id="MultipleBranchestopic-0"><span class="orange">Introduction</span></h3>
+There are times where you might be working from a particular git branch and need to quickly jump over to a different branch to do some urgent work.
+
+Typically you would need to first <code>git stash</code> anything you were working on (as it's unlikely to be in a state where it can be committed), and then you'd have to leave your current branch to create a new branch from <code>master</code> and thus begin working on your new urgent task.
+
+This is a fairly straightforward workflow, but there is a mild annoyance which is that I happen to <code>git stash</code> <em>a lot</em> and I find when jumping over to a new branch to do some urgent work that I might end up <code>git stash</code>‘ing a few more times along the way.
+
+Ultimately, when I'm done with my urgent task and ready to go back to my other branch, I then have to sift through my stash to find the relevant one I want to pop. 
+OK so not that tragic considering <code>git stash list</code> will indicate the branch on which the stash was taken (which helps), but I do then need to Google what the syntax is for popping a specific stash (e.g. 
+it's <code>git stash apply stash@{n}</code> where <code>n</code> is the index you want to apply.)
+
+Note: for the life of me I wish I could remember the syntax but it just eludes me every time.
+
+Oh, and then you have to think about whether you actually want to use <code>apply</code>, which leaves the stashed changes in the stack, or if you meant to actually <code>pop</code> the stashed content (<code>git stash pop stash@{n}</code>) so it's properly removed from the stack.
+
+This is where I was recently introduced to a concept in git referred to as a ‘worktree' (thanks Kiran).
+
+<h3 id="MultipleBranchestopic-1"><span class="orange">Worktree</span></h3>
+Git offers a feature referred to as a <a href="https://git-scm.com/docs/git-worktree">worktree</a>, and what it does is allow you to have multiple branches running at the same time.
+
+It does this by creating a new directory for you with a copy of your git repository that is synced between the two directories where they are stored.
+
+This is different to manually creating a new directory and git cloning your repo down, because with the worktree model the two sub directories are aware of each other.
+
+Note: as you'll see, although this workflow is pretty cool, you <em>could</em> argue that <code>git stash</code> is just plain simpler and easier for a human mind to reason about. 
+I'll leave that up to the reader to decide.
+
+<h3 id="MultipleBranchestopic-2"><span class="orange">Example</span></h3>
+In the following example I'm going to create a new git repo. 
+I'll make a change in <code>master</code>, then create a new branch for doing some work. 
+We'll then imagine that I have been given an urgent task that I must complete <em>now</em> and yet my current non-master branch is in such a state that I want to avoid just stashing everything.
+
+Note: I use tmux to split my terminal into multiple windows, and this demonstration will require two windows (or two separate terminal instances if you're not using a screen multiplexer) for the sake of demonstration.
+
+<h3 id="MultipleBranchestopic-3">Create a new repo</h3>
+<code>mkdir foo_project
+cd foo_project
+touch foo
+git add foo
+git commit -m "created foo file"</code>
+
+<h3 id="MultipleBranchestopic-4">Create a new branch</h3>
+<code>git checkout -b foo_contents
+echo 123 &gt; foo
+git add -u
+git commit -m "added content to foo"</code>
+
+Now I'll create a new file and stage it for committing, but I won't commit it (this is where we pretend my branch is in some hideously complex state).
+
+<h3 id="MultipleBranchestopic-5">Create new worktree branch</h3>
+<code>git worktree add ../foo_hotfix</code>
+
+Note: you'll want to create the new worktree in a directory outside of your current repo's directory (just so there's a clear distinction).
+
+At this point you'll find your current terminal is still in the same <code>foo_contents</code>, but there is now a new directory called <code>foo_hotfix</code> outside your current repo's directory.
+
+<h3 id="MultipleBranchestopic-6">Make changes in new worktree branch</h3>
+Open up a new terminal (or split window) and run through the following steps:
+
+<code>cd ./foo_hotfix</code> (or <code>cd ../foo_hotfix</code> if your new terminal is currently set to your main git repo directory)
+<code>git log</code>
+
+OK, so if you do a <code>git log</code> you'll find that the worktree has a branch automatically created and named after the worktree (so the branch is called <code>foo_hotfix</code> in my case).
+
+The important thing to realize is that <code>git worktree add</code> is a bit like <code>git branch</code> in that it creates the new worktree from the current branch you're in. 
+Meaning that my <code>foo_hotfix</code> branch has the "added content to foo" commit from the <code>foo_contents</code> branch as that's where I ran the <code>git worktree add</code> command from.
+
+This is what <code>git log</code> looks like for me in this new worktree:
+
+<pre><code>* d374dcb (Integralist) - (HEAD -&gt; foo_hotfix, foo_contents) added content to foo (2 minutes ago)
+* 9ae3a7f (Integralist) - (master) created foo file (3 minutes ago)
+</code></pre>I don't want the commit <code>d374dcb</code> in there as it's coming from a branch (<code>foo_contents</code>) that's still in progress, and so I'll need to rebase out that commit:
+
+<code>git rebase -i 9ae3a7f</code>
+
+Note: the rebase editor opens and I change <code>pick</code> to <code>drop</code> to get rid of the commit.
+
+Now at this point I have a new working directory that I can work in:
+
+<code>echo hotfix &gt; baz
+git add baz
+git commit -m "some hotfix"</code>
+
+<h3 id="MultipleBranchestopic-7">Merge my hotfix back into master</h3>
+I'm going to change into my <code>master</code> branch, but remember I'm still in the <code>foo_hotfix</code> directory, so my main repo directory <code>foo_project</code> (open in another terminal window) is still in the <code>foo_contents</code> branch).
+
+<code>git checkout master
+git merge foo_hotfix</code>
+
+<h3 id="MultipleBranchestopic-8">Removing the worktree</h3>
+OK, so at this point we've merged our hotfix into <code>master</code>. 
+I want to go back to my original repo directory and make sure I have the latest <code>master</code> rebased in before continuing on with my <code>foo_contents</code> work.
+
+To remove the worktree you can either remove it using the git interface (e.g. 
+<code>git worktree remove foo_hotfix</code>) or manually remove it (e.g. 
+<code>cd ../ &amp;&amp; rm ./foo_hotfix</code>), where git will, at some point in the future, internally run a prune and remove any references to this orphaned branch/working tree (you could also manually trigger that prune using <code>git worktree prune</code>).
+
+Note: if I do <code>git worktree remove foo_hotfix</code> while currently residing inside the <code>foo_hotfix</code> directory, I'll find that the <code>.git</code> repository is removed from the directory.
+
+<h3 id="MultipleBranchestopic-9">Continuing working on my feature branch</h3>
+Presuming I'm still in the <code>foo_hotfix</code> directory and that's where I ran <code>git worktree remove foo_hotfix</code>:
+
+<code>cd ../foo_project
+git rebase master</code> &lt; whoops! I need to stash my changes first †
+<code>git stash pop</code>
+
+† why yes, this does seem a bit strange considering that's what I was trying to avoid in the first place, but in this case it's a single ‘stash' and so a simple <code>git stash pop</code> will suffice to get me back to where I need to be.
+
+I can now continue working on my <code>foo_contents</code> branch.
+
+
 
 
 
