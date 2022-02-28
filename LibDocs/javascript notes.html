@@ -34,8 +34,8 @@ img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; bor
 <a href="https://cloud.google.com/speech-to-text/docs/languages" class="whitebut ">google Cloud Speech-to-Text</a>
 
 <a href="https://www.geeksforgeeks.org/how-to-convert-speech-into-text-using-javascript/" class="whitebut ">convert speech into text</a>
-
-<a href="https://github.com/WebDevSimplified" class="whitebut ">WebDevSimplified</a>
+<a href="https://blog.webdevsimplified.com/" class="redbut ">webdevsimplified</a>
+<a href="https://github.com/WebDevSimplified" class="bluebut ">WebDevSimplified</a>
 <a href="https://github.com/WebDevSimplified/audio-book-reader" class="whitebut ">audio-book-reader</a>
 <a href="https://github.com/naptha/tesseract.js#tesseractjs" class="whitebut ">Tesseractjs javascript library</a>
 
@@ -27763,6 +27763,607 @@ const worker = createWorker();
   console.log(text);
   await worker.terminate();
 })();
+
+<h2>Express Middleware through Examples</h2>
+<div id="ExpressMiddlewaretoc" class="toc"><a href="#ExpressMiddlewaretopic-0" target="_self">What is Express Middleware?</a><br><a href="#ExpressMiddlewaretopic-1" target="_self">Requirements to Write Express Middleware</a><br><a href="#ExpressMiddlewaretopic-2" target="_self">Express Middleware: The Basics</a><br><a href="#ExpressMiddlewaretopic-3" target="_self">Express Request Logging Middleware Example</a><br><a href="#ExpressMiddlewaretopic-4" target="_self">Restrict Express Request Content Type Example</a><br><a href="#ExpressMiddlewaretopic-5" target="_self">Third-Party Express Middleware</a><br><a href="#ExpressMiddlewaretopic-6" target="_self">Why Okta for Express Applications</a><br><a href="#ExpressMiddlewaretopic-7" target="_self">Okta’s OIDC Express Middleware</a><br><a href="#ExpressMiddlewaretopic-8" target="_self">Middleware Order is Important</a><br><a href="#ExpressMiddlewaretopic-9" target="_self">Error Handling in Express Middleware</a><br><a href="#ExpressMiddlewaretopic-10" target="_self">Learn More About Express Middleware</a><br></div>
+<br><br>
+If you’ve done any significant Node development in the past seven or eight years, you’ve probably used <a href="https://expressjs.com">Express</a> to build a web server at some point. 
+While you can create a server in Node without using a library, it doesn’t give you a lot out of the box and can be quite cumbersome to add functionality. 
+Express is a minimalist, “unopinionated” server library and has become the de facto standard for building web apps in Node. 
+To understand Express, you need to understand Express Middleware.
+
+<h3 id="ExpressMiddlewaretopic-0">What is Express Middleware?</h3>
+Middleware literally means anything you put in the middle of one layer of the software and another. 
+Express middleware are functions that execute during the lifecycle of a request to the Express server. 
+Each middleware has access to the HTTP <code>request</code> and <code>response</code> for each route (or path) it’s attached to. 
+In fact, Express itself is compromised wholly of middleware functions. 
+Additionally, middleware can either terminate the HTTP request or pass it on to another middleware function using <code>next</code> (more on that soon). 
+This “chaining” of middleware allows you to compartmentalize your code and create reusable middleware.
+
+In this article I’ll explain what middleware is, why you would use it, how to use existing Express middleware, and how to write your own middleware for Express.
+
+<h3 id="ExpressMiddlewaretopic-1">Requirements to Write Express Middleware</h3>
+There are a few things you will need installed to create, use, and test Express middleware. 
+First, you will need Node and NPM. 
+To ensure you have them installed, you can run:
+
+<code>npm -v &amp;&amp; node -v</code>
+You should see the Node and NPM versions you have installed. 
+If you get an error, you need to <a href="https://nodejs.org/en/">install Node</a>. 
+I’m using the latest version of both as of the time of this article, which is Node 10.9.0 and NPM 6.4.1, but all the examples should work with Node versions 8+ and NPM versions 5+.
+
+I will also be using Express version 4.x. 
+This is important because major changes were made from version 3.x to 4.x.
+
+It will also be helpful to have <a href="https://www.getpostman.com/">Postman</a> installed to test routes using any HTTP verbs other than <code>GET</code>.
+
+<h3 id="ExpressMiddlewaretopic-2">Express Middleware: The Basics</h3>
+To get started, you’ll use the most basic of Express’ built-in middleware. 
+This will give you the chance to see how middleware is used, and how Express middleware is structured.
+
+Create a new project and <code>npm init</code> it…
+
+<code>npm init
+npm install express --save</code>
+Create <code>server.js</code> and paste the following code:
+
+<code>const express = require('express');
+const app = express();
+
+app.get('/', (req, res, next) =&gt; {
+res.send('Welcome Home');
+});
+
+app.listen(3000);</code>
+Run the server via <code>node server.js</code>, access <code>http://localhost:3000</code>, and you should see “Welcome Home” printed in your browser.
+
+The <code>app.get()</code> function is <a href="https://expressjs.com/en/guide/using-middleware.html#middleware.application">Application-level Middleware</a>. 
+You’ll notice the parameters passed to the method are <code>req</code>, <code>res</code>, and <code>next</code>. 
+These are the incoming request, the response being written, and a method to call to pass the call to the next middleware function once the current middleware is finished. 
+In this case, once the response is sent, the function exits. 
+You could also chain other middleware here by calling the <code>next()</code> method.
+
+Let’s take a look at a few more examples of the different types of middleware.
+
+<h3 id="ExpressMiddlewaretopic-3">Express Request Logging Middleware Example</h3>
+In Express, you can set up middleware to be “global” middleware; meaning it will be called for every incoming request.
+
+Change the contents of <code>server.js</code> to:
+<code>const express = require('express');
+const app = express();
+
+app.use((req, res, next) =&gt; {
+console.log(req);
+next();
+});
+
+app.get('/', (req, res, next) =&gt; {
+res.send('Welcome Home');
+});
+
+app.listen(3000);</code>
+This time, when you go to <code>http://localhost:3000</code> you should see the same thing in your browser window, but back in the console window you will see the output of the incoming request object.
+
+The middleware logs out the request object and then calls <code>next()</code>. 
+The next middleware in the pipeline handles the get request to the root URL and sends back the text response. 
+Using <code>app.use()</code> means that this middleware will be called for every call to the application.
+
+<h3 id="ExpressMiddlewaretopic-4">Restrict Express Request Content Type Example</h3>
+In addition to running middleware for all calls, you could also specify to only run middleware for specific calls.
+
+Change the <code>server.js</code> file again to:
+
+<code>const express = require('express');
+const app = express();
+
+const requireJsonContent = () =&gt; {
+return (req, res, next) =&gt; {
+ if (req.headers['content-type'] !== 'application/json') {
+     res.status(400).send('Server requires application/json')
+ } else {
+   next()
+ }
+}
+}
+
+app.get('/', (req, res, next) =&gt; {
+res.send('Welcome Home');
+});
+
+app.post('/', requireJsonContent(), (req, res, next) =&gt; {
+res.send('You sent JSON');
+})
+
+app.listen(3000);</code>
+This time, start the server by running:
+<code>node server.js</code>
+To test this, open up Postman and create a post request to <code>http://localhost:3000</code>. 
+Don’t set any headers and run the request. 
+You will get back the “Server requires application/json” message.
+
+Now go back and add the <code>Content-Type</code> header with a value of <code>application/json</code> and run the request again. 
+You will get the “You sent JSON” message back from the server.
+
+This <code>app.post()</code> method call adds the <code>requireJsonContent()</code> middleware function to ensure the incoming request payload has a <code>Content-Type</code> header value set to <code>application/json</code>. 
+If it doesn’t pass the check, an error response is sent. 
+If it does, the request is then handed off to the next piece of middleware in the chain via the <code>next()</code> method.
+
+<h3 id="ExpressMiddlewaretopic-5">Third-Party Express Middleware</h3>
+You’ve built a couple of custom middlewares to far, but there are lots of packages already built to do the things you might normally want to do. 
+In fact, you’ve used the simple routing middleware library by using the <code>app.get()</code> or <code>app.post()</code> middleware functions. 
+There are thousands of middleware libraries for doing things like parsing incoming data, routing, and authorization.
+
+Okta has an Express middleware for OIDC security that I’ll show you to demonstrate using third-party middleware libraries.
+
+<h3 id="ExpressMiddlewaretopic-6">Why Okta for Express Applications</h3>
+At Okta, our goal is to make <a href="https://developer.okta.com/product/user-management/">identity management</a> a lot easier, more secure, and more scalable than what you’re used to. 
+Okta is a cloud service that allows developers to create, edit, and securely store user accounts and user account data, and connect them with one or multiple applications. 
+Our API enables you to:
+<a href="https://developer.okta.com/product/authentication/">Authenticate</a> and <a href="https://developer.okta.com/product/authorization/">authorize</a> your users
+Store data about your users
+Perform password-based and <a href="https://developer.okta.com/authentication-guide/social-login/">social login</a>
+Secure your application with <a href="https://developer.okta.com/use_cases/mfa/">multi-factor authentication</a>
+And much more! Check out our <a href="https://developer.okta.com/documentation/">product documentation</a>
+
+<h3 id="ExpressMiddlewaretopic-7">Okta’s OIDC Express Middleware</h3>
+To install Okta’s OIDC middleware for Express, run:
+
+<code>npm install @okta/oidc-middleware@0.1.3 --save</code>
+Then in the <code>server.js</code> file, you create an instance if the middleware with some configuration options so that Okta knows how to connect to your Okta application.
+
+<code>const oidc = new ExpressOIDC({
+issuer: 'https://{yourOktaDomain}/oauth2/default',
+client_id: '{yourClientId}',
+client_secret: '{yourClientSecret}',
+redirect_uri: 'http://localhost:3000/authorization-code/callback',
+scope: 'openid profile'
+});</code>
+You’ll also need to tell Express to use the OIDC middleware router instead of the default router.
+
+<code>app.use(oidc.router);</code>
+Then you use it like any other middleware:
+
+<code>app.get('/protected', oidc.ensureAuthenticated(), (req, res) =&gt; {
+res.send('Top Secret');
+});</code>
+The <code>oidc.ensureAuthenticated()</code> function is a middleware in the Okta library. 
+It runs a function to see if the current user is logged in. 
+If they are, it calls <code>next()</code> to let the <code>app.get()</code> function continue handling the request. 
+If they aren’t it will send back an <code>HTTP 401 (Unauthorized)</code> response.
+
+<h3 id="ExpressMiddlewaretopic-8">Middleware Order is Important</h3>
+When a request is received by Express, each middleware that matches the request is run in the order it is initialized until there is a terminating action (like a response being sent).
+
+<img src="/assets-jekyll/blog/express-middleware-examples/middleware-30b3b30ad54e21d8281719042860f3edd9fb1f40f93150233a08165d908f4631.png" alt="Middleware Flow" width="800">
+
+So if an error occurs, all middleware that is meant to handle errors will be called in order until one of them does not call the <code>next()</code> function call.
+
+<h3 id="ExpressMiddlewaretopic-9">Error Handling in Express Middleware</h3>
+Express has a built-in default error handler that is inserted at the end of the middleware pipeline that handles any unhandled errors that may have occurred in the pipeline. 
+Its signature adds an error parameter to the standard parameters of request, response, and next. 
+The basic signature looks like this:
+
+<code>app.use((err, req, res, next) =&gt; {
+// middleware functionality here
+})</code>
+In order to call an error-handling middleware, you simply pass the error to <code>next()</code>, like this:
+
+<code>app.get('/my-other-thing', (req, res, next) =&gt; {
+next(new Error('I am passing you an error!'));
+});
+
+app.use((err, req, res, next) =&gt; {
+console.log(err);    
+if(!res.headersSent){
+ res.status(500).send(err.message);
+}
+});</code>
+In this case, the error handling middleware at the end of the pipeline will handle the error. 
+You might also notice that I checked the <code>res.headersSent</code> property. 
+This just checks to see if the response has already sent the headers to the client. 
+If it hasn’t it sends a 500 HTTP status and the error message to the client. 
+You can also chain error-handling middleware. 
+This is common to handle different types of errors in different ways. 
+For instance:
+
+<code>
+app.get('/nonexistant', (req, res, next) =&gt; {
+let err = new Error('I couldn\'t find it.');
+err.httpStatusCode = 404;
+next(err);
+});
+
+app.get('/problematic', (req, res, next) =&gt; {
+let err = new Error('I\'m sorry, you can\'t do that, Dave.');
+err.httpStatusCode = 304;
+next(err);
+});
+
+// handles not found errors
+app.use((err, req, res, next) =&gt; {
+if (err.httpStatusCode === 404) {
+ res.status(400).render('NotFound');
+}
+next(err);
+});
+
+// handles unauthorized errors
+app.use((err, req, res, next) =&gt; {
+if(err.httpStatusCode === 304){
+ res.status(304).render('Unauthorized');
+}
+next(err);
+})
+
+// catch all
+app.use((err, req, res, next) =&gt; {
+console.log(err);
+if (!res.headersSent) {
+ res.status(err.httpStatusCode || 500).render('UnknownError');
+}
+});</code>
+In this case, the middleware checks to see if a 404 (not found) error was thrown. 
+If so, it renders the ‘NotFound’ template page and then passes the error to the next item in the middleware. 
+The next middleware checks to see if a 304 (unauthorized) error was thrown. 
+If it was, it renders the ‘Unauthorized’ page, and passes the error to the next middleware in the pipeline. 
+Finally the “catch all” error handler just logs the error and if no response has been sent, it sends the error’s <code>httpStatusCode</code> (or an HTTP 500 status if none is provided) and renders the ‘UnknownError’ template.
+
+<h3 id="ExpressMiddlewaretopic-10">Learn More About Express Middleware</h3>
+For detailed instructions on setting up the Okta OIDC middleware, you can follow the <a href="https://developer.okta.com/quickstart/#/okta-sign-in-page/nodejs/express">ExpressJS Quickstart</a>.
+
+There is also a list of officially supported Express middleware in this <a href="https://github.com/senchalabs/connect#middleware">GitHub repo</a> you can try out and dig into to learn more
+
+Finally, if you’re interested in learning more about how to use Okta, there’s an <a href="https://github.com/okta/okta-sdk-nodejs">Okta Node SDK</a> for implementing more user management functionality in your application.
+
+<h2>How To Use And Write Express Middleware</h2>
+<div id="Middlewaretoc" class="toc"><a href="#Middlewaretopic-0" target="_self"><span class="orange">Setting Up An Express Server</span></a><br><a href="#Middlewaretopic-1" target="_self"><span class="orange">What Is Middleware?</span></a><br><a href="#Middlewaretopic-2" target="_self"><span class="orange">How To Create Logging Middleware</span></a><br><a href="#Middlewaretopic-3" target="_self"><span class="orange">Advanced Middleware Example</span></a><br><a href="#Middlewaretopic-4" target="_self"><span class="orange">Middleware Additional Information</span></a><br><a href="#Middlewaretopic-5" target="_self">1. Controller Actions Are Just Like Middleware</a><br><a href="#Middlewaretopic-6" target="_self">2. Calling next Is Not The Same As Calling return</a><br><a href="#Middlewaretopic-7" target="_self">3. Middleware Will Execute In Order</a><br><a href="#Middlewaretopic-8" target="_self">Conclusion</a><br></div>
+<br><br>
+Middleware is an often misunderstood Middlewaretopic since it sounds and appears very complicated, but in reality middleware is actually really straightforward. 
+The entire idea of middleware is to execute some code before the controller action that sends the response and after the server gets the request from the client. 
+
+Essentially it is code that executes in the middle of your request, hence the name middleware. 
+Before I get too in depth on the details of middleware, though, I want to setup a basic Express server with two routes.<em>If you prefer to learn visually, check out the video version of this article.</em>
+
+<h3 id="Middlewaretopic-0"><span class="orange">Setting Up An Express Server</span></h3>
+To get started working with a Node.js project you will need to run
+<code>npm init -y</code>. 
+
+This will create a basic package.json file with all of the default values filled in for you. 
+From there the next thing to do is install Express by running <code>npm i express</code>. 
+Lastly, we need to create a server.js file with the following code.
+<code>const express = require('express')
+
+const app = express()
+app.get('/', (req, res) =&gt; {
+res.send('Home Page')
+
+})
+app.get('/users', (req, res) =&gt; {
+res.send('Users Page')
+
+})
+app.listen(3000, () =&gt; console.log('Server Started'))
+</code>This server.js file simply sets up a server on port 3000 that has two routes, a home page route and a users page route. 
+
+The last thing to do is run <code>node server.js</code> to start up the application and if everything worked you should see a message in the console saying <strong>Server Started</strong>. 
+You can then open up any browser to <code>localhost:3000</code> and you should see the message <strong>Home Page</strong>. 
+If you go to <code>localhost:3000/users</code> you should then see the message <strong>Users Page</strong>.That is all the basic setup we will need for the rest of this article. 
+
+As we make changes you will need to restart your server in the console to see the changes take effect.
+<h3 id="Middlewaretopic-1"><span class="orange">What Is Middleware?</span></h3>
+I talked briefly about middleware as functions that execute after the server receives the request and before the controller action sends the response, but there are a few more things that are specific to middleware. 
+The biggest thing is that middleware functions have access to the response (<code>res</code>) and request (<code>req</code>) variables and can modify them or use them as needed. 
+Middleware functions also have a third parameter which is a <code>next</code> function. 
+
+This function is important since it must be called from a middleware for the next middleware to be executed. 
+If this function is not called then none of the other middleware including the controller action will be called.This is all a bit difficult to understand just from text so in the next section we are going to create a logging middleware that will<span class="orange"> log the url of the request a </span>user makes.
+<h3 id="Middlewaretopic-2"><span class="orange">How To Create Logging Middleware</span></h3>
+As I mentioned in the previous section, middleware takes three parameters, <code>req</code>, <code>res</code>, and <code>next</code>, so in order to create middleware we need to create a function that has those three inputs.<code>const express = require('express')
+const app = express()
+
+app.get('/', (req, res) =&gt; {
+res.send('Home Page')
+})
+
+app.get('/users', (req, res) =&gt; {
+res.send('Users Page')
+})
+
+function loggingMiddleware(req, res, next) {
+console.log('Inside Middleware')
+}
+
+app.listen(3000, () =&gt; console.log('Server Started'))
+</code>We now have the shell of a basic middleware function defined with some placeholder content, but the application is not using it. 
+Express has a few different ways you can define middleware to be used, but for this example we will make this middleware execute before every single controller action by adding it to the application level. 
+
+This can be done by using the <code>use</code> function on the <code>app</code> variable like this.<code>const express = require('express')
+const app = express()
+app.use(loggingMiddleware)
+
+app.get('/', (req, res) =&gt; {
+res.send('Home Page')
+})
+
+app.get('/users', (req, res) =&gt; {
+res.send('Users Page')
+})
+
+function loggingMiddleware(req, res, next) {
+console.log('Inside Middleware')
+}
+
+app.listen(3000, () =&gt; console.log('Server Started'))
+</code>The application is now using the middleware that we defined and if we restart our server and navigate to any of the pages in our app you will notice that in the console the message <strong>Inside Middleware</strong> appears. 
+This is great, but there is a slight problem. 
+
+The application now loads forever and never actually finishes the request. 
+This is because in our middleware we are not calling the <code>next</code> function so the controller action never gets called. 
+We can fix this by calling <code>next</code> after our logging.<code>const express = require('express')
+
+const app = express()
+app.use(loggingMiddleware)
+app.get('/', (req, res) =&gt; {
+
+res.send('Home Page')
+})
+app.get('/users', (req, res) =&gt; {
+
+res.send('Users Page')
+})
+function loggingMiddleware(req, res, next) {
+
+console.log('Inside Middleware')
+next()
+}
+
+app.listen(3000, () =&gt; console.log('Server Started'))
+</code>Now if you restart the server you will notice that everything is logging correctly, and the web page is properly loading. 
+The next thing to do is to actually log out the URL that the user is accessing inside the middleware. 
+
+This is where the <code>req</code> variable will come in handy.<code>const express = require('express')
+const app = express()
+app.use(loggingMiddleware)
+
+app.get('/', (req, res) =&gt; {
+res.send('Home Page')
+})
+
+app.get('/users', (req, res) =&gt; {
+res.send('Users Page')
+})
+
+function loggingMiddleware(req, res, next) {
+console.log(`${new Date().toISOString()}: ${req.originalUrl}`)
+next()
+
+}
+app.listen(3000, () =&gt; console.log('Server Started'))
+</code>The logging middleware is now working 100% correctly on all the routes in the application, but we have only scratched the surface on the usefulness of middleware. 
+
+In the next example we are going to take a look at creating a simp<span class="orange">le authorization middleware for</span> the users page.
+<h3 id="Middlewaretopic-3"><span class="orange">Advanced Middleware Example</span></h3>
+To get started we need to create another function to use as middleware.<code>const express = require('express')
+const app = express()
+app.use(loggingMiddleware)
+
+app.get('/', (req, res) =&gt; {
+res.send('Home Page')
+})
+
+app.get('/users', (req, res) =&gt; {
+res.send('Users Page')
+})
+
+function loggingMiddleware(req, res, next) {
+console.log(`${new Date().toISOString()}: ${req.originalUrl}`)
+next()
+
+}
+function authorizeUsersAccess(req, res, next) {
+console.log('authorizeUsersAccess Middleware')
+
+next()
+}
+app.listen(3000, () =&gt; console.log('Server Started'))
+
+</code>This is just a shell of a function to be used as middleware, but we can add it to our users page route now in order to ensure that our middleware is only being executed on the users page route. 
+This can be done by adding the function as a parameter to the <code>app.get</code> function for the users page.<code>const express = require('express')
+const app = express()
+
+app.use(loggingMiddleware)
+app.get('/', (req, res) =&gt; {
+res.send('Home Page')
+
+})
+app.get('/users', authorizeUsersAccess, (req, res) =&gt; {
+res.send('Users Page')
+
+})
+function loggingMiddleware(req, res, next) {
+console.log(`${new Date().toISOString()}: ${req.originalUrl}`)
+
+next()
+}
+function authorizeUsersAccess(req, res, next) {
+
+console.log('authorizeUsersAccess Middleware')
+next()
+}
+
+app.listen(3000, () =&gt; console.log('Server Started'))
+</code>Now if you restart the server and go to the users page you should see the message <strong>authorizeUsersAccess Middleware</strong>, but if you go to the home page this message will not show up. 
+We now have middleware that only executes on a single route in the application. 
+
+The next thing to do is fill in the logic of this function so that if the user does not have access to the page they will get an error message instead.<code>const express = require('express')
+const app = express()
+app.use(loggingMiddleware)
+
+app.get('/', (req, res) =&gt; {
+res.send('Home Page')
+})
+
+app.get('/users', authorizeUsersAccess, (req, res) =&gt; {
+res.send('Users Page')
+})
+
+function loggingMiddleware(req, res, next) {
+console.log(`${new Date().toISOString()}: ${req.originalUrl}`)
+next()
+
+}
+function authorizeUsersAccess(req, res, next) {
+if (req.query.admin === 'true') {
+
+next()
+} else {
+res.send('ERROR: You must be an admin')
+
+}
+}
+app.listen(3000, () =&gt; console.log('Server Started'))
+
+</code>This middleware now checks to see if the query parameter <code>admin=true</code> is in the URL and if it is not an error message is shown to the user. 
+You can test this by going to <code>http://localhost:3000/users</code> and you will see an error message explaining that you are not a admin. 
+If you instead go to <code>http://localhost:3000/users?admin=true</code> you will be sent the normal users page since you set the query parameter of admin to true.One other thing that is really useful with middleware is the ability to send data between middleware. 
+
+There is no way to do this with the next function, but you can modify the <code>req</code> or <code>res</code> variables to set your own custom data. 
+For example in the previous example if we wanted to set a variable to true if the user was a admin we could easily do that.<code>const express = require('express')
+const app = express()
+
+app.use(loggingMiddleware)
+app.get('/', (req, res) =&gt; {
+res.send('Home Page')
+
+})
+app.get('/users', authorizeUsersAccess, (req, res) =&gt; {
+console.log(req.admin)
+
+res.send('Users Page')
+})
+function loggingMiddleware(req, res, next) {
+
+console.log(`${new Date().toISOString()}: ${req.originalUrl}`)
+next()
+}
+
+function authorizeUsersAccess(req, res, next) {
+if (req.query.admin === 'true') {
+req.admin = true
+
+next()
+} else {
+res.send('ERROR: You must be an admin')
+
+}
+}
+app.listen(3000, () =&gt; console.log('Server Started'))
+
+</code>This code sets an admin variable on the <code>req</code> object which is then accessed in the controller action for the users page.
+<h3 id="Middlewaretopic-4"><span class="orange">Middleware Additional Information</span></h3>
+This is the majority of everything you need to know about middleware functions, but there a few extra things that are important to know.
+
+<h3 id="Middlewaretopic-5">1. Controller Actions Are Just Like Middleware</h3>One thing you may have noticed is that controller actions which have a <code>req</code>, and <code>res</code> variable are very similar to middleware. 
+That is because they are essentially middleware, but with no other middleware that comes after them. 
+
+They are the end of the chain which is why there are never any next calls inside the controller action.
+
+<h3 id="Middlewaretopic-6">2. Calling next Is Not The Same As Calling return</h3>By far the biggest mistake I see developers make when working with middleware is that they treat the <code>next</code> function as if it exited out of the middleware. 
+Take for example this middleware.<code>function middleware(req, res, next) {
+
+if (req.valid) {
+next()
+}
+
+res.send('Invalid Request')
+}
+</code>At face value this code looks correct. 
+
+If the request is valid then the <code>next</code> function is called and if it isn't valid then it is sending an error message. 
+The problem is that the <code>next</code> function does not actually return from the middleware function. 
+This means that when <code>next</code> is called the next middleware will execute and that will continue until no more middleware is left to execute. 
+
+Then after all the middleware after this middleware is done executing the code will pick back up right after the <code>next</code> call in each of the middleware. 
+That means that in this middleware the error message will always be sent to the user which is obviously not what you want. 
+An easy way to prevent this is by simply returning when you call <code>next</code><code>function middleware(req, res, next) {
+
+if (req.valid) {
+return next()
+}
+
+res.send('Invalid Request')
+}
+</code>Now the code will no longer execute after calling <code>next</code> since it will return out of the function. 
+
+An easy way to see this issue in action is with the following code.<code>const express = require('express')
+const app = express()
+app.get('/', middleware, (req, res) =&gt; {
+
+console.log('Inside Home Page')
+res.send('Home Page')
+})
+
+function middleware(req, res, next) {
+console.log('Before Next')
+next()
+
+console.log('After Next')
+}
+app.listen(3000, () =&gt; console.log('Server Started'))
+
+</code>When you run this code and go to the home page the console will print out the following messages in order.<code>Before Next
+Inside Home Page
+After Next</code>Essentially what is happening is the middleware is called and it logs out the before statement. 
+
+Then next is called so the next set of middleware is called which is the controller action where the home page message is logged. 
+Lastly the controller action finishes executing so the middleware then executes the code after <code>next</code> which logs out the after statement.
+
+<h3 id="Middlewaretopic-7">3. Middleware Will Execute In Order</h3>This may seem self-explanatory but when you define middleware it will execute in the order it is used. 
+
+Take for example the following code.<code>const express = require('express')
+const app = express()
+app.use(middlewareThree)
+
+app.use(middlewareOne)
+app.get('/', middlewareTwo, middlewareFour, (req, res) =&gt; {
+console.log('Inside Home Page')
+
+res.send('Home Page')
+})
+function middlewareOne(req, res, next) {
+
+console.log('Middleware One')
+next()
+}
+
+function middlewareTwo(req, res, next) {
+console.log('Middleware Two')
+next()
+
+}
+function middlewareThree(req, res, next) {
+console.log('Middleware Three')
+
+next()
+}
+function middlewareFour(req, res, next) {
+
+console.log('Middleware Four')
+next()
+}
+
+app.listen(3000, () =&gt; console.log('Server Started'))
+</code>Since the <code>app.use</code> statements come first the middleware in those statements will be executed first in the order they were added. 
+Next the <code>app.get</code> middleware is defined and again they will be executed in the order they are in the <code>app.get</code> function. 
+
+This will lead to the following console output if ran.<code>Middleware Three
+Middleware One
+Middleware Two
+
+Midd<span class="orange">leware Four</span></code>
+<h3 id="Middlewaretopic-8">Conclusion</h3>
+That is all there is to know about middleware. 
+Middleware is incredibly powerful for cleaning up code and making things like user authorization and authentication much easier, but it can be used for so much more than just that because of the incredible flexibility of middleware.
 
 
 

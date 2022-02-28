@@ -1,13 +1,13 @@
+
 <!DOCTYPE html>
 <html>
 <head>
 <title>Stdv Line chart</title>
 <link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-<script src='..\mainscript.js'></script>
-<script src="./rchart/RGraph.common.core.js" ></script>
-<script src="./rchart/RGraph.line.js"></script>
-<!--script src="./rchart/RGraph.svg.bar.js" ></script-->
+<script src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.common.core.js" ></script>
+<script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.line.js"></script>
 
 
 <style>
@@ -18,7 +18,10 @@
 <body onkeypress="chkKey()">
 <center>
 <canvas id="cvs" width="1350" height="600">[No canvas support]</canvas>
-<br><span id="turnover"></span>
+<br>
+<canvas id="accel" width="1350" height="240">[No canvas support]</canvas>
+<br>
+<span id="turnover"></span>
 <span id="lastValues"></span>
 </center>
 <div id="dateTime" style="margin-left:5%;" class="lime"> </div>
@@ -98,10 +101,35 @@ colors: red, green, #f58, blue, grey, cyan, brown, purple, yellow
           newDevadd.map(a => a.toFixed(2)), newDevminus.map(a => a.toFixed(2)),
         ];
 	   theMax = Math.max(Math.max(...mydata[0]),Math.max(...mydata[1]),Math.max(...mydata[2]),Math.max(...mydata[3]),Math.max(...mydata[4]),Math.max(...mydata[5]),Math.max(...mydata[6]),Math.max(...mydata[6]),Math.max(...mydata[7]),Math.max(...mydata[8]));
-
 	   theMin = Math.min(Math.min(...mydata[0]),Math.min(...mydata[1]),Math.min(...mydata[2]),Math.min(...mydata[3]),Math.min(...mydata[4]),Math.min(...mydata[5]),Math.min(...mydata[6]),Math.min(...mydata[6]),Math.min(...mydata[7]),Math.min(...mydata[8]));
 
        drawchart()
+
+		// find derivative
+		derivative = diff(makeMovAve(mydata[0], 3));
+		derivative.unshift(0);
+		derivative.fill(null,0,intv6); //array.fill(value, start, end)
+		// diffaccel
+		// diffaccel = mydata[baseSubIdx].map(function(item, index) { return item - mydata[baseMinuIdx][index]; })
+		diffaccel = []
+		diffaccel.push(mydata[1].map(function(item, index) { return item - mydata[6][index]; }))
+		diffaccel.push(mydata[2].map(function(item, index) { return item - mydata[6][index]; }))
+		diffaccel.push(mydata[3].map(function(item, index) { return item - mydata[6][index]; }))
+		diffaccel.push(mydata[4].map(function(item, index) { return item - mydata[6][index]; }))
+		diffaccel.push(mydata[5].map(function(item, index) { return item - mydata[6][index]; }))
+		diffaccel.push(mydata[6].map(function(item, index) { return item - mydata[6][index]; }))
+
+		diffaccel[0].fill(null,0,intv6); //array.fill(value, start, end)
+		diffaccel[1].fill(null,0,intv6); //array.fill(value, start, end)
+		diffaccel[2].fill(null,0,intv6); //array.fill(value, start, end)
+		diffaccel[3].fill(null,0,intv6); //array.fill(value, start, end)
+		diffaccel[4].fill(null,0,intv6); //array.fill(value, start, end)
+		diffaccel[5].fill(null,0,intv6); //array.fill(value, start, end)
+
+		diffaccMax = Math.max(...[].concat.apply([], diffaccel));
+		diffaccMin = Math.min(...[].concat.apply([], diffaccel));
+		drawTrend(diffaccel, diffaccMax, diffaccMin, 'accel');
+
      }
 
 	function makeMovAve(bigArray, intv) {
@@ -197,6 +225,44 @@ colors: red, green, #f58, blue, grey, cyan, brown, purple, yellow
             }
           }).trace();
     };
+
+    function drawTrend(therange,maxValue, minValue, chartID) {
+       // dataTooltips = therange.map(item => Math.round(item * 1000) / 1000)
+       // dataTooltips = dataTooltips.map(String)
+       RGraph.reset(document.getElementById(chartID));
+       line = new RGraph.Line({
+       	id:chartID, data:therange,
+       	options: {
+       		title: "acceleration",
+    			titleColor: 'grey', 
+    			titleSize: 10,
+       		backgroundGrid: true, axisColor: '#864', textColor: '#ccc',
+    		     numxticks: 0,
+               colors:['red','green','#f58','blue','grey','cyan','brown','purple','yellow'],
+               scaleDecimals: 2,
+
+       		tickmarksDotLinewidth: 0,ticksize: 1, linewidth: 1, 
+       		ymax: maxValue, ymin: minValue,
+               tickmarks: 'plus',
+
+       		spline: false, shadow: false,
+              // tooltips: dataTooltips,
+			backgroundGridVlines: true,
+			backgroundGridDashed: true, 
+       		backgroundGridColor: '#001000',
+            gutterLeft: 50,
+            gutterRight: 50,
+            gutterTop: 50,
+            gutterBottom: 50
+
+       	}
+       }).trace();
+    };
+    
+    function diff(arr) {
+      return arr.slice(1).map(function(n, i) { return n - arr[i]; });
+    }
+
 
     redraw();
 </script>
