@@ -28366,6 +28366,115 @@ That is all there is to know about middleware.
 Middleware is incredibly powerful for cleaning up code and making things like user authorization and authentication much easier, but it can be used for so much more than just that because of the incredible flexibility of middleware.
 
 
+<h2>Tesseract.js: OCR Remote Images</h2>
+Tesseract.js works with a &lt;script> tag via local copy or CDN, with webpack via npm and on Node.js with npm/yarn.
+
+CDN
+&lt;!-- v2 -->
+&lt;script src='https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js'>&lt;/script>
+
+After including the script the Tesseract variable will be globally available.
+
+<div id="OCRImagestoc" class="toc"><a href="#OCRImagestopic-0" target="_self">Download a remote file with Node.js</a><br><a href="#OCRImagestopic-1" target="_self">OCR a local image with Tesseract.js and Node.js</a><br><a href="#OCRImagestopic-2" target="_self">OCR a remote image with Tesseract.js</a><br></div>
+<br><br>
+Tesseract.js is a JavaScript OCR library based on the world’s most popular Optical Character Recognition engine. 
+It’s insanely easy to use on both the client-side and on the server with Node.js. 
+
+Server side, Tesseract.js only works with local images. 
+But, with a little help from the request Node package, we can download a remote image from a URL and then OCR it with Tesseract.js. 
+
+We’ll tackle this in three steps: 
+Write code to download a remote file with Node
+Write code to OCR that local file with Tessearct
+Put the two snippets together
+
+The final product will take just fifteen lines of JavaScript to OCR images from a URL. 
+Sound good? Let’s get started.
+<h3 id="OCRImagestopic-0">Download a remote file with Node.js</h3>
+Request “is designed to be the simplest way possible to make http calls” in Node.js. 
+We’ll use it to open a URL and then pipe the stream to the local file system using the Node.js standard library. 
+When finished, we’ll fire off a callback. 
+
+Paste this code into a new file called download.js: 
+<code>var request = require('request')
+var fs = require('fs')
+var url = 'http://tesseract.projectnaptha.com/img/eng_bw.png'
+var filename = 'pic.png'
+var writeFileStream = fs.createWriteStream(filename)
+request(url).pipe(writeFileStream).on('close', function() {
+  console.log(url, 'saved to', filename)
+})</code>
+
+We’re using the sample image from the Tesseract documentation, which looks like this:
+<img src="http://tesseract.projectnaptha.com/img/eng_bw.png">
+
+Install request and run the script:
+<code>npm install request
+node download.js</code>
+
+Check your directory and you should see a new file. 
+Now let’s OCR that downloaded file. 
+<h3 id="OCRImagestopic-1">OCR a local image with Tesseract.js and Node.js</h3>
+Getting started with Tesseract.js is dead simple. 
+
+Paste this code into a file called ocr.js. 
+<code>var Tesseract = require('tesseract.js')
+var filename = 'pic.png'
+Tesseract.recognize(filename)
+  .progress(function  (p) { console.log('progress', p)  })
+  .catch(err =&gt; console.error(err))
+  .then(function (result) {
+console.log(result.text)
+process.exit(0)
+  })</code>
+
+Install Tesseract.js and run the script: 
+<code>npm install tesseract.js
+node ocr.js</code>
+
+Once Tesseract starts up (~10 seconds on my MacBook Pro), we’ll see progress updates and then find the recognized text in <code>result.text</code>. 
+There’s a <i>ton</i> more data hiding in <code>result</code> if you’re inclined to go digging.
+<img src="https://s3.amazonaws.com/com.twilio.prod.twilio-docs/original_images/tesseract-js.gif">
+We now have code to download a remote file and code to OCR a local file — we just need to put them together. 
+<h3 id="OCRImagestopic-2">OCR a remote image with Tesseract.js</h3>
+Paste this code into a new file called download-and-ocr.js: 
+<code>var Tesseract = require('tesseract.js')
+var request = require('request')
+var fs = require('fs')
+var url = 'http://tesseract.projectnaptha.com/img/eng_bw.png'
+var filename = 'pic.png'
+var writeFile = fs.createWriteStream(filename)
+request(url).pipe(writeFile).on('close', function() {
+  console.log(url, 'saved to', filename)
+  Tesseract.recognize(filename)
+.progress(function  (p) { console.log('progress', p)  })
+.catch(err =&gt; console.error(err))
+.then(function (result) {
+  console.log(result.text)
+  process.exit(0)
+})
+});</code>
+
+All we’ve done here is: 
+Start with the script from download.js 
+Require Tesseract.js
+Paste the the code from ocr.js into the callback that’s run when the file finishes downloading. 
+Give the script a run, swapping in your own picture URL if you so please: 
+
+<code>node download-and-ocr.js</code>
+
+<b>Next Steps</b>
+That’s it! Three simple steps and we’re using Tesseract.js to perform OCR on an image from a URL. 
+My personal motivation is to use Tesseract.js in conjunction with Twilio MMS to process photos that I snap while running around NYC. 
+Perhaps I’ll grep phone numbers out of ads and run them through our Lookup API to see if they’re Twilio numbers. 
+What are you going to build? 
+If you’d like to learn more, check out:
+Docs for Request file streaming in Node.js
+Full API docs for Tesseract.js
+Twilio JavaScript quickstarts
+If you enjoyed this post, give a shout-out to Guillermo Webster and Kevin Kwok for their heroic effort porting Tesseract to JS. 
+And, of course, feel free to drop me a line if you have any questions or build something you’d like to show off.
+
 
 
 
