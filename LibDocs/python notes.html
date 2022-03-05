@@ -23,6 +23,8 @@ img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; bor
 <div id="toc"></div></center>
 <br><br>
 <div id="mustWatch"><center><span class="red">MustWatch</span></center><br>
+<a href="https://altair-viz.github.io/" class="whitebut ">Altair: Declarative Visualization</a>
+
 <a href="https://thonny.org/" class="whitebut ">thonny Python IDE</a>
 
 <a href="https://www.youtube.com/watch?v=dam0GPOAvVI" class="whitebut ">Python Website Full Tutorial - Flask</a>
@@ -14469,6 +14471,582 @@ create_map()  # 产生map地图
 print_map()  # 打印map地图
 root.mainloop()
 </code>
+
+<h2>Python获取全部股票代码信息</h2>
+<a href="https://juejin.cn/user/2604119467234270" class="whitebut ">Angryshark128</a>
+
+# 保存股票信息至本地 save_stocks()
+# 获取全部股票代码及名称 _get_all_stocks()
+# 获取股票信息 _get_stocks(base_url, stock)
+
+# 保存股票信息至本地
+def save_stocks():
+    all_stocks = target_util._get_all_stocks()
+    with open ("stock.csv",'a+') as f:
+        f.write("股票代码,股票名称,市场,分类,类型\n")
+        for stock in all_stocks:
+            f.write("{stock[id]},{stock[name]},{stock[category]},{stock[tag]},{stock[type]}\n".format(
+                stock=stock
+            ))
+
+    logging.info("全部股票信息写入完成！")
+    
+if __name__ == "__main__":
+    save_stocks()
+
+
+# 获取全部股票代码及名称
+def _get_all_stocks():
+    base_url = "http://54.push2.eastmoney.com/api/qt/clist/get?pn={page_num}&pz={page_size}&po=1&np=1&fltt=2&invt=2&fid=f3&fs={time_id}&fields=f12,f14"
+    stocks = [
+        {
+            "category": "A股",
+            "tag": "沪深A股",
+            "type": "股票",
+            "time_id": "m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23"
+        },
+        {
+            "category": "A股",
+            "tag": "上证A股",
+            "type": "股票",
+            "time_id": "m:1+t:2,m:1+t:23"
+        },
+        {
+            "category": "A股",
+            "tag": "深证A股",
+            "type": "股票",
+            "time_id": "m:0+t:6,m:0+t:80"
+        },
+        {
+            "category": "A股",
+            "tag": "新股",
+            "type": "股票",
+            "time_id": "m:0+f:8,m:1+f:8"
+        },
+        {
+            "category": "A股",
+            "tag": "创业板",
+            "type": "股票",
+            "time_id": "m:0+t:80"
+        },
+        {
+            "category": "A股",
+            "tag": "科创板",
+            "type": "股票",
+            "time_id": "m:1+t:23"
+        },
+        {
+            "category": "A股",
+            "tag": "沪股通",
+            "type": "股票",
+            "time_id": "b:BK0707"
+        },
+        {
+            "category": "A股",
+            "tag": "深股通",
+            "type": "股票",
+            "time_id": "b:BK0804"
+        },
+        {
+            "category": "B股",
+            "tag": "B股",
+            "type": "股票",
+            "time_id": "m:0+t:7,m:1+t:3"
+        },
+        {
+            "category": "A-B股",
+            "tag": "上证AB股比价",
+            "type": "股票",
+            "time_id": "m:1+b:BK0498"
+        },
+        {
+            "category": "A-B股",
+            "tag": "深证AB股比价",
+            "type": "股票",
+            "time_id": "m:0+b:BK0498"
+        },
+        {
+            "category": "A-B股",
+            "tag": "风险警示板",
+            "type": "股票",
+            "time_id": "m:0+f:4,m:1+f:4"
+        },
+        {
+            "category": "A-B股",
+            "tag": "两网及退市",
+            "type": "股票",
+            "time_id": "m:0+s:3"
+        },
+        {
+            "category": "美股",
+            "tag": "美股",
+            "type": "股票",
+            "time_id": "m:105,m:106,m:107"
+        },
+        {
+            "category": "港股",
+            "tag": "港股",
+            "type": "股票",
+            "time_id": "m:128+t:3,m:128+t:4,m:128+t:1,m:128+t:2"
+        },
+        {
+            "category": "英股",
+            "tag": "英股",
+            "type": "股票",
+            "time_id": "m:155+t:1,m:155+t:2,m:155+t:3,m:156+t:1,m:156+t:2,m:156+t:5,m:156+t:6,m:156+t:7,m:156+t:8"
+        }
+    ]
+
+    all_stocks = []
+    for stock in stocks:
+        all_stocks.extend(_get_stocks(base_url, stock))
+
+    logging.warning("全部股票信息共{0}条。".format(len(all_stocks)))
+    return all_stocks
+
+
+# 获取股票信息
+def _get_stocks(base_url, stock):
+    max_page_num = 50
+    page_size = 100
+    result = []
+
+    for page_num in range(1, max_page_num):
+        url = base_url.format(time_id=stock["time_id"], page_num=page_num, page_size=page_size)
+        resp = requests.get(url)
+
+        if not resp.ok:
+            logging.error("{0}-{1}-{2}请求失败：{3}".format(stock["type"],
+                                                       stock["category"],
+                                                       stock["tag"],
+                                                       url))
+
+        resp_json = resp.json()
+        if not resp_json["data"]:
+            logging.warning("当前页无数据，将不再继续请求！")
+            break
+
+        stocks = resp_json["data"]["diff"]
+        result.extend(list(
+            map(lambda s: {"id": s["f12"].replace(" ", "").replace("'", "_"),
+                           "name": s["f14"].replace(" ", "").replace("'", "_"),
+                           "category": stock["category"],
+                           "tag": stock["tag"],
+                           "type": stock["type"]},
+                stocks)))
+
+    logging.info("{0}-{1}-{2}信息爬取完成，共{3}条。".format(stock["type"], stock["category"], stock["tag"], len(result)))
+    return result
+
+
+<h2>YYDS 分析股票数据特征</h2>
+<div id="YYDStoc"><a href="#YYDStopic-0" target="_self">数据准备</a><br><a href="#YYDStopic-1" target="_self">特征构造</a><br><a href="#YYDStopic-2" target="_self">描述性统计</a><br><a href="#YYDStopic-3" target="_self">缺失值分析</a><br><a href="#YYDStopic-4" target="_self">特征间相关性分析</a><br><a href="#YYDStopic-5" target="_self">特征值分布</a><br><a href="#YYDStopic-6" target="_self">特征间的关系</a><br><a href="#YYDStopic-7" target="_self"><span class="orange">特征重要性</span></a><br><a href="#YYDStopic-8" target="_self">线性回归系数大小排序</a><br><a href="#YYDStopic-9" target="_self">随机森林特征重要性排序</a><br><a href="#YYDStopic-10" target="_self">RandomizedLasso</a><br><a href="#YYDStopic-11" target="_self">RFE递归特征消除特征排序</a><br><a href="#YYDStopic-12" target="_self">RFECV</a><br><a href="#YYDStopic-13" target="_self">LarsCV</a><br><a href="#YYDStopic-14" target="_self">创建特征排序矩阵</a><br><a href="#YYDStopic-15" target="_self">绘制特征重要性排序图</a><br></div></center>
+<br><br>
+
+<img class="lazy loaded" data-src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdx4aynvrr0g2Lm4cFLqFQVhrozxfXLP29ASlnGF2sTJXpR8piaUOx35Uw/640" src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdx4aynvrr0g2Lm4cFLqFQVhrozxfXLP29ASlnGF2sTJXpR8piaUOx35Uw/640" data-was-processed="true">
+
+本文主要从股市数据变量的<strong>特征分布及特征重要性</strong>两个角度对数据进行分析。
+
+通过绘制图表等方法分析特征本身对分布状况或特征间相互关系。
+通过机器学习模型方法分析出特种重要性排序，选出对结果贡献较大对那几个特征，这对后面建模对模型效果有着不可小觑对效果。
+
+<h3 id="YYDStopic-0">数据准备</h3>此处数据获取可参见<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=MzA4MjEyNTA5Mw==&amp;mid=2652587312&amp;idx=2&amp;sn=e49850868c977904ac5d803c43acabb7&amp;chksm=84656d7ab312e46c7de429cac932623c276ce51a47e567144cd70e8c5ab9ad1b6351652b38a0&amp;scene=21#wechat_redirect" textvalue="金融数据准备">金融数据准备</a>。
+
+df.info()
+
+&lt;class 'pandas.core.frame.DataFrame'&gt;
+DatetimeIndex: 1260 entries, 2015-12-31 to 2020-12-31
+Data columns (total 6 columns):
+ #   Column     Non-Null Count  Dtype  
+---  ------     --------------  -----  
+ 0   Open       1260 non-null   float64
+ 1   High       1260 non-null   float64
+ 2   Low        1260 non-null   float64
+ 3   Close      1260 non-null   float64
+ 4   Adj Close  1260 non-null   float64
+ 5   Volume     1260 non-null   int64  
+dtypes: float64(5), int64(1)
+memory usage: 68.9 KB
+
+<h3 id="YYDStopic-1">特征构造</h3>
+df['H-L'] = df['High'] - df['Low']
+df['O-C'] = df['Adj Close'] - df['Open']
+df['3day MA'] = df['Adj Close'].shift(1).rolling(window=3).mean()
+df['10day MA'] = df['Adj Close'].shift(1).rolling(window=10).mean()
+df['30day MA'] = df['Adj Close'].shift(1).rolling(window=30).mean()
+df['Std_dev'] = df['Adj Close'].rolling(5).std()
+df.dtypes
+
+<h3 id="YYDStopic-2">描述性统计</h3>
+df.describe().T
+
+<img class="lazy loaded" data-src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdxJ3ornzD0zAgmda1AaIEYm7j3qL6McTG21bstYp95Ea4SWUiasQOSNqA/640" src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdxJ3ornzD0zAgmda1AaIEYm7j3qL6McTG21bstYp95Ea4SWUiasQOSNqA/640" data-was-processed="true">
+
+<h3 id="YYDStopic-3">缺失值分析</h3><h4>检查缺失值</h4>
+df.isnull().sum() 
+
+Open          0
+High          0
+Low           0
+Close         0
+Adj Close     0
+Volume        0
+H-L           0
+O-C           0
+3day MA       3
+10day MA     10
+30day MA     30
+Std_dev       4
+dtype: int64
+
+<h4>缺失值可视化</h4>这里使用Series的属性plot直接绘制条形图。
+
+df_missing_count = df.isnull().sum() 
+# -1表示缺失数据
+# 另一个不常见的设置画布的方法
+plt.rcParams['figure.figsize'] = (15,8)
+df_missing_count.plot.bar()
+plt.show()
+
+<img class="lazy loaded" data-src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdxsA7wmd9uK7K4iaKIjiblHw9YVEibe0ACJmc2bUI3aPXHX8FSCgPx6sCHw/640" src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdxsA7wmd9uK7K4iaKIjiblHw9YVEibe0ACJmc2bUI3aPXHX8FSCgPx6sCHw/640" data-was-processed="true">
+
+for column in df:
+   print("column nunique  NaN")
+    print("{0:15} {1:6d} {2:6}".format(
+          column, df[column].nunique(), 
+          (df[column] == -1).sum()))
+
+column            nunique   NaN
+Open              1082      0
+High              1083      0
+Low               1025      0
+Close             1098      0
+Adj Close         1173      0
+Volume            1250      0
+H-L                357      0
+O-C               1237      2
+3day MA           1240      0
+10day MA          1244      0
+30day MA          1230      0
+Std_dev           1252      0
+
+<h3 id="YYDStopic-4">特征间相关性分析</h3>
+import seaborn as sns
+# 一个设置色板的方法
+# cmap = sns.diverging_palette(220, 10,
+                        as_cmap=True)
+sns.heatmap(df.iloc[:df.shape[0]].corr()
+        ,annot = True, cmap = 'Blues')
+
+<img class="lazy loaded" data-src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdx0EkIqYxwwyiagC4iasZjPKPmzZhekGLWGdvQicxKzB0n4iaDA1dj37uHicQ/640" src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdx0EkIqYxwwyiagC4iasZjPKPmzZhekGLWGdvQicxKzB0n4iaDA1dj37uHicQ/640" data-was-processed="true">
+
+<h3 id="YYDStopic-5">特征值分布</h3><h4>直方图</h4>
+columns_multi = [x for x in list(df.columns)]
+df.hist(layout = (3,4), column = columns_multi)
+# 一种不常用的调整画布大小的方法
+fig=plt.gcf()
+fig.set_size_inches(20,9)
+
+<img class="lazy loaded" data-src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdx8mgEf6eibb8u1GMMLKOkiczN6yMRVSeqBjLHW8VsF4VY94uNgia1z2OQQ/640" src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdx8mgEf6eibb8u1GMMLKOkiczN6yMRVSeqBjLHW8VsF4VY94uNgia1z2OQQ/640" data-was-processed="true">
+
+<h4>密度图</h4>
+names = columns_multi
+df.plot(kind='density', subplots=True, 
+        layout=(3,4), sharex=False)
+
+<img class="lazy loaded" data-src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdxXPR9mXSTC4XsK1MOicPGyt7dGhO54TAcCwq7RPhFQ2sFL0QdqFOBQhA/640" src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdxXPR9mXSTC4XsK1MOicPGyt7dGhO54TAcCwq7RPhFQ2sFL0QdqFOBQhA/640" data-was-processed="true">
+
+<h3 id="YYDStopic-6">特征间的关系</h3><strong>函数可视化探索数据特征间的关系</strong>
+
+sns.pairplot(df, size=3, 
+             diag_kind="kde")
+
+<img class="lazy loaded" data-src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbZlibm15O9H3ribG7TDl2C1TaXwT0a7WGEia9g7FhZnTTmiajMtGXJHQHuNkEziaEL5UZ5QIpib6smVn2gw/640" src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbZlibm15O9H3ribG7TDl2C1TaXwT0a7WGEia9g7FhZnTTmiajMtGXJHQHuNkEziaEL5UZ5QIpib6smVn2gw/640" data-was-processed="true">
+
+<h3 id="YYDStopic-7"><span class="orange">特征重要性</span></h3>通过多种方式对特征重要性进行评估，将每个特征的特征重要的得分取均值，最后以均值大小排序绘制特征重要性排序图，直观查看特征重要性。
+
+<h4>导入相关模块</h4>
+from sklearn.feature_selection import RFE,RFECV, f_regression
+from sklearn.linear_model import (LinearRegression, Ridge, Lasso，LarsCV)
+from stability_selection import StabilitySelection, RandomizedLasso
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVR
+
+<h3 id="YYDStopic-8">线性回归系数大小排序</h3>回归系数(regression coefficient)在回归方程中表示自变量 x 对因变量 y 影响大小的参数。
+回归系数越大表示 x 对 y 影响越大。
+
+<h4>创建排序函数</h4>
+df = df.dropna()
+Y = df['Adj Close'].values
+X = df.values
+colnames = df.columns
+
+# 定义字典来存储的排名
+ranks = {}
+# 创建函数，它将特征排名存储到rank字典中
+def ranking(ranks, names, order=1):
+    minmax = MinMaxScaler()
+    ranks = minmax.fit_transform(order*np.array([ranks]).T).T[0]
+    ranks = map(lambda x: round(x,2), ranks)
+    res = dict(zip(names, ranks))
+    return res
+
+<h4>多个回归模型系数排序</h4>
+# 使用线性回归
+lr = LinearRegression(normalize=True)
+lr.fit(X,Y)
+ranks["LinReg"] = ranking(np.abs(lr.coef_), colnames)
+# 使用 Ridge 
+ridge = Ridge(alpha = 7)
+ridge.fit(X,Y)
+ranks['Ridge'] = ranking(np.abs(ridge.coef_), colnames)
+# 使用 Lasso
+lasso = Lasso(alpha=.05)
+lasso.fit(X, Y)
+ranks["Lasso"] = ranking(np.abs(lasso.coef_), colnames)
+
+<h3 id="YYDStopic-9">随机森林特征重要性排序</h3>随机森林得到的特征重要性的原理是我们平时用的较频繁的一种方法，无论是对分类型任务还是连续型任务，都有较好对效果。
+在随机森林中某个特征X的重要性的计算方法如下：
+对于随机森林中的每一颗决策树， 使用相应的OOB(袋外数据)数据来计算它的袋外数据误差 ，记为errOOB1.
+
+随机地对袋外数据OOB所有样本的特征X加入噪声干扰 (就可以随机的改变样本在特征X处的值)， 再次计算它的袋外数据误差 ，记为errOOB2.
+
+假设随机森林中有Ntree 棵树，那么对于特征X的重要性<img style="width:200px; background-color:gray;" src="https://mmbiz.qlogo.cn/mmbiz_svg/47CicbLQOxtUxCJwVFD9RPfiaaSzNh2nT7oaX11CiaDeiaXbCsJK0UaQL4YqCIhvbib4bhX8NdicWMacKvDvyicLicNsefkr7HSs92Qic/0">，之所以可以用这个表达式来作为相应特征的重要性的度量值是因为：若给某个特征随机加入噪声之后，袋外的准确率大幅度降低，则说明这个特征对于样本的分类结果影响很大，也就是说它的重要程度比较高。
+
+<h4>连续型特征重要性</h4>对于连续型任务的特征重要性，可以使用回归模型<strong>RandomForestRegressor</strong>中<code>feature_importances_</code>属性。
+
+X_1 = dataset[['Open', 'High', 'Low', 'Volume', 
+               'Increase_Decrease','Buy_Sell_on_Open', 'Buy_Sell', 'Returns']]
+y_1 = dataset['Adj Close']
+
+# 创建决策树分类器对象
+clf = RandomForestRegressor(random_state=0, n_jobs=-1)
+# 训练模型
+model = clf.fit(X_1, y_1)
+# 计算特征重要性
+importances = model.feature_importances_
+# 按降序排序特性的重要性
+indices = np.argsort(importances)[::-1]
+# 重新排列特性名称，使它们与已排序的特性重要性相匹配
+names = [dataset.columns[i] for i in indices]
+# 创建画布
+plt.figure(figsize=(10,6))
+# 添加标题
+plt.title("Feature Importance")
+# 添加柱状图
+plt.bar(range(X.shape[1]), importances[indices])
+# 为x轴添加特征名
+plt.xticks(range(X.shape[1]), names, rotation=90)
+
+<img class="lazy loaded" data-src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdxbCZP3O64tOy646UtJobBTVOmA9YtU5RNQ9fVTBhP1YsOonQoeQkXLg/640" src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdxbCZP3O64tOy646UtJobBTVOmA9YtU5RNQ9fVTBhP1YsOonQoeQkXLg/640" data-was-processed="true">
+
+<h4>分类型特征重要性</h4>当该任务是分类型，需要用分类型模型时，可以使用<strong>RandomForestClassifier</strong>中的<code>feature_importances_</code>属性。
+
+X2 = dataset[['Open', 'High', 'Low','Adj Close', 'Volume', 'Buy_Sell_on_Open', 
+              'Buy_Sell', 'Returns']]
+y2 = dataset['Increase_Decrease']
+
+clf = RandomForestClassifier(random_state=0, n_jobs=-1)
+model = clf.fit(X2, y2)
+importances = model.feature_importances_
+indices = np.argsort(importances)[::-1]
+names = [dataset.columns[i] for i in indices]
+plt.figure(figsize=(10,6))
+plt.title("Feature Importance")
+plt.bar(range(X2.shape[1]), importances[indices])
+plt.xticks(range(X2.shape[1]), names, rotation=90)
+plt.show()
+
+<img class="lazy loaded" data-src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdx3TUnNyxEic5pDJ1a2t1JvxYX5tQLZmiafW6KDqMCg2ViaxXYqctWXmQLQ/640" src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdx3TUnNyxEic5pDJ1a2t1JvxYX5tQLZmiafW6KDqMCg2ViaxXYqctWXmQLQ/640" data-was-processed="true">
+
+<h4>本案例中使用回归模型</h4>
+rf = RandomForestRegressor(n_jobs=-1, n_estimators=50, verbose=3)
+rf.fit(X,Y)
+ranks["RF"] = ranking(rf.feature_importances_, colnames);
+
+下面介绍两个顶层特征选择算法，之所以叫做顶层，是因为他们都是建立在基于模型的特征选择方法基础之上的，例如回归和SVM，在不同的子集上建立模型，然后汇总最终确定特征得分。
+
+<h3 id="YYDStopic-10">RandomizedLasso</h3><strong>RandomizedLasso的选择稳定性方法排序。</strong>
+稳定性选择是一种基于二次抽样和选择算法相结合较新的方法，选择算法可以是回归、SVM或其他类似的方法。
+它的主要思想是在不同的数据子集和特征子集上运行特征选择算法，不断的重复，最终汇总特征选择结果，比如可以统计某个特征被认为是重要特征的频率（被选为重要特征的次数除以它所在的子集被测试的次数）。
+
+理想情况下，重要特征的得分会接近100%。
+稍微弱一点的特征得分会是非0的数，而最无用的特征得分将会接近于0。
+
+lambda_grid = np.linspace(0.001, 0.5, num=100)
+rlasso = RandomizedLasso(alpha=0.04)
+selector = StabilitySelection(base_estimator=rlasso, lambda_name='alpha',
+                              lambda_grid=lambda_grid, threshold=0.9, verbose=1)
+selector.fit(X, Y)
+# 运行随机Lasso的选择稳定性方法
+ranks["rlasso/Stability"] = ranking(np.abs(selector.stability_scores_.max(axis=1)), colnames)
+print('finished')
+
+{'Open': 1.0, 'High': 1.0, 'Low': 0.76, 
+'Close': 1.0, 'Adj Close': 0.99, 'Volume': 0.0, 
+'H-L': 0.0, 'O-C': 1.0, '3day MA': 1.0, 
+'10day MA': 0.27, '30day MA': 0.75, 'Std_dev': 0.0}
+finished
+
+<h4>稳定性得分可视化</h4>
+fig, ax = plot_stability_path(selector)
+fig.set_size_inches(15,6)
+fig.show()
+
+<img class="lazy loaded" data-src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdx3PO9hdqCVeEUVukqUseQiaPCbOmvHD5RyAVLoSUYWiaMOlkKWho6ZWLA/640" src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdx3PO9hdqCVeEUVukqUseQiaPCbOmvHD5RyAVLoSUYWiaMOlkKWho6ZWLA/640" data-was-processed="true">
+
+<h4>查看得分超过阈值的变量索引及其得分</h4>
+# 获取所选特征的掩码或整数索引
+selected_variables = selector.get_support(indices=True)
+selected_scores = selector.stability_scores_.max(axis=1)
+print('Selected variables are:')
+print('-----------------------')
+for idx, (variable, score) in enumerate(
+          zip(selected_variables, selected_scores[selected_variables])):
+    print('Variable %d: [%d], 
+          score %.3f' % (idx + 1, variable, score))
+
+Selected variables are:
+-----------------------
+Variable 1: [0], score 1.000
+Variable 2: [1], score 1.000
+Variable 3: [3], score 1.000
+Variable 4: [4], score 0.990
+Variable 5: [7], score 1.000
+Variable 6: [8], score 1.000
+
+<h3 id="YYDStopic-11">RFE递归特征消除特征排序</h3>基于递归特征消除的特征排序。
+
+给定一个给特征赋权的外部评估器(如线性模型的系数)，递归特征消除(RFE)的目标是通过递归地考虑越来越小的特征集来选择特征。
+
+主要思想是反复的构建模型(如SVM或者回归模型)然后选出最好的(或者最差的)的特征(可以根据系数来选)。
+
+首先，在初始特征集上训练评估器，并通过任何特定属性或可调用属性来获得每个特征的重要性。
+
+然后，从当前的特征集合中剔除最不重要的特征。
+
+这个过程在训练集上递归地重复，直到最终达到需要选择的特征数。
+
+这个过程中特征被消除的次序就是特征的排序。
+因此，这是一种寻找最优特征子集的贪心算法。
+
+RFE的稳定性很大程度上取决于在迭代的时候底层用哪种模型。
+例如，假如RFE采用的普通的回归，没有经过正则化的回归是不稳定的，那么RFE就是不稳定的；假如采用的是Ridge，而用Ridge正则化的回归是稳定的，那么RFE就是稳定的。
+
+sklearn.feature_selection.RFE(estimator, *, n_features_to_select=None,
+        step=1, verbose=0, importance_getter='auto')
+
+<strong>estimator</strong> <em>Estimator instance</em>
+一种带有""拟合""方法的监督学评估器，它提供关于特征重要性的信息(例如"coef_"、"feature_importances_")。
+
+<strong>n_features_to_select</strong> <em>int or float, default=None</em>
+要选择的功能的数量。
+如果'None'，则选择一半的特性。
+如果为整数，则该参数为要选择的特征的绝对数量。
+如果浮点数在0和1之间，则表示要选择的特征的分数。
+
+<strong>step</strong> <em>int or float, default=1</em>
+如果大于或等于1，那么'step'对应于每次迭代要删除的(整数)特征数。
+如果在(0.0,1.0)范围内，则'step'对应于每次迭代中要删除的特性的百分比(向下舍入)。
+
+<strong>verbose</strong> <em>int, default=0</em>
+控制输出的冗长。
+
+<strong>importance_getter</strong> <em>str or callable, default='auto'</em>
+如果是'auto'，则通过估计器的'coef_'或'feature_importances_'属性使用特征重要性。
+
+
+lr = LinearRegression(normalize=True)
+lr.fit(X,Y)
+# 当且仅当剩下最后一个特性时停止搜索
+rfe = RFE(lr, n_features_to_select=1, verbose =3)
+rfe.fit(X,Y)
+ranks["RFE"] = ranking(list(map(float, rfe.ranking_)),
+                       colnames, order=-1)
+
+Fitting estimator with 12 features.
+...
+Fitting estimator with 2 features.
+
+<h3 id="YYDStopic-12">RFECV</h3><strong>递归特征消除交叉验证。</strong>
+Sklearn提供了 <code>RFE</code> 包，可以用于特征消除，还提供了 <code>RFECV</code> ，可以通过交叉验证来对的特征进行排序。
+
+# 实例化估计器和特征选择器
+svr_mod = SVR(kernel="linear")
+rfecv = RFECV(svr_mod, cv=5)
+
+# 训练模型
+rfecv.fit(X, Y)
+ranks["RFECV"] = ranking(list(map(float, rfecv.ranking_)), colnames, order=-1)
+# Print support and ranking
+print(rfecv.support_)
+print(rfecv.ranking_)
+print(X.columns)
+
+<h3 id="YYDStopic-13">LarsCV</h3><strong>最小角度回归模型(Least Angle Regression)交叉验证。</strong>
+
+# 删除第二步中不重要的特征
+# X = X.drop('sex', axis=1)
+# 实例化
+larscv = LarsCV(cv=5, normalize=False)
+# 训练模型
+larscv.fit(X, Y)
+ranks["LarsCV"] = ranking(list(map(float, larscv.ranking_)), colnames, order=-1)
+# 输出r方和估计alpha值
+print(larscv.score(X, Y))
+print(larscv.alpha_)
+
+以上是两个交叉验证，在对特征重要性要求高时可以使用。
+因运行时间有点长，这里大家可以自行运行得到结果。
+
+<h3 id="YYDStopic-14">创建特征排序矩阵</h3>创建一个空字典来存储所有分数，并求其平均值。
+
+r = {}
+for name in colnames:
+    r[name] = round(np.mean([ranks[method][name] 
+                             for method in ranks.keys()]), 2)
+methods = sorted(ranks.keys())
+ranks["Mean"] = r
+methods.append("Mean")
+
+print("\t%s" % "\t".join(methods))
+for name in colnames:
+    print("%s\t%s" % (name, "\t".join(map(str, 
+                         [ranks[method][name] for method in methods]))))
+
+	Lasso	LinReg	RF	RFE	Ridge	rlasso/Stability	Mean
+Open	1.0	1.0	0.02	0.91	0.47	1.0	0.73
+High	0.14	0.0	0.1	0.36	0.06	1.0	0.28
+Low	0.02	0.0	0.08	0.73	0.05	0.76	0.27
+Close	0.14	0.0	0.64	0.55	0.32	1.0	0.44
+Adj Close	0.02	1.0	1.0	0.82	1.0	0.99	0.8
+Volume	0.0	0.0	0.0	0.0	0.0	0.0	0.0
+H-L	0.0	0.0	0.0	0.45	0.01	0.0	0.08
+O-C	0.85	1.0	0.0	1.0	0.53	1.0	0.73
+3day MA	0.0	0.0	0.0	0.27	0.01	1.0	0.21
+10day MA	0.0	0.0	0.02	0.09	0.0	0.27	0.06
+30day MA	0.0	0.0	0.0	0.18	0.0	0.75	0.16
+Std_dev	0.0	0.0	0.0	0.64	0.01	0.0	0.11
+
+<h3 id="YYDStopic-15">绘制特征重要性排序图</h3>将平均得到创建<strong>DataFrame</strong>数据框，从高到低排序，并利用可视化方法将结果展示出。
+这样就一目了然，每个特征重要性大小。
+
+meanplot = pd.DataFrame(list(r.items()), columns= ['Feature','Mean Ranking'])
+# 排序
+meanplot = meanplot.sort_values('Mean Ranking', ascending=False)
+g=sns.factorplot(x="Mean Ranking", y="Feature", data = meanplot, kind="bar", 
+               size=14, aspect=1.9, palette='coolwarm')
+
+<img class="lazy" data-src="https://mmbiz.qpic.cn/mmbiz_png/CBC1V6TTLbYo7n7x3u3cfJ2l6p8AeCdxTvX7CvcwOuGlXaEb5ayJPI35c5I3e7xFpT8ObxBKQ3REIMLibI85rLw/640">
+
+推荐阅读
+1、<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=MzA4MjEyNTA5Mw==&amp;mid=2652586506&amp;idx=2&amp;sn=8b226620468ebf3b69c514401ca4b735&amp;chksm=84656a40b312e356a765a4f64cc27d3315bbdbdc8ccd88c4eccf9b431b64d131f6329e5d1bb7&amp;scene=21#wechat_redirect" textvalue="一文详解 RNN 股票预测实战（Python代码）" linktype="text" imgurl="" imgdata="null" data-itemshowtype="11" tab="innerlink" data-linktype="2">一文详解 RNN 股票预测实战（Python代码）</a>
+2、<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=MzA4MjEyNTA5Mw==&amp;mid=2652581207&amp;idx=2&amp;sn=bb077138fd4b0e8b81e2e11a44682f01&amp;chksm=8465051db3128c0ba7fcff26fb50b72c284622cd9e7eefc000fa8b456c8f3b5206cd9d4ce5e6&amp;scene=21#wechat_redirect" textvalue="关于“数据分析”如何快速入门一些基本思路" linktype="text" imgurl="" imgdata="null" data-itemshowtype="11" tab="innerlink" data-linktype="2">关于“数据分析”如何快速入门一些基本思路</a>
+3、<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=MzA4MjEyNTA5Mw==&amp;mid=2652587312&amp;idx=2&amp;sn=e49850868c977904ac5d803c43acabb7&amp;chksm=84656d7ab312e46c7de429cac932623c276ce51a47e567144cd70e8c5ab9ad1b6351652b38a0&amp;scene=21#wechat_redirect" textvalue="超级攻略！Pandas\NumPy\Matrix 用于金融数据准备" linktype="text" imgurl="" imgdata="null" data-itemshowtype="11" tab="innerlink" data-linktype="2">超级攻略！Pandas\NumPy\Matrix 用于金融数据准备</a>
+
+
 
 
 
