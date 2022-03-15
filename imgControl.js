@@ -28,3 +28,5 @@ window.addEventListener('click', function (evt) {
       window.scrollTo(x, y);
     }
 });
+
+randomScroll();
