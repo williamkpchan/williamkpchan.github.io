@@ -28811,6 +28811,128 @@ HTML css works fine
 &lt;body scroll="no">
 
 
+<h2>Javascript Records and Tuples</h2>
+<div id="RecordsTuplestoc"><a href="#RecordsTuplestopic-0" target="_self" onclick="jumpto(0)">Support for Records and Tuples</a><br><a href="#RecordsTuplestopic-1" target="_self" onclick="jumpto(1)">What are Records and Tuples in Javascript?</a><br><a href="#RecordsTuplestopic-2" target="_self" onclick="jumpto(2)">Records and Tuples are immutable</a><br><a href="#RecordsTuplestopic-3" target="_self" onclick="jumpto(3)">Records and Tuples compare Values, not Identity</a><br><a href="#RecordsTuplestopic-4" target="_self" onclick="jumpto(4)">Converting Arrays to Tuples and Objects to Records in Javascript</a><br><a href="#RecordsTuplestopic-5" target="_self" onclick="jumpto(5)">Adding to a Tuple or Record</a><br><a href="#RecordsTuplestopic-6" target="_self" onclick="jumpto(6)">Interacting with Tuples and Records in Javascript</a><br><a href="#RecordsTuplestopic-7" target="_self" onclick="jumpto(7)">Conclusion</a><br></div></center>
+Records and Tuples are an upcoming feature for Javascript, which may be familiar if you have used other languages except. 
+They are very similar to <code>Arrays</code> and <code>Objects</code>, the key difference being that they are immutable, meaning they can't be updated or changed. 
+
+They give us a brand new primitive type in Javascript, and let us do a lot of things we couldn't previously do, including comparing objects and arrays by value, rather than identity. 
+In this article, we'll cover how they work, and how you can use them today.
+
+<h3 id="RecordsTuplestopic-0">Support for Records and Tuples</h3>
+Currently, records and tuples are a stage 2 proposal for Javascript. 
+Broadly speaking, this means that they are relatively stable, but not implemented as a standard spec. 
+As such, major browsers and backend Javascript like Node.JS do not implement them. 
+
+You can, however, use them, if you have Babel, by using this polyfill.
+
+<h3 id="RecordsTuplestopic-1">What are Records and Tuples in Javascript?</h3>
+<code>Record</code>s and <code>Tuple</code>s introduce a brand new primitive type to Javascript, but ultimately follow the same syntax as <code>Object</code>s and <code>Array</code>s. 
+
+When we want to define a new <code>Record</code> or <code>Tuple</code>, we use the syntax <code>#{}</code> or <code>#[]</code>. 
+As such, we can define both as shown in the code below:
+
+<code>let myRecord = #{
+  name: "New Record",
+  tags: #['some', 'tags', 'go', 'here']
+}
+
+let myTuple = #['some', 'other', 'set', 'of', 'array', 'items'];
+</code>
+
+As you can see, the syntax is <strong>identical</strong> to objects and arrays, with the exception of the hash (<code>#</code>) at the start. 
+
+Note, that we can also put a <code>Tuple</code> in our <code>Record</code>, as shown in the first example.
+<h3 id="RecordsTuplestopic-2">Records and Tuples are immutable</h3>
+Both Records and Tuples in Javascript are deeply immutable. 
+
+All that means is that they can't be changed, at any level. 
+If you try to change them, you'll get an error:
+
+<code>let myRecord = #{
+  name: "New Record",
+  tags: #['some', 'tags', 'go', 'here']
+}
+
+myRecord.name = 'Another Record'; // This will throw an error
+</code>
+
+That also means you can't insert something new into them. 
+In that way, they act as a source of truth - which brings us onto their main use case. 
+Both <code>Tuple</code>s and <code>Record</code>s allow us to compare Objects and Arrays based on their value, rather than their identity.
+
+<h3 id="RecordsTuplestopic-3">Records and Tuples compare Values, not Identity</h3>
+If you try to run the following code, you'll get <code>false</code> back:
+
+<code>console.log({ a: 1 } === { a: 1 }) // returns false
+console.log([1, 2, 3] === [1, 2, 3]) // returns false
+</code>
+That might be confusing, but it's because equality of Objects and Arrays work on the basis of identity. 
+When we define a new Object or Array, it is given a unique identity. 
+
+As such, when comparing the identity of two different Objects, the result is <code>false</code>.
+Records and Tuples break that convention, and allow us to compare by value. 
+<code>Deep comparisons</code> of objects has been something that's been quite tricky in Javascript for a long time, but with Tuples and Records we can finally do that. 
+
+As such, the following code returns true:
+<code>console.log(#{ a: { b : 3 }} === #{ a: { b : 3 }}) // return true
+console.log(#[1, 2, 3] === #[1, 2, 3]) // returns true
+</code>
+
+This means we can finally (and easily) make comparisons of the value between different objects, where we expect a very specific return value.
+<h3 id="RecordsTuplestopic-4">Converting Arrays to Tuples and Objects to Records in Javascript</h3>
+
+Since Records and Tuples are compared by value, you may want to convert regular Objects and Arrays into them, so that you can make that comparison. 
+Fortunately, we can convert any Object or Array into a Record or Tuple using <code>Record()</code> and <code>Tuple()</code>:
+
+<code>let newRecord = Record({ a: 1, b: 2 });
+  let newTuple = Tuple(...[1, 2, 3, 4, 5]);
+  let anotherTuple = Tuple.from([1, 2, 3, 4, 5]);
+</code>
+
+Both the above lines will produce the Record and Tuple version of each. 
+Future proposals also include a <code>JSON.parseImmutable</code> function, which will let us convert strings of Arrays or Objects straight into their Tuple or Record form. 
+This is not currently implemented.
+
+<h3 id="RecordsTuplestopic-5">Adding to a Tuple or Record</h3>
+I am aware that I have just said that you can't add to or change a Tuple/Record - but you can produce a new Tuple or Record based on an old one. 
+This will be a totally different Tuple/Record - but it will use the data from the old and add something new. 
+
+We can do that as shown below:
+<code>let myTuple = #[1, 2, 3, 4, 5];
+let myRecord = #{ a: 1, b: 1 };
+
+// Produce a new record using original myRecord:
+let newRecord = #{ ...myRecord, c: 1 } // #{ a: 1, b: 1, c: 1}
+
+// Produce a new tuple using myTuple:
+let newTuple = #[ ...myTuple, 6, 7];
+
+// Or you can use Tuple.with():
+let anotherTuple = myTuple.with(6, 7);
+</code>
+
+<h3 id="RecordsTuplestopic-6">Interacting with Tuples and Records in Javascript</h3>
+Tuples and Records work exactly the same as Objects and Arrays except they cannot be changed. 
+
+As such, you can iterate through them, or interact with them using the same methods as are available on Objects and Arrays. 
+For example, we could get all the keys of a particular Record:
+<code>let myRecord = #{ a: 1, b: 2, c: 2};
+
+let recordKeys = Object.keys(myRecord); // Returns ['a', 'b', 'c'];
+</code>
+Or you could iterate over an array using a for loop:
+<code>let myTuple = #[1, 2, 3, 4, 5];
+  for(const i of myTuple) {
+    console.log(i);
+  }
+// Console logs 1, 2, 3, 4, 5 on after each other
+</code>
+
+<h3 id="RecordsTuplestopic-7">Conclusion</h3>
+As <code>Tuple</code>s and <code>Record</code>s aren't widely supported, you will need the Babel polyfill to use them. 
+They allow us to compare data from Objects and Arrays in ways we couldn't before, making code much simpler where it once required complicated custom functions.
+
 
 
 
