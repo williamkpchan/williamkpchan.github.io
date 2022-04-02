@@ -29,7 +29,7 @@ function chkKey() {
   else if(testkey == 'l'){window.location = '#dushu';}
   //if(testkey == 'L'){openLogFile();}
   else if(testkey == 'L'){window.open("https://williamkpchan.github.io/LibDocs/mlinechart.html");}
-  else if(testkey == 'm'){window.open("https://williamkpchan.github.io/LibDocs/medical.html");}
+  else if(testkey == 'm'){window.open("https://williamkpchan.github.io/medical.html");}
   else if(testkey == 'M'){window.open("https://www.google.com/maps");}
   else if(testkey == 'n'){window.location = '#xinwen';}
   else if(testkey == 'N'){window.location = '#Notes';}

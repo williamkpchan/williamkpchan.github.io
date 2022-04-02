@@ -93,7 +93,7 @@ function randomFlip() {
   // console.log(notvisitedList.length, topicpointer)
 
   var index = notvisitedList.indexOf(topicpointer);
-  notvisitedList = notvisitedList.splice(index, 1);
+  notvisitedList.splice(index, 1);
 
   showTopic();
 }
