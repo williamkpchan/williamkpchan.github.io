@@ -40,15 +40,15 @@ function chkKey() {
   else if(testkey == 'Q'){window.open('https://news.qq.com/zt2020/page/feiyan.htm');}
 
 
-  else if(testkey == 's'){window.open("https://williamkpchan.github.io/LibDocs/stkListVH.html");}
-  else if(testkey == 'S'){window.open("https://williamkpchan.github.io/LibDocs/Hour STK Charts.html");}
+  else if(testkey == 's'){window.open("https://williamkpchan.github.io/stkListVH.html");}
+  else if(testkey == 'S'){window.open("https://williamkpchan.github.io/Hour STK Charts.html");}
 
 
   else if(testkey == 't'){window.open("https://my.weather.gov.hk/tc/myindex.htm");}
   else if(testkey == 'T'){window.open("https://translate.google.com/#en/zh-CN");}
 
   else if(testkey == 'u'){window.open("https://www.worldometers.info/coronavirus/");}
-  else if(testkey == 'v'){window.open("https://williamkpchan.github.io/LibDocs/StkImgViewer.html");}
+  else if(testkey == 'v'){window.open("https://williamkpchan.github.io/StkImgViewer.html");}
   else if(testkey == 'w'){window.location = '#ruanjian';}
   else if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
 
