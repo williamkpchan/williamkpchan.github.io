@@ -10,7 +10,7 @@ styleStr = "<script type='text/javascript' src='mainscript.js'></script><style>b
 
 function chkKey() {
   var testkey = getChar(event);
-  if(testkey == 'a'){window.open("https://williamkpchan.github.io/LibDocs/apptechno.html");}
+  if(testkey == 'a'){window.open("https://williamkpchan.github.io/apptechno.html");}
   else if(testkey == 'b'){window.open("LibDocs/listofcharts.html");}
   else if(testkey == 'Y'){window.location = '#media';}
   else if(testkey == 'B'){window.open("http://xh.5156edu.com/bs.html");}
