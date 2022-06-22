@@ -99,7 +99,7 @@ function randomFlip() {
 }
 
 function jumpToAsk() {
-  var thecode = prompt("Jump to item number:", "");
+  var thecode = prompt("Jump to item number:", totalLength-1);
   if (thecode != null && thecode != "") {
     // topicpointer = notvisitedList[Math.floor(Math.random() * notvisitedList.length)]; // random from not visited list
     topicpointer = Number(thecode);
@@ -140,7 +140,7 @@ if(markerName != "h0"){
   });
 }
 
-var totalLength = topicLength
+totalLength = topicLength
 notvisitedList = [...Array(totalLength).keys()];
 
 function storeBookmark(objName, pagepos) {
