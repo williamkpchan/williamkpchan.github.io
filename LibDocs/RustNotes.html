@@ -38,9 +38,9 @@ In the end, you’ll have a Rust program that can scrape the <a href="https://ww
 To start off, you need to create a basic Rust project and add all the dependencies you’ll be using. 
 This is best done with Cargo.
 To generate a new project for a Rust binary, run:
+<code>cargo new web_scraper</code>
 
-<code>cargo new web_scraper
-</code>Next, add the required libraries to the dependencies. 
+Next, add the required libraries to the dependencies. 
 For this project, you’ll use <code>reqwest</code> and <code>scraper</code>.
 
 Open the <code>web_scraper</code> folder in your favorite code editor and open the <code>cargo.toml</code> file. 
@@ -186,6 +186,209 @@ If this is an issue, you will need to configure your IMDb preferences and then c
 However, sometimes working with CSS selectors isn’t enough. 
 You might need a more advanced solution that simulates actions taken by a real browser. 
 In that case, you can use <a href="https://docs.rs/thirtyfour/latest/thirtyfour/"><code>thirtyfour</code></a>, Rust’s UI testing library, for more powerful web scraping action.
+
+<h2>Web Scraping With Rust</h2>
+The main libraries, or crates, I'll be utilizing are the following:
+<a href="https://github.com/seanmonstar/reqwest">reqwest</a>
+An easy and powerful Rust HTTP Client
+<a href="https://github.com/programble/scraper">scraper</a>
+HTML parsing and querying with CSS selectors
+<a href="https://github.com/utkarshkukreti/select.rs">select.rs</a>
+A Rust library to extract useful data from HTML documents, suitable for web scraping
+
+I'll present a couple different scripts to get a feel for each crate.
+
+<h3>Grabbing All Links</h3>
+The first script will perform a fairly basic task: grabbing all links from the page. For this, we'll utilize <code>reqwest</code> and <code>select.rs</code>. As you can see the syntax is fairly concise and straightforward.
+
+extern crate reqwest;
+extern crate select;
+
+use select::document::Document;
+use select::predicate::Name;
+
+fn main() {
+    hacker_news("https://news.ycombinator.com");
+}
+
+fn hacker_news(url: &amp;str) {
+    let mut resp = reqwest::get(url).unwrap();
+    assert!(resp.status().is_success());
+
+    Document::from_read(resp)
+        .unwrap()
+        .find(Name("a"))
+        .filter_map(|n| n.attr("href"))
+        .for_each(|x| println!("{}", x));
+}
+
+The main things to note are <code>unwrap()</code> and the <code>|x|</code> notation. The first is Rust's way of telling the compiler we don't care about error handling right now. <code>unwrap()</code> will give us the value out of an <code>Option&lt;T&gt;</code> for <code>Some(v)</code>, however if the value is <code>None</code> the function will panic - not ideal for production settings. This is a common pattern when developing. The second notation is Rust's lambda syntax. Other than that, it's fairly straightforward. We send a get request to the Hacker News home page, then read in the HTML response to Document. Next we find all links and print them. If you run this you'll see the following:
+
+<a target="_blank" href="https://camo.githubusercontent.com/24078c241b65d7b5d925baaa46d6d387c3c04db0b30c3fb94156e9674626bbcb/68747470733a2f2f692e696d6775722e636f6d2f645a49616b36542e706e67"><img src="https://camo.githubusercontent.com/24078c241b65d7b5d925baaa46d6d387c3c04db0b30c3fb94156e9674626bbcb/68747470733a2f2f692e696d6775722e636f6d2f645a49616b36542e706e67" alt="all-links" data-canonical-src="https://i.imgur.com/dZIak6T.png" style="max-width: 100%;"></a>
+
+<h3>Using CSS Selectors</h3>
+For the second example we'll use the <code>scraper</code> crate. The main advantage of <code>scraper</code> is using CSS selectors. A great tool for this is the Chrome extension <a href="http://selectorgadget.com" rel="nofollow">Selector Gadget</a>. This extension makes grabbing elements trivial. All you'll need to do is navigate to your page of interest, click the icon and select.
+
+<a target="_blank" href="https://camo.githubusercontent.com/eb0b49d2464d1ff8f0abc69f3db440e201f6fe21673c7fa5b3244451317fe2eb/68747470733a2f2f692e696d6775722e636f6d2f4e65354b5051452e706e67"><img src="https://camo.githubusercontent.com/eb0b49d2464d1ff8f0abc69f3db440e201f6fe21673c7fa5b3244451317fe2eb/68747470733a2f2f692e696d6775722e636f6d2f4e65354b5051452e706e67" alt="css-select" data-canonical-src="https://i.imgur.com/Ne5KPQE.png" style="max-width: 100%;"></a>
+
+Now that we know the post headline translates to <code>.storylink</code> we can retrieve it with ease.
+
+extern crate reqwest;
+extern crate scraper;
+
+// importation syntax 
+use scraper::{Html, Selector};
+
+fn main() {
+    hn_headlines("https://news.ycombinator.com");
+}
+
+fn hn_headlines(url: &amp;str) {
+
+   let mut resp = reqwest::get(url).unwrap(); 
+   assert!(resp.status().is_success());
+
+   let body = resp.text().unwrap();
+   // parses string of HTML as a document
+   let fragment = Html::parse_document(&amp;body);
+   // parses based on a CSS selector
+   let stories = Selector::parse(".storylink").unwrap();
+
+   // iterate over elements matching our selector
+   for story in fragment.select(&amp;stories) {
+        // grab the headline text and place into a vector
+        let story_txt = story.text().collect::&lt;Vec&lt;_&gt;&gt;();
+        println!("{:?}", story_txt);
+    }
+}
+
+Perhaps the most foreign part of this syntax is the <code>::</code> annotations. The symbol merely designates a path. So, <code>Html::parse_document</code> allows us to know that <code>parse_document()</code> is a method on the <code>Html</code> struct, which is from the crate <code>scraper</code>. Other than that, we read our get request's response into a document, specified our selector, and then looped over every instance collecting the headline in a vector and printed to stdout. The example output is below.
+
+<a target="_blank" href="https://camo.githubusercontent.com/495d41587279abfd68266bc6ea24200cd7f68e5294f67c2d6795eb67be51cf81/68747470733a2f2f692e696d6775722e636f6d2f3958636b3867562e706e67"><img src="https://camo.githubusercontent.com/495d41587279abfd68266bc6ea24200cd7f68e5294f67c2d6795eb67be51cf81/68747470733a2f2f692e696d6775722e636f6d2f3958636b3867562e706e67" alt="scraper-headline" data-canonical-src="https://i.imgur.com/9Xck8gV.png" style="max-width: 100%;"></a>
+
+<h3>More Than One Attribute</h3>
+At this point, all we've really done is grab a single element from a page, rather boring. In order to get something that can aid in the construction of the final project we'll need multiple attributes. We'll switch back to using the <code>select.rs</code> crate for this task. This is due to an increased level of control over specifying exactly what we want.
+
+The first thing to do in this situation is inspect the element of the page. Specifically, we want to know what our post section is called.
+
+<a target="_blank" href="https://camo.githubusercontent.com/29af823af1855a6339bc89bc42991c767927fe408606331f24abc8a0d6ebf6e7/68747470733a2f2f692e696d6775722e636f6d2f716f634c6845322e6a7067"><img src="https://camo.githubusercontent.com/29af823af1855a6339bc89bc42991c767927fe408606331f24abc8a0d6ebf6e7/68747470733a2f2f692e696d6775722e636f6d2f716f634c6845322e6a7067" alt="inspect" data-canonical-src="https://i.imgur.com/qocLhE2.jpg" style="max-width: 100%;"></a>
+
+From the image it's pretty clear it's a class called <code>"athing"</code>. We need the top level attribute in order to iterate through every occurrence and select our desired fields.
+
+extern crate reqwest;
+extern crate select;
+
+use select::document::Document;
+use select::predicate::{Class, Name, Predicate};
+
+fn main() {
+    hacker_news("https://news.ycombinator.com");
+}
+
+fn hacker_news(url: &amp;str) {
+
+    let resp = reqwest::get(url).unwrap();
+    assert!(resp.status().is_success());
+
+    let document = Document::from_read(resp).unwrap();
+
+    // finding all instances of our class of interest
+    for node in document.find(Class("athing")) {
+        // grabbing the story rank
+        let rank = node.find(Class("rank")).next().unwrap();
+        // finding class, then selecting article title
+        let story = node.find(Class("title").descendant(Name("a")))
+            .next()
+            .unwrap()
+            .text();
+        // printing out | rank | story headline
+        println!("\n | {} | {}\n", rank.text(), story);
+        // same as above
+        let url = node.find(Class("title").descendant(Name("a"))).next().unwrap();
+        // however, we don't grab text
+        // instead find the "href" attribute, which gives us the url
+        println!("{:?}\n", url.attr("href").unwrap());
+    }
+}
+
+We've now got a working scraper that will gives us the rank, headline and url. However, UI is important, so let's have a go at adding some visual flair.
+
+<h3>Adding Some Panache</h3>
+This next part will build off of the <a href="https://github.com/phsym/prettytable-rs">PrettyTable</a> crate. PrettyTable is a rust library to print aligned and formatted tables, as seen below.
+
+<code>+---------+------+---------+
+| ABC     | DEFG | HIJKLMN |
++---------+------+---------+
+| foobar  | bar  | foo     |
++---------+------+---------+
+| foobar2 | bar2 | foo2    |
++---------+------+---------+
+</code>
+
+One of the benefits of PrettyTable is it's ability add custom formatting. Thus, for our example we will add an orange background for a consistent look.
+
+// specifying we'll be using a macro from
+// the prettytable crate (ex: row!())
+#[macro_use]
+extern crate prettytable;
+extern crate reqwest;
+extern crate select;
+
+use select::document::Document;
+use select::predicate::{Class, Name, Predicate};
+use prettytable::Table;
+
+fn main() {
+    hacker_news("https://news.ycombinator.com");
+}
+
+fn hacker_news(url: &amp;str) {
+
+    let resp = reqwest::get(url).unwrap();
+    assert!(resp.status().is_success());
+
+    let document = Document::from_read(resp).unwrap();
+
+    let mut table = Table::new();
+
+    // same as before
+    for node in document.find(Class("athing")) {
+        let rank = node.find(Class("rank")).next().unwrap();
+        let story = node.find(Class("title").descendant(Name("a")))
+            .next()
+            .unwrap()
+            .text();
+        let url = node.find(Class("title").descendant(Name("a")))
+            .next()
+            .unwrap();
+        let url_txt = url.attr("href").unwrap();
+        // shorten strings to make table aesthetically appealing
+        // otherwise table will look mangled by long URLs
+        let url_trim = url_txt.trim_left_matches('/');
+        let rank_story = format!(" | {} | {}", rank.text(), story);
+        // [FdBybl-&gt;] specifies row formatting
+        // F (foreground) d (black text)
+        // B (background) y (yellow text) l (left-align)
+        table.add_row(row![FdBybl-&gt;rank_story]);
+        table.add_row(row![Fy-&gt;url_trim]);
+    }
+    // print table to stdout
+    table.printstd();
+}
+
+The end result of running this script is as follows:
+
+<a target="_blank" href="https://camo.githubusercontent.com/8b0e7793955d47b7d387e73263231908427d9ab4cdd324977ee8fa610dd0b053/68747470733a2f2f692e696d6775722e636f6d2f654e6c4e3232762e706e67"><img src="https://camo.githubusercontent.com/8b0e7793955d47b7d387e73263231908427d9ab4cdd324977ee8fa610dd0b053/68747470733a2f2f692e696d6775722e636f6d2f654e6c4e3232762e706e67" alt="final" data-canonical-src="https://i.imgur.com/eNlN22v.png" style="max-width: 100%;"></a>
+
+Hopefully, this brief intro serves as a good jumping off point for exploring Rust as an everyday tool. Despite Rust being a statically typed, compiled, and non-gc language it remains a joy to work with, especially <a href="https://doc.rust-lang.org/cargo/" rel="nofollow">Cargo</a> - Rust's package manager. If you are considering learning a low level language for speed concerns, and are coming from a high-level language such as Python or Javasciprt, Rust is a fabolous choice.
+
+<em>Here are a few resources to get up and running</em>:
+<a href="https://doc.rust-lang.org/book/second-edition/" rel="nofollow">The Book</a>
+<a href="https://www.amazon.com/Programming-Rust-Fast-Systems-Development/dp/1491927283/ref=sr_1_1?ie=UTF8&amp;qid=1515194775&amp;sr=8-1&amp;keywords=programming+rust" rel="nofollow">Programming Rust</a>
+<a href="https://rustbyexample.com" rel="nofollow">Rust by Example</a>
+<a href="https://rust-lang-nursery.github.io/rust-cookbook/" rel="nofollow">Rust Cookbook</a>
+<a href="https://users.rust-lang.org" rel="nofollow">Rust Forum</a>
+<a href="https://www.reddit.com/r/rust/" rel="nofollow">r/rust</a>
 
 
 
