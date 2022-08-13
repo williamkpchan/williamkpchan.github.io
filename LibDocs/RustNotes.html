@@ -1,0 +1,206 @@
+<base target="_blank"><html><head><title>Rust Notes</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="../lazyload.min.js"></script>
+<script type='text/javascript' src='../mainscript.js'></script>
+<script src="D:/Dropbox/Public/commonfunctions.js"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+
+<script>
+  var showTopicNumber = true;
+  var bookid = "Rust Notes"
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:24px;}
+h1, h2, h3 {color: gold; display:block;}
+strong {color: orange;}
+pre{width:100%;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px; background-color:#044;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>Rust Notes</h1>
+<a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a>
+<br><br>
+<div id="toc"></div></center>
+<br><br>
+<div id="mustWatch"><center><span class="red">MustWatch</span></center><br>
+
+<pre>
+<h2>Web Scraping with Rust</h2>
+You’ll use two Rust libraries, <code>reqwest</code> and <code>scraper</code>, to scrape the top one hundred movies list from IMDb.
+
+<h3>Implementing a Web Scraper in Rust</h3>
+Your target for scraping will be <a href="https://www.imdb.com/">IMDb</a>, a database of movies, TV series, and other media.
+In the end, you’ll have a Rust program that can scrape the <a href="https://www.imdb.com/search/title/?groups=top_100&amp;sort=user_rating,desc&amp;count=100">top one hundred movies by user rating</a> at any given moment.
+
+<h3>Creating the Project and Adding Dependencies</h3>
+To start off, you need to create a basic Rust project and add all the dependencies you’ll be using. 
+This is best done with Cargo.
+To generate a new project for a Rust binary, run:
+
+<code>cargo new web_scraper
+</code>Next, add the required libraries to the dependencies. 
+For this project, you’ll use <code>reqwest</code> and <code>scraper</code>.
+
+Open the <code>web_scraper</code> folder in your favorite code editor and open the <code>cargo.toml</code> file. 
+At the end of the file, add the libraries:
+<code>[dependencies]
+reqwest = {version = "0.11", features = ["blocking"]}
+scraper = "0.12.0"
+</code>Now you can move to <code>src/main.rs</code> and start creating your web scraper.
+
+<h3>Getting the Website HTML</h3>
+Scraping a page usually involves getting the HTML code of the page and then parsing it to find the information you need. 
+Therefore, you’ll need to make the code of the IMDb page available in your Rust program. 
+
+To do that, you first need to understand how browsers work, because they’re your usual way of interacting with web pages.
+To display a web page in the browser, the browser (client) sends an HTTP request to the server, which responds with the source code of the web page. 
+The browser then renders this code.
+
+HTTP has various different types of requests, such as GET (for getting the contents of a resource) and POST (for sending information to the server). 
+To get the code of an IMDb web page in your Rust program, you’ll need to mimic the behavior of browsers by sending an HTTP GET request to IMDb.
+In Rust, you can use <a href="https://docs.rs/reqwest/latest/reqwest/"><code>reqwest</code></a> for that. 
+
+This commonly used Rust library provides the features of an HTTP client. 
+It can do a lot of the things that a regular browser can do, such as open pages, log in, and store cookies.
+To request the code of a page, you can use the <code>reqwest::blocking::get</code> method:
+
+<code>fn main() {
+let response = reqwest::blocking::get(
+"https://www.imdb.com/search/title/?groups=top_100&amp;sort=user_rating,desc&amp;count=100",
+)
+.unwrap()
+.text()
+.unwrap();
+}
+</code><code>response</code> will now contain the full HTML code of the page you requested.
+
+<h3>Extracting Information from HTML</h3>
+The hardest part of a web scraping project is usually getting the specific information you need out of the HTML document. 
+For this purpose, a commonly used tool in Rust is the <a href="https://docs.rs/scraper/0.12.0/scraper/"><code>scraper</code></a> library. 
+
+It works by parsing the HTML document into a tree-like structure. 
+You can use <a href="https://www.w3schools.com/cssref/css_selectors.asp">CSS selectors</a> to query the elements you’re interested in.
+The first step is to parse your entire HTML document using the library:
+
+<code>    let document = scraper::Html::parse_document(&amp;response);
+</code>Next, find and select the parts you need. 
+To do that, you need to check the website’s code and find a collection of CSS selectors that uniquely identifies those items.
+
+The simplest way to do this is via your regular browser. 
+Find the element you need, then check the code of that element by inspecting it:
+<img src="https://i.imgur.com/qaM1KG2.png" >
+
+In the case of IMDb, the element you need is the name of the movie. 
+When you check the element, you’ll see that it’s wrapped in an <code>&lt;a&gt;</code> tag:
+<code>&lt;a href="/title/tt0111161/?ref_=adv_li_tt"&gt;The Shawshank Redemption&lt;/a&gt;
+
+</code>Unfortunately, this tag is not unique. 
+Since there are a lot of <code>&lt;a&gt;</code> tags on the page, it wouldn’t be a smart idea to scrape them all, as most of them won’t be the items you need. 
+Instead, find the tag unique to movie titles and then navigate to the <code>&lt;a&gt;</code> tag inside that tag.
+
+In this case, you can pick the <code>lister-item-header</code> class:
+<code>&lt;h3 class="lister-item-header"&gt;
+&lt;span class="lister-item-index unbold text-primary"&gt;1.&lt;/span&gt;
+
+&lt;a href="/title/tt0111161/?ref_=adv_li_tt"&gt;The Shawshank Redemption&lt;/a&gt;
+&lt;span class="lister-item-year text-muted unbold"&gt;(1994)&lt;/span&gt;
+&lt;/h3&gt;
+
+</code>Now you need to create a query using the <code>scraper::Selector::parse</code> method.
+You’ll give it a <code>h3.lister-item-header&gt;a</code> selector. 
+In other words, it finds <code>&lt;a&gt;</code> tags that have as a parent an <code>&lt;h3&gt;</code> tag that is of a <code>lister-item-header</code> class.
+
+Use the following query:
+<code>    let title_selector = scraper::Selector::parse("h3.lister-item-header&gt;a").unwrap();
+</code>Now you can apply this query to your parsed document with the <code>select</code> method. 
+
+To get the actual titles of movies instead of the HTML elements, you’ll map each HTML element to the HTML that’s inside it:
+<code>    let titles = document.select(&amp;title_selector).map(|x| x.inner_html());
+</code><code>titles</code> is now an iterator holding the names of all the top one hundred titles.
+
+All you need to do now is to print out these names. 
+To do that, first <code>zip</code> your title list with the numbers 1 to 100. 
+Then call the <code>for_each</code> method on the resulting iterator, which will print each item of the iterator on a separate line:
+
+<code>    titles
+.zip(1..101)
+.for_each(|(item, number)| println!("{}. 
+
+{}", number, item));
+</code>Your web scraper is now done.
+Here’s the complete code of the scraper:
+
+<code>fn main() {
+let response = reqwest::blocking::get(
+"https://www.imdb.com/search/title/?groups=top_100&amp;sort=user_rating,desc&amp;count=100",
+)
+.unwrap()
+.text()
+.unwrap();
+let document = scraper::Html::parse_document(&amp;response);
+let title_selector = scraper::Selector::parse("h3.lister-item-header&gt;a").unwrap();
+
+let titles = document.select(&amp;title_selector).map(|x| x.inner_html());
+titles
+.zip(1..101)
+.for_each(|(item, number)| println!("{}. 
+{}", number, item));
+}
+
+</code>If you save the file and run it with <code>cargo run</code>, you should get the list of top one hundred movies at any given moment:
+<code>1. 
+The Shawshank Redemption
+
+2. The Godfather
+3. The Dark Knight
+4. The Lord of the Rings: The Return of the King
+5. Schindler's List
+6. The Godfather: Part II
+7. 12 Angry Men
+8. Pulp Fiction
+9. Inception
+10. The Lord of the Rings: The Two Towers
+
+...
+</code><h3>Conclusion</h3>
+In this tutorial, you learned how to use Rust to create a simple web scraper. 
+
+Rust isn’t a popular language for scripting, but as you saw, it gets the job done quite easily.
+This is just the starting point in Rust web scraping. 
+There are many ways you could upgrade this scraper, depending on your needs.
+
+Here are some options you can try out as an exercise:
+<ul>
+<li><strong>Parse data into a custom struct:</strong> You can create a typed Rust struct that holds movie data. 
+
+This will make it easier to print the data and work with it further inside your program.</li>
+<li><strong>Save data in a file:</strong> Instead of printing out movie data, you can instead save it in a file.</li>
+<li><strong>Create a <a href="https://docs.rs/reqwest/latest/reqwest/blocking/struct.Client.html"><code>Client</code></a> that logs into an IMDb account:</strong> You might want IMDb to display movies according to your preferences before you parse them. 
+
+For example, IMDb shows film titles in the language of the country you live in. 
+If this is an issue, you will need to configure your IMDb preferences and then create a web scraper that can log in and scrape with preferences.</li>
+</ul>
+
+However, sometimes working with CSS selectors isn’t enough. 
+You might need a more advanced solution that simulates actions taken by a real browser. 
+In that case, you can use <a href="https://docs.rs/thirtyfour/latest/thirtyfour/"><code>thirtyfour</code></a>, Rust’s UI testing library, for more powerful web scraping action.
+
+
+
+
+<script type='text/javascript' src='readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+    // ... more custom settings?
+});
+
+//d3.selectAll("h2").style("color", function() {
+//   return "hsl(" + Math.random() * 360 + ",80%,50%)";
+//});
+
+</script>
+</body>
+</html>
