@@ -119,6 +119,7 @@ function jumpToAsk() {
 var toc = $('#toc');
 var markerList = []
 waitList = []
+elapseTIme = 10000
 
 if(typeof(topicEnd) == 'undefined'){ topicEnd = "<br>";}
 
