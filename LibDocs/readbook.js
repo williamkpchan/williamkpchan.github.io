@@ -15,6 +15,7 @@ function chkKey() {
   else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
   else if(testkey == "f"){ foreward();}
   else if(testkey == "6"){ foreward();}
+  else if(testkey == 'A'){autoShowImg(imgnotvisitedList.length)}
   else if(testkey == "j"){ jumpToAsk();}
   else if(testkey == "l"){
     $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-400)}, 1);}
@@ -78,6 +79,14 @@ function changeTopic() {
 }
 function backward() { topicpointer = topicpointer - 2; changeTopic();}
 function foreward() { topicpointer = topicpointer + 1; showTopic();}
+function autoShowImg(countNumber) {
+  console.log("auto")
+  if (countNumber > 0) {
+    foreward()
+    setTimeout(() => autoShowImg(countNumber - 1), elapseTIme)
+  }
+}
+
 function showTopic() {
   if(topicpointer>topicLength){topicpointer = topicLength}
   window.location = "#topic-" + topicpointer;
@@ -142,6 +151,7 @@ if(markerName != "h0"){
 
 totalLength = topicLength
 notvisitedList = [...Array(totalLength).keys()];
+imgnotvisitedList = notvisitedList
 
 function storeBookmark(objName, pagepos) {
   if(typeof objName != 'undefined') {
