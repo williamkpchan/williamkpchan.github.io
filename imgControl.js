@@ -31,4 +31,10 @@ window.addEventListener('click', function (evt) {
     }
 });
 
+function viewImgSource() {
+  topicId = "topic-" + topicpointer
+  imgSrc = document.getElementById([topicId]).attributes.src.nodeValue
+  window.open(imgSrc);
+}
+
 randomScroll();

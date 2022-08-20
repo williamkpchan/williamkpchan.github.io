@@ -56,6 +56,7 @@ function chkKey() {
   else if(testkey == "a"){ askNum();}
   else if(testkey == "w"){ setwaitListSize();}
   else if(testkey == "z"){ dblClickIt();}
+  else if(testkey == 'v'){ viewImgSource();} //imgControl.js
 
   else{chkOtherKeys(testkey)} 
 }
