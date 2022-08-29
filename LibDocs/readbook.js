@@ -29,7 +29,7 @@ function chkKey() {
   else if(testkey == "p"){ pause();}
   // else if(testkey == "c"){ continU();}
   else if(testkey == "r"){ randomWL();}
-  else if(testkey == "5"){ randomWL();}
+  else if(testkey == "5"){ randomFlip();}
   else if(testkey == "s"){ showMov();}
   else if(testkey == 't'){window.location = '#toc';
       window.scrollTo(window.scrollX, window.scrollY - 200);}
@@ -49,7 +49,6 @@ function chkKey() {
     else{alert("No BookId!")}
   }
   else if(testkey == 'd'){window.open("https://www.youdao.com/");}
-  else if(testkey == 'u'){window.open("https://www.worldometers.info/coronavirus/");}
   else if(testkey == "R"){ randomFlip();}
   else if(testkey == "+"){ addtoWL();}
   else if(testkey == "-"){ rvFmWL();}
