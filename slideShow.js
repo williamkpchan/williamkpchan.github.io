@@ -2,11 +2,11 @@ elapseTIme = 5000 // 5 sec
 function chkKey() {
   var testkey = getChar(event);
   if(testkey == 'a'){autoShowImg(repeats)}
-  else if(testkey == 'A'){autoShowImg(imgnotvisitedList.length)}
+  else if((testkey == '0')||(testkey == 'A')){autoShowImg(imgnotvisitedList.length)}
   else if(testkey == 'm'){alert(imgnotvisitedList[imgpointer])}
   else if(testkey == 'v'){ viewOriginal();}
   else if(testkey == '5'){ randomPointer();}
-  else if(testkey == '2'){ zoomout();}
+  else if(testkey == 'z'){ setElapseTIme();}
   else if((testkey == 'f')||(testkey == '6')){
     forwardImg();
     window.location="#pictList";
@@ -82,6 +82,14 @@ function zoomout(){
         }
     }
 
+function setElapseTIme(){
+    thecode = prompt("elapseTIme(sec):", "");
+    if (thecode != null && thecode != "") {
+      elapseTIme = Number(thecode);
+    }else{
+      return;
+    }
+}
 function randomPointer(){
     imgpointer = Math.floor(Math.random() * imgnotvisitedList.length)
     forwardImg()
