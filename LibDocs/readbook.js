@@ -13,6 +13,7 @@ function chkKey() {
   if(testkey == "b"){ backward();}
   else if(testkey == "4"){ backward();}
   else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
+  else if(testkey == 'E'){ setElapseTIme();}
   else if(testkey == "f"){ foreward();}
   else if(testkey == "6"){ foreward();}
   else if(testkey == 'A'){autoShowImg(imgnotvisitedList.length)}
@@ -116,10 +117,18 @@ function jumpToAsk() {
   }
 }
 
+function setElapseTIme() {
+  var thecode = prompt("Set elapseTIme(1000 = 1 sec):");
+  if (thecode != null && thecode != "") {
+    elapseTIme = Number(thecode);
+    autoShowImg(imgnotvisitedList.length);
+  }
+}
+
 var toc = $('#toc');
 var markerList = []
 waitList = []
-elapseTIme = 5000
+elapseTIme = 1500
 
 if(typeof(topicEnd) == 'undefined'){ topicEnd = "<br>";}
 
