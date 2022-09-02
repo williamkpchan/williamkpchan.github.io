@@ -72,6 +72,7 @@ if (typeof markerName == 'undefined') {
   markerName = 'h2';
 }
 
+autoShowImgFlag = false;
 function changeTopic() {
  if (topicpointer >= topicLength-1) { topicpointer = 0;}
  else if (topicpointer < 0) { topicpointer = topicLength-1;}
@@ -82,6 +83,9 @@ function backward() { topicpointer = topicpointer - 2; changeTopic();}
 function foreward() { topicpointer = topicpointer + 1; showTopic();}
 function autoShowImg(countNumber) {
   console.log("auto")
+  autoShowImgFlag = !autoShowImgFlag;
+  if !autoShowImgFlag { countNumber = 0 }
+
   if (countNumber > 0) {
     foreward()
     setTimeout(() => autoShowImg(countNumber - 1), elapseTIme)
