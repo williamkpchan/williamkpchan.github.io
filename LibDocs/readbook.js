@@ -121,7 +121,6 @@ function setElapseTIme() {
   var thecode = prompt("Set elapseTIme(1000 = 1 sec):");
   if (thecode != null && thecode != "") {
     elapseTIme = Number(thecode);
-    autoShowImg(imgnotvisitedList.length);
   }
 }
 
