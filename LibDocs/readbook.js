@@ -1,4 +1,5 @@
 var divtoc = document.getElementById("toc");
+autoShowImgFlag = false;
 
 $(document).ready(function(){
   $('h1, h2, h3, h4, h5, .goldword, strong,  div.title').click(function(){
@@ -16,7 +17,8 @@ function chkKey() {
   else if(testkey == 'E'){ setElapseTIme();}
   else if(testkey == "f"){ foreward();}
   else if(testkey == "6"){ foreward();}
-  else if(testkey == 'A'){autoShowImg(imgnotvisitedList.length)}
+  else if(testkey == 'A'){ autoShowImg(imgnotvisitedList.length)}
+  else if(testkey == 'a'){ stopautoShowImg();}
   else if(testkey == "j"){ jumpToAsk();}
   else if(testkey == "l"){
     $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-400)}, 1);}
@@ -72,7 +74,6 @@ if (typeof markerName == 'undefined') {
   markerName = 'h2';
 }
 
-autoShowImgFlag = false;
 function changeTopic() {
  if (topicpointer >= topicLength-1) { topicpointer = 0;}
  else if (topicpointer < 0) { topicpointer = topicLength-1;}
@@ -81,12 +82,16 @@ function changeTopic() {
 }
 function backward() { topicpointer = topicpointer - 2; changeTopic();}
 function foreward() { topicpointer = topicpointer + 1; showTopic();}
-function autoShowImg(countNumber) {
-  console.log("auto")
-  autoShowImgFlag = !autoShowImgFlag;
-  if !autoShowImgFlag { countNumber = 0 }
 
-  if (countNumber > 0) {
+function stopautoShowImg() {
+  console.log("stopautoShowImg")
+  autoShowImgFlag = !autoShowImgFlag;
+  console.log(autoShowImgFlag)
+}
+
+function autoShowImg(countNumber) {
+  if ((countNumber > 0) && autoShowImgFlag) {
+    console.log("autoShowImg",autoShowImgFlag)
     foreward()
     setTimeout(() => autoShowImg(countNumber - 1), elapseTIme)
   }
