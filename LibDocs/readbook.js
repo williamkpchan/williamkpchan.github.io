@@ -17,7 +17,7 @@ function chkKey() {
   else if(testkey == 'E'){ setElapseTIme();}
   else if(testkey == "f"){ foreward();}
   else if(testkey == "6"){ foreward();}
-  else if(testkey == 'A'){ autoShowImg(imgnotvisitedList.length)}
+  else if(testkey == 'A'){ autoShowImg(imgnotvisitedList.length);}
   else if(testkey == 'a'){ stopautoShowImg();}
   else if(testkey == "j"){ jumpToAsk();}
   else if(testkey == "l"){
@@ -90,9 +90,11 @@ function stopautoShowImg() {
 }
 
 function autoShowImg(countNumber) {
+  console.log("autoShowImg",autoShowImgFlag)
+  if (!autoShowImgFlag) { alert("autoShowImgFlag: " + autoShowImgFlag) }
   if ((countNumber > 0) && autoShowImgFlag) {
-    console.log("autoShowImg",autoShowImgFlag)
     foreward()
+    console.log("elapseTIme",elapseTIme)
     setTimeout(() => autoShowImg(countNumber - 1), elapseTIme)
   }
 }
@@ -131,6 +133,7 @@ function setElapseTIme() {
   if (thecode != null && thecode != "") {
     elapseTIme = Number(thecode);
   }
+  console.log(elapseTIme)
 }
 
 var toc = $('#toc');
