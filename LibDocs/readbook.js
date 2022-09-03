@@ -12,33 +12,23 @@ $(document).ready(function(){
 function chkKey() {
   var testkey = getChar(event);
   if(testkey == "b"){ backward();}
-  else if(testkey == "4"){ backward();}
   else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
   else if(testkey == 'E'){ setElapseTIme();}
   else if(testkey == "f"){ foreward();}
-  else if(testkey == "6"){ foreward();}
   else if(testkey == 'A'){ autoShowImg(imgnotvisitedList.length);}
-  else if(testkey == 'a'){ stopautoShowImg();}
+  else if(testkey == 'a'){ toggleAutoShowImg();}
   else if(testkey == "j"){ jumpToAsk();}
   else if(testkey == "l"){
     $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-400)}, 1);}
 
-  else if(testkey == "2"){
-    $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-400)}, 1);}
-
-  else if(testkey == "7"){
-    $('body,html').animate({scrollTop:(divtoc.clientHeight/2 + divtoc.offsetTop-400)}, 1); } //go to middle
   else if(testkey == "m"){ location = '#mustWatch';}
   else if(testkey == "p"){ pause();}
   // else if(testkey == "c"){ continU();}
   else if(testkey == "r"){ randomWL();}
-  else if(testkey == "5"){ randomFlip();}
   else if(testkey == "s"){ showMov();}
   else if(testkey == 't'){window.location = '#toc';
       window.scrollTo(window.scrollX, window.scrollY - 200);}
 
-  else if(testkey == '8'){window.location = '#toc';
-      window.scrollTo(window.scrollX, window.scrollY - 200);}
   else if(testkey == 'T'){window.scrollTo(0,0);}
   else if(testkey == 'B'){window.open("https://williamkpchan.github.io/LibDocs/汉语字典.html");}
 
@@ -59,6 +49,19 @@ function chkKey() {
   else if(testkey == "w"){ setwaitListSize();}
   else if(testkey == "z"){ dblClickIt();}
   else if(testkey == 'v'){ viewImgSource();} //imgControl.js
+
+  else if(testkey == "2"){
+    $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-400)}, 1);}
+
+  else if(testkey == '3'){ toggleAutoShowImg();}
+  else if(testkey == "4"){ backward();}
+  else if(testkey == "5"){ randomFlip();}
+  else if(testkey == "6"){ foreward();}
+  else if(testkey == "7"){
+    $('body,html').animate({scrollTop:(divtoc.clientHeight/2 + divtoc.offsetTop-400)}, 1); } //go to middle
+  else if(testkey == "8"){window.location = '#toc';
+      window.scrollTo(window.scrollX, window.scrollY - 200);}
+  else if(testkey == '9'){ autoShowImg(imgnotvisitedList.length);}
 
   else{chkOtherKeys(testkey)} 
 }
@@ -83,8 +86,8 @@ function changeTopic() {
 function backward() { topicpointer = topicpointer - 2; changeTopic();}
 function foreward() { topicpointer = topicpointer + 1; showTopic();}
 
-function stopautoShowImg() {
-  console.log("stopautoShowImg")
+function toggleAutoShowImg() {
+  console.log("toggleAutoShowImg")
   autoShowImgFlag = !autoShowImgFlag;
   console.log(autoShowImgFlag)
 }
