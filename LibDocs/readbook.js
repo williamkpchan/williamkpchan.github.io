@@ -49,6 +49,8 @@ function chkKey() {
   else if(testkey == "w"){ setwaitListSize();}
   else if(testkey == "z"){ dblClickIt();}
   else if(testkey == 'v'){ viewImgSource();} //imgControl.js
+  else if(testkey == '*'){ pageScroll();} //imgControl.js
+  else if(testkey == '&'){ randomScroll();} //imgControl.js
 
   else if(testkey == "2"){
     $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-400)}, 1);}
