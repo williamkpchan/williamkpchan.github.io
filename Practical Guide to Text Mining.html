@@ -124,39 +124,38 @@ In this problem, we'll predict the popularity of apartment rental listing based 
 The data set has been taken from currently running <a href="https://www.kaggle.com/c/two-sigma-connect-rental-listing-inquiries">two sigma rental listing</a> problem on Kaggle. 
 Therefore, after you finish this tutorial, you can right away participate in it and try your luck. 
 Since the focus of this tutorial is text mining, we'll work only on the text features available in the data. 
-For this tutorial, you can download the <a href="https://s3-ap-southeast-1.amazonaws.com/he-public-data/text_dataee185a4.zip">data here</a>. 
+For this tutorial, you can download the <a href="https://s3-ap-southeast-1.amazonaws.com/he-public-data/text_dataee185a4.zip">data here</a>. (huge dataset)
 
 Now, we'll load the data and useful libraries for solving this problem. 
 Using map_at function from purrr package, we'll convert the json files into tabular data tables.
-<code>#load libraries
+<code><span class="brown">#load libraries</span>
 path &lt;- "/home/manish/Desktop/Data2017/February/twosigma/"
 setwd(path)
 library(data.table)
 library(jsonlite)
-library(purrr)
-library(RecordLinkage)
-library(stringr)
-library(tm)</code>
-<code>#load data
+library(purrr) <span class="brown"># big tool sets working with functions and vectors.</span>
+library(RecordLinkage) <span class="brown"># functions for linking and deduplicating data sets</span>
+library(stringr) <span class="brown"># functions to make working with strings</span>
+library(tm) <span class="brown"># for text mining applications</span>
+
+<span class="brown">#load data</span>
 traind &lt;- fromJSON("train.json")
 test &lt;- fromJSON("test.json")</code>
-<code>#convert json to data table
+<code><span class="brown">#convert json to data table</span>
 vars &lt;- setdiff(names(traind),c("photos","features"))
-train &lt;- map_at(traind, vars, unlist) %&gt;% as.data.table()
+train &lt;- map_at(traind, vars, unlist) %&gt;% as.data.table() <span class="brown"># Apply a function to each element of a vector conditionally</span>
 test &lt;- map_at(test,vars,unlist) %&gt;% as.data.table()</code>
 Since we are interested only in text variables, let's extract the text features:
 <code>train &lt;- train[,.(listing_id,features, description,street_address,display_address,interest_level)]
 test &lt;- test[,.(listing_id,features,street_address,display_address,description)]</code>
 Let's quickly understand what the data is about: 
-<code>dim(train)
-dim(test)
-head(train)
-head(test)
-sapply(train,class)
-sapply(test,class)</code>
-From the analysis above, we can derive the following insights:
-The train data has 49352 rows and 6 columns. 
-The test data has 74659 rows and 5 columns.
+we can derive the following insights:
+<code>dim(train)</code> #The train data has 49352 rows and 6 columns. 
+<code>dim(test)</code> #The test data has 74659 rows and 5 columns.
+<code>head(train)</code>
+<code>head(test)</code>
+<code>sapply(train,class)</code>
+<code>sapply(test,class)</code>
 interest_level is the dependent variable i.e. the variable to predict
 listing_id variable has unique value for every listing. 
 In other words, it is the identifier variable.
@@ -167,19 +166,19 @@ Let's start with the analysis.
 
 We'll now join the data and create some new features. 
 
-<code>#join data
+<code><span class="brown">#join data</span>
 test[,interest_level := "None"]
 tdata &lt;- rbindlist(list(train,test))</code>
-<code>#fill empty values in the list
+<code><span class="brown">#fill empty values in the list</span>
 tdata[,features := ifelse(map(features, is_empty),"aempty",features)]</code>
-<code>#count number of features per listing
+<code><span class="brown">#count number of features per listing</span>
 tdata[,feature_count := unlist(lapply(features, length))]</code>
-<code>#count number of words in description
+<code><span class="brown">#count number of words in description</span>
 tdata[,desc_word_count := str_count(description,pattern = "\\w+")]</code>
-<code>#count total length of description
+<code><span class="brown">#count total length of description</span>
 tdata[,desc_len := str_count(description)]</code>
  
-<code>#similarity between address
+<code><span class="brown">#similarity between address</span>
 tdata[,lev_sim := levenshteinDist(street_address,display_address)]</code>
 Feature engineering doesn't play by a fixed set of rules. 
 With a different data set, you'll always discover new potential set of features. 
@@ -198,66 +197,66 @@ We'll create more new features from the variable 'Features' and 'Description'.
 Let's take them up one by one. 
 First, we'll transform the list 'Features' into one feature per row format. 
 
-<code>#extract variables from features
+<code><span class="brown">#extract variables from features</span>
 fdata &lt;- data.table(listing_id = rep(unlist(tdata$listing_id), lapply(tdata$features, length)), features = unlist(tdata$features))
 head(fdata)</code>
-<code>#convert features to lower
+<code><span class="brown">#convert features to lower</span>
 fdata[,features := unlist(lapply(features, tolower))]</code>
 Since not all the features will be useful, let's calculate the count of features and remove features which are occurring less than 100 times in the data. 
 
-<code>#calculate count for every feature
+<code><span class="brown">#calculate count for every feature</span>
 fdata[,count := .N, features]
 fdata[order(count)][1:20]</code>
-<code>#keep features which occur 100 or more times
+<code><span class="brown">#keep features which occur 100 or more times</span>
 fdata &lt;- fdata[count &gt;= 100]</code>
 Let's convert each feature into a separate column so that it can be used as a variable in model training. 
 To accomplish that, we'll use the dcast function. 
 
-<code>#convert columns into table
+<code><span class="brown">#convert columns into table</span>
 fdata &lt;- dcast(data = fdata, formula = listing_id ~ features, fun.aggregate = length, value.var = "features")
 dim(fdata)</code>
 This has resulted in 96 new variables. 
 We'll keep this new data set as is, and extract more features from the description variable. 
 From here, we'll be using tm package.
-<code>#create a corpus of descriptions
+<code><span class="brown">#create a corpus of descriptions</span>
 text_corpus &lt;- Corpus(VectorSource(tdata$description))
-#check first 4 documents
+<span class="brown">#check first 4 documents</span>
 inspect(text_corpus[1:4])</code>
-<code>#the corpus is a list object in R of type CORPUS
+<code><span class="brown">#the corpus is a list object in R of type CORPUS</span>
 print(lapply(text_corpus[1:2], as.character))</code>
 As you can see, the word 'br' is just a noise and doesn't provide any useful information in the description. 
 We'll remove it. 
 Also, we'll perform the text mining steps to clean the data as explained in section above.
-<code>#let's clean the data
+<code><span class="brown">#let's clean the data</span>
 dropword &lt;- "br"</code>
-<code>#remove br
+<code><span class="brown">#remove br</span>
 text_corpus &lt;- tm_map(text_corpus,removeWords,dropword)
 print(as.character(text_corpus[[1]]))
-#tolower
+<span class="brown">#tolower</span>
 text_corpus &lt;- tm_map(text_corpus, tolower)
 print(as.character(text_corpus[[1]]))
-#remove punctuation
+<span class="brown">#remove punctuation</span>
 text_corpus &lt;- tm_map(text_corpus, removePunctuation)
 print(as.character(text_corpus[[1]]))
-#remove number
+<span class="brown">#remove number</span>
 text_corpus &lt;- tm_map(text_corpus, removeNumbers)
 print(as.character(text_corpus[[1]]))
-#remove whitespaces
+<span class="brown">#remove whitespaces</span>
 text_corpus &lt;- tm_map(text_corpus, stripWhitespace,lazy = T)
 print(as.character(text_corpus[[1]]))
-#remove stopwords
+<span class="brown">#remove stopwords</span>
 text_corpus &lt;- tm_map(text_corpus, removeWords, c(stopwords('english')))
 print(as.character(text_corpus[[1]]))
-#convert to text document
+<span class="brown">#convert to text document</span>
 text_corpus &lt;- tm_map(text_corpus, PlainTextDocument)
-#perform stemming - this should always be performed after text doc conversion
+<span class="brown">#perform stemming - this should always be performed after text doc conversion</span>
 text_corpus &lt;- tm_map(text_corpus, stemDocument,language = "english")
 print(as.character(text_corpus[[1]]))
 text_corpus[[1]]$content</code>
 After every cleaning step, we've printed the resultant corpus to help you understand the effect of each step on the corpus. 
 Now, our corpus is ready to get converted into a matrix. 
 
-<code>#convert to document term matrix
+<code><span class="brown">#convert to document term matrix</span>
 docterm_corpus &lt;- DocumentTermMatrix(text_corpus)
 dim(docterm_corpus)</code>
 This matrix has resulted in 52647 features. 
@@ -275,13 +274,13 @@ Now, our matrix looks more friendly with 87 features.
 But, which are these features ? It's equally important to explore and visualize the features to gain better understanding of the matrix. 
 Let's calculate the most frequent and least frequently occurring set of features. 
 
-<code>#find frequent terms
+<code><span class="brown">#find frequent terms</span>
 colS &lt;- colSums(as.matrix(new_docterm_corpus))
 length(colS)
 doc_features &lt;- data.table(name = attributes(colS)$names, count = colS)</code>
-<code>#most frequent and least frequent words
-doc_features[order(-count)][1:10] #top 10 most frequent words
-doc_features[order(count)][1:10] #least 10 frequent words</code>
+<code><span class="brown">#most frequent and least frequent words</span>
+doc_features[order(-count)][1:10] <span class="brown">#top 10 most frequent words</span>
+doc_features[order(count)][1:10] <span class="brown">#least 10 frequent words</code></span>
 We can also visualize this table using simple bar plots. 
 To avoid overly populated bar chart, let's plot features occurring more than 20,000 times. 
 
@@ -289,14 +288,14 @@ To avoid overly populated bar chart, let's plot features occurring more than 20,
 library(ggthemes)
 ggplot(doc_features[count&gt;20000],aes(name, count)) +</code> <code>geom_bar(stat = "identity",fill='lightblue',color='black')+</code> <code>theme(axis.text.x = element_text(angle = 45, hjust = 1))+</code> <code>theme_economist()+</code> <code>scale_color_economist()</code>
 <img src="http://blog.hackerearth.com/wp-content/uploads/2017/04/doc_words.png">
-<code>#check association of terms of top features
+<code><span class="brown">#check association of terms of top features</span>
 findAssocs(new_docterm_corpus,"street",corlimit = 0.5)
 findAssocs(new_docterm_corpus,"new",corlimit = 0.5)</code>
 A better way to visualize text features is using a wordcloud. 
 A wordcloud is composed of words where the size of each word is determined by its frequency in the data. 
 In R, we'll use wordcloud package to do this task. 
 Let's create two word clouds with different frequencies.
-<code>#create wordcloud
+<code><span class="brown">#create wordcloud</span>
 library(wordcloud)
 wordcloud(names(colS), colS, min.freq = 100, scale = c(6,.1), colors = brewer.pal(6, 'Dark2'))</code>
 <img src="http://blog.hackerearth.com/wp-content/uploads/2017/04/word_cloud.png">
@@ -305,13 +304,13 @@ wordcloud(names(colS), colS, min.freq = 100, scale = c(6,.1), colors = brewer.pa
 Until here, we've chopped the description variable and extracted 87 features out of it. 
 The final step is to convert the matrix into a data frame and merge it with new features from 'Feature' column. 
 
-<code>#create data set for training
+<code><span class="brown">#create data set for training</span>
 processed_data &lt;- as.data.table(as.matrix(new_docterm_corpus))</code>
-<code>#combing the data
+<code><span class="brown">#combing the data</span>
 data_one &lt;- cbind(data.table(listing_id = tdata$listing_id, interest_level = tdata$interest_level),processed_data)</code>
-<code>#merging the features
+<code><span class="brown">#merging the features</span>
 data_one &lt;- fdata[data_one, on="listing_id"]</code>
-<code>#split the data set into train and test
+<code><span class="brown">#split the data set into train and test</span>
 train_one &lt;- data_one[interest_level != "None"]
 test_one &lt;- data_one[interest_level == "None"]
 test_one[,interest_level := NULL]</code>
@@ -331,9 +330,9 @@ Neither, it should have the identifier variable (listing_id)
 Keeping its nature in mind, let's prepare the data for xgboost and train our model.
 <code>library(caTools)
 library(xgboost)</code>
-<code>#stratified splitting the data
+<code><span class="brown">#stratified splitting the data</span>
 sp &lt;- sample.split(Y = train_one$interest_level,SplitRatio = 0.6)</code>
-<code>#create data for xgboost
+<code><span class="brown">#create data for xgboost</span>
 xg_val &lt;- train_one[sp]
 listing_id &lt;- train_one$listing_id
 target &lt;- train_one$interest_level</code>
@@ -341,7 +340,7 @@ target &lt;- train_one$interest_level</code>
 d_train &lt;- xgb.DMatrix(data = as.matrix(train_one[,-c("listing_id","interest_level"),with=F]),label = target)
 d_val &lt;- xgb.DMatrix(data = as.matrix(xg_val[,-c("listing_id","interest_level"),with=F]), label = xg_val_target)
 d_test &lt;- xgb.DMatrix(data = as.matrix(test_one[,-c("listing_id"),with=F]))
-param &lt;- list(booster="gbtree",</code> <code>objective="multi:softprob",</code> <code>eval_metric="mlogloss",</code> <code>#nthread=13,</code> <code>num_class=3,</code> <code>eta = .02,</code> <code>gamma = 1,</code> <code>max_depth = 4,</code> <code>min_child_weight = 1,</code> <code>subsample = .7,</code> <code>colsample_bytree = .5</code> <code>)</code>
+param &lt;- list(booster="gbtree",</code> <code>objective="multi:softprob",</code> <code>eval_metric="mlogloss",</code> <code><span class="brown">#nthread=13,</code> <code>num_class=3,</code> <code>eta = .02,</code> <code>gamma = 1,</code> <code>max_depth = 4,</code> <code>min_child_weight = 1,</code> <code>subsample = .7,</code> <code>colsample_bytree = .5</code> <code>)</code></span>
 <code>set.seed(2017)
 watch &lt;- list(val=d_val, train=d_train)</code>
 <code>xgb2 &lt;- xgb.train(data = d_train,</code> <code>params = param,</code> <code>watchlist=watch,</code> <code>nrounds = 500,</code> <code>print_every_n = 10</code> <code>)</code>
@@ -365,7 +364,7 @@ It contained simple 1 and 0 to detect the presence of a new word in the descript
 Let's create a weighted matrix using tf-idf technique. 
 It's quite easy to do. 
 
-<code>#TF IDF Data set
+<code><span class="brown">#TF IDF Data set</span>
 data_mining_tf &lt;- as.data.table(as.matrix(weightTfIdf(new_docterm_corpus)))</code>
 Here's your <strong>&emsp;exercise one</strong>: Follow the steps above and calculate validation and leaderboard score on this data. 
 
@@ -375,9 +374,9 @@ Now, we'll create a 2-gram document matrix and check model performance on it.
 To create a n-gram matrix, we'll use NGramTokenizer function from Rweka package.
 <code>install.packages("RWeka")
 library(RWeka)</code>
-<code>#bigram function
+<code><span class="brown">#bigram function</span>
 Bigram_Tokenizer &lt;- function(x){</code> <code>NGramTokenizer(x, Weka_control(min=2, max=2))</code> <code>}
-#create a matrix
+<span class="brown">#create a matrix</span>
 bi_docterm_matrix &lt;- DocumentTermMatrix(text_corpus, control = list(tokenize = Bigram_Tokenizer))</code>
 Here's your <strong>&emsp;exercise two</strong>: Create a data table from this <code>bi_docterm_matrix</code> and check your score. 
 Your next steps would are similar to what we've done above. 
@@ -461,8 +460,8 @@ Open RStudio and create a new R Script.
 
 Use the following code to install and load these packages.
 
-# Install
-install.packages("tm") # for text mininginstall.packages("SnowballC")  # for text stemminginstall.packages("wordcloud")  # word-cloud generator install.packages("RColorBrewer")  # color palettesinstall.packages("syuzhet")  # for sentiment analysisinstall.packages("ggplot2")  # for plotting graphs # Load
+<span class="brown"># Install</span>
+install.packages("tm") <span class="brown"># for text mininginstall.packages("SnowballC")  <span class="brown"># for text stemminginstall.packages("wordcloud")  <span class="brown"># word-cloud generator install.packages("RColorBrewer")  <span class="brown"># color palettesinstall.packages("syuzhet")  <span class="brown"># for sentiment analysisinstall.packages("ggplot2")  <span class="brown"># for plotting graphs <span class="brown"># Load</span>
 library("tm")
 library("SnowballC")
 library("wordcloud")
@@ -494,9 +493,9 @@ Details of using the <code>readLines</code> function are sourced from: <a href="
 
 In your R script, add the following code to load the data into a corpus.
 
-# Read the text file from local machine , choose file interactively
+<span class="brown"># Read the text file from local machine , choose file interactively</span>
 text &lt;- readLines(file.choose())
-# Load the data as a corpus
+<span class="brown"># Load the data as a corpus</span>
 TextDoc &lt;- Corpus(VectorSource(text))
 
 Upon running this, you will be prompted to select the input file. 
@@ -533,25 +532,25 @@ Please note stemming uses the <em>SnowballC</em> package.
 
 In your R script, add the following code to transform and run to clean-up the text data.
 
-#Replacing "/", "@" and "|" with space
+<span class="brown">#Replacing "/", "@" and "|" with space</span>
 toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
 TextDoc <- tm_map(TextDoc, toSpace, "/")
 TextDoc <- tm_map(TextDoc, toSpace, "@")
 TextDoc <- tm_map(TextDoc, toSpace, "\\|")
-# Convert the text to lower case
+<span class="brown"># Convert the text to lower case</span>
 TextDoc <- tm_map(TextDoc, content_transformer(tolower))
-# Remove numbers
+<span class="brown"># Remove numbers</span>
 TextDoc <- tm_map(TextDoc, removeNumbers)
-# Remove english common stopwords
+<span class="brown"># Remove english common stopwords</span>
 TextDoc <- tm_map(TextDoc, removeWords, stopwords("english"))
-# Remove your own stop word
-# specify your custom stopwords as a character vector
+<span class="brown"># Remove your own stop word</span>
+<span class="brown"># specify your custom stopwords as a character vector</span>
 TextDoc <- tm_map(TextDoc, removeWords, c("s", "company", "team")) 
-# Remove punctuations
+<span class="brown"># Remove punctuations</span>
 TextDoc <- tm_map(TextDoc, removePunctuation)
-# Eliminate extra white spaces
+<span class="brown"># Eliminate extra white spaces</span>
 TextDoc <- tm_map(TextDoc, stripWhitespace)
-# Text stemming - which reduces words to their root form
+<span class="brown"># Text stemming - which reduces words to their root form</span>
 TextDoc <- tm_map(TextDoc, stemDocument)
 
 <strong>Building the term document matrix</strong>
@@ -561,13 +560,13 @@ Using the function <code>TermDocumentMatrix()</code> from the text mining packag
 In your R script, add the following code and run it to see the top 5 most frequently found words in your text.
 
 
-# Build a term-document matrix
+<span class="brown"># Build a term-document matrix</span>
 TextDoc_dtm <- TermDocumentMatrix(TextDoc)
 dtm_m <- as.matrix(TextDoc_dtm)
-# Sort by descearing value of frequency
+<span class="brown"># Sort by descearing value of frequency</span>
 dtm_v <- sort(rowSums(dtm_m),decreasing=TRUE)
 dtm_d <- data.frame(word = names(dtm_v),freq=dtm_v)
-# Display the top 5 most frequent words
+<span class="brown"># Display the top 5 most frequent words</span>
 head(dtm_d, 5)
 
 The following table of word frequency is the expected output of the <code>head</code> command on RStudio Console.
@@ -577,7 +576,7 @@ Plotting the top 5 most frequent words using a bar chart is a good basic way to 
 In your R script, add the following code and run it to generate a bar chart, which will display in the <em>Plots</em> sections of RStudio.
 
 
-# Plot the most frequent words
+<span class="brown"># Plot the most frequent words</span>
 barplot(dtm_d[1:5,]$freq, las = 2, names.arg = dtm_d[1:5,]$word,
         col ="lightgreen", main ="Top 5 most frequent words",
         ylab = "Word frequencies")
@@ -605,7 +604,7 @@ It’s an image composed of keywords found within a body of text, where the size
 Use the word frequency data frame (table) created previously to generate the word cloud. 
 In your R script, add the following code and run it to generate the word cloud and display it in the <em>Plots</em> section of RStudio.
 
-#generate word cloud
+<span class="brown">#generate word cloud</span>
 set.seed(1234)
 wordcloud(words = dtm_d$word, freq = dtm_d$freq, min.freq = 5,
           max.words=100, random.order=FALSE, rot.per=0.40, 
@@ -642,7 +641,7 @@ This technique can be used effectively to analyze which words occur most often i
 In your R script, add the following code and run it.
 
 
-# Find associations 
+<span class="brown"># Find associations </span>
 findAssocs(TextDoc_dtm, terms = c("good","work","health"), corlimit = 0.25)			
 
 
@@ -663,7 +662,7 @@ This indicates that most responses are saying that teams “work together” and
 
 You can modify the above script to find terms associated with words that occur at least 50 times or more, instead of having to hard code the terms in your script.
 
-# Find associations for words that occur at least 50 times
+<span class="brown"># Find associations for words that occur at least 50 times</span>
 findAssocs(TextDoc_dtm, terms = findFreqTerms(TextDoc_dtm, lowfreq = 50), corlimit = 0.25)
 
 <img src="https://www.red-gate.com/simple-talk/wp-content/uploads/2020/05/a-screenshot-of-a-cell-phone-description-automati-3.png">
@@ -684,12 +683,12 @@ The descriptions of the <code>get_sentiment</code> function has been sourced fro
 
 Add the following code to the R script and run it.
 
-# regular sentiment score using get_sentiment() function and method of your choice
-# please note that different methods may have different scales
+<span class="brown"># regular sentiment score using get_sentiment() function and method of your choice</span>
+<span class="brown"># please note that different methods may have different scales</span>
 syuzhet_vector <- get_sentiment(text, method="syuzhet")
-# see the first row of the vector
+<span class="brown"># see the first row of the vector</span>
 head(syuzhet_vector)
-# see summary statistics of the vector
+<span class="brown"># see summary statistics of the vector</span>
 summary(syuzhet_vector)
 
 Your results should look similar to Figure 7.
@@ -706,11 +705,11 @@ Next, run the same analysis for the remaining two methods and inspect their resp
 
 Add the following code to the R script and run it.
 
-# bing
+<span class="brown"># bing</span>
 bing_vector <- get_sentiment(text, method="bing")
 head(bing_vector)
 summary(bing_vector)
-#affin
+<span class="brown">#affin</span>
 afinn_vector <- get_sentiment(text, method="afinn")
 head(afinn_vector)
 summary(afinn_vector)
@@ -732,7 +731,7 @@ This basic scale conversion can be done easily using R’s built-in <code>sign</
 
 Add the following code to your R script and run it.
 
-#compare the first row of each vector using sign function
+<span class="brown">#compare the first row of each vector using sign function</span>
 rbind(
   sign(head(syuzhet_vector)),
   sign(head(bing_vector)),
@@ -760,12 +759,12 @@ The definition of <code>get_nrc_sentiments</code> has been sourced from: <a href
 Add the following line to your R script and run it, to see the data frame generated from the previous execution of the <code>get_nrc_sentiment</code> function.
 
 
-# run nrc sentiment analysis to return data frame with each row classified as one of the following
-# emotions, rather than a score: 
-# anger, anticipation, disgust, fear, joy, sadness, surprise, trust 
-# It also counts the number of positive and negative emotions found in each row
+<span class="brown"># run nrc sentiment analysis to return data frame with each row classified as one of the following</span>
+<span class="brown"># emotions, rather than a score: </span>
+<span class="brown"># anger, anticipation, disgust, fear, joy, sadness, surprise, trust </span>
+<span class="brown"># It also counts the number of positive and negative emotions found in each row</span>
 d<-get_nrc_sentiment(text)
-# head(d,10) - to see top 10 lines of the get_nrc_sentiment dataframe
+<span class="brown"># head(d,10) - to see top 10 lines of the get_nrc_sentiment dataframe</span>
 head (d,10)
 
 The results should look like Figure 10.
@@ -790,16 +789,16 @@ The first plot shows the total number of instances of words in the text, associa
 Add the following code to your R script and run it.
 
 
-#transpose
+<span class="brown">#transpose</span>
 td<-data.frame(t(d))
-#The function rowSums computes column sums across rows for each level of a grouping variable.
+<span class="brown">#The function rowSums computes column sums across rows for each level of a grouping variable.</span>
 td_new <- data.frame(rowSums(td[2:253]))
-#Transformation and cleaning
+<span class="brown">#Transformation and cleaning</span>
 names(td_new)[1] <- "count"
 td_new <- cbind("sentiment" = rownames(td_new), td_new)
 rownames(td_new) <- NULL
 td_new2<-td_new[1:8,]
-#Plot One - count of words associated with each sentiment
+<span class="brown">#Plot One - count of words associated with each sentiment</span>
 quickplot(sentiment, data=td_new2, weight=count, geom="bar", fill=sentiment, ylab="count")+ggtitle("Survey sentiments")
 
 You can see the bar plot in Figure 11.
@@ -811,7 +810,7 @@ This bar chart demonstrates that words associated with the positive emotion of �
 A deeper understanding of the overall emotions occurring in the survey response can be gained by comparing these number as a percentage of the total number of meaningful words. 
 Add the following code to your R script and run it.
 
-#Plot two - count of words associated with each sentiment, expressed as a percentage
+<span class="brown">#Plot two - count of words associated with each sentiment, expressed as a percentage</span>
 barplot(
   sort(colSums(prop.table(d[, 1:8]))), 
   horiz = TRUE, 
