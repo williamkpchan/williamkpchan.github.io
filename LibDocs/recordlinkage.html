@@ -1,0 +1,1046 @@
+<base target="_blank"><html><head><title>recordlinkage</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="https://williamkpchan.github.io/lazyload.min.js"></script>
+<script src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/commonfunctions.js"></script>
+<script>
+  var showTopicNumber = false;
+  var topicEnd = "<br>";
+  var bookid = "recordlinkage"
+  var markerName = "h2"
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:24px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>recordlinkage</h1>
+<a href="#mustWatch" class="red goldbs" target="_self">Must Watch!</a>
+<div id="toc"></div></center>
+<div id="mustWatch"><center><span class="red">MustWatch</span></center></div>
+<pre>
+<h2><span class="orange">Pre-processing with recordlinkage</span></h2>
+Welcome to the first installment of a five part tutorial series on the recordlinkage python package. 
+Each tutorial will cover a specific stage of the data integration workflow. 
+The topics and links for each tutorial are included below:
+
+<h2>Data pre-processing</h2>
+Data pre-processing is a crucial step in any data analysis project, and record linkage problems are no different. 
+The main goal of pre-processing is to transform messy data into something that is usable in an analysis workflow. 
+In some senses, the entire process of record linkage can be considered part of the data pre-processing phase as it is preparing data for analysis. 
+However, the first part of record linkage involves cleaning and standardizing the data. 
+This can be relatively simple, such as removing extra white-space or more complex, such as parsing and standardizing address strings.
+
+While cleaning and standardizing can be performed without the use of specialized packages, the <a href="https://github.com/J535D165/recordlinkage">recordlinkage</a> python package has cleaning and standardizing functionality built-in. 
+In this tutorial, we will explore how this functionality can be used during the pre-processing phase of data integration.
+
+<h2>Goals</h2>
+<strong>By the end of this tutorial you should have an understanding of how to use the recordlinkage package to perform basic cleaning and standardization of Panda’s DataFrames in python.</strong>
+
+To get the most out of the tutorials, I recommend you follow along by writing your own code in the python environment of your choice (script, console, notebook, etc). 
+Writing the code out can help you become familiar with the syntax and functions within recordlinkage.
+
+<h2>Before you start</h2>
+Before you start reading through the tutorial it is important that you have some background knowledge. 
+I recommend you check out the following resources:
+
+recordlinkage’s standardise module <a href="https://recordlinkage.readthedocs.io/en/latest/">documentation</a> for an introduction to the functions we will be covering.
+
+<a href="https://regexone.com/">RegexOne</a> for an introduction (or quick refresher) on regular expressions.
+
+<h2>Pre-processing with recordlinkage</h2>
+recordlinkage’s <code>standardise</code> sub-module includes four built-in functions. 
+Each of these functions tackle a different aspect of pre-processing. 
+Below, we introduce potential uses for each of these functions, provide a basic code example, and present a couple of small problems to solve. 
+For a full overview of the functions, read the <a href="https://recordlinkage.readthedocs.io/en/latest/">documentation</a>. 
+The examples below make use of a small dataset. 
+The table below shows the data in its raw form.
+
+<table><thead><tr><th scope="col">name</th><th scope="col">phone_number</th><th scope="col">occupation</th><th scope="col">address</th></tr></thead>
+<tbody>
+<tr><td>1. 
+Rachel Green</td><td>1(613)555 0149</td><td>buyer (fashion)</td><td>“90 Bedford Street, Apt 20”</td></tr>
+<tr><td>2. 
+Ross Geller</td><td>+1-613-555-0138</td><td>paleontogist</td><td>“100 Grove Street, Apartment 16”</td></tr>
+<tr><td>3. 
+Mnica Geller</td><td>16135550185</td><td>Chef</td><td>“90 Bedford Street, Apt 20”</td></tr>
+<tr><td>4. 
+Chandler BING</td><td>1 613 555 0161</td><td>???</td><td>“90 Bedford Street, Apt 19”</td></tr>
+<tr><td>5. 
+Pheobe Buffay</td><td>1(613)5550114</td><td>musician</td><td>“5 Morton Street, Apt. 
+14”</td></tr>
+<tr><td>6. 
+Joseph (Joey) Tribbiani</td><td>1(613)555-0148</td><td>actor</td><td>“90 Bedford Street, Apt 19”</td></tr>
+</tbody></table>
+<h3><code>clean()</code></h3>
+The <code>clean()</code> function is used to clean a single column within a data frame, where the column contains strings. 
+By default, <code>clean()</code> will turn all strings into lowercase and remove characters such as quotation marks and punctuation. 
+This function is especially useful for cleaning columns containing attributes such as names, addresses, abstracts, unstructured text, etc. 
+It is less useful for cleaning columns containing attributes such as phone numbers or lists.
+
+Although not discussed in the documentation, the <code>clean()</code> function also automatically removes leading and trailing white-space and collapses consecutive white-space into a single space.
+
+<h4>Example</h4>
+In this example we will first use default parameters to clean the <code>name</code> column and store it as a new column. 
+Additionally, we will provide a custom <code>replace_by_none</code> argument to clean the <code>occupation</code> column, removing the brackets and their content and placing the result in a new column. 
+The code block and resulting data frame are shown below.
+
+<code>from recordlinkage.standardise import clean
+import pandas as pd
+df = pd.read_csv("friends.csv")
+# Default Cleaning
+df["name_clean_default"] = clean(df["name"])
+# Clean the `occupation` column, but keep brackets and their contents.
+df["occupation_clean"]= clean(df["occupation"],
+ replace_by_none='[^ \\-\\_\(\)A-Za-z0-9]+',
+ remove_brackets=False)</code>
+
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col">name</th><th scope="col">phone_number</th><th scope="col">occupation</th><th scope="col">address</th><th scope="col">name_clean_default</th><th scope="col">occupation_clean</th></tr></thead>
+<tbody>
+<tr><td>1. 
+Rachel Green</td><td>1(613)555 0149</td><td>buyer (fashion)</td><td>“90 Bedford Street, Apt 20”</td><td>1 rachel green</td><td>buyer (fashion)</td></tr>
+<tr><td>2. 
+Ross Geller</td><td>+1-613-555-0138</td><td>paleontogist</td><td>“100 Grove Street, Apartment 16”</td><td>2 ross geller</td><td>paleontogist</td></tr>
+<tr><td>3. 
+M nica Geller</td><td>16135550185</td><td>Chef</td><td>“90 Bedford Street, Apt 20”</td><td>3 mnica geller</td><td>chef</td></tr>
+<tr><td>4. 
+Chandler BING</td><td>1 613 555 0161</td><td>???</td><td>“90 Bedford Street, Apt 19”</td><td>4 chandler bing</td><td></td></tr>
+<tr><td>5. 
+Pheobe Buffay</td><td>1(613)5550114</td><td>musician</td><td>“5 Morton Street, Apt. 
+14”</td><td>5 pheobe buffay</td><td>musician</td></tr>
+<tr><td>6. 
+Joseph (Joey) Tribbiani</td><td>1(613)555-0148</td><td>actor</td><td>“90 Bedford Street, Apt 19”</td><td>6 joseph tribbiani</td><td>actor</td></tr>
+</tbody></table>
+<h4>Test your knowledge</h4>
+Try writing code to perform the following tasks:
+Clean and strip accents from the <code>name</code> column. 
+Replace the uncleaned column with the result.
+Clean the <code>name</code> column, removing all instances of numbers from the field. 
+Replace the uncleaned column with the result.
+
+<h3><code>phonenumbers()</code></h3>
+The <code>phonenumbers()</code> function is used to remove all non-number characters from a cell, excluding the ‘+’ character. 
+To also remove ‘+’ you can use a custom version of the <code>clean()</code> function.
+
+<h4>Example</h4>
+The example below cleans the <code>phone_number</code> column and replaces the old column with the result.
+
+<code># Clean the phone_number column and replaces the old column with the result.
+from recordlinkage.standardise import phonenumbers
+import pandas as pd
+df = pd.read_csv("friends.csv")
+df["phone_number"]= phonenumbers(df["phone_number"])</code>
+
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col">name</th><th scope="col">phone_number</th><th scope="col">occupation</th><th scope="col">address</th></tr></thead>
+<tbody>
+<tr><td>1. 
+Rachel Green</td><td>16135550149</td><td>buyer (fashion)</td><td>“90 Bedford Street, Apt 20”</td></tr>
+<tr><td>2. 
+Ross Geller</td><td>+16135550138</td><td>paleontogist</td><td>“100 Grove Street, Apartment 16”</td></tr>
+<tr><td>3. 
+Mnica Geller</td><td>16135550185</td><td>Chef</td><td>“90 Bedford Street, Apt 20”</td></tr>
+<tr><td>4. 
+Chandler BING</td><td>16135550161</td><td>???</td><td>“90 Bedford Street, Apt 19”</td></tr>
+<tr><td>5. 
+Pheobe Buffay</td><td>16135550114</td><td>musician</td><td>“5 Morton Street, Apt. 
+14”</td></tr>
+<tr><td>6. 
+Joseph (Joey) Tribbiani</td><td>16135550148</td><td>actor</td><td>“90 Bedford Street, Apt 19”</td></tr>
+</tbody></table>
+<h3><code>value_occurence()</code></h3>
+The <code>value_occurence</code> function is used to count the number of times each item in a column occurs. 
+This is a very general function, that can be used in many different situations. 
+My impression of the function is that it is most useful for solving data specific problems and extracting features from those data. 
+It could also be used to determine whether a column contains unique values and can act as a candidate key. 
+The function could also be used to assign a summary value to each attribute, such as the proportion of the dataset which has the same value as an observation.
+
+<h4>Example</h4>
+In the example below, <code>value_occurence()</code> is used to find the size (in people) of each individual’s household.
+
+<code>from recordlinkage.standardise import value_occurence
+from recordlinkage.standardise import value_occurence
+import pandas as pd
+df = pd.read_csv("friends.csv")
+df["household_size"] = value_occurence(df["address"])</code>
+
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col">name</th><th scope="col">phone_number</th><th scope="col">occupation</th><th scope="col">address</th><th scope="col">household_size</th></tr></thead>
+<tbody>
+<tr><td>1. 
+Rachel Green</td><td>1(613)555 0149</td><td>buyer (fashion)</td><td>“90 Bedford Street, Apt 20”</td><td>2</td></tr>
+<tr><td>2. 
+Ross Geller</td><td>+1-613-555-0138</td><td>paleontogist</td><td>“100 Grove Street, Apartment 16”</td><td>1</td></tr>
+<tr><td>3. 
+Mnica Geller</td><td>16135550185</td><td>Chef</td><td>“90 Bedford Street, Apt 20”</td><td>2</td></tr>
+<tr><td>4. 
+Chandler BING</td><td>1 613 555 0161</td><td>???</td><td>“90 Bedford Street, Apt 19”</td><td>2</td></tr>
+<tr><td>5. 
+Pheobe Buffay</td><td>1(613)5550114</td><td>musician</td><td>“5 Morton Street, Apt. 
+14”</td><td>1</td></tr>
+<tr><td>6. 
+Joseph (Joey) Tribbiani</td><td>1(613)555-0148</td><td>actor</td><td>“90 Bedford Street, Apt 19”</td><td>2</td></tr>
+</tbody></table>
+<h4>Test your knowledge</h4>
+Try writing code to find the number of roommates for each individual. 
+Place the result in a new column.
+
+<h3><code>phonetic()</code></h3>
+The <code>phonetic()</code> function is used to convert strings into their corresponding phonetic codes. 
+This is particularly useful when comparing names where different possible spellings make it difficult to find exact matches (Ex. 
+Jillian and Gillian).
+
+Note that some phonetic algorithms have been created specifically for use with English names. 
+Check out the algorithm before choosing whether to use for your own project. 
+All the algorithms have trade-offs, some have increased accuracy for specific languages, some build in understanding of non-English names, some run faster, etc.
+
+<h4>Example</h4>
+The example below will standardize the <code>name</code> column, resulting in a new column called <code>phonetic</code>, where each of the names have been standardized using the nysiis phonetic algorithm.
+
+<code>from recordlinkage.standardise import phonetic
+import pandas as pd
+# Read in the data
+df = pd.read_csv("friends.csv")
+# Clean the name column to remove numbers and strip accents
+df["name"]= clean(df["name"], replace_by_none='[^ \\-\\_\(\)A-Za-z]+', strip_accents="unicode")
+# Standardize using the nysiis phonetic algorithm
+df["phonetic"] = phonetic(df["name"], method="nysiis")</code>
+
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col">name</th><th scope="col">phone_number</th><th scope="col">occupation</th><th scope="col">address</th><th scope="col">phonetic</th></tr></thead>
+<tbody>
+<tr><td>rachel green</td><td>1(613)555 0149</td><td>buyer (fashion)</td><td>“90 Bedford Street, Apt 20”</td><td>RACALGRAN</td></tr>
+<tr><td>ross geller</td><td>+1-613-555-0138</td><td>paleontogist</td><td>“100 Grove Street, Apartment 16”</td><td>RASGALAR</td></tr>
+<tr><td>monica geller</td><td>16135550185</td><td>Chef</td><td>“90 Bedford Street, Apt 20”</td><td>MANACAGALAR</td></tr>
+<tr><td>chandler bing</td><td>1 613 555 0161</td><td>???</td><td>“90 Bedford Street, Apt 19”</td><td>CANDLARBANG</td></tr>
+<tr><td>pheobe buffay</td><td>1(613)5550114</td><td>musician</td><td>“5 Morton Street, Apt. 
+14”</td><td>FABABAFY</td></tr>
+<tr><td>joseph tribbiani</td><td>1(613)555-0148</td><td>actor</td><td>“90 Bedford Street, Apt 19”</td><td>JASAFTRABAN</td></tr>
+</tbody></table>
+<h4>Test your knowledge</h4>
+Try writing code to perform the following tasks:
+Standardize the <code>name</code> column using the metaphone algorithm, having not removed white-space prior to applying the <code>phonetic</code> function. 
+Place the result in a new column called <code>name_metaphone</code>.
+Compare the results of all four phonetic algorithms. 
+Create a new column for the result of each algorithm.
+
+<h2>What's next?</h2>
+After you have sufficiently pre-processed and standardized your data, you will want to begin the record linking process. 
+The first step is to create a set of candidate links through a process called indexing. 
+For an introduction to indexing, check out the next tutorial in this series <a href="/networks-lab/blog/post/indexing-candidate-links-recordlinkage">indexing candidate links with recordlinkage</a>.
+</div></div></div>
+<span property="dc:title" content="Pre-processing with recordlinkage" class="rdf-meta element-hidden"></span>    </div>
+<h2><span class="orange">Indexing candidate links with recordlinkage</span></h2>
+Welcome to the second installment of a five part tutorial series on the <a href="https://github.com/J535D165/recordlinkage">recordlinkage</a> Python package. 
+Each tutorial will cover a specific stage of the data integration workflow. 
+The topics and links for each tutorial are included below:
+
+<h2>What is data indexing?</h2>
+When using recordlinkage for data integration or deduplication, <strong>indexing</strong> is the process of identifying pairs of data frame rows which might refer to the same real-world entity. 
+These matched rows are known as <strong>candidate links</strong>. 
+The goal of the indexing stage of data integration is to exclude obvious non-matches from the beginning of your analysis to improve computational efficiency.
+
+The easiest, but least efficient, indexing method is to consider every possible link as a candidate link. 
+Using this method for integrating two data frames, we would be comparing <em>every row</em> in the first data frame with <em>every row</em> in the second. 
+So, if we had ten rows in the first data frame and five in the second, we would be considering 50 (10 × 5) candidate links. 
+This growth in complexity can be visualized simply by drawing a 10 × 5 rectangle where coloured squares indicate candidate links:
+
+<img src="https://uwaterloo.ca/networks-lab/blog/post//networks-lab/sites/ca.networks-lab/files/uploads/images/block_index_1.png">
+
+As you can see, every possible link is coloured. 
+With such a large set of candidate links, every comparison made between the two data frames must be made <code>length(DataFrame A)</code> × <code>length(DataFrame B)</code> times. 
+This isn’t a problem with only 50 candidate links. 
+However, most data integration problems are much larger. 
+If we instead had 10,000 records in data frame A and 100,000 records in data frame B, we would have 1,000,000,000 candidate links. 
+In the world of big data, 100,000 records barely qualifies as “medium-sized data” — and yet, our data integration problem has become large enough to be difficult on consumer laptops. 
+Luckily, there’s a better way.
+
+<strong>In most data integration problems, the majority of possible links will be non-matches, and so we want to use our knowledge of the data we’re integrating to eliminate bad links from the outset.</strong>
+
+Let’s consider an imaginary example in which we are integrating two datasets of employee information. 
+Supposing that we have accurate “city of residence” data for all employees, and assuming that each employee lives in only one city, we can rule out links between rows with mismatching cities. 
+Like before, we can visualize what this might look like if employees lived in three cities, where coloured blocks represent candidate links (<a href="https://gist.github.com/joelbecker/401249a0a1c1fc8f9d3275c65f25e924">see how these graphics were generated</a>):
+
+<img src="https://uwaterloo.ca/networks-lab/blog/post//networks-lab/sites/ca.networks-lab/files/uploads/images/block_index_2.png">
+
+This indexing method is known as “blocking”. 
+By blocking on city, we were able to reduce our set of candidate links from 50 links to 18 links, or 36% of all possible links. 
+In our earlier example with larger datasets, this magnitude in reduction would reduce the number of candidate links from 1,000,000,000 to 360,000,000. 
+However, we’re likely to get even greater reductions if we use blocking variables with more categories, or were blocking on multiple variables. 
+For example, by blocking on <code>given_name</code> in the <code>febrl4</code> example datasets included with recordlinkage, we can reduce the set of candidate links from 25,000,000 (5000 × 5000) to a mere 77,249 (0.3% of all possible links).
+
+However, keep in mind that fewer candidate links are not always better, since you don’t want to throw away actual matches. 
+The ideal indexing strategy will discard a large number of mismatching records but discard very few matching records. 
+It is important to have a deep understanding of your data, and the indexing methods that you apply to it, to ensure that you do not erroneously discard matching records.
+
+<h2>Indexation methods</h2>
+This table is a straight-up information dump, which overviews all of the indexing methods built-in to recordlinkage:
+
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col"></th><th scope="col">Method</th><th scope="col">Description</th><th scope="col">Advantages</th><th scope="col">Limitations</th></tr></thead>
+<tbody>
+<tr><td>0</td><td><b>Full Index</b></td><td>All possible links are kept as candidate links.</td><td>Convenient when performance isn't an issue.</td><td>Highly inefficient with large data sets.</td></tr>
+<tr><td>1</td><td><b>Block Index</b></td><td>Only links exactly equal on specified values are kept as candidate links.</td><td>Extremely effective for high-quality, structured data.</td><td>Does not allow approximate matching.</td></tr>
+<tr><td>2</td><td><b>Sorted Neighbourhood Index</b></td><td>Rows are ranked by some value, and candidate links are made between rows with nearby values.</td><td>Useful for making approximate matches.</td><td>More conceptually difficult.</td></tr>
+<tr><td>3</td><td><b>Random Index</b></td><td>Creates a random set of candidate links.</td><td>Useful for developing your data integration workflow on a subset of candidate links, or creating training data for unsupervised learning models.</td><td>Not recommended for your final data integration workflow.</td></tr>
+</tbody></table>
+<h2>Code examples and visualizations</h2>
+We will now demonstrate how to use each indexing method in recordlinkage, and visualize the resulting set of candidate links.
+
+The indexing process has two simple steps:
+
+<ol>
+Create an <a href="https://recordlinkage.readthedocs.io/en/latest/ref-index.html"><code>Index</code></a> object to manage the indexing process. 
+We call this the <code>indexer</code> in the following code examples.
+Call <code>indexer.index()</code> to return a Pandas <a href="https://pandas.pydata.org/pandas-docs/stable/generated/pandas.MultiIndex.html"><code>MultiIndex</code></a> object. 
+This object identifies candidate links by their original indices in the data frames being linked.
+</ol>
+Once you have created the <code>MultiIndex</code>, you can use these candidate links to begin the <a href="/networks-lab/blog/post/record-comparison-recordlinkage">record comparison stage</a> of the data integration process.
+
+<h2>Setup</h2>
+We’ll demonstrate these indexing algorithms by indexing candidate links between two lists of names. 
+To start, we need to add this data to two Pandas data frames.
+
+<code>import pandas as pd
+import recordlinkage as rl
+# Name data for indexing
+names_1 = ['alfred', 'bob', 'calvin', 'hobbes', 'rusty']
+names_2 = ['alfred', 'danny', 'callum', 'hobie', 'rusty']
+# Convert to DataFrames
+df_a = pd.DataFrame(pd.Series(names_1, name='names'))
+df_b = pd.DataFrame(pd.Series(names_2, name='names'))</code>
+
+<h2>Show <code>df_a</code></h2>
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col"></th><th scope="col">names</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>alfred</td></tr>
+<tr><td>1</td><td>bob</td></tr>
+<tr><td>2</td><td>calvin</td></tr>
+<tr><td>3</td><td>hobbes</td></tr>
+<tr><td>4</td><td>rusty</td></tr>
+</tbody></table>
+</div>
+</div>
+
+<h2>Show <code>df_b</code></h2>
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col"></th><th scope="col">names</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>alfred</td></tr>
+<tr><td>1</td><td>danny</td></tr>
+<tr><td>2</td><td>callum</td></tr>
+<tr><td>3</td><td>hobie</td></tr>
+<tr><td>4</td><td>rusty</td></tr>
+</tbody></table>
+</div>
+</div>
+
+<h2>Full index</h2>
+The following code creates a set of candidate links using the <strong>full index</strong> method:
+
+<code># Create indexing object
+indexer = rl.FullIndex()
+# Create pandas MultiIndex containing candidate links
+candidate_links = indexer.index(df_a, df_b)</code>
+
+<img src="https://uwaterloo.ca/networks-lab/blog/post//networks-lab/sites/ca.networks-lab/files/uploads/images/full_index.png">
+
+<h2>Show <code>candidate_links</code> as a data frame</h2>
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col"></th><th scope="col">0</th><th scope="col">1</th></tr></thead>
+<tbody>
+<tr><td>(0,0)</td><td>0</td><td>0</td></tr>
+<tr><td>(0,1)</td><td>0</td><td>1</td></tr>
+<tr><td>(0,2)</td><td>0</td><td>2</td></tr>
+<tr><td>(0,3)</td><td>0</td><td>3</td></tr>
+<tr><td>(0,4)</td><td>0</td><td>4</td></tr>
+<tr><td>(1,0)</td><td>1</td><td>0</td></tr>
+<tr><td>(1,1)</td><td>1</td><td>1</td></tr>
+<tr><td>(1,2)</td><td>1</td><td>2</td></tr>
+<tr><td>(1,3)</td><td>1</td><td>3</td></tr>
+<tr><td>(1,4)</td><td>1</td><td>4</td></tr>
+<tr><td>(2,0)</td><td>2</td><td>0</td></tr>
+<tr><td>(2,1)</td><td>2</td><td>1</td></tr>
+<tr><td>(2,2)</td><td>2</td><td>2</td></tr>
+<tr><td>(2,3)</td><td>2</td><td>3</td></tr>
+<tr><td>(2,4)</td><td>2</td><td>4</td></tr>
+<tr><td>(3,0)</td><td>3</td><td>0</td></tr>
+<tr><td>(3,1)</td><td>3</td><td>1</td></tr>
+<tr><td>(3,2)</td><td>3</td><td>2</td></tr>
+<tr><td>(3,3)</td><td>3</td><td>3</td></tr>
+<tr><td>(3,4)</td><td>3</td><td>4</td></tr>
+<tr><td>(4,0)</td><td>4</td><td>0</td></tr>
+<tr><td>(4,1)</td><td>4</td><td>1</td></tr>
+<tr><td>(4,2)</td><td>4</td><td>2</td></tr>
+<tr><td>(4,3)</td><td>4</td><td>3</td></tr>
+<tr><td>(4,4)</td><td>4</td><td>4</td></tr>
+</tbody></table>
+</div>
+</div>
+
+The result is a set of candidate links containing all possible links. 
+The image above visualizes the set of candidate links as a network, with data frame rows as labelled nodes and candidate links as connections between them. 
+You can also click the button to see the candidate links by their original indices (i.e. 
+the contents of the <code>MultiIndex</code> containing the candidate links).
+
+<h2>Blocked index</h2>
+The following code creates a set of candidate links using the <strong>block index</strong> method:
+
+<code># Create indexing object
+indexer = rl.BlockIndex(on='names')
+# Create pandas MultiIndex containing candidate links
+candidate_links = indexer.index(df_a, df_b)</code>
+
+<img src="https://uwaterloo.ca/networks-lab/blog/post//networks-lab/sites/ca.networks-lab/files/uploads/images/blocked_index.png">
+
+<h2>Show <code>candidate_links</code> as a data frame</h2>
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col"></th><th scope="col">0</th><th scope="col">1</th></tr></thead>
+<tbody>
+<tr><td>(0,0)</td><td>0</td><td>0</td></tr>
+<tr><td>(4,4)</td><td>4</td><td>4</td></tr>
+</tbody></table>
+</div>
+</div>
+
+Here, the set of candidate links is restricted to entries with the exact same name. 
+Think carefully about the quality of your data when using this method. 
+If you cannot guarantee exact matches between corresponding rows, you may exclude potential matches from your set of candidate links.
+
+<h2>Random index</h2>
+The following code creates a set of candidate links using the random index method:
+
+<code># Create indexing object
+indexer = rl.RandomIndex()
+# Create pandas MultiIndex containing candidate links
+candidate_links = indexer.index(df_a, df_b)</code>
+
+<img src="https://uwaterloo.ca/networks-lab/blog/post//networks-lab/sites/ca.networks-lab/files/uploads/images/random_index.png">
+
+<h2>Show <code>candidate_links</code> as a data frame</h2>
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col"></th><th scope="col">0</th><th scope="col">1</th></tr></thead>
+<tbody>
+<tr><td>(0,1)</td><td>0</td><td>1</td></tr>
+<tr><td>(0,4)</td><td>0</td><td>4</td></tr>
+<tr><td>(3,2)</td><td>3</td><td>2</td></tr>
+<tr><td>(4,1)</td><td>4</td><td>1</td></tr>
+<tr><td>(4,2)</td><td>4</td><td>2</td></tr>
+<tr><td>(4,3)</td><td>4</td><td>3</td></tr>
+<tr><td>(4,4)</td><td>4</td><td>4</td></tr>
+</tbody></table>
+</div>
+</div>
+
+Here, we have a random set of candidate links.
+
+<h2>Sorted neighbourhood index</h2>
+The <strong>sorted neighbourhood method</strong> is more complex than other indexing methods. 
+The following code creates a set of candidate links using the sorted neighbourhood index method:
+
+<code># Create indexing object
+indexer = rl.SortedNeighbourhoodIndex(on='names', window=3)
+# Create pandas MultiIndex containing candidate links
+candidate_links = indexer.index(df_a, df_b)</code>
+
+<img src="https://uwaterloo.ca/networks-lab/blog/post//networks-lab/sites/ca.networks-lab/files/uploads/images/sorted_neighbourhood_index.png">
+
+<h2>Show <code>candidate_links</code> as a data frame</h2>
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col"></th><th scope="col">0</th><th scope="col">1</th></tr></thead>
+<tbody>
+<tr><td>(1,2)</td><td>1</td><td>2</td></tr>
+<tr><td>(2,1)</td><td>2</td><td>1</td></tr>
+<tr><td>(3,3)</td><td>3</td><td>3</td></tr>
+<tr><td>(0,0)</td><td>0</td><td>0</td></tr>
+<tr><td>(4,4)</td><td>4</td><td>4</td></tr>
+<tr><td>(1,0)</td><td>1</td><td>0</td></tr>
+<tr><td>(2,2)</td><td>2</td><td>2</td></tr>
+<tr><td>(3,1)</td><td>3</td><td>1</td></tr>
+<tr><td>(4,3)</td><td>4</td><td>3</td></tr>
+</tbody></table>
+</div>
+</div>
+
+Here, we have candidate links between names which would be adjacent in a sorted list. 
+This method is excellent if you want to reduce the number of candidate links considered, but cannot guarantee exact matches between potential matches. 
+However, it’s important to understand that this method has some quirks which should be kept in mind while using it. 
+To learn more about sorted neighbourhood indexing check out our <a href="/networks-lab/blog/post/sorted-neighbourhood-indexing-recordlinkage">deep dive tutorial</a>.
+
+<h2>What's next?</h2>
+After you have created a set of candidate links, you’re ready to begin comparing the records associated with each candidate link. 
+The next step will look like this:
+
+<code>
+# Create pandas MultiIndex containing candidate links
+candidate_links = indexer.index(df_a, df_b)
+# Create comparing object
+comp = rl.Compare(candidate_links, df_a, df_b)</code>
+
+For an introduction to record comparison, check out the next tutorial in this series, <a href="/networks-lab/blog/post/record-comparison-recordlinkage">record comparison with recordlinkage</a>.
+
+<h2>Further reading</h2>
+We highly recommend that you check out the <a href="https://recordlinkage.readthedocs.io/en/latest/notebooks/link_two_dataframes.html#Make-record-pairs">recordlinkage documentation</a> section on indexing. 
+For an in-depth look at the mechanics of each indexing class, check out the indexing page of the recordlinkage <a href="https://recordlinkage.readthedocs.io/en/latest/ref-index.html">API Reference</a>.
+</div></div></div>
+<span property="dc:title" content="Indexing candidate links with recordlinkage" class="rdf-meta element-hidden"></span>    </div>
+<h2><span class="orange">Record comparison with recordlinkage</span></h2>
+
+Welcome to the third installment of a five part tutorial series on the recordlinkage python package. 
+Each tutorial will cover a specific stage of the data integration workflow. 
+The topics and links for each tutorial are included below:
+
+<ol>
+<a href="/networks-lab/blog/post/pre-processing-recordlinkage">Pre-processing with recordlinkage</a>
+<a href="/networks-lab/blog/post/indexing-candidate-links-recordlinkage">Indexing candidate links with recordlinkage</a>
+<a href="/networks-lab/blog/post/record-comparison-recordlinkage">Record comparison with recordlinkage</a>
+<a href="/networks-lab/blog/post/record-pair-classification-recordlinkage">Record pair classification with recordlinkage</a>
+Data fusion (coming soon …)
+</ol>
+<h2>Goal</h2>
+<strong>By the end of this tutorial you should be comfortable using recordlinkage’s built-in methods and custom functions for record comparison.</strong>
+
+Record comparison is an important part of the data integration workflow, as it provides the basis for classifying matches and the eventual fusion of data. 
+Both of these steps will be covered in subsequent tutorials.
+
+In this tutorial, we will compare two data sets. 
+The first includes bibliographic data, which was retrieved using the <em>metaknowledge</em> python package. 
+This data includes information on affiliations, papers, authors, etc. 
+The second dataset is a collection of institutions from <a href="https://grid.ac/">GRID</a>. 
+Both data sets have been filtered to only include institutions from Canada. 
+Five rows from each of these datasets have been included below.
+
+<h3>Affiliation data</h3>
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col"></th><th scope="col">Affiliation</th><th scope="col">Country</th></tr></thead>
+<tbody>
+<tr><td>7</td><td>university of alberta 2 51 south academic building edmonton ab canada t6g2g7</td><td>Canada</td></tr>
+<tr><td>1</td><td>departement de microbiologie infectiologie et immunologieuniversite de montreal montreal quebec h3c 3j7 canada electronic addressroxannecollinumontrealca</td><td>Canada</td></tr>
+<tr><td>10</td><td>getting to know cancer room 229a 36 arthur st truro nova scotia b2n 1x5canada</td><td>Canada</td></tr>
+<tr><td>17</td><td>michael smith laboratories university of british columbia vancouver britishcolumbia canada</td><td>Canada</td></tr>
+<tr><td>13</td><td>gastrointestinal research group and inflammation research network department of physiology and pharmacology calvin joan and phoebe snyder institute for chronicdiseases cumming school of medicine university of calgary calgary albertacanada</td><td>Canada</td></tr>
+</tbody></table>
+<h3>GRID data</h3>
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col"></th><th scope="col">name</th><th scope="col">city</th><th scope="col">state</th><th scope="col">country</th></tr></thead>
+<tbody>
+<tr><td>2457</td><td>holstein association of canada</td><td>Brantford</td><td>Ontario</td><td>Canada</td></tr>
+<tr><td>2499</td><td>yellow island aquaculture</td><td>Victoria</td><td>British Columbia</td><td>Canada</td></tr>
+<tr><td>3094</td><td>mitel</td><td>Ottawa</td><td>Ontario</td><td>Canada</td></tr>
+<tr><td>1370</td><td>tekion</td><td>Toronto</td><td>Ontario</td><td>Canada</td></tr>
+<tr><td>1030</td><td>toronto general hospital</td><td>Toronto</td><td>Ontario</td><td>Canada</td></tr>
+</tbody></table>
+<h2>Comparing records</h2>
+<h3>Preliminary work</h3>
+There is a bit of work we need to do before we can compare records in our data sets. 
+First, we need to load and pre-process the data. 
+Then we will need to index the datasets to give us our list of candidate links. 
+Each of these topics have been covered in detailed in previous tutorials (links at the top of the page). 
+The script below contains the code used to prepare the data for comparisons.
+
+<code>import recordlinkage as rl
+import pandas as pd
+# ***************************
+# Load Bib Data
+# ***************************
+bib = pd.read_csv("/path/to/canada_bib.csv") # Read bibliometric data
+bib["Affiliation"] = clean(bib["Affiliation"]) # Clean Affiliation Data
+# ***************************
+# Load GRID Data
+# ***************************
+grid = pd.read_csv("/path/to/grid.csv") # Read GRID data
+grid["name"] = clean(grid["name"]) # Clean GRID data
+# ***************************
+# Index with Full Index
+# ***************************
+indexer = rl.FullIndex()
+candidate_links = indexer.index(bib, grid)</code>
+
+<h3>Set up the Compare object</h3>
+In recordlinkage you must initiate a <code>Compare</code> object prior to performing any comparison functionality between records. 
+This object stores both dataframes, the candidate links, and a vector containing comparison results. 
+Further, the <code>Compare</code> object contains the methods for performing comparisons. 
+The code block below initializes the comparison object.
+
+<code>compare = rl.Compare(candidate_links, bib, grid)</code>
+
+<h2>Built-in comparison methods</h2>
+Now that we have initiated a comparison method we can go ahead and start comparing records. 
+The simplest way to do comparisons is to use comparison methods that have been built-in to recordlinkage. 
+Currently there are five specific comparison methods within recordlinkage: <code>Compare.exact()</code>, <code>Compare.string()</code>, <code>Compare.numeric()</code>, <code>Compare.geo()</code>, and <code>Compare.date()</code>. 
+These are all well documented in the <a href="https://recordlinkage.readthedocs.io/en/latest/ref-compare.html">documentation</a>. 
+For this example we will be comparing the <code>Affiliation</code> column from the bibliometric dataset and the <code>name</code> column from the grid dataset.
+
+We will start by using the <code>Compare.exact()</code> comparison method. 
+This method is simple, if two values are an exact match a comparison score of 1 is returned, otherwise 0 is retured. 
+Since the affiliation data we are trying to match is quite messy, this method returns very low scores. 
+In fact, looking at the describe table included below the code block, you can see that no exact matches were found between the two columns.
+
+Next, we will use the <code>Compare.string()</code> comparison method. 
+This method is a bit more complicated and generates a score based on well known string-comparison algorithms. 
+For this example, we will use the <a href="https://en.wikipedia.org/wiki/Levenshtein_distance">Levenshtein</a> method. 
+However, as shown in the describe table below, we still aren’t getting very high comparison scores, with the highest only being 0.52 (of a maximum 1.0).
+
+<code># Use built-in comparison functions
+compare.exact("Affiliation", "name", name="exact")
+compare.string("Affiliation", "name", name="string")
+# Print description
+print(compare.vectors.describe())</code>
+
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col"></th><th scope="col">exact</th><th scope="col">string</th></tr></thead>
+<tbody>
+<tr><td>count</td><td>87920</td><td>87920</td></tr>
+<tr><td>mean</td><td>0</td><td>0.152443</td></tr>
+<tr><td>std</td><td>0</td><td>0.0587379</td></tr>
+<tr><td>min</td><td>0</td><td>0</td></tr>
+<tr><td>25%</td><td>0</td><td>0.111111</td></tr>
+<tr><td>50%</td><td>0</td><td>0.15</td></tr>
+<tr><td>75%</td><td>0</td><td>0.19</td></tr>
+<tr><td>max</td><td>0</td><td>0.521739</td></tr>
+</tbody></table>
+<h3>Custom comparison methods</h3>
+Based on the lack of high comparison scores, it doesn’t seem as though recordlinkage’s built-in methods are going to work for our current use case. 
+Thankfully, there is a general comparison method built-in to recordlinkage called <code>Compare.compare()</code>. 
+This method takes in a comparison function, two columns to compare, and the name of the column the score should be stored in. 
+So, all we have to do is define and call a custom comparison function.
+
+To demonstrate how the <code>Compare.compare()</code> method works, we will use a couple of custom comparison function that has already been defined in NetLab’s <a href="https://github.com/networks-lab/labutils"><code>labutils</code></a> package. 
+We will use the <code>normed_lcss()</code> and <code>normed_fuzzy_lcss()</code> functions. 
+<code>normed_lcss</code> computes a comparison score based on the length of the longest common substring between two strings. 
+This score is normalized based on the length of the longest possible substring (the lesser of the two string lengths). 
+<code>normed_fuzzy_lcss()</code> computes a score based on the prescence of similar substrings within the two strings. 
+Once again this is normalized based on the length of the longest possible substring. 
+For more information on this function see the <a href="https://labutils.readthedocs.io/en/latest/">documentation</a>.
+
+The code block below shows how each of these functions can be implemented using the generalized <code>Compare.compare()</code> method in recordlinkage.
+
+<code># Import custom functions
+from labutils import normed_lcss, normed_fuzzy_lcss
+# Perform the comparison
+compare.compare(normed_lcss, "Affiliation", "name", name="lcss")
+compare.compare(normed_fuzzy_lcss, "Affiliation", "name", name="fuzzy_lcss")
+# Print new description, including the 99th and 99.99th percentiles
+compare.vectors.describe([0.99, 0.9999])</code>
+
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col"></th><th scope="col">exact</th><th scope="col">string</th><th scope="col">lcss</th><th scope="col">fuzzy_lcss</th></tr></thead>
+<tbody>
+<tr><td>count</td><td>87920</td><td>87920</td><td>87920</td><td>87920</td></tr>
+<tr><td>mean</td><td>0</td><td>0.152443</td><td>0.184052</td><td>0.193961</td></tr>
+<tr><td>std</td><td>0</td><td>0.0587379</td><td>0.0997552</td><td>0.102741</td></tr>
+<tr><td>min</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>50%</td><td>0</td><td>0.15</td><td>0.163265</td><td>0.172414</td></tr>
+<tr><td>99%</td><td>0</td><td>0.321429</td><td>0.5</td><td>0.527778</td></tr>
+<tr><td>99.99%</td><td>0</td><td>0.5</td><td>0.7</td><td>0.875</td></tr>
+<tr><td>max</td><td>0</td><td>0.521739</td><td>0.9</td><td>0.9</td></tr>
+</tbody></table>
+As we can see in the table above, both custom methods are resulting in higher comparison scores, but are still spread out between 0 and 1. 
+The occurence of rare high scores helps to identify candidate links which likely correspond to true matches. 
+The table below shows the results of comparisons on four pairs of records, two having low scores and two having high scores.
+
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col"></th><th scope="col">Affiliation_l</th><th scope="col">name_r</th><th scope="col">exact</th><th scope="col">string</th><th scope="col">lcss</th><th scope="col">fuzzy_lcss</th></tr></thead>
+<tbody>
+<tr><td>(26, 2507)</td><td>institute of parasitology mcgill university st anne de bellevue quebec canadah9x 3v9</td><td>steel structures education foundation</td><td>0</td><td>0.202381</td><td>0.0810811</td><td>0.0810811</td></tr>
+<tr><td>(22, 2225)</td><td>transgenic core facility clinical research institute of montreal montreal qc canada</td><td>grand river conservation authority</td><td>0</td><td>0.228916</td><td>0.0882353</td><td>0.0882353</td></tr>
+<tr><td>(7, 8)</td><td>university of alberta 2 51 south academic building edmonton ab canada t6g2g7</td><td>ualberta</td><td>0</td><td>0.105263</td><td>0.875</td><td>0.875</td></tr>
+<tr><td>(17, 11)</td><td>michael smith laboratories university of british columbia vancouver britishcolumbia canada</td><td>university of british columbia</td><td>0</td><td>0.333333</td><td>1</td><td>1</td></tr>
+</tbody></table>
+<h2>Defining custom comparison methods</h2>
+Once you know how to use custom comparison methods, the next important step is knowing how to create a custom method. 
+There is additional information in the recordlinkage <a href="https://recordlinkage.readthedocs.io/en/latest/">documentation</a>, but I hope this example can provide some helpful additional information.
+
+The code block below shows a template that can be used for create a custom comparison method. 
+A custom comparison method takes in two <code>Pandas.Series</code> (columns) as well as any additional arguments that that specific function might need. 
+To use the template below all you need to do is add to the <code>inner_apply()</code> method, writing the functionality to compare two values and produce a comparison score.
+
+<code>def my_compare(s1, s2):
+ # This combines the columns you are comparing into a single DataFrame
+ concat = pd.concat([s1, s2], axis=1, ignore_index=True)
+ def inner_apply(x):
+ """
+ This is where your custom algorithm is housed.
+ Create a function to be applied to each pair in the DataFrame.
+ """
+ val1 = x[0]
+ val2 = x[1]
+ # Do something to produce the result of comparing val1 and val2
+ # return the result
+ return concat.apply(inner_apply, axis=1)</code>
+
+As an example, we will use this template to create a new comparison method. 
+This method might not be terribly useful, but it should demonstrate how this template can be customixed for your own purposes. 
+This method will first tokenize both strings (splitting at spaces). 
+Then it will check that the first token from both strings appears in the other string. 
+If both appear in the other a score of 1 is given. 
+If neither appear a score of 0 is given. 
+Finally, if only one appears in the other, a score of 0.5 is given.
+
+<code>def first_token(s1, s2):
+ # This combines the columns you are comparing into a single DataFrame
+ concat = pd.concat([s1, s2], axis=1, ignore_index=True)
+ def apply_first_token(x):
+ """
+ This is where your custom algorithm is housed.
+ Create a function to be applied to each pair in the DataFrame.
+ """
+ val1 = x[0]
+ val2 = x[1]
+ # Do something to produce the result of comparing val1 and val2
+ tkn1 = val1.split()
+ tkn2 = val2.split()
+ score = 0
+ if tkn1[0] in tkn2:
+ score += 0.5
+ if tkn2[0] in tkn1:
+ score += 0.5
+ # return the result
+ return score
+ return concat.apply(apply_first_token, axis=1)</code>
+
+The table below shows the resuls of applying this function to our dataset, showing the affiliation and name being compared as well as the resulting score. 
+While the method itself isn’t very useful, it provides a good demonstration of how to define and use your own custom comparison function.
+
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col"></th><th scope="col">Affiliation_l</th><th scope="col">name_r</th><th scope="col">first_token</th></tr></thead>
+<tbody>
+<tr><td>(17, 1425)</td><td>michael smith laboratories university of british columbia vancouver britishcolumbia canada</td><td>phenomenome discoveries</td><td>0</td></tr>
+<tr><td>(14, 2691)</td><td>department of surgery the university of british columbia vancouver bc canada</td><td>strathcona community hospital</td><td>0</td></tr>
+<tr><td>(26, 39)</td><td>institute of parasitology mcgill university st anne de bellevue quebec canadah9x 3v9</td><td>university of victoria</td><td>0.5</td></tr>
+<tr><td>(21, 343)</td><td>institut de recherches cliniques de montreal montreal qc canada</td><td>canada council</td><td>0.5</td></tr>
+<tr><td>(7, 798)</td><td>university of alberta 2 51 south academic building edmonton ab canada t6g2g7</td><td>university of northern british columbia</td><td>1</td></tr>
+<tr><td>(7, 737)</td><td>university of alberta 2 51 south academic building edmonton ab canada t6g2g7</td><td>university of ottawa</td><td>1</td></tr>
+</tbody></table>
+<h2>What's next?</h2>
+After you have compared attributes between a set of candidate links, you will want to determine which should be considered matches. 
+This is done through classification. 
+For an introduction to classification, check out the next tutorial in this series (coming soon …).
+
+<h2>Futher reading</h2>
+We highly recommend that you check out the <a href="https://recordlinkage.readthedocs.io/en/latest/notebooks/link_two_dataframes.html#Compare-records">recordlinkage documentation</a> section on comparing records. 
+For an in-depth look at each comparison method, take a look at the comparing page of the recordlinkage <a href="https://recordlinkage.readthedocs.io/en/latest/ref-compare.html">API Reference</a>.
+
+For more information on types of comparison metrics, we suggest reading Chapter 5 of Peter Christen’s book <em>Data Matching: Concepts and Techniques for Record Linkage, Entity Resolution, and Duplicate Detection Paperback</em>. 
+A shorter and more general overview of the process is described in Section 3.5 in Foster et al.’s book <em>Big Data and Social Science: A Practical Guide to Methods and Tools</em>.
+</div></div></div>
+<span property="dc:title" content="Record comparison with recordlinkage" class="rdf-meta element-hidden"></span>    </div>
+<h2><span class="orange">Record pair classification with recordlinkage</span></h2>
+
+Welcome to the third installment of a five part tutorial series on the recordlinkage python package. 
+Each tutorial will cover a specific stage of the data integration workflow. 
+The topics and links for each tutorial are included below:
+
+<ol>
+<a href="/networks-lab/blog/post/pre-processing-recordlinkage">Pre-processing with recordlinkage</a>
+<a href="/networks-lab/blog/post/indexing-candidate-links-recordlinkage">Indexing candidate links with recordlinkage</a>
+<a href="/networks-lab/blog/post/record-comparison-recordlinkage">Record comparison with recordlinkage</a>
+<a href="/networks-lab/blog/post/record-pair-classification-recordlinkage">Record pair classification with recordlinkage</a>
+Data fusion (coming soon …)
+</ol>
+<h2>Goal</h2>
+<strong>By the end of this tutorial you should be comfortable using both threshold and learning based methods to classify candidate record pairs as matching/non-matching.</strong>
+
+Classification is an important step in the data integration processes, as it is how we determine which record pairs correspond to matches and non-matches (and sometimes possible matches). 
+Threshold-based methods offer a simple and easy to understand approach to classification. 
+Alternatively, supervised or unsupervised learning models offer a more sophisticated way to address the task of classification. 
+Regardless of the approach we use, the records which are determined to be matches will fused in the next step of data integration.
+
+In this tutorial, we will be examining two product data sets, one from Amazon and one from Google. 
+Our task is to identify the products which appear in both datasets. 
+You can <a href="/networks-lab/sites/ca.networks-lab/files/uploads/files/classificationdata-amazon-google.zip">download both datasets (.zip)</a>. 
+Five rows from each data set have been included below.
+
+<h3>Google</h3>
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col">id</th><th scope="col">name</th><th scope="col">description</th><th scope="col">manufacturer</th><th scope="col">price</th></tr></thead>
+<tbody>
+<tr><td>http://www.google.com/base/feeds/
+snippets/11125907881740407428</td><td>learning quickbooks 2007</td><td>learning quickbooks 2007</td><td>intuit</td><td>38.99</td></tr>
+<tr><td>http://www.google.com/base/feeds/
+snippets/11538923464407758599</td><td>superstart! fun with reading &amp; writing!</td><td>fun with reading &amp; writing! is designed to help kids learn to read and write better through exercises puzzle-solving creative writing decoding and more!</td><td></td><td>8.49</td></tr>
+<tr><td>http://www.google.com/base/feeds/
+snippets/11343515411965421256</td><td>qb pos 6.0 basic software</td><td>qb pos 6.0 basic retail mngmt software. 
+for retailers who need basic inventory sales and customer tracking.</td><td>intuit</td><td>637.99</td></tr>
+<tr><td>http://www.google.com/base/feeds/
+snippets/12049235575237146821</td><td>math missions: the amazing arcade adventure (grades 3-5)</td><td>save spectacle city by disrupting randall underling's plan to drive all the stores out of business and take over the city. 
+solve real-world math challenges in the uniquely entertaining stores and make theme successful again.</td><td></td><td>12.95</td></tr>
+<tr><td>http://www.google.com/base/feeds/
+snippets/12244614697089679523</td><td>production prem cs3 mac upgrad</td><td>adobe cs3 production premium mac upgrade from production studio premium or standard</td><td>adobe software</td><td>805.99</td></tr>
+</tbody></table>
+<h3>Amazon</h3>
+<table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack"><thead><tr><th scope="col">id</th><th scope="col">title</th><th scope="col">description</th><th scope="col">manufacturer</th><th scope="col">price</th></tr></thead>
+<tbody>
+<tr><td>b000jz4hqo</td><td>clickart 950 000 - premier image pack (dvd-rom)</td><td></td><td>broderbund</td><td>0.00</td></tr>
+<tr><td>b0006zf55o</td><td>ca international - arcserve lap/desktop oem 30pk</td><td>oem arcserve backup v11.1 win 30u for laptops ...</td><td>computer associates</td><td>0.00</td></tr>
+<tr><td>b00004tkvy</td><td>noah\'s ark activity center (jewel case ages 3-8)</td><td></td><td>victory multimedia</td><td>0.00</td></tr>
+<tr><td>b000g80lqo</td><td>peachtree by sage premium accounting for nonpr ...</td><td>peachtree premium accounting for nonprofits 20 ...</td><td>sage software</td><td>599.99</td></tr>
+<tr><td>b0006se5bq</td><td>singing coach unlimited</td><td>singing coach unlimited - electronic learning ...</td><td>carry-a-tune technologies</td><td>99.99</td></tr>
+</tbody></table>
+<h2>Preliminary work</h2>
+The code below tackles the steps of pre-processing, indexing, and record comparison, each of which were introduced in previous blog posts. 
+Since we working with a fair-sized data set, this code may take a few minutes to run.
+
+<code>import recordlinkage as rl
+from recordlinkage.preprocessing import clean
+import pandas as pd
+# ********************************
+# Load Data
+# ********************************
+goog = pd.read_parquet('amazon-google/Google')
+amzn = pd.read_parquet('amazon-google/Amazon')
+# ********************************
+# Pre-processing
+# ********************************
+goog['name'] = clean(goog['name'])
+goog['description'] = clean(goog['description'])
+goog['manufacturer'] = clean(goog['manufacturer'])
+goog['price'] = pd.to_numeric(goog['price'], errors='coerce')
+goog.columns = ['idGoogle', 'name', 'description', 'manufacturer', 'price']
+goog = goog.set_index('idGoogle')
+amzn['title'] = clean(amzn['title'])
+amzn['description'] = clean(amzn['description'])
+amzn['manufacturer'] = clean(amzn['manufacturer'])
+amzn.columns = ['idAmazon', 'name', 'description', 'manufacturer', 'price']
+amzn = amzn.set_index('idAmazon')
+# ********************************
+# Indexing
+# ********************************
+cl = rl.SortedNeighbourhoodIndex('name', window=251)
+cl = cl.index(goog, amzn)
+# ********************************
+# Record Comparison
+# ********************************
+c = rl.Compare()
+c.string('name', 'name', label='cmp_name')
+c.string('description', 'description', method='jaro_winkler', label='cmp_description')
+c.string('manufacturer', 'manufacturer', label='cmp_manufacturer')
+c.numeric('price', 'price', method='linear', scale=1,
+ offset=10, label='cmp_price')
+feature_vectors = c.compute(cl, goog, amzn)</code>
+
+<h2>Classification</h2>
+We will cover three ways to classify our candidate record pairs as matches or non-matches.
+
+<ol>
+<a href="#threshold">Threshold-based methods</a>
+<a href="#supervised">Supervised learning methods</a>
+<a href="#unsupervised">Unsupervised learning methods</a>
+</ol>
+Once we classify each of the record pairs, it is important to evaluate the classification. 
+We will use three commonly used metrics: precision, recall, and F-measure.
+Precision is the portion of record pairs classified as matching which are actually matching.
+Recall is the portion of true matches which are identified as matching.
+F-Measure combines precision and recall to balance the two in a single metric.
+</ul>
+<h3>
+<a id="threshold" name="threshold"></a>1. 
+Threshold-based methods</h3>
+We will start with implementing a threshold-based approach to classification. 
+This works by finding some metric, setting a threshold, and then using that as the boundary to define our two classes.
+
+An example of threshold-based classification could be determining whether an animal is a cat or a dog. 
+Our metric will be weight and 10 lbs (4.5 kgs) will be our threshold. 
+If an animal weighs more than 10 lbs it is classified as a dog, and if it weighs less it is classified as a cat.
+
+This is a very straightforward approach, it is easy to understand and implement. 
+However, it's also error-prone. 
+For example, most Chihuahuas are going to be classified as cats and some well-fed cats will be classified as dogs.
+
+For our recordlinkage problem, our metric will be the sum of all comparisons scores for each candidate record pair. 
+We will use a threshold of 2.5 (chosen arbitrarily).
+
+<code>predictions = feature_vectors[feature_vectors.sum(axis=1) &gt; 2.5]
+print("Threshold-Based: {} matches".format(len(predictions)))</code>
+
+<h4>Evaluate the predictions</h4>
+Now, we should evaluate how this threshold-based approach performed. 
+First, we will read in the true matches from our dataset. 
+Then, we will use the three the three different metrics which were introduced above.
+
+As a refresher, precision is the proportion of record pairs classified as matching which are actual matches. 
+Recall is the proportion of all the actual matches which are identified as matching. 
+Finally, F-measure can be thought of as metric which balances precision and recall.
+
+<code># Load True Matches
+mapping = pd.read_parquet('amazon-google/Amazon_Google_perfectMapping')
+# Convert dataframe to index required by recordlinkage
+matches = mapping.set_index(['idGoogle', 'idAmazon']).index
+# Get the confusion matrix. 
+This is just the table with the numbers of True/False Postives and True/False Negatives.
+confusion_matrix = rl.confusion_matrix(matches, predictions, len(feature_vectors))
+# Print Metrics
+print("Precision:", rl.precision(confusion_matrix))
+print("Recall:", rl.recall(confusion_matrix))
+print("F-Measure:", rl.fscore(confusion_matrix))</code>
+
+Precision: 0.28607594936708863
+Recall: 0.08692307692307692
+F-Measure: 0.13333333333333333
+
+We want all three of these numbers to be as close to 1 as possible. 
+This is a pretty good indication that something in our process needs to change. 
+Perhaps we should revisit earlier steps (garbage in, garbage out). 
+But we can also consider use more sophisticated methods of classification.
+
+<h3>
+<a id="supervised" name="supervised"></a>2. 
+Supervised learning methods</h3>
+Next, we will use a supervised-learning approach to classification. 
+Supervised learning models are trained based on data provided by a user. 
+This data includes a set of features as well as the proper classification.
+
+You can think of a parent teaching a young child about animals as supervised learning. 
+The parent will point to an animal and say something like “Look, a dog!” or “Watch out! There is a goose!”. 
+Soon the child will be able to identify dogs from geese – they will have developed a successful classification model!
+
+We will use a logistic regression model for classification. 
+There are many other supervised learning models, some of which are also available in recordlinkage.
+
+<h4>Load true matches</h4>
+First we will load the data containing all of the true matches in our data set.
+
+<code># Load True Matches
+mapping = pd.read_parquet('amazon-google/Amazon_Google_perfectMapping')
+# Convert dataframe to index required by recordlinkage
+match = mapping.set_index(['idGoogle', 'idAmazon']).index</code>
+
+<h4>Create training and testing datasets</h4>
+Next we will split the our dataframe of feature vectors generated during the prelimary stage into our training and testing set. 
+The training set will be used to train the logistic regression model. 
+Then, the testing set will be used to evaluate how the model performs. 
+It is very important to know that you should <strong>never train and test your model on the same subset of your data</strong>.
+
+To get a sense for why this shouldn’t be done, we can think about a professor giving their students a 10 question sample exam, along with all the solutions. 
+Then, come the final exam they pass out an exam made up of the exact same 10 questions. 
+Upon grading the exam the professor discovers every student got <sup>10</sup><sub>10</sub> and concludes that the entire class has an amazing grasp of all course content.
+
+However, this is probably not the case at all. 
+We can imagine that some of the students likely just memorized the 10 solutions and were able to ace the test regardless of whether they studied any other content at all!
+
+This is an example of what is called overfitting. 
+Essentially, the model has memorized the provided examples but has failed to learn a more general model that is successful beyond these examples.
+
+Once again, <strong>do not evaluate your model on the data it was trained on!</strong>
+
+<code>from sklearn.model_selection import train_test_split
+# Create a training and test set
+train, test = train_test_split(feature_vectors, test_size=0.25)
+# Get the true pairs for each set
+train_matches_index = train.index &amp; match
+test_matches_index = test.index &amp; match</code>
+
+<h4>Build the model</h4>
+Finally, we can build our classification model and train it.
+
+<code># Logistic Regression
+# ***********************
+# Initialize the classifier
+classifier = rl.LogisticRegressionClassifier()
+# Train the classifier
+classifier.learn(train, train_matches_index)</code>
+
+<h4>Evaluate the model</h4>
+Now, we should evaluate how the model performs on the test set. 
+First, we use the model to make predictions on the test set. 
+Then we will use the three different metrics which were introduced above.
+
+As a refresher, precision is the proportion of record pairs classified as matching which are actual matches. 
+Recall is the proportion of all the actual matches which are identified as matching. 
+Finally, F-measure can be thought of as metric which balances precision and recall.
+
+<code># Make Predictions on a test set
+predictions = classifier.predict(test)
+# Get the confusion matrix. 
+This is just the table with the numbers of True/False Postives and True/False Negatives.
+confusion_matrix = rl.confusion_matrix(test_matches_index, predictions, len(test))
+# Print Metrics
+print("Precision:", rl.precision(confusion_matrix))
+print("Recall:", rl.recall(confusion_matrix))
+print("F-Measure:", rl.fscore(confusion_matrix))</code>
+
+Precision: 0.5
+Recall: 0.23170731707317074
+F-Measure: 0.3166666666666667
+
+We want all three of these numbers to be as close to 1 as possible. 
+As we can see, the model is not performing miracles here. 
+However, it is a pretty good improvement over our threhold-based classification.
+
+We will likely want to revisit earlier parts of our process to see if we can improve these measures. 
+Improvements to the model could be achieved in a variety of ways, from adding new features to model (perhaps comparing product names using jaccard similarity) to changing model hyper-parameters.
+
+Its important to realize that these metrics are evaluating how the classification model performs on the data it has been given. 
+It does not consider the fact that during our preliminary work we actually exclude a whole bunch of possible record pairs when indexing.
+
+<h3>
+<a id="unsupervised" name="unsupervised"></a>3. 
+Unsupervised learning methods</h3>
+Finally, we will use unsupervised learning to classify our candidate record pairs. 
+Unsupervised models train themselves without the user having to provide training data to the model.
+
+Once again, we can consider a child learning about animals. 
+Unsupervised learning would have the child learning about the world without the help of her parents. 
+Instead, she might be told that there are two types of animals she is likely to encounter. 
+She doesn’t know anything else about these animals, not even their names. 
+But by examining lots of different examples of animals she eventually groups them together. 
+Animals that have tails, chase sticks, and enjoy being approached are one type, while those which have wings, walk aimlessly across the street, and are scary when you get near them are another. 
+At this point, the child will have developed a successful method of distinguishing the two types of animals.
+
+We will use a K Means Classifier for our example.
+
+<h4>Create training and testing datasets</h4>
+Just as we did for unsupervised learning, we will start with splitting our data into two parts. 
+By excluding some of our data from training, we will be able to evaluate how the model might perform if given data it has never seen before.
+
+<code>from sklearn.model_selection import train_test_split
+# Create a training and test set
+train, test = train_test_split(feature_vectors, test_size=0.25)
+# Get the true pairs for the test set (Used for Evaluation)
+test_matches_index = test.index &amp; match</code>
+
+<h4>Build the model</h4>
+<code># K-means Classifier
+# *******************
+# Build The Classifier
+kmeans = rl.KMeansClassifier()
+# Train the Model
+result_kmeans = kmeans.learn(train)</code>
+
+<h4>Evaluate the model</h4>
+Once again, we will make predictions on the test set and then use precision, recall, and F-measure to evaluate the performance.
+
+<code># Make Predictions on a test set
+predictions = kmeans.predict(test)
+# Get the confusion matrix. 
+This is just the table with the numbers of True/False Postives and True/False Negatives.
+confusion_matrix = rl.confusion_matrix(test_matches_index, predictions, len(test))
+# Print Metrics
+print("Precision:", rl.precision(confusion_matrix))
+print("Recall:", rl.recall(confusion_matrix))
+print("F-Measure:", rl.fscore(confusion_matrix))</code>
+
+Precision: 0.009804922888366867
+Recall: 0.5853658536585366
+F-Measure: 0.019286790557508787
+
+Remember, we want all three of these numbers to be as close to 1 as possible. 
+Once again, this has offered an improvement over our original threshold-based approach. 
+However, it does have a worse F-measure than our supervised approach.
+
+Once again, these poor scores offer an indication that we should revisit earlier steps in our process.
+
+<h2>What’s next?</h2>
+Now that you have your set of matching record pairs, you will likely want to combine the records into a single dataset for easy use. 
+This task is called data fusion. 
+For an introduction to fusion check out the next tutorial in this series (coming soon …).
+
+<h2>Further reading</h2>
+While recordlinkage provides some good basic classification algorithms, it does not offer a lot of opportunity to customize the algorithms. 
+To do this, I suggest using other pacakges built for classification, such as <a href="http://scikit-learn.org/stable/supervised_learning.html#supervised-learning">scikit learn</a>.
+
+Its important to remember that your goal is to classify these record pairs as matching or non-matching. 
+There is nothing saying that you can’t deviate from the traditional methods. 
+Often, these are good places to start, but be creative in how you design a classification system. 
+For example, you might want to find ways to combine multiple model types, using something like stacking or a committee-based approaches.
+</div></div></div>
+<span property="dc:title" content="Record pair classification with recordlinkage" class="rdf-meta element-hidden"></span>    </div>
+
+<script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+    // ... 
+more custom settings?
+});
+</script>
+
+</pre></body></html>
