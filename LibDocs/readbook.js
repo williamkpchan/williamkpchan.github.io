@@ -255,8 +255,8 @@ function autoShowWL(countNumber) {
   if (!autoShowImgFlag) { alert("autoShowImgFlag: " + autoShowImgFlag) }
   if ((countNumber > 0) && autoShowImgFlag) {
     showWLImg()
-    console.log("elapseTIme",elapseTIme)
-    setTimeout(() => autoShowWL(countNumber - 1), elapseTIme)
+    console.log("elapseTIme",elapseTIme*3)
+    setTimeout(() => autoShowWL(countNumber - 1), elapseTIme*3)
   }
 }
 
