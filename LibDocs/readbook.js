@@ -52,6 +52,7 @@ function chkKey() {
   else if(testkey == '*'){ pageScroll();} //imgControl.js
   else if(testkey == '&'){ randomScroll();} //imgControl.js
 
+  else if(testkey == "1"){ autoShowWL(waitList.length);}
   else if(testkey == "2"){
     $('body,html').animate({scrollTop:(divtoc.clientHeight + divtoc.offsetTop-400)}, 1);}
 
@@ -178,7 +179,7 @@ if(markerName != "h0"){
 totalLength = topicLength
 notvisitedList = [...Array(totalLength).keys()];
 imgnotvisitedList = notvisitedList
-
+WLPointer = 0
 function storeBookmark(objName, pagepos) {
   if(typeof objName != 'undefined') {
     localStorage.setItem(objName, pagepos.toString())
@@ -246,6 +247,27 @@ function randomWL() {
     newPointer = pointerList[Math.floor(Math.random() * pointerList.length)];
   }
   topicpointer = newPointer;
+  showTopic();
+}
+
+function autoShowWL(countNumber) {
+  console.log("autoShowWL", autoShowImgFlag)
+  if (!autoShowImgFlag) { alert("autoShowImgFlag: " + autoShowImgFlag) }
+  if ((countNumber > 0) && autoShowImgFlag) {
+    showWLImg()
+    console.log("elapseTIme",elapseTIme)
+    setTimeout(() => autoShowWL(countNumber - 1), elapseTIme)
+  }
+}
+
+function showWLImg() {
+  pointerList = waitList
+  if(waitList.length > waitListSize){
+    pointerList.splice(waitListSize, (pointerList.length - waitListSize));
+  }
+
+  topicpointer = pointerList[WLPointer];
+  WLPointer = WLPointer+1;
   showTopic();
 }
 
