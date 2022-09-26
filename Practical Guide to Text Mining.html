@@ -280,7 +280,7 @@ length(colS)
 doc_features &lt;- data.table(name = attributes(colS)$names, count = colS)</code>
 <code><span class="brown">#most frequent and least frequent words</span>
 doc_features[order(-count)][1:10] <span class="brown">#top 10 most frequent words</span>
-doc_features[order(count)][1:10] <span class="brown">#least 10 frequent words</code></span>
+doc_features[order(count)][1:10] <span class="brown">#least 10 frequent words</span></code>
 We can also visualize this table using simple bar plots. 
 To avoid overly populated bar chart, let's plot features occurring more than 20,000 times. 
 
@@ -340,7 +340,7 @@ target &lt;- train_one$interest_level</code>
 d_train &lt;- xgb.DMatrix(data = as.matrix(train_one[,-c("listing_id","interest_level"),with=F]),label = target)
 d_val &lt;- xgb.DMatrix(data = as.matrix(xg_val[,-c("listing_id","interest_level"),with=F]), label = xg_val_target)
 d_test &lt;- xgb.DMatrix(data = as.matrix(test_one[,-c("listing_id"),with=F]))
-param &lt;- list(booster="gbtree",</code> <code>objective="multi:softprob",</code> <code>eval_metric="mlogloss",</code> <code><span class="brown">#nthread=13,</code> <code>num_class=3,</code> <code>eta = .02,</code> <code>gamma = 1,</code> <code>max_depth = 4,</code> <code>min_child_weight = 1,</code> <code>subsample = .7,</code> <code>colsample_bytree = .5</code> <code>)</code></span>
+param &lt;- list(booster="gbtree",</code> <code>objective="multi:softprob",</code> <code>eval_metric="mlogloss",</code> <code><span class="brown">#nthread=13,</span></code> <code>num_class=3,</code> <code>eta = .02,</code> <code>gamma = 1,</code> <code>max_depth = 4,</code> <code>min_child_weight = 1,</code> <code>subsample = .7,</code> <code>colsample_bytree = .5</code> <code>)</code>
 <code>set.seed(2017)
 watch &lt;- list(val=d_val, train=d_train)</code>
 <code>xgb2 &lt;- xgb.train(data = d_train,</code> <code>params = param,</code> <code>watchlist=watch,</code> <code>nrounds = 500,</code> <code>print_every_n = 10</code> <code>)</code>
@@ -461,7 +461,13 @@ Open RStudio and create a new R Script.
 Use the following code to install and load these packages.
 
 <span class="brown"># Install</span>
-install.packages("tm") <span class="brown"># for text mininginstall.packages("SnowballC")  <span class="brown"># for text stemminginstall.packages("wordcloud")  <span class="brown"># word-cloud generator install.packages("RColorBrewer")  <span class="brown"># color palettesinstall.packages("syuzhet")  <span class="brown"># for sentiment analysisinstall.packages("ggplot2")  <span class="brown"># for plotting graphs <span class="brown"># Load</span>
+install.packages("tm") <span class="brown"># for text mining</span>
+install.packages("SnowballC")  <span class="brown"># for text stemming</span>
+install.packages("wordcloud")  <span class="brown"># word-cloud generator </span>
+install.packages("RColorBrewer")  <span class="brown"># color palettes</span>
+install.packages("syuzhet")  <span class="brown"># for sentiment analysis</span>
+install.packages("ggplot2")  <span class="brown"># for plotting graphs</span>
+<span class="brown"># Load</span>
 library("tm")
 library("SnowballC")
 library("wordcloud")
@@ -836,6 +842,224 @@ It demonstrated how to create a word frequency table and plot a word cloud, to i
 Word association analysis using correlation, helped gain context around the prominent themes. 
 It explored four methods to generate sentiment scores, which proved useful in assigning a numeric value to strength (of positivity or negativity) of sentiments in the text and allowed interpreting that the average sentiment through the text is trending positive. 
 Lastly, it demonstrated how to implement an emotion classification with NRC sentiment and created two plots to analyze and interpret emotions found in the text.
+
+<h2>用R進行中文 text Mining</h2>
+安裝需要工具
+本文使用的分析方法，目前僅能在Windows上測試成功。
+我的環境: Windows 7 + R 版本 2.15.3 + RStudio 0.98.484<br/>
+安裝以下套件  
+
+install.packages("rJava")
+install.packages("Rwordseg", repos="http://R-Forge.R-project.org")
+install.packages("tm")
+install.packages("tmcn", repos="http://R-Forge.R-project.org", type="source")
+install.packages("wordcloud")
+install.packages("XML")
+install.packages("RCurl")
+
+Windows上安裝rJava的注意事項:
+
+將jvm.dll加到環境變數PATH之中
+注意java的版本(32-bit or 64-bit)必須要和R一致
+(Windows binary)之後再安裝，以避免
+
+<h2>抓取ptt笨版文章列表</h2>
+我們以分析ptt笨版文章為範例, 首先到ptt web 版抓取文章的url連結。
+我們利用 RCurl套件的 getURL和 XML套件的 htmlParseApply 抓取笨版文章列表的 html網頁, 再用xpathSApply 去擷取出所有文章的url連結並儲存。 
+或是可以到<a href="https://dl.dropboxusercontent.com/u/21186660/doc.rar">已下載ptt笨版文章</a>
+
+library(XML)
+library(RCurl)
+
+data &lt;- list()
+
+for( i in 1058:1118){
+  tmp &lt;- paste(i, '.html', sep='')
+  url &lt;- paste('', tmp, sep='')
+  urlHeader = "https://williamkpchan.github.io/"
+  html &lt;- htmlParse(readLines(paste0(urlHeader, url)))
+  url.list &lt;- xpathSApply(html, "//div[@class='title']/a[@href]", xmlAttrs)
+  data &lt;- rbind(data, paste('www.ptt.cc', url.list, sep=''))
+}
+data &lt;- unlist(data)
+
+下載列表中的笨版文章之後，接著才開始利用所有文章的url連結去抓所有文章的html網頁, 並用xpathSApply去解析出文章的內容並儲存。
+
+getdoc &lt;- function(line){
+  start &lt;- regexpr('www', line)[1]
+  end &lt;- regexpr('html', line)[1]
+
+  if(start != -1 &amp; end != -1){
+    url &lt;- substr(line, start, end+3)
+    html &lt;- htmlParse(getURL(url), encoding='UTF-8')
+    doc &lt;- xpathSApply(html, "//div[@id='main-content']", xmlValue)
+    name &lt;- strsplit(url, '/')[[1]][4]
+    write(doc, gsub('html', 'txt', name))
+  }      
+}
+
+開始下載文章
+
+先用 <code>setwd(填入資料夾位置)</code> 這指令, 選定文件下載位置<br/>
+或是用 <code>getwd()</code>確定目前的工作資料夾位置
+
+sapply(data, getdoc)  
+
+<h2>開始文字處理</h2>
+首先載入以下text mining 套件
+
+library(tm)
+library(tmcn)
+
+## # tmcn Version: 0.1-2
+
+library(Rwordseg)
+
+## Loading required package: rJava
+## # Version: 0.2-1
+
+匯入剛才抓完的笨版文章，doc 是儲存下載ptt文章的資料夾, 這些文章變成我們分析的語料庫。
+
+d.corpus &lt;- Corpus(DirSource("doc"), list(language = NA))
+
+<h2>進行數據清理</h2>
+1 清除標點符號, 數字
+d.corpus &lt;- tm_map(d.corpus, removePunctuation)
+d.corpus &lt;- tm_map(d.corpus, removeNumbers)
+
+2 清除大小寫英文與數字
+d.corpus &lt;- tm_map(d.corpus, function(word) {
+    gsub("[A-Za-z0-9]", ", word)
+})
+
+<h2>進行中文斷詞</h2>
+首先，由於ptt有自己獨特的詞彙，例如發文不附沒圖、沒圖沒真相&hellip;等等，因此我們另外安裝 ptt  常用詞彙來協助斷詞。ptt常用詞彙可以從<a href="http://wubi.sogou.com/dict/cell.php?id=9182">搜狗細胞辭庫</a>下載 。 
+
+words &lt;- readLines("http://wubi.sogou.com/dict/download_txt.php?id=9182")
+words &lt;- toTrad(words)
+insertWords(words)
+
+接著，我們利用我們 Rwordseg套件裡的segmentCN來進行斷詞。Rwordseg是<a href="http://jliblog.com/app/rwordseg">李艦</a>所撰寫的R套件，利用rJava去連結java分詞工具ansj來進行斷詞。 另外，斷詞後的詞彙有詞性，例如動詞、名詞、形容詞、介係詞等等，我們只挑出名詞來進行分析。
+
+d.corpus &lt;- tm_map(d.corpus[1:100], segmentCN, nature = TRUE)
+d.corpus &lt;- tm_map(d.corpus, function(sentence) {
+    noun &lt;- lapply(sentence, function(w) {
+        w[names(w) == "n"]
+    })
+    unlist(noun)
+})
+d.corpus &lt;- Corpus(VectorSource(d.corpus))
+
+接著進行清除停用字符，停用字符指的是一些文章中常見的單字，但卻無法提供我們資訊的冗字。例如有些、以及、因此&hellip;等等字詞。
+
+myStopWords &lt;- c(stopwordsCN(), "編輯", "時間", "標題", "發信", "實業", "作者")
+d.corpus &lt;- tm_map(d.corpus, removeWords, myStopWords)
+
+我們可以看看有哪些停用字符，這裡抽出前20個停用字符來看  
+
+head(myStopWords, 20)
+
+##  [1] "第二"     "一番"     "一直"     "一&lt;U+4E2A&gt;" "一些"     "&lt;U+8BB8&gt;多"
+##  [7] "种"       "有的是"   "也就是&lt;U+8BF4&gt;" "末"       "啊"       "阿"      
+## [13] "哎"       "哎呀"     "哎&lt;U+54DF&gt;" "唉"       "俺"       "俺&lt;U+4EEC&gt;"
+## [19] "按"       "按照"
+
+<h2>建立 TermDocumentMatrix</h2>
+中文斷詞結束後，我們用矩陣將結果儲存起來。TermDocumentMatrix 指的是關鍵字為列，文件是行的矩陣。儲存的數字是關鍵字在這些文件中出現的次數。其中 wordLengths=c(2,Inf) 表示我們挑至少兩個字的詞。
+
+tdm &lt;- TermDocumentMatrix(d.corpus, control = list(wordLengths = c(2, Inf)))
+
+我們可以看看TermDocumentMatrix裡面，前兩篇文章的前10個關鍵字  
+
+inspect(tdm[1:10, 1:2])
+
+## A term-document matrix (10 terms, 2 documents)
+## 
+## Non-/sparse entries: 3/17
+## Sparsity           : 85%
+## Maximal term length: 3 
+## Weighting          : term frequency (tf)
+## 
+##         Docs
+## Terms    M.1384834727.A.0CB.txt M.1384838698.A.957.txt
+##   一生                        0                      0
+##   一家                        1                      0
+##   一家子                      0                      0
+##   一線                        0                      0
+##   人士                        0                      0
+##   人才                        0                      0
+##   人中                        0                      0
+##   人文                        0                      0
+##   人民                        0                      1
+##   人生                        0                      2
+
+<h2>畫出關鍵字詞雲</h2>
+我們利用 wordcloud 套件，畫出在所有文件中出現次數超過10次的名詞。出現次數越多，字體就會呈現越大。
+
+library(wordcloud)
+
+m1 &lt;- as.matrix(tdm)
+v &lt;- sort(rowSums(m1), decreasing = TRUE)
+d &lt;- data.frame(word = names(v), freq = v)
+wordcloud(d$word, d$freq, min.freq = 10, random.order = F, ordered.colors = F, 
+    colors = rainbow(length(row.names(m1))))
+
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfgAAAH4CAIAAAApSmgoAAAABnRSTlMA/QD+AP2iVEMGAAAACXBIWXMAAAsSAAALEgHS3X78AAAgAElEQVR4nOzdf3hU9Zk3/vf9Od3q8+y2VkV+GqQdMtY0W39RcWBgi35Lx46lcXFjabFRaehY22Gzu/HaaL7U5YGyl3R36rTWSLQaq8VNdZtSTzniKi0GIor4Y2ksE48FAgiKUt3re11tn865v3+cmclkMoEkBImn79c1lztzzpkzJ1zd99xzn8/5HMl6WRARUXCZk30ARER0YjHoiYgCjkFPRBRwDHoiooBj0BMRBRyDnogo4Bj0REQBx6AnIgo4Bj0RUcAx6ImIAo5BT0QUcAx6IqKAY9ATEQUcg56IKOAY9EREAcegJyIKOAY9EVHAMeiJiAKOQU9EFHAMeiKigGPQExEFHIOeiCjgGPRERAHHoCciCjgGPRFRwDHoiYgCjkFPRBRwDHoiooBj0BMRBRyDnogo4Bj0REQBx6AnIgo4Bj0RUcAx6ImIAo5BT0QUcAx6IqKAY9ATEQUcg56IKOAY9EREAcegJyIKOAY9EVHAMeiJiAKOQU9EFHAMeiKigGPQExEFHIOeiCjgGPRERAHHoCciCjgGPRFRwDHoiYgCjkFPRBRwDHoiooBj0BMRBRyDnogo4Bj0REQBx6AnIgo4Bj0RUcAx6ImIAo5BT0QUcAx6IqKAY9ATEQUcg56IKOAY9EREAcegJyIKOAY9EVHAMeiJiAKOQU9EFHAMeiKigGPQExEFHIOeiCjgGPRERAHHoCciCjgGPRFRwDHoiYgCjkFPRBRwDHoiooBj0BMRBRyDnogo4Bj0REQBx6AnIgo4Bj0RUcAx6ImIAo5BT0QUcAx6IqKAY9ATEQUcg56IKOAY9EREAcegJyIKOAY9EVHAMeiJiAKOQU9EFHAMeiKigGPQExEFHIOeiCjgGPRERAHHoCciCjgGPRFRwDHoiYgCjkFPRBRwDHoiooBj0BMRBRyDnogo4Bj0REQBx6AnIgo4Bj0RUcAx6ImIAo5BT0QUcAx6IqKAY9ATEQUcg56IKOAY9EREAcegJyIKOAY9EVHAMeiJiAKOQU9EFHAMeiKigGPQExEFHIOeiCjgGPRERAHHoCciCjgGPRFRwDHoiYgCjkFPRBRwDHoiooBj0BMRBRyDnogo4Bj0REQBx6AnIgo4Bj0RUcAx6ImIAo5BT0QUcAx6IqKAY9ATEQUcg56IKOAY9EREAcegJyIKOAY9EVHAMeiJiAKOQU9EFHAMeiKigGPQExEFHIOeiCjgGPRERAHHoCciCjgGPRFRwDHoiYgCjkFPRBRwDHoiooBj0BMRBRyDnogo4Bj0REQBx6AnIgo4Bj0RUcAx6ImIAo5BT0QUcAx6IqKAY9ATEQUcg56IKOAY9EREAcegJyIKOAY9EVHAMeiJiAKOQU9EFHAMeiKigGPQExEFHIOeiCjgGPRERAHHoCciCjgGPRFRwDHoiYgCjkFPRBRwDHoiooBj0BMRBRyDnogo4Bj0REQBx6AnIgo4Bj0RUcAx6On9oNcFgC3OyT4OovclBj2NVVsSZp6Ve6ywBY5sPtmHRPT+9IGTfQBEg5hapSszAHQqsHeNmdetm1pO9jERvS+xoqcxqTdtVrTnX9iyucbbVIPVbN0QjYRkvezJPgaicnpdebAOgLxWq9d1SzN0ZRWmJrXiZB8Y0fsNWzc0VlWEtKlNtti6sQHI6nwLyDLliUaArRsamxyZZ5l5Ydkc1k1ZbLaAFKaOYD+urHPQmzbl2j6yOiq9ACDr0sd5uERjGYOexqaYbsp6mzL6WtzMszA3q01xrMjl8jD09mBqJRDWxbG+hfnxPJjbhhWWmWcB4WHvmej9gz16Gqt6XVSEjnMfsi6B3TtlY1d+Qb1uasEWR2fHAMjqKBZ3agVkXQKo0UWxo+yK6P2LQU9jkyPz4lK6MKIPdA6jTb8lIWjR2UCvI4j1e+OWhGlu1ZUZ3B+WV6Erszp7NI6aaEziyVgam2L6gK2AdFbqohB6XVT0yJbYsE7GCmqw2TLNhZfA9JTXmgQAVOkDWTwYxfKsB2fANwpRoLCip7HJkfoOAfQ6SPNOXVota1uxNOMtGlEzp7Sid9ELWRHGdTaa4zK9Xq9r1NnH2yYiGrMY9DTGuegFOteYta3DbLC4Uh+WVwcsnp7yLuuWaCNWFK2dHsFlbaXfIoXOT47fTYpgfrW+tlPQhVcLrSRX1vVoNGMeDHtNbPTTmMPWDY1N+R799Hpgp17W7G2qkS3D2kNIW7M6yDoFMPjavBr0+16pxHQA1Tq3BosbdUVYptfmfiXkxvag39geojGDFT2NTWVPxg7nrOn+tLmxAYjgo134bX7hPNtriOGRqFR06kwAjizL6B3J4vfJaks2AgCmR/BqfrjOfNtrqpQt0Kk9smKlALq8E3vzo3fKje051rcI0XuHQU/vK71psy7sTVspFZ16dt/4S7k9ijm1QFIjABz5ekZvDQtius/BzBi2OZgZw35HENMpwCNpuTqpAODKNujM8t152ZIG4n29+3UJ2b1TXqvW5Y0KyIowPlYvr1V513UPOraHaGxg64bGttxoele+HhYXAPS2LHozeNoyuyOY1uzN6TC3tQLAk11AO5ZUo6IG1yaBtNwYl4+mdGtcKmz9sSVIeXf4rZV2WdAgABDRrzSjbND3poGk7k3L7PxXwtRGXRTSXkdW1Bl04WO21xRTQLY4g4/tIRoTGPQ0Rsm6tC5KyoNr0NSivcCcCF6p1gdqAKC3HXOy3iIXFSF0QS/fiTltGgkBQJcjEaALQFjvyuq+tPTaig7cnPX2JWQbdCZQ0eytP3oz3ZUHoU3A7DDq02hNAiHdGzXNXX2bvBo3G4GlGW9RDLOz2sSKnsYuBj2NTa5OhZkX1ZVtCsiD/y96u/CBLlld5f0ghq7aXEWPWu9aYFGndkXNbV1Avd5W038/Ya2AzGxRAPtqMBMA0LvSrIrnN6jX9f366bLako0RfaATABDT5Rkzz8J822vq9Bb5V1rt7Ltuq/epkrE9ufMKLOppLGGPnsYsV7b04P6VWN6pcFERkh+uxA3N6t9WsDA7QpcjT8dlWkor4vhRHT7djFqgK6YRV5aFZZrtNUAWxAXAvHqd1aIz+/XlZZujMzlUhgKOk5rR2OTIvLA0x+VVyIqE7O0BHLw5BbcnpKvOrOtBryNf9+c4ywApRbvcFpZpzVoby5Xnj9TJnIxXm5FtMV1v61cy3ixIryupOpxd1JTvzWBbwiywzIKo7AfgyLLCTJauLLPMgqJHinc+ofclVvQ0ZrmyBToVqOiR+pXyahfm22rF5Ul/bUTvacO+Pehtx27gyVa53PbmdMjTkCdb9basRob8OdvScnYyNz5nsHE42xyZGdP9LqbwAlp6/2HQ04njymob07oRbdEKV+rXoLUlN4Kl5JrV+Xa5C0oLQR9Cr4s/2nJGUk/3VznixnS0IndbwqxqxUdT3h3JXNDDlrOTOqVog601XgM7PPR+xdYNnSCu1IcF3fIUsMIy88LyaqvMs8w6179m1duU9TZlvZW2bsp6iyvL7SGks0PY2yMAKnrkF8/I42k54gIAKvFcVI4A26PiAnDlYctsdLA9ar5v9T0eHuLtRKr0rqzOgaQssyAsq8JmK7Dvqb6+zSrorI7c82VD2qekCg2fhDwS7Wv79HuekP1DO0Ci48OKnk6kdQmZ6s8X5soWlE4ctiVhNtcMbXIYRzZ2yBmNHurMM10AcKmtr8blDNv7VCVOz+92e1pmJLXwlu2VOqOk7Hd/Lmsma8vFxcu2pc2PGzDN9hpyrZvtl9Yd0M7P923gyMzY8K503ebI2ZXY16MzK3O9IP9nwSzI2ZUK29zYgK/Y+nRcfpu/XpfohOHwSjphtiTMbuCpOtwPebUL/tDD+ffoa1/N923qdWWHmRcHjjUe0c3gjCp9u05Cnd43ALjycB0+m/XeTgti2GjJGRmvNNPLeF3q2lH996WLw3pHVrcVTrTuOYCuff7T3A+IfoeCIyGcfsyPyqB9JVBtfgydttOs6sql+TYH+3qAsM6DPBAXAB9NMeXpRGNFTyfMFkf2dqC4ooctU5N9lxRtcWT2kCplcR1FRs5I4jlLMgAi+uU2PB6WM1IK6Pwktick1KJuNFfv+8alvC+Wfnm8LukDmrwYAJy7BDdqTLY52BqX3fWKVimZFWf7DJN+Ab8Dlme8GSFsj5pngHC1vt0qh4FxERzuKvspgCvLwvJb6K02tkIbYrlxnNscQQd6G/Xq/NfStoSgRWcO+V+VaPgY9HSi9M0OVjA/pXOLZo8pBH3fLGMu9ocwBYCTG/wOANBbszouLWck9XRXtvfojEp5uA6fbcNzNubnezVHXJwewpG0vJ3UI8U9nH4KQf+8WN8FAPtH2ldQy0b/i6SgXr/cqIXWkOtIqFLdHjkjpm5aZiTV/7gBvyUkFcWsNp3ZIws6MK9VNgEA5tneLMjMSjyyRh5ozW06z/ZqKzmYh04onoylE0Wbst4DKV1p9wXuxga53wYAuFJvmebvwT9jiWb82D91WWfaj3W289W4+X4dPutX9PF8yqcl12UJ44whHd7Fatci8yPtuFasuwpLz1j68Dfrn/tG1vMfl1bh9FBRA6dDvl9njmTwuGWeaZCHo+ahhvJ/e0MntobNgg6srwHqgUIjPiPL6hBp8e6y9a6sd6vtNVQCTHk6sdijpxOpIqkVwKaBM7/7k8U78kjauzoEuFKR8WaGctNMApLqN0exrEogVQUA6MFhAF3yUBgApvvrXXkOOj8EAG+jqL4eSj+95Ufa8rxY1yJ1uyb/FzbKc6d/6hkLAMK2FwKOAG6dQZsXso1b432jEdtt+WzWOz33G0I2Wsa1vfll++ytsqC134Je6B1tWGYZf4a1rpV97XuiE4YVPY0NPw6bBZbZ2iHbAEAr+l/vNK9GnmmQjRaOQM4CJuUfu8IAZGMdPpUEADdhjuRGasqjFtBjfmEN5cMv1uyPFN8X6+Ezrv87nNq34gzgbQhqvRkhceHNj2H7GgPgcct83zKP15mNCYSy5VLexe4yHyS9DbIgLNPq9bcNZkFCersA6CymPJ1YrOjppKqALLP6ToFuAsr2QvbEMR46w5bHM/gLeAuzcBNmw06c1QVA53cCrjwcljNsz6/rZ4TxDMz3O/QK2zxqeQuHciIqfika5G1gRqcXcgSx3MVZbhqnJwHojCQAnF6lRwC/oncTgpZBrtsK6R353zGFq2oBbchqgyPbgE2tZd9GdCKwoqeTZz9wdghfsr31Wf+hX6nyw9EvdfucY+NUaCimhfEtoRbvG52FQsU8Gpa/AP4nbh61zKOWeTSOScCkVnkxDsA8esy63rlL6qD250/v+q+NCfN4Bx6PmoctcWN4uxshV9x8m/5IuzzTIA9Z5vuW2TCEsN6WMFuhQO506yNRs6ADAG61vfU1mJX1vpICh9zQCcaKnk4WV1rvwTcr8eO4WVVYGEEkiXZLNgF/a3vXxeDHdFsc81CozQcG98CavaSQf12iHdp5Y7njeF2iN6P677Xz4u0JebUi9NnDf3ropx8AMC4iGyy9wsb3w3JpJleez+j0kJYZSWxP52r8I0Xlf+FPWxbO/0yp11s7zII4AHw0pXNqvfVJ+JfOrgIA+WjKu3o4/2xEw8fhlXTy7EqYzipvSfEgdBdvhXBmbq2gRc/1nztmZ3xoHZic0qCHe0DC3+23SWQquvYCU5FZ1a//kv45kl/YYwHwzunbg/mpBX/Ggksz3owQjqRzQ24+BJwLTOp7f/G7Sq+q9e9k+9GUTmvIjbnMzbFDdAIx6GlU9abNg+F+sxqsi8rUTp0NwJH6jBZf/rorLeOSembR299Km7X5Jv0nbEVcfg0A+BBwCnBGX+VeKOoHLiksL9udL7pgyn0dPR0S34rU7ZosCmo8L+lP7W7ol9eA2WOVLCleOPBJTpnpExx5JCMPFJ2L4KgbOsHYo6fRFdbF/TNrarNOdcW/W8h1SVntTyI/iMNhryk/7v7X+ZQfn8KkvpT3u/AAvIXZ4hwvvCxZPrjQJMRuzI+3uVbSr+dXfGp3w8/yqe3/t/iJ/7ygZG3RGleWWWZVR/HGkrLMgg5cnfTWZ727Unpr1lufZcrTicaKnkaJX8svhiCGzrQuSvabjnh6BK92AcAC4C3gL8vt4W8y3qyiFspbruyydVbSL8xLyvPBxtKU3ax4YVFFXyJ9qzScrdkb8/mOktbNyCp6AICko1jY2Tfv8f60WdYAQOfWy2b/jG69PtIyvHnTiIaMJ2NplOwNe00x9DoANApTn/Zak9pqY0tMkZb7G3IXQK0vmn1+YOum2OE1OLMFfnNmV9+tnQotmkJdX/K+gV2doUmu0uTzYt2KzKpzsmXzuqzCt0JJpQ9A0pZszr/YbOX+Beba3sKw3pHV/Y5MgS5s0SmQZx2mPJ04DHoaFY7srdTZ+VcVSW95Wta5OrUDqBTEtTWJdVHsbkbT0WYxk/VWrl0DABGMt+Q/AQCfqEe+sVJo4JRU7oXnJf2ckt79AbQfQNmKHgAu1uxkiZo9Xc+dk704X56XRHnxF0DhedkvBk1mNQnsT8v+uE4JYQrwrINLYtiflmVxQb3eUQM4cnUcN/OHNZ1AbN3QKJDVCTS1KIBeRxDLzU/Z66IiJKujglpvMWRvGADuLzofe/SKvv/aQhNm4IZlo7/YkK+Zym9fVJsPVtcPrN9Ljyr3Rkf+KaPficuz0P11prdWFyYVjiCm+x2ZkpFlubOyenNWLxn6MRINAyt6GgXa1ILcdJURfSB/arEiJKstzM16U9NmBbxWyLpKXZ4xq52h3Wykn8KJ1qNvMNxV5bcfMN5m4NqS9n3ZN2J/2ixrx5ebFSHdHzVo85IhANifKVT0enNGLwnhWQdMeTphOOqGRo02Zb1NnX3TzQN6g43pQEXSa00CMV0UQkXSi0NK3+rKv0blEAD8SCzsSpjVltkVHqzY/5FYA18O/G//jZ27isbVHN3AUTTeOVn/UXbjQvSXjrp5FN4jbblW1SVtCjv3h+8P6yNZ7+YaANi/xvw0LfvL3kyRaHSwdUMnlCPJ+IBYh341q5+EtFnyvL8ggs/X6vMNcgAAMANtdcfe9bWa+5+uH+XFL/3nxXH//yByM7oG7KO8h3bjZ+dkv1DUoB+sFz+EUTeu/FNYdgNzbS8JuTou027V2bMUK81D1Xoz5PZWnAL8D+BPu9+bkEhLfnxO8RW2ADjinkaIQU8nlCMvx/ST/Zc9kZbP5O8K8nJaJiR1giv/WofrOxVOp8Sj44/xv8lClA986T8fuATA85KenL8w6nU4QCx/kVT650j23SEWrtkTbpqWWb077BWNpi8oXjjwC8C8bfmpPcRBO3mObANWFX0plmR6YWY03qKEho89ejrxXnbkkzEFcMgRlIy66ZZV+XGHqywBzv888JnyuynJ95JVAK7VrL/BwIp+KMzWvu1XnRPCfpj9RWdlZ/X7aO+crNlq4RyYty0A+FD+CYAPAeh76Z2R7Vs1CO+pFK5O6voMtkFn9kgK2i/lE2ZrjTcTTHkaGQY9nXgTMvkGTkS/WtyMduUXpRNAnvY8vM8MmtGDZX3Zin4Ece/NygKO2RovegkUfQeYrVZp4p+RLV5u3rb8JQO3ye3hbcuP/v6bRWVBN+btRG0nHrFRGz/KzGicG4eGi0FP74Gw3prVCX5pH8IT/kJX/jWca8oXOwDzr+lr/3l4HcXiir5sj36Iiov6gS8BeLOyA7PebLXw8b4Svrh+L6R58UL/eWGJtkF2p7z1YdnWiNstM8fW9jqZ1Vkyo723vmW4fw6Rj0FPJ8zWtMwK557fZ5kDwMX1ikJHIqT/nFGnzny4zZsVkpcd/WQMcDtfDkc/mUS54v0orZshVPTp/0TDXil/i1egoR14CNg/KzupKN8HVvQYkPV+yhcHetlwR6H271/Rm7ctbcjqNgeIYWsUN2e1PYraovkSiI4bg56GzpX6NVjeiM41iLZoZ9Ss7cJ822uCzOs/tGZ6ymsNC4B1K+U3cfHvzTcJ2PuEPG8J6tXvwm+9xmx9Ab8Lm4cB+GMuI9OKzooOpSQfbDzlwCXf0OykAW/vz5pyrIreV1zRe7Oy5m1rYME+DI9EzdO12rtSNnVhk6W3ZnC7ZeZkcnfTXRaW39breg62oZHjqBsasl5HADzYgWk1eGolLmvWKAQxrXBlC3R233lCcW6UF1SbanBvRpeUbSi7cm9Y3ui3SP82q+f2Gxw5WEVfdlDNUfjbFI+6KStfp7s/l/AXtvRLc3/VYLlf4If+YNV9SSFf8iTPkavjggjmVuvenYIu7I7oHZ06BZK2cGlWLwF+GpUpnbyMloaOFT0NlTwYl431urIKmztwWTOmQvYiN7/N/WHTXLRp9Fbv/6zA1rREw/12sSth3mrUw+GiCW2K9v+floxPnf7VYRxSSeIP3KDQxnldot9FFwZt3QDAQ8C1uZ3UfwFlbhNYNvr9cM8t7N98L1GS6YNsVolpAKr10hosbNRUWKbV+m0cvdSW/VFzdRe+nNFnLHM7MC3lfYcnZunYGPQ0VNqUwVwb97fjsmY81YHraoCM9Ma0Argu480OoTcte5M6G9iSkHujcl6bhzVmdbxvF5+wvXN7MCur49IyK46tPYqMzEpia1rPhD+zzZGiu4Mfs3VTXMsPVv77/52knX9/7HH01o80C7hma7hpdmb1ltKTroMZ2Hw/5tibwfr4AFCb8ab0SGql+DcT3+8UrrrSL2e8O2xJ2fhO1qtIy1VMeRoSBj0NlawOy0boUhtRYGqLwsHsuKxzsKgyV9FPT+nHLNMMfBwIX6PnhnBmi9fkjxVxZWuPzio0mttldQP8vvyv/CcRXVoaWwOze+BRHeXLoHjVMds7BWZr+GezM6s0VHaADQBscMxp8dKBN29b+A0wK/eybNYPqXf/0zXo3Wn2VmtDmwdIysLUetNe5TXYeBZAnUlVa0OL7k+b3m59Fpwhh4aCQU9DpU1ZnevIVAAx7E3L1LACmFoJFCp6FxVhzK3Uj4fw6+UDZz7oM6tNX+nfox9fWzKzzcBoPvoI+mK5ct5NmzVhr2UYpzHNVsublUL+FrLlB1OeFkdUjP//O525+PbOyBqUjrEprCosKfOJ/dLflSmNelVI9zuSqjPowlTbS8YUwLMOpkAv6dSrXHnWBcJekuU8DRWDnoZKVlsC25vbYZrjutTG3ozcvxLLOwEHzXEDf7BNEpst0wxcdat+4qi7O8/2lhQi2JX19lCO4ZjNnKINHKlsAMSs/ap6Q715k5/pn++/pPhqKQCIFlZeCnThNwBQSPmy/RkMkvIDlofU78IX7I6bzcCXn9AplYqevm3Q5g3tLyICR93QiVI8m7yblkwcpxW3bgaMuvmE7S2IYQijaIa2QUZmh6Wr70eF/urfb5nbsPfYx116o/ASkrBkrSDy715zt1lZ5W05MWX1swlz+05/sA0A7HcxJSQ/TeuUbnN7K76c8VBnHurCXNtLctglHRuDnk6Mt9JyOKnnAnBkdVwArAX2FJJXEUdh1l5A8SnguaM1e47XLD1wa3biFcfcLn2r+N8H9o90QIa6aVPZAES0p1NDkIQlsIfVGipL7oziqk6d3O+TZH2PzsiYn4a9mxjldLwY9DTGubnaPPLvJ6p8Hu6RLH0sH+6OmLikMt6y45lrzJHtMZ3hStMafLNRJ4cA4IAjByp1co8g1v8LgGgkeOMRGjEXb4147dD1+NPIa/PJPvd4R510CfBV7SvhY9qTQkNYNoxkf3KnZb5kmS91YJtlvhSWSBW+V2fudADI9g5sqzP/FJd/8rdJnMgfOxR8rOhpxBxZvRJLO3VX1Pwqf/5wfMrLXQp79LVDtiFh4vcAwzihekL0b9r0syFh4veo/Sc9dl+ozH5lO3RGCAfSciCpMwAA2xOCFp0BHHBY0dOo4KgbGqm3MvjbTmyJCmq1qVOR68sPae3QZXYCQKpxDKS8qD0g5QFc0eKldpr4ByS1a9g9nO1r5ECjArIduiC3TFCDbZb598JL4JyUt/pk/6Ch9zMGPY1AYcxMA8bXK7qHs3aYH9TeBUT0ypN4w43cMM2j1ezLOj1ETcO5BsPM+hkt3vqo+VIXzokI4t6CEACdEcOMrN7Eip5GDVs3NEKyNa2z4rK1R7Gy0JzxJyY75tqh8kvppaMwsmWkHDFxgWAo1fodUdPwzDFOGh9KGzvs3RADIHdasgX4YsbPd6yPmoe7cNbn8L9/gT0D3siino4DK3oaGQdnJgEHZ8bwVqaoOTOUtUP2WDsQ0cb3Q8oDWNbphRMm/g/GtA9o5buyIiz7gSkpb0GH+Vp+/p9rM94V+e0WdOrhKOI3wb5JV3NIJY0mVvQ0Im+5sqUOqMWCpG6NltbsR1/rc9PmKzjqiElXZoeldliDF/1orh+NM7e5lB/2WdZ8Q7/f18OGhFzUiB09ekVRgr+YELToBbm3yYowFmT1AuDFhLmrVW/M5lcRHS8GPY2YI1szOBzWcRmZlSycbs1H+dHXojAsfdAk3ZAwcQwrsnOXrQLHO0rnKGNshvF26XcYhxxBJe4Oy/78ZjNtvQh6QQwboqYDuqITtiXbgJm2d0NMfmgJbL/JQ3ScOI6eRkjWd2BWUs9FvyHeuxKy69hr++0n/gFjyj3i9wD3SNlVgzzyKQ/gHrnDHeEfdkfUVP4DUK/eiFIeQCjpebZCc8c/Ow24cnccr4d0QX3fZttWYlIMgExq9u5uw90WLspoje1d1GG+ZuGiLFOeRgsrehoJWW/h3KyeC9mVwFtV+FWDABif0mgYb2VwuOEoa3WW3645VkU/Av7pUFw6wkq88Jug79rXERxDQq5s8T+97xdGTDH1X7SlWV905IJYrsZ/0cEFJZ/iyob+7R2i0cCgp+PhyivQ846Vqa84cl5sQCPlhAX9CCdLGGlTvlju8i70Neg3JEy8FROA04HfAB//OOb8JrfxlJS3PH+ch9JmediBuh4AACAASURBVAMQ0Zpq6WgFwB49jSK2bmhEno6ap108vUa6+08v/ErC/ItV+vjlSrxyko5ziO6IGnOlRFKe9yf8LCoj6/q4aRPP34Cw4VyTcADgihbPy+jHAAATAPymb/s/DtxFl5/yRKOLwytpBBxBmzcnBLR4hx05DB2XX3NejV7WqHP61/ivODjvPT/GoSot5LWx1lRagpHNLlP0rrVXmvP8uj6kW7Lqf9AhyUV95Kv610Xvm5D07uYweTpRWNHTsMmjHZgTwmEXAMZV4ifRogHyMR3Xk087V14Z6RnR94Irsy1jrpSltucVtWtCSc/Let6fRuHRb2BoTHek9PXHNPLvnvcnb0uLJsKlXyYvJuTFQQ9XfhiVQ2WeEx0Tg56G6ekoqloUkF+F5RUAIb2xDT+xzF3p3AZnZSTXtAnLL4d036j3nB/x5wpSnven9+CyW/mhZb5mmR3Ajg6pbjBf8192IBfrjuSW1GCHlVv7NUv6r8VFbfp62hSen+iDpgBh64aGxZVxbXoe8EoCVVk9D3g6LXOSemO2KHfCelNWxwFw5OnKk3akg/JPAo/KRVVDpTdkMCk3nEYnVcmkpE5w5MWYf7pVftiBu7Pei2l5HbgopRcl9QIXh0KYkH//jVnvAuDFtPAkLY0IK3oalpCeFwIc6a5Rv+0+J4x/6T9b+psZ+Ylf0XeMydZ8SLdkvfd60uMedMTN18r3W/SGFt0QNTvCelGlTkhih2W+FjbLiza+yzJfs8xd7QDkrnzJvyJdZl9E5bCip+Fy5a64vAHZ6b+s12/V4FEHC/MNkPOS3nn584qvJMydrRif8s778x4bvqEDN2Y82OZuS/ZHMKXBvz5WpqS85Un5oSWTMt4NIWyIyqROjWf0hv5ns3MVvSOToCuyOsGRDZV6xUmc0ZPeZxj0NFyh/o0aABBY8kpWS+r3VxKmu8b7VkvfksMuxv0ZxpMrk2oAAGFdntXcdVJ9rRu9IasbouZrXZhp6+uW2TagP3OXZQDMrFdUIf7n/ZVJI8LWDY2G8Sk9D4ArdxW3car0b2L9Rtb/pE7G7oB6V2ZbZsQTJwy2QxMVN6QXfBC/yy9E/rzFC4lcc+ZlR67o9Fak9KKY3pD1brRxAXDovtxvpkPAiqx3d9a7oUUvCuuEMp9EdHSs6Om4+eMs4cpddfi7Nj0MjIM8aslOAA1SbXvfasHhtLyZ1PNcDJipWOIfGBs3RA1pbUQazjXto3QX8tw9Zp+Ryg/A3oVfhc3vAAU+CPH/4Mp79JCLCSHZHJc7IQJ8sEEAeMD/hQCogFbPFTuj/qQ3G6IGbR7PxNLwcQoEGqmno+apLgCothVx2RnRmzr7rpwC5FFLYHtVHaa9FYhgfBfeAC7LeLnLqcbaFAiFqXJOgMgtetss/SQEsXxJ7si/ZvSfk4A/saW/3JWXoZ8M4ZCLQ7ZMSLJ+p1HBip5Gak6nN8e/6jUmT6e82rCMK17tACkdn8lfS9WFNwBEjj0xzkl3PDOaFes317ErT/QAGVkV7/v58vlM36kOJ2qe7wKAyRG5pwuTIzqpFuzG0yhh0NNxOJyWw/FcWp0H3JXGjflS+ukMqoCzkvpmGjdl9c20nJVUOGOjS/MeitQWzaMZ1luzfRX9E0WbxTq9OuBlRyZk8HKbfiaEl9N/dv9WdMLwZCyNmCM/QdG0NjH9O5jcmHpXxuW/ANAtd1qmvUHutMydK0/KgY4JEyoxoRL3WSbpPzrwmZIfN468AJ2QVNSZNufkHCQFFIOeRsaVuzpwY9IfVJMbHzIu6X2rBnel89dV+ar0pqxXm9LL6gfdWfD1ACEcsvG5rHdrSr+a9dI1eKJohM+htEl2oC4GAJ/p9C7skBdO1qFSADHoaWRCemOLAjivxftW1rsxCThyS0IQ00L35rykjnPlUFjHAePiOqfF+1anjgPeTEv3yTz09560deAFy9wHRcKsagAAxPTN+abDBYBDHXJPA9AqyXy9f0+rPN9+Ug+ZAoVBT6PClXQHvl2D/yjpOYR0fId0u/JUnbnFyj3WAfjzak1oXSP+BGiDsVsxCWJbZrVl/mqZju8BgE826vnApNxDb8p66az3rVr5YYJtehoVPBlLx8+RW1aioVMBTIiaW+KYn/E+HQKAN12cVYVf9+hft+k1IXQ7qIrhTRdnhYCxPIPx6NOarJ4JANiVlnFJPdOV9WuAbrMe3oJKnGd7S2IAsDUt5wJvpU0HvKaWo+6SaKhY0dNxkf+wzC0d+HYb1lnmFsugzft21kOd8Uv7N9eYVDc+UQmsMbdY5sG4ucUy68bm3MUn0lZbkDarLXNvGgB2JczqOpzbiDNrvAUxAHglblZbZrVlXgHWW6YD3pKkrI/KWyf3uCkgGPR0XPSajC6uwi1hmWB7DbYeqjO3WOZQs3dNDACqGnViq6TWCKq0Iesttr1vZ/WTJ/ug33uzkroL2pT1asLyFnBui9fUhl11QAxw5d6wvJHf8o0G+XW9LkliVwLnctJ5Gh1s3dDxi+u34/hlDwBc1uldA+nOt+Df7MGijP66R5Ex6yw5CAC6+M/yYuwzu2W1JePrFTvllQZ5I6KfqAZcIKRLMujL+ogubdGtUXO42Vsw5i8uo/cJVvR03P4rbG4Jy8uZMqvOiil68AnIf8NblKvo8d+W+eUIG/QviLVE0gcH3+Dgd3X51wfMp5PjHuWNJ16NNmW9mhqcV6s1Wa+pDUDfXJ7RjNeU9Zqy3t/UYotl0OYtiGFXItfqITo+nOuGRsmbLtAjb2bkwQZdnNUqAMAvo+blakWrlETs+bZ3Dfy7cpfuZ5Yub8aKzwmAg9/VpjDu+1zfNjt+oQc6MGMtJgIHZ2Hi1tK37/iFbv+ryKRoZxw4KNFb0dV/feRvtfMzEn21dPlAdpUe3xQEuSkQ8rey2ho1vyo9GF3apgjhzKK1f2N758ZwJrArYXblO/hEx4dBTydJLgcHDiDUtdoXw5ENmJzBo8sG2cmGfl8DgK7twYLK+gnlbyCVuE0ab9MQ4LwplafB/r3GAXwYubJaEpas9femexWnzsb4AV8kI3Kp9nT2TYSwK2H+s7Vv5Sdsb3ZGdsX1XFsOJ/WthJzborv81g1TnkYHe/R0kg2YvdJR4F6NATgo0Z/HOj8Xw+fysf2CRA9oZ7ywbQyeV/zWyfvsQxOXPn29RP+2eDMAwEHZOUVDgPMCcHaZA3H/MAev3q0ATt2A8bPx4dFJeQDPyGOuLssn/bkt/cdNurI+g3F1Zm21NgFv1aDDMudl2KCnUcSgpxPHlfQaJBuRrsOiTj2rZO1hfA24W+X5KGYMXDsSL1Si5nPArNMvRdtksZYM3EIsfxriWmTm9S113kXsVGzGDzD1aXwY/3Lo7kV/FQt5A99+XBzZCJ2fL9JdR0IxBXAEuiAs29u8phAAnBnTJaU38CI6Tgx6GpF1CYm2aAWwLi2LkgpXVtvalMSWhKBFp6bNd+7GX56u/lVUi2pNypKJKS+Znx3hl1GzEbrCxscr9Ut26doBDsKdiOIK12mV+H5kbtPihemfTT/U2/Mv94Y+DOBCzd4L15bwAc0OmGQn7Ur4VQDSANR/GK3vAkCq+imcCgDfmvD7bwHwTskCMH+wit/pLyzL37L/Bo58vzAvcb1eUSNAPsQ7/NyX58IIZfC2DbfbuDXefLZraPQx6Gk4tiRMc76/vLZVACxN6RZgdkgXx7ElYTbXKCzTHcHs83HkM1hnmYPAxJT37aL4604YtHnfhqTDcgiyrv/asqRuCboAXKqZyWItQf03NPt5Sb+A5IX5TV6Q7imIfCrUDBRGqtgHkClO+YMSvRXN92q8QpMf7Ftc8y5ip8IBsPdUvIv6s1A14fcNhdWF7C4JfX9JcbIXb+n9d8Q8U63fyHpH0vJ2Uks7MVWKjBzJIGRjQ51cWg23St+Om+0ZbwabNjTKGPQ0HLNrdGmjLsonUa+LvWvMXhebw7IRujKrsDA36y1Om688o1fdi0VZ7yygO2FusfqG4lS1eFWupOvKrwWA+JJ8GXwpAGCidt5bWKnZiyV6a2kXPrFdW2ZI9EDRwb4g3ZPRvkT6xrpUIHOv2jZiJe37gqm/B9BasnBgvhd4p2RLsh6F9D89AbTK91sFABpyf9ClGW8G5OGwHAYuTelzYWAlvtymz9kagoRsPYMpT6OPQU/D9FSdWZuPzukRfKzZWwwsymBuj06FANJsCYD/PQ2LNuYq+vNtb3GN/LclyGoV5D8seSmiDW1l1wIA7L6TsYMcxaXaOVmsJUit0uRE4AXU1AP9Z/ZNH9CWOBAHisbbAEjGkeiWQpqnpmu48J6eU/EH4BRkKn/ft3Cwir7wsvyTs4F6eKdkMaCi1y9m8HAd3gZCHfJctT6+BtN3GrdW0YEjwAx2b2iUMehpmK7rVDg6u1LW9Wi0Ent7pCKkcLF5pelrQANnXAiENGnjl5X66RC6HVyTO8eo12T1r9MyyNoBnFaJl7mRq1jQ7L1I20AcuHDAbfcOInxx+R2mbdRcgsb88Mqed6TjD4i/ifpKoPL3/jbh4jcMVtEXF/KFun5ggd+PmzBHGr1QD6bXIhTH4w04DAFwGECXAAjX8EwsjToGPQ1HL7A3IU/tlOYuALIWmG97swGEdHGbVkDW2d6mGAA8HDcpS1Cv83eaW7pwfr2iEmeFkBtd0y1HW1ssVq/Zz0vieW0p9FsOSvTn2lkPAMlBmjA9z0v8P/staV1SNFryA32jbirP0hbAH+/YuvNUf2GqOt+jL0nzss9Llpg/WHiqZHbOfOsmbHuhHrwNPR2CkH4xg422zk/iiCMAHs/opyrL/0FEx4FBT0PnyoMZoBWvFi3bGDewFXF5LYJX8+nvGwdUtspGAMBLrfJSqxSmL845+to+E7URYrWWGT8zmMq4ZvPfAa4tayZry4V9a503BxkiX6V+rLu/P6X4bG0ZZcv5viWXWd4V+SWlrRtXXCj8GSN6gG7z/YR+oxEPr8FnG6X4VxHRKGHQ09CFtCkJJLVp4KrSxousjWJBp04cuKUrO6AX1eisRr2ybKxn9qOhUH1XiAsNAaG42q2SPqjJMrs8qoNSd0A747kWkH2vxv4oK99E15vwh1f2qQa6xQJQ/Xuc2n8nRx9VOXBt6Una36TlL5P5f42Qhlz5t824IYntGcxv8ea78nAd3jwNz9k4IwyOuqHRxqCnE2NybUnKy1pLugBEdGEzLoopEnKwRQ8kBC16UfGGydu07ID6WP1QJ5/pfgbheoQAHJRoC9puy709W4/EEun4hnZeWP6NVr6itwbr2JTw03zgBt4pWe+UrDlk4SfAuJT3aZgmq9+viE/fqs9FzRlt3pG0eahdv9yJ3zp6WkZQCQA70jI5We5rkmgkONcNjS6/YA/JY2m9ckBe70iYA43e5DXme61YaOuzcTnb1hnQi4aU4MWTlF1aro3Tf4KEshdVAUgskapV5X4ZDHZCtezy4sujBtu+6NAdQUwnAjscXBQr/Cuh7/sPqIigNz+cKZLSyWG9ksNvaHRwmmIaXT3osPOlqyPXl9z1tEpnhHBRi37T9q6M6SUpXRorpLx51PIfg+16onbeq9l7tf6+R9A/5V1JR+VNAF3+OPoXxFoiHXM2RVZsym/yy2j+juQt30D3633vTbuS/uOAzzJ/sAqPsgfj1+wD31X2eRkHevz/q0uz3n1Zb3WqL+UBnZFkytMoYuuGRtVjGaxIam5SypjeB1mexopcaS/bG6QrN/5EACzMeI8lZEaL36PwFmYBlA36gQvNoxZeA47kX89P6Trr4oO4GBbOty+8JnsvAKT10z1yS1gATEzpBMs8CMzPXPjpmn3iINcIip+lPYXdvgvnXYlPBXaempqev3r2GJFdpOz1Uzk/sExv4UVEV3f2W3sgrN+0/e882eHoZBdgp55GDYOeRpEjiPc/KxvTr2fkMVevDMlaC0jpar/17MhjlTrDlu01OiDHi1/66Y+ir4HCEvOo5Z2XkrOSstnSl9uxKOvBEcRy86O96cihdknXet/OKoBfRmV81rsmt9vxuqZbVp6lnWchdCr8oHcBvIvY2Zr1TnHPQt+NbY8W3wOU2eyxqHm2Wr+e9SY68lilXhkCXFlumUsyXu50tCuoVNhyMKYHEkAL2J2nUcWgp1EjazuwtKV06cSkXgkAujSLHWkBsCNhvge9r0aWQ1fkGhT94rvoefHa4lX+QnOvBbcBgKALKUsAzM/op0MA5NcZTKjVy2BuKXxtWH5p7yWTH0RLlaZdsf6g2fG5tSEAHx7kTzt61pc9H9vnyk7vSgDAYxnkGjIhvSSFwqCjx9ZgRgsmxrHcMmfb3tJB90Q0MuzR06jRpS0KYEfCXG/Js/4yV5ZH5SBw0JW1lvleOw6kzfdagVa5vgNfh7neMo+5ALAjXXoXqv4KKe+nv3nUAlz9/wZs97Jfibv6iaQCOCvpLS7u59drbo5MZ590n6XZD4v1quRuguidYmNwR6/o/ZZ9ySO37rGoud4y11sGcQVkrWWutMxvwv5PH1lrmZZWWWSZeWG5JOu9+49msWWut8xaZ/BPIxoeVvQ02i5q8e5rwWNRc30DAERS+gPL9EIj9VjYqBeFEGmQLgCt4o/HfzQMwESgkx3zh7i3MFtSuftKinpvYcasCOP3Az79YINJw0smy11kC5xfmGAgdrbiXeDDmp0u0TeQLHcrklFSqOgBALrUxidiOtuV+gSWN+rSrC4F4MgWoNnqq7zCA3dENEIMehp9fUMGAfSdfa3xZgB+0k2u1CtDOOhiYgh+fJ/Sbd5q8Or8EC+T9X4hX7Qw5C3PmIfC/qVNep6tVTHAlW5o1TFOY/5REu9oS98XgTafItE3tbPMV8M7Lk47+t4c2RPTc4qXuHgnhNPKbCqrLdkIoF7nx00zsDSlK+rMx5q9phjWZbAoqZsy2AKd3SOroU0cdUOjhkFPo0+XZjC5R6+MAa481qNXxnAwbdbDj3WgEs+GzaP9Ro4btOrq/v33olOyfu6XGXzpwi/q5Xn//h4Rnd+M4qDvTpj/qvK+nQUcuSV/DxCtgVjdfRulpmvbOxJ10fWHvoX2WQBgm5/B+0LRBQEvRc0LXQBwYcY7PwRU4sWofKQNL9k6NwkA79jmp916XQs2W/Ja/h9kXlbPgTZltcmVLdDZLbo4LXuT2prM/8Jol3ndmL8TizuxzsbiweZRJhoJXjBFo69fRV9soT/OxL9cqMcfgiKPpeUPDd4pKbkyWTKPQkldX7bMH9jkGTLnXcQ+DPwRDhD7INL7JH52ydVV76Tld8l+BftLaTk/qXvSAsimBgC40NbdK3FBMz4S09OAl9IyDfJS2JubK8nlpbR+JCznxBTAloTZ2+gtCsm6tC7KjzpdbclrKa81LFsqcX9YLrN190rM7dTZI/3LiPrjyVgafbo06y1M6X1Z776MLrT9C4L0m1mvZHKbySMcKm7WHWNg+zE3wBtu6ZKd4Ymw382/ks2W7Mm/2JOWdwbs4SNJ77qsd11GP1KpF1TL7yr1NACuvNON30HRYe63/AcAs6cDL7kAMLvFQ52ZZ8lT7WZd7hi0KetdFwZi2FyH5VndvRKLmfI0mhj0dIK0y/WWuT4sj8bN9ZZpaiizyfesovE5/ZR0acw6y6yz8Mf8k3JLhkWeWFM6f+Whjr84VDgB6uC0TF8hf04cv4zms75d7rfMpnYAeClq7q/DnjqzqRXv9ADAHltQpR8BzmnxLozkPuuFBrwGnB+S1ZaZZxm0eZuyXmunn/hmnYt1UXN/RtZFZWOXfMXC3DassApfA0THj60bGn2Dtm4itrc0BtxnFn8VBrCA/wt8APAAq17va8Sda3BVi052pWkNVjfqgRAmA4BZZ3mLBp8/cp3lLcoeM+777eEN9/+O3/PBf/uMIPWHfwwrKk95skcvj70r6VM1+cE9Tq7T0te6ceVna/CFFi20bva0y2v9/8gLn1D8EcjoNMjvwvhdpZ4fkpfSev6gNz0nem/wZCyNvvyQwTLkTku2RHBORBe2YVsdKqqlq0q/GcdPw/KlnTq7Wn6aBhqw0MaX6swXm70FMQBHz3E/wYtz/OhfDL6/wGV6bUZh/8U/NcsVX8FfJwF8WON/hCN70H8gDYCQXoC+Zg6A8zv1HEfPicHvwp+f9IfoyEsZANjTIa+1yguAX9GjcPKW6CRg0NN7Sm/K6lUOUCnfC2NhBgdsRTcmJ/WmrN4EuTOqVzXie924KaY/jhWfmy0Ed3GIHyXQi78Yjhb645O4GXJ7t17uvw6dsnkN5g64vhfAOS36jovftcv9DYKIXpVUdJifZfrG5BQPxDynxZvbgj1p+UgSu1nU00nGoKf33PaVMrlTV2dwIIQD3fLNllygH0hjZqdOdiUy6H1TC8leyPGBWV+yZMBPAVf+LSyvQ6/L6njIQ5YcTHnfqZEnXVweAqC5lHfk/rgAOq8oo08L4fxO7/zCyxavtPAv8k7a7Al75wDTYO5P6HUtvHUUnSzs0dN7Su60ZMuApV/MeDNs80/t+g9tOgPSFJY9AOr1x33hOLB1U0j8gUF/lLU5b7jyRFgORnRitUxs9C4P4cm0XF46vvPY9iTMplZ/mHzuD9ycwNxG/CwsSBUNwHfkpUpl64ZOEgY9nQzr0zIjDADbK3VBCAeekp/u1KvCgphOdmV9jy6IAS7yJ2NLHL1jUxzxRwl6jM/H7pNRs6Fav1ODnTGtHsEf40gaujAjz4bRm8nPpeNifwhTIOkoFnbqlBHslmjUMOjpPZWr6CPXwJuu/7Oqb2zlVzLeLFs2dcspjfpEWF4vWn51CIBpsjARGF9mn/0aNfdYemXWn+D+aKdkdzpSXXwO4D75+yfw3R/3LXkxYXbUeDfEAOCQiwkh2ZDWK5KyIa1XhGVDpU6yZVJSt0bNQ106t172VnkNYUFMp7jYHwLSZlkDAL05g/aw7AYAzLW9JCc2oJOAQU8nwzYH6DBba7yGStkG7bXl6qQOutyR6+P4Zhbb/VGb9ZjfWkjw0qGcFfVa0yi7wigaq1M27mWno9WF2HXka/HSkfUAajLeFSEcSpvlDZiS8hZ0y+s1eK4DCyA7qvSiODaHZXN+47kp3dsguyP4crM3BZgCQQyPRrGwU/c7ckmMPXo6WXgylt5jriwLy7R67K7SOSvNgi4AMq9et7ny47LLgZkQAN/L9+j/qhXFLfsPAfPhLcqYprC3OmvWWbKr72ug+Mxt/7h3cKgShUbNhp/hQ9BJwOUZvN6jkzrM643epB6ZlN9gpq0XQXZ044ZKoEYnVeKiHr0ghAtsVFTqVZBne7A/g4VZfTatV8UAYL8DQJOdALD/RPxLEg0Vg57eYyG9I6P7Q7LPUTTr+krZBkWPzAzpzLLLAcS8+475u9PV2Tb8ND/oyEFo0U2aylT0b1Tir4te/tVZ+Cjkf9kKG4Ds2IltdbKiUyf4q8M6qUN21Hg31MgP12DfTkGbTuqQFyvxYAdm7zRXQ+dWY2Ej9qcxpXACNiPL8r8S5qa8KTGwU08nCVs39J57JC1Xh7Etht6oPACdB0G17q7SOSi3fDxOWyW9/fdQkfJWJAFXlof7VhXmwqyo10tqjnFz7TfS5vbcrAx6XQaHevSPK01H/ytdZ9r5Hr0jr2dkR9i7qMPc1VpYrzdm9bdR8xDw5VqdEtdLQv1Ove53BLHc82cT5pkaNujpZGFFT++5q8NYEJd5tlfbhgobvWGt6MCsJGY65ZbXwV5Vuoez/UlpQroim298+zNiDmn8oux0tDrp3Rz3B97IQ5ZMzAxsoPu36gYAZGQ9dAGAGl1RhdeTeD2tkyBwcVWzPhSX3lpsCZvboTdnkLIMUt53kv0qegBza4bzb0Q0mljR03vMlWV1uLlT9yVMb6N3NWRZWH4b0bvacHuZ5fh0F/673G5y0+YU7XaoQe/iyTVmQysmpbx/TALATkcOdeDtKv27JODKi9ALQoAjL1YC0AtCeDEtk5J43VFALojhh5bsS3kLIJOS+d4O0ZjGoKcxzu/P1Ot9/g1p0zI5Wdx/R2HgTW6y+yHbmTD3t2JSvX62UashHd+RDWtLt/G7Ny86siMusPu1bt7+EA7/T9+W01Nea24Evay2gW6gVTYCiOgDnVoxvL+ZaHQx6OnPlX/N1BuOIKbjB46sP5YtjsyO9TWOtkBnhwBX6sPyKjC9Xpe36N6E7G3URbwglk4yzkdPY1VXwtzuAEB7tMykx73p3NredPkpkY9F3ugBgPEx9S/CqgZ2DmsHHTLPMrlHWPYCcKW+DpelsNTWj+2UFZbZXAPYZYbnE723eDKWxqqza3RRpXS5qGjWCNCbln1JPG3Jk/7qiC6pNp+NI5TSax0ghq6Eua0VAJbY+su4uMDltiKe377I5bZ3c6zoainfMOc/2Fulm7La6whiWuHKFgAhXFYNdOtT7biuzVscQmfUoNnrBdi6oZOKrRsag1z5elhcABG9HEC1PNmKUEqvDWskhi4HkRh602Zd2LsZ0l6ptSF0JczTNToto7Vxud3GnLACEokpHPlsySWv9fr46E0kmQt6oDctnXGN9khnRhDW3SvltS4gpZd1y+4qr4nTFNPJxIqexqCQNmUUPYJK7APQ491cI10xjQC9Ls7OmM/G8xU9dEkVkBRAd6+UJ7vk3na9rQ3oESCX5ksyXqRHENN9DiIxaU/3pXxv2nx1wD0Ol2S82lxXXW6PYtHAU6n5RnyeAJie0ut6UBHTRZVYXYe5bd7iEPamBY0ee/R0sjHoaUzat8b8CIpWXJtV9EhXBmfHABfokdXwHs/mKvrHIbd3yO2OTttppjXrpzuwG/K0rXPCioz0xrQipoia1dWKuJlWj9vielvxT9iwLkkhktR9jkRi2uXgbAiKcnlabS7lC5U7AIS0NT9+v99yXw82dsnGOpnehVeB6dDZLOfpJGPrhsakLkcisXwH3JGvZ/QHofQiIAAABDdJREFUSQByewKLquSrDX5FL/dCLwcWNWpFCIC0p7U2jt6Q7HM0Uild0EgIvS5QXNFHgTb1a/ZeR/YBP4rLtHw3P1Sv1zYq1uTa/X0ieg9HSdL7FSt6Gps6Cr11Qb3eU2U+ayGU8n5QI1/P6P/f3h2jVHZAARg+V7cRYUCSKhsQtJpGSO8G3MNUU0xtE7ASgkVaq2kGnsVUU7wNhBSKMPDWoTeFE0mRJl385/sW8XM499x7387yebt8ff90O8v2dD2YuTneu97OzHJ9M+fv14OZuZ8vs3z5afl6NPOPif78bg7u52Vs393Nm1/Xk48zj+vJ5cwv69HhzNXT7dXMw3Jzv56dzsxsN4vK82qZ6ClYLvaXz89D98Ns75fdx7meub2ai/3lzd3T2eHz0c56NMvF/pw8rkczM7PbLNu7mT+X6z/W85/n4GrdHe/N73/v6DffHgzMzM3lcvbf/z8F/w9Cz3dsu1l++HE9OJzZLBezvjtdtpt1Zo5O53lN9O7bfc5yc7meWbXzWlnd8N16WHYf58NvLy8NPl/cL28/Pe2O966364fH9eXQ8/xfvnoGr4WJHiDOJxAA4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeKEHiBO6AHihB4gTugB4oQeIE7oAeL+AiXmt9h1gWnqAAAAAElFTkSuQmCC" alt="plot of chunk unnamed-chunk-13"/> 
+
+這邊看到百合出現次數非常多，原因是因為一位叫小百合的網友所發的po文被鄉民推爆，留言當中也重複出現小百合的緣故。
+
+<h2>尋找關鍵字之間的關聯</h2>
+當我們利用wordcloud 知道哪些關鍵字常出現後，接著可能想知道哪些字與它有關聯。
+因此我們先建出DocumentTermMatrix，這是以文件名稱為列，關鍵字為欄的矩陣。
+
+d.dtm &lt;- DocumentTermMatrix(d.corpus, control = list(wordLengths = c(2, Inf)))
+inspect(d.dtm[1:10, 1:2])
+
+## A document-term matrix (10 documents, 2 terms)
+## 
+## Non-/sparse entries: 1/19
+## Sparsity           : 95%
+## Maximal term length: 2 
+## Weighting          : term frequency (tf)
+## 
+##                         Terms
+## Docs                     一生 一家
+##   M.1384834727.A.0CB.txt    0    1
+##   M.1384838698.A.957.txt    0    0
+##   M.1384840050.A.414.txt    0    0
+##   M.1384840304.A.EF5.txt    0    0
+##   M.1384842495.A.5B8.txt    0    0
+##   M.1384842609.A.A5B.txt    0    0
+##   M.1384847473.A.6A5.txt    0    0
+##   M.1384847771.A.729.txt    0    0
+##   M.1384848469.A.AD8.txt    0    0
+##   M.1384849471.A.B71.txt    0    0
+
+可以用 findFreqTerms 看看在所有文件裡出現30次以上的關鍵字有哪些。  
+
+findFreqTerms(d.dtm, 30)
+
+## [1] "同學" "百合" "老闆" "朋友" "東西" "時候" "閃光" "問卷" "結果"
+
+再來可以用 findAssocs 找出最常與"同學"關程度0.5以上的關鍵字。  
+
+findAssocs(d.dtm, "同學", 0.5)
+
+## 同學.原因 
+##      0.56
+
+<h2>結尾</h2>
+以上我們介紹了如何將中文文章進行清理、斷詞等處理，最後轉換成矩陣，再進行一些簡單分析與繪圖。本文介紹之操作，還可以繼續進行關鍵字分群、主題模型、情緒分析等進階應用，有興趣繼續深入, 可以自行搜尋 tm, tmcn, Rwordseg 這三個套件，可以發現許多資源自行學習。  
+
+<h2>參考資料</h2>
+<a href="http://jliblog.com/app/rwordseg">Rwordseg</a>  
+
+<a href="https://docs.google.com/viewer?url=http%3A%2F%2Fevent.twdatascience.org%2Fimages%2Fr_taiwan%2Fshare%2F%25E5%25B0%2588%25E9%25A1%258C%25E6%25BC%2594%25E8%25AC%259B2RTaiwan2013_%25E6%259D%258E%25E8%2589%25A6.pdf">中文文字資料探勘 (英國Mango Solutions上海分公司資深顧問李艦)</a>  
+
+<a href="www.youtube.com/watch?v=TcMao3r6jYY">MLDM Monday - 如何用 R 作中文斷詞 </a>
+
+<a href="http://stackoverflow.com/questions/7019912/using-the-rjava-package-on-win7-64-bit-with-r">using-the-rjava-package-on-win7-64-bit-with-r</a>
+
 
 
 <script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>

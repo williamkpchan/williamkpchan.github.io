@@ -255,8 +255,8 @@ function autoShowWL(countNumber) {
   if (!autoShowImgFlag) { alert("autoShowImgFlag: " + autoShowImgFlag) }
   if ((countNumber > 0) && autoShowImgFlag) {
     showWLImg()
-    console.log("elapseTIme",elapseTIme*3)
-    setTimeout(() => autoShowWL(countNumber - 1), elapseTIme*3)
+    console.log("elapseTIme",elapseTIme*5)
+    setTimeout(() => autoShowWL(countNumber - 1), elapseTIme*5)
   }
 }
 
@@ -265,10 +265,12 @@ function showWLImg() {
   if(waitList.length > waitListSize){
     pointerList.splice(waitListSize, (pointerList.length - waitListSize));
   }
+  if( WLPointer >= waitList.length){WLPointer = 0}
 
   topicpointer = pointerList[WLPointer];
   WLPointer = WLPointer+1;
   showTopic();
+  console.log("WLPointer",WLPointer)
 }
 
 function addtoWL() {
@@ -283,7 +285,7 @@ function rvFmWL() {
 	if (ItemIndex > -1) { waitList.splice(ItemIndex, 1); }
 	waitList = [...new Set(waitList)]; // set unique
 	localStorage.setItem(waitingList, waitList)
-	alert("topicpointer "+topicpointer + ", removed fm waitList! Remaining: " + waitList)
+	alert("removed topic: " +topicpointer + "\ntopic length: " + waitList.length + ", topic quota: " + waitListSize + "\nwaitList: " + waitList)
 }
 
 function askNum() {
