@@ -210,7 +210,7 @@ var tipsList = [
 ".class, eg. $(\".intro\") :<br><br> selects All elements with class=\"intro\"",
 ".class,.class, eg. $(\".intro,.demo\") :<br><br> selects All elements with the class \"intro\" or \"demo\"",
 "element, eg. $(\"p\") :<br><br> selects All &lt;p&gt; elements",
-"el1,el2,el3, eg. $(\"h1,div,p\") :<br><br> selects All &lt;h1&gt;, &lt;div&gt; and &lt;p&gt; elements",
+"el1, el2, el3, eg. $(\"h1,div,p\") :<br><br> selects All &lt;h1&gt;, &lt;div&gt; and &lt;p&gt; elements",
 ":first, eg. $(\"p:first\") :<br><br> selects The first &lt;p&gt; element",
 ":last, eg. $(\"p:last\") :<br><br> selects The last &lt;p&gt; element",
 ":even, eg. $(\"tr:even\") :<br><br> selects All even &lt;tr&gt; elements",
