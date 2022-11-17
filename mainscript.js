@@ -1,5 +1,5 @@
 $(document).ready(function(){
-    $('.left, .title').click(function(){
+    $('.left, .title, b').click(function(){
     parent.history.back();
     return false;
     });
