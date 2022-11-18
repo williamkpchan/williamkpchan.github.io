@@ -29067,6 +29067,157 @@ It sounds as if you'll want to set your breakpoint on DOMContentLoaded, which is
 
 After you do this, reload the page and you'll end up in the debugger.
 
+<h2>new JavaScript language features</h2>
+<div id="newFeaturestoc" class="toc"><a href="#newFeaturestopic-0" target="_self" onclick="jumpto(0)">String.prototype.replaceAll</a><br><a href="#newFeaturestopic-1" target="_self" onclick="jumpto(1)">promise.any()</a><br><a href="#newFeaturestopic-2" target="_self" onclick="jumpto(2)">AggregateError</a><br><a href="#newFeaturestopic-3" target="_self" onclick="jumpto(3)">New logical assignment operators</a><br><a href="#newFeaturestopic-4" target="_self" onclick="jumpto(4)">Nullish assignment (??=)</a><br><a href="#newFeaturestopic-5" target="_self" onclick="jumpto(5)">And assignment (&amp;&amp;=)</a><br><a href="#newFeaturestopic-6" target="_self" onclick="jumpto(6)">Or assignment (||=)</a><br><a href="#newFeaturestopic-7" target="_self" onclick="jumpto(7)">WeakRef</a><br><a href="#newFeaturestopic-8" target="_self" onclick="jumpto(8)">FinalizationRegistry</a><br><a href="#newFeaturestopic-9" target="_self" onclick="jumpto(9)">Numeric literal separators</a><br><a href="#newFeaturestopic-10" target="_self" onclick="jumpto(10)">Array.prototype.sort improvements</a><br></div></center><br><br>
+
+<h3 id="newFeaturestopic-0">String.prototype.replaceAll</h3>
+The <code>replaceAll()</code> method takes a string or regular expression, called the <em>pattern</em>, as its first argument. 
+The second argument is the pattern's <em>replacement</em>.
+Given the first and second argument, <code>replaceAll()</code> returns a new string that will be the source string with all instances of the pattern swapped for the replacement. 
+
+The source string is not affected.In ECMAScript 2021, <code>replaceAll()</code> joins ECMAScript 2020’s <code>matchAll()</code> in improving the inherent capabilities of JavaScript’s built-in <code>String</code> object.The <code>replaceAll()</code> method works exactly like <code>replace()</code>, but applies to all occurrences in the string, instead of just the first one. 
+It’s a welcome addition after years of having to use a library or hand-coded solution.
+Listing 1 shows a simple example, wherein we mangle some Shakespeare.
+
+<h4>Listing 1. replaceAll()</h4>
+<code>let quote = "all the world's a stage, and all the men and women merely players";
+let newQuote = quote.replaceAll("all", "most of");
+console.log(newQuote);</code>
+
+<h3 id="newFeaturestopic-1">promise.any()</h3>The <code>promise.any()</code> method takes a collection of promises and allows you to respond to the first one that completes successfully by returning a new promise.
+If any promises are rejected, they are ignored. 
+(Note this method's contrast with <code>promise.all()</code>, which stops with any error or rejection; and with <code>promise.allSettled()</code>, which lets you observe all promises that resolved in a collection, even if there were intervening errors.)
+If any of the promises error out, <code>promise.any()</code> will still act upon the first resolved promise in the collection.
+The <code>promise.any()</code> method returns a rejected promise if none of the passed-in promises resolves. 
+
+The error it returns is <code>AggregateError</code>, which is a new error type also introduced by ECMAScript 2021. 
+<code>AggregateError</code> represents the summary of all errors encountered.You can use <code>promise.any()</code> to roll up many promises into a single one. 
+This promise will resolve to whichever of the collection resolves first, ignoring errors and rejections. 
+
+Listing 2 has a simple example.
+<h4>Listing 2. promise.any()—all resolved</h4><code>
+const promise1 = new Promise((resolve, reject) =&gt; {
+  setTimeout(resolve, 1000, "1 second");
+});
+const promise2 = new Promise((resolve, reject) =&gt; {
+  setTimeout(resolve, 2000, "2 second");
+});
+let promises = [promise1, promise2];
+  Promise.any(promises).then((firstResolved) =&gt; {
+  console.log(firstResolved); // outputs “1 second”
+})
+
+</code>Now consider Listing 3, wherein all promises eventually fail as rejected.
+
+<h4>Listing 3. promise.any()—all rejected</h4><code>
+const promise1 = new Promise((resolve, reject) =&gt; {
+  setTimeout(reject, 1000, "1 second");
+});
+const promise2 = new Promise((resolve, reject) =&gt; {
+  setTimeout(reject, 2000, "2 second");
+});
+let promises = [promise1, promise2];
+  Promise.any(promises).then((firstResolved) =&gt; {
+  console.log(firstResolved);
+}).catch((err) =&gt; { console.log("error: " + err) }) // outputs error: AggregateError: All promises were rejected
+
+</code>In Listing 3, we add a catch handler, which fires after both promises are rejected. 
+Notice that <code>AggregateError</code> is an object holding information about the failed promises. 
+Let's get a closer look at <code>AggregateError</code>, which is another new feature in ECMAScript 2021.
+
+<h3 id="newFeaturestopic-2">AggregateError</h3><code>AggregateError</code> is a special kind of error subclass that combines many errors into a summary object. 
+
+As you saw, the <code>promise.any()</code> method in Listing 3 created an <code>AggregateError</code>.In that example, all promises passed to <code>promise.any()</code> failed, so the method returned an <code>AggregateError</code>. 
+The error contained a message describing the error and an array with details about each error. 
+Listing 4 shows the contents of the error returned.
+<h4>Listing 4. AggregateError</h4><code>
+AggregateError: All promises were rejected
+errors: Array(2)
+
+0: "1 second"
+1: "2 second"
+length: 2
+message: "All promises were rejected"
+stack: "AggregateError: All promises were rejected"
+</code>As shown, <code>AggregateError</code> gives you access to the promise messages that contributed to the error, via <code>AggregateError.errors</code>.
+<h3 id="newFeaturestopic-3">New logical assignment operators</h3>JavaScript has familiar math assignment operators such as <code>+=</code>, which perform the operation and assignment in one go, as a kind of convenience. 
+
+ECMAScript 2021 adds similar support to the logical operators <code>||</code>, <code>??</code>, and <code>&amp;&amp;</code>.Let’s take a look at each of these.<h3 id="newFeaturestopic-4">Nullish assignment (??=)</h3>You can use the nullish assignment operator to test a variable for being null or undefined. 
+If the variable is null or undefined, you can assign the right side of the expression to the variable. 
+Listing 5 is an example.
+<h4>Listing 5. The ??= assignment in action</h4><code>
+let quote = "When goodness is lost there is morality.";
+let existingQuote = "A leader is best when people barely know he exists";
+let nonExistingQuote = null;
+existingQuote ??= quote;
+nonExistingQuote ??= quote;
+console.log(existingQuote); // A leader is best when people barely know he exists
+console.log(nonExistingQuote); // When goodness is lost there is morality.
+</code>Notice that when used on a variable that exists, like <code>existingQuote</code>, the nullish assignment operator does nothing. 
+
+When used on <code>nonExistingQuote</code>, however, it assigns the quote a new value. 
+Even if the string were empty for <code>existingQuote</code> (which is a falsy value in JavaScript), the nullish assignment will not replace it; it will remain an empty string. 
+That is the essence of the operator: it only tests for null or undefined.<h3 id="newFeaturestopic-5">And assignment (&amp;&amp;=)</h3>The <em>and</em> assignment operator (<code>&amp;&amp;=</code>) tests the left side of an expression. 
+
+If the left side is truthy, it assigns the right side of the expression. 
+If it is falsy, the operator does nothing. 
+Listing 6 shows a simple example.
+<h4>Listing 6. The &amp;&amp;= assignment in action</h4><code>
+let emptyString = "";
+emptyString &amp;&amp;= "bar";
+console.log (emptyString); // “”
+let nonEmptyString = "foo";
+nonEmptyString &amp;&amp;= "bar";
+console.log(nonEmptyString); // “bar”
+</code>In Listing 6, the first console log outputs an empty string. 
+This is because the empty string is falsy, so the <code>&amp;&amp;=</code> operator does not assign it a new value. 
+
+The second console outputs "<code>bar</code>". 
+This is because <code>nonEmptyString</code> is “<code>foo</code>”, which is a truthy value.<code>&amp;&amp;=</code> is a kind of edge case operator, but useful when you need it.<h3 id="newFeaturestopic-6">Or assignment (||=)</h3>The <em>or</em> assignment operator is the opposite of the<em> and</em> assignment operator you just saw. 
+We can use the same example from Listing 6, this time replacing <code>&amp;&amp;=</code> with <code>||=</code>.
+<h4>Listing 7. The ||= assignment in action</h4><code>
+let emptyString = "";
+emptyString ||= "bar";
+console.log (emptyString); // “bar”
+let nonEmptyString = "foo";
+nonEmptyString ||= "bar";
+console.log(nonEmptyString); // “foo”
+</code>If the left side of the expression is falsy, the <code>||=</code> assignment operator resolves to the right side. 
+Therefore, in this case, the <code>emptyString</code> becomes “<code>bar</code>”. 
+
+The <code>nonEmptyString</code> variable stays with its truthy value of “<code>foo</code>”.
+
+<h3 id="newFeaturestopic-7">WeakRef</h3>
+<a href="https://tc39.es/ecma262/#sec-weak-ref.prototype.deref" rel="nofollow">WeakRef</a> is used to refer to a target object without preserving it from garbage collection. 
+
+It is a rather esoteric language feature, not much used by the working coder. 
+The <a href="https://github.com/tc39/proposal-weakrefs/blob/master/README.md" rel="nofollow">one common use case</a> for <code>WeakRef</code> is in implementing caches or mappings for large objects, "where it’s desired that a large object is not kept alive solely because it appears in a cache or mapping.”So, if you find yourself building a caching solution for large entities, remember that <code>WeakRef</code> exists. 
+Otherwise, if you are not sure about needing a <code>WeakRef</code> variable reference, you probably should avoid using it. 
+
+(The spec itself recommends  avoidance.)
+<h3 id="newFeaturestopic-8">FinalizationRegistry</h3>It is a bit of programming irony that JavaScript introduced <code>FinalizationRegistry</code> almost simultaneously with Java’s <a href="https://www.infoworld.com/article/3649089/how-to-handle-java-errors-and-cleanup-without-finalize.html">deprecation of Object.finalize()</a>. 
+The features are practically analogous. 
+Like <code>WeakRef</code>, the specification <a href="https://github.com/tc39/proposal-weakrefs/blob/master/README.md#finalizers" rel="nofollow">warns developers away from user-defined finalizers</a>. 
+
+For some use cases, however, the new <code>FinalizationRegistry</code> could be just what you need. 
+The specification offers the example of long-running processes consuming many file handles. 
+In such a case, using <code>FinalizationRegistry</code> could ensure no handles are leaked.Along with <code>WeakRef</code>, <code>FinalizationRegistry</code> fits better into the toolbox of platform and framework developers, rather than application developers.
+<h3 id="newFeaturestopic-9">Numeric literal separators</h3>Numeric separators are a nicety that make looking at large number easier on the eyes. 
+
+JavaScript can’t use commas like natural languages, because that symbol is <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Comma_Operator" rel="nofollow">already taken</a>. 
+So, ECMAScript 2021 introduced the <em>underscore</em>.Instead of typing<code>
+let distanceToSun = 91772000000;
+
+</code>you can type<code>
+let distanceToSun = 91_772_000_000;
+</code>The new form is quite a bit easier to read.
+
+<h2><dfn>: The Definition element</h2>
+The <dfn> HTML element is used to indicate the term being defined within the context of a definition phrase or sentence. 
+The  element, the <dt>/<dd> pairing, or the  element which is the nearest ancestor of the <dfn> is considered to be the definition of the term.
+
+<p>A <dfn id="def-validator">validator</dfn> is a program that checks for syntax errors in code or documents.</p>
+
 
 
 
