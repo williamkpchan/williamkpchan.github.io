@@ -2935,6 +2935,62 @@ If you are a domain administrator and want to configure group policies on a Wind
 Open the Run dialog by pressing Windows key + R.Type in gpedit.msc and press Ok.
 This will open the local group policy editor.You can also enable other functionalities in Windows 10 Home:<ul><a href=https://www.itechtics.com/lusrmgr/ class=rank-math-link>How to Enable Local User and Group Management (lusrmgr.msc) Console in Windows 10 Home</a><a href=https://www.itechtics.com/enable-hyper-v-windows-10-home/ class=rank-math-link>How To Enable Hyper-V On Windows 10 Home</a><a href=https://www.itechtics.com/remote-desktop-windows-10-home/ class=rank-math-link>How To Enable Remote Desktop In Windows 10 Home (RDP)</a></ul>
 
+<h2>fix broken permissions for Windows scheduled task</h2>
+<a href="https://superuser.com/questions/1475639/how-to-fix-broken-permissions-for-windows-scheduled-task" class="whitebut ">fix broken permissions for Windows scheduled task</a>
+
+All tasks definitions stored in both
+
+Registry:
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\TaskCache\*
+
+and
+Filesystem: C:\Windows\System32\Tasks\*
+
+Security Descriptors exists both on files in filesystem and stored in the registry for each task:
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\TaskCache\Tree\&lt;TaskName>\SD
+
+This registry value is in the binary form and it seems that there is no decent UI for it.
+
+You could get retrive it via Powershell and Task Scheduler API (https://docs.microsoft.com/en-us/windows/win32/api/_taskschd/index):
+
+$ts = New-Object -ComObject "Schedule.Service"
+$ts.Connect("localhost")
+$task = $ts.GetFolder("").GetTask("&lt;TaskName>")
+Write-Host $task.GetSecurityDescriptor(0xF)
+This method return security descriptor in SDDL format
+BUT:
+
+I've got into the same problem and it seems that the problem is not directly related to task permissions, but to hardlinks on tasks created during Windows 10 upgrade
+Check folder C:\$WINDOWS.~BT\NewOS\Windows\System32\Tasks_Migrated\ whether it contains hardlinks to task's files in C:\Windows\System32\Tasks
+I've removed all hardlinks from C:\$WINDOWS.~BT\NewOS\Windows\System32\Tasks_Migrated\ and after that Unregister-ScheduledTask work as expected.
+UPDATE:
+
+I've finally investigated a problem with "broken" tasks permissions in Windows 10. It has nothing common with permissions at all and looks like an unexpected outcome of security patch.
+
+11/06/2019 Microsoft released a patch for CVE-2019-1069. This patch fixed a vulnerability of the Task Scheduler and to exploit it an adversary need to create a hardlink to a file associated with some task.
+
+If this patch installed you can't change/enable/disable/delete Task with Task Scheduler API (schtasks, powershell -ScheduledTask, COM "Schedule.Service") if associated task file in C:\Windows\System32\Tasks\ have any hardlink.
+Windows Feature update during installation do "Tasks migration" procedure and create hardlinks to all tasks in the folder C:\$WINDOWS.~BT\NewOS\Windows\System32\Tasks_Migrated\ and this could be a reason why tasks cannot be deleted.
+Deleting all hardlinks solves the problem.
+
+<h2>God Mode in Windows 11 or 10</h2>
+God Mode - A complete list of direct shortcuts settings.
+
+<b>How to Enable God Mode in Windows 11 or 10</b>
+1. <b>Right click on the desktop</b> and <b>select New-&gt;Folder</b>.
+
+2. <b>Name the folder </b>as follows:
+<b>GodMode.{ED7BA470-8E54-465E-825C-99712043E01C}</b>
+
+The name will disappear once you are finished.
+
+3. <b>Open the folder</b>. 
+You'll notice a more than 200 settings menus to choose from, organized into categories such as Security and Maintenance and Power Options.
+
+4. <b>Drag and drop individual shortcuts</b> to the desktop if you want even quicker access. 
+For example, if you want one-click access to the "Manage audio devices" menu, drag it onto the desktop and and you'll have a dedicated shortcut there.
+
+Note that the folder icon for the God Mode folder may change its icon at some point, perhaps after you reboot. 
 
 
 
