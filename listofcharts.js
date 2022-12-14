@@ -152,7 +152,7 @@ function chkKey() { testkey = getChar(event);
   if(testkey == 'F'){forewardList();} // go forward to next list
   if(testkey == 'b'){backwardList();}
   if(testkey == 'B'){backwardList();}
-  if(testkey == 'i'){window.open("InspectChart.html", "_blank");}
+  if(testkey == 'i'){window.open("https://williamkpchan.github.io/LibDocs/InspectChart.html", "_blank");}
 
   if(testkey == 'H'){window.open("monitorHSI.html");}
   if(testkey == 'A'){window.open("monitorA.html");}
