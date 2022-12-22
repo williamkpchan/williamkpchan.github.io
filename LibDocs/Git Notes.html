@@ -2044,6 +2044,145 @@ git config --global credential.useHttpPath true
 <h2>git to revert to last version</h2>
 git checkout master~1 pictList.js
 
+<h2>Work With Multiple Github Accounts on a single Machine</h2>
+https://gist.github.com/rahularity/86da20fe3858e6b311de068201d279e3
+<a href="https://gist.github.com/starred" class="whitebut ">GitHub Gist</a>
+<a href="https://gist.github.com/search?q=multiple+accounts" class="whitebut ">multiple accounts</a>
+
+<div id="multiGittoc" class="toc"><a href="#multiGittopic-0" target="_self">Create SSH keys for all accounts</a><br><a href="#multiGittopic-1" target="_self"> Now generating SSH keys for my two accounts</a><br><a href="#multiGittopic-2" target="_self">Add SSH keys to SSH Agent</a><br><a href="#multiGittopic-3" target="_self">Add SSH public key to the Github</a><br><a href="#multiGittopic-4" target="_self">Create a Config File and Make Host Entries</a><br><a href="#multiGittopic-5" target="_self">Cloning GitHub repositories using different accounts</a><br><a href="#multiGittopic-6" target="_self">Finally</a><br></div></center><br><br>
+
+Let suppose I have two github accounts, <b>https://github.com/rahul-office</b> and <b>https://github.com/rahul-personal</b>. 
+
+Now i want to setup my mac to easily talk to both the github accounts.
+NOTE: This logic can be extended to more than two accounts also. 
+:)
+
+The setup can be done in 5 easy steps:
+Step 1: Create SSH keys for all accounts
+Step 2: Add SSH keys to SSH Agent
+Step 3: Add SSH public key to the Github
+Step 4: Create a Config File and Make Host Entries
+Step 5: Cloning GitHub repositories using different accounts
+
+<h3 id="multiGittopic-0">Create SSH keys for all accounts</h3>
+First make sure your current directory is your <b>.ssh</b> folder.
+
+$ cd ~/.ssh
+Syntax for generating unique ssh key for ann account is:
+ssh-keygen -t rsa -C "your-email-address" -f "github-username"
+
+here,
+<b>-C</b> stands for comment to help identify your ssh key
+<b>-f</b> stands for the file name where your ssh key get saved
+
+<h4 id="multiGittopic-1"> Now generating SSH keys for my two accounts</h4>
+ssh-keygen -t rsa -C "my_office_email@gmail.com" -f "github-rahul-office"
+ssh-keygen -t rsa -C "my_personal_email@gmail.com" -f "github-rahul-personal"
+
+Notice here <b>rahul-office</b> and <b>rahul-work</b> are the username of my github accounts corresponding to <b>my_office_email@gmail.com</b> and <b>my_personal_email@gmail.com</b> email ids respectively.
+After entering the command the terminal will ask for passphrase, leave it empty and proceed.
+
+<img class="lazy" data-src="https://github.com/rahularity/github-essentials/raw/master/screenshots/passphrase.png">
+
+Now after adding keys , in your .ssh folder, a public key and a private will get generated.
+The public key will have an extention <b>.pub</b> and private key will be there without any extention both having same name which you have passed after <b>-f</b> option in the above command. 
+(in my case <b>github-rahul-office</b> and <b>github-rahu-personal</b>)
+
+<img class="lazy" data-src="https://github.com/rahularity/github-essentials/raw/master/screenshots/ssh_keys_added.png">
+<h3 id="multiGittopic-2">Add SSH keys to SSH Agent</h3>
+Now we have the keys but it cannot be used until we add them to the SSH Agent.
+ssh-add -K ~/.ssh/github-rahul-office
+ssh-add -K ~/.ssh/github-rahul-personal
+
+You can read more about adding keys to SSH Agent <a href="https://help.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent">here.</a>
+
+<h3 id="multiGittopic-3">Add SSH public key to the Github</h3>
+For the next step we need to add our public key (that we have generated in our previous step) and add it to corresponding github accounts.
+For doing this we need to:
+<b>1. Copy the public key</b>
+<code> We can copy the public key either by opening the github-rahul-office.pub file in vim and then copying the content of it.
+</code>
+
+vim ~/.ssh/github-rahul-office.pub
+vim ~/.ssh/github-rahul-personal.pub
+OR
+
+We can directly copy the content of the public key file in the clipboard.
+pbcopy &lt; ~/.ssh/github-rahul-office.pub
+pbcopy &lt; ~/.ssh/github-rahul-personal.pub
+
+<b>2. Paste the public key on Github</b>
+Sign in to Github Account
+Goto <b>Settings</b> &gt; <b>SSH and GPG keys</b> &gt; <b>New SSH Key</b>
+Paste your copied public key and give it a Title of your choice.
+
+<em><b>OR</b></em>
+
+Sign in to Github
+Paste this link in your browser (<a href="https://github.com/settings/keys">https://github.com/settings/keys</a>) or click <a href="https://github.com/settings/keys">here</a>
+Click on <b>New SSH Key</b> and paste your copied key.
+
+<h3 id="multiGittopic-4">Create a Config File and Make Host Entries</h3>
+
+The <b>~/.ssh/config</b> file allows us specify many config options for SSH.
+If <b>config</b> file not already exists then create one (make sure you are in <b>~/.ssh</b> directory)
+touch config
+
+The commands below opens config in your default editor....Likely TextEdit, VS Code.
+open config
+Now we need to add these lines to the file, each block corresponding to each account we created earlier.
+
+<code>     #rahul-office account
+Host github.com-rahul-office
+HostName github.com
+
+User git
+IdentityFile ~/.ssh/github-rahul-office
+#rahul-personal account
+
+Host github.com-rahul-personal
+HostName github.com
+User git
+
+IdentityFile ~/.ssh/github-rahul-personal
+</code>
+
+<h3 id="multiGittopic-5">Cloning GitHub repositories using different accounts</h3>
+So we are done with our setups and now its time to see it in action. 
+We will clone a repository using one of the account we have added.
+
+Make a new project folder where you want to clone your repository and go to that directory from your terminal.
+For Example:
+I am making a repository on my personal github account and naming it <b>TestRepo</b>
+
+Now for cloning the repo use the below command:
+<code>    git clone git@github.com-{your-username}:{owner-user-name}/{the-repo-name}.git
+[e.g.] git clone git@github.com-rahul-personal:rahul-personal/TestRepo.git
+</code>
+
+<h3 id="multiGittopic-6">Finally</h3>
+From now on, to ensure that our commits and pushes from each repository on the system uses the correct GitHub user — we will have to configure <b>user.email</b> and <b>user.name</b> in every repository freshly cloned or existing before.
+
+To do this use the following commands.
+<code>     git config user.email "my_office_email@gmail.com"
+git config user.name "Rahul Pandey"
+
+git config user.email "my-personal-email@gmail.com"
+git config user.name "Rahul Pandey"
+</code>
+
+Pick the correct pair for your repository accordingly.
+To push or pull to the correct account we need to add the remote origin to the project
+<code>     git remote add origin git@github.com-rahul-personal:rahul-personal
+git remote add origin git@github.com-rahul-office:rahul-office
+</code>
+Now you can use:
+
+<code>     git push
+git pull
+
+
+
 
 
 
