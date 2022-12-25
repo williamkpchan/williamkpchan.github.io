@@ -252,7 +252,7 @@ var tipsList = [
 "<pre>[attribute^=value], eg. $(\"[title^=\'Tom\']\") :<br><br>selects All elements with a title attribute value starting with \"Tom\"",
 "<pre>[attribute~=value], eg. $(\"[title~=\'hello\']\") :<br><br>selects All elements with a title attribute value containing the specific word \"hello\"",
 "<pre>[attribute*=value], eg. $(\"[title*=\'hello\']\") :<br><br>selects All elements with a title attribute value containing the word \"hello\"",
-"<pre>:input, eg. $(\":input\") :<br><br>selects All input elements",
+'<pre>:input, eg. $(\":input\") :<br><br>selects All input elements<br>&lt;input type="button" value="Another useless button">&lt;br><br>&lt;input type="reset" value="Reset"><br>&lt;input type="submit" value="Submit">&lt;br><br>',
 "<pre>:text, eg. $(\":text\") :<br><br>selects All input elements with type=\"text\"",
 "<pre>:password, eg. $(\":password\") :<br><br>selects All input elements with type=\"password\"",
 "<pre>:radio, eg. $(\":radio\") :<br><br>selects All input elements with type=\"radio\"",
