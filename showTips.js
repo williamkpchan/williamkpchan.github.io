@@ -1,7 +1,7 @@
 
 ignoreLstName = bookid + "IgnoreLst"
 if (localStorage.getItem(window["ignoreLstName"]) === null) {
-        localStorage.setItem(window["ignoreLstName"], "");
+        // localStorage.setItem(window["ignoreLstName"], "");
         ignoreLst = []
 } else{
         ignoreLst = localStorage.getItem(window["ignoreLstName"]).split(',');
@@ -12,7 +12,7 @@ tipLimit = tipsList.length; // Tip Limit counter
 allIdx = Array.from(Array(tipLimit).keys())
 
 // remove ignoreLst elements
-if(ignoreLst.length > 0){
+if(ignoreLst.length > 0 && ignoreLst !=""){
   for(loop = 0; loop < ignoreLst.length; loop++){
     ItemIndex = allIdx.indexOf( ignoreLst[loop] );
     allIdx.splice(ItemIndex, 1)
