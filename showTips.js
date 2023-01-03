@@ -37,22 +37,20 @@ function generateTip() {
 }
 
 function forward() {
-    topicpointer = topicpointer - 1;
     console.log("topicpointer", topicpointer)
-    if (topicpointer >= 0 && topicpointer <= (selectRange-1)) {
-      generateTip();
-    }else{
-      topicpointer = selectRange -1
+    if (!(topicpointer >= 0 && topicpointer <= (selectRange-1))) {
+       topicpointer = selectRange -1
     }
+    generateTip();
+    topicpointer = topicpointer - 1;
 }
 
 function backClick() {
-    topicpointer = topicpointer + 1;
-    if (topicpointer >= 0 && topicpointer <= (selectRange-1)) {
-      generateTip();
-    }else{
+    if (!(topicpointer >= 0 && topicpointer <= (selectRange-1))) {
       topicpointer = 0
     }
+    generateTip();
+    topicpointer = topicpointer + 1;
 }
 
 function chkKey() {
