@@ -19,11 +19,13 @@ if(ignoreLst.length > 0){
   }
 }
 
-tipsListIdx = allIdx.slice(0, 100); // select the leading 100 items
+selectRange = tipLimit
+if(selectRange <= 100){selectRange = tipLimit}
+tipsListIdx = allIdx.slice(0, selectRange); // select the leading 100 items
 
 // shuffle the remaining pointers
 tipsListIdx = shuffle(tipsListIdx)
-topicpointer = 99
+topicpointer = selectRange - 1
 
 function generateTip() {
   console.log("tipsListIdx[topicpointer] ", tipsListIdx[topicpointer])
@@ -37,16 +39,16 @@ function generateTip() {
 function forward() {
     topicpointer = topicpointer - 1;
     console.log("topicpointer", topicpointer)
-    if (topicpointer >= 0 && topicpointer <= 99) {
+    if (topicpointer >= 0 && topicpointer <= (selectRange-1)) {
       generateTip();
     }else{
-      topicpointer = 99
+      topicpointer = selectRange -1
     }
 }
 
 function backClick() {
     topicpointer = topicpointer + 1;
-    if (topicpointer >= 0 && topicpointer <= 99) {
+    if (topicpointer >= 0 && topicpointer <= (selectRange-1)) {
       generateTip();
     }else{
       topicpointer = 0
