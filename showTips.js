@@ -20,12 +20,13 @@ if(ignoreLst.length > 0 && ignoreLst !=""){
 }
 
 selectRange = tipLimit
-if(selectRange <= 100){
+myselectRange = 100
+if(selectRange <= myselectRange){
   selectRange = tipLimit
 }else{
-  selectRange = 100
+  selectRange = myselectRange
 }
-tipsListIdx = allIdx.slice(0, selectRange); // select the leading 100 items
+tipsListIdx = allIdx.slice(0, selectRange); // select the leading items
 
 // shuffle the remaining pointers
 tipsListIdx = shuffle(tipsListIdx)
