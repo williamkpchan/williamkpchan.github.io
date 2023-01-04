@@ -19,19 +19,31 @@ if(ignoreLst.length > 0 && ignoreLst !=""){
   }
 }
 
-selectRange = tipLimit
-myselectRange = 100
-if(selectRange <= myselectRange){
-  selectRange = tipLimit
+if(tipLimit > 50){
+  selectRange = 50
 }else{
-  selectRange = myselectRange
+  selectRange = tipLimit
 }
-tipsListIdx = allIdx.slice(0, selectRange); // select the leading items
+init_theRange(selectRange)
 
-// shuffle the remaining pointers
-tipsListIdx = shuffle(tipsListIdx)
-topicpointer = selectRange - 1
+function init_theRange(newRange) {
+  old_selectRange = selectRange
+  if(newRange > 10 && newRange <= tipLimit && selectRange <= tipLimit){
+    selectRange = newRange
+  }else{
+    selectRange = tipLimit
+  }
+  tipsListIdx = allIdx.slice(0, selectRange); // select the leading items
 
+  // shuffle the remaining pointers
+  tipsListIdx = shuffle(tipsListIdx)
+  topicpointer = selectRange - 1
+
+  if( old_selectRange != selectRange ) {
+      alert("selected tips number: " + selectRange)
+  }
+  generateTip()
+}
 
 function generateTip() {
   console.log("IdxPointer: ", tipsListIdx[topicpointer])
@@ -74,6 +86,7 @@ function chkKey() {
   else if(testkey == '+'){addToIgnoreLst();}
   else if(testkey == '-'){removeFmIgnoreLst();}
   else if(testkey == 'R'){removeNumFmIgnoreLst();}
+  else if(testkey == 's'){setRange();}
   else if(testkey == 'v'){viewIgnoreLst();}
 
   else if(testkey == 'h'){window.open("https://williamkpchan.github.io/LibDocs/News Points.html");}
@@ -188,6 +201,13 @@ function removeNumFmIgnoreLst() {
         }
 }
 
+function setRange() {
+    var tips_number = prompt("enter the tips number: ", "");
+    if (tips_number != null && tips_number != ""){
+      init_theRange(+tips_number)
+    }
+}
+
 function viewIgnoreLst() {
   alert("ignoreLst: " + ignoreLst);
   // alert(tipsList[ignoreLst]);
@@ -196,5 +216,5 @@ function viewIgnoreLst() {
 forward();
 // Get the first tip
 generateTip();
-$(".tip-button").after("<br>shortcut Keys:<br>b backward<br>f forward<br>+ add To IgnoreLst<br>- remove Fm IgnoreLst<br>R remove Num Fm IgnoreLst<br>v view IgnoreLst<br>")
+$(".tip-button").after("<br>shortcut Keys:<br>b backward<br>f forward<br>+ add To IgnoreLst<br>- remove Fm IgnoreLst<br>R remove Num Fm IgnoreLst<br>v view IgnoreLst<br><br>s setRange<br>")
 
