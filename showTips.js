@@ -20,7 +20,11 @@ if(ignoreLst.length > 0 && ignoreLst !=""){
 }
 
 selectRange = tipLimit
-if(selectRange <= 100){selectRange = tipLimit}
+if(selectRange <= 100){
+  selectRange = tipLimit
+}else{
+  selectRange = 100
+}
 tipsListIdx = allIdx.slice(0, selectRange); // select the leading 100 items
 
 // shuffle the remaining pointers
@@ -28,7 +32,7 @@ tipsListIdx = shuffle(tipsListIdx)
 topicpointer = selectRange - 1
 
 function generateTip() {
-  console.log("tipsListIdx[topicpointer] ", tipsListIdx[topicpointer])
+  console.log("IdxPointer: ", tipsListIdx[topicpointer])
   tip = tipsList[tipsListIdx[topicpointer]];
   document.querySelector('.js-tip').innerHTML = tip;
   document.querySelector('.tip-limit-count').innerHTML = topicpointer;
@@ -144,7 +148,7 @@ function getChar(event) {
 }
 
 function randomNum() {
- topicpointer = Math.floor(Math.random() * (tipLimit -1))
+ topicpointer = Math.floor(Math.random() * (selectRange -1))
  generateTip();
 }
 
