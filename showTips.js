@@ -31,6 +31,7 @@ tipsListIdx = allIdx.slice(0, selectRange); // select the leading 100 items
 tipsListIdx = shuffle(tipsListIdx)
 topicpointer = selectRange - 1
 
+
 function generateTip() {
   console.log("IdxPointer: ", tipsListIdx[topicpointer])
   tip = tipsList[tipsListIdx[topicpointer]];
@@ -76,9 +77,6 @@ function chkKey() {
 
   else if(testkey == 'h'){window.open("https://williamkpchan.github.io/LibDocs/News Points.html");}
   else if(testkey == 'H'){window.open("https://williamkpchanHP.github.io/");}
-  else if(testkey == 'J'){window.location = '#_jiaoyu';}
-  else if(testkey == 'l'){window.location = '#dushu';}
-  //if(testkey == 'L'){openLogFile();}
   else if(testkey == 'L'){window.open("https://williamkpchan.github.io/LibDocs/mlinechart.html");}
   else if(testkey == 'm'){window.open("https://williamkpchan.github.io/medical.html");}
   else if(testkey == 'M'){window.open("https://www.google.com/maps");}
@@ -90,13 +88,10 @@ function chkKey() {
 
   else if(testkey == 'S'){window.open("https://williamkpchan.github.io/Hour STK Charts.html");}
 
-
   else if(testkey == 't'){window.open("https://my.weather.gov.hk/tc/myindex.htm");}
 
   else if(testkey == 'u'){window.open("https://www.worldometers.info/coronavirus/");}
   else if(testkey == 'V'){window.open("https://williamkpchan.github.io/StkImgViewer.html");}
-  else if(testkey == 'w'){window.location = '#ruanjian';}
-  else if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
 
   else if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
   else if(testkey == 'z'){showTenYear();}
@@ -110,7 +105,6 @@ function chkKey() {
   else if(testkey == ','){window.open("https://williamkpchan.github.io/LibDocs/mlinechart.html");}
   else if(testkey == '.'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutechart.html");}
   else if(testkey == '/'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutecharttest.html");}
-  else if(testkey == 'n'){generateTip();}
   else{chkOtherKeys(testkey)} 
 }
 function chkOtherKeys(testkey) {
@@ -201,4 +195,5 @@ function viewIgnoreLst() {
 forward();
 // Get the first tip
 generateTip();
+$(".tip-button").after("<br>shortcut Keys:<br>b backward<br>f forward<br>+ add To IgnoreLst<br>- remove Fm IgnoreLst<br>R remove Num Fm IgnoreLst<br>v view IgnoreLst<br>")
 
