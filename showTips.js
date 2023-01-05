@@ -216,5 +216,5 @@ function viewIgnoreLst() {
 forward();
 // Get the first tip
 generateTip();
-$(".tip-button").after("<br>shortcut Keys:<br>b backward<br>f forward<br>+ add To IgnoreLst<br>- remove Fm IgnoreLst<br>R remove Num Fm IgnoreLst<br>v view IgnoreLst<br><br>s setRange<br>")
+$(".tip-button").after("<br><br><br>shortcut Keys:<br>b backward<br>f forward<br>+ add To IgnoreLst<br>- remove Fm IgnoreLst<br>R remove Num Fm IgnoreLst<br>v view IgnoreLst<br>s setRange<br>")
 
