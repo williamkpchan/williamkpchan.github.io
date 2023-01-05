@@ -475,41 +475,4 @@ var tipsList = [
 '<pre>JavaScript Class:<br><br><pre>Use the keyword <i>class</i> to create a class.<br>Always add a method named <i>constructor()</i> to define properties.<br>A JavaScript class is <b>not</b> an object.<br>It is a <b>template</b> for JavaScript objects.<br><br>class Car {<br>   constructor(name, year) {<br>    this.name = name;<br>    this.year = year;<br>  }<br>}<br><br>When you have a class, you can use the class to create objects:<br>let myCar1 = new Car("Ford", 2014);<br>let myCar2 = new Car("Audi", 2019);<br><h3>Class Methods</h3><br>Use the keyword <i>class</i> to create a class.<br>Always add a <i>constructor()</i> method.<br>Then add any number of methods.<br><br>class ClassName {<br>  constructor() { ... }<br>  method_1() { ... }<br>  method_2() { ... }<br>  method_3() { ... }<br>}<br><br>class Car {<br>   constructor(name, year) {<br>    this.name = name;<br>    this.year = year;<br>   }<br>  age() {<br>    let date = new Date();<br>    return date.getFullYear() - this.year;<br>   }<br>}<br><br>let myCar = new Car("Ford", 2014);<br>document.getElementById("demo").innerHTML =<br>"My car is " + myCar.age() + " years old.";</pre>',
 
 ];
-
-// Tip Limit counter
-  var tipLimit = tipsList.length;
-
-// Generate a number
-function generateNumber() {
-//  return tipsList.length-1;
-  return Math.floor(Math.random() * tipsList.length);
-}
-
-function generateTip() {
-  var tip = tipsList[generateNumber()];
-  var tipElement = document.querySelector('.js-tip');
-  tipElement.innerHTML = tip;
-  var tipLimitCount = document.querySelector('.tip-limit-count');
-  tipLimitCount.innerHTML = tipLimit;
-  document.querySelector('.tip-button').focus();
-
-}
-
-function onTipButtonClick() {
-  var tipButton = document.querySelector('.tip-button');
-  tipButton.addEventListener('click', function() {
-    tipLimit = tipLimit - 1;
-    if (tipLimit >= 0) {
-      generateTip();
-
-      if (tipLimit === 0) {
-        tipButton.innerHTML = 'See you in another tab!';
-        tipButton.classList.add('disabled');
-      }
-    }
-  });
-}
-
-// Get the first tip
-generateTip();
-onTipButtonClick();
+bookid = "C Tips"

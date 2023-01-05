@@ -57,6 +57,7 @@ function generateTip() {
 function forward() {
     console.log("topicpointer", topicpointer)
     if (!(topicpointer >= 0 && topicpointer <= (selectRange-1))) {
+       init_theRange(selectRange)
        topicpointer = selectRange -1
     }
     generateTip();
@@ -65,7 +66,8 @@ function forward() {
 
 function backClick() {
     if (!(topicpointer >= 0 && topicpointer <= (selectRange-1))) {
-      topicpointer = 0
+       init_theRange(selectRange)
+       topicpointer = 0
     }
     generateTip();
     topicpointer = topicpointer + 1;
@@ -214,7 +216,6 @@ function viewIgnoreLst() {
 }
 
 forward();
-// Get the first tip
-generateTip();
+
 $(".tip-button").after("<br><br><br>shortcut Keys:<br>b backward<br>f forward<br>+ add To IgnoreLst<br>- remove Fm IgnoreLst<br>R remove Num Fm IgnoreLst<br>v view IgnoreLst<br>s setRange<br>")
 
