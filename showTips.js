@@ -42,6 +42,7 @@ function init_theRange(newRange) {
   if( old_selectRange != selectRange ) {
       alert("selected tips number: " + selectRange)
   }
+
   generateTip()
 }
 
@@ -89,7 +90,9 @@ function chkKey() {
   else if(testkey == '-'){removeFmIgnoreLst();}
   else if(testkey == 'R'){removeNumFmIgnoreLst();}
   else if(testkey == 's'){setRange();}
+  else if(testkey == '2'){setRange();}
   else if(testkey == 'v'){viewIgnoreLst();}
+  else if(testkey == 't'){alertTotal();}
 
   else if(testkey == 'h'){window.open("https://williamkpchan.github.io/LibDocs/News Points.html");}
   else if(testkey == 'H'){window.open("https://williamkpchanHP.github.io/");}
@@ -215,7 +218,12 @@ function viewIgnoreLst() {
   // alert(tipsList[ignoreLst]);
 }
 
+function alertTotal() {
+  alert("Total Length: " + tipsList.length + "\nignoreLst: " + ignoreLst.length);
+  // alert(tipsList[ignoreLst]);
+}
+
 forward();
 
-$(".tip-button").after("<br><br><br>shortcut Keys:<br>b backward<br>f forward<br>+ add To IgnoreLst<br>- remove Fm IgnoreLst<br>R remove Num Fm IgnoreLst<br>v view IgnoreLst<br>s setRange<br>")
+$(".tip-button").after("<br><br><br>shortcut Keys:<br>b backward<br>f forward<br>+ add To IgnoreLst<br>- remove Fm IgnoreLst<br>R remove Num Fm IgnoreLst<br>v view IgnoreLst<br>s setRange<br>t total length<br>")
 
