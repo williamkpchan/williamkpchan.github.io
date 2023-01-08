@@ -92,7 +92,8 @@ function chkKey() {
   else if(testkey == 's'){setRange();}
   else if(testkey == '2'){setRange();}
   else if(testkey == 'v'){viewIgnoreLst();}
-  else if(testkey == 't'){alertTotal();}
+  else if(testkey == 'T'){alertTotal();}
+  else if(testkey == "t"){ location = '#tip-number';}
 
   else if(testkey == 'h'){window.open("https://williamkpchan.github.io/LibDocs/News Points.html");}
   else if(testkey == 'H'){window.open("https://williamkpchanHP.github.io/");}
@@ -223,7 +224,8 @@ function alertTotal() {
   // alert(tipsList[ignoreLst]);
 }
 
+
 forward();
 
-$(".tip-button").after("<br><br><br>shortcut Keys:<br>b backward<br>f forward<br>+ add To IgnoreLst<br>- remove Fm IgnoreLst<br>R remove Num Fm IgnoreLst<br>v view IgnoreLst<br>s setRange<br>t total length<br>")
+$(".tip-button").after("<br><br><br>shortcut Keys:<br>b backward<br>f forward<br>+ add To IgnoreLst<br>- remove Fm IgnoreLst<br>R remove Num Fm IgnoreLst<br>v view IgnoreLst<br>s setRange<br>T total length<br>")
 
