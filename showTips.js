@@ -93,8 +93,9 @@ function chkKey() {
   else if(testkey == '2'){setRange();}
   else if(testkey == 'v'){viewIgnoreLst();}
   else if(testkey == 'T'){alertTotal();}
-  else if(testkey == "t"){ location.href = '.tip-number';}
-
+  else if(testkey == "t"){ window.location = 'div.tip-number';
+       window.scrollTo(window.scrollX, window.scrollY - 50);}
+  
   else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
 
   else if(testkey == 'h'){window.open("https://williamkpchan.github.io/LibDocs/News Points.html");}
