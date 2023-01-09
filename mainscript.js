@@ -307,11 +307,8 @@ $("img").dblclick(function() {
 
 function toggleScrollBar() {
     barSwitch =localStorage.getItem("visibleScrollBar")
-    if( barSwitch == null || barSwitch == "0"){
+    if( barSwitch == null || barSwitch === "0"){
         localStorage.setItem("visibleScrollBar", 1);
-        $('html').addClass('visibleBar');
-    }else{
-        localStorage.setItem("visibleScrollBar", 0);
-        $('html').addClass('invisibleBar');
+        $('html').toggle('visibleBar');
     }
 }
