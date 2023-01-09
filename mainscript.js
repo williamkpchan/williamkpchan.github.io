@@ -37,7 +37,7 @@ function chkKey() {
   else if(testkey == 'P'){window.open("https://williamkpchan.github.io/LibDocs/popupRecordReport.html");}
 
   else if(testkey == 'q'){window.open('https://www.quora.com/');}
-  else if(testkey == 'Q'){window.open('https://news.qq.com/zt2020/page/feiyan.htm');}
+  else if(testkey == 'Q'){toggleScrollBar();}
 
 
   else if(testkey == 's'){window.open("https://williamkpchan.github.io/stkListVH.html");}
@@ -304,3 +304,14 @@ $("img").dblclick(function() {
  $('img').css('max-height', '100%');
  window.location = "#topic-" + topicpointer;
 })
+
+function toggleScrollBar() {
+    barSwitch =localStorage.getItem("visibleScrollBar")
+    if( barSwitch == null || barSwitch == "0"){
+        localStorage.setItem("visibleScrollBar", 1);
+        $('html').addClass('visibleBar');
+    }else{
+        localStorage.setItem("visibleScrollBar", 0);
+        $('html').addClass('invisibleBar');
+    }
+}
