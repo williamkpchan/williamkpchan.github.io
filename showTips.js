@@ -37,7 +37,7 @@ function init_theRange(newRange) {
 
   // shuffle the remaining pointers
   tipsListIdx = shuffle(tipsListIdx)
-  topicpointer = selectRange - 1
+  topicpointer = 0
 
   if( old_selectRange != selectRange ) {
       alert("selected tips number: " + selectRange)
@@ -50,28 +50,28 @@ function generateTip() {
   console.log("IdxPointer: ", tipsListIdx[topicpointer])
   tip = tipsList[tipsListIdx[topicpointer]];
   document.querySelector('.js-tip').innerHTML = tip;
-  document.querySelector('.tip-limit-count').innerHTML = topicpointer;
+  document.querySelector('.tip-limit-count').innerHTML = selectRange - topicpointer -1;
   $("#dateAndTime").click()
   document.querySelector('.tip-button').focus();
 }
 
 function forward() {
     console.log("topicpointer", topicpointer)
-    if (!(topicpointer >= 0 && topicpointer <= (selectRange-1))) {
+    if (!(topicpointer >= 0 && topicpointer < (selectRange-1))) {
        init_theRange(selectRange)
-       topicpointer = selectRange -1
+       topicpointer = -1
     }
+    topicpointer = topicpointer + 1;
     generateTip();
-    topicpointer = topicpointer - 1;
 }
 
 function backClick() {
-    if (!(topicpointer >= 0 && topicpointer <= (selectRange-1))) {
+    if (!(topicpointer > 0 && topicpointer <= (selectRange-1))) {
        init_theRange(selectRange)
-       topicpointer = 0
+       topicpointer = selectRange
     }
+    topicpointer = topicpointer - 1;
     generateTip();
-    topicpointer = topicpointer + 1;
 }
 
 function chkKey() {
