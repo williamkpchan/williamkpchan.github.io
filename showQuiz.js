@@ -1,14 +1,17 @@
 
 ignoreQuizName = bookid + "IgnoreQuiz"
-if (localStorage.getItem(window["ignoreQuizName"]) === null) {
+if (localStorage.getItem(window["ignoreQuizName"]) === null ||
+    localStorage.getItem(window["ignoreQuizName"]) === "") {
         // localStorage.setItem(window["ignoreQuizName"], "");
         ignoreQuiz = []
 } else{
-        ignoreQuiz = localStorage.getItem(window["ignoreQuizName"]).split(',');
+        ignoreQuiz = localStorage.getItem(window["ignoreQuizName"]).split(',').map(x=>+x);
+        ignoreQuiz = ignoreQuiz.filter((v, i, a) => a.indexOf(v) === i);  // set unique
 }
 
 quizLimit = quizList.length; // Quiz Limit counter
 
+allSetIdx = Array.from(Array(quizLimit).keys())
 allIdx = Array.from(Array(quizLimit).keys())
 QArray = []
 AArray = []
@@ -16,31 +19,46 @@ quizListIdx = []
 splitString(quizList)
 answerIs =""
 
-// remove ignoreQuiz elements
-if(ignoreQuiz.length > 0 && ignoreQuiz !=""){
-  for(loop = 0; loop < ignoreQuiz.length; loop++){
-    ItemIndex = allIdx.indexOf( ignoreQuiz[loop] );
-    allIdx.splice(ItemIndex, 1)
-  }
-}
-
 if(quizLimit > 50){
   selectRange = 50
 }else{
   selectRange = quizLimit
 }
+newRange = selectRange
 init_theRange(selectRange)
 
 function init_theRange(newRange) {
+  // remove ignoreQuiz elements
+  if(ignoreQuiz.length > 0 && ignoreQuiz !=""){
+    for(loop = 0; loop < ignoreQuiz.length; loop++){
+      ItemIndex = allIdx.indexOf( +ignoreQuiz[loop] );
+      if (ItemIndex > -1) { allIdx.splice(ItemIndex, 1) }
+    }
+  }
+
+  if(allIdx.length == 0){
+    var resetIgnoreList = prompt("reset all answer? y/n", "n");
+    if (resetIgnoreList != "y"){
+        ignoreQuiz = []
+        localStorage.setItem(window["ignoreQuizName"], ignoreQuiz);
+    }else{
+        allIdx = Array.from(Array(quizLimit).keys())
+    }
+  }
+
   old_selectRange = selectRange
-  if(newRange > 10 && newRange <= quizLimit && selectRange <= quizLimit){
+  if(newRange > 5 && newRange <= quizLimit && selectRange <= quizLimit){
     selectRange = newRange
   }else{
     selectRange = quizLimit
   }
-  quizListIdx = allIdx.slice(0, selectRange); // select the leading items
 
-  // shuffle the remaining pointers
+  //quizListIdx = allIdx.slice()
+  if(newRange >= 5 && newRange <= quizLimit && selectRange <= quizLimit && allIdx.length >= 5){
+    quizListIdx = allIdx.slice(0, selectRange); // select the leading items
+  } 
+
+// shuffle the pointers
   shuffle(quizListIdx)
   topicpointer = 0
 
@@ -61,8 +79,8 @@ function splitString(textArr) {
 }
 
 function showQuiz() {
-  quiz = "<i>Quiz:</i>    " +QArray[quizListIdx[topicpointer]];
-  answerPoolIdx = get5Choices(quizListIdx)
+  quiz = "<i>Quiz " + quizListIdx[topicpointer] + ":</i> "+QArray[quizListIdx[topicpointer]];
+  answerPoolIdx = get5Choices(allSetIdx)
   quizAnswer = "<i>Answer:</i><ol>";
   for(i=0; i<answerPoolIdx.length; i++){
     quizAnswer = quizAnswer + "<li>" + AArray[answerPoolIdx[i]] + "\n</li>"
@@ -72,19 +90,18 @@ function showQuiz() {
   document.querySelector('.js-quiz').innerHTML = quiz
   document.querySelector('.js-quiz-answer').innerHTML = quizAnswer
 
-  document.querySelector('.quiz-limit-count').innerHTML = selectRange - topicpointer -1;
-
   $("#dateAndTime").click()
-  document.querySelector('.quiz-button').focus();
+  document.querySelector('#records').innerHTML = "&emsp; <i>Total Pass:</i> " + ignoreQuiz.length + " &emsp;<i>All Quizzes:</i> " + quizList.length
 }
 
 function get5Choices(thisArr) {
   allchoices = thisArr.slice()
-  theAnswer = allchoices.splice(topicpointer, 1);
+  theAnswer = allchoices.splice(quizListIdx[topicpointer], 1);
+
   itemNumber = 4;
   shuffledArray = allchoices.sort(() => 0.5 - Math.random());
   result = shuffledArray.slice(0, itemNumber);
-  result.push(thisArr[topicpointer])
+  result.push(quizListIdx[topicpointer])
   result = result.sort(() => 0.5 - Math.random());
   theAnswer = theAnswer[0]
   answerIs = result.indexOf(theAnswer) +1
@@ -95,7 +112,7 @@ function get5Choices(thisArr) {
 
 function forward() {
     console.log("forward topicpointer", topicpointer)
-    if (!(topicpointer >= 0 && topicpointer < (selectRange-1))) {
+    if (!(topicpointer >= 0 && topicpointer < (allIdx.length-6))) {
        init_theRange(selectRange)
        topicpointer = -1
     }
@@ -104,7 +121,7 @@ function forward() {
 }
 
 function backClick() {
-    if (!(topicpointer > 0 && topicpointer <= (selectRange-1))) {
+    if (!(topicpointer > 0 && topicpointer <= (allIdx.length-1))) {
        init_theRange(selectRange)
        topicpointer = selectRange
     }
@@ -272,11 +289,15 @@ function alertTotal() {
 
 function checkAnswer(thisChoice) {
     if(thisChoice == answerIs){
-      alert("正确: " + answerIs)
+      document.querySelector('#lastResult').innerHTML = "<c>Last Answer Correct!</c> "  + answerIs
+
       addToIgnoreQuiz()
     }else{
-      alert("XXX 错误 XXX ")
+      document.querySelector('#lastResult').innerHTML = "<ic>Last Answer Incorrect!</ic> "  + answerIs
     }
+
+    document.querySelector('#lastQuiz').innerHTML = quiz + "<br><i>Answer</i>: " + AArray[answerPoolIdx[answerIs-1]]
+    forward();
 }
 
 forward();
