@@ -19,8 +19,12 @@ quizListIdx = []
 splitString(quizList)
 answerIs =""
 
-if(quizLimit > 50){
-  selectRange = 50
+if (typeof initSelectRange == 'undefined') {
+  initSelectRange = 50;
+}
+
+if(quizLimit > initSelectRange){
+  selectRange = initSelectRange
 }else{
   selectRange = quizLimit
 }

@@ -19,8 +19,12 @@ if(ignoreLst.length > 0 && ignoreLst !=""){
   }
 }
 
-if(tipLimit > 50){
-  selectRange = 50
+if (typeof initSelectRange == 'undefined') {
+  initSelectRange = 50;
+}
+
+if(tipLimit > initSelectRange){
+  selectRange = initSelectRange
 }else{
   selectRange = tipLimit
 }
