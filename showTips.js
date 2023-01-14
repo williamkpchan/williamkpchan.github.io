@@ -54,8 +54,9 @@ function generateTip() {
   console.log("IdxPointer: ", tipsListIdx[topicpointer])
   tip = tipsList[tipsListIdx[topicpointer]];
   document.querySelector('.js-tip').innerHTML = tip;
-  document.querySelector('.tip-limit-count').innerHTML = selectRange - topicpointer -1;
+
   $("#dateAndTime").click()
+  document.querySelector('.tip-button').innerHTML = tipsListIdx[topicpointer] + " of " + tipsList.length
   document.querySelector('.tip-button').focus();
 }
 
@@ -97,7 +98,7 @@ function chkKey() {
   else if(testkey == '2'){setRange();}
   else if(testkey == 'v'){viewIgnoreLst();}
   else if(testkey == 'T'){alertTotal();}
-  else if(testkey == 't'){window.scrollTo(0,100);}
+  else if(testkey == 't'){window.scrollTo(0,50);}
   else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
 
   else if(testkey == 'h'){window.open("https://williamkpchan.github.io/LibDocs/News Points.html");}
