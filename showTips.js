@@ -214,7 +214,7 @@ function removeNumFmIgnoreLst() {
 }
 
 function setRange() {
-    var tips_number = prompt("enter the tips number: ", "");
+    var tips_number = prompt("enter the tips number: ", selectRange);
     if (tips_number != null && tips_number != ""){
       init_theRange(+tips_number)
     }
