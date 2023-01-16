@@ -9,7 +9,7 @@
 <script>
   var showTopicNumber = true;
   var bookid = "pythonNotes" 
-  var markerName = "h2, i"
+  var markerName = "h2"
 </script>
 <style>
 body{width:80%;margin-left: 10%; font-size:22px;}
@@ -17228,6 +17228,317 @@ while True:
                     break
         else:
              print('查无此人, 没有{}学生信息!'.format(name))
+
+
+<h2>if else 升级新语法</h1>
+Python 从 <i>if else</i> 优化到 <i>match case</i>
+
+<i>Python 是一门非常重 if else 的语言</i>
+以前 Python 真的是把 if else 用到了极致，比如说 Python 里面没有三元运算符(<i> xx ? y : z </i>) 无所谓，它可以用 if else 整一个。
+
+<k>x = True if 100 &gt; 0 else False</k>离谱的事还没有完，if  else 这两老六还可以分别与其它语法结合，其中又数 else 玩的最野。
+
+a: else 可以和 try 玩到一起，当 try 中没有引发异常的时候 else 块会得到执行。
+
+<k>#!/usr/bin/env python3
+# -*- coding: utf8 -*-</k>
+
+<k>def main():
+    try:
+        # ...
+        pass
+    except Exception as err:
+        pass
+    else:
+        print("this is else block")
+    finally:
+        print("finally block")</k>
+<k>if __name__  == "__main__":
+    main()</k>b: else 也可以配合循环语句使用，当循环体中没有执行 break 语句时 else 块能得到执行。
+
+<k>#!/usr/bin/env python3
+# -*- coding: utf8 -*-</k>
+
+<k>def main():
+    for i in range(3):
+        pass
+    else:
+        print("this is else block")</k>
+<k>    while False:
+        pass
+    else:
+        print("this is else block")</k>
+
+<k>if __name__  == "__main__":
+    main()</k>
+c: if 相对来说就没有 else 那么多的副业；常见的就是列表推导。
+以过滤出列表中的偶数为例，传统上我们的代码可能是这样的。
+
+<k>#!/usr/bin/env python3
+# -*- coding: utf8 -*-</k>
+
+<k>def main():
+    result = []</k>
+<k>    numers = [1, 2, 3, 4, 5]
+    for number in numers:
+        if number % 2 == 0:
+            result.append(number)
+    
+    print(result)
+    </k>
+
+<k>if __name__  == "__main__":
+    main()</k>使用列表推导可以一行解决。
+
+<k>#!/usr/bin/env python3
+# -*- coding: utf8 -*-</k>
+
+<k>def main():
+    numers = [1, 2, 3, 4, 5]
+    print( [_ for _ in numers if _ % 2 == 0] )</k>
+
+<k>if __name__  == "__main__":
+    main()</k>看起来这些增强都还可以，但是对于类似于 switch 的这些场景，就不理想了。
+
+<i>没有 switch 语句 if else 顶上</i>
+对于 Python 这种把 if else 在语法上用到极致的语言，没有 switch 语句没关系的，它可以用 if else ！！！ 
+
+<k>#!/usr/bin/env python3
+# -*- coding: utf8 -*-</k>
+<k>def fun(times):
+    """这个函数不是我们测试的重点这里直接留白</k>
+<k>    Parameter
+    ---------
+    times: int</k>
+<k>    """
+    pass</k>
+<k>def main(case_id: int):
+    """由 case_id 到调用函数还有其它逻辑，这里为了简单统一处理在 100 * case_id</k>
+<k>    Parameter
+    ---------
+    times: int</k>
+<k>    """
+    if case_id == 1:
+        fun(100 * 1)
+    elif case_id == 2:
+        fun(100 * 2)
+    elif case_id == 3:
+        fun(100 * 3)
+    elif case_id == 4:
+        fun(100 * 4)</k>
+
+<k>if __name__  == "__main__":
+    main(1)</k>这个代码写出来大家应该发现了，这样的代码像流水账一样<i>一点都不优雅</i>，用 Python 的话来说，这个叫一点都不 <i>Pythonic</i> ！<i>其它语言不好说，对于 Python 来讲不优雅就是有罪</i>。
+
+前面铺垫了这么多，终于快到重点了。
+社区提出了一个相对优雅的写法，新写法完全不用 if else 。
+
+<k>#!/usr/bin/env python3
+# -*- coding: utf8 -*-</k>
+
+<k>def fun(times):
+    pass</k>
+<k># 用字典以 case 为键，要执行的函数对象为值，这样做到按 case 路由
+routers = {
+    1: fun,
+    2: fun,
+    3: fun,
+    4: fun
+}</k>
+<k>def main(case_id: int):
+   routers[case_id](100 * case_id)</k>
+<k>if __name__  == "__main__":
+    main(1)</k>可以看到新的写法下，代码确实简洁了不少；从另一个角度来看社区也完成了一次进化，从之前抱着 if else 这个传家宝不放，到完全不用 if else 。
+也算是非常有意思吧。
+
+新写法也不是没有问题；性能！性能！还是他妈的性能不行！
+
+<i>if else 和宝典写法性能测试</i>
+在说测试结果之前，先介绍一下我的开发环境，腾讯云的虚拟机器，Python 版本是 Python-3.12.0a3 。
+测试代码会记录耗时和内存开销，耗时小的性能就好。
+详细的代码如下。
+
+<k>#!/usr/bin/env python3
+# -*- coding: utf8 -*-</k>
+<k>import timeit
+import tracemalloc</k>
+<k>tracemalloc.start()</k>
+<k>def fun(times):
+    """这个函数不是我们测试的重点这里直接留白</k>
+<k>    Parameter
+    ---------
+    times: int</k>
+<k>    """
+    pass</k>
+<k># 定义 case 到 操作的路由字典
+routers = {
+    1: fun,
+    2: fun,
+    3: fun,
+    4: fun
+}</k>
+<k>def main(case_id: int):
+    """用于测试 if else 写法的耗时情况</k>
+<k>    Parametr
+    --------
+    case_id: int
+        不同 case 的唯一标识</k>
+<k>    Return
+    ------
+    None
+    """
+    if case_id == 1:
+        fun(100 * 1)
+    elif case_id == 2:
+        fun(100 * 2)
+    elif case_id == 3:
+        fun(100 * 3)
+    elif case_id == 4:
+        fun(100 * 4)</k>
+
+<k>def main(case_id: int):
+    """测试字典定法的耗时情况</k>
+<k>    Parametr
+    --------
+    case_id: int
+        不同 case 的唯一标识</k>
+<k>    Return
+    ------
+    None
+    """
+    routers[case_id](100 * case_id)</k>
+
+<k>if __name__ == "__main__":
+    # 1. 记录开始时间、内存
+    # 2. 性能测试
+    # 3. 记录结束时间和总的耗时情况</k>
+<k>    start_current, start_peak = tracemalloc.get_traced_memory()
+    start_at = timeit.default_timer()</k>
+<k>    for i in range(10000000):
+        main((i % 4) + 1)
+    end_at = timeit.timeit()</k>
+<k>    cost = timeit.default_timer() - start_at
+    end_current, end_peak = tracemalloc.get_traced_memory()
+    
+    print(f"time cost = {cost} .")
+    print(f"memery cost = {end_current - start_current}, {end_peak - start_peak}")</k>下面直接上我在开发环境的测试结果。
+
+<img src="https://mmbiz.qpic.cn/mmbiz_png/dTYibpXKjh45mQxHVibZd2XGNKr8ydkCNUDWd46OpKEI494lGbj0xbqwNUUgc1HA2bVias8NMicK9Y1nibyZMNcafvw/640">
+
+文字版本。
+
+<img src="https://mmbiz.qpic.cn/mmbiz_png/dTYibpXKjh45mQxHVibZd2XGNKr8ydkCNU9gloW1KFntWU3Sx273IhiaaEX6ibvNbNFAuqAU1Pic5iat5KaTAIe2AzcQ/640">
+
+可以看到字典写法虽然优雅了一些，但是它在性能上是不行的。
+故事讲到这里，我们这次的主角要上场了。
+
+<i>match case 新语法</i>
+<i>Python-3.10</i> 版本引入了一个新的语法 <i>match case</i> ，这个新语法和其它语言的 <i>switch case</i> 差不多。
+在性能上比字典写法好一点，在代码的优雅程度上比 if else 好一点。
+大致语法像这样。
+
+<k>    match xxx:
+        case aaa:
+            ...
+        case bbb:
+            ... 
+        case ccc:
+            ...
+        case ddd:
+            ...</k>
+光说不练，假把式！改一下我们的测试代码然后比较一下三者的性能差异。
+
+<k>#!/usr/bin/env python3
+# -*- coding: utf8 -*-</k>
+<k>import timeit
+import tracemalloc</k>
+<k>tracemalloc.start()</k>
+<k>def fun(times):
+    """这个函数不是我们测试的重点这里直接留白</k>
+<k>    Parameter
+    ---------
+    times: int</k>
+<k>    """
+    pass</k>
+<k># 定义 case 到 操作的路由字典
+routers = {
+    1: fun,
+    2: fun,
+    3: fun,
+    4: fun
+}</k>
+<k>def main(case_id: int):
+    """用于测试 if else 写法的耗时情况</k>
+<k>    Parametr
+    --------
+    case_id: int
+        不同 case 的唯一标识</k>
+<k>    Return
+    ------
+    None
+    """
+    if case_id == 1:
+        fun(100 * 1)
+    elif case_id == 2:
+        fun(100 * 2)
+    elif case_id == 3:
+        fun(100 * 3)
+    elif case_id == 4:
+        fun(100 * 4)</k>
+
+<k>def main(case_id: int):
+    """测试字典定法的耗时情况</k>
+<k>    Parametr
+    --------
+    case_id: int
+        不同 case 的唯一标识</k>
+<k>    Return
+    ------
+    None
+    """
+    routers[case_id](100 * case_id)</k>
+
+<k>def main(case_id: int):
+    """测试 match case 写法的耗时情况</k>
+<k>    Parametr
+    --------
+    case_id: int
+        不同 case 的唯一标识</k>
+<k>    Return
+    ------
+    None
+    """
+    match case_id:
+        case 1:
+            fun(100 * 1)
+        case 2:
+            fun(100 * 2)
+        case 3:
+            fun(100 * 3)
+        case 4:
+            fun(100 * 4)</k>
+
+<k>if __name__ == "__main__":
+    # 1. 记录开始时间、内存
+    # 2. 性能测试
+    # 3. 记录结束时间和总的耗时情况</k>
+<k>    start_current, start_peak = tracemalloc.get_traced_memory()
+    start_at = timeit.default_timer()</k>
+<k>    for i in range(10000000):
+        main((i % 4) + 1)
+    end_at = timeit.timeit()</k>
+<k>    cost = timeit.default_timer() - start_at
+    end_current, end_peak = tracemalloc.get_traced_memory()
+    
+    print(f"time cost = {cost} .")
+    print(f"memery cost = {end_current - start_current}, {end_peak - start_peak}")
+    </k>可以看到 match case 耗时还是比较理想的。
+
+<img src="https://mmbiz.qpic.cn/mmbiz_png/dTYibpXKjh45mQxHVibZd2XGNKr8ydkCNU5pHOgPBUYHd7ibEa0cbMuuozKynU3oSoumc2xg9rwhsdh6HPOhrumHw/640">
+
+详细的数据如下。
+
+<img src="https://mmbiz.qpic.cn/mmbiz_png/dTYibpXKjh45mQxHVibZd2XGNKr8ydkCNUv2WZCkM5J2ocIvrsh06g4gSk5T57GmpEFicRv8iaJ9IBYQpALCceWSdw/640">
 
 
 
