@@ -168,7 +168,7 @@ function chkKey() { testkey = getChar(event);
 
   if(testkey == '.'){showNextPage();}
   if(testkey == ','){showPrevPage();}
-  if(testkey == "'"){window.open("mline11chart.html");}
+  if(testkey == "'"){window.open("https://williamkpchan.github.io/LibDocs/swipeChart.html");}
 }
 
 function getChar(event) {
