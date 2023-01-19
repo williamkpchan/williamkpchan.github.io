@@ -312,3 +312,18 @@ function toggleScrollBar() {
         $('html').toggle('visibleBar');
     }
 }
+
+function Show(elementID){
+  if (document.getElementById(elementID).style.display == 'none') {
+      document.getElementById(elementID).style.display = 'block';
+  }else {
+      document.getElementById(elementID).style.display = 'none';
+  }
+};
+function Hide(elementID){
+  if (document.getElementById(elementID).style.display == 'block') {
+      document.getElementById(elementID).style.display = 'none';
+  }else {
+      document.getElementById(elementID).style.display = 'block';
+  }
+};
