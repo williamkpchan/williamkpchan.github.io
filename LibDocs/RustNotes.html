@@ -459,6 +459,683 @@ https://mp.weixin.qq.com/s?__biz=MzI1MjAzNDI1MA==&mid=2648216805&idx=2&sn=20a59d
 <h2>rust 支付宝支付 SDK</h2>
 https://mp.weixin.qq.com/s?__biz=MzI1MjAzNDI1MA==&mid=2648216324&idx=2&sn=1faeb20cc8a6b89de1cbda260a29206d
 
+<h2>Web Scraping with Rust</h2>
+https://www.scrapingbee.com/blog/web-scraping-rust/
+To get some information from a website, like stock prices. 
+The easiest way of doing this is to connect to an API. 
+If the website has a free-to-use API, you can just request the information you need.
+
+If not, always the second option: web scraping.
+
+Scraping with the Rust programming language. 
+You’ll use two Rust libraries, <k>reqwest</k> and <k>scraper</k>, to scrape the top one hundred movies list from IMDb.
+
+<h3>Implementing a Web Scraper in Rust</h3>
+You’re going to set up a fully functioning web scraper in Rust. 
+Your target for scraping will be <a href="https://www.imdb.com/">IMDb</a>, a database of movies, TV series, and other media.
+In the end, you’ll have a Rust program that can scrape the <a href="https://www.imdb.com/search/title/?groups=top_100&sort=user_rating,desc&count=100">top one hundred movies by user rating</a> at any given moment.
+
+This tutorial assumes you already have Rust and Cargo (Rust’s package manager) installed. 
+If you don’t, follow <a href="https://www.rust-lang.org/tools/install">the official documentation</a> to install them.
+<h3>&emsp;Creating the Project and Adding Dependencies</h3>
+
+To start off, you need to create a basic Rust project and add all the dependencies you’ll be using. 
+This is best done with Cargo.
+To generate a new project for a Rust binary, run:
+
+<k>cargo new web_scraper
+</k>Next, add the required libraries to the dependencies. 
+For this project, you’ll use <k>reqwest</k> and <k>scraper</k>.
+
+Open the <k>web_scraper</k> folder in your favorite k editor and open the <k>cargo.toml</k> file. 
+At the end of the file, add the libraries:
+<k>[dependencies]
+reqwest = {version = "0.11", features = ["blocking"]}
+scraper = "0.12.0"
+</k>Now you can move to <k>src/main.rs</k> and start creating your web scraper.
+
+<h3>&emsp;Getting the Website HTML</h3>
+Scraping a page usually involves getting the HTML k of the page and then parsing it to find the information you need. 
+Therefore, you’ll need to make the k of the IMDb page available in your Rust program. 
+
+To do that, you first need to understand how browsers work, because they’re your usual way of interacting with web pages.
+To display a web page in the browser, the browser (client) sends an HTTP request to the server, which responds with the source k of the web page. 
+The browser then renders this k.
+
+HTTP has various different types of requests, such as GET (for getting the contents of a resource) and POST (for sending information to the server). 
+To get the k of an IMDb web page in your Rust program, you’ll need to mimic the behavior of browsers by sending an HTTP GET request to IMDb.
+In Rust, you can use <a href="https://docs.rs/reqwest/latest/reqwest/"><k>reqwest</k></a> for that. 
+
+This commonly used Rust library provides the features of an HTTP client. 
+It can do a lot of the things that a regular browser can do, such as open pages, log in, and store cookies.
+To request the k of a page, you can use the <k>reqwest::blocking::get</k> method:
+
+<k>fn main() {
+  let response = reqwest::blocking::get(
+    "https://www.imdb.com/search/title/?groups=top_100&sort=user_rating,desc&count=100",
+    )
+    .unwrap()
+    .text()
+    .unwrap();
+}
+</k><k>response</k> will now contain the full HTML k of the page you requested.
+
+<h3>&emsp;Extracting Information from HTML</h3>
+The hardest part of a web scraping project is usually getting the specific information you need out of the HTML document. 
+For this purpose, a commonly used tool in Rust is the <a href="https://docs.rs/scraper/0.12.0/scraper/"><k>scraper</k></a> library. 
+
+It works by parsing the HTML document into a tree-like structure. 
+You can use <a href="https://www.w3schools.com/cssref/css_selectors.asp">CSS selectors</a> to query the elements you’re interested in.
+The first step is to parse your entire HTML document using the library:
+
+<k>    let document = scraper::Html::parse_document(&response);
+</k>Next, find and select the parts you need. 
+To do that, you need to check the website’s k and find a collection of CSS selectors that uniquely identifies those items.
+
+The simplest way to do this is via your regular browser. 
+Find the element you need, then check the k of that element by inspecting it:
+<img src="https://i.imgur.com/qaM1KG2.png" >
+
+In the case of IMDb, the element you need is the name of the movie. 
+When you check the element, you’ll see that it’s wrapped in an <k>&lt;a></k> tag:
+<k>&lt;a href="/title/tt0111161/?ref_=adv_li_tt">The Shawshank Redemption&lt;/a>
+
+</k>Unfortunately, this tag is not unique. 
+Since there are a lot of <k>&lt;a></k> tags on the page, it wouldn’t be a smart idea to scrape them all, as most of them won’t be the items you need. 
+Instead, find the tag unique to movie titles and then navigate to the <k>&lt;a></k> tag inside that tag.
+
+In this case, you can pick the <k>lister-item-header</k> class:
+<k>&lt;h3 class="lister-item-header">
+&lt;span class="lister-item-index unbold text-primary">1.&lt;/span>
+
+&lt;a href="/title/tt0111161/?ref_=adv_li_tt">The Shawshank Redemption&lt;/a>
+&lt;span class="lister-item-year text-muted unbold">(1994)&lt;/span>
+&lt;/h3>
+
+</k>Now you need to create a query using the <k>scraper::Selector::parse</k> method.
+You’ll give it a <k>h3.lister-item-header>a</k> selector. 
+In other words, it finds <k>&lt;a></k> tags that have as a parent an <k>&lt;h3></k> tag that is of a <k>lister-item-header</k> class.
+
+Use the following query:
+<k>    let title_selector = scraper::Selector::parse("h3.lister-item-header>a").unwrap();
+</k>Now you can apply this query to your parsed document with the <k>select</k> method. 
+
+To get the actual titles of movies instead of the HTML elements, you’ll map each HTML element to the HTML that’s inside it:
+<k>    let titles = document.select(&title_selector).map(|x| x.inner_html());
+</k><k>titles</k> is now an iterator holding the names of all the top one hundred titles.
+
+All you need to do now is to print out these names. 
+To do that, first <k>zip</k> your title list with the numbers 1 to 100. 
+Then call the <k>for_each</k> method on the resulting iterator, which will print each item of the iterator on a separate line:
+
+<k>    titles.zip(1..101).for_each(|(item, number)| println!("{}. 
+
+{}", number, item));
+</k>Your web scraper is now done.
+Here’s the complete k of the scraper:
+
+<k>fn main() {
+let response = reqwest::blocking::get(
+"https://www.imdb.com/search/title/?groups=top_100&sort=user_rating,desc&count=100",
+
+).unwrap().text()
+.unwrap();
+let document = scraper::Html::parse_document(&response);
+let title_selector = scraper::Selector::parse("h3.lister-item-header>a").unwrap();
+
+let titles = document.select(&title_selector).map(|x| x.inner_html());
+titles.zip(1..101)
+.for_each(|(item, number)| println!("{}. 
+{}", number, item));
+}
+
+</k>If you save the file and run it with <k>cargo run</k>, you should get the list of top one hundred movies at any given moment:
+<k>1. The Shawshank Redemption
+2. The Godfather
+3. The Dark Knight
+4. The Lord of the Rings: The Return of the King
+5. Schindler's List
+6. The Godfather: Part II
+7. 12 Angry Men
+8. Pulp Fiction
+9. Inception
+10. The Lord of the Rings: The Two Towers
+...
+</k><h3>Conclusion</h3>
+In this tutorial, you learned how to use Rust to create a simple web scraper. 
+
+Rust isn’t a popular language for scripting, but as you saw, it gets the job done quite easily.
+This is just the starting point in Rust web scraping. 
+There are many ways you could upgrade this scraper, depending on your needs.
+
+Here are some options you can try out as an exercise:
+
+<strong>Parse data into a custom struct:</strong> You can create a typed Rust struct that holds movie data. 
+
+This will make it easier to print the data and work with it further inside your program.
+<strong>Save data in a file:</strong> Instead of printing out movie data, you can instead save it in a file.
+<strong>Create a <a href="https://docs.rs/reqwest/latest/reqwest/blocking/struct.Client.html"><k>Client</k></a> that logs into an IMDb account:</strong> You might want IMDb to display movies according to your preferences before you parse them. 
+
+For example, IMDb shows film titles in the language of the country you live in. 
+If this is an issue, you will need to configure your IMDb preferences and then create a web scraper that can log in and scrape with preferences.
+
+However, sometimes working with CSS selectors isn’t enough. 
+You might need a more advanced solution that simulates actions taken by a real browser. 
+In that case, you can use <a href="https://docs.rs/thirtyfour/latest/thirtyfour/"><k>thirtyfour</k></a>, Rust’s UI testing library, for more powerful web scraping action.
+
+If you love low-level languages you might also like our <a href="https://www.scrapingbee.com/blog/web-scraping-c++/">Web scraping with C++</a>.
+
+<h2>What is web scraping?</h2>
+<a href="https://blog.logrocket.com/html-tags-every-frontend-developer-should-know/" target="_blank">HTML isn’t a very structured format</a>, so you usually have to dig around a bit to find the relevant parts.
+If the data you want is available in another way — either through some sort of API call, or in a structured format like JSON, XML, or CSV — it will almost certainly be easier to get it that way instead. 
+
+Web scraping can be a bit of a last resort because it can be cumbersome and brittle.
+The details of web scraping highly depend on the page you’re getting the data from. 
+We’ll look at an example below.
+
+<h3>Web scraping principles</h3>
+Let’s go over some general principles of web scraping that are good to follow.
+<h3>&emsp;Be a good citizen when writing a web scraper</h3>
+
+When writing a web scraper, it’s easy to accidentally make a bunch of web requests quickly. 
+This is considered rude, as it might swamp smaller web servers and make it hard for them to respond to requests from other clients.
+Also, it might considered a denial-of-service (DoS) attack, and it’s possible your IP address could be blocked, either manually or automatically!
+
+The best way to avoid this is to put a small delay in between requests. 
+The example we’ll look at later on in this article has a 500ms delay between requests, which should be plenty of time to not overwhelm the web server.
+<h3>&emsp;Aim for robust web scraper solutions</h3>
+
+As we’ll see in the example, a lot of the HTML out there is not designed to be read by humans, so it can be a bit tricky to figure out how to locate the data to extract.
+One option is to do something like finding the seventh <code>p</code> element in the document. 
+But this is very fragile; if the HTML document page changes even a tiny bit, the seventh <code>p</code> element could easily be something different.
+
+It’s better to try to find something more robust that seems like it won’t change.
+
+In the example we’ll look at below, to find the main data table, we find the <code>table</code> element that has the most rows, which should be stable even if the page changes significantly.
+<h3>&emsp;Validate, validate, validate!</h3>
+Another way to guard against unexpected page changes is to validate as much as you can. 
+
+Exactly what you validate will be pretty specific to the page you are scraping and the application you are using to do so.
+In the example below, some of the things we validate include:
+
+
+If a row has any of the headers that we’re looking for, then it has all three of the ones we expect
+The values are all between 0 and 100,000
+The values are decreasing (we know to expect this because of the specifics of the data we’re looking at)
+
+After parsing the page, we’ve gotten at least 50 rows of data
+
+It’s also helpful to include reasonable error messages to make it easier to track down what invariant has been violated when a problem occurs.
+
+Now, let’s look at an example of web scraping with Rust!
+<h3>Building a web scraper with Rust</h3>
+In this example, we are going to gather life expectancy data from the Social Security Administration (SSA). 
+
+This data is available in “life tables” found on various pages of the SSA website.
+<a href="https://www.ssa.gov/oact/NOTES/as120/LifeTables_Tbl_7_1900.html" target="_blank">The page we are using</a> lists, for people born in 1900, their chances of surviving to various ages. 
+The SSA provides a much more <a href="https://www.ssa.gov/oact/NOTES/as120/LifeTables_Body.html" target="_blank">comprehensive explanation of these life tables</a>, but we don’t need to read through the entire study for this article.
+
+The table is split into two parts, male and female. 
+Each row of the table represents a different age (that’s the &#8220;x&#8221; column). 
+The various other columns show different statistics about survival rates at that age.
+
+For our purposes, we care about the “lx” column, which starts with 100,000 babies born (at age 0) and shows how many are still alive at a given age. 
+This is the data we want to capture and save into a JSON file.
+The SSA provides this data for babies born every 10 years from 1900-2100 (I assume the data in the year 2100 is just a projection, unless they have time machines over there!). 
+
+We’d like to capture all of it.
+One thing to notice: in 1900, 14 percent of babies didn’t survive to age one! In 2020, that number was more like 0.5 percent. 
+Hooray for modern medicine!
+
+The HTML table itself is kind of weird; because it’s split up into male and female, there are essentially two tables in one <code>table</code> element, a bunch of header rows, and blank rows inserted every five years to make it easier for humans to read. 
+We’ll have to deal with all this while building our Rust web scraper.
+The example code is in <a href="https://github.com/gregstoll/rust-scraping" target="_blank">this GitHub repo</a>. 
+
+Feel free to follow along as we look at different parts of the scraper!
+<h3>&emsp;Fetching the page with the Rust <code>reqwest</code> crate</h3>
+First, we need to fetch the webpage. 
+
+We will <a href="https://crates.io/crates/reqwest" target="_blank">use the </a><code><a href="https://crates.io/crates/reqwest" target="_blank">reqwest</a></code><a href="https://crates.io/crates/reqwest" target="_blank"> crate</a> for this step. 
+This crate has powerful ways to fetch pages in an async way in case you’re doing a bunch of work at once, but for our purposes, using the blocking API is simpler.
+Note that to use the blocking API you need to add the “blocking” feature to the <code>reqwest</code> dependency in your <code>Cargo.toml</code> file; <a href="https://github.com/gregstoll/rust-scraping" target="_blank">see an example at line nine of the file in the Github repo</a>.
+
+Fetching the page is done in the <code><a href="https://github.com/gregstoll/rust-scraping/blob/main/src/scraper_utils.rs#L19" target="_blank">do_throttled_request()</a></code><a href="https://github.com/gregstoll/rust-scraping/blob/main/src/scraper_utils.rs#L19" target="_blank"> method</a> in <code>scraper_utils.rs</code>. 
+Here’s a simplified version of that code:
+// Do a request for the given URL, with a minimum time between requests
+
+// to avoid overloading the server.
+pub fn do_throttled_request(url: &amp;str) -&gt; Result&lt;String, Error&gt; {
+// See the real code for the throttling - it's omitted here for clarity
+
+let response = reqwest::blocking::get(url)?;
+response.text()
+}
+
+At its core, this method is pretty simple: do the request and return the body as a <code>String</code>. 
+We&#8217;re using the <code>?</code> operator to do an early return on any error we counter — for example, if our network connection is down.
+Interestingly, the <code>text()</code> method can also fail, and we just return that as well. 
+
+Remember that since the last line doesn&#8217;t have a semicolon at the end, it&#8217;s the same as doing the following, but a bit more idiomatic for Rust:
+return response.text();
+<h3>&emsp;Parsing the HTML with the Rust <code>scraper</code> crate</h3>
+
+Now to the hard part! We will be <a href="https://crates.io/crates/scraper" target="_blank">using the appropriately-named </a><code><a href="https://crates.io/crates/scraper" target="_blank">scraper</a></code><a href="https://crates.io/crates/scraper" target="_blank"> crate</a>, which is based on <a href="https://servo.org/" target="_blank">the Servo project</a>, which shares code with Firefox. 
+In other words, it&#8217;s an industrial-strength parser!
+The parsing is done using the <code><a href="https://github.com/gregstoll/rust-scraping/blob/main/src/main.rs#L44" target="_blank">parse_page()</a></code><a href="https://github.com/gregstoll/rust-scraping/blob/main/src/main.rs#L44" target="_blank"> method</a> in your <code>main.rs</code> file. 
+
+Let’s break it down into steps.
+First, we parse the document. 
+Notice that the <code>parse_document()</code> call below doesn’t return an error and thus can’t fail, which makes sense since this is code coming from a real web browser. 
+
+No matter how badly formed the HTML is, the browser has to render something!
+let document = Html::parse_document(&amp;body);
+// Find the table with the most rows
+
+let main_table = document.select(&amp;TABLE).max_by_key(|table| {
+table.select(&amp;TR).count()
+}).expect("No tables found in document?");
+
+Next, we want to find all the tables in the document. 
+The <code>select()</code> call allows us to pass in a CSS selector and returns all the nodes that match that selector.
+<a href="https://blog.logrocket.com/level-up-your-css-selector-skills/" target="_blank">CSS selectors are a very powerful way</a> to specify which nodes you want. 
+
+For our purposes, we just want to select all table nodes, which is easy to do with a simple <code>Type</code> selector:
+static ref TABLE: Selector = make_selector("table");
+Once we have all of the table nodes, we want to find the one with the most rows. 
+
+We will <a href="https://doc.rust-lang.org/stable/std/cmp/fn.max_by_key.html" target="_blank">use the </a><code><a href="https://doc.rust-lang.org/stable/std/cmp/fn.max_by_key.html" target="_blank">max_by_key()</a></code><a href="https://doc.rust-lang.org/stable/std/cmp/fn.max_by_key.html" target="_blank"> method</a>, and for the key we get the number of rows in the table.
+Nodes also have a <code>select()</code> method, so we can use another simple selector to get all the descendants that are rows and count them:
+static ref TR: Selector = make_selector("tr");
+
+Now it’s time to find out which columns have the “100,000” text. 
+Here’s that code, with some parts omitted for clarity:
+let mut column_indices: Option&lt;ColumnIndices&gt; = None;
+
+for row in main_table.select(&amp;TR) {
+// Need to collect this into a Vec&lt;&gt; because we're going to be iterating over it
+// multiple times.
+
+let entries = row.select(&amp;TD).collect::&lt;Vec&lt;_&gt;&gt;();
+if column_indices.is_none() {
+let mut row_number_index: Option&lt;usize&gt; = None;
+
+let mut male_index: Option&lt;usize&gt; = None;
+let mut female_index: Option&lt;usize&gt; = None;
+// look for values of "0" (for the row number) and "100000"
+
+for (column_index, cell) in entries.iter().enumerate() {
+let text: String = get_numeric_text(cell);
+if text == "0" {
+
+// Only want the first column that has a value of "0"
+row_number_index = row_number_index.or(Some(column_index));
+} else if text == "100000" {
+
+// male columns are first
+if male_index.is_none() {
+male_index = Some(column_index);
+
+}
+else if female_index.is_none() {
+female_index = Some(column_index);
+
+}
+else {
+panic!("Found too many columns with text \"100000\"!");
+
+}
+}
+}
+
+assert_eq!(male_index.is_some(), female_index.is_some(), "Found male column but not female?");
+if let Some(male_index) = male_index {
+assert!(row_number_index.is_some(), "Found male column but not row number?");
+
+column_indices = Some(ColumnIndices {
+row_number: row_number_index.unwrap(),
+male: male_index,
+
+female: female_index.unwrap()
+});
+}
+
+}
+For each row, if we haven’t found the column indices we need, we’re looking for a value of <code>0</code> for the age and <code>100000</code> for male and female columns.
+Note that the <code>get_numeric_text()</code> function takes care of removing any commas from the text. 
+
+Also notice the number of asserts and panics here to guard against the format of the page changing too much — we’d much rather have the script error out than get incorrect data!
+Finally, here’s the code that gathers all the data:
+if let Some(column_indices) = column_indices {
+
+if entries.len() &lt; column_indices.max_index() {
+// Too few columns, this isn't a real row
+continue
+
+}
+let row_number_text = get_numeric_text(&amp;entries[column_indices.row_number]);
+if row_number_text.parse::&lt;u32&gt;().map(|x| x == next_row_number) == Ok(true) {
+
+next_row_number += 1;
+let male_value = get_numeric_text(&amp;entries[column_indices.male]).parse::&lt;u32&gt;();
+let male_value = male_value.expect("Couldn't parse value in male cell");
+
+// The page normalizes all values by assuming 100,000 babies were born in the
+// given year, so scale this down to a range of 0-1.
+let male_value = male_value as f32 / 100000_f32;
+
+assert!(male_value &lt;= 1.0, "male value is out of range");
+if let Some(last_value) = male_still_alive_values.last() {
+assert!(*last_value &gt;= male_value, "male values are not decreasing");
+
+}
+male_still_alive_values.push(male_value);
+// Similar code for female values omitted
+
+}
+}
+This code just makes sure that the row number (i.e. 
+
+the age) is the next expected value, and then gets the values from the columns, parses the number, and scales it down. 
+Again, we do some assertions to make sure the values look reasonable.
+<h3>&emsp;Writing the data out to JSON</h3>
+
+For this application, we wanted the data written out to a file in JSON format. 
+We will <a href="https://crates.io/crates/json" target="_blank">use the </a><code><a href="https://crates.io/crates/json" target="_blank">json</a></code><a href="https://crates.io/crates/json" target="_blank"> crate</a> for this step. 
+Now that we have all the data, this part is pretty straightforward:
+
+fn write_data(data: HashMap&lt;u32, SurvivorsAtAgeTable&gt;) -&gt; std::io::Result&lt;()&gt; {
+let mut json_data = json::object! {};
+let mut keys = data.keys().collect::&lt;Vec&lt;_&gt;&gt;();
+
+keys.sort();
+for &amp;key in keys {
+let value = data.get(&amp;key).unwrap();
+
+let json_value = json::object! {
+"female": value.female.clone(),
+"male": value.male.clone()
+
+};
+json_data[key.to_string()] = json_value;
+}
+
+let mut file = File::create("fileTables.json")?;
+write!(&amp;mut file, "{}", json::stringify_pretty(json_data, 4))?;
+Ok(())
+
+}
+Sorting the keys isn’t strictly necessary, but it does make the output easier to read. 
+We use the handy <code><a href="https://docs.rs/json/0.12.4/json/macro.object.html" target="_blank">json::object!</a></code><a href="https://docs.rs/json/0.12.4/json/macro.object.html" target="_blank"> macro</a> to easily create the JSON data and write it out to a file with <code>write!</code>. 
+
+And we’re done!
+<h3>Conclusion</h3>
+Hopefully this article gives you a good starting point for doing web scraping in Rust.
+
+With these tools, a lot of the work can be reduced to crafting CSS selectors to get the nodes you’re interested in, and figuring out what invariants you can use to assert that you’re getting the right ones in case the page changes!
+
+<h2>Web Scraping With Rust</h2>
+https://github.com/kadekillary/scraping-with-rust
+In this post I'm going to explore web scraping in Rust through a basic <a href="https://news.ycombinator.com" rel="nofollow">Hacker News</a> CLI. 
+My hope is to point out resources for future Rustaceans interested in web scraping. 
+
+Plus, highlight Rust's viability as a scripting language for everyday use. 
+Lastly, feel free to send through a PR to help improve the repo or demos.
+Note: for a simplififed recent version - <a href="https://github.com/kadekillary/scraping-with-rust/tree/master/hack-scraper">here</a>
+
+<h3>Scraping Ecosystem</h3>
+Typically, when faced with web scraping most people don't run to a low-level systems programming language. 
+Given the relative simplicity of scraping it would appear to be overkill. 
+
+However, Rust makes this process fairly painless.
+The main libraries, or crates, I'll be utilizing are the following:
+<a href="https://github.com/seanmonstar/reqwest">reqwest</a>
+An easy and powerful Rust HTTP Client
+
+<a href="https://github.com/programble/scraper">scraper</a>
+
+HTML parsing and querying with CSS selectors
+
+<a href="https://github.com/utkarshkukreti/select.rs">select.rs</a>
+A Rust library to extract useful data from HTML documents, suitable for web scraping
+
+I'll present a couple different scripts to get a feel for each crate.
+<h3>Grabbing All Links</h3>
+The first script will perform a fairly basic task: grabbing all links from the page. 
+
+For this, we'll utilize <code>reqwest</code> and <code>select.rs</code>. 
+As you can see the syntax is fairly concise and straightforward.
+cargo run --example grab_all_links
+
+extern crate reqwest;
+
+extern crate select;
+use select::document::Document;
+use select::predicate::Name;
+
+fn main() {
+hacker_news("https://news.ycombinator.com");
+}
+
+fn hacker_news(url: &amp;str) {
+let mut resp = reqwest::get(url).unwrap();
+assert!(resp.status().is_success());
+
+Document::from_read(resp)
+.unwrap()
+.find(Name("a"))
+
+.filter_map(|n| n.attr("href"))
+.for_each(|x| println!("{}", x));
+}
+
+The main things to note are <code>unwrap()</code> and the <code>|x|</code> notation. 
+
+The first is Rust's way of telling the compiler we don't care about error handling right now. 
+<code>unwrap()</code> will give us the value out of an <code>Option&lt;T&gt;</code> for <code>Some(v)</code>, however if the value is <code>None</code> the function will panic - not ideal for production settings. 
+This is a common pattern when developing. 
+
+The second notation is Rust's lambda syntax. 
+Other than that, it's fairly straightforward. 
+We send a get request to the Hacker News home page, then read in the HTML response to Document. 
+
+Next we find all links and print them. 
+If you run this you'll see the following:
+
+<h3>Using CSS Selectors</h3>
+For the second example we'll use the <code>scraper</code> crate. 
+The main advantage of <code>scraper</code> is using CSS selectors. 
+
+A great tool for this is the Chrome extension <a href="http://selectorgadget.com" rel="nofollow">Selector Gadget</a>. 
+This extension makes grabbing elements trivial. 
+All you'll need to do is navigate to your page of interest, click the icon and select.
+
+Now that we know the post headline translates to <code>.storylink</code> we can retrieve it with ease.
+Note: not working at the moment - use as reference
+
+extern crate reqwest;
+extern crate scraper;
+// importation syntax 
+
+use scraper::{Html, Selector};
+fn main() {
+hn_headlines("https://news.ycombinator.com");
+
+}
+fn hn_headlines(url: &amp;str) {
+let mut resp = reqwest::get(url).unwrap(); 
+
+assert!(resp.status().is_success());
+let body = resp.text().unwrap();
+// parses string of HTML as a document
+
+let fragment = Html::parse_document(&amp;body);
+// parses based on a CSS selector
+let stories = Selector::parse(".storylink").unwrap();
+
+// iterate over elements matching our selector
+for story in fragment.select(&amp;stories) {
+// grab the headline text and place into a vector
+
+let story_txt = story.text().collect::&lt;Vec&lt;_&gt;&gt;();
+println!("{:?}", story_txt);
+}
+
+}
+
+Perhaps the most foreign part of this syntax is the <code>::</code> annotations. 
+The symbol merely designates a path. 
+So, <code>Html::parse_document</code> allows us to know that <code>parse_document()</code> is a method on the <code>Html</code> struct, which is from the crate <code>scraper</code>. 
+
+Other than that, we read our get request's response into a document, specified our selector, and then looped over every instance collecting the headline in a vector and printed to stdout. 
+The example output is below.
+
+<h3>More Than One Attribute</h3>
+At this point, all we've really done is grab a single element from a page, rather boring. 
+In order to get something that can aid in the construction of the final project we'll need multiple attributes. 
+
+We'll switch back to using the <code>select.rs</code> crate for this task. 
+This is due to an increased level of control over specifying exactly what we want.
+The first thing to do in this situation is inspect the element of the page. 
+
+Specifically, we want to know what our post section is called.
+
+From the image it's pretty clear it's a class called <code>"athing"</code>. 
+
+We need the top level attribute in order to iterate through every occurrence and select our desired fields.
+cargo run --example rank_story_link
+
+extern crate reqwest;
+extern crate select;
+
+use select::document::Document;
+use select::predicate::{Class, Name, Predicate};
+fn main() {
+
+hacker_news("https://news.ycombinator.com");
+}
+fn hacker_news(url: &amp;str) {
+
+let resp = reqwest::get(url).unwrap();
+assert!(resp.status().is_success());
+let document = Document::from_read(resp).unwrap();
+
+// finding all instances of our class of interest
+for node in document.find(Class("athing")) {
+// grabbing the story rank
+
+let rank = node.find(Class("rank")).next().unwrap();
+// finding class, then selecting article title
+let story = node.find(Class("title").descendant(Name("a")))
+
+.next()
+.unwrap()
+.text();
+
+// printing out | rank | story headline
+println!("\n | {} | {}\n", rank.text(), story);
+// same as above
+
+let url = node.find(Class("title").descendant(Name("a"))).next().unwrap();
+// however, we don't grab text
+// instead find the "href" attribute, which gives us the url
+
+println!("{:?}\n", url.attr("href").unwrap());
+}
+}
+
+We've now got a working scraper that will gives us the rank, headline and url. 
+However, UI is important, so let's have a go at adding some visual flair.
+<h3>Adding Some Panache</h3>
+
+This next part will build off of the <a href="https://github.com/phsym/prettytable-rs">PrettyTable</a> crate. 
+PrettyTable is a rust library to print aligned and formatted tables, as seen below.
+<code>+---------+------+---------+
+
+| ABC     | DEFG | HIJKLMN |
++---------+------+---------+
+| foobar  | bar  | foo     |
+
++---------+------+---------+
+| foobar2 | bar2 | foo2    |
++---------+------+---------+
+
+</code>
+
+One of the benefits of PrettyTable is it's ability add custom formatting. 
+Thus, for our example we will add an orange background for a consistent look.
+cargo run --example final_demo
+
+// specifying we'll be using a macro from
+
+// the prettytable crate (ex: row!())
+#[macro_use]
+extern crate prettytable;
+
+extern crate reqwest;
+extern crate select;
+use select::document::Document;
+
+use select::predicate::{Class, Name, Predicate};
+use prettytable::Table;
+fn main() {
+
+hacker_news("https://news.ycombinator.com");
+}
+fn hacker_news(url: &amp;str) {
+
+let resp = reqwest::get(url).unwrap();
+assert!(resp.status().is_success());
+let document = Document::from_read(resp).unwrap();
+
+let mut table = Table::new();
+// same as before
+for node in document.find(Class("athing")) {
+
+let rank = node.find(Class("rank")).next().unwrap();
+let story = node.find(Class("title").descendant(Name("a")))
+.next()
+
+.unwrap()
+.text();
+let url = node.find(Class("title").descendant(Name("a")))
+
+.next()
+.unwrap();
+let url_txt = url.attr("href").unwrap();
+
+// shorten strings to make table aesthetically appealing
+// otherwise table will look mangled by long URLs
+let url_trim = url_txt.trim_left_matches('/');
+
+let rank_story = format!(" | {} | {}", rank.text(), story);
+// [FdBybl-&gt;] specifies row formatting
+// F (foreground) d (black text)
+
+// B (background) y (yellow text) l (left-align)
+table.add_row(row![FdBybl-&gt;rank_story]);
+table.add_row(row![Fy-&gt;url_trim]);
+
+}
+// print table to stdout
+table.printstd();
+
+}
+
+The end result of running this script is as follows:
+
+Hopefully, this brief intro serves as a good jumping off point for exploring Rust as an everyday tool. 
+Despite Rust being a statically typed, compiled, and non-gc language it remains a joy to work with, especially <a href="https://doc.rust-lang.org/cargo/" rel="nofollow">Cargo</a> - Rust's package manager. 
+If you are considering learning a low level language for speed concerns, and are coming from a high-level language such as Python or Javasciprt, Rust is a fabolous choice.
+
+<em>Here are a few resources to get up and running</em>:
+<a href="https://doc.rust-lang.org/book/second-edition/" rel="nofollow">The Book</a>
+<a href="https://www.amazon.com/Programming-Rust-Fast-Systems-Development/dp/1491927283/ref=sr_1_1?ie=UTF8&amp;qid=1515194775&amp;sr=8-1&amp;keywords=programming+rust" rel="nofollow">Programming Rust</a>
+<a href="https://rustbyexample.com" rel="nofollow">Rust by Example</a>
+<a href="https://rust-lang-nursery.github.io/rust-cookbook/" rel="nofollow">Rust Cookbook</a>
+<a href="https://users.rust-lang.org" rel="nofollow">Rust Forum</a>
+<a href="https://www.reddit.com/r/rust/" rel="nofollow">r/rust</a>
+
+
 
 
 
