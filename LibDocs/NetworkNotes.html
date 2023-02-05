@@ -4025,6 +4025,66 @@ If the connection fails, most likely you have configured the adapter incorrectly
 Repeat the steps of the instructions again.
 </li>
 
+<h2>Windows 10 变成 Linux 服务器</h2>
+Windows 下的 WSL 可以提供 Linux 虚拟环境，但如果想让 Linux 对外提供服务还需要做一些网络配置。
+默认 WSL 下的 Linux 只能通过虚拟IP在本地进行访问，局域网或者本机之外的终端是无法访问 Windows 上的 Linux 环境的。
+
+我们以 WSL 下的 Linux ssh 服务为例，讲一下如何将 Linux 下的服务映射到局域网。
+首先进入到 Linux 虚拟机中，修改 sshd_config 文件，将密码认证打开：
+<code>$ /etc/ssh/<k>sshd_config</k>
+PermitRootLogin <k>yes</k>
+PasswordAuthentication <k>yes</k>
+
+</code>然后重启 ssh 服务：
+<code># /etc/init.d/ssh restart
+* Restarting OpenBSD Secure Shell server sshd   [ OK ]</code>此时就可以通过 Linux 的 IP 进行访问了，通过命令 ip a 可以查看 Linux 的IP：
+
+<code># ip a
+<k>eth0</k>: &lt;BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000
+
+<k>link</k>/ether 00:15:5d:69:57:3f brd ff:ff:ff:ff:ff:ff
+<k>inet</k> 172.21.65.35/20 brd 172.21.79.255 scope global eth0
+<k>valid_lft</k> forever preferred_lft forever</code>这里 172.21.65.35 即是 Linux 的IP，此时局域网还无法访问 Linux 的 ssh 服务。
+
+因为 Linux 的网卡是桥接的，只有 Windows 主机能看到。
+此时我们需要将此端口映射出去。
+执行以下命令可以将 22 端口映射至局域网：
+
+<code>C:\> netsh interface portproxy add v4tov4 listenport=22 listenaddress=0.0.0.0 connectport=22 connectaddress=172.21.65.35
+C:\>netshinterfaceportproxyshowall
+
+侦听ipv4:连接到ipv4:
+地址            端口        地址            端口
+--------------- ----------  --------------- ----------
+
+0.0.0.0         22          172.21.65.35    22</code>此时通过 netstat 也能看到 22 端口是开放状态：
+
+<code>C:\> netstat -ano | findstr :22
+
+TCP    0.0.0.0:22             0.0.0.0:0              LISTENING       4492
+TCP    127.0.0.1:22           0.0.0.0:0              LISTENING       13656
+TCP    [::1]:22               [::]:0                 LISTENING       13656
+
+</code>这里能看到 127.0.0.1也开放了22端口，原因是 .wslconfig 中配置了 localhostForward 选项：
+<code>$ cat ~/.wslconfig
+[wsl2]
+
+localhostForwarding=<k>true</k></code>
+<img class="lazy" data-src="https://mmbiz.qpic.cn/mmbiz_png/ulAibOLeecVsVmol4hR68zGmzwbxS8XZ6ibGUWyr5lqxtc0vdehUnh2iaymLUcib0lqWH1RXxCGpyBhWGp9CsdQd2g/640">此时将防火墙策略放行22端口，局域网的其它终端就可以访问 Linux 的 ssh 服务了。
+其它端口也可以使用这种方式映射出去，如果开始了 localhostForwarding 功能，实际上可以使用 127.0.0.1 作为 connectionaddress，此时 netsh 命令可以改写为：
+<code>C:\>netshinterfaceportproxyaddv4tov4listenport=22listenaddress=0.0.0.0connectport=22connectaddress=127.0.0.1
+
+</code>即最后一段不用写Linux虚拟机IP，因为默认端口已经 forward至 127.0.0.1了，我们只是再将其映射一遍至 0.0.0.0如果想删除映射，此时有没有好的办法？
+自问自答，同样可以使用 netsh 命令删除配置：
+<code>C:\> netsh interface portproxy show all
+
+C:\> netsh interface portproxy delete v4tov4 listenport=22 listenaddress=0.0.0.0
+C:\> netsh interface portproxy show all</code>
+<img class="lazy" data-src="https://mmbiz.qpic.cn/mmbiz_png/ulAibOLeecVsVmol4hR68zGmzwbxS8XZ6O2sCbGNmhERzvZ2Jp1jlDicsRJKBaJbXrDrew53m91T2Nv5dAt84b3w/640">
+到此基本上就将 WSL 的网络部分讲完了，官网有文档，但只讲了如何映射，并没有讲如何删除配置。
+微软官网文档地址：
+
+<code>https://learn.microsoft.com/zh-cn/windows/wsl/networking</code><strong>
 
 
 
