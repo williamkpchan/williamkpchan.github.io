@@ -3827,6 +3827,204 @@ Redisplays selected statistics, pausing interval seconds between each display.
 Press CTRL+C to stop redisplaying statistics.
 If omitted, netstat will print the current configuration information once.
 
+<h2>虚拟IP Vrtual IP Address</h2>
+是一种不与特定计算机或者特定计算机网卡相对应的IP地址。
+所有发往这个IP地址的数据包最后都会经过真实的网卡到达目的主机的目的进程。
+
+虚拟ip的用处
+虚拟IP主要是用来网络地址转换，网络容错和可移动性。
+虚拟IP比较常见的一个用例就是在系统高可用性（High Availability HA）方面的应用
+
+通常一个系划外的情况而发统会因为日常维护或者非计生宕机，为了提高系统对外服务的高可用性，就会采用主备模式进行高可用性的配置。
+当提供服务的主机M宕机后，服务会切换到备用主机S继续对外提供服务。
+而这一切用户是感觉不到的，在这种情况下系统对客户端提供服务的IP地址就会是一个虚拟IP，当主机M宕机后，虚拟IP便会漂浮到备机上，继续提供服务。
+
+在这种情况下，虚拟IP就不是与特定计算主机或者特定某个物理网卡对应的了，而是一种虚拟或者是说逻辑的概念，它是可以自由移动自由漂浮的，这样一来既对外屏蔽了系统内部的细节，又为系统内部的可维护性和扩展性提供了方便。
+ARP协议其实现原理主要是靠TCP/IP的ARP协议。
+因为ip地址只是一个逻辑地址，在以太网中mac地址才是真正用来进行数据传输的物理地址，每台主机中都有一个ARP高速缓存，存储同一个网络内的IP地址与MAC地址的对应关 系，以太网中的主机发送数据时会先从这个缓存中查询目标IP对应的MAC地址，会向这个MAC地址发送数据。
+
+操作系统会自动维护这个缓存。
+这就是整个实现的关键。
+
+virtual IP addresses
+Virtual IP addresses are IP addresses that are not tethered to particular machines. 
+Thus, they can rotate among nodes in a Content Gateway cluster.
+It is common for a single machine to represent multiple IP addresses on the same subnet. 
+
+This machine would have a primary or real IP address bound to its interface card and also serve many more virtual addresses.
+You can set up your user base to use a DNS round-robin pointing at virtual IP addresses, as opposed to using the real IP addresses of the Content Gateway machines.
+Because virtual IP addresses are not bound to machines, a Content Gateway cluster can take addresses from inactive nodes and distribute those addresses among the remaining live nodes.
+
+Using a proprietary management protocol, Content Gateway nodes communicate their status with their peers. 
+If a node fails, its peers notice the failure and negotiate which of the remaining nodes will mask the fault by taking over the failed node's virtual interface.
+
+Virtual IP (VIP)
+What it is used for.
+How it works.
+How it is charged.
+How to get a VIP and assign it to several instances to create a fault-tolerant system.
+How to get a VIP and assign it as a second address to the network interface.
+
+<h3>What it is used for</h3>
+Using VIP you can create a fault-tolerant infrastructure. 
+
+Assign it to several instances at once and the address will pass from one machine to another: if the main one is not available the address is instantly passed to another and this instance will send responses to requests. 
+If the second machine is not available the address is passed to the third one and so on (you specify the order). 
+As a result, your users will always get a response when requesting the IP because the machines support each other.
+
+You can also assign a VIP as a second address for the network interface.
+<h3>How it works</h3>
+<em>Fault-tolerant system</em>. 
+Most of our machines run on Linux kernel-based OS (Ubuntu, CentOS, Fedora, Debian, CoreOS, Fedora-CoreOS, SUSE). 
+For them, a fault-tolerant system can be created using keepalived, a system daemon for Linux that balances the load between servers. 
+If the main instance fails, the daemon passes the VIP to the backup one. 
+
+It uses VRRP (Virtual Router Redundancy Protocol) to pass the VIP address.
+<em>VIP as a second address for the network interface</em>. 
+You reserve a VIP and assign it to an instance, first in the settings of our system, then in the settings of the machine. 
+
+As a result, the VIP becomes the address of this instance on a par with its regular IP: the machine can receive and transmit data on behalf of both addresses.
+<h3>How it is charged</h3>
+VIP is a format of using Reserved IP. 
+Its tariffication does not differ from the tariffication of reserved addresses: the IP price per month is displayed in the order window, you pay only for the time from creating the IP to deleting it. 
+For example, if you had reserved an IP and then deleted it after an hour, you will be charged only for an hour of use. 
+The price doesn’t depend on whether the address is assigned to the instance or not.
+
+<img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/4405920800529/1.png" >.
+
+<h3>How to get a VIP and assign it to several instances to create a fault-tolerant system</h3>
+
+In the "Networks" → "Reserved IPs" section, reserve an address in a public or private network (select the one where you want to create a fault-tolerant system).
+
+<img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/5287253010449/mceclip0.png" ><img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/4405920807057/3.png" >.
+<img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/4405927142545/4.png" >.
+
+<ol start="2"><li>
+Convert your reserved IP to VIP and assign it to instances inside our system. 
+To do this, click the selector next to the IP and select "VIP settings". 
+
+In the pop-up window, enable the "Is VIP" slider and assign this address to required instances using the "Add Instance" button.</li></ol>
+
+<img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/5287267730193/mceclip1.png" ><img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/4405920811537/6.png" >.
+
+<ol start="3"><li>
+Install keepalived on your instances. 
+The up-to-date instruction for installing it for the required operating system you can find on the Internet. 
+Using the same instructions, edit the keepalived configuration file on the machines: set the state "MASTER" for the main instance, and state "BACKUP" for the backup ones. 
+
+Also, set the “priority” value, it determines the order with which the VIP will be passed between devices. 
+If the master server fails the address will be transferred to the machine with the highest priority value, if the second machine fails the VIP will go to the next priority device, and so on.
+</li><li>
+Run keepalived on your instances and add it to the autostart list. 
+The fault-tolerant system will start working.
+</li></ol>
+<h3>How to get a VIP and assign it as a second address to the network interface</h3>
+
+<ol start="1"><li>
+In the "Networks" → "Reserved IPs" section, reserve an address in a public or private network (select the one where you want to add a second address for the network interface).
+</li></ol>
+<img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/5287045722257/mceclip2.png" >
+
+<img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/4405927154065/8.png" >.
+
+<img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/4405920816145/9.png" >.
+
+<ol start="2"><li>
+Assign your VIP to an instance inside our system. 
+
+To do this, click the selector next to the IP and select "VIP settings". 
+In the pop-up window, enable the "Is VIP" slider and assign the VIP to the desired machine using the "Add Instance" button.
+</li></ol>
+<img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/5287180326929/mceclip3.png" ><img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/4405920818321/11.png" >.
+
+<ol start="3"><li>
+Configure VIP in instance settings.
+</li></ol>
+<strong><em>Instructions for instances on any OS except Windows</em></strong>
+Connect to the instance. 
+
+The VIP can be configured on the fly with a simple command (you have to run it as an administrator):
+ip addr add <strong>[VIP]</strong>/<strong>[mask] </strong>dev <strong>[interface name]</strong>
+The command will instantly assign the VIP to your instance; the binding will remain in effect as long as the equipment is turned on. 
+
+After rebooting, you can enter the command again and the VIP will again belong to the machine.
+In this command:
+● VIP is the reserved IP that you use as a VIP. 
+<img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/4405927164049/12.png" >.
+
+● Mask is a subnet mask, you can view it in the settings of the instance in the "Networking" tab by expanding the line with the interface. 
+<img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/4405920832913/13.png" >.
+
+● Interface name is the name of the instance’s network interface, you can find it using the command:     
+ifconfig
+The name will appear at the beginning of the first line.
+
+<img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/4405927169169/14.png" >.
+
+For example, if your reserved IP is 45.147.140.22, the subnet mask is 24, and the interface name is enp1s0, then the command is: ip addr add 45.147.140.22/24 dev enp1s0. 
+And to run it, for example, on an Ubuntu system as an administrator you need to add "sudo" at the beginning:
+
+<img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/4405927171089/15.png" >.
+
+The VIP will be configured. 
+To check if it works, try connecting to the instance via SSH.
+ using your VIP: the connection should be successful. 
+
+If the connection doesn’t work, most likely you entered the wrong command to assign the IP or forgot to add it to the machine inside our system. 
+Repeat steps №2 and №3.
+VIP can also be bound to an instance permanently. 
+
+To do this, you need to add the address to the network settings within the system. 
+The directory and structure of the configuration file may be different not only in different operating systems but even within releases of the same system. 
+We deliberately do not leave a specific instruction — it may become out of date at any time. 
+
+To bound the VIP, open the official documentation of the operating system of your machine on the Internet and configure the address according to the instructions from there.
+<em><strong>Instructions for instances on Windows OS</strong></em>
+<ol start="1"><li>
+Connect to the instance, open a command prompt and enter the command:
+</li></ol>
+ipconfig
+You will see the connection parameters. 
+
+Do not close the command prompt: you will need the values ​​from the IPv4 Address, Subnet Mask and Default Gateway lines for the step №4.
+<img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/4405920838161/16.png" >.
+
+<ol start="2"><li>
+Open Control Panel → Network and Internet → Network Connections. 
+Right-click the adapter and select Properties.
+</li></ol>
+<img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/4405920840081/17.png" >.
+
+<ol start="3"><li>
+Click the line "Internet Protocol Version 4 (TCP/IPv4)" and then click "Properties".
+</li></ol>
+<img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/4405927177745/18.png" >.
+
+<ol start="4"><li>
+Copy IP, subnet mask, and default gateway from the command prompt to the corresponding lines. 
+
+Then click "Advanced ...".</li></ol>
+
+<img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/4405920841489/19.png" >.
+
+<ol start="5"><li>
+Click "Add ...". 
+In the pop-up window, enter your VIP (the reserved IP that you previously added to the instance as a VIP) in the "IP address" line, and enter the subnet mask from the command prompt in the "Subnet mask" line. 
+Then click "Add".
+</li></ol>
+<img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/4405920843281/20.png" >.
+<img class="lazy" data-src="https://support.gcore.com/hc/article_attachments/4405920845585/21.png" >.
+<ol start="6"><li>
+Confirm all changes with the "OK" buttons.
+</li><li>
+The VIP will be configured. 
+
+To check if it works, try connecting to the instance.
+ using your VIP: the connection should be successful. 
+If the connection fails, most likely you have configured the adapter incorrectly or forgot to assign the VIP to the instance inside our system. 
+Repeat the steps of the instructions again.
+</li>
+
 
 
 
