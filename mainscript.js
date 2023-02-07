@@ -53,7 +53,7 @@ function chkKey() {
   else if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
 
   else if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
-  else if(testkey == 'z'){showTenYear();}
+  else if(testkey == 'z'){window.open("https://williamkpchan.github.io/LibDocs/追風10.html", "_blank");}
   else if(testkey == 'Z'){window.open("https://williamkpchan.github.io/LibDocs/minBor.html", "_blank");}
 
   else if(testkey == "'"){window.open("https://williamkpchan.github.io/LibDocs/swipeChart.html");}
@@ -88,7 +88,7 @@ function chkOtherKeys(testkey) {
   else if(testkey == 'T'){window.open("https://translate.google.com/#en/zh-CN");}
   else if(testkey == 'u'){window.open("https://www.worldometers.info/coronavirus/");}
   else if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
-  else if(testkey == 'x'){window.open("https://wx.qq.com/");}
+  else if(testkey == 'x'){showTenYear();}
   else if(testkey == 'X'){window.open("https://williamkpchan.github.io/LibDocs/Random Charts.html");}
 
   else if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
