@@ -53,7 +53,7 @@ function chkKey() {
   else if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
 
   else if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
-  else if(testkey == 'z'){window.open("https://williamkpchan.github.io/LibDocs/追風10.html", "_blank");}
+  else if(testkey == 'z'){window.open("https://williamkpchan.github.io/LibDocs/追風4.html", "_blank");}
   else if(testkey == 'Z'){window.open("https://williamkpchan.github.io/LibDocs/minBor.html", "_blank");}
 
   else if(testkey == "'"){window.open("https://williamkpchan.github.io/LibDocs/swipeChart.html");}
