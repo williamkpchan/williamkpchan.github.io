@@ -147,7 +147,7 @@ function chkOtherKeys(testkey) {
   else if(testkey == 'i'){window.open("https://williamkpchan.github.io/LibDocs/InspectChart.html");}
 
   else if(testkey == 'r'){randomNum();}
-  else if(testkey == 'R'){window.open("https://williamkpchan.github.io/LibDocs/postProcessReport.html");}
+  //else if(testkey == 'R'){window.open("https://williamkpchan.github.io/LibDocs/postProcessReport.html");}
 
   else if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
   else if(testkey == 'x'){window.open("https://wx.qq.com/");}
@@ -168,7 +168,7 @@ function getChar(event) {
 }
 
 function randomNum() {
- topicpointer = Math.floor(Math.random() * (selectRange -1))
+ topicpointer = Math.floor(Math.random() * (tipsList.length -1))
  generateTip();
 }
 
