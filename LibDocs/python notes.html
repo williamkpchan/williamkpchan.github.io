@@ -18084,6 +18084,923 @@ Arcade
 Pandas3D 
 PyOpenGL
 
+<h2>剖析 Python collections模块</h2>
+本文剖析 Python 的collections模块提供有用的数据类型，可以改进和缩短许多用例的代码。
+
+我们将介绍和讨论五种最常用的类型：
+deque
+Counter
+defaultdict
+OrderedDict
+namedtuple
+
+collections 模块就是其中之一，我和许多其他开发人员经常使用这个功能强大的包。
+我几乎每天都在工作中使用<k>defaultdict</k>和<k>Counter</k>，它们产生了许多优雅的单行代码。
+
+但<k>OrderedDict</k>没有。
+当我在做Leetcode<k> deque</k>挑战时遇到困难时，它提供了很大的帮助——并且通常对构建代码和提高可读性很有用。
+这种频繁的使用和强大的功能激发了我写这篇文章的灵感，我希望它也能在你的编码生活中变得有用——并且成为标准。
+事不宜迟，让我们开始吧。
+<b>1、双向队列  Deque</b>Deque代表“双端队列”，顾名思义，允许从任一端高效地输入/删除数据（与标准队列相比，标准队列使用 FIFO（先进先出）方法，即只允许插入结尾，并从开头删除）。
+deque在 <k>O(1) </k>中从队列的任一侧提供插入/删除操作。
+这与在 Python 中使用本机列表形成对比，后者也可用于此目的。
+但是，列表仅支持在（摊销）<k>O(1)</k> 的末尾插入/移除，而在开头的插入/移除是 <k>O(n)</k>。
+此外，列表在底层实现为数组。
+这会产生一些空间开销，因为数组被预先分配给特定的大小和时间。
+因此，当空间用完时，必须将元素复制到不同的位置分摊<k>O(1)</k>。
+相比之下，deques 被实现为双向链表，从而产生上述属性。
+Python snippet->
+<code>from collections import deque 
+
+<i>### Native list: 在开头添加/删除元素时不要使用</i>
+standard_list = [ 1 , 2 , 3 ] 
+
+<i># 从结尾添加/删除：O(1)</i>
+ standard_list.append( 4 ) 
+last_el = standard_list .pop() <i># 默认参数是 -1，最后一项</i>
+<b>print</b> ( f<i>"Removed last element: {last_el} "</i> ) 
+<i># 从开头添加/删除：O(n)</i>
+ standard_list.insert( 0 , 0 ) <i># 语法：插入(pos, val) </i>
+<b>print</b> ( f<i>"移除第一个元素：{standard_list.pop( 0 )} "</i> )
+</code>
+deque 更高效
+<i>Python snippet-></i>
+<code> <i>### deque: 更高效</i>
+my_deque = deque([ 1 , 2 , 3 ])
+
+ <i># 添加/删除末尾：O(1)</i>
+ my_deque.append( 4 )
+last_el = my_deque. pop() <i># pop() 从右侧弹出 </i>
+<b>print</b> ( f<i>"Removed last element: {last_el} "</i> )
+ <i># 从开头添加/删除：O(1)</i>
+ my_deque.appendleft( 0 )
+ <b>print</b> ( f<i>"Removed first element: { my_deque.popleft()} "</i> )
+</code>
+Counters<k>Counters</k>本质上是dicts包含对象的快捷方式：元素的键映射到元素的计数。
+<k>Counter</k>您可以像这样初始化一个新的：
+<code>from collections import Counterimport  Counter 
+fruits  = Counter({ <i>'apple'</i> : 4 , <i>'pear'</i> : 2 , <i>'orange'</i> : 0 })
+</code>
+然后我们可以更新我们的计数如下：
+<code>fruits.update({ <i>'orange'</i> : 2 , <i>'apple'</i> : - 1 }) 
+<b>print</b> ( f<i>"My fruit collection: {fruits} "</i> )
+</code>
+在这里我们看到update()确实更新了计数（即，从我们的集合中减去一个苹果）而不是将元素数设置为给定值。
+另一个有用的函数是<k>most_common(n)</k>，它返回 n 个最频繁出现的元素：
+<code><b>print</b> ( f<i>"我最常吃的两个水果：{fruits.most_common( 2 )} "</i> )
+</code>
+此外，Counter允许从任何合适的可迭代对象进行初始化，通常会产生紧凑的单行代码。
+例如，我们可以从“原始”数据初始化它，如下所示：
+<code>fruits = Counter([ <i>"apple"</i> , <i>"apple"</i> , <i>"pear"</i> , <i>"apple"</i> , <i>"apple"</i> , <i>"pear"</i> ])
+</code>
+
+这也经常用于字符串，特别是计算字符的出现次数：
+<code>from collections import Counter 
+char_counts = Counter( <i>"Hello world!"</i> ) 
+<b>print</b> ( f<i>"字符数：{char_counts} "</i> )
+</code>
+<b>2、defaultdict </b>指令<k>defaultdict</k>是在向字典添加新键时删除烦人的初始化代码的好方法。
+它使用默认工厂进行初始化，每当发生这种情况时都会在内部调用它。
+考虑以下非常常见的示例：您想为每个键存储一个值列表，因此，无论何时添加一个新的、尚不存在的键，都必须初始化空列表。
+这就是它的样子：
+<code>my_dict = {} 
+
+key_value_pairs_to_insert = [( <i>"a"</i> , 0 ), ( <i>"b"</i> , 1 ), ( <i>"a"</i> , 2 )] 
+
+for key, val in key_value_pairs_to_insert: 
+    if key not  in my_dict: 
+        my_dict[key] = [ ] 
+    my_dict[key].append(val) 
+
+<b>print</b> ( f<i>"Resulting dict: {my_dict} ."</i> )
+</code>
+我们可以缩短，特别是删除“key not in dict”检查，使用defaultdict：
+<code>from collections import defaultdict 
+
+my_dict = defaultdict( list ) 
+
+key_value_pairs_to_insert = [( <i>"a"</i> , 0 ), ( <i>"b"</i> , 1 ), ( <i>"a"</i> , 2 )] 
+
+for key, val in key_value_pairs_to_insert: 
+    my_dict[key].append (val) 
+
+<b>print</b> ( f<i>"结果字典：{my_dict}。
+" )
+</code>
+<b>3、有序字典</b><code>OrderedDict</code>
+引用官方文档，是“一个能记住添加的顺序元素的字典”，因此，它提供了以下功能：
+
+<k>popitem(last=True)</k>, 它返回添加的最后一个或第一个项目
+
+<k>move_to_end()</k>, 将所选项目移动到字典的末尾
+
+让我们看一下 Python 代码：
+
+<code>from collections import OrderedDict 
+
+<i># 添加4个元素：</i>
+ ordered_dict = OrderedDict() 
+ ordered_dict[ <i>"a"</i> ] = 0
+ ordered_dict[ <i>"b"</i> ] = 1
+ ordered_dict[ <i>"c"</i> ] = 2
+ ordered_dict[ <i>"d"</i> ] = 3 
+
+</code>
+弹出第一个和最后一个元素：
+<code><i># pop first and last item</i>
+<b>print</b> ( f<i>"Pop first element: {ordered_dict.popitem(last= False )} "</i> ) 
+<b>print</b> ( f<i>"Pop last element: {ordered_dict.popitem()} "</i> ) 
+</code>
+交换 "b" / " 的插入顺序
+<code><i># 交换 "b" / " 的插入顺序</i>
+ordered_dict.move_to_end( <i>"b"</i> ) 
+<b>print</b> ( f<i>"弹出最后一个元素: {ordered_dict.popitem()} "</i> )
+</code>
+题外话，请注意这个数据结构为Leetcode 著名的 LRU 缓存问题提供了一个简单的解决方案（当然，理解底层原理仍然很好，即在内部这个结构是作为一个指向双精度的字典实现的- 节点链表）。
+在此问题中，您的任务是实现“LRU（最近最少使用）缓存”，这意味着缓存仅保留最近使用的 N 个元素并在 O(1) 中提供插入/删除运算符。
+示例解决方案可以像这样简短：
+<code>from collections import OrderedDict 
+
+class  LRUCache ( OrderedDict ): 
+    def  __init__ ( self, capacity: int ): 
+        self.capacity = capacity 
+
+    def  get ( self, key: int ) -> int : 
+        if key in self: 
+            self.move_to_end(key)
+            <b>return</b> self[key] 
+        else : 
+            <b>return</b> - 1 
+
+    def  put ( self, key: int , value: int ) ->None :
+        if key in self: 
+            self.move_to_end(key) 
+        self[key] = value 
+        if  len (self) > self.capacity: 
+            self.popitem(last= False )
+</code>
+
+<b>4、命名元组 </b>namedtuple
+元组<k>tuple</k>是 Python 中重要的数据结构，并且是list的不可变等价物。
+由于这个属性，它们为开发人员提供了辨识内部元素不可变的特性（指示const性），使用起来更快，内存效率更高。
+因此，建议尽可能在列表上使用它们。
+请注意，return x, y, z实际上已经返回了一个元组，而不是列表——可能是这个原因，也许是函数以元组形式返回若干个值不易被误修改？使用它们的一个缺点（然而，这也适用于列表）是数据访问的匿名性和相应的容易出错。
+例如<k>t[n]</k>访问第 n 个元素，问题通过 <i>namedtuple</i>来缓解，顾名思义，它允许命名元素的数据类。
+namedtuple可以按如下方式使用：
+<code>from collections import namedtuple 
+Point = namedtuple( <i>'Point'</i> , [ <i>'x'</i> , <i>'y'</i> ]) 
+
+p = Point( 0 , y= 1 )
+<b>print</b>( f<i>"x: {px} , {p[ 1 ]} "</i> )
+</code>
+
+正如我们所见，我们首先声明了一个新的类型<k>namedtuple</k>named<k> Point</k>，其属性为x和y。
+链接👇介绍运用例子：
+
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=MzI4NjAyNTMxMQ==&amp;mid=2649455921&amp;idx=1&amp;sn=9a53136fa0fdec3f064217cb849025a4&amp;chksm=f3fcee01c48b67177add2a42ebb348bc9b99f71de28c986ef0124bb05a1c69b80694bacb704b&amp;scene=21#wechat_redirect" textvalue="数据结构：namedtuple应用场景" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2">数据结构：namedtuple应用场景</a>
+
+<i><b><i>引入适用场景</i></b>
+测量两个点的距离，一个点描述为两个数字x,y，作为单独的对象来处理。
+点经常被写在括号里，用逗号隔开方向。
+例如，(0, 0)是起始点，(x, y)是向右移动x个单位，从起始点向上移动y个单位的指南。
+正常任务可能是确定一个点与起点的距离，或与另一个点的距离，或发现两个点的中点，或询问一个点是否落在一个给定的方形或圆形内。
+我们会在眨眼间察觉到答案。
+如何运用数学描述将这些与信息协调起来？在Python中解决一个点的一个特征方法，简单的安排是利用一个元组，对于某些应用来说，这可能是个不错的决定。
+另一个选择是描述另一个类。
+这种方法包括更多的努力，然而，它的好处很快就会显现出来。
+我们需要我们的焦点有一个x和一个y的特性，所以我们的顶层定义类似于这样。
+<b>有3个任务场景 </b>代码见链接 👇<ul class="list-paddingleft-1" style="list-style-type: circle;margin-left: 8px;margin-right: 8px;"><li style="font-size: 15px;">
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=MzI4NjAyNTMxMQ==&amp;mid=2649454423&amp;idx=1&amp;sn=fb0c8b2bb9d1bc1bbb509e1d2e9914e6&amp;chksm=f3fce467c48b6d71adf3b8730d057ef6db85ad966510352286dc973fb7c0c95898138ef6613e&amp;scene=21#wechat_redirect" textvalue="面向对象引入类表达点坐标" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2" style="font-size: 15px;">面向对象引入类表达点坐标</a>
+</li><li style="font-size: 15px;"><a target="_blank" href="http://mp.weixin.qq.com/s?__biz=MzI4NjAyNTMxMQ==&amp;mid=2649451579&amp;idx=2&amp;sn=8b392ad7ea10722a7a3a92e4efbe16c2&amp;chksm=f3fcff0bc48b761dbad2bc9b3fb53ccb887f1d42d23a10b7269acb78b58d6d4d37c6c12938f4&amp;scene=21#wechat_redirect" textvalue="Tuple元组的一点体会" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2" style="letter-spacing: 0px;font-size: 15px;">Tuple元组的一点体会</a></li><li style="font-size: 15px;">
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=MzI4NjAyNTMxMQ==&amp;mid=2649453454&amp;idx=1&amp;sn=5fb0ec061ae5d6db3c4b6f7ecdf1cf1f&amp;chksm=f3fce0bec48b69a8858f40496989ef266e0db1d9de94bc61df0f356d957318463fc74fdc9a43&amp;scene=21#wechat_redirect" textvalue="起步班第十节 判断三角形的类型和面积计算" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2">起步班第十节 判断三角形的类型和面积计算</a>
+
+</li></ul>然后我们实例化该类型的一个新实例，并可以在构造函数中使用位置参数或命名参数。
+此外，为了访问属性，我们可以使用属性的名称或简单的索引，类似于普通元组。
+
+<h2>30+ snippet</h2>
+
+<div id="snippettoc" class="toc"><a href="#snippettopic-0" target="_self">使用虚拟环境</a><br><a href="#snippettopic-1" target="_self">使用变量的类型提示</a><br><a href="#snippettopic-2" target="_self">正确的异常处理</a><br><a href="#snippettopic-3" target="_self">使用上下文管理器</a><br><a href="#snippettopic-4" target="_self">使用if __name__ == "main"</a><br><a href="#snippettopic-5" target="_self">使用理解推导式</a><br><a href="#snippettopic-6" target="_self">枚举</a><br><a href="#snippettopic-7" target="_self">使用</a><br><a href="#snippettopic-8" target="_self">正确缩进</a><br><a href="#snippettopic-9" target="_self">for ... else ...</a><br><a href="#snippettopic-10" target="_self">使用in关键字</a><br><a href="#snippettopic-11" target="_self">运算is符检查</a><br><a href="#snippettopic-12" target="_self">使用布尔值关键字：</a><br><a href="#snippettopic-13" target="_self">使用生成器</a><br><a href="#snippettopic-14" target="_self">使用函数式编程 ***** </a><br><a href="#snippettopic-15" target="_self">使用装饰器</a><br><a href="#snippettopic-16" target="_self">使用正确的内置库</a><br><a href="#snippettopic-17" target="_self">使用正确的包</a><br><a href="#snippettopic-18" target="_self">使用正确的命名约定</a><br><a href="#snippettopic-19" target="_self">坚持风格</a><br><a href="#snippettopic-20" target="_self">拆包</a><br><a href="#snippettopic-21" target="_self">使用日志而不是打印</a><br><a href="#snippettopic-22" target="_self">比较运算符</a><br><a href="#snippettopic-23" target="_self">使用 <code>Fstring</code> 进行格式化：</a><br><a href="#snippettopic-24" target="_self">通过实现 <code>__repr__ </code>方法定义对象的写打印表示</a><br><a href="#snippettopic-25" target="_self">使用专门的子类</a><br><a href="#snippettopic-26" target="_self">使用深拷贝</a><br><a href="#snippettopic-27" target="_self">Python内置的中值函数 </a><br><a href="#snippettopic-28" target="_self">Python 内置分数 </a><br><a href="#snippettopic-29" target="_self">locals() 和 globals() 内置</a><br></div></center><br><br>
+
+补充上一期任务中用到<code>set()</code>的时间复杂度问题。
+
+具体问题见下面的链接👇
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=MzI4NjAyNTMxMQ==&amp;mid=2649473696&amp;idx=2&amp;sn=9ca8c8d2c53679231ab7d2160d2a6555&amp;chksm=f3fc5190c48bd8861a6d8e80fa7b056733aecd6145c49d4c0448a36c9e6de7c91a4df0420409&amp;scene=21#wechat_redirect">计算思维第25篇 无处不在的启发</a>
+
+set()它是一个哈希表，实现方式与Python的dict非常相似，有一些优化，利用了值总是空的事实，在一个集合中，我们只关心键。
+
+有同学问到集合操作确实需要对至少一个操作数表进行迭代 ，在union的情况下都是如此。
+迭代时间复杂度<code>O(n)</code>，成员测试平均是<code>O(1)</code>
+
+所以对于两个大小为m和n的集合，操作的平均成本为。
+合并：O(m+n)
+交集：O(min(m,n))
+差集：O(m)
+子集：O(m)
+
+<b id="snippettopic-0">使用虚拟环境</b>：这表明您隔离环境以避免依赖项和包版本出现问题。
+此外，如果我们坚持要求和约束文件，这表明我们关心应用程序应该如何在另一个地方运行：
+
+<code>pip install -r requirements.txt -c constraints.txt</code>
+
+<b id="snippettopic-1">使用变量的类型提示</b>：类型提示使我们的代码更具可读性。
+这有助于简化维护和调试。
+
+<code>def demo(x: type_x, y: type_y, z: type_z= 100)
+-&gt; type_return :</code>
+
+<b id="snippettopic-2">正确的异常处理</b>：
+
+捕获特定的异常可以很容易地理解我们的代码中出了什么问题。
+<code>Bareexcept</code>子句捕获所有异常，包括<code>SystemExit</code>和<code>KeyboardInterrupt</code>。
+但两者并不相同，应区别对待。
+
+Try 和 Except
+Python 中异常处理的高级技术
+作为 Python 开发人员，您可能熟悉使用 try 和 except 语句处理异常的基本方法。
+但是您是否知道可以使用其他技术来使您的异常处理更加强大？
+在本文中，我们将超越基础知识，探索一些在 Python 中处理异常的高级技术。
+
+首先，让我们看一下<code>finally</code>声明。
+此语句允许您指定无论是否引发异常都将执行的代码块。
+
+例如，假设您有一个文件，您需要在使用完它后将其关闭。
+您可以使用 try-except 块来捕获在处理文件时可能发生的任何错误，但如果文件未正确关闭怎么办？这就是 finally 语句出现的地方。
+这是一个例子：
+<code>try:
+    my_file = open("my_file.txt", "r")
+    # do some file operations
+except FileNotFoundError:
+    print("File not found.")
+finally:
+    my_file.close()</code>
+在此示例中，无论如何都会关闭文件，无论是否引发异常。
+这在处理需要清理的资源（如文件、数据库连接和网络套接字）时特别有用。
+
+另一种高级技术是使用多个<code>except</code> 块来处理不同类型的异常。
+例如，您可能希望以不同于<code>PermissionError</code>的方式处理<code>FileNotFoundError</code>。
+这是一个例子：
+
+<code>try:
+    my_file = open("my_file.txt", "r")
+    # do some file operations
+except FileNotFoundError:
+    print("File not found.")
+except PermissionError:
+    print("Permission denied.")</code>
+在此示例中，如果引发<code> FileNotFoundError</code>，将执行第一个 except 块，如果引发 <code>PermissionError</code>，将执行第二个<code> except</code> 块。
+这允许您以更具体和更有针对性的方式处理不同类型的异常。
+
+最后，您还可以使用该语句引发您自己的异常<code>raise</code>。
+例如，您可能希望在未满足特定条件时引发异常。
+这是一个例子：
+<code>def divide(a, b):
+    if b == 0:
+        raise ZeroDivisionError("Cannot divide by zero.")
+    return a / b
+
+try:
+    result = divide(5, 0)
+    print(result)
+except ZeroDivisionError as e:
+    print(e)</code>
+在此示例中，如果除数为零，则会引发 ZeroDivisionError 并显示消息“不能被零除”。
+这对于发出未满足特定条件并且程序无法继续的信号很有用。
+
+总之，除了基本的 try 和 except 语句之外，Python 中还有许多用于异常处理的高级技术。
+通过使用<code>finally</code>语句、多个 <code>except</code> 块和 <code>raise </code>语句，您可以使您的异常处理更加强大和具体，并且您的代码更加健壮和可维护。
+
+除了基本的 try 和 except 语句之外，还有一些更高级的 Python 异常处理技术
+使用<code>else</code>子句：else子句可以与 try-except 块结合使用，它允许您指定只有在 try 块中没有引发异常时才会执行的代码块。
+
+使用<code>assert</code>语句：assert语句可用于检查代码中的某些条件，如果不满足条件则引发异常。
+这对于在代码中尽早发现错误很有用，以免它们导致更严重的问题。
+
+使用<code>with</code>语句：with语句可用于自动处理资源的设置和清理，例如文件和网络连接。
+这可以使您的异常处理更加简洁和易于阅读。
+
+debug 变量
+可能是我们不能在 Python 中重新分配的唯一变量
+该<code>__debug__</code>变量是一个布尔值，当我们正常运行 Python 脚本时通常为 True。
+但是，如果我们使用<code>-O</code>标志运行我们的 Python 脚本，<code>__debug__</code>则设置为<code> False</code>。
+
+<code>python3 -O yourscript.py</code>
+当<code>__debug__</code>为 False 时，assert 语句将被忽略。
+
+<code>assert 1==2</code>
+^ 如果我们正常运行上面的代码，我们会得到一个<code> AssertionError</code>。
+但是，如果我们使用<code>-O</code>标志运行它，<code>__debug__</code>设置为 False，并且<code> assert </code>语句将被忽略。
+
+使用自定义异常类：您可以通过对内置Exception类进行子类化来创建自己的自定义异常类。
+这允许您创建可以在代码中以不同方式处理的更具体的异常。
+
+记录异常：您可以使用日志记录来跟踪和记录代码中发生的异常。
+这对于调试和故障排除以及监控应用程序的运行状况很有用。
+
+使用装饰器进行异常处理：您可以使用装饰器将函数与<code> try-except</code> 块包装起来，以更优雅的方式处理异常，而不是为每个函数单独添加 <code>try-except</code> 块。
+
+使用 <code>contextlib</code> 库：Python 的 <code>contextlib</code> 库提供了几个上下文管理实用程序，包括 <code>contextmanager</code> 装饰器，它可用于为需要设置和拆除的资源定义上下文管理器。
+
+<b id="snippettopic-3">使用上下文管理器</b>：这有助于资源管理并避免悬空连接或文件句柄。
+
+<code>with open("demo.txt", mode="w") as file:</code>
+
+<b id="snippettopic-4">使用if __name__ == "main"</b>
+
+<code>if __name__ == "main"：</code>
+这可以避免在导入脚本时使用不必要的对象。
+
+<b id="snippettopic-5">使用理解推导式</b>：理解使代码不那么冗长和高效。
+
+<code>another_list = [ x for item in iterable]</code>
+
+<b id="snippettopic-6">枚举</b><code>enumerate</code>：
+
+当我们不需要有条件地跳过枚举元素时手动处理索引很容易工作并且速度更快。
+
+<code>for idx, num in enumerate(nums)</code>
+<code>"".join(Iterable)</code>字符串连接高频用法，用到烂熟！
+
+<b id="snippettopic-7">使用</b> <code>zip</code>：在使用多个列表 <code>zip</code> 方法时，可以简化迭代，并且项目可以直接开箱即用。
+
+<code>for item1, item2 in zip(list1, list2)</code>
+
+<b id="snippettopic-8">正确缩进</b>：遵循一致的缩进（四个空格）有助于提高可读性。
+此外，如果脚本是从文本编辑器或文件 io 流中读取的，它会使用更轻松。
+
+<b id="snippettopic-9">for ... else ...</b>
+
+将<code>else</code>与 <code>for</code> &amp; <code>while</code> 一起使用：这是告诉所有项目都在其自然过程中处理的<code>pythonic</code>方式。
+实际运用例子的链接见👇
+
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=MzI4NjAyNTMxMQ==&amp;mid=2649453431&amp;idx=1&amp;sn=8fa7dc6393094f42544c1eca74d3d10c&amp;chksm=f3fce047c48b695150234ae49bb91cd9189613eb6bfb999aae8d7ab4000d2c9246d9efdf9767&amp;scene=21#wechat_redirect">自学编程24：For else循环判断，Switch-Case Statements Coming</a>
+
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=MzI4NjAyNTMxMQ==&amp;mid=2649472060&amp;idx=2&amp;sn=f0d39b18b935b726e9cde5bfa13db5b7&amp;chksm=f3fc2f0cc48ba61aec0f982044c2d541fb15dbc59986d9d77febea08bab4d30157505e5b2c05&amp;scene=21#wechat_redirect">新手上路 for ... else ... 运用中的细微差别</a>
+
+<b id="snippettopic-10">使用in关键字</b>检查字典键中的成员资格。
+
+<code>if key in my_dict:</code>
+items在处理字典时使用该方法：这是一种更 pythonic 的访问键和项目的方式，而不是循环访问键，然后使用<code>get</code>或下标访问值。
+
+<code>for key, val in my_dict.items()</code>
+使用<code>dict.get()</code>方法：这避免了键不存在时的错误，并且还允许我们在键不存在时返回默认值。
+
+<code>isinstance</code>在进行对象类型相等时使用关键字：在继承对象的情况下，比较对象类型将给出错误的结果。
+
+<b id="snippettopic-11">运算is符检查</b>这两个项目是否引用相同的对象（即存在于相同的内存位置）。
+运算==符检查值 是否相等。
+
+<em>using is for equality 与 singleton: Using is to check None, True &amp; False.</em>
+
+<b id="snippettopic-12">使用布尔值关键字：</b>
+这有助于简捷定义正确的操作流程
+<code>“or”、“and”、“not”</code>
+使用<code>OR</code>中检查不满足if判断条件时，会继续检查下一个，直到有满足时返回，否则检查所有的值：在运用<code>AND</code> 时，只要遇到第一个不满足即布尔值为False的时候，就不再检查其余条件。
+优先考虑<code> and</code>会比<code>or</code>缩短执行时间；
+
+<b id="snippettopic-13">使用生成器</b>：生成器节省内存并提高性能。
+
+<code>(expression for item in iterable)</code>
+
+<b id="snippettopic-14">使用函数式编程 ***** </b>
+
+如<code> map</code>、<code>reduce</code> 和 <code>filter</code>：这可以提高代码效率。
+
+<code>squared = map(lambda x : x*x, [1, 2, 3])</code>
+这比运行 <code>for</code> 循环更快！
+<code>map</code>也一个一个地加载每个项目，不像 <code>for</code> 循环将所有项目加载到内存中，这使得<code>map</code>的内存效率更高，尽可能地选择生成器。
+
+👉<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=MzI4NjAyNTMxMQ==&amp;mid=2649450352&amp;idx=1&amp;sn=92c8b0bb2aa661eeade1b25d01ed7dab&amp;chksm=f3fcf440c48b7d5615e6b45de633b335d659b0c0844864a02ea8088e33d69107f8de17704283&amp;scene=21#wechat_redirect">10个python初学者技巧(6) map filter zip</a>
+
+Python 提供了许多预定义的内置函数，终端用户只需调用这些函数就可以使用。
+在本教程中，你将学习Python的三个最强大的函数：map()、filter()和reduce()。
+
+<code>Map()</code> Map 对输入列表中的所有项目应用一个函数。
+
+语法：map(function, iterable)
+例子：让我们看看下面的例子
+<code>items = [1, 2, 3, 4, 5]
+add = []
+for i in items:
+    add.append(i+i)
+    
+print(add)
+Output:
+
+[2, 4, 6, 8, 10]</code>
+我们可以使用map()，就像流水线操作一样
+<code>items = [1, 2, 3, 4, 5]
+add = list(map(lambda x: x+x, items))
+print(add)
+
+Output:
+[2, 4, 6, 8, 10]</code>
+reduce()
+
+ <code>Reduce()</code>函数将提供的函数应用于'iterables'，并返回一个单一的值，正如其名称所暗示的那样。
+
+语法：reduce(function, iterables)
+例子：让我们看看下面的例子
+<code>add=0
+list = [1, 2, 3, 4]
+for num in list:
+    add = add + num
+    
+print(add)
+Output:
+
+10</code>
+我们可以使用reduce()
+
+<code>from functools import reduce
+add = reduce((lambda x, y: x + y), [1, 2, 3, 4])
+print(add)
+
+输出 10</code>
+filter() : 
+
+<code>filter()</code>函数用于生成一个输出值列表，当该函数被调用时返回真值。
+它的语法如下。
+
+语法：filter (function, iterables)
+
+让我们看看下面的例子
+
+<code>number_list =[1,2,3,4,5,6,7,8,9,10]
+less_than_5 = list(filter(lambda x: x &lt; 5, number_list))
+print(less_than_5)
+Output:
+
+[1, 2, 3, 4]</code>
+Python Pro
+
+<b id="snippettopic-15">使用装饰器</b>：这有助于编写可重用的代码。
+etc等装饰器<code>@retry</code> <code>@properties</code> <code>@lru_cache</code>有助于扩展代码的功能。
+有像 Flask 这样的框架，它有<code>@route</code>装饰器。
+Airflow有<code>@task</code>运算符。
+
+<b id="snippettopic-16">使用正确的内置库</b>：使用正确的内置包可以减少大量样板代码。
+此外，由于特定的包在执行特定任务时效率很高。
+<b id="snippettopic-17">使用正确的包</b>是有意义的。
+
+例如<code>os</code> vs pathlib&amp; <code>os.system</code> vs <code>subprocess</code>。
+
+<b id="snippettopic-18">使用正确的命名约定</b>：<code>PEP-8</code>是 Python 程序员中流行的指南，它告诉我们如何正确命名变量、类和函数。
+
+<b id="snippettopic-19">坚持风格</b>：坚持你选择的规则让重构变得轻而易举，并且以后更容易理解。
+使用 <code>Docstring </code>和注释：<code>Docstring</code>有助于让用户理解函数/模块打算做什么。
+它的输入、输出，以及它们的类型、样本值。
+此外，如果我们在前面加上单行注释并表达它的含义，这也会有所帮助。
+
+<b id="snippettopic-20">拆包</b>也是高频用法：
+
+<code>first, second, third = [ ‘first’, ‘second’ , ‘third’]</code>
+
+<b id="snippettopic-21">使用日志而不是打印</b>：日志允许我们拥有一致的消息，它还允许我们通过设置正确的日志级别来抑制/过滤消息。
+
+一些不错的补充：
+
+<b id="snippettopic-22">比较运算符</b>链接—
+
+<code>if a &lt; b &lt; c
+
+if a &lt;b and b &lt; c</code>
+<b id="snippettopic-23">使用 <code>Fstring</code> 进行格式化：</b>
+使用 F-Strings 更简单的调试方法
+名字=“洛基”
+年龄= 4
+品种=“德国牧羊犬”
+
+<code>name = "rocky"
+age = 4
+breed = "german shepherd"
+print(f"{name=} {age=} {breed=}")</code>
+输出：
+
+<code>name='rocky' age=4 breed='德国牧羊犬'</code>
+这让我们在调试时输入更少的东西。
+详细见2个链接👇
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=MzI4NjAyNTMxMQ==&amp;mid=2649457273&amp;idx=1&amp;sn=c2ba0ede4c9b95716e9ffb876ecf4656&amp;chksm=f3fc1149c48b985f21731717cd8352219a8261f9bfecbbdd455b4a1208d3f0c3fe283c620fdd&amp;scene=21#wechat_redirect">Python基础 fstring"{}”内部双引号和单引号的区别</a>
+
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=MzI4NjAyNTMxMQ==&amp;mid=2649473892&amp;idx=2&amp;sn=5e7b09e25eb493b3fd1808a277a7d36c&amp;chksm=f3fc5054c48bd9422f5d5ee803a1b0505a9fcee6fce50181791bde0b523d1980536ccceba71e&amp;scene=21#wechat_redirect">Python官方文档总结输出命令 f'string 用法</a>
+
+<b id="snippettopic-24">通过实现 <code>__repr__ </code>方法定义对象的写打印表示</b>
+
+<b id="snippettopic-25">使用专门的子类</b>，如：
+
+<code>defaultdict、
+Counter、
+frozenset，
+from collections import defaultdict, Counter</code>
+<b id="snippettopic-26">使用深拷贝</b>—
+<code>from copy import deepcopy</code>
+27、使用单独的文件进行配置任何INI、TOML、YAML、ENV
+28、 webbrowser模块
+Python 以编程方式打开我们的浏览器 导入网络浏览器
+<code>webbrowser.open_new("https://bing.com")</code>注意 webbrowser模块是预安装的，所以我们不必使用 Pip 安装它。
+运行上面的代码会在我们使用的任何浏览器上打开 bing.com 的新选项卡。
+
+<b id="snippettopic-27">Python内置的中值函数 </b>
+
+和其他统计相关的函数，从统计数据导入中位数
+
+<code>from statistics import median
+lis = [1, 5, 3, 4, 2]
+print(median(lis))   # 3</code>该statistics模块是我们不必使用 Pip 安装的内置模块，它包含许多其他与统计相关的功能。
+
+我不知道这一点，并且一直在使用np.median Numpy
+
+<b id="snippettopic-28">Python 内置分数 </b>
+Python 标准库的一部分，我们不需要使用 Pip 安装它.
+
+<code>from fractions import Fraction
+x = Fraction(1/2)
+print(x**2)   # 1/4</code>
+Python不返回fractions模块中浮点数的内置分数。
+
+<b id="snippettopic-29">locals() 和 globals() 内置</b>
+
+<code>globals()</code>函数允许我们检查我们有哪些全局变量，内置<code>locals()</code>函数允许我们检查我们在函数范围内有哪些局部变量。
+
+<code>x = 1
+y = 2
+def test():
+    z = 3
+    print(globals())
+    print(locals())
+test()</code>
+输出：
+<code># globals() 
+{'__name__': '__main__', '__doc__': None, 
+'__package__': None, '__loader__': &lt;_frozen_importlib_external.SourceFileLoader object at 0x108a30dc0&gt;,
+'__spec__': None, '__annotations__': {} ，
+'__builtins__'：&lt;模块'builtins'（内置）&gt;，
+'__file__'：'/Users/lzl/Documents/repos/test/aa.py'，'__cached__'：无，
+
+'x'：1， 'y': 2, 'test': &lt;0x10896beb0 处的功能测试&gt;}
+# locals() 
+{'z': 3}</code>
+我们甚至可以使用globals()和分配全局/局部变量locals()。
+
+但我建议你不要因为潜在的副作用。
+
+<code>x = 1
+def test():
+    globals()["x"] = 5
+test()
+print(x)   # 5</code>
+
+<h2>17 个短代码</h2>
+<div id="shortsnippettoc" class="toc"><a href="#shortsnippettopic-0" target="_self">交换变量值</a><br><a href="#shortsnippettopic-1" target="_self">将列表中的所有元素组合成字符串</a><br><a href="#shortsnippettopic-2" target="_self">查找列表中频率最高的值</a><br><a href="#shortsnippettopic-3" target="_self">检查两个字符串是不是由相同字母不同顺序组成</a><br><a href="#shortsnippettopic-4" target="_self">反转字符串</a><br><a href="#shortsnippettopic-5" target="_self">反转列表</a><br><a href="#shortsnippettopic-6" target="_self">转置二维数组</a><br><a href="#shortsnippettopic-7" target="_self">链式比较</a><br><a href="#shortsnippettopic-8" target="_self">链式函数调用</a><br><a href="#shortsnippettopic-9" target="_self">复制列表</a><br><a href="#shortsnippettopic-10" target="_self">字典 get 方法</a><br><a href="#shortsnippettopic-11" target="_self">通过「键」排序字典元素</a><br><a href="#shortsnippettopic-12" target="_self">For Else</a><br><a href="#shortsnippettopic-13" target="_self">转换列表为逗号分割符格式</a><br><a href="#shortsnippettopic-14" target="_self">合并字典</a><br><a href="#shortsnippettopic-15" target="_self">列表中最小和最大值的索引</a><br><a href="#shortsnippettopic-16" target="_self">移除列表中的重复元素</a><br></div></center><br><br>
+<pre>
+<b id="shortsnippettopic-0">交换变量值</b>
+<img class="lazy" data-src="https://pic3.zhimg.com/v2-3080d3a0a889f514ac5f5740d28b2f8a_b.jpg">
+
+<b id="shortsnippettopic-1">将列表中的所有元素组合成字符串</b>
+<img class="lazy" data-src="https://pic1.zhimg.com/v2-0e444f118f469ecb19551063db938218_b.jpg">
+
+<b id="shortsnippettopic-2">查找列表中频率最高的值</b>
+<img class="lazy" data-src="https://pic3.zhimg.com/v2-baaa6a0dfee796fc7bcef6c070deea1e_b.jpg">
+
+<b id="shortsnippettopic-3">检查两个字符串是不是由相同字母不同顺序组成</b>
+<img class="lazy" data-src="https://pic4.zhimg.com/v2-7e10faebe58019bebbd633c4d5881da3_b.jpg">
+
+<b id="shortsnippettopic-4">反转字符串</b>
+<img class="lazy" data-src="https://pic1.zhimg.com/v2-f61971e68f641493e33e09a03ab9b72c_b.jpg">
+
+<b id="shortsnippettopic-5">反转列表</b>
+<img class="lazy" data-src="https://pic4.zhimg.com/v2-4ba5c5add22fd2c4dba0fa2e1dc9b30b_b.jpg">
+
+<b id="shortsnippettopic-6">转置二维数组</b>
+<img class="lazy" data-src="https://pic4.zhimg.com/v2-97a9f616d862be3ee37b9ba6fb823e5f_b.jpg">
+
+<b id="shortsnippettopic-7">链式比较</b>
+<img class="lazy" data-src="https://pic2.zhimg.com/v2-4f3e3420019d03eb37e49593a0c05a41_b.jpg">
+
+<b id="shortsnippettopic-8">链式函数调用</b>
+<img class="lazy" data-src="https://pic2.zhimg.com/v2-bf1d07438cc5df2c57bdb0ac5c7f8461_b.jpg">
+
+<b id="shortsnippettopic-9">复制列表</b>
+<img class="lazy" data-src="https://pic4.zhimg.com/v2-76ae3c8fad17fc8e0151102f5acee153_b.jpg">
+
+<b id="shortsnippettopic-10">字典 get 方法</b>
+<img class="lazy" data-src="https://pic2.zhimg.com/v2-1f53c425ce5447ec8917a8d36feb599d_b.jpg">
+
+<b id="shortsnippettopic-11">通过「键」排序字典元素</b>
+<img class="lazy" data-src="https://pic3.zhimg.com/v2-921739469d714a7f78adfa686592c24e_b.jpg">
+
+<b id="shortsnippettopic-12">For Else</b>
+<img class="lazy" data-src="https://pic3.zhimg.com/v2-4725994e0cc5d4a41d2d09b61981fe2e_b.jpg">
+
+<b id="shortsnippettopic-13">转换列表为逗号分割符格式</b>
+<img class="lazy" data-src="https://pic2.zhimg.com/v2-042ae278de1cb4f2344fc0f9ae312d51_b.jpg">
+
+<b id="shortsnippettopic-14">合并字典</b>
+<img class="lazy" data-src="https://pic1.zhimg.com/v2-8974aa3fe9bd49818e9806494761b7bc_b.jpg">
+
+<b id="shortsnippettopic-15">列表中最小和最大值的索引</b>
+<img class="lazy" data-src="https://pic2.zhimg.com/v2-f3dd00e0d6b383da701b4ee2c7a2b1a9_b.jpg">
+
+<b id="shortsnippettopic-16">移除列表中的重复元素</b>
+<img class="lazy" data-src="https://pic4.zhimg.com/v2-73335e49eb5d5581de43c5062d36b5a7_b.jpg">
+
+<h2>Python 自动化脚本案列</h2>
+<div id="automatetoc" class="toc"><a href="#automatetopic-0" target="_self">网络连通性</a><br><a href="#automatetopic-1" target="_self">端口状态测试</a><br><a href="#automatetopic-2" target="_self">上传下载速率</a><br><a href="#automatetopic-3" target="_self">paramiko交互</a><br><a href="#automatetopic-4" target="_self">linux ssh测试</a><br><a href="#automatetopic-5" target="_self">内存使用率</a><br><a href="#automatetopic-6" target="_self">CPU使用率</a><br><a href="#automatetopic-7" target="_self">获取nginx访问量前十IP</a><br><a href="#automatetopic-8" target="_self">操作MySQL</a><br><a href="#automatetopic-9" target="_self">xonsh python和shell交互</a><br><a href="#automatetopic-10" target="_self">cpu内存使用率展示</a><br></div></center><br><br>
+
+<b id="automatetopic-0">网络连通性</b>
+import platform,os,traceback
+#判断系统
+def get_os():
+os = platform.system()
+if os == "Windows":
+return "n"
+else:
+return "c"
+#ping判断，成功返回OK,否则Down
+def ping_ip2(ip_str):
+try:
+cmd = ["ping", "-{op}".format(op=get_os()), "1", ip_str]
+# print(cmd)
+output = os.popen(" ".join(cmd)).readlines()
+# print(output)
+flag = False
+for line in list(output):
+if not line:
+continue
+if str(line).upper().find("TTL") &gt;= 0:
+flag = True
+break
+if flag:
+# print("%s OK\n"%(ip_str))
+return "OK"
+else:
+# print("%s Down\n"%(ip_str))
+return "Down"
+except Exception as e:
+print(traceback.format_exc())
+<b id="automatetopic-1">端口状态测试</b>
+
+#给定IP,给出端口，默认为22端口，可进行相应的传参。
+import sys,os,socket
+def telnet_port_fun2(ip,port=22):
+s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+res=s.connect_ex((ip,port))
+s.close()
+if res==0:
+return 'OPEN'
+else:
+return 'CLOSE'
+<b id="automatetopic-2">上传下载速率</b>
+from speedtest import Speedtest
+def Testing_Speed(net):
+download = net.download()
+upload = net.upload()
+print(f'下载速度: {download/(1024*1024)} Mbps')
+print(f'上传速度: {upload/(1024*1024)} Mbps')
+print("开始网速的测试 ...")
+#进行调用
+net = Speedtest()
+Testing_Speed(net)
+<b id="automatetopic-3">paramiko交互</b>
+#paramiko是ansible重要模板之一，支持SSH2远程安全连接，支持认证及密钥方式。可以实现远程命
+令执行、文件传输、中间SSH代理等功能
+import paramiko
+cmd = "ls"
+task_info = "ps -aux"
+# 创建客户端对象
+ssh = paramiko.SSHClient()
+# 接收并保存新的主机名，此外还有RejectPolicy()拒绝未知的主机名
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+# hostname:目标主机地址，port:端口号，username:登录用户名，password:密码
+ssh.connect(hostname="hostname", username="root", password="password",
+port=22)
+# 执行命令，timeout为此次会话的超时时间，返回的是(stdin, stdout, stderr)的三元组
+stdin, stdout, stderr = ssh.exec_command(cmd, timeout=20)
+# 需要解码才能把返回的内容转换为正常的字符串形式
+print(stdout.read().decode())
+<b id="automatetopic-4">linux ssh测试</b>
+import subprocess
+def scan_port(ip, user, passwd):
+cmd = "id"
+# try:'{CMD}'
+COMMAND = "timeout 10 sshpass -p '{PASSWD}' ssh -o
+StrictHostKeyChecking=no {USER}@{IP} '{CMD}' ".format(
+PASSWD=passwd, USER=user, IP=ip, CMD=cmd)
+output = subprocess.Popen(COMMAND, shell=True, stderr=subprocess.PIPE,
+stdout=subprocess.PIPE)
+oerr = output.stderr.readlines()
+oout = output.stdout.readlines()
+oinfo = oerr + oout
+if len(oinfo) != 0:
+oinfo = oinfo[0].decode()
+else:
+oinfo = '未知异常.'
+if user in oinfo:
+res = "{USER}登录正常".format(USER=user)
+elif "reset" in oinfo:
+res = "没加入白名单"
+elif "Permission" in oinfo:
+res = "{USER}密码错误".format(USER=user)
+elif 'No route to host' in oinfo or ' port 22: Connection refused' in
+oinfo:
+res = '22端口不通'
+else:
+res = oinfo
+# print(res,'============',oinfo)
+return res
+<b id="automatetopic-5">内存使用率</b>
+import psutil
+def mem_use():
+print('内存信息:')
+mem=psutil.virtual_memory()
+#换算为MB
+memtotal=mem.total/1024/1024
+memused=mem.used/1024/1024
+mem_percent=str(mem.used/mem.total*100)+'%'
+print('%.3fMB'%memused)
+print('%.3fMB'%memtotal)
+print(mem_percent)
+<b id="automatetopic-6">CPU使用率</b>
+import psutil
+import os
+def get_cpu_mem():
+pid = os.getpid()
+p=psutil.Process(pid)
+cpu_percent = p.cpu_percent()
+mem_percent = p.memory_percent()
+print("cpu:{:.2f}%,mem:{:.2f}%".format(cpu_percent,mem_percent))
+<b id="automatetopic-7">获取nginx访问量前十IP</b>
+
+import matplotlib.pyplot as plt
+nginx_file = 'file_path'
+ip = {}
+# 筛选nginx日志文件中的IP。
+
+with open(nginx_file) as f:
+for i in f.readlines():
+s = i.strip().split()[0]
+lengh = len(ip.keys())
+if s in ip.keys():
+ip[s] = ip[s] + 1
+else:
+ip[s] = 1
+ip = sorted(ip.items(), key=lambda e: e[1], reverse=True)
+# 取前十：
+
+newip = ip[0:10:1]
+tu = dict(newip)
+x = []
+y = []
+for k in tu:
+x.append(k)
+y.append(tu[k])
+plt.title('ip access')
+plt.xlabel('ip address')
+plt.ylabel('pv')
+# X 轴项的翻转角度：
+plt.xticks(rotation=70)
+# 显示每个柱状图的值
+for a, b in zip(x, y):
+plt.text(a, b, '%.0f' % b, ha='center', va='bottom', fontsize=6)
+plt.bar(x, y)
+plt.legend()
+plt.show()
+<b id="automatetopic-8">操作MySQL</b>
+方法1：查询
+import pymysql
+# 创建连接
+conn = pymysql.connect(host="127.0.0.1", port=3306, user='user',
+passwd='passwd', db='db_name', charset='utf8mb4')
+# 创建游标
+cursor = conn.cursor()
+# 存在sql注入情况(不要用格式化字符串的方式拼接SQL)
+sql = "insert into USER (NAME) values('%s')" % ('zhangsan',)
+effect_row = cursor.execute(sql)
+# 正确方式一
+# execute函数接受一个元组/列表作为SQL参数,元素个数只能有1个
+sql = "insert into USER (NAME) values(%s)"
+effect_row1 = cursor.execute(sql, ['value1'])
+effect_row2 = cursor.execute(sql, ('value2',))
+# 正确方式二
+sql = "insert into USER (NAME) values(%(name)s)"
+effect_row1 = cursor.execute(sql, {'name': 'value3'})
+# 写入插入多行数据
+effect_row2 = cursor.executemany("insert into USER (NAME) values(%s)",
+[('value4'), ('value5')])
+# 提交
+conn.commit()
+# 关闭游标
+cursor.close()
+方法2：增删查改
+# coding=utf-8
+import pymysql
+from loguru import logger
+from urllib import parse
+from dbutils.pooled_db import PooledDB
+from sqlalchemy import create_engine
+class SqlHelper2(object):
+global host, user, passwd, port
+host = 'ip'
+user = 'root'
+passwd = 'passwd'
+port = 3306
+def __init__(self,db_name):
+self.connect(db_name)
+def connect(self,db_name):
+self.conn = pymysql.connect(host=host, user=user,
+passwd=passwd,port=port, db=db_name, charset='utf8mb4')
+self.conn.ping(reconnect=True)
+# self.cursor = self.conn.cursor(cursor=pymysql.cursors.DictCursor)
+self.cursor = self.conn.cursor()
+def get_list(self,sql):
+try:
+self.conn.ping(reconnect=True)#解决超时问题
+self.cursor.execute(sql)
+result = self.cursor.fetchall()
+self.cursor.close()
+except Exception as e:
+self.conn.ping(reconnect=True)
+self.cursor = self.conn.cursor()
+self.cursor.execute(sql)
+result = self.cursor.fetchall()
+return result
+def get_one(self, sql):
+self.cursor.execute(sql)
+result = self.cursor.fetchone()
+return result
+#提交数据
+def modify(self,sql,args=[]):
+try:
+self.cursor.execute(sql,args)
+self.conn.commit()
+qk = "存入MySQL 成功"
+except Exception as e:
+# # 如果发生错误则回滚
+qk = "存入MySQL 失败:"+str(e)
+self.conn.rollback()
+return qk
+def multiple(self,sql,args=[]):
+# executemany支持下面的操作，即一次添加多条数据
+# self.cursor.executemany('sinsert into class(id,name)
+values(%s,%s)', [(1,'wang'),(2,'li')])
+try:
+self.cursor.executemany(sql,args)
+self.conn.commit()
+qk = "存入MySQL 成功"
+except Exception as e:
+qk = "存入MySQL 失败:"+str(e)
+self.conn.rollback()
+return qk
+def create(self,sql,args=[]):
+self.cursor.execute(sql,args)
+self.conn.commit()
+return self.cursor.lastrowid
+def close(self):
+self.cursor.close()
+self.conn.close()
+<b id="automatetopic-9">xonsh python和shell交互</b>
+
+#Xonsh shell，为喜爱 Python 的 Linux 用户而打造。
+
+#Xonsh 是一个使用 Python 编写的跨平台 shell 语言和命令提示符。
+
+#它结合了 Python 和 Bash shell，因此你可以在这个 shell 中直接运行 Python 命令#（语句）。你甚至可以把 Python 命令和 shell 命令混合起来使用。
+#pip install xonsh
+xonsh #启动
+#shell 部分
+&gt;&gt;&gt;$GOAL = 'Become the Lord of the Files'
+&gt;&gt;&gt;print($GOAL)
+Become the Lord of the Files
+&gt;&gt;&gt;del $GOAL
+#python 部分
+d = {'xonsh': True}
+d.get('bash', False)
+&gt;&gt;&gt;False
+#
+<b id="automatetopic-10">cpu内存使用率展示</b>
+
+#pyecharts是百度开源软件echarts的python集成包，可根据需求绘制各类图形。
+#折线图 Line
+from pyecharts.charts import Line
+import pandas as pd
+from pyecharts import options as opts
+import random
+#模拟数据，生成cpu使用率的折线图
+x =list(pd.date_range('20220701','20220830'))
+y=[random.randint(10,30) for i in range(len(x))]
+z=[random.randint(5,20) for i in range(len(x))]
+line = Line(init_opts = opts.InitOpts(width ='800px',height ='600px'))
+line.add_xaxis(xaxis_data =x)
+line.add_yaxis(series_name = 'cpu使用率',y_axis = y,is_smooth=True)
+line.add_yaxis(series_name = '内存使用率',y_axis = z,is_smooth=True)
+#添加参数，title_opts设置图的标题
+line.set_global_opts(title_opts = opts.TitleOpts(title ='CPU和内存使用率折线
+图'))
+line.render()#生成一个render.html浏览器打开
+#可根据上述脚本对linux主机采集的数据，存入到MySQL，最后通过python Django、flask、fastapi等web框架进行展示。
+
+执行前需安装相应的依赖包：pip install xxx
+
+
 
 
 
