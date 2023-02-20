@@ -62,7 +62,7 @@ function generateTip() {
 
 function forward() {
     console.log("topicpointer", topicpointer)
-    if (!(topicpointer >= 0 && topicpointer < (selectRange-1) && topicpointer < (tipLimit-1)) {
+    if (!(topicpointer >= 0 && topicpointer < (selectRange-1) && topicpointer < (tipLimit-1) ) ){
        init_theRange(selectRange)
        topicpointer = -1
     }
