@@ -62,7 +62,7 @@ function generateTip() {
 
 function forward() {
     console.log("topicpointer", topicpointer)
-    if (!(topicpointer >= 0 && topicpointer < (selectRange-1))) {
+    if (!(topicpointer >= 0 && topicpointer < (selectRange-1) && topicpointer < (tipLimit-1)) {
        init_theRange(selectRange)
        topicpointer = -1
     }
@@ -71,7 +71,7 @@ function forward() {
 }
 
 function backClick() {
-    if (!(topicpointer > 0 && topicpointer <= (selectRange-1))) {
+    if (!(topicpointer > 0 && topicpointer <= (selectRange-1) && topicpointer <= (tipLimit-1))) {
        init_theRange(selectRange)
        topicpointer = selectRange
     }
@@ -98,7 +98,7 @@ function chkKey() {
   else if(testkey == '2'){setRange();}
   else if(testkey == 'v'){viewIgnoreLst();}
   else if(testkey == 'T'){alertTotal();}
-  else if(testkey == 't'){window.scrollTo(0,0);}
+  else if(testkey == 't'){window.scrollTo(0,-100);}
   else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
 
   else if(testkey == 'h'){window.open("https://williamkpchan.github.io/LibDocs/News Points.html");}
