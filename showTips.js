@@ -98,7 +98,7 @@ function chkKey() {
   else if(testkey == '2'){setRange();}
   else if(testkey == 'v'){viewIgnoreLst();}
   else if(testkey == 'T'){alertTotal();}
-  else if(testkey == 't'){window.scrollTo(0,50);}
+  else if(testkey == 't'){window.scrollTo(0,0);}
   else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
 
   else if(testkey == 'h'){window.open("https://williamkpchan.github.io/LibDocs/News Points.html");}
@@ -202,15 +202,21 @@ function removeFmIgnoreLst() {
 }
 
 function removeNumFmIgnoreLst() {
-        var rmNum = prompt("remove Item Number: ", "");
-        if (rmNum != null && rmNum != ""){
-          // rmNum = +rmNum    this must be string
-          ItemIndex = ignoreLst.indexOf(rmNum);
+        var rmNums = prompt("remove Item Number(separate by comma): ", "");
+        if (rmNums != null && rmNums != ""){
+          // rmNums = +rmNums    this must be string
+
+          rmNumArr = rmNums.split.split(',')
+          rmNumArr.map(rmFunction)
+
+          localStorage.setItem(window["ignoreLstName"], ignoreLst);
+          alert("ignoreLst: " +rmNums + " removed fm ignoreLst! Remaining " + ignoreLst.length)
+        }
+}
+function rmFunction(index){
+          ItemIndex = ignoreLst.indexOf(index);
           ignoreLst.splice(ItemIndex, 1);
           ignoreLst = [...new Set(ignoreLst)]; // set unique
-          localStorage.setItem(window["ignoreLstName"], ignoreLst);
-          alert("ignoreLst: " +rmNum + " removed fm ignoreLst! Remaining " + ignoreLst.length)
-        }
 }
 
 function setRange() {
