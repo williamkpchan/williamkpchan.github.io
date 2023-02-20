@@ -206,7 +206,7 @@ function removeNumFmIgnoreLst() {
         if (rmNums != null && rmNums != ""){
           // rmNums = +rmNums    this must be string
 
-          rmNumArr = rmNums.split.split(',')
+          rmNumArr = rmNums.split(',')
           rmNumArr.map(rmFunction)
 
           localStorage.setItem(window["ignoreLstName"], ignoreLst);
