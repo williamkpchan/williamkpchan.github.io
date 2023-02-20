@@ -191,8 +191,11 @@ function addToIgnoreLst() {
         ItemIndex = ignoreLst.indexOf("");  // remove empty items
         if (ItemIndex > -1) { ignoreLst.splice(ItemIndex, 1); }
 
+        ignoreLst = [...new Set(ignoreLst)]; // set unique
+        ignoreLst.sort(function(a, b){return a-b}); // sort numerically
         localStorage.setItem(window["ignoreLstName"], ignoreLst);
         alert(tipsListIdx[topicpointer] + " added to ignoreLst! Total " + ignoreLst.length)
+        tipsListIdx.splice(topicpointer, 1);
 }
 
 function removeFmIgnoreLst() {
@@ -200,6 +203,7 @@ function removeFmIgnoreLst() {
         if (ItemIndex > -1) { ignoreLst.splice(ItemIndex, 1); }
 
         ignoreLst = [...new Set(ignoreLst)]; // set unique
+        ignoreLst.sort(function(a, b){return a-b}); // sort numerically
         localStorage.setItem(window["ignoreLstName"], ignoreLst);
         alert(tipsListIdx[topicpointer] + " removed fm ignoreLst! Remaining " + ignoreLst.length)
 }
