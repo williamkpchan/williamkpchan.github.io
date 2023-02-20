@@ -51,6 +51,9 @@ function init_theRange(newRange) {
 }
 
 function generateTip() {
+  if(topicpointer>tipsListIdx.length){
+     topicpointer = Math.floor(Math.random() * (tipsListIdx.length -1))
+  }
   console.log("IdxPointer: ", tipsListIdx[topicpointer])
   tip = tipsList[tipsListIdx[topicpointer]];
   document.querySelector('.js-tip').innerHTML = tip;
