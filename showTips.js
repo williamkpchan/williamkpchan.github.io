@@ -211,6 +211,8 @@ function removeNumFmIgnoreLst() {
 
           rmNumArr = rmNums.split(',')
           rmNumArr.map(rmFunction)
+          ignoreLst = [...new Set(ignoreLst)] // set unique
+          ignoreLst.sort(function(a, b){return a-b}); // sort numerically
 
           localStorage.setItem(window["ignoreLstName"], ignoreLst);
           alert("ignoreLst: " +rmNums + " removed fm ignoreLst! Remaining " + ignoreLst.length)
