@@ -15,6 +15,8 @@ rm_ignoreLst()
 // remove ignoreLst elements
 function rm_ignoreLst() {
   ignoreLst = localStorage.getItem(window["ignoreLstName"]).split(',');
+  ignoreLst = ignoreLst.map(unaryOp)
+
   if(ignoreLst.length > 0 && ignoreLst !=""){
     for(loop = 0; loop < ignoreLst.length; loop++){
       ItemIndex = allIdx.indexOf( ignoreLst[loop] );
@@ -22,6 +24,9 @@ function rm_ignoreLst() {
     }
   }
 }
+
+// Function that converts string to number
+function unaryOp(value) { return +value; }
 
 if (typeof initSelectRange == 'undefined') {
   initSelectRange = 50;

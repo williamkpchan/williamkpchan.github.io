@@ -55,6 +55,7 @@ var tipsList = [
 'Global variable has global scope :<br><br>All scripts and functions on a web page can access global variable',
 'Assigning value to a not declared variable :<br><br>Automatically become a GLOBAL variable.',
 'onchange Event :<br><br>An HTML element has been changed',
+'convert number to string\n\nnum.toString()',
 'onclick Event :<br><br>The user clicks an HTML element',
 'onmouseover Event :<br><br>The user moves the mouse over an HTML element',
 'onmouseout Event :<br><br>The user moves the mouse away from an HTML element',
