@@ -190,7 +190,7 @@ function shuffle(arrayLst) {
 
 
 function addToIgnoreLst() {
-        ignoreLst.push(tipsListIdx[topicpointer])
+        ignoreLst.push(tipsListIdx[topicpointer].toString())
         ignoreLst = [...new Set(ignoreLst)]; // set unique
 
         ItemIndex = ignoreLst.indexOf("");  // remove empty items
