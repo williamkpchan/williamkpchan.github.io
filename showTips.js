@@ -5,6 +5,7 @@ if (localStorage.getItem(window["ignoreLstName"]) === null) {
         ignoreLst = []
 } else{
         ignoreLst = localStorage.getItem(window["ignoreLstName"]).split(',');
+        ignoreLst = ignoreLst.map(unaryOp)
 }
 
 tipLimit = tipsList.length; // Tip Limit counter
@@ -14,8 +15,11 @@ rm_ignoreLst()
 
 // remove ignoreLst elements
 function rm_ignoreLst() {
-  ignoreLst = localStorage.getItem(window["ignoreLstName"]).split(',');
-  ignoreLst = ignoreLst.map(unaryOp)
+  ignoreLst = localStorage.getItem(window["ignoreLstName"]);
+  if(ignoreLst != null){
+     ignoreLst = ignoreLst.split(',');
+     ignoreLst = ignoreLst.map(unaryOp)
+  }
 
   if(ignoreLst.length > 0 && ignoreLst !=""){
     for(loop = 0; loop < ignoreLst.length; loop++){
