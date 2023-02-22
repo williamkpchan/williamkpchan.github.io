@@ -91,6 +91,7 @@ var tipsList = [
 'Keywords: return :<br><br>Exits a function',
 'Keywords: switch :<br><br>Marks a block of statements to be executed, depending on different cases',
 'Keywords: var :<br><br>Declares a variable',
+'<h3>convert a string to a number</h3>\nusing the unary plus operator (+)\nquantity = "12";\n+quantity\n\nconvert array of string to a number\nvar arr = ["1", "2", "3"];\nvar nums = arr.map(unaryOp);\n\n// Function that converts string to number\nfunction unaryOp(value) { return +value; }\n',
 'modular operator (%) :<br><br>returns the division remainder. var z = x % y',
 'increment operator (++) :<br><br>increments numbers. x++;',
 'Exponentiation ** :<br><br>10 ** 2',
