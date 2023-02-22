@@ -236,7 +236,7 @@ function setRange() {
 }
 
 function viewIgnoreLst() {
-  alert("ignoreLst: " + ignoreLst);
+  alert("Length: " + ignoreLst.length + "\nignoreLst: " + ignoreLst);
   // alert(tipsList[ignoreLst]);
 }
 
