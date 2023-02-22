@@ -10,12 +10,16 @@ if (localStorage.getItem(window["ignoreLstName"]) === null) {
 tipLimit = tipsList.length; // Tip Limit counter
 
 allIdx = Array.from(Array(tipLimit).keys())
+rm_ignoreLst()
 
 // remove ignoreLst elements
-if(ignoreLst.length > 0 && ignoreLst !=""){
-  for(loop = 0; loop < ignoreLst.length; loop++){
-    ItemIndex = allIdx.indexOf( ignoreLst[loop] );
-    allIdx.splice(ItemIndex, 1)
+function rm_ignoreLst() {
+  ignoreLst = localStorage.getItem(window["ignoreLstName"]).split(',');
+  if(ignoreLst.length > 0 && ignoreLst !=""){
+    for(loop = 0; loop < ignoreLst.length; loop++){
+      ItemIndex = allIdx.indexOf( ignoreLst[loop] );
+      allIdx.splice(ItemIndex, 1)
+    }
   }
 }
 
@@ -37,6 +41,7 @@ function init_theRange(newRange) {
   }else{
     selectRange = tipLimit
   }
+  rm_ignoreLst();
   tipsListIdx = allIdx.slice(0, selectRange); // select the leading items
 
   // shuffle the remaining pointers
@@ -195,7 +200,7 @@ function addToIgnoreLst() {
         ignoreLst.sort(function(a, b){return a-b}); // sort numerically
         localStorage.setItem(window["ignoreLstName"], ignoreLst);
         alert(tipsListIdx[topicpointer] + " added to ignoreLst! Total " + ignoreLst.length)
-        tipsListIdx.splice(topicpointer, 1);
+        // tipsListIdx.splice(topicpointer, 1); // prevent double entry
 }
 
 function removeFmIgnoreLst() {
