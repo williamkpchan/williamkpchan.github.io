@@ -19,13 +19,12 @@ function rm_ignoreLst() {
   if(ignoreLst != null){
      ignoreLst = ignoreLst.split(',');
      ignoreLst = ignoreLst.map(unaryOp)
-  }
-
-  if(ignoreLst.length > 0 && ignoreLst !=""){
-    for(loop = 0; loop < ignoreLst.length; loop++){
-      ItemIndex = allIdx.indexOf( ignoreLst[loop] );
-      allIdx.splice(ItemIndex, 1)
-    }
+     if(ignoreLst.length > 0 && ignoreLst !=""){
+       for(loop = 0; loop < ignoreLst.length; loop++){
+         ItemIndex = allIdx.indexOf( ignoreLst[loop] );
+         allIdx.splice(ItemIndex, 1)
+       }
+     }
   }
 }
 
