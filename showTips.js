@@ -249,8 +249,12 @@ function setRange() {
 }
 
 function viewIgnoreLst() {
-  alert("Length: " + ignoreLst.length + "\nignoreLst: " + ignoreLst);
+  if(ignoreLst != null){
+    alert("Length: " + ignoreLst.length + "\nignoreLst: " + ignoreLst);
   // alert(tipsList[ignoreLst]);
+  }else{
+    alert("Empty!");
+  }
 }
 
 function alertTotal() {
