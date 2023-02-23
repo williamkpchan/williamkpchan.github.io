@@ -74,6 +74,9 @@ function generateTip() {
   $("#dateAndTime").click()
   document.querySelector('.tip-button').innerHTML = tipsListIdx[topicpointer] + " of " + tipsList.length
   document.querySelector('.tip-button').focus();
+  if(showSrcSwitch == true){
+     $(".tip-button").after(tip)
+  }
 }
 
 function forward() {
