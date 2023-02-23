@@ -101,6 +101,7 @@ var tipsList = [
 'Strict equal :<br><br>x === y',
 'Logical and :<br><br>&&',
 'Logical or :<br><br>||',
+'<h3>jQuery get the image src</h3>$(".class").find("tag").attr("src");',
 'Math.PI; :<br><br>returns 3.141592653589793',
 'Math.round() :<br><br>Math.round(4.4); returns the value of x rounded to its nearest integer:',
 'Math.pow() :<br><br>Math.pow(8, 2); returns the value of x to the power of y:',

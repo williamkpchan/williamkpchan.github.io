@@ -75,7 +75,7 @@ function generateTip() {
   document.querySelector('.tip-button').innerHTML = tipsListIdx[topicpointer] + " of " + tipsList.length
   document.querySelector('.tip-button').focus();
   if(showSrcSwitch == true){
-     $(".tip-button").after(tip)
+     $(".tip-button").after('\n'+ $('.js-tip').find('img').attr('src') )
   }
 }
 
