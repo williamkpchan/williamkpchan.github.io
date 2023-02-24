@@ -29639,6 +29639,79 @@ function unaryOp(value) { return +value; }
 <h2>jQuery get the image src</h2>
 $('.class').find('tag').attr('src');
 
+<h2>前端实现电子签名（web、移动端）通用组件</h2>
+
+<h3>前言</h3>在现在的时代发展中，从以前的手写签名，逐渐衍生出了电子签名。
+电子签名和纸质手写签名一样具有法律效应。
+
+电子签名目前主要还是在需要个人确认的产品环节和司法类相关的产品上较多。
+举个常用的例子，大家都用过钉钉，钉钉上面就有电子签名，相信大家这肯定是知道的。
+那作为前端的我们如何实现电子签名呢？
+
+其实在<k>html5</k>中已经出现了一个重要级别的辅助标签，是啥呢？
+那就是canvas<sup>[1]</sup>。
+<h3>什么是<k>canvas</k></h3><k>Canvas（画布）</k>是在<k>HTML5</k>中新增的标签用于在网页实时生成图像，并且可以操作图像内容，基本上它是一个可以用<k>JavaScript</k>操作的<k>位图（bitmap）</k>。
+
+<k>Canvas</k> 对象表示一个 <k>HTML</k> 画布元素 -。
+它没有自己的行为，但是定义了一个 API 支持脚本化客户端绘图操作。
+大白话就是<k>canvas</k>是一个可以在上面通过<k>javaScript</k>画图的标签，通过其提供的<k>context(上下文)</k>及<k>Api</k>进行绘制，在这个过程中<k>canvas</k>充当画布的角色。
+
+<k>&lt;canvas>&lt;/canvas></k><h3>如何使用</h3><k>canvas</k>给我们提供了很多的<k>Api</k>，供我们使用，我们只需要在<k>body</k>标签中创建一个<k>canvas</k>标签，在<k>script</k>标签中拿到<k>canvas</k>这个标签的节点，并创建<k>context(上下文)</k>就可以使用了。
+<k>...&lt;body>&lt;canvas>&lt;/canvas>&lt;/body>&lt;script>//获取canvas实例constcanvas=document.querySelector('canvas')canvas.getContext('2d')&lt;/script>...</k>步入正题。
+<h3>实现电子签名</h3>知道几何的朋友都很清楚，线有点绘成，面由线绘成。
+
+多点成线，多线成面。
+所以我们实际只需要拿到当前触摸的坐标点，进行成线处理就可以了。
+<h4>在<k>body</k>中添加<k>canvas</k>标签</h4>在这里我们不仅需要在在<k>body</k>中添加<k>canvas</k>标签，我们还需要添加两个按钮，分别是<k>取消</k>和<k>保存</k>（后面我们会用到）。
+
+<k>&lt;body>&lt;canvas>&lt;/canvas>&lt;div>&lt;button>取消&lt;/button>&lt;button>保存&lt;/button>&lt;/div>&lt;/body></k><h4>添加文件</h4>我这里全程使用<k>js</k>进行样式设置及添加。
+<k>//配置内容constconfig={width:400,//宽度height:200,//高度lineWidth:5,//线宽strokeStyle:'red',//线条颜色lineCap:'round',//设置线条两端圆角lineJoin:'round',//线条交汇处圆角}</k><h4>获取<k>canvas</k>实例</h4>这里我们使用<k>querySelector</k>获取<k>canvas</k>的dom实例，并设置样式和创建上下文。
+<k>//获取canvas实例constcanvas=document.querySelector('canvas')//设置宽高canvas.width=config.widthcanvas.height=config.height//设置一个边框，方便我们查看及使用canvas.style.border='1pxsolid#000'//创建上下文constctx=canvas.getContext('2d')</k><h4>基础设置</h4>我们将<k>canvas</k>的填充色为透明，并绘制填充一个矩形，作为我们的画布，如果不设置这个填充背景色，在我们初识渲染的时候是一个黑色背景，这也是它的一个默认色。
+
+<k>//设置填充背景色ctx.fillStyle='transparent'//绘制填充矩形ctx.fillRect(0,//x轴起始绘制位置0,//y轴起始绘制位置config.width,//宽度config.height//高度);</k><h4>上次绘制路径保存</h4>这里我们需要声明一个对象，用来记录我们上一次绘制的路径结束坐标点及偏移量。
+保存上次坐标点这个我不用说大家都懂；
+为啥需要保存偏移量呢，因为鼠标和画布上的距离是存在一定的偏移距离，在我们绘制的过程中需要减去这个偏移量，才是我们实际的绘制坐标。
+
+但我发现<k>chrome</k>中不需要减去这个偏移量，拿到的就是实际的坐标，之前在微信小程序中使用就需要减去偏移量，需要在小程序中使用的朋友需要注意这一点哦。
+
+<k>//保存上次绘制的坐标及偏移量constclient={offsetX:0,//偏移量offsetY:0,endX:0,//坐标endY:0}</k><h4>设备兼容</h4>我们需要它不仅可以在<k>web</k>端使用，还需要在<k>移动端</k>使用，我们需要给它做设备兼容处理。
+我们通过调用<k>navigator.userAgent</k>获取当前设备信息，进行正则匹配判断。
+
+<k>//判断是否为移动端constmobileStatus=(/Mobile|Android|iPhone/i.test(navigator.userAgent))</k><h4>初始化</h4>这里我们在监听<k>鼠标按下(mousedown)</k>(web端)/<k>触摸开始(touchstart)</k>的时候进行初始化，事件监听采用<k>addEventListener</k>。
+<k>//创建鼠标/手势按下监听器window.addEventListener(mobileStatus?"touchstart":"mousedown",init)</k><strong>三元判断说明：
+</strong> 这里当<k>mobileStatus</k>为<k>true</k>时则表示为<k>移动端</k>，反之则为<k>web端</k>，后续使用到的<k>三元</k>依旧是这个意思。
+
+<strong>声明初始化方法</strong>我们添加一个<k>init</k>方法作为监听<k>鼠标按下</k>/<k>触摸开始</k>的回调方法。
+这里我们需要获取到当前<k>鼠标按下</k>/<k>触摸开始</k>的偏移量和坐标，进行起始点绘制。
+Tips：
+
+<k>web端</k>可以直接通过<k>event</k>中取到，而移动端则需要在<k>event.changedTouches[0]</k>中取到。
+这里我们在初始化后再监听鼠标的移动。
+<k>//初始化constinit=event=>{//获取偏移量及坐标const{offsetX,offsetY,pageX,pageY}=mobileStatus?event.changedTouches[0]:event//修改上次的偏移量及坐标client.offsetX=offsetXclient.offsetY=offsetYclient.endX=pageXclient.endY=pageY//清除以上一次beginPath之后的所有路径，进行绘制ctx.beginPath()//根据配置文件设置进行相应配置ctx.lineWidth=config.lineWidthctx.strokeStyle=config.strokeStylectx.lineCap=config.lineCapctx.lineJoin=config.lineJoin//设置画线起始点位ctx.moveTo(client.endX,client.endY)//监听鼠标移动或手势移动window.addEventListener(mobileStatus?"touchmove":"mousemove",draw)}</k><h4>绘制</h4>这里我们添加绘制<k>draw</k>方法，作为监听<k>鼠标移动</k>/<k>触摸移动</k>的回调方法。
+
+<k>//绘制constdraw=event=>{//获取当前坐标点位const{pageX,pageY}=mobileStatus?event.changedTouches[0]:event//修改最后一次绘制的坐标点client.endX=pageXclient.endY=pageY//根据坐标点位移动添加线条ctx.lineTo(pageX,pageY)//绘制ctx.stroke()}</k><h4>结束绘制</h4>添加了监听<k>鼠标移动</k>/<k>触摸移动</k>我们一定要记得取消监听并结束绘制，不然的话它会一直监听并绘制的。
+这里我们创建一个<k>cloaseDraw</k>方法作为<k>鼠标弹起</k>/<k>结束触摸</k>的回调方法来结束绘制并移除<k>鼠标移动</k>/<k>触摸移动</k>的监听。
+<k>canvas</k>结束绘制则需要调用<k>closePath()</k>让其结束绘制<k>//结束绘制constcloaseDraw=()=>{//结束绘制ctx.closePath()//移除鼠标移动或手势移动监听器window.removeEventListener("mousemove",draw)}</k>添加结束回调监听器<k>//创建鼠标/手势弹起/离开监听器window.addEventListener(mobileStatus?"touchend":"mouseup",cloaseDraw)</k>ok，现在我们的电子签名功能还差一丢丢可以实现完了，现在已经可以正常的签名了。
+
+我们来看一下效果：
+<img data-src="https://mmbiz.qpic.cn/mmbiz/mshqAkialV7F9r8KqkI6SZT7SIor7Ug2iauffHxyaqka4WVRiaVhFFGN1WC1POkJl4qbKCdpNbYdD5KibiaQnoTvzzQ/640">
+
+<h4>取消功能/清空画布</h4>我们在刚开始创建的那两个按钮开始排上用场了。
+这里我们创建一个<k>cancel</k>的方法作为取消并清空画布使用<k>//取消-清空画布constcancel=()=>{//清空当前画布上的所有绘制内容ctx.clearRect(0,0,config.width,config.height)}</k>然后我们将这个方法和<k>取消按钮</k>进行绑定<k>&lt;buttononclick="cancel()">取消&lt;/button></k><h4>保存功能</h4>这里我们创建一个<k>save</k>的方法作为保存画布上的内容使用。
+
+将画布上的内容保存为<k>图片/文件</k>的方法有很多，比较常见的是<k>blob</k>和<k>toDataURL</k>这两种方案，但<k>toDataURL</k>这哥们没<k>blob</k>强，适配也不咋滴。
+所以我们这里采用<k>a</k>标签 ➕ <k>blob</k>方案实现图片的保存下载。
+<k>//保存-将画布内容保存为图片constsave=()=>{//将canvas上的内容转成blob流canvas.toBlob(blob=>{//获取当前时间并转成字符串，用来当做文件名constdate=Date.now().toString()//创建一个a标签consta=document.createElement('a')//设置a标签的下载文件名a.download=`${date}.png`//设置a标签的跳转路径为文件流地址a.href=URL.createObjectURL(blob)//手动触发a标签的点击事件a.click()//移除a标签a.remove()})}</k>然后我们将这个方法和<k>保存按钮</k>进行绑定<k>&lt;buttononclick="save()">保存&lt;/button></k>我们将刚刚绘制的内容进行保存，点击保存按钮，就会进行下载保存<img data-src="https://mmbiz.qpic.cn/mmbiz/mshqAkialV7F9r8KqkI6SZT7SIor7Ug2iaYbHbZqx1yEMb5nRhJ5ibmGrY5322CmtjdfkUfPkSksuss3wUUjD2LdQ/640">
+<h3>完整代码</h3><k>&lt;!DOCTYPEhtml>&lt;htmllang="en">&lt;head>&lt;metacharset="UTF-8">&lt;metahttp-equiv="X-UA-Compatible"content="IE=edge">&lt;metaname="viewport"content="width=device-width,initial-scale=1.0">&lt;title>Document&lt;/title>&lt;style>*{margin:0;padding:0;}&lt;/style>&lt;/head>&lt;body>&lt;canvas>&lt;/canvas>&lt;div>&lt;buttononclick="cancel()">取消&lt;/button>&lt;buttononclick="save()">保存&lt;/button>&lt;/div>&lt;/body>&lt;script>//配置内容constconfig={width:400,//宽度height:200,//高度lineWidth:5,//线宽strokeStyle:'red',//线条颜色lineCap:'round',//设置线条两端圆角lineJoin:'round',//线条交汇处圆角}//获取canvas实例constcanvas=document.querySelector('canvas')//设置宽高canvas.width=config.widthcanvas.height=config.height//设置一个边框canvas.style.border='1pxsolid#000'//创建上下文constctx=canvas.getContext('2d')//设置填充背景色ctx.fillStyle='transparent'//绘制填充矩形ctx.fillRect(0,//x轴起始绘制位置0,//y轴起始绘制位置config.width,//宽度config.height//高度);//保存上次绘制的坐标及偏移量constclient={offsetX:0,//偏移量offsetY:0,endX:0,//坐标endY:0}//判断是否为移动端constmobileStatus=(/Mobile|Android|iPhone/i.test(navigator.userAgent))//初始化constinit=event=>{//获取偏移量及坐标const{offsetX,offsetY,pageX,pageY}=mobileStatus?event.changedTouches[0]:event//修改上次的偏移量及坐标client.offsetX=offsetXclient.offsetY=offsetYclient.endX=pageXclient.endY=pageY//清除以上一次beginPath之后的所有路径，进行绘制ctx.beginPath()//根据配置文件设置相应配置ctx.lineWidth=config.lineWidthctx.strokeStyle=config.strokeStylectx.lineCap=config.lineCapctx.lineJoin=config.lineJoin//设置画线起始点位ctx.moveTo(client.endX,client.endY)//监听鼠标移动或手势移动window.addEventListener(mobileStatus?"touchmove":"mousemove",draw)}//绘制constdraw=event=>{//获取当前坐标点位const{pageX,pageY}=mobileStatus?event.changedTouches[0]:event//修改最后一次绘制的坐标点client.endX=pageXclient.endY=pageY//根据坐标点位移动添加线条ctx.lineTo(pageX,pageY)//绘制ctx.stroke()}//结束绘制constcloaseDraw=()=>{//结束绘制ctx.closePath()//移除鼠标移动或手势移动监听器window.removeEventListener("mousemove",draw)}//创建鼠标/手势按下监听器window.addEventListener(mobileStatus?"touchstart":"mousedown",init)//创建鼠标/手势弹起/离开监听器window.addEventListener(mobileStatus?"touchend":"mouseup",cloaseDraw)//取消-清空画布constcancel=()=>{//清空当前画布上的所有绘制内容ctx.clearRect(0,0,config.width,config.height)}//保存-将画布内容保存为图片constsave=()=>{//将canvas上的内容转成blob流canvas.toBlob(blob=>{//获取当前时间并转成字符串，用来当做文件名constdate=Date.now().toString()//创建一个a标签consta=document.createElement('a')//设置a标签的下载文件名a.download=`${date}.png`//设置a标签的跳转路径为文件流地址a.href=URL.createObjectURL(blob)//手动触发a标签的点击事件a.click()//移除a标签a.remove()})}&lt;/script>&lt;/html></k><h3>各内核和浏览器支持情况</h3>Mozilla 程序从 Gecko 1.8 (Firefox 1.5 \(en-US\)<sup>[2]</sup>) 开始支持 <k>&lt;canvas></k>。
+
+它首先是由 Apple 引入的，用于 OS X Dashboard 和 Safari。
+Internet Explorer 从 IE9 开始支持<k>&lt;canvas></k> ，更旧版本的 IE 中，页面可以通过引入 Google 的 Explorer Canvas<sup>[3]</sup> 项目中的脚本来获得<k>&lt;canvas></k>支持。
+Google Chrome 和 Opera 9+ 也支持 <k>&lt;canvas></k>。
+
+<h3>小程序中提示</h3>在小程序中我们如果需呀实现的话，也是同样的原理哦，只是我们需要将<k>创建实例和上下文</k>的<k>Api</k>进行修改，因为小程序中是没有<k>dom</k>，既然没有<k>dom</k>，哪来的<k>操作dom</k>这个操作呢。
+如果是<k>uni-app</k>则需要使用uni.createCanvasContext<sup>[4]</sup>进行上下文创建</li><li>如果是原生微信小程序则使用`wx.createCanvasContext`<sup>[5]</sup>进行创建（2.9.0）之后的库不支持
+<h3>参考资料</h3>[1] canvas: <em>https://developer.mozilla.org/zh-CN/docs/Web/API/Canvas_API</em>[2] Firefox 1.5 (en-US): <em>https://developer.mozilla.org/en-US/docs/Mozilla/Firefox/Releases/1.5</em>[3] Explorer Canvas: <em>https://github.com/arv/explorercanvas</em>[4] uni.createCanvasContext: <em>https://uniapp.dcloud.net.cn/api/canvas/createCanvasContext.html
+
 
 
 
