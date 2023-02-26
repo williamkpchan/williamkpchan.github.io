@@ -1,5 +1,9 @@
 
 ignoreLstName = bookid + "IgnoreLst"
+if (typeof showSrcSwitch == 'undefined') {
+    showSrcSwitch == false;
+}
+
 if (localStorage.getItem(window["ignoreLstName"]) === null) {
         // localStorage.setItem(window["ignoreLstName"], "");
         ignoreLst = []
@@ -74,6 +78,7 @@ function generateTip() {
   $("#dateAndTime").click()
   document.querySelector('.tip-button').innerHTML = tipsListIdx[topicpointer] + " of " + tipsList.length
   document.querySelector('.tip-button').focus();
+
   if(showSrcSwitch == true){
      $(".Notes").text('\n'+ $('.js-tip').find('img').attr('src') )
   }

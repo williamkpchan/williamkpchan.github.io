@@ -63,7 +63,7 @@ var tipsList = [
 'String indexOf() method:first occurrence of a specified text :<br><br>var pos = str.indexOf(\"locate\");',
 'String lastIndexOf() method:last occurrence of a specified text :<br><br>var pos = str.lastIndexOf(\"locate\");',
 'String lastIndexOf() method: accept a second parameter as starting position for the search :<br><br>var pos = str.indexOf(\"locate\',15);',
-'String search() method: searches a string :<br><br>var pos = str.search(\"locate\");',
+'String search() method: searches a string :<br><br>str=\"String search() method: searches a string :\"<br><br>pos = str.search(\"method\");',
 'String slice() method: extracts a part of a string :<br><br>var res = str.slice(7, 13);',
 'String slice() method: negative parameter, counted from the end :<br><br>var res = str.slice(-12, -6);',
 'String slice() method: omit the second parameter, slice out the rest :<br><br>var res = str.slice(7);',
