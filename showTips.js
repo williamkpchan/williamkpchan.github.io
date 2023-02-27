@@ -1,7 +1,7 @@
 
 ignoreLstName = bookid + "IgnoreLst"
 if (typeof showSrcSwitch == 'undefined') {
-    showSrcSwitch = false;
+    showSrcSwitch = false;  // showSrcSwitch to control display dom content
 }
 
 if (localStorage.getItem(window["ignoreLstName"]) === null) {
