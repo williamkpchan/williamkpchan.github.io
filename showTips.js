@@ -1,4 +1,4 @@
-
+ignoreLst = []
 ignoreLstName = bookid + "IgnoreLst"
 if (typeof showSrcSwitch == 'undefined') {
     showSrcSwitch = false;  // showSrcSwitch to control display dom content
@@ -8,10 +8,10 @@ if (typeof breakLine == 'undefined') {
 }
 
 if (localStorage.getItem(window["ignoreLstName"]) === null) {
-        ignoreLst = []
+    ignoreLst = []
 } else{
-        ignoreLst = localStorage.getItem(window["ignoreLstName"]).split(',');
-        ignoreLst = ignoreLst.map(unaryOp)
+    ignoreLst = localStorage.getItem(window["ignoreLstName"]).split(',');
+    ignoreLst = ignoreLst.map(unaryOp)
 }
 
 tipLimit = tipsList.length; // Tip Limit counter
