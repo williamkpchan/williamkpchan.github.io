@@ -133,6 +133,7 @@ function chkKey() {
   else if(testkey == '2'){setRange();}
   else if(testkey == 'v'){viewIgnoreLst();}
   else if(testkey == 'T'){alertTotal();}
+  else if(testkey == 'x'){showAnswer();}
   else if(testkey == 't'){window.scrollTo(0,-100);}
   else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
 
@@ -279,6 +280,13 @@ function viewIgnoreLst() {
 function alertTotal() {
   alert("Total Length: " + tipsList.length + "\nignoreLst: " + ignoreLst.length);
   // alert(tipsList[ignoreLst]);
+}
+
+function showAnswer() {
+    $('.answer-tip').css('background','#333');
+      setTimeout(function(){
+        $('.answer-tip').css('background','black');
+      }, 1000);
 }
 
 
