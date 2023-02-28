@@ -3,9 +3,11 @@ ignoreLstName = bookid + "IgnoreLst"
 if (typeof showSrcSwitch == 'undefined') {
     showSrcSwitch = false;  // showSrcSwitch to control display dom content
 }
+if (typeof breakLine == 'undefined') {
+    breakLine = false;  // breakLine to break content into two parts
+}
 
 if (localStorage.getItem(window["ignoreLstName"]) === null) {
-        // localStorage.setItem(window["ignoreLstName"], "");
         ignoreLst = []
 } else{
         ignoreLst = localStorage.getItem(window["ignoreLstName"]).split(',');
@@ -73,7 +75,16 @@ function generateTip() {
   }
   console.log("IdxPointer: ", tipsListIdx[topicpointer])
   tip = tipsList[tipsListIdx[topicpointer]];
-  document.querySelector('.js-tip').innerHTML = tip;
+  if(breakLine == true){
+    tip = tip.split("\t");
+    Qtip = tip[0]
+    Atip = tip[1]
+    document.querySelector('.js-tip').innerHTML = Qtip;
+    document.querySelector('.answer-tip').innerHTML = Atip;
+  }else{
+    document.querySelector('.js-tip').innerHTML = tip;
+  }
+
 
   $("#dateAndTime").click()
   document.querySelector('.tip-button').innerHTML = tipsListIdx[topicpointer] + " of " + tipsList.length
