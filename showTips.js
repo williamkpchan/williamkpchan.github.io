@@ -1,4 +1,3 @@
-ignoreLst = []
 ignoreLstName = bookid + "IgnoreLst"
 if (typeof showSrcSwitch == 'undefined') {
     showSrcSwitch = false;  // showSrcSwitch to control display dom content
@@ -7,8 +6,10 @@ if (typeof breakLine == 'undefined') {
     breakLine = false;  // breakLine to break content into two parts
 }
 
-if (localStorage.getItem(window["ignoreLstName"]) === null) {
+ignoreLst = localStorage.getItem(window["ignoreLstName"]);
+if (ignoreLst === null) {
     ignoreLst = []
+    localStorage.setItem(window["ignoreLstName"], ignoreLst);
 } else{
     ignoreLst = localStorage.getItem(window["ignoreLstName"]).split(',');
     ignoreLst = ignoreLst.map(unaryOp)
