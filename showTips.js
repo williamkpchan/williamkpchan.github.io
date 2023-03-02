@@ -285,9 +285,7 @@ function alertTotal() {
 
 function showAnswer() {
     $('.answer-tip').css('background','#333');
-      setTimeout(function(){
-        $('.answer-tip').css('background','black');
-      }, 1000);
+      setTimeout(function(){ $('.answer-tip').css('background','black'); }, 1000);
 }
 
 
