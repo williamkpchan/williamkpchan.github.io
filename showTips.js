@@ -86,6 +86,8 @@ function generateTip() {
     document.querySelector('.js-tip').innerHTML = tip;
   }
 
+  $('.answer-tip').hide();
+
 
   $("#dateAndTime").click()
   document.querySelector('.tip-button').innerHTML = tipsListIdx[topicpointer] + " of " + tipsList.length
@@ -284,8 +286,10 @@ function alertTotal() {
 }
 
 function showAnswer() {
-    $('.answer-tip').css('background','#333');
-      setTimeout(function(){ $('.answer-tip').css('background','black'); }, 1000);
+    //$('.answer-tip').css('background','#333');
+    // setTimeout(function(){ $('.answer-tip').css('background','black'); }, 2000);
+    $('.answer-tip').show();
+    setTimeout(function(){ $('.answer-tip').hide(); }, 1500);
 }
 
 
