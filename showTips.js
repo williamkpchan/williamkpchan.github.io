@@ -297,3 +297,8 @@ forward();
 
 $(".tip-button").after("<br><br><br>shortcut Keys:<br>b backward<br>f forward<br>+ add To IgnoreLst<br>- remove Fm IgnoreLst<br>R remove Num Fm IgnoreLst<br>v view IgnoreLst<br>s setRange<br>T total length<br>")
 
+window.addEventListener('click', function (evt) {
+  if (evt.detail === 3) {
+    forward();
+  }
+});
