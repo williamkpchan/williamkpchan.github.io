@@ -134,6 +134,7 @@ function chkKey() {
   else if(testkey == '-'){removeFmIgnoreLst();}
   else if(testkey == 'R'){removeNumFmIgnoreLst();}
   else if(testkey == 's'){setRange();}
+  else if(testkey == 'S'){toggle_showSrcSwitch();}
   else if(testkey == '2'){setRange();}
   else if(testkey == 'v'){viewIgnoreLst();}
   else if(testkey == 'T'){alertTotal();}
@@ -293,6 +294,18 @@ function showAnswer() {
     setTimeout(function(){ $('.answer-tip').hide(); }, 1500);
 }
 
+function toggle_showSrcSwitch() {
+    if(showSrcSwitch == true){
+        showSrcSwitch = false
+    }else{
+        showSrcSwitch = true
+    }
+}
+
+// automode
+function automode() {
+    setInterval(function(){ forward(); }, 10000);
+}
 
 forward();
 
