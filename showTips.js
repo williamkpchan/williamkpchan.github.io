@@ -15,6 +15,7 @@ if (ignoreLst === null) {
     ignoreLst = ignoreLst.map(unaryOp)
 }
 
+automodeSwitch = false
 tipLimit = tipsList.length; // Tip Limit counter
 
 allIdx = Array.from(Array(tipLimit).keys())
@@ -94,7 +95,11 @@ function generateTip() {
   document.querySelector('.tip-button').focus();
 
   if(showSrcSwitch == true){
+     console.log("showSrcSwitch ", showSrcSwitch)
      $(".Notes").text('\n'+ $('.js-tip').find('img').attr('src') )
+  }else{
+     console.log("showSrcSwitch ", showSrcSwitch)
+     $(".Notes").text('')
   }
 }
 
@@ -121,7 +126,7 @@ function chkKey() {
   var testkey = getChar(event);
   console.log(testkey)
   if(testkey == 'a'){window.open("https://williamkpchan.github.io/apptechno.html");}
-  else if(testkey == 'A'){automode();}
+  else if(testkey == 'A'){toggle_automode();}
   else if(testkey == 'b'){backClick();}
   else if(testkey == 'c'){callCalculator();}
   else if(testkey == 'd'){window.open("https://www.youdao.com/");}
@@ -302,9 +307,13 @@ function toggle_showSrcSwitch() {
     }
 }
 
-// automode
-function automode() {
-    setInterval(function(){ forward(); }, 10000);
+// toggle_automode
+function toggle_automode() {
+  if(automodeSwitch == false){
+    autoInterval = setInterval(function(){ forward(); }, 10000);
+  }else{
+    clearInterval(autoInterval);
+  }
 }
 
 forward();
