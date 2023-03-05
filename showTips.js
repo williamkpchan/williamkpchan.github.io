@@ -121,6 +121,7 @@ function chkKey() {
   var testkey = getChar(event);
   console.log(testkey)
   if(testkey == 'a'){window.open("https://williamkpchan.github.io/apptechno.html");}
+  else if(testkey == 'A'){automode();}
   else if(testkey == 'b'){backClick();}
   else if(testkey == 'c'){callCalculator();}
   else if(testkey == 'd'){window.open("https://www.youdao.com/");}
