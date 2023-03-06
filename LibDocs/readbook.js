@@ -173,6 +173,7 @@ if(markerName != "h0"){
 
       // modify the target id
       topic.attr('id', 'topic-' + topicNumber);
+      topic.after('&emsp;<a href=#top target="_self"><b>&#8679;</b></a><br>')
   });
 }
 
