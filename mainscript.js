@@ -327,3 +327,5 @@ function Hide(elementID){
       document.getElementById(elementID).style.display = 'block';
   }
 };
+
+if(screen.width < 560){ $('img').css('width','100%'); }
