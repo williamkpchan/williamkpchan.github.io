@@ -148,7 +148,7 @@ function chkKey() {
   else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
 
   else if(testkey == 'h'){window.open("https://williamkpchan.github.io/LibDocs/News Points.html");}
-  else if(testkey == 'H'){window.open("https://williamkpchanHP.github.io/");}
+  else if(testkey == 'H'){showHelp();}
   else if(testkey == 'L'){window.open("https://williamkpchan.github.io/LibDocs/mlinechart.html");}
   else if(testkey == 'm'){window.open("https://williamkpchan.github.io/medical.html");}
   else if(testkey == 'M'){window.open("https://www.google.com/maps");}
@@ -314,6 +314,10 @@ function toggle_automode() {
   }else{
     clearInterval(autoInterval);
   }
+}
+
+function showHelp() {
+  alert(showHelpTxt)
 }
 
 forward();
