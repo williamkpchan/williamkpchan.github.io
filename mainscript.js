@@ -24,7 +24,6 @@ function chkKey() {
   else if(testkey == 'g'){window.open("https://mail.google.com/");}
 
   else if(testkey == 'h'){window.open("https://williamkpchan.github.io/LibDocs/News Points.html");}
-  else if(testkey == 'H'){window.open("https://williamkpchanHP.github.io/");}
   else if(testkey == 'J'){window.location = '#_jiaoyu';}
   else if(testkey == 'l'){window.location = '#dushu';}
   //if(testkey == 'L'){openLogFile();}
@@ -44,8 +43,8 @@ function chkKey() {
   else if(testkey == 'S'){window.open("https://williamkpchan.github.io/Hour STK Charts.html");}
 
 
-  else if(testkey == 't'){window.open("https://my.weather.gov.hk/tc/myindex.htm");}
-  else if(testkey == 'T'){window.open("https://translate.google.com/#en/zh-CN");}
+  else if(testkey == 'T'){window.open("https://my.weather.gov.hk/tc/myindex.htm");}
+  else if(testkey == 't'){window.scrollTo(0,0);}
 
   else if(testkey == 'u'){window.open("https://www.worldometers.info/coronavirus/");}
   else if(testkey == 'v'){window.open("https://williamkpchan.github.io/StkImgViewer.html");}

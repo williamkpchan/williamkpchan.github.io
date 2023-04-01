@@ -401,6 +401,8 @@ $ git push http://example.com/repo.git
 [your credentials are used automatically]
 In conclusion, the credential helper does not work in all versions of git but from version 1.8 and above.
 
+<a href="https://docs.github.com/en/authentication/connecting-to-github-with-ssh/working-with-ssh-key-passphrases" class="whitebut ">Working with SSH key passphrases</a>
+
 <h2>Git Tools - Credential Storage</h2>
 If you use the SSH transport for connecting to remotes, it’s possible for you to have a key without a passphrase, which allows you to securely transfer data without typing in your username and password.
 However, this isn’t possible with the HTTP protocols – every connection needs a username and password.
@@ -2812,6 +2814,178 @@ In review, these are the five steps to successfully perform a git remote add ori
 <li>View the pushed files on the remote Git repository to verify that the git remote add and push commands ran successfully.</li> 
 
 Now that the remote and local repositories can interact seamlessly, you can continue to <a href="https://www.theserverside.com/video/Follow-these-git-commit-message-guidelines">commit code</a> locally, push changes to the remote GitHub server, and begin to manage your source code in a distributed manner.
+
+<h2>SSH Keys</h2>
+
+<div id="SSHKeystoc" class="toc"><a href="#SSHKeystopic-0" target="_self">Generating SSH Keys</a><br><a href="#SSHKeystopic-1" target="_self"> Uploading and Installing the public key</a><br><a href="#SSHKeystopic-2" target="_self">Using the SSH Key</a><br><a href="#SSHKeystopic-3" target="_self"> SSH config file</a><br><a href="#SSHKeystopic-4" target="_self"> SSH Agent</a><br></div></center>
+SSH key pairs allow users to connect to remote accounts without having to use the password of the remote account. This is useful if you'd like to not have to enter the password to an account you own and access frequently, or if you need to connect to a shared account where you are not its owner and do not know its password. You create a pair of files known as "keys", one private and one public, to facilitate this process. The private key stays on the machine you will connect from which is usually the machine where it is created (for example, your laptop). The other key, the public key, is put into the remote account by the owner of that account (which may be you) or by the server administrator. Think of this process as leaving a real key (the public key) in a remote door. The door will only open if you have the associated private key as you approach. This is why you must keep the private key to yourself, otherwise people who have a copy of it can pass through all the doors in which you left your public key.
+The most popular Windows SSH client today is Putty which is available from <a href="http://www.chiark.greenend.org.uk/%7Esgtatham/putty">http://www.chiark.greenend.org.uk/~sgtatham/putty</a>. Download the complete Windows installer rather than just the putty.exe file. You may choose to follow the thorough Putty documentation directly on how to <a href="http://the.earth.li/%7Esgtatham/putty/0.60/htmldoc/Chapter8.html#pubkey-puttygen">create an SSH keypair on Windows</a>. Otherwise see the more brief step-by-step instructions below.
+
+<b id="SSHKeystopic-0">Generating SSH Keys</b> <a href="#top" target="_self"><b>⇧</b></a><br>
+Start the puttygen.exe program included with the Putty installer.
+In the <em>Parameters</em> section choose SSH3 RSA as the key type and press <k>Generate</k>. You will need to move your mouse about in the small window area in order to generate randomness that the process requires.
+You may choose to enter a key comment which can be used by you to identify the key (useful when you use several SSH keys).
+Type in a passphrase and confirm it. The passphrase is used to protect your key and you will be asked for it when you connect via SSH using public key authentication.
+Click <k>Save private key</k> to save your private key. A common name is <k>id_rsa</k>.
+Click <k>Save public key</k> to save your public key.  A common name is <k>id_rsa.pub</k>.
+
+<b id="SSHKeystopic-1"> Uploading and Installing the public key</b> <a href="#top" target="_self"><b>⇧</b></a><br>
+See the UNIX instructions for these steps above as they are identical.
+
+<h3 id="SSHKeystopic-2">Using the SSH Key</h3> <a href="#top" target="_self"><b>⇧</b></a><br>
+<b id="SSHKeystopic-3"> SSH config file</b> <a href="#top" target="_self"><b>⇧</b></a><br>
+You can explicitly tell your ssh program to use your ssh key and not your password with `ssh -o preferredauthentications=publickey ...`. Since you may not want to type that every time, you can configure an ssh host alias. Create and/or append to the file ~/.ssh/config on your local computer and enter the following:
+
+<code>Host somename
+HostName your.favorite.machine.berkeley.edu
+User theuser
+PreferredAuthentications publickey</code>
+Then you can invoke `ssh somename` and it will pass in all of the above options.
+
+<b id="SSHKeystopic-4"> SSH Agent</b> <a href="#top" target="_self"><b>⇧</b></a><br>
+If you do not want to have to type your key's passphrase every time, you can load the key into your SSH agent once. The ssh-agent is usually automatically started on Linux, and you can load the key into your agent by typing `ssh-add`. If your key is in a non-standard location, you can manually specify it with `ssh-add /path/to/the/ssh/key`. On macOS, your agent uses your keychain, so pass in `-K` to ssh-add, e.g. `ssh-add -K` or `ssh-add -K /path/to/the/ssh/key`.
+
+<h2>What is ed25519?</h2>
+
+<div id="ed25519toc" class="toc"><a href="#ed25519topic-0" target="_self">Why ed25519 Key is a Good Idea</a><br><a href="#ed25519topic-1" target="_self">Generate ed25519 SSH Key</a><br></div></center>
+<k>ed25519</k> is a relatively new cryptography solution implementing Edwards-curve Digital Signature Algorithm (EdDSA).
+
+I say <em>relatively</em>, because <k>ed25519</k> is supported by OpenSSH for about 5 years now – so it wouldn’t be considered a cutting edge.
+Still, people are such creatures of habits that many IT professionals daily using SSH/SCP haven’t even heard of this key type.
+
+Similarly, not all the software solutions are supporting <k>ed25519</k> right now – but SSH implementations in most modern Operating Systems certainly support it.
+
+<h3 id="ed25519topic-0">Why ed25519 Key is a Good Idea</h3> <a href="#top" target="_self"><b>⇧</b></a><br>
+Compared to the most common type of SSH key – RSA – <k>ed25519</k> brings a number of cool improvements:
+
+it’s faster: to generate and to verify
+it’s more secure
+collision resilience – this means that it’s more resilient against hash-function collision attacks (types of attacks where large numbers of keys are generated with the hope of getting two different keys have matching hashes)
+keys are smaller – this, for instance, means that it’s easier to transfer and to copy/paste them
+
+<h3 id="ed25519topic-1">Generate ed25519 SSH Key</h3> <a href="#top" target="_self"><b>⇧</b></a><br>
+Here’s the command to generate an ed25519 SSH key:
+
+$ ssh-keygen -t ed25519 -C "[email@protected]"
+Generating public/private ed25519 key pair.
+Enter file in which to save the key (/Users/greys/.ssh/id_ed25519):
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+Your identification has been saved in /Users/greys/.ssh/id_ed25519.
+Your public key has been saved in /Users/greys/.ssh/id_ed25519.pub.
+The key fingerprint is:
+SHA256:FHsTyFHNmvNpw4o7+rp+M1yqMyBF8vXSBRkZtkQ0RKY
+
+The key's randomart image is:
++--[ED25519 256]--+
+|       */Xoo     |
+|  . . .===..o    |
+|   + .Eo+.oo     |
+|    o ..o.+.     |
+|   .   .S  + .   |
+|  . .     . *    |
+|   . . . + o .   |
+|      o O .      |
+|     .*Xo=       |
++----[SHA256]-----+
+That’s it – this keypair is ready to be deployed to SSH servers, GitHub or any other service that can use them.
+
+Check out how short the public key is:
+
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK0wmN/Cr3JXqmLW7u+g9pTh+wyqDHpSQEIQczXkVx9q
+
+<h2>SSH Keys for GitHub</h2>
+<h4>Objectives</h4>
+<li>Explain what an SSH key is</li>
+<li>Generate your own SSH key pair</li>
+<li>Add your SSH key to your GitHub account</li>
+<li>Learn how to use your SSH key in your GitHub workflow</li>
+<h4>Why Use an SSH Key?</h4>
+When working with a GitHub repository, you'll often need to identify yourself to GitHub using your username and password.
+An SSH key is an alternate way to identify yourself that doesn't require you to enter you username and password every time.
+
+SSH keys come in pairs, a public key that gets shared with services like GitHub, and a private key that is stored only on your computer.
+If the keys match, you're granted access.
+
+The cryptography behind SSH keys ensures that no one can reverse engineer your private key from the public one.
+
+<h4>Generating an SSH key pair</h4>
+The first step in using SSH authorization with GitHub is to generate your own key pair.
+
+You might already have an SSH key pair on your machine.
+You can check to see if one exists by moving to your <code>.ssh</code> directory and listing the contents.
+<code>$ cd ~/.ssh
+$ ls</code>
+If you see <code>id_rsa.pub</code>, you already have a key pair and don't need to create a new one.
+
+If you don't see <code>id_rsa.pub</code>, use the following command to generate a new key pair.
+Make sure to replace <code>your@email.com</code> with your own email address.
+<code>$ ssh-keygen -o -t rsa -C "your@email.com"</code>
+(The <code>-o</code> option was added in 2014; if this command fails for you, just remove the <code>-o</code> and try again)
+
+When asked where to save the new key, hit enter to accept the default location.
+<code>Generating public/private rsa key pair.
+Enter file in which to save the key (/Users/username/.ssh/id_rsa):</code>
+You will then be asked to provide an optional passphrase.
+This can be used to make your key even more secure, but for this lesson you can skip it by hitting enter twice.
+<code>Enter passphrase (empty for no passphrase):</code>
+
+<code>Enter same passphrase again:</code>
+When the key generation is complete, you should see the following confirmation:
+<code>Your identification has been saved in /Users/username/.ssh/id_rsa.
+Your public key has been saved in /Users/username/.ssh/id_rsa.pub.
+The key fingerprint is:
+01:0f:f4:3b:ca:85:d6:17:a1:7d:f0:68:9d:f0:a2:db your@email.com
+The key's randomart image is:
++--[ RSA 2048]----+
+|                 |
+|                 |
+|        . E +    |
+|       . o = .   |
+|      . S =   o  |
+|       o.O . o   |
+|       o .+ .    |
+|      . o+..     |
+|       .+=o      |
++-----------------+</code>
+The random art image is an alternate way to match keys but we won't be needing this.
+
+<h4>Add your public key to GitHub</h4>
+We now need to tell GitHub about your public key.
+ Display the contents of your new public key file with <code>cat</code>:
+<code>$ cat ~/.ssh/id_rsa.pub</code>
+The output should look something like this:
+<code>ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA879BJGYlPTLIuc9/R5MYiN4yc/YiCLcdBpSdzgK9Dt0Bkfe3rSz5cPm4wmehdE7GkVFXrBJ2YHqPLuM1yx1AUxIebpwlIl9f/aUHOts9eVnVh4NztPy0iSU/Sv0b2ODQQvcy2vYcujlorscl8JjAgfWsO3W4iGEe6QwBpVomcME8IU35v5VbylM9ORQa6wvZMVrPECBvwItTY8cPWH3MGZiK/74eHbSLKA4PY3gM4GHI450Nie16yggEg2aTQfWA1rry9JYWEoHS9pJ1dnLqZU3k/8OWgqJrilwSoC5rGjgp93iu0H8T6+mEHGRQe84Nk1y5lESSWIbn6P636Bl3uQ== your@email.com</code>
+Copy the contents of the output to your clipboard.
+
+Login to github.com and bring up your account settings by clicking the tools icon.
+<img src="https://jdblischak.github.io/2014-09-18-chicago/novice/git/img/github-account-settings.png" />
+
+Select <k>SSH Keys</k> from the side menu, then click the <k>Add SSH key</k> button.
+
+<img src="https://jdblischak.github.io/2014-09-18-chicago/novice/git/img/github-ssh-keys.png" />
+
+Name your key something whatever you like, and paste the contents of your clipboard into the <k>Key</k> text box.
+
+<img src="https://jdblischak.github.io/2014-09-18-chicago/novice/git/img/github-add-ssh-key.png" />
+
+Finally, hit <k>Add key</k> to save.
+Enter your github password if prompted.
+
+####Using Your SSH Key
+
+Going forward, you can use the SSH clone URL when copying a repo to your local machine.
+
+<img src="https://jdblischak.github.io/2014-09-18-chicago/novice/git/img/github-ssh-clone-url.png" />
+
+This will allow you to bypass entering your username and password for future GitHub commands.
+
+<h4>Key Points</h4>
+<li>SSH is a secure alternative to username/password authorization</li>
+<li>SSH keys are generated in public / private pairs.
+Your public key can be shared with others.
+The private keys stays on your machine only.</li>
+<li>You can authorize with GitHub through SSH by sharing your public key with GitHub.</li>
 
 
 
