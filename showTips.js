@@ -311,6 +311,7 @@ function toggle_showSrcSwitch() {
 function toggle_automode() {
   if(automodeSwitch == false){
     autoInterval = setInterval(function(){ forward(); }, 10000);
+    $(".tip-button").before("<p>automode! 10s</p>");
   }else{
     clearInterval(autoInterval);
   }
@@ -322,7 +323,7 @@ function showHelp() {
 
 forward();
 
-$(".tip-button").after("<br><br><br>shortcut Keys:<br>b backward<br>f forward<br>+ add To IgnoreLst<br>- remove Fm IgnoreLst<br>R remove Num Fm IgnoreLst<br>v view IgnoreLst<br>s setRange<br>T total length<br>")
+$(".tip-button").after("<br><br><br>shortcut Keys:<br>+ addToIgnoreLst<br>- removeFmIgnoreLst<br>2 setRange<br>A toggle_automode<br>b backClick<br>c callCalculator<br>c showChart<br>C showTimeDate<br>e scrollTo Bottom<br>f forward<br>H showHelp<br>r randomNum<br>R removeNumFmIgnoreLst<br>s setRange<br>S toggle_showSrcSwitch<br>T alertTotal<br>t scrollTo Top<br>v viewIgnoreLst<br>x showAnswer<br>z showTenYear")
 
 window.addEventListener('click', function (evt) {
   if (evt.detail === 3) {
