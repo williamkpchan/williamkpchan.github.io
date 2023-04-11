@@ -17,6 +17,7 @@ if (ignoreLst === null) {
 
 automodeSwitch = false
 tipLimit = tipsList.length; // Tip Limit counter
+timeInterval = 10000
 
 allIdx = Array.from(Array(tipLimit).keys())
 rm_ignoreLst()
@@ -144,6 +145,7 @@ function chkKey() {
   else if(testkey == 'v'){viewIgnoreLst();}
   else if(testkey == 'T'){alertTotal();}
   else if(testkey == 'x'){showAnswer();}
+  else if(testkey == 'I'){settimeInterval();}
   else if(testkey == 't'){window.scrollTo(0,-100);}
   else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
 
@@ -310,7 +312,7 @@ function toggle_showSrcSwitch() {
 // toggle_automode
 function toggle_automode() {
   if(automodeSwitch == false){
-    autoInterval = setInterval(function(){ forward(); }, 10000);
+    autoInterval = setInterval(function(){ forward(); }, timeInterval);
     $(".tip-button").before("<p>automode! 10s</p>");
   }else{
     clearInterval(autoInterval);
@@ -319,6 +321,14 @@ function toggle_automode() {
 
 function showHelp() {
   alert(showHelpTxt)
+}
+function settimeInterval() {
+  timeInterval = prompt("enter timeInterval in sec: ", "10");
+    if (timeInterval != null && timeInterval != ""){
+      timeInterval = Number(timeInterval)*1000
+      toggle_automode()
+      toggle_automode()
+    }
 }
 
 forward();
