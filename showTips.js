@@ -298,7 +298,7 @@ function showAnswer() {
     //$('.answer-tip').css('background','#333');
     // setTimeout(function(){ $('.answer-tip').css('background','black'); }, 2000);
     $('.answer-tip').show();
-    setTimeout(function(){ $('.answer-tip').hide(); }, 1500);
+    setTimeout(function(){ $('.answer-tip').hide(); }, 3000);
 }
 
 function toggle_showSrcSwitch() {
