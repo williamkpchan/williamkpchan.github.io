@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<html>
+<head>
+<title>Stk Line Borr chart</title>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src='..\mainscript.js'></script>
+<script src="stkComments.js"></script>
+
+<script src="https://williamkpchanhp.github.io/LibDocs/longHistList.js"></script>
+<script src="./rchart/RGraph.common.core.js" ></script>
+<script src="./rchart/RGraph.line.js"></script>
+<script src="./rchart/RGraph.drawing.yaxis.js"></script>
+<!--script src="./rchart/RGraph.svg.bar.js" ></script-->
+
+
+<style>
+#dateTime {  text-align: left;}
+#cmtNote, #instruction, #message{display:none;}
+select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
+</style>
+
+</head>
+<body onkeypress="chkKey()">
+<center>
+<br>
+<canvas id="cvs" width="1350" height="550">[No canvas support]</canvas>
+<br><span id="turnover"></span>
+<span id="lastValues"></span>
+</center>
+
+<div id="dateTime" style="margin-left:5%;" class="lime"> </div>
+<span onclick="$('#instruction').toggle();"> 🎌 </span>
+<a href="AStkList.txt" class="whitebut" target="_blank">A股清单</a>
+
+<a href="http://www.etnet.com.hk/www/tc/stocks/industry_adu.php" target="_blank" class="bordred1">行業板塊</a>
+<a href="http://www.etnet.com.hk/www/tc/stocks/indexes_detail.php?subtype=HSI" target="_blank" class="bordred1">指數成分股表現</a>
+<a href="http://www.etnet.com.hk/www/tc/stocks/ah.php" target="_blank" class="bordred1">AH股表現</a>
+<select id="selectList" onchange="assignList()"></select>
+<span onclick="$('#message').toggle();"> 🎌 </span>
+
+<br>
+<pre id="instruction">
+commands:
+d fillLineData, paste one set data to redraw with std dev
+c askforCode
+
+z large chart
+
+R Random Charts.html
+m mlineMinutechart.html
+
+f jpforward
+b jpback
+r jprandom
+t jpTo 0
+
+h chgHighList
+l chgLowList
+C chgCloseLst
+
+a useAttentionList
+
+i chgIntv
+L askList
+5 lines: data, WAve5, WAve10, sd+, sd-
+A stk code sample: 000001.sh, 399001.sz
+</pre>
+<pre id="message">
+
+</pre>
+<script>
+      let thestkdata = [];
+      period = 75;
+      let dateLst = [];
+      let openLst = [];
+      let highLst = [];
+      let lowLst = [];
+      let closeLst = [];
+      let amtLst = [];
+
+      dataStatus = "L"
+      intv5 = 5
+      stkpriceDataArr = [];
+      stkList = localStorage.getItem("stkListArr").split(' ');
+      stkPointer = 0;
+      theCode = localStorage.randomcode;
+      titleText = "";
+
+      attentionList = ""
+
+      var options = '';  // build the List select option
+      for (var i = 0; i < allListNames.length; i++) {
+         options += '<option value="' + allListNames[i]+ '">' + allListNames[i] + '</option>';
+      }
+      $("#selectList").html(options);
+
+
+      if (localStorage.getItem("attentionList") === null) {
+        localStorage.attentionList = "07500";
+      } else{
+        attentionList = localStorage.getItem("attentionList").split(',');
+      }
+      //console.log(attentionList)
+
+      // load localStorage.savedCodeList
+      if (localStorage.getItem("savedCodeList") === null) {
+        quickCodeList = ["110000"];
+        localStorage.savedCodeList = quickCodeList;
+      } else{
+        quickCodeList = localStorage.getItem("savedCodeList").split(',');
+      }
+
+
+      // added extra links
+      bigVolHeader = "http://www.etnet.com.hk/www/tc/stocks/realtime/quote_transaction.php?code="
+      shortsellHeader = "http://www.aastocks.com/tc/stocks/analysis/stock-short-selling-ratio.aspx?symbol="
+      newshead = "http://www.aastocks.com/tc/stocks/analysis/stock-aafn/"
+      newstail = "/0/all/1"
+
+      function askforCode() {
+        var tempCode = prompt("Code Number:", "");
+        if (tempCode != null && tempCode != ""){
+
+            codewidth = tempCode.length
+            if(codewidth <= 5){
+              theCode = "00000"+tempCode;
+              codewidth = theCode.length;
+              theCode = theCode.slice(codewidth-5, codewidth);
+              codewidth = theCode.length; //update to be used later
+            }else{
+              theCode = tempCode
+            }
+
+           storeCode(theCode)
+           collectStkData(theCode)  // show turnover and draw
+        }
+      }
+
+      function collectStkData(theCode) {
+      $("#turnover").html(
+       '<span class="randomBut gold bordred1 borRad10" onclick="askforCode()">号码</span> ' +
+       '<span class="randomBut gold bordred1 borRad10" onclick="jpforward()">Next</span> ' +
+      '<a href="' + bigVolHeader + theCode +'" target="_blank" class="white bordred1 borRad10">大戶</a>' +
+      '<a href="' + newshead + theCode + newstail +'" target="_blank" class="white bordred1 borRad10">資料</a>' +
+      '<a href="' + shortsellHeader + theCode + '" target="_blank" class="white bordred1 borRad10">沽空</a> '
+      );
+
+          if(theCode == "110000"){ theCode = "HSI" }
+          codewidth = theCode.length
+          if(theCode == "HSI"){
+              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,1000,qfq';
+          }else{
+            if(codewidth <= 5){
+              theCode = "00000"+theCode;
+              codewidth = theCode.length;
+              theCode = theCode.slice(codewidth-5, codewidth);
+              codewidth = theCode.length; //update to be used later
+              theStartCode = theCode
+              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,1000,qfq';
+            }else{
+              codewidth = theCode.length
+              if((codewidth == 6) && !hsReservedCode.includes(theCode)){
+                 if (theCode.charAt(0) == "6"){
+                    theCode = "sh"+theCode; 
+                 }else{
+                    theCode = "sz"+theCode
+                 }
+                 theStartCode = theCode
+                 theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,1000,qfq';
+              }else if(codewidth == 9){
+                theCode = theCode.substring(7, 9) + theCode.substring(0, 6);
+                theStartCode = theCode
+                theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,1000,qfq';
+              }else{
+                theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,1000,qfq';
+                theStartCode = theCode
+              }
+            }
+          }
+      
+          theStartCode = theCode;
+          thestkdata = [];
+          thedrawdata = [];
+          dateLst = [];
+          openLst = [];
+          highLst = [];
+          lowLst = [];
+          closeLst = [];
+          amtLst.length = 0;
+      
+          RGraph.AJAX.getJSON(theurl, function (rawJSON){
+              var keys = Object.keys(rawJSON); // read the structure keys ["code", "msg", "data"]
+
+              var insideDatakey = Object.keys(rawJSON)[2] //
+              // myobj[Object.keys(myobj)[0]] this is the extract method
+      
+              var thedata = rawJSON[Object.keys(rawJSON)[2]]
+              thestkkey = Object.keys(thedata)[0] // this is the stk key name
+              var tempdata = thedata[Object.keys(thedata)[0]];
+              thestkdata = tempdata[Object.keys(tempdata)[0]]; // real data here, this is whole dataset
+
+              if(thestkdata.length == 0){alert("no data in: " + thestkkey)}
+
+    for(i=(thestkdata.length-12);i<thestkdata.length;i++){
+      thedate = thestkdata[i][0];  // date
+      if(codewidth <= 5){
+        theAmtIdx = 8;
+      }else{
+        theAmtIdx = 5;
+      }
+      theamt = Math.round(Number(thestkdata[i][theAmtIdx]));
+      if(codewidth > 5){
+        if(theCode.slice(0, 5) == "sh688"){
+          theamt = Math.round(theamt * Number(thestkdata[i][2])/10000);
+        }else{
+          theamt = Math.round(theamt * Number(thestkdata[i][2])/100);
+        }
+      }
+      theamt = theamt.toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",");
+      $("#turnover").append( theamt,"w ");
+    }
+      
+              theNameObj = tempdata[Object.keys(tempdata)[1]];
+              theNameObjName  = theNameObj[Object.keys(theNameObj)[0]];
+              stkName = theNameObjName[1]
+      
+              /* data is arranged in days array, tempdata[320] is last set
+              tempdata[320][0]  // date
+              tempdata[320][1]  // open
+              tempdata[320][3]  // high
+              tempdata[320][4]  // low
+              tempdata[320][2]  // close */
+      
+                //period + intv5, the chartwidth + max trend interval
+              starti = thestkdata.length - (parseInt(period) + parseInt(intv5)) -5; 
+              if(starti <= 0){
+                  alert("not enough data! Selet short chartwidth and trend period!");
+                  return;
+              }
+
+              for (let i = starti; i < thestkdata.length; i++) {
+                  dateLst.push(thestkdata[i][0]);
+                  openLst.push(Number(thestkdata[i][1]));
+                  highLst.push(Number(thestkdata[i][3]));
+                  lowLst.push(Number(thestkdata[i][4]));
+                  closeLst.push(Number(thestkdata[i][2]));
+                  amtvalue = "&emsp;" + Math.round(Number(thestkdata[i][8])).toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",") +"w ";
+                  amtLst.push(amtvalue);
+              }
+              if(dataStatus == "C"){ stkpriceDataArr = closeLst
+              }else if(dataStatus == "L"){ stkpriceDataArr = lowLst
+              }else { stkpriceDataArr = highLst}
+
+              titleText = theStartCode + " " + stkName + " 日線保力加";
+              redraw();  // this line must be inside the AJAX because AJAX run last
+              // return  thedrawdata =[highLst, lowLst, closeLst];
+           });
+
+           showDateTime();
+      $("#dateTime").prepend("Item " + (stkPointer+1) + " of " + stkList.length + ", ");
+
+
+      }
+
+     function chkKey() {
+       var testkey = getChar(event);
+       if(testkey == '0'){ theCode = '000001.sh'; collectStkData('000001.sh');}
+
+       else if(testkey == '3'){ theCode = '399001.sz'; collectStkData('399001.sz');}
+       else if(testkey == '1'){ theCode = 'HSI'; collectStkData('HSI');}
+       else if(testkey == '2'){ theCode = '01339'; collectStkData('01339');}
+       else if(testkey == '4'){ theCode = '01766'; collectStkData('01766');}
+       else if(testkey == '5'){ theCode = '03800'; collectStkData('03800');}
+       else if(testkey == '6'){ theCode = '00371'; collectStkData('00371');}
+       else if(testkey == '7'){ theCode = '00788'; collectStkData('00788');}
+       else if(testkey == '8'){ theCode = '00308'; collectStkData('00308');}
+       else if(testkey == '9'){ theCode = '00390'; collectStkData('00390');}
+       else if(testkey == 'd'){fillLineData();}
+       else if(testkey == 'c'){askforCode();}
+       else if(testkey == '+'){addToquickCodeList();}
+       else if(testkey == 'q'){myfavor();}
+       else if(testkey == 'Q'){usequickCodeList();}
+
+       // if(testkey == '+'){addToAttentionList();}
+       else if(testkey == '-'){removeFmquickCodeList();}
+       else if(testkey == 'X'){storeCode(theCode); window.open("Random Charts.html");}
+       else if(testkey == '.'){storeCode(theCode); window.open("mlineMinutechart.html");}
+
+       else if(testkey == 'a'){useAttentionList();}
+       else if(testkey == 'f'){jpforward();}
+       else if(testkey == ']'){jpforward();}
+       else if(testkey == 'b'){jpback();}
+       else if(testkey == '['){jpback();}
+       else if(testkey == 'r'){jprandom();}
+       else if(testkey == 't'){jpTo0();}
+       else if(testkey == 'h'){chgHighList();}
+       else if(testkey == 'l'){chgLowList();}
+       else if(testkey == 'i'){chgIntv();}
+       else if(testkey == 'w'){chgchartWidth();}
+       else if(testkey == 'C'){chgCloseLst();}
+       else if(testkey == 'L'){askList()}
+       else if(testkey == 'z'){largeCht()}
+       else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
+       else{chkOtherKeys(testkey)} 
+     }
+
+     function getChar(event) {
+       if (event.which!=0 && event.charCode!=0) {
+         return String.fromCharCode(event.which)   // the rest
+       } else {
+         return null // special key
+       }
+     }
+
+	function fillLineData() {
+      var dataArr = prompt("Enter data array sep by space:", "");
+      if (dataArr != null && dataArr != "") {
+        dataArrArr = dataArr.split(' ');
+
+        stkpriceDataArr = dataArrArr.map(Number);
+        redraw()
+      }
+     }
+
+      function addToquickCodeList() {
+        codewidth = theCode.length
+        if(codewidth <= 5){
+          theCode = "00000"+theCode;
+          codewidth = theCode.length;
+          theCode = theCode.slice(codewidth-5, codewidth);
+        }
+        if (!quickCodeList.includes(theCode)) {
+          quickCodeList.push(theCode);
+          quickCodeList = Array.from(new Set(quickCodeList)); // set unique
+          localStorage.savedCodeList = quickCodeList;
+          alert(theCode + " added to quickCodeList")
+        }else{alert(theCode + " already exist!")}
+      }
+
+    function usequickCodeList() {
+        stkList = quickCodeList;
+        alert("quickCodeList Total: " + quickCodeList.length + "\ndetails see end of this page.\nremember to modify mustadd list!")
+        $("#message").text("quickCodeList Total: " + quickCodeList.length + "\n"+stkList);
+    }
+
+	function addToAttentionList() {
+            codewidth = theCode.length
+            if(codewidth <= 5){
+              theCode = "00000"+theCode;
+              codewidth = theCode.length;
+              theCode = theCode.slice(codewidth-5, codewidth);
+              codewidth = theCode.length; //update to be used later
+            }
+
+        attentionList.push(theCode)
+        attentionList = [...new Set(attentionList)]; // set unique
+
+        ItemIndex = attentionList.indexOf("");  // remove empty items
+        if (ItemIndex > -1) { attentionList.splice(ItemIndex, 1); }
+
+        localStorage.setItem("attentionList", attentionList);
+        alert(theCode + " added to attentionList!")
+     }
+	function removeFmquickCodeList() {
+        ItemIndex = quickCodeList.indexOf(theCode);
+        if (ItemIndex > -1) { quickCodeList.splice(ItemIndex, 1); }
+        quickCodeList = [...new Set(quickCodeList)]; // set unique
+        localStorage.setItem("quickCodeList", quickCodeList);
+        alert(theCode + " removed fm quickCodeList!")
+   }
+
+     function redraw() {
+        intv10 = 2*intv5
+
+        RGraph.reset(document.getElementById('cvs'));
+
+        if(dataStatus == "C"){ stkpriceDataArr = closeLst
+        }else if(dataStatus == "L"){ stkpriceDataArr = lowLst
+        }else { stkpriceDataArr = highLst}
+
+        stdDevH = makeStd(highLst, intv10)
+        stdDevL = makeStd(lowLst, intv10)
+        newDevadd = makeMovAve(stkpriceDataArr, intv10).map((a, i) => a + stdDevH[i]);
+        newDevminus = makeMovAve(stkpriceDataArr, intv10).map((a, i) => a - stdDevL[i]);
+
+        mydata= [
+          stkpriceDataArr, 
+          makeMovAve(stkpriceDataArr, intv5),
+          makeMovAve(stkpriceDataArr, intv10),
+          newDevadd, newDevminus,
+        ];
+        theMax = Math.max(...[].concat(...mydata));
+        theMin = Math.min(...[].concat(...mydata));
+
+statusMsg = '<br><span class="red">只信趨勢：price '+ mydata[0].slice(-1)[0].toFixed(3) +
+'</span>, <span class="lime">intvS '+ mydata[1].slice(-1)[0].toFixed(3) +
+'</span>, <span class="blue">intvL '+ mydata[2].slice(-1)[0].toFixed(3) +
+'</span>, <span class="purple">Top '+ mydata[3].slice(-1)[0].toFixed(3) +
+'</span>, <span class="yellow">Bottom '+ mydata[4].slice(-1)[0].toFixed(3) +
+'</span>, <span class="lime">IntvS '+ intv5 +
+'</span>, <span class="blue">IntvL '+ intv10 +
+'</span>'
+
+$("#lastValues").text("");
+$("#lastValues").append(statusMsg);
+
+       drawchart()
+     }
+
+	function makeMovAve(bigArray, intv) {
+	     // the intv-1 is correct
+		return bigArray.slice(0, intv-1).concat(calcMovAve(bigArray, intv));
+	}
+	function calcAve(aveArray) {
+		add = (a, b) =>  a + b;
+		return aveArray.reduce(add) / aveArray.length;
+	}
+	
+	function calcMovAve(bigArray, intv) {
+		var ma = [];
+		for (var i =0 ; i < (bigArray.length-intv+1); i++) {ma[i] = calcWAve(bigArray.slice(i, i+intv));} // points to indicator
+		return ma;
+	}
+	function calcWAve(aveArray) {
+		var sum = 0
+		for( var i = 1; i <= aveArray.length; i++ ) {
+			sum += aveArray[i-1] * i;
+		}
+		return (sum / ((1 + aveArray.length)*aveArray.length/2))
+	}
+
+	function makeStd(bigArray, intv) {
+	     // the intv-1 is correct
+          newArray = new Array(intv-1).fill(0)
+		newArray = newArray.concat(calcStd(bigArray, intv));
+		return newArray
+	}
+
+	function calcStd(bigArray, intv) {
+		var stdArrar = [];
+		for (var i =0 ; i < (bigArray.length-intv+1); i++) {stdArrar[i] = Std(bigArray.slice(i, i+intv));} // points to indicator
+		return stdArrar;
+	}
+
+	function Std(array) {
+	  const n = array.length
+	  const mean = array.reduce((a, b) => a + b) / n
+	  return Math.sqrt(array.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n)
+	}
+
+    function useAttentionList() {
+        stkList = attentionList;
+        alert("AttentionList Total: " + attentionList.length + "\ndetails see end of this page.\nremember to modify mustadd list!")
+        $("#message").text("Total: " + attentionList.length + "\n"+stkList);
+    }
+
+    function myfavor() {
+        myfavorLst = mychips.split(" ");
+        stkList = myfavorLst;
+        alert("mychips Total: " + myfavorLst.length + "\ndetails see end of this page.\nremember to modify mustadd list!")
+        $("#message").text("mychips Total: " + myfavorLst.length + "\n"+stkList);
+    }
+
+    function askList() {
+        var theList = prompt("CodeList, Number (5 digits) sep by space： ", "");
+        if (theList != null && theList != "HSI" && theList != "") {
+            stkList = theList.split(" ");
+            alert("Supplied List Total: " + stkList.length + "\ndetails see end of this page.\nremember to modify mustadd list!")
+            $("#message").text("Supplied List Total: " + stkList.length + "\n"+stkList);
+        }
+    }
+
+    function FormatNumberLength5(num) {
+        var r = "" + num;
+        while (r.length < 5) { r = "0" + r; }
+        return r;
+    }
+
+    function jpforward() {
+        if (stkPointer < stkList.length-1) {
+            stkPointer = stkPointer + 1;
+        } else {
+            stkPointer = 0;
+        }
+        theCode = stkList[stkPointer];
+         collectStkData(theCode)
+    }
+
+    function jpback() {
+        if (stkPointer > 0) {
+            stkPointer = stkPointer - 1;
+        } else {
+            stkPointer = stkList.length-1;
+        }
+        theCode = stkList[stkPointer];
+         collectStkData(theCode)
+    }
+    function jprandom() {
+        stkPointer = Math.floor(Math.random() * (stkList.length-1))
+        theCode = stkList[stkPointer]
+         collectStkData(theCode)
+    }
+
+    function jpTo0() {
+        stkPointer = 0;
+        theCode = stkList[stkPointer]
+        collectStkData(theCode)
+    }
+
+    function storeCode(theCode) {
+        if(typeof(Storage) !== "undefined") {
+            localStorage.randomcode = theCode;
+        }
+    }
+
+
+    function chgchartWidth() {
+        newChartWidth = prompt("enter chart width:", "");
+        if (newChartWidth != null && newChartWidth != "" && newChartWidth < (1000 - 2*intv5)){period = parseInt(newChartWidth); collectStkData(theCode)}
+    }
+    function chgIntv() {
+        intv = prompt("intv5 value:", "");
+        if (theCode != null && intv5 != ""){intv5 = parseInt(intv); redraw()}
+    }
+    function chgHighList() {
+        dataStatus = "H"
+        redraw()
+    }
+    function chgLowList() {
+        dataStatus = "L"
+        redraw()
+    }
+    function chgCloseLst() {
+        dataStatus = "C"
+        redraw()
+    }
+
+    function largeCht() {
+        imgHead = "http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=3&indpara1=3&indpara2=5&indpara3=10&indpara4=15&indpara5=20&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&subChart3=12&ref3para1=0&ref3para2=0&ref3para3=0&scheme=3&com=100&chartwidth=1600&chartheight=900&stockid=";
+
+        imgTail = "&period=2060&type=1&logoStyle=1"
+        imgURL = imgHead + theCode + imgTail
+        window.open(imgURL, "_blank")
+    }
+
+function assignList(){
+  newList = eval(document.getElementById("selectList").value).split(" ");
+  stkList = newList;
+  // console.log(newList)
+
+  document.getElementById("message").focus();
+  alert(" Total: " + stkList.length + "\ndetails see end of this page.\nremember to modify mustadd list!\n" + newList)
+        $("#message").text("Total: " + stkList.length + "\n"+stkList);
+}
+
+function showDateTime() {
+    var theDateTime = showDate() +" "+ showTime();
+    cmtCode = theCode // use another name not to interfere other parts
+    var cmtcodewidth = cmtCode.length
+    if(cmtcodewidth <= 5){
+      cmtCode = "00000"+cmtCode;
+      cmtcodewidth = cmtCode.length;
+      cmtCode = cmtCode.slice(cmtcodewidth-5, cmtcodewidth);
+    }
+    else if(cmtcodewidth == 8){ cmtCode = cmtCode.slice(2, 8); }
+    else if(cmtcodewidth == 9){ cmtCode = cmtCode.slice(0, 6); }
+    commentName = "j" + cmtCode;
+
+    CommentListNames = Object.keys(theCommentList); // extract the names from comments
+    // to show comments
+    if(CommentListNames.includes(commentName)){
+      cmtLocation = CommentListNames.indexOf(commentName);
+      commentTxt = theCommentList[Object.keys(theCommentList)[cmtLocation]]
+    }else{commentTxt = "No data!";}
+
+    document.getElementById("dateTime").innerHTML = theDateTime  + " <span class='orange'>" + commentTxt + "</span>";
+}
+
+
+    function drawchart() {
+      // console.log(intv5)
+      var line = new RGraph.Line({
+        id:'cvs',
+        data:mydata,
+        options: {
+			title: titleText + " " + dataStatus,
+			titleColor: 'grey',
+			titleSize: 20,
+            // colors: ['darkgreen','blue','grey'],
+            backgroundGrid: true, backgroundGridVlines: true,
+            backgroundGridColor: '#002010', backgroundGridBorder: false,
+            // backgroundGridDotted: true,
+            backgroundGridDashed: true, 
+            axisColor: '#864',  scaleDecimals: 2,
+            textColor: '#ccc',
+            tickmarks: 'plus',
+            ticksize: 1,
+            linewidth:1,
+			ymax: theMax,
+			ymin: theMin,
+      // labels control the number of grids
+            // labels: ['2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018'],
+            spline: false,
+            shadow: false,
+            gutterLeft: 50,
+            gutterRight: 50,
+            gutterTop: 22,
+            gutterBottom: 22
+            }
+          }).trace();
+
+		yminpct = 100 - (theMax-theMin)*100/theMax,
+		ymaxpct = 100,
+
+          yaxis1 = new RGraph.Drawing.YAxis('cvs', 1350)
+                .Set('colors', ['gold'])
+                .Set('text.color', 'gray')
+                .Set('text.size', 8)
+                .Set('max', ymaxpct)
+                .Set('min', yminpct)
+                .Set('linewidth', 2)
+                .Set('tickmarkslength', 5)
+                .Set('title', '% pct')
+                .Draw();
+
+    };
+
+    collectStkData(theCode);
+</script>
+</body>
+</html>
