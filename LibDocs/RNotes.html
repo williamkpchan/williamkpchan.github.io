@@ -30029,6 +30029,1004 @@ Useful PDF for common questions in Lectures;
 <a href="http://bayesianquest.wordpress.com/category/random-forest/">Random Forest</a>
 
 
+<h2>R Random Forest Tutorial with Example</h2>
+<div id="RandomForestTuttoc" class="toc"><a href="#RandomForestTuttopic-0" target="_self"><span class="orange">What is Random Forest in R?</span></a><br><a href="#RandomForestTuttopic-1" target="_self"><span class="orange"><k>Step 1)</k> Import the data</span></a><br><a href="#RandomForestTuttopic-2" target="_self"><span class="orange"><k>Step 2) </k>Train the model</span></a><br><a href="#RandomForestTuttopic-3" target="_self">Grid Search definition</a><br><a href="#RandomForestTuttopic-4" target="_self">Random Search definition</a><br><a href="#RandomForestTuttopic-5" target="_self">Set the control parameter</a><br><a href="#RandomForestTuttopic-6" target="_self">Default setting</a><br><a href="#RandomForestTuttopic-7" target="_self"><span class="orange"><k>Step 3)</k> Search the best maxnodes</span></a><br><a href="#RandomForestTuttopic-8" target="_self"><span class="orange"><k>Step 4)</k> Search the best ntrees</span></a><br><a href="#RandomForestTuttopic-9" target="_self"><span class="orange"><k>Step 5)</k> Evaluate the model</span></a><br><a href="#RandomForestTuttopic-10" target="_self"><span class="orange"><k>Step 6)</k> Visualize Result</span></a><br><a href="#RandomForestTuttopic-11" target="_self"><span class="orange">Summary</span></a><br></div></center>
+<h3 id="RandomForestTuttopic-0"><span class="orange">What is Random Forest in R?</span></h3>
+Random forests are based on a simple idea: 'the wisdom of the crowd'.
+Aggregate of the results of multiple predictors gives a better prediction than the best individual predictor.
+A group of predictors is called an <k>ensemble</k>.
+Thus, this technique is called <k>Ensemble Learning</k>.
+
+In earlier tutorial, you learned how to use <k>Decision trees</k> to make a binary prediction.
+To improve our technique, we can train a group of <k>Decision Tree classifiers</k>, each on a different random subset of the train set.
+To make a prediction, we just obtain the predictions of all individuals trees, then predict the class that gets the most votes.
+This technique is called <k>Random Forest</k>.
+
+<h3 id="RandomForestTuttopic-1"><span class="orange"><k>Step 1)</k> Import the data</span></h3>
+To make sure you have the same dataset as in the tutorial for decision trees, the train test and test set are stored on the internet.
+You can import them without make any change.
+
+library(dplyr)
+data_train &lt;- read.csv("https://raw.githubusercontent.com/guru99-edu/R-Programming/master/train.csv")
+glimpse(data_train)
+data_test &lt;- read.csv("https://raw.githubusercontent.com/guru99-edu/R-Programming/master/test.csv") 
+glimpse(data_test)
+
+<h3 id="RandomForestTuttopic-2"><span class="orange"><k>Step 2) </k>Train the model</span></h3>
+One way to evaluate the performance of a model is to train it on a number of different smaller datasets and evaluate them over the other smaller testing set.
+This is called the <k>F-fold cross-validation</k> feature.
+R has a function to randomly split  number of datasets of almost the same size.
+For example, if k=9, the model is evaluated over the nine folder and tested on the remaining test set.
+This process is repeated until all the subsets have been evaluated.
+This technique is widely used for model selection, especially when the model has parameters to tune.
+
+Now that we have a way to evaluate our model, we need to figure out how to choose the parameters that generalized best the data.
+
+Random forest chooses a random subset of features and builds many Decision Trees.
+The model averages out all the predictions of the Decisions trees.
+
+Random forest has some parameters that can be changed to improve the generalization of the prediction.
+You will use the function RandomForest() to train the model.
+
+Syntax for Randon Forest is
+
+RandomForest(formula, ntree=n, mtry=FALSE, maxnodes = NULL)
+Arguments:
+- Formula: Formula of the fitted model
+- ntree: number of trees in the forest
+- mtry: Number of candidates draw to feed the algorithm.
+By default, it is the square of the number of columns.
+- maxnodes: Set the maximum amount of terminal nodes in the forest
+- importance=TRUE: Whether independent variables importance in the random forest be assessed
+
+<k>Note</k>: Random forest can be trained on more parameters.
+You can refer to the <a href="https://cran.r-project.org/web/packages/randomForest/randomForest.pdf" data-lasso-id="209881" rel="noopener">vignette</a> to see the different parameters.
+
+Tuning a model is very tedious work.
+There are lot of combination possible between the parameters.
+You don't necessarily have the time to try all of them.
+A good alternative is to let the machine find the best combination for you.
+There are two methods available:
+
+Random Search
+Grid Search
+
+We will define both methods but during the tutorial, we will train the model using grid search
+
+<h3 id="RandomForestTuttopic-3">Grid Search definition</h3>
+The grid search method is simple, the model will be evaluated over all the combination you pass in the function, using cross-validation.
+
+For instance, you want to try the model with 10, 20, 30 number of trees and each tree will be tested over a number of mtry equals to 1, 2, 3, 4, 5.
+Then the machine will test 15 different models:
+
+    .mtry ntrees
+ 1      1     10
+ 2      2     10
+ 3      3     10
+ 4      4     10
+ 5      5     10
+ 6      1     20
+ 7      2     20
+ 8      3     20
+ 9      4     20
+ 10     5     20
+ 11     1     30
+ 12     2     30
+ 13     3     30
+ 14     4     30
+ 15     5     30	
+
+The algorithm will evaluate:
+
+RandomForest(formula, ntree=10, mtry=1)
+RandomForest(formula, ntree=10, mtry=2)
+RandomForest(formula, ntree=10, mtry=3)
+RandomForest(formula, ntree=20, mtry=2)
+...
+
+Each time, the random forest experiments with a cross-validation.
+One shortcoming of the grid search is the number of experimentations.
+It can become very easily explosive when the number of combination is high.
+To overcome this issue, you can use the random search
+
+<h3 id="RandomForestTuttopic-4">Random Search definition</h3>
+The big difference between random search and grid search is, random search will not evaluate all the combination of hyperparameter in the searching space.
+Instead, it will randomly choose combination at every iteration.
+The advantage is it lower the computational cost.
+
+<h3 id="RandomForestTuttopic-5">Set the control parameter</h3>
+You will proceed as follow to construct and evaluate the model:
+<ul>
+<li>Evaluate the model with the default setting</li>
+<li>Find the best number of mtry</li>
+<li>Find the best number of maxnodes</li>
+<li>Find the best number of ntrees</li>
+<li>Evaluate the model on the test dataset</li>
+</ul>
+Before you begin with the parameters exploration, you need to install two libraries.
+
+<ul>
+<li>caret: R machine learning library.
+If you have install R with r-essential.
+It is already in the library
+<ul>
+<li><a href="https://anaconda.org/r/r-caret" data-lasso-id="209882" rel="noopener">Anaconda</a>: conda install -c r r-caret</li>
+</ul></li>
+<li>e1071: R machine learning library.
+<ul><li><a href="https://anaconda.org/r/r-caret" data-lasso-id="209883" rel="noopener">Anaconda</a>: conda install -c r r-e1071</li>
+</ul></li>
+</ul>
+You can import them along with RandomForest
+
+library(randomForest)
+library(caret)
+library(e1071)
+
+<h3 id="RandomForestTuttopic-6">Default setting</h3>
+K-fold cross validation is controlled by the trainControl() function
+
+trainControl(method = "cv", number = n, search ="grid")
+arguments
+- method = "cv": The method used to resample the dataset.
+
+- number = n: Number of folders to create
+- search = "grid": Use the search grid method.
+For randomized method, use "grid"
+Note: You can refer to the vignette to see the other arguments of the function.
+
+You can try to run the model with the default parameters and see the accuracy score.
+
+<k>Note</k>: You will use the same controls during all the tutorial.
+
+# Define the control
+trControl &lt;- trainControl(method = "cv",
+    number = 10,
+    search = "grid")
+
+You will use caret library to evaluate your model.
+The library has one function called train() to evaluate almost all machine learning algorithm.
+Say differently, you can use this function to train other algorithms.
+
+The basic syntax is:
+
+train(formula, df, method = "rf", metric= "Accuracy", trControl = trainControl(), tuneGrid = NULL)
+argument
+- `formula`: Define the formula of the algorithm
+- `method`: Define which model to train.
+Note, at the end of the tutorial, there is a list of all the models that can be trained
+- `metric` = "Accuracy": Define how to select the optimal model
+- `trControl = trainControl()`: Define the control parameters
+- `tuneGrid = NULL`: Return a data frame with all the possible combination
+
+Let's try the build the model with the default values.
+
+set.seed(1234)
+# Run the model
+rf_default &lt;- train(survived~.,
+    data = data_train,
+    method = "rf",
+    metric = "Accuracy",
+    trControl = trControl)
+# Print the results
+print(rf_default)
+
+Code Explanation
+
+<ul>
+<li>trainControl(method=”cv”, number=10, search=”grid”): Evaluate the model with a grid search of 10 folder</li>
+<li>train(…): Train a random forest model.
+Best model is chosen with the accuracy measure.</li>
+</ul>
+<k>Output:</k>
+
+## Random Forest 
+## 
+## 836 samples
+##   7 predictor
+##   2 classes: 'No', 'Yes' 
+## 
+## No pre-processing
+## Resampling: Cross-Validated (10 fold) 
+## Summary of sample sizes: 753, 752, 753, 752, 752, 752, ...
+
+## Resampling results across tuning parameters:
+## 
+##   mtry  Accuracy   Kappa    
+##    2    0.7919248  0.5536486
+##    6    0.7811245  0.5391611
+##   10    0.7572002  0.4939620
+## 
+## Accuracy was used to select the optimal model using  the largest value.
+## The final value used for the model was mtry = 2.
+
+The algorithm uses 500 trees and tested three different values of mtry: 2, 6, 10.
+
+The final value used for the model was mtry = 2 with an accuracy of 0.78.
+Let's try to get a higher score.
+
+<k>Step 2)</k> Search best mtry
+
+You can test the model with values of mtry from 1 to 10
+
+set.seed(1234)
+tuneGrid &lt;- expand.grid(.mtry = c(1: 10))
+rf_mtry &lt;- train(survived~.,
+    data = data_train,
+    method = "rf",
+    metric = "Accuracy",
+    tuneGrid = tuneGrid,
+    trControl = trControl,
+    importance = TRUE,
+    nodesize = 14,
+    ntree = 300)
+print(rf_mtry)
+
+Code Explanation
+
+<ul>
+<li>tuneGrid &lt;- expand.grid(.mtry=c(3:10)): Construct a vector with value from 3:10</li>
+</ul>
+The final value used for the model was mtry = 4.
+
+## Random Forest 
+## 
+## 836 samples
+##   7 predictor
+##   2 classes: 'No', 'Yes' 
+## 
+## No pre-processing
+## Resampling: Cross-Validated (10 fold) 
+## Summary of sample sizes: 753, 752, 753, 752, 752, 752, ...
+
+## Resampling results across tuning parameters:
+## 
+##   mtry  Accuracy   Kappa    
+##    1    0.7572576  0.4647368
+##    2    0.7979346  0.5662364
+##    3    0.8075158  0.5884815
+##    4    0.8110729  0.5970664
+##    5    0.8074727  0.5900030
+##    6    0.8099111  0.5949342
+##    7    0.8050918  0.5866415
+##    8    0.8050918  0.5855399
+##    9    0.8050631  0.5855035
+##   10    0.7978916  0.5707336
+## 
+## Accuracy was used to select the optimal model using  the largest value.
+## The final value used for the model was mtry = 4.
+
+The best value of mtry is stored in:
+
+rf_mtry$bestTune$mtry
+You can store it and use it when you need to tune the other parameters.
+
+max(rf_mtry$results$Accuracy)
+<k>Output:</k>
+
+## [1] 0.8110729
+best_mtry &lt;- rf_mtry$bestTune$mtry 
+best_mtry
+
+<k>Output:</k>
+
+## [1] 4
+<h3 id="RandomForestTuttopic-7"><span class="orange"><k>Step 3)</k> Search the best maxnodes</span></h3>
+You need to create a loop to evaluate the different values of maxnodes.
+In the following code, you will:
+
+<ul>
+<li>Create a list</li>
+<li>Create a variable with the best value of the parameter mtry; Compulsory</li>
+<li>Create the loop</li>
+<li>Store the current value of maxnode</li>
+<li>Summarize the results</li>
+</ul>
+store_maxnode &lt;- list()
+tuneGrid &lt;- expand.grid(.mtry = best_mtry)
+for (maxnodes in c(5: 15)) {
+    set.seed(1234)
+    rf_maxnode &lt;- train(survived~.,
+        data = data_train,
+        method = "rf",
+        metric = "Accuracy",
+        tuneGrid = tuneGrid,
+        trControl = trControl,
+        importance = TRUE,
+        nodesize = 14,
+        maxnodes = maxnodes,
+        ntree = 300)
+    current_iteration &lt;- toString(maxnodes)
+    store_maxnode[[current_iteration]] &lt;- rf_maxnode
+}
+results_mtry &lt;- resamples(store_maxnode)
+summary(results_mtry)
+
+Code explanation:
+
+<ul>
+<li>store_maxnode &lt;- list(): The results of the model will be stored in this list</li>
+<li>expand.grid(.mtry=best_mtry): Use the best value of mtry</li>
+<li>for (maxnodes in c(15:25)) { … }: Compute the model with values of maxnodes starting from 15 to 25.</li>
+<li>maxnodes=maxnodes: For each iteration, maxnodes is equal to the current value of maxnodes.
+i.e 15, 16, 17, …</li>
+<li>key &lt;- toString(maxnodes): Store as a string variable the value of maxnode.</li>
+<li>store_maxnode[[key]] &lt;- rf_maxnode: Save the result of the model in the list.</li>
+<li>resamples(store_maxnode): Arrange the results of the model</li>
+<li>summary(results_mtry): Print the summary of all the combination.</li>
+</ul>
+<k>Output:</k>
+
+## 
+## Call:
+## summary.resamples(object = results_mtry)
+## 
+## Models: 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 
+## Number of resamples: 10 
+## 
+## Accuracy 
+##         Min.
+  1st Qu.
+   Median      Mean   3rd Qu.
+     Max.
+NA's
+## 5  0.6785714 0.7529762 0.7903758 0.7799771 0.8168388 0.8433735    0
+## 6  0.6904762 0.7648810 0.7784710 0.7811962 0.8125000 0.8313253    0
+## 7  0.6904762 0.7619048 0.7738095 0.7788009 0.8102410 0.8333333    0
+## 8  0.6904762 0.7627295 0.7844234 0.7847820 0.8184524 0.8433735    0
+## 9  0.7261905 0.7747418 0.8083764 0.7955250 0.8258749 0.8333333    0
+## 10 0.6904762 0.7837780 0.7904475 0.7895869 0.8214286 0.8433735    0
+## 11 0.7023810 0.7791523 0.8024240 0.7943775 0.8184524 0.8433735    0
+## 12 0.7380952 0.7910929 0.8144005 0.8051205 0.8288511 0.8452381    0
+## 13 0.7142857 0.8005952 0.8192771 0.8075158 0.8403614 0.8452381    0
+## 14 0.7380952 0.7941050 0.8203528 0.8098967 0.8403614 0.8452381    0
+## 15 0.7142857 0.8000215 0.8203528 0.8075301 0.8378873 0.8554217    0
+## 
+## Kappa 
+##         Min.
+  1st Qu.
+   Median      Mean   3rd Qu.
+     Max.
+NA's
+## 5  0.3297872 0.4640436 0.5459706 0.5270773 0.6068751 0.6717371    0
+## 6  0.3576471 0.4981484 0.5248805 0.5366310 0.6031287 0.6480921    0
+## 7  0.3576471 0.4927448 0.5192771 0.5297159 0.5996437 0.6508314    0
+## 8  0.3576471 0.4848320 0.5408159 0.5427127 0.6200253 0.6717371    0
+## 9  0.4236277 0.5074421 0.5859472 0.5601687 0.6228626 0.6480921    0
+## 10 0.3576471 0.5255698 0.5527057 0.5497490 0.6204819 0.6717371    0
+## 11 0.3794326 0.5235007 0.5783191 0.5600467 0.6126720 0.6717371    0
+## 12 0.4460432 0.5480930 0.5999072 0.5808134 0.6296780 0.6717371    0
+## 13 0.4014252 0.5725752 0.6087279 0.5875305 0.6576219 0.6678832    0
+## 14 0.4460432 0.5585005 0.6117973 0.5911995 0.6590982 0.6717371    0
+## 15 0.4014252 0.5689401 0.6117973 0.5867010 0.6507194 0.6955990    0
+
+The last value of maxnode has the highest accuracy.
+You can try with higher values to see if you can get a higher score.
+
+store_maxnode &lt;- list()
+tuneGrid &lt;- expand.grid(.mtry = best_mtry)
+for (maxnodes in c(20: 30)) {
+    set.seed(1234)
+    rf_maxnode &lt;- train(survived~.,
+        data = data_train,
+        method = "rf",
+        metric = "Accuracy",
+        tuneGrid = tuneGrid,
+        trControl = trControl,
+        importance = TRUE,
+        nodesize = 14,
+        maxnodes = maxnodes,
+        ntree = 300)
+    key &lt;- toString(maxnodes)
+    store_maxnode[[key]] &lt;- rf_maxnode
+}
+results_node &lt;- resamples(store_maxnode)
+summary(results_node)
+
+<k>Output:</k>
+
+## 
+## Call:
+## summary.resamples(object = results_node)
+## 
+## Models: 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 
+## Number of resamples: 10 
+## 
+## Accuracy 
+##         Min.
+  1st Qu.
+   Median      Mean   3rd Qu.
+     Max.
+NA's
+## 20 0.7142857 0.7821644 0.8144005 0.8075301 0.8447719 0.8571429    0
+## 21 0.7142857 0.8000215 0.8144005 0.8075014 0.8403614 0.8571429    0
+## 22 0.7023810 0.7941050 0.8263769 0.8099254 0.8328313 0.8690476    0
+## 23 0.7023810 0.7941050 0.8263769 0.8111302 0.8447719 0.8571429    0
+## 24 0.7142857 0.7946429 0.8313253 0.8135112 0.8417599 0.8690476    0
+## 25 0.7142857 0.7916667 0.8313253 0.8099398 0.8408635 0.8690476    0
+## 26 0.7142857 0.7941050 0.8203528 0.8123207 0.8528758 0.8571429    0
+## 27 0.7023810 0.8060456 0.8313253 0.8135112 0.8333333 0.8690476    0
+## 28 0.7261905 0.7941050 0.8203528 0.8111015 0.8328313 0.8690476    0
+## 29 0.7142857 0.7910929 0.8313253 0.8087063 0.8333333 0.8571429    0
+## 30 0.6785714 0.7910929 0.8263769 0.8063253 0.8403614 0.8690476    0
+## 
+## Kappa 
+##         Min.
+  1st Qu.
+   Median      Mean   3rd Qu.
+     Max.
+NA's
+## 20 0.3956835 0.5316120 0.5961830 0.5854366 0.6661120 0.6955990    0
+## 21 0.3956835 0.5699332 0.5960343 0.5853247 0.6590982 0.6919315    0
+## 22 0.3735084 0.5560661 0.6221836 0.5914492 0.6422128 0.7189781    0
+## 23 0.3735084 0.5594228 0.6228827 0.5939786 0.6657372 0.6955990    0
+## 24 0.3956835 0.5600352 0.6337821 0.5992188 0.6604703 0.7189781    0
+## 25 0.3956835 0.5530760 0.6354875 0.5912239 0.6554912 0.7189781    0
+## 26 0.3956835 0.5589331 0.6136074 0.5969142 0.6822128 0.6955990    0
+## 27 0.3735084 0.5852459 0.6368425 0.5998148 0.6426088 0.7189781    0
+## 28 0.4290780 0.5589331 0.6154905 0.5946859 0.6356141 0.7189781    0
+## 29 0.4070588 0.5534173 0.6337821 0.5901173 0.6423101 0.6919315    0
+## 30 0.3297872 0.5534173 0.6202632 0.5843432 0.6590982 0.7189781    0
+
+The highest accuracy score is obtained with a value of maxnode equals to 22.
+
+<h3 id="RandomForestTuttopic-8"><span class="orange"><k>Step 4)</k> Search the best ntrees</span></h3>
+Now that you have the best value of mtry and maxnode, you can tune the number of trees.
+The method is exactly the same as maxnode.
+
+store_maxtrees &lt;- list()
+for (ntree in c(250, 300, 350, 400, 450, 500, 550, 600, 800, 1000, 2000)) {
+    set.seed(5678)
+    rf_maxtrees &lt;- train(survived~.,
+        data = data_train,
+        method = "rf",
+        metric = "Accuracy",
+        tuneGrid = tuneGrid,
+        trControl = trControl,
+        importance = TRUE,
+        nodesize = 14,
+        maxnodes = 24,
+        ntree = ntree)
+    key &lt;- toString(ntree)
+    store_maxtrees[[key]] &lt;- rf_maxtrees
+}
+results_tree &lt;- resamples(store_maxtrees)
+summary(results_tree)
+
+<k>Output:</k>
+
+## 
+## Call:
+## summary.resamples(object = results_tree)
+## 
+## Models: 250, 300, 350, 400, 450, 500, 550, 600, 800, 1000, 2000 
+## Number of resamples: 10 
+## 
+## Accuracy 
+##           Min.
+  1st Qu.
+   Median      Mean   3rd Qu.
+     Max.
+NA's
+## 250  0.7380952 0.7976190 0.8083764 0.8087010 0.8292683 0.8674699    0
+## 300  0.7500000 0.7886905 0.8024240 0.8027199 0.8203397 0.8452381    0
+## 350  0.7500000 0.7886905 0.8024240 0.8027056 0.8277623 0.8452381    0
+## 400  0.7500000 0.7886905 0.8083764 0.8051009 0.8292683 0.8452381    0
+## 450  0.7500000 0.7886905 0.8024240 0.8039104 0.8292683 0.8452381    0
+## 500  0.7619048 0.7886905 0.8024240 0.8062914 0.8292683 0.8571429    0
+## 550  0.7619048 0.7886905 0.8083764 0.8099062 0.8323171 0.8571429    0
+## 600  0.7619048 0.7886905 0.8083764 0.8099205 0.8323171 0.8674699    0
+## 800  0.7619048 0.7976190 0.8083764 0.8110820 0.8292683 0.8674699    0
+## 1000 0.7619048 0.7976190 0.8121510 0.8086723 0.8303571 0.8452381    0
+## 2000 0.7619048 0.7886905 0.8121510 0.8086723 0.8333333 0.8452381    0
+## 
+## Kappa 
+##           Min.
+  1st Qu.
+   Median      Mean   3rd Qu.
+     Max.
+NA's
+## 250  0.4061697 0.5667400 0.5836013 0.5856103 0.6335363 0.7196807    0
+## 300  0.4302326 0.5449376 0.5780349 0.5723307 0.6130767 0.6710843    0
+## 350  0.4302326 0.5449376 0.5780349 0.5723185 0.6291592 0.6710843    0
+## 400  0.4302326 0.5482030 0.5836013 0.5774782 0.6335363 0.6710843    0
+## 450  0.4302326 0.5449376 0.5780349 0.5750587 0.6335363 0.6710843    0
+## 500  0.4601542 0.5449376 0.5780349 0.5804340 0.6335363 0.6949153    0
+## 550  0.4601542 0.5482030 0.5857118 0.5884507 0.6396872 0.6949153    0
+## 600  0.4601542 0.5482030 0.5857118 0.5884374 0.6396872 0.7196807    0
+## 800  0.4601542 0.5667400 0.5836013 0.5910088 0.6335363 0.7196807    0
+## 1000 0.4601542 0.5667400 0.5961590 0.5857446 0.6343666 0.6678832    0
+## 2000 0.4601542 0.5482030 0.5961590 0.5862151 0.6440678 0.6656337    0
+
+You have your final model.
+You can train the random forest with the following parameters:
+
+<ul>
+<li>ntree =800: 800 trees will be trained</li>
+<li>mtry=4: 4 features is chosen for each iteration</li>
+<li>maxnodes = 24: Maximum 24 nodes in the terminal nodes (leaves)</li>
+</ul>
+fit_rf &lt;- train(survived~.,
+    data_train,
+    method = "rf",
+    metric = "Accuracy",
+    tuneGrid = tuneGrid,
+    trControl = trControl,
+    importance = TRUE,
+    nodesize = 14,
+    ntree = 800,
+    maxnodes = 24)
+
+<h3 id="RandomForestTuttopic-9"><span class="orange"><k>Step 5)</k> Evaluate the model</span></h3>
+The library caret has a function to make prediction.
+
+predict(model, newdata= df)
+argument
+- `model`: Define the model evaluated before.
+
+- `newdata`: Define the dataset to make prediction
+
+prediction &lt;-predict(fit_rf, data_test)
+You can use the prediction to compute the confusion matrix and see the accuracy score
+
+confusionMatrix(prediction, data_test$survived)
+<k>Output:</k>
+
+## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction  No Yes
+##        No  110  32
+##        Yes  11  56
+##                                          
+##                Accuracy : 0.7943         
+##                  95% CI : (0.733, 0.8469)
+##     No Information Rate : 0.5789         
+##     P-Value [Acc &gt; NIR] : 3.959e-11      
+##                                          
+##                   Kappa : 0.5638         
+##  Mcnemar's Test P-Value : 0.002289       
+##                                          
+##             Sensitivity : 0.9091         
+##             Specificity : 0.6364         
+##          Pos Pred Value : 0.7746         
+##          Neg Pred Value : 0.8358         
+##              Prevalence : 0.5789         
+##          Detection Rate : 0.5263         
+##    Detection Prevalence : 0.6794         
+##       Balanced Accuracy : 0.7727         
+##                                          
+##        'Positive' Class : No             
+## 
+
+You have an accuracy of 0.7943 percent, which is higher than the default value
+
+<h3 id="RandomForestTuttopic-10"><span class="orange"><k>Step 6)</k> Visualize Result</span></h3>
+Lastly, you can look at the feature importance with the function varImp().
+It seems that the most important features are the sex and age.
+That is not surprising because the important features are likely to appear closer to the root of the tree, while less important features will often appear closed to the leaves.
+
+varImpPlot(fit_rf)
+<k>Output:</k>
+
+varImp(fit_rf)
+## rf variable importance
+## 
+##              Importance
+## sexmale         100.000
+## age              28.014
+## pclassMiddle     27.016
+## fare             21.557
+## pclassUpper      16.324
+## sibsp            11.246
+## parch             5.522
+## embarkedC         4.908
+## embarkedQ         1.420
+## embarkedS         0.000		
+
+<h3 id="RandomForestTuttopic-11"><span class="orange">Summary</span></h3>
+We can summarize how to train and evaluate a random forest with the table below:
+<table>
+<thead><tr><th>Library</th><th>Objective</th><th>Function</th><th>Parameter</th></tr></thead>
+<tbody>
+<tr><td>randomForest</td><td>Create a Random forest</td><td>RandomForest()</td><td>formula, ntree=n, mtry=FALSE, maxnodes = NULL</td></tr>
+<tr><td>caret</td><td>Create K folder cross validation</td><td>trainControl()</td><td>method = “cv”, number = n, search =”grid”</td></tr>
+<tr><td>caret</td><td>Train a Random Forest</td><td>train()</td><td>formula, df, method = “rf”, metric= “Accuracy”, trControl = trainControl(), tuneGrid = NULL</td></tr>
+<tr><td>caret</td><td>Predict out of sample</td><td>predict</td><td>model, newdata= df</td></tr>
+<tr><td>caret</td><td>Confusion Matrix and Statistics</td><td>confusionMatrix()</td><td>model, y test</td></tr>
+<tr><td>caret</td><td>variable importance</td><td>cvarImp()</td><td>model</td></tr>
+</tbody></table>
+
+<h2>Decision Tree in R: Classification Tree</h2>
+
+<div id="DecisionTreetoc" class="toc"><a href="#DecisionTreetopic-0" target="_self"><span class="orange">What are Decision Trees?</span></a><br><a href="#DecisionTreetopic-1" target="_self">Training and Visualizing a decision trees in R</a><br><a href="#DecisionTreetopic-2" target="_self"><span class="orange"><k>Step 1) </k>Import the data</span></a><br><a href="#DecisionTreetopic-3" target="_self"><span class="orange"><k>Step 2) </k>Clean the dataset</span></a><br><a href="#DecisionTreetopic-4" target="_self"><span class="orange"><k>Step 3)</k> Create train/test set</span></a><br><a href="#DecisionTreetopic-5" target="_self">Install rpart.plot</a><br><a href="#DecisionTreetopic-6" target="_self"><span class="orange"><k>Step 4) </k>Build the model</span></a><br><a href="#DecisionTreetopic-7" target="_self"><span class="orange"><k>Step 5)</k> Make a prediction</span></a><br><a href="#DecisionTreetopic-8" target="_self"><span class="orange"><k>Step 6)</k> Measure performance</span></a><br><a href="#DecisionTreetopic-9" target="_self"><span class="orange"><k>Step 7) </k>Tune the hyper-parameters</span></a><br><a href="#DecisionTreetopic-10" target="_self">Summary</a><br></div></center>
+
+<h3 id="DecisionTreetopic-0"><span class="orange">What are Decision Trees?</span></h3>
+<k>Decision Trees</k> are versatile Machine Learning algorithm that can perform both classification and regression tasks.
+They are very powerful algorithms, capable of fitting complex datasets.
+Besides, decision trees are fundamental components of random forests, which are among the most potent Machine Learning algorithms available today.
+
+<h3 id="DecisionTreetopic-1">Training and Visualizing a decision trees in R</h3>
+
+<h3 id="DecisionTreetopic-2"><span class="orange"><k>Step 1) </k>Import the data</span></h3>
+If you are curious about the fate of the titanic, you can watch this video on <a href="https://www.youtube.com/watch?v=9xoqXVjBEF8" data-lasso-id="209454" rel="noopener">Youtube</a>.
+The purpose of this dataset is to predict which people are more likely to survive after the collision with the iceberg.
+The dataset contains 13 variables and 1309 observations.
+The dataset is ordered by the variable X.<br>
+
+set.seed(678)
+path &lt;- 'https://raw.githubusercontent.com/guru99-edu/R-Programming/master/titanic_data.csv'
+titanic &lt;-read.csv(path)
+head(titanic)
+
+<span class="smallsize"><k>Output:</k>
+##   X pclass survived                                            name    sex
+## 1 1      1        1                   Allen, Miss. Elisabeth Walton female
+## 2 2      1        1                  Allison, Master. Hudson Trevor   male
+## 3 3      1        0                    Allison, Miss. Helen Loraine female
+## 4 4      1        0            Allison, Mr. Hudson Joshua Creighton   male
+## 5 5      1        0 Allison, Mrs. Hudson J C (Bessie Waldo Daniels) female
+## 6 6      1        1                             Anderson, Mr. Harry   male
+##       age sibsp parch ticket     fare   cabin embarked
+## 1 29.0000     0     0  24160 211.3375      B5        S
+## 2  0.9167     1     2 113781 151.5500 C22 C26        S
+## 3  2.0000     1     2 113781 151.5500 C22 C26        S
+## 4 30.0000     1     2 113781 151.5500 C22 C26        S
+## 5 25.0000     1     2 113781 151.5500 C22 C26        S
+## 6 48.0000     0     0  19952  26.5500     E12        S
+##                         home.dest
+## 1                    St Louis, MO
+## 2 Montreal, PQ / Chesterville, ON
+## 3 Montreal, PQ / Chesterville, ON
+## 4 Montreal, PQ / Chesterville, ON
+## 5 Montreal, PQ / Chesterville, ON
+## 6                    New York, NY
+
+tail(titanic)
+</span>
+<span class="smallsize"><k>Output:</k>
+##         X pclass survived                      name    sex  age sibsp
+## 1304 1304      3        0     Yousseff, Mr. Gerious   male   NA     0
+## 1305 1305      3        0      Zabour, Miss. Hileni female 14.5     1
+## 1306 1306      3        0     Zabour, Miss. Thamine female   NA     1
+## 1307 1307      3        0 Zakarian, Mr. Mapriededer   male 26.5     0
+## 1308 1308      3        0       Zakarian, Mr. Ortin   male 27.0     0
+## 1309 1309      3        0        Zimmerman, Mr. Leo   male 29.0     0
+##      parch ticket    fare cabin embarked home.dest
+## 1304     0   2627 14.4583              C          
+## 1305     0   2665 14.4542              C          
+## 1306     0   2665 14.4542              C          
+## 1307     0   2656  7.2250              C          
+## 1308     0   2670  7.2250              C          
+## 1309     0 315082  7.8750              S
+</span>
+From the head and tail output, you can notice the data is not shuffled.
+This is a big issue! When you will split your data between a train set and test set, you will select <k>only</k> the passenger from class 1 and 2 (No passenger from class 3 are in the top 80 percent of the observations), which means the algorithm will never see the features of passenger of class 3.
+This mistake will lead to poor prediction.<br>
+
+To overcome this issue, you can use the function sample().
+shuffle_index &lt;- sample(1:nrow(titanic))
+head(shuffle_index)
+Decision tree R code Explanation
+<ul>
+<li>sample(1:nrow(titanic)): Generate a random list of index from 1 to 1309 (i.e.
+the maximum number of rows).</li>
+</ul>
+<span class="smallsize"><k>Output:</k>
+## [1]  288  874 1078  633  887  992
+</span>
+You will use this index to shuffle the titanic dataset.
+titanic &lt;- titanic[shuffle_index, ]
+
+head(titanic)
+<span class="smallsize"><k>Output:</k>
+##         X pclass survived
+## 288   288      1        0
+## 874   874      3        0
+## 1078 1078      3        1
+## 633   633      3        0
+## 887   887      3        1
+## 992   992      3        1
+##                                                           name    sex age
+## 288
+  Sutton, Mr. Frederick   male  61
+## 874
+  Humblen, Mr. Adolf Mathias Nicolai Olsen   male  42
+## 1078
+  O'Driscoll, Miss. Bridget female  NA
+## 633
+  Andersson, Mrs. Anders Johan (Alfrida Konstantia Brogren) female  39
+## 887
+  Jermyn, Miss. Annie female  NA
+## 992
+  Mamee, Mr. Hanna   male  NA
+##      sibsp parch ticket    fare cabin embarked           home.dest
+## 288      0     0  36963 32.3208   D50        S     Haddenfield, NJ
+## 874      0     0 348121  7.6500 F G63        S                    
+## 1078     0     0  14311  7.7500              Q                    
+## 633      1     5 347082 31.2750              S Sweden Winnipeg, MN
+## 887      0     0  14313  7.7500              Q                    
+## 992      0     0   2677  7.2292              C	
+</span>
+<h3 id="DecisionTreetopic-3"><span class="orange"><k>Step 2) </k>Clean the dataset</span></h3>
+The structure of the data shows some variables have NA’s.
+Data clean up to be done as follows
+<ul>
+<li>Drop variables home.dest,cabin, name, X and ticket</li>
+<li>Create factor variables for pclass and survived</li>
+<li>Drop the NA</li>
+</ul>
+library(dplyr)
+# Drop variables
+clean_titanic &lt;- titanic % &gt; %
+select(-c(home.dest, cabin, name, X, ticket)) % &gt; % 
+#Convert to factor level
+	mutate(pclass = factor(pclass, levels = c(1, 2, 3), labels = c('Upper', 'Middle', 'Lower')),
+	survived = factor(survived, levels = c(0, 1), labels = c('No', 'Yes'))) % &gt; %
+na.omit()
+glimpse(clean_titanic)
+Code Explanation
+<ul>
+<li> select(-c(home.dest, cabin, name, X, ticket)): Drop unnecessary variables</li>
+<li>pclass = factor(pclass, levels = c(1,2,3), labels= c(‘Upper’, ‘Middle’, ‘Lower’)): Add label to the variable pclass.
+1 becomes Upper, 2 becomes MIddle and 3 becomes lower</li>
+<li>factor(survived, levels = c(0,1), labels = c(‘No’, ‘Yes’)): Add label to the variable survived.
+1 Becomes No and 2 becomes Yes</li>
+<li>na.omit(): Remove the NA observations</li>
+</ul>
+<span class="smallsize"><k>Output:</k>
+## Observations: 1,045
+## Variables: 8
+## $ pclass   &lt;fctr&gt; Upper, Lower, Lower, Upper, Middle, Upper, Middle, U...
+## $ survived &lt;fctr&gt; No, No, No, Yes, No, Yes, Yes, No, No, No, No, No, Y...
+## $ sex      &lt;fctr&gt; male, male, female, female, male, male, female, male...
+## $ age      &lt;dbl&gt; 61.0, 42.0, 39.0, 49.0, 29.0, 37.0, 20.0, 54.0, 2.0, ...
+## $ sibsp    &lt;int&gt; 0, 0, 1, 0, 0, 1, 0, 0, 4, 0, 0, 1, 1, 0, 0, 0, 1, 1,...
+## $ parch    &lt;int&gt; 0, 0, 5, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 2, 0, 4, 0,...
+## $ fare     &lt;dbl&gt; 32.3208, 7.6500, 31.2750, 25.9292, 10.5000, 52.5542, ...
+## $ embarked &lt;fctr&gt; S, S, S, S, S, S, S, S, S, C, S, S, S, Q, C, S, S, C...		
+</span>
+<h3 id="DecisionTreetopic-4"><span class="orange"><k>Step 3)</k> Create train/test set</span></h3>
+Before you train your model, you need to perform two steps:
+<ul>
+<li>Create a train and test set: You train the model on the train set and test the prediction on the test set (i.e.
+unseen data)</li>
+<li>Install rpart.plot from the console</li>
+</ul>
+The common practice is to split the data 80/20, 80 percent of the data serves to train the model, and 20 percent to make predictions.
+You need to create two separate data frames.
+You don’t want to touch the test set until you finish building your model.
+You can create a function name create_train_test() that takes three arguments.
+create_train_test(df, size = 0.8, train = TRUE)
+arguments:
+-df: Dataset used to train the model.
+-size: Size of the split.
+By default, 0.8.
+Numerical value
+-train: If set to `TRUE`, the function creates the train set, otherwise the test set.
+Default value sets to `TRUE`.
+Boolean value.You need to add a Boolean parameter because R does not allow to return two data frames simultaneously.
+create_train_test &lt;- function(data, size = 0.8, train = TRUE) {
+    n_row = nrow(data)
+    total_row = size * n_row
+    train_sample &lt; - 1: total_row
+    if (train == TRUE) {
+        return (data[train_sample, ])
+    } else {
+        return (data[-train_sample, ])
+    }
+}
+
+Code Explanation
+<ul>
+<li>function(data, size=0.8, train = TRUE): Add the arguments in the function</li>
+<li>n_row = nrow(data): Count number of rows in the dataset</li>
+<li>total_row = size*n_row: Return the nth row to construct the train set</li>
+<li>train_sample &lt;- 1:total_row: Select the first row to the nth rows</li>
+<li>if (train ==TRUE){ } else { }: If condition sets to true, return the train set, else the test set.</li>
+</ul>
+You can test your function and check the dimension.
+data_train &lt;- create_train_test(clean_titanic, 0.8, train = TRUE)
+data_test &lt;- create_train_test(clean_titanic, 0.8, train = FALSE)
+dim(data_train)
+<span class="smallsize"><k>Output:</k>
+## [1] 836   8</span>
+dim(data_test)
+<span class="smallsize"><k>Output:</k>
+## [1] 209   8</span>
+The train dataset has 1046 rows while the test dataset has 262 rows.
+You use the function prop.table() combined with table() to verify if the randomization process is correct.
+prop.table(table(data_train$survived))
+<span class="smallsize"><k>Output:</k>
+##
+##        No       Yes 
+## 0.5944976 0.4055024
+</span>
+prop.table(table(data_test$survived))
+<span class="smallsize"><k>Output:</k>
+## 
+##        No       Yes 
+## 0.5789474 0.4210526
+</span>
+In both dataset, the amount of survivors is the same, about 40 percent.
+<h3 id="DecisionTreetopic-5">Install rpart.plot</h3>
+rpart.plot is not available from conda libraries.
+You can install it from the console:
+install.packages("rpart.plot")
+<h3 id="DecisionTreetopic-6"><span class="orange"><k>Step 4) </k>Build the model</span></h3>
+You are ready to build the model.
+The syntax for Rpart decision tree function is:
+rpart(formula, data=, method='')
+arguments:			
+- formula: The function to predict
+- data: Specifies the data frame- method: 			
+- "class" for a classification tree 			
+- "anova" for a regression tree	
+
+You use the class method because you predict a class.
+library(rpart)
+library(rpart.plot)
+fit &lt;- rpart(survived~., data = data_train, method = 'class')
+rpart.plot(fit, extra = 106
+Code Explanation
+<ul>
+<li>rpart(): Function to fit the model.
+The arguments are:
+<ul>
+<li>survived ~.: Formula of the Decision Trees</li>
+<li>data = data_train: Dataset</li>
+<li>method = ‘class’: Fit a binary model</li>
+</ul>
+</li>
+<li>rpart.plot(fit, extra= 106): Plot the tree.
+The extra features are set to 101 to display the probability of the 2nd class (useful for binary responses).
+You can refer to the <a href="https://cran.r-project.org/web/packages/rpart.plot/rpart.plot.pdf" data-lasso-id="209458" rel="noopener">vignette</a> for more information about the other choices.</li>
+</ul>
+<span class="smallsize"><k>Output:</k></span>
+<img class="lazy" data-src="https://www.guru99.com/images/r_programming/032918_0938_DecisionTre1.png">
+You start at the root node (depth 0 over 3, the top of the graph):
+<ol>
+<li>At the top, it is the overall probability of survival.
+It shows the proportion of passenger that survived the crash.
+41 percent of passenger survived.</li>
+<li>This node asks whether the gender of the passenger is male.
+If yes, then you go down to the root’s left child node (depth 2).
+63 percent are males with a survival probability of 21 percent.</li>
+<li>In the second node, you ask if the male passenger is above 3.5 years old.
+If yes, then the chance of survival is 19 percent.</li>
+<li>You keep on going like that to understand what features impact the likelihood of survival.</li>
+</ol>
+Note that, one of the many qualities of Decision Trees is that they require very little data preparation.
+In particular, they don’t require feature scaling or centering.
+By default, rpart() function uses the <k>Gini</k> impurity measure to split the note.
+The higher the Gini coefficient, the more different instances within the node.
+<h3 id="DecisionTreetopic-7"><span class="orange"><k>Step 5)</k> Make a prediction</span></h3>
+You can predict your test dataset.
+To make a prediction, you can use the predict() function.
+The basic syntax of predict for R decision tree is:
+predict(fitted_model, df, type = 'class')
+arguments:
+- fitted_model: This is the object stored after model estimation.
+
+- df: Data frame used to make the prediction
+- type: Type of prediction			
+    - 'class': for classification			
+    - 'prob': to compute the probability of each class			
+    - 'vector': Predict the mean response at the node level	
+
+You want to predict which passengers are more likely to survive after the collision from the test set.
+It means, you will know among those 209 passengers, which one will survive or not.
+predict_unseen &lt;-predict(fit, data_test, type = 'class')
+Code Explanation
+<ul>
+<li>predict(fit, data_test, type = ‘class’): Predict the class (0/1) of the test set</li>
+</ul>
+Testing the passenger who didn’t make it and those who did.
+table_mat &lt;- table(data_test<k>$</k>survived, predict_unseen)
+table_mat
+Code Explanation
+<ul>
+<li>table(data_test$survived, predict_unseen): Create a  table to count how many passengers are classified as survivors and passed away compare to the correct decision tree classification in R</li>
+</ul>
+<span class="smallsize"><k>Output:</k>
+##      predict_unseen
+##        No Yes
+##   No  106  15
+##   Yes  30  58
+</span>
+The model correctly predicted 106 dead passengers but classified 15 survivors as dead.
+By analogy, the model misclassified 30 passengers as survivors while they turned out to be dead.
+<h3 id="DecisionTreetopic-8"><span class="orange"><k>Step 6)</k> Measure performance</span></h3>
+You can compute an accuracy measure for classification task with the <k><a href="/confusion-matrix-machine-learning-example.html" data-lasso-id="209461">confusion matrix</a></k>:
+The <k>confusion matrix</k> is a better choice to evaluate the classification performance.
+The general idea is to count the number of times True instances are classified are False.
+<img class="lazy" data-src="https://www.guru99.com/images/r_programming/032918_0938_DecisionTre2.png">
+Each row in a confusion matrix represents an actual target, while each column represents a predicted target.
+The first row of this matrix considers dead passengers (the False class): 106 were correctly classified as dead (<k>True negative</k>), while the remaining one was wrongly classified as a survivor (<k>False positive</k>).
+The second row considers the survivors, the positive class were 58 (<k>True positive</k>), while the <k>True negative</k> was 30.
+You can compute the <k>accuracy test</k> from the confusion matrix:
+<img class="lazy" data-src="https://www.guru99.com/images/r_programming/032918_0938_DecisionTre3.jpg">
+It is the proportion of true positive and true negative over the sum of the matrix.
+With R, you can code as follow:
+accuracy_Test &lt;- sum(diag(table_mat)) / sum(table_mat)
+Code Explanation
+<ul>
+<li>sum(diag(table_mat)): Sum of the diagonal</li>
+<li>sum(table_mat): Sum of the matrix.</li>
+</ul>
+You can print the accuracy of the test set:
+print(paste('Accuracy for test', accuracy_Test))
+<span class="smallsize"><k>Output:</k>
+## [1] "Accuracy for test 0.784688995215311"</span>
+You have a score of 78 percent for the test set.
+You can replicate the same exercise with the training dataset.
+<h3 id="DecisionTreetopic-9"><span class="orange"><k>Step 7) </k>Tune the hyper-parameters</span></h3>
+Decision tree in R has various parameters that control aspects of the fit.
+In rpart decision tree library, you can control the parameters using the rpart.control() function.
+In the following code, you introduce the parameters you will tune.
+You can refer to the <a href="https://cran.r-project.org/web/packages/rpart/rpart.pdf" data-lasso-id="209463" rel="noopener">vignette</a> for other parameters.
+rpart.control(minsplit = 20, minbucket = round(minsplit/3), maxdepth = 30)
+Arguments:
+-minsplit: Set the minimum number of observations in the node before the algorithm perform a split
+-minbucket:  Set the minimum number of observations in the final note i.e.
+the leaf
+-maxdepth: Set the maximum depth of any node of the final tree.
+The root node is treated a depth 0
+We will proceed as follow:
+<ul>
+<li>Construct function to return accuracy</li>
+<li>Tune the maximum depth</li>
+<li>Tune the minimum number of sample a node must have before it can split</li>
+<li>Tune the minimum number of sample a leaf node must have</li>
+</ul>
+You can write a function to display the accuracy.
+You simply wrap the code you used before:
+<ol>
+<li>predict: predict_unseen &lt;- predict(fit, data_test, type = ‘class’)</li>
+<li>Produce table: table_mat &lt;- table(data_test$survived, predict_unseen)</li>
+<li>Compute accuracy: accuracy_Test &lt;- sum(diag(table_mat))/sum(table_mat)</li>
+</ol>
+accuracy_tune &lt;- function(fit) {
+    predict_unseen &lt;- predict(fit, data_test, type = 'class')
+    table_mat &lt;- table(data_test$survived, predict_unseen)
+    accuracy_Test &lt;- sum(diag(table_mat)) / sum(table_mat)
+    accuracy_Test
+}
+
+You can try to tune the parameters and see if you can improve the model over the default value.
+As a reminder, you need to get an accuracy higher than 0.78
+control &lt;- rpart.control(minsplit = 4,
+    minbucket = round(5 / 3),
+    maxdepth = 3,
+    cp = 0)
+tune_fit &lt;- rpart(survived~., data = data_train, method = 'class', control = control)
+accuracy_tune(tune_fit)
+<span class="smallsize"><k>Output:</k>
+## [1] 0.7990431</span>
+With the following parameter:
+minsplit = 4
+minbucket= round(5/3)
+maxdepth = 3cp=0
+You get a higher performance than the previous model.
+Congratulation!
+<h3 id="DecisionTreetopic-10">Summary</h3>
+We can summarize the functions to train a decision tree algorithm in R
+<table><thead><tr><th>Library</th><th>Objective</th><th>Function</th><th>Class</th><th>Parameters</th><th>Details</th></tr></thead><tbody>
+<tr><td>rpart</td><td>Train classification tree in R</td><td>rpart()</td><td>class</td><td>formula, df, method</td><td></td></tr>
+<tr><td>rpart</td><td>Train regression tree</td><td>rpart()</td><td>anova</td><td>formula, df, method</td><td></td></tr>
+<tr><td>rpart</td><td>Plot the trees</td><td>rpart.plot()</td><td></td><td>fitted model</td><td></td></tr>
+<tr><td>base</td><td>predict</td><td>predict()</td><td>class</td><td>fitted model, type</td><td></td></tr>
+<tr><td>base</td><td>predict</td><td>predict()</td><td>prob</td><td>fitted model, type</td><td></td></tr>
+<tr><td>base</td><td>predict</td><td>predict()</td><td>vector</td><td>fitted model, type</td><td></td></tr>
+<tr><td>rpart</td><td>Control parameters</td><td>rpart.control()</td><td></td><td>minsplit</td><td>Set the minimum number of observations in the node before the algorithm perform a split</td></tr>
+<tr><td></td><td></td><td></td><td></td><td>minbucket</td><td>Set the minimum number of observations in the final note i.e.
+the leaf</td></tr>
+<tr><td></td><td></td><td></td><td></td><td>maxdepth</td><td>Set the maximum depth of any node of the final tree.
+The root node is treated a depth 0</td></tr>
+<tr><td>rpart</td><td>Train model with control parameter</td><td>rpart()</td><td></td><td>formula, df, method, control</td><td></td></tr>
+</tbody></table>
+Note : Train the model on a training data and test the performance on an unseen dataset, i.e.
+test set.
+
 
 
 
