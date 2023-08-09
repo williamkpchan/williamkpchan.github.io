@@ -179,6 +179,7 @@ function chkKey() {
   else if(testkey == ','){window.open("https://williamkpchan.github.io/LibDocs/mlinechart.html");}
   else if(testkey == '.'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutechart.html");}
   else if(testkey == '/'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutecharttest.html");}
+  else if(testkey == 'o'){window.open($('img').attr('src'))}
   else{chkOtherKeys(testkey)} 
 }
 function chkOtherKeys(testkey) {
