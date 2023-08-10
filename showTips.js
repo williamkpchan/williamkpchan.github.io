@@ -179,7 +179,9 @@ function chkKey() {
   else if(testkey == ','){window.open("https://williamkpchan.github.io/LibDocs/mlinechart.html");}
   else if(testkey == '.'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutechart.html");}
   else if(testkey == '/'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutecharttest.html");}
-  else if(testkey == 'o'){window.open($('img').attr('src'))}
+  else if(testkey == 'o'){imgSrc = $('img').attr('src');
+                          if(imgSrc!=''){ window.open(imgSrc);}
+                         }
   else{chkOtherKeys(testkey)} 
 }
 function chkOtherKeys(testkey) {
@@ -334,7 +336,7 @@ function settimeInterval() {
 
 forward();
 
-$(".tip-button").after("<br><br><br>shortcut Keys:<br>+ addToIgnoreLst<br>- removeFmIgnoreLst<br>2 setRange<br>A toggle_automode<br>b backClick<br>c callCalculator<br>c showChart<br>C showTimeDate<br>e scrollTo Bottom<br>f forward<br>H showHelp<br>r randomNum<br>R removeNumFmIgnoreLst<br>s setRange<br>S toggle_showSrcSwitch<br>T alertTotal<br>t scrollTo Top<br>v viewIgnoreLst<br>x showAnswer<br>z showTenYear")
+$(".tip-button").after("<br><br><br>shortcut Keys:<br>+ addToIgnoreLst<br>- removeFmIgnoreLst<br>2 setRange<br>A toggle_automode<br>b backClick<br>c callCalculator<br>c showChart<br>C showTimeDate<br>e scrollTo Bottom<br>f forward<br>H showHelp<br>r randomNum<br>R removeNumFmIgnoreLst<br>s setRange<br>S toggle_showSrcSwitch<br>T alertTotal<br>t scrollTo Top<br>v viewIgnoreLst<br>x showAnswer<br>z showTenYear<br>o open image in new window")
 
 window.addEventListener('click', function (evt) {
   if (evt.detail === 3) {
