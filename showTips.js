@@ -180,7 +180,7 @@ function chkKey() {
   else if(testkey == '.'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutechart.html");}
   else if(testkey == '/'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutecharttest.html");}
   else if(testkey == 'o'){imgSrc = $('img').attr('src');
-                          if(imgSrc!=''){ window.open(imgSrc);}
+                          if(imgSrc !== undefined){ window.open(imgSrc);}
                          }
   else{chkOtherKeys(testkey)} 
 }
