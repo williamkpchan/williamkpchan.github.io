@@ -72,6 +72,7 @@ function chkOtherKeys(testkey) {
   else if(testkey == 'c'){showChart();}
   else if(testkey == 'C'){alert(showTime() + "\n\n"+showDate());}
   else if(testkey == 'd'){window.open("https://www.youdao.com/");}
+  else if(testkey == 'D'){window.open("https://docs.google.com/document/d/1N_f4jh3EmTCfrOJC4nb0MaHDK-5ibw0hZccBkMULd4g/edit");}
   else if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
   else if(testkey == 'f'){window.open("http://williamkpchan.github.io/ForexChart.htm");}
   else if(testkey == 'G'){window.open("https://keep.google.com/");}
