@@ -614,6 +614,125 @@ Git will have a hard time trying to merge the changes from computer 2 with the c
 pull is fetch + merge.
 If you've already run fetch, there's no need to run pull, merge should be enough.
 Or just run pull without fetching first, as it fetches on its own.
+<h2>Multiple Github Accounts on a single Machine</h2>
+Let suppose I have two github accounts, <k>https://github.com/rahul-office</k> and <k>https://github.com/rahul-personal</k>. Now i want to setup my mac to easily talk to both the github accounts.
+NOTE: This logic can be extended to more than two accounts also. :)
+The setup can be done in 5 easy steps:
+<k>Step 1: Create SSH keys for all accounts
+Step 2: Add SSH keys to SSH Agent
+Step 3: Add SSH public key to the Github
+Step 4: Create a Config File and Make Host Entries
+Step 5: Cloning GitHub repositories using different accounts</k>
+<h3>Create SSH keys for all accounts</h3>
+First make sure your current directory is your <k>.ssh</k> folder.
+     $ cd ~/.ssh
+
+Syntax for generating unique ssh key for ann account is:
+     ssh-keygen -t rsa -C "your-email-address" -f "github-username"
+here,
+
+<k>-C</k> stands for comment to help identify your ssh key
+<k>-f</k> stands for the file name where your ssh key get saved
+<h4>Now generating SSH keys for my two accounts</h4>
+     ssh-keygen -t rsa -C "my_office_email@gmail.com" -f "github-rahul-office"
+     ssh-keygen -t rsa -C "my_personal_email@gmail.com" -f "github-rahul-personal"
+
+Notice here <k>rahul-office</k> and <k>rahul-work</k> are the username of my github accounts corresponding to <k>my_office_email@gmail.com</k> and <k>my_personal_email@gmail.com</k> email ids respectively.
+After entering the command the terminal will ask for passphrase, leave it empty and proceed.
+<a target="_blank" href="https://raw.githubusercontent.com/rahularity/github-essentials/bc3dafc37b36f5fb4ebcffcba63a7689a36fc7ff/screenshots/passphrase.png"><img src="https://raw.githubusercontent.com/rahularity/github-essentials/bc3dafc37b36f5fb4ebcffcba63a7689a36fc7ff/screenshots/passphrase.png" alt="Passphrase Image" style="max-width: 100%;"></a>
+
+Now after adding keys , in your .ssh folder, a public key and a private will get generated.
+
+The public key will have an extention <k>.pub</k> and private key will be there without any extention both having same name which you have passed after <k>-f</k> option in the above command. (in my case <k>github-rahul-office</k> and <k>github-rahu-personal</k>)
+<a target="_blank" href="https://raw.githubusercontent.com/rahularity/github-essentials/master/screenshots/ssh_keys_added.png"><img src="https://raw.githubusercontent.com/rahularity/github-essentials/master/screenshots/ssh_keys_added.png" alt="Added Key Image" style="max-width: 100%;"></a>
+<h3>Add SSH keys to SSH Agent</h3>
+Now we have the keys but it cannot be used until we add them to the SSH Agent.
+     ssh-add -K ~/.ssh/github-rahul-office
+     ssh-add -K ~/.ssh/github-rahul-personal
+
+You can read more about adding keys to SSH Agent <a href="https://help.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent">here.</a>
+<h3>Add SSH public key to the Github</h3>
+For the next step we need to add our public key (that we have generated in our previous step) and add it to corresponding github accounts.
+For doing this we need to:
+<k>1. Copy the public key</k>
+<dg> We can copy the public key either by opening the github-rahul-office.pub file in vim and then copying the content of it.
+</dg>
+     vim ~/.ssh/github-rahul-office.pub
+     vim ~/.ssh/github-rahul-personal.pub
+
+<p align="center">OR
+We can directly copy the content of the public key file in the clipboard.
+     pbcopy &lt; ~/.ssh/github-rahul-office.pub
+     pbcopy &lt; ~/.ssh/github-rahul-personal.pub
+
+<k>2. Paste the public key on Github</k>
+<ul>
+<li>Sign in to Github Account
+<li>Goto <k>Settings</k> &gt; <k>SSH and GPG keys</k> &gt; <k>New SSH Key</k>
+<li>Paste your copied public key and give it a Title of your choice.
+</ul>
+<em><k>OR</k></em>
+<ul>
+<li>Sign in to Github
+<li>Paste this link in your browser (<a href="https://github.com/settings/keys">https://github.com/settings/keys</a>) or click <a href="https://github.com/settings/keys">here</a>
+<li>Click on <k>New SSH Key</k> and paste your copied key.
+</ul>
+<h3>Create a Config File and Make Host Entries</h3>
+The <k>~/.ssh/config</k> file allows us specify many config options for SSH.
+If <k>config</k> file not already exists then create one (make sure you are in <k>~/.ssh</k> directory)
+     touch config
+
+The commands below opens config in your default editor....Likely TextEdit, VS Code.
+     open config
+
+Now we need to add these lines to the file, each block corresponding to each account we created earlier.
+<dg>     #rahul-office account
+     Host github.com-rahul-office
+          HostName github.com
+          User git
+          IdentityFile ~/.ssh/github-rahul-office
+
+     #rahul-personal account
+     Host github.com-rahul-personal
+          HostName github.com
+          User git
+          IdentityFile ~/.ssh/github-rahul-personal
+</dg>
+<h3>Cloning GitHub repositories using different accounts</h3>
+So we are done with our setups and now its time to see it in action. We will clone a repository using one of the account we have added.
+Make a new project folder where you want to clone your repository and go to that directory from your terminal.
+For Example:
+I am making a repository on my personal github account and naming it <k>TestRepo</k>
+Now for cloning the repo use the below command:
+<dg>    git clone git@github.com-{your-username}:{owner-user-name}/{the-repo-name}.git
+
+    [e.g.] git clone git@github.com-rahul-personal:rahul-personal/TestRepo.git
+</dg>
+ 
+<h3>Finally</h3>
+From now on, to ensure that our commits and pushes from each repository on the system uses the correct GitHub user — we will have to configure <k>user.email</k> and <k>user.name</k> in every repository freshly cloned or existing before.
+To do this use the following commands.
+<dg>     git config user.email "my_office_email@gmail.com"
+     git config user.name "Rahul Pandey"
+     
+     git config user.email "my-personal-email@gmail.com"
+     git config user.name "Rahul Pandey"
+</dg>
+Pick the correct pair for your repository accordingly.
+To push or pull to the correct account we need to add the remote origin to the project
+<dg>     git remote add origin git@github.com-rahul-personal:rahul-personal
+     
+     git remote add origin git@github.com-rahul-office:rahul-office
+</dg>
+Now you can use:
+<dg>     git push
+     
+     git pull
+</dg>
+
+P.S: <br> If this gist has been helpful to you, kindly consider leaving a star.
+<br>   If you'd like, let's connect on <a href="https://www.linkedin.com/in/rahularity" rel="nofollow">LinkedIn</a> and build a supportive community together.
+
 
 <h2>Use Multiple GitHub Accounts With One Computer</h2>
 <h3>How to set up and change SSH keys to use multiple GitHub accounts on one machine</h3>
@@ -2825,7 +2944,7 @@ Now that the remote and local repositories can interact seamlessly, you can cont
 SSH key pairs allow users to connect to remote accounts without having to use the password of the remote account. This is useful if you'd like to not have to enter the password to an account you own and access frequently, or if you need to connect to a shared account where you are not its owner and do not know its password. You create a pair of files known as "keys", one private and one public, to facilitate this process. The private key stays on the machine you will connect from which is usually the machine where it is created (for example, your laptop). The other key, the public key, is put into the remote account by the owner of that account (which may be you) or by the server administrator. Think of this process as leaving a real key (the public key) in a remote door. The door will only open if you have the associated private key as you approach. This is why you must keep the private key to yourself, otherwise people who have a copy of it can pass through all the doors in which you left your public key.
 The most popular Windows SSH client today is Putty which is available from <a href="http://www.chiark.greenend.org.uk/%7Esgtatham/putty">http://www.chiark.greenend.org.uk/~sgtatham/putty</a>. Download the complete Windows installer rather than just the putty.exe file. You may choose to follow the thorough Putty documentation directly on how to <a href="http://the.earth.li/%7Esgtatham/putty/0.60/htmldoc/Chapter8.html#pubkey-puttygen">create an SSH keypair on Windows</a>. Otherwise see the more brief step-by-step instructions below.
 
-<b id="SSHKeystopic-0">Generating SSH Keys</b> <a href="#top" target="_self"><b>⇧</b></a><br>
+<b id="SSHKeystopic-0">Generating SSH Keys</b>
 Start the puttygen.exe program included with the Putty installer.
 In the <em>Parameters</em> section choose SSH3 RSA as the key type and press <k>Generate</k>. You will need to move your mouse about in the small window area in order to generate randomness that the process requires.
 You may choose to enter a key comment which can be used by you to identify the key (useful when you use several SSH keys).
@@ -2833,11 +2952,11 @@ Type in a passphrase and confirm it. The passphrase is used to protect your key 
 Click <k>Save private key</k> to save your private key. A common name is <k>id_rsa</k>.
 Click <k>Save public key</k> to save your public key.  A common name is <k>id_rsa.pub</k>.
 
-<b id="SSHKeystopic-1"> Uploading and Installing the public key</b> <a href="#top" target="_self"><b>⇧</b></a><br>
+<b id="SSHKeystopic-1"> Uploading and Installing the public key</b>
 See the UNIX instructions for these steps above as they are identical.
 
-<h3 id="SSHKeystopic-2">Using the SSH Key</h3> <a href="#top" target="_self"><b>⇧</b></a><br>
-<b id="SSHKeystopic-3"> SSH config file</b> <a href="#top" target="_self"><b>⇧</b></a><br>
+<h3 id="SSHKeystopic-2">Using the SSH Key</h3>
+<b id="SSHKeystopic-3"> SSH config file</b>
 You can explicitly tell your ssh program to use your ssh key and not your password with `ssh -o preferredauthentications=publickey ...`. Since you may not want to type that every time, you can configure an ssh host alias. Create and/or append to the file ~/.ssh/config on your local computer and enter the following:
 
 <code>Host somename
@@ -2846,7 +2965,7 @@ User theuser
 PreferredAuthentications publickey</code>
 Then you can invoke `ssh somename` and it will pass in all of the above options.
 
-<b id="SSHKeystopic-4"> SSH Agent</b> <a href="#top" target="_self"><b>⇧</b></a><br>
+<b id="SSHKeystopic-4"> SSH Agent</b>
 If you do not want to have to type your key's passphrase every time, you can load the key into your SSH agent once. The ssh-agent is usually automatically started on Linux, and you can load the key into your agent by typing `ssh-add`. If your key is in a non-standard location, you can manually specify it with `ssh-add /path/to/the/ssh/key`. On macOS, your agent uses your keychain, so pass in `-K` to ssh-add, e.g. `ssh-add -K` or `ssh-add -K /path/to/the/ssh/key`.
 
 <h2>What is ed25519?</h2>
@@ -2859,7 +2978,7 @@ Still, people are such creatures of habits that many IT professionals daily usin
 
 Similarly, not all the software solutions are supporting <k>ed25519</k> right now – but SSH implementations in most modern Operating Systems certainly support it.
 
-<h3 id="ed25519topic-0">Why ed25519 Key is a Good Idea</h3> <a href="#top" target="_self"><b>⇧</b></a><br>
+<h3 id="ed25519topic-0">Why ed25519 Key is a Good Idea</h3>
 Compared to the most common type of SSH key – RSA – <k>ed25519</k> brings a number of cool improvements:
 
 it’s faster: to generate and to verify
@@ -2867,7 +2986,7 @@ it’s more secure
 collision resilience – this means that it’s more resilient against hash-function collision attacks (types of attacks where large numbers of keys are generated with the hope of getting two different keys have matching hashes)
 keys are smaller – this, for instance, means that it’s easier to transfer and to copy/paste them
 
-<h3 id="ed25519topic-1">Generate ed25519 SSH Key</h3> <a href="#top" target="_self"><b>⇧</b></a><br>
+<h3 id="ed25519topic-1">Generate ed25519 SSH Key</h3>
 Here’s the command to generate an ed25519 SSH key:
 
 $ ssh-keygen -t ed25519 -C "[email@protected]"
@@ -3049,7 +3168,373 @@ But I use <code>git@github.com:username/new_repo</code> rather than <code>https:
 
 If you use the latter construction, you'll have to type your github password every time you push to github.
 
+<h2>See What Branch You're On</h2>
+Run this command: git status
+<h2>List All Branches</h2>
+<k>NOTE: </k>The current local branch will be marked with an asterisk (*).</p>
+To see <k>local branches</k>, run this command: <k>git branch </k>
+To see <k>remote branches</k>, run this command: <k>git branch -r </k>
+To see <k>all local and remote branches</k>, run this command: <k>git branch -a </k>
+<h2>Create a New Branch</h2>
+Run this command (replacing <k>my-branch-name </k> with whatever name you want):
+<k>git checkout -b my-branch-name </k>
+You're now ready to commit to this branch.
+<h2>Switch to a Branch In Your Local Repo</h2>
+Run this command:<k>git checkout my-branch-name </k>
 
+<h2>Switch to a Branch That Came From a Remote Repo</h2>
+To get a list of all branches from the remote, run this command: <k>git pull </k>
+Run this command to switch to the branch:
+<k>git checkout --track origin/my-branch-name </k>
+
+<h2>Push to a Branch</h2>
+If your local branch <k>does not exist </k> on the remote, run either of these commands:
+<k>git push -u origin my-branch-name </k>
+<k>git push -u origin HEAD </k>
+<k>NOTE: </k>HEAD is a reference to the top of the current branch, so it's an easy way to push to a branch of the same name on the remote. This saves you from having to type out the exact name of the branch!</p>
+If your local branch <k>already exists </k> on the remote, run this command: <k>git push </k>
+
+<h2>Merge a Branch</h2>
+You'll want to make sure your working tree is clean and see what branch you're on. Run this command:
+<k>git status </k>
+First, you must check out the branch that you want to merge another branch into (changes will be merged into this branch). If you're not already on the desired branch, run this command: <k>git checkout master </k>
+<k>NOTE:</k> Replace <k>master </k>with another branch name as needed.
+Now you can merge another branch into the current branch. Run this command:
+<k>git merge my-branch-name </k>
+<k>NOTE:</k> When you merge, there may be a conflict. Refer to <k>Handling Merge Conflicts </k> (the next exercise) to learn what to do.
+
+<h2>Delete Branches</h2>
+To delete a <k>remote branch</k>, run this command: <k>git push origin --delete my-branch-name </k>
+To delete a <k>local branch</k>, run either of these commands:
+<k>git branch -d my-branch-name </k>
+<k>git branch -D my-branch-name </k>
+<k>NOTE:</k> The -d option only deletes the branch if it has already been merged. The -D option is a shortcut for --delete --force, which deletes the branch irrespective of its merged status.
+
+<h2>Working with Remotes</h2>
+
+<div id="withRemotestoc" class="toc"><a href="#withRemotestopic-0" target="_self">Showing Your Remotes</a><br><a href="#withRemotestopic-1" target="_self">Adding Remote Repositories</a><br><a href="#withRemotestopic-2" target="_self">Fetching and Pulling from Your Remotes</a><br><a href="#withRemotestopic-3" target="_self">Pushing to Your Remotes</a><br><a href="#withRemotestopic-4" target="_self">Inspecting a Remote</a><br><a href="#withRemotestopic-5" target="_self">Renaming and Removing Remotes</a><br></div></center>
+
+Remote repositories are versions of your project that are hosted on the Internet or network somewhere.
+You can have several of them, each of which generally is either read-only or read/write for you.
+Collaborating with others involves managing these remote repositories and pushing and pulling data to and from them when you need to share work.
+
+Managing remote repositories includes knowing how to add remote repositories, remove remotes that are no longer valid, manage various remote branches and define them as being tracked or not, and more.
+In this section, we’ll cover some of these remote-management skills.
+Note
+
+Remote repositories can be on your local machine.
+It is entirely possible that you can be working with a “remote” repository that is, in fact, on the same host you are.
+The word “remote” does not necessarily imply that the repository is somewhere else on the network or Internet, only that it is elsewhere.
+
+Working with such a remote repository would still involve all the standard pushing, pulling and fetching operations as with any other remote.
+<h3 id="withRemotestopic-0">Showing Your Remotes</h3>
+To see which remote servers you have configured, you can run the <k>git remote</k> command.
+
+It lists the shortnames of each remote handle you’ve specified.
+If you’ve cloned your repository, you should at least see <k>origin</k> — that is the default name Git gives to the server you cloned from:
+<k>$ git clone https://github.com/schacon/ticgit</k>
+
+Cloning into 'ticgit'...
+remote: Reusing existing pack: 1857, done.
+remote: Total 1857 (delta 0), reused 0 (delta 0)
+
+Receiving objects: 100% (1857/1857), 374.35 KiB | 268.00 KiB/s, done.
+Resolving deltas: 100% (772/772), done.
+Checking connectivity... 
+
+done.
+$ cd ticgit
+$ git remote
+
+origin
+You can also specify <k>-v</k>, which shows you the URLs that Git has stored for the shortname to be used when reading and writing to that remote:
+<k>$ git remote -v</k>
+origin	https://github.com/schacon/ticgit (fetch)
+origin	https://github.com/schacon/ticgit (push)
+If you have more than one remote, the command lists them all.
+
+For example, a repository with multiple remotes for working with several collaborators might look something like this.
+<k>$ cd grit
+$ git remote -v</k>
+
+bakkdoor  https://github.com/bakkdoor/grit (fetch)
+bakkdoor  https://github.com/bakkdoor/grit (push)
+cho45     https://github.com/cho45/grit (fetch)
+
+cho45     https://github.com/cho45/grit (push)
+defunkt   https://github.com/defunkt/grit (fetch)
+defunkt   https://github.com/defunkt/grit (push)
+
+koke      git://github.com/koke/grit.git (fetch)
+koke      git://github.com/koke/grit.git (push)
+origin    git@github.com:mojombo/grit.git (fetch)
+origin    git@github.com:mojombo/grit.git (push)
+
+This means we can pull contributions from any of these users pretty easily.
+We may additionally have permission to push to one or more of these, though we can’t tell that here.
+
+Notice that these remotes use a variety of protocols; we’ll cover more about this in <a href="ch00/_getting_git_on_a_server">Getting Git on a Server</a>.
+<h3 id="withRemotestopic-1">Adding Remote Repositories</h3>
+We’ve mentioned and given some demonstrations of how the <k>git clone</k> command implicitly adds the <k>origin</k> remote for you.
+
+Here’s how to add a new remote explicitly.
+To add a new remote Git repository as a shortname you can reference easily, run <k>git remote add &lt;shortname&gt; &lt;url&gt;</k>:
+<k>$ git remote</k>
+
+origin
+$ git remote add pb https://github.com/paulboone/ticgit
+$ git remote -v
+
+origin	https://github.com/schacon/ticgit (fetch)
+origin	https://github.com/schacon/ticgit (push)
+pb	https://github.com/paulboone/ticgit (fetch)
+pb	https://github.com/paulboone/ticgit (push)
+
+Now you can use the string <k>pb</k> on the command line in lieu of the whole URL.
+For example, if you want to fetch all the information that Paul has but that you don’t yet have in your repository, you can run <k>git fetch pb</k>:
+
+<k>$ git fetch pb</k>
+remote: Counting objects: 43, done.
+remote: Compressing objects: 100% (36/36), done.
+
+remote: Total 43 (delta 10), reused 31 (delta 5)
+Unpacking objects: 100% (43/43), done.
+From https://github.com/paulboone/ticgit
+
+* [new branch]      master     -&gt; pb/master
+* [new branch]      ticgit     -&gt; pb/ticgit
+Paul’s <k>master</k> branch is now accessible locally as <k>pb/master</k> — you can merge it into one of your branches, or you can check out a local branch at that point if you want to inspect it.
+
+We’ll go over what branches are and how to use them in much more detail in <a href="ch00/ch03-git-branching">Git Branching</a>.
+<h3 id="withRemotestopic-2">Fetching and Pulling from Your Remotes</h3>
+As you just saw, to get data from your remote projects, you can run:
+
+<k>$ git fetch &lt;remote&gt;</k>
+The command goes out to that remote project and pulls down all the data from that remote project that you don’t have yet.
+After you do this, you should have references to all the branches from that remote, which you can merge in or inspect at any time.
+
+If you clone a repository, the command automatically adds that remote repository under the name “origin”.
+So, <k>git fetch origin</k> fetches any new work that has been pushed to that server since you cloned (or last fetched from) it.
+It’s important to note that the <k>git fetch</k> command only downloads the data to your local repository — it doesn’t automatically merge it with any of your work or modify what you’re currently working on.
+
+You have to merge it manually into your work when you’re ready.
+If your current branch is set up to track a remote branch (see the next section and <a href="ch00/ch03-git-branching">Git Branching</a> for more information), you can use the <k>git pull</k> command to automatically fetch and then merge that remote branch into your current branch.
+This may be an easier or more comfortable workflow for you; and by default, the <k>git clone</k> command automatically sets up your local <k>master</k> branch to track the remote <k>master</k> branch (or whatever the default branch is called) on the server you cloned from.
+
+Running <k>git pull</k> generally fetches data from the server you originally cloned from and automatically tries to merge it into the code you’re currently working on.
+Note
+From Git version 2.27 onward, <k>git pull</k> will give a warning if the <k>pull.rebase</k> variable is not set.
+
+Git will keep warning you until you set the variable.
+If you want the default behavior of Git (fast-forward if possible, else create a merge commit):
+<k>git config --global pull.rebase "false"</k>
+
+If you want to rebase when pulling:
+<k>git config --global pull.rebase "true"</k>
+<h3 id="withRemotestopic-3">Pushing to Your Remotes</h3>
+
+When you have your project at a point that you want to share, you have to push it upstream.
+The command for this is simple: <k>git push &lt;remote&gt; &lt;branch&gt;</k>.
+If you want to push your <k>master</k> branch to your <k>origin</k> server (again, cloning generally sets up both of those names for you automatically), then you can run this to push any commits you’ve done back up to the server:
+
+<k>$ git push origin master</k>
+This command works only if you cloned from a server to which you have write access and if nobody has pushed in the meantime.
+If you and someone else clone at the same time and they push upstream and then you push upstream, your push will rightly be rejected.
+
+You’ll have to fetch their work first and incorporate it into yours before you’ll be allowed to push.
+See <a href="ch00/ch03-git-branching">Git Branching</a> for more detailed information on how to push to remote servers.
+<h3 id="withRemotestopic-4">Inspecting a Remote</h3>
+
+If you want to see more information about a particular remote, you can use the <k>git remote show &lt;remote&gt;</k> command.
+If you run this command with a particular shortname, such as <k>origin</k>, you get something like this:
+<k>$ git remote show origin</k>
+
+* remote origin
+Fetch URL: https://github.com/schacon/ticgit
+Push  URL: https://github.com/schacon/ticgit
+
+HEAD branch: master
+Remote branches:
+master                               tracked
+
+dev-branch                           tracked
+Local branch configured for 'git pull':
+master merges with remote master
+
+Local ref configured for 'git push':
+master pushes to master (up to date)
+It lists the URL for the remote repository as well as the tracking branch information.
+
+The command helpfully tells you that if you’re on the <k>master</k> branch and you run <k>git pull</k>, it will automatically merge the remote’s <k>master</k> branch into the local one after it has been fetched.
+It also lists all the remote references it has pulled down.
+That is a simple example you’re likely to encounter.
+
+When you’re using Git more heavily, however, you may see much more information from <k>git remote show</k>:
+<k>$ git remote show origin</k>
+* remote origin
+
+URL: https://github.com/my-org/complex-project
+Fetch URL: https://github.com/my-org/complex-project
+Push  URL: https://github.com/my-org/complex-project
+
+HEAD branch: master
+Remote branches:
+master                           tracked
+
+dev-branch                       tracked
+markdown-strip                   tracked
+issue-43                         new (next fetch will store in remotes/origin)
+
+issue-45                         new (next fetch will store in remotes/origin)
+refs/remotes/origin/issue-11     stale (use 'git remote prune' to remove)
+Local branches configured for 'git pull':
+
+dev-branch merges with remote dev-branch
+master     merges with remote master
+Local refs configured for 'git push':
+
+dev-branch                     pushes to dev-branch                     (up to date)
+markdown-strip                 pushes to markdown-strip                 (up to date)
+master                         pushes to master                         (up to date)
+
+This command shows which branch is automatically pushed to when you run <k>git push</k> while on certain branches.
+It also shows you which remote branches on the server you don’t yet have, which remote branches you have that have been removed from the server, and multiple local branches that are able to merge automatically with their remote-tracking branch when you run <k>git pull</k>.
+<h3 id="withRemotestopic-5">Renaming and Removing Remotes</h3>
+
+You can run <k>git remote rename</k> to change a remote’s shortname.
+For instance, if you want to rename <k>pb</k> to <k>paul</k>, you can do so with <k>git remote rename</k>:
+<k>$ git remote rename pb paul</k>
+
+$ git remote
+origin
+paul
+
+It’s worth mentioning that this changes all your remote-tracking branch names, too.
+What used to be referenced at <k>pb/master</k> is now at <k>paul/master</k>.
+If you want to remove a remote for some reason — you’ve moved the server or are no longer using a particular mirror, or perhaps a contributor isn’t contributing anymore — you can either use <k>git remote remove</k> or <k>git remote rm</k>:
+
+<k>$ git remote remove paul</k>
+$ git remote
+origin
+
+Once you delete the reference to a remote this way, all remote-tracking branches and configuration settings associated with that remote are also deleted.
+
+<h2>remotes and pushing to multiple Git repositories</h2>
+
+<div id="multipleGittoc" class="toc"><a href="#multipleGittopic-0" target="_self">Two Minute Version</a><br><a href="#multipleGittopic-1" target="_self">Prerequisites</a><br><a href="#multipleGittopic-2" target="_self">Adding multiple remotes</a><br><a href="#multipleGittopic-3" target="_self">Configure primary remote</a><br><a href="#multipleGittopic-4" target="_self">Change remote URL</a><br><a href="#multipleGittopic-5" target="_self">List all remotes</a><br><a href="#multipleGittopic-6" target="_self">Remove a remote</a><br><a href="#multipleGittopic-7" target="_self">Push to multiple remotes</a><br><a href="#multipleGittopic-8" target="_self">Pull from multiple remotes</a><br></div></center>
+Working with two or more Git repositories? No problem! In this tutorial, you’ll first learn to setup multiple Git remotes. 
+Next, you’ll also learn to perform a “git push” to multiple Git repositories with a single command.
+
+As a programmer, one of the best things that has happened to me is Git! If you don’t know what Git is, you should probably read a paragraph about it before you continue. 
+Git allows you to synchronize the code on your computer with code on a remote repo shared with other developers – usually team members. 
+In this tutorial we will learn to configure one or more Git remotes and pushing code to them with a single command.
+
+
+<h3 id="multipleGittopic-0">Two Minute Version</h3>
+Define a git remote which will point to multiple git remotes.
+Say, we call it “all”: <dg>git remote add all REMOTE-URL-1</dg>.
+
+Register 1<sup>st</sup> push URL: <dg>git remote set-url --add --push all REMOTE-URL-1</dg>.
+Register 2<sup>nd</sup> push URL: <dg>git remote set-url --add --push all REMOTE-URL-2</dg>.
+Push a branch to all the remotes with <dg>git push all BRANCH</dg> – replace <dg>BRANCH</dg> with a real branch name.
+
+You cannot pull from multiple remotes, but you can fetch updates from multiple remotes with <dg>git fetch --all</dg>.
+
+<h3 id="multipleGittopic-1">Prerequisites</h3>
+Working knowledge of Git – <dg>git init</dg>, <dg>git pull</dg>, <dg>git commit</dg> and <dg>git push</dg>.
+
+Have write access to one or more remote Git repositories.
+
+<h3 id="multipleGittopic-2">Adding multiple remotes</h3>
+When you do <dg>git init</dg>, you initialize a local Git repository. 
+
+In general, the purpose is to synchronize this repo with a remote Git repo. 
+To be able to synchronize code with a remote repo, you need to specify where the remote repo exists.
+The first step is to add remote repos to your project.
+
+<dg># Syntax to add a git remote
+git remote add REMOTE-ID REMOTE-URL</dg>
+By convention, the original / primary remote repo is called <dg>origin</dg>. 
+
+Here’s a real example:
+<dg># Add remote 1: GitHub.
+git remote add origin git@github.com:jigarius/toggl2redmine.git
+
+# Add remote 2: BitBucket.
+git remote add upstream git@bitbucket.org:jigarius/toggl2redmine.git</dg>
+In the above example, we add the remote repository of a project called  found on GitHub. 
+
+Use the above command to add one or more remote Git repos – make sure that each repo has its unique ID, i.e. 
+<dg>origin</dg>, <dg>upstream</dg> in the above example.
+
+<h3 id="multipleGittopic-3">Configure primary remote</h3>
+
+Though you can add multiple remotes, usually, each branch of your project can be configured to track a single remote branch. 
+You can setup a branch to track a remote branch as follows:
+<dg># Change local branch.
+
+git checkout BRANCH
+# Configure local branch to track a remote branch.
+git branch -u origin/BRANCH</dg>
+
+Here, <dg>BRANCH</dg> is the name of the remote branch, which is usually the same as your local branch.
+
+<h3 id="multipleGittopic-4">Change remote URL</h3>
+If you want to change the URL associated to a remote that you’ve already added, you can do it with the following command:
+
+<dg># The syntax is: git remote set-url REMOTE-ID REMOTE-URL
+git remote set-url upstream git@foobar.com:jigarius/toggl2redmine.git</dg>
+<h3 id="multipleGittopic-5">List all remotes</h3>
+To see a list of all remotes, simply use the following command:
+
+<dg>$git remote -v
+origin	    git@github.com:jigarius/toggl2redmine.git (fetch)
+origin	    git@github.com:jigarius/toggl2redmine.git (push)
+
+upstream    git@bitbucket.org:jigarius/toggl2redmine.git (fetch)
+upstream    git@bitbucket.org:jigarius/toggl2redmine.git (push)</dg>
+<h3 id="multipleGittopic-6">Remove a remote</h3>
+If you’ve added a remote which you no longer require, you can remove it as follows:
+
+<dg># The syntax is: git remote remove REMOTE-ID
+git remote remove upstream</dg>
+<h3 id="multipleGittopic-7">Push to multiple remotes</h3>
+Now that you have a primary remote repo and other remotes as well, it’s time to configure the push. 
+
+The objective is to <dg>push to multiple Git remotes</dg> with a single <dg>git push</dg> command.
+To do this, choose a remote ID which will refer to all the remotes. 
+I usually call it <dg>all</dg>, but there are developers who prefer <dg>origin</dg>. 
+
+The idea is to add all the remote repo URLs as  “push URLs” to this remote. 
+Here’s what you do:
+<dg># Create a new remote called "all" with the URL of the primary repo.
+
+git remote add all git@github.com:jigarius/toggl2redmine.git
+# Re-register the remote as a push URL.
+git remote set-url --add --push all git@github.com:jigarius/toggl2redmine.git
+
+# Add a push URL to a remote. 
+This means that "git push" will also push to this git URL.
+git remote set-url --add --push all git@bitbucket.org:jigarius/toggl2redmine.git</dg>
+
+If you don’t want to create an extra remote named <dg>all</dg>, you can skip the first command and use the remote <dg>origin</dg> instead of <dg>all</dg> in the subsequent command(s).
+Now, you can push to all remote repositories with a single command!
+<dg># Replace BRANCH with the name of the branch you want to push.
+
+git push all BRANCH</dg>
+<h3 id="multipleGittopic-8">Pull from multiple remotes</h3>
+It is not possible to <dg>git pull</dg> from multiple repos. 
+However, you can <dg>git fetch</dg> from multiple repos with the following command:
+
+<dg>git fetch --all</dg>
+This will <dg>fetch</dg> information from all remote repos. 
+You can switch to the latest version of a branch on a particular remote with the command:
+
+# Checkout the branch you want to work with.
+<dg>git checkout BRANCH</dg>
+# Reset the branch to match the state as on a specific remote.
+
+<dg>git reset --hard REMOTE-ID/BRANCH</dg>
 
 
 
