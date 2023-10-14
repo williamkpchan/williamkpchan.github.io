@@ -326,9 +326,9 @@ function showHelp() {
   alert(showHelpTxt)
 }
 function settimeInterval() {
-  timeInterval = prompt("enter timeInterval in sec: ", "10");
-    if (timeInterval != null && timeInterval != ""){
-      timeInterval = Number(timeInterval)*1000
+  timeInt = prompt("enter timeInt in sec: ", "10");
+    if (timeInt != null && timeInt != ""){
+      timeInterval = Number(timeInt)*1000
       toggle_automode()
       toggle_automode()
     }
