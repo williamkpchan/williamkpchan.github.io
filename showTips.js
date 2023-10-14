@@ -316,7 +316,7 @@ function toggle_showSrcSwitch() {
 function toggle_automode() {
   if(automodeSwitch == false){
     autoInterval = setInterval(function(){ forward(); }, timeInterval);
-    $(".tip-button").before("<p>automode! 10s</p>");
+    $(".tip-button").before("<p>automode!"+ timeInterval/1000 +"s</p>");
   }else{
     clearInterval(autoInterval);
   }
@@ -326,7 +326,7 @@ function showHelp() {
   alert(showHelpTxt)
 }
 function settimeInterval() {
-  timeInt = prompt("enter timeInt in sec: ", "10");
+  timeInt = prompt("enter timeInt in sec: ", timeInterval);
     if (timeInt != null && timeInt != ""){
       timeInterval = Number(timeInt)*1000
       toggle_automode()
@@ -336,7 +336,7 @@ function settimeInterval() {
 
 forward();
 
-$(".tip-button").after("<br><br><br>shortcut Keys:<br>+ addToIgnoreLst<br>- removeFmIgnoreLst<br>2 setRange<br>A toggle_automode<br>b backClick<br>c callCalculator<br>c showChart<br>C showTimeDate<br>e scrollTo Bottom<br>f forward<br>H showHelp<br>r randomNum<br>R removeNumFmIgnoreLst<br>s setRange<br>S toggle_showSrcSwitch<br>T alertTotal<br>t scrollTo Top<br>v viewIgnoreLst<br>x showAnswer<br>z showTenYear<br>o open image in new window")
+$(".tip-button").after("<br><br><br>shortcut Keys:<br>+ addToIgnoreLst<br>- removeFmIgnoreLst<br>2 setRange<br>A toggle_automode<br>b backClick<br>c callCalculator<br>c showChart<br>C showTimeDate<br>e scrollTo Bottom<br>f forward<br>H showHelp<br>I set time interval<br>r randomNum<br>R removeNumFmIgnoreLst<br>s setRange<br>S toggle_showSrcSwitch<br>T alertTotal<br>t scrollTo Top<br>v viewIgnoreLst<br>x showAnswer<br>z showTenYear<br>o open image in new window")
 
 window.addEventListener('click', function (evt) {
   if (evt.detail === 3) {
