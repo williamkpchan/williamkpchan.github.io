@@ -134,7 +134,8 @@ function chkKey() {
   else if(testkey == 'E'){window.open("https://williamkpchan.github.io/LibDocs/English Conversation.html");}
   else if(testkey == 'f'){forward();}
   else if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
-  else if(testkey == 'g'){window.open("https://mail.google.com/");}
+  else if(testkey == 'g'){gotoNum()}
+  else if(testkey == 'l'){listAll()}
 
   else if(testkey == '+'){addToIgnoreLst();}
   else if(testkey == '-'){removeFmIgnoreLst();}
@@ -334,9 +335,27 @@ function settimeInterval() {
     }
 }
 
+function gotoNum() {
+ pointer = prompt("goto Item Number: ", "");
+ topicpointer = pointer
+ generateTip();
+}
+
+function listAll() {
+    tipsListChop = []
+    for(loop = 0; loop < tipLimit; loop++){
+      var tipbit = loop + "\t" + tipsList[loop] + "<br>";
+      if(tipbit.length > 20) {
+        tipbit = tipbit.slice(0, 20) + "<br>"
+      }
+      tipsListChop.push(tipbit)
+    }
+    document.querySelector('.js-tip').innerHTML = tipsListChop;
+}
+
 forward();
 
-$(".tip-button").after("<br><br><br>shortcut Keys:<br>+ addToIgnoreLst<br>- removeFmIgnoreLst<br>2 setRange<br>A toggle_automode<br>b backClick<br>c callCalculator<br>c showChart<br>C showTimeDate<br>e scrollTo Bottom<br>f forward<br>H showHelp<br>I set time interval<br>r randomNum<br>R removeNumFmIgnoreLst<br>s setRange<br>S toggle_showSrcSwitch<br>T alertTotal<br>t scrollTo Top<br>v viewIgnoreLst<br>x showAnswer<br>z showTenYear<br>o open image in new window")
+$(".tip-button").after("<br><br><br>shortcut Keys:<br>+ addToIgnoreLst<br>- removeFmIgnoreLst<br>2 setRange<br>A toggle_automode<br>b backClick<br>c callCalculator<br>c showChart<br>C showTimeDate<br>e scrollTo Bottom<br>f forward<br>g gotoNum<br>H showHelp<br>I set time interval<br>r randomNum<br>R removeNumFmIgnoreLst<br>s setRange<br>S toggle_showSrcSwitch<br>T alertTotal<br>t scrollTo Top<br>v viewIgnoreLst<br>x showAnswer<br>z showTenYear<br>o open image in new window")
 
 window.addEventListener('click', function (evt) {
   if (evt.detail === 3) {
