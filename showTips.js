@@ -344,13 +344,15 @@ function gotoNum() {
 function listAll() {
     tipsListChop = []
     for(loop = 0; loop < tipLimit; loop++){
-      var tipbit = loop + "\t" + tipsList[loop] + "<br>";
-      if(tipbit.length > 20) {
-        tipbit = tipbit.slice(0, 20) + "<br>"
+      var tipbit = loop + "\t" + tipsList[loop];
+        tipbit = tipbit.replace(/<.*?>|\n/g, "");
+
+      if(tipbit.length > 30) {
+        tipbit = tipbit.slice(0, 29)
       }
       tipsListChop.push(tipbit)
     }
-    document.querySelector('.js-tip').innerHTML = tipsListChop;
+    document.querySelector('.js-tip').innerHTML = tipsListChop.join("<br>");
 }
 
 forward();
