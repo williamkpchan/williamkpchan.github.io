@@ -337,14 +337,14 @@ function settimeInterval() {
 
 function gotoNum() {
  pointer = prompt("goto Item Number: ", "");
- topicpointer = pointer
- generateTip();
+ tip = tipsList[pointer];
+ document.querySelector('.js-tip').innerHTML = tip;
 }
 
 function listAll() {
     tipsListChop = []
     for(loop = 0; loop < tipLimit; loop++){
-      var tipbit = loop + "\t" + tipsList[loop];
+      var tipbit = loop + "\t" + tipsList[tipsListIdx[loop]];
         tipbit = tipbit.replace(/<.*?>|\n/g, "");
 
       if(tipbit.length > 30) {
@@ -357,7 +357,7 @@ function listAll() {
 
 forward();
 
-$(".tip-button").after("<br><br><br>shortcut Keys:<br>+ addToIgnoreLst<br>- removeFmIgnoreLst<br>2 setRange<br>A toggle_automode<br>b backClick<br>c callCalculator<br>c showChart<br>C showTimeDate<br>e scrollTo Bottom<br>f forward<br>g gotoNum<br>H showHelp<br>I set time interval<br>r randomNum<br>R removeNumFmIgnoreLst<br>s setRange<br>S toggle_showSrcSwitch<br>T alertTotal<br>t scrollTo Top<br>v viewIgnoreLst<br>x showAnswer<br>z showTenYear<br>o open image in new window")
+$(".tip-button").after("<br><br><br>shortcut Keys:<br>+ addToIgnoreLst<br>- removeFmIgnoreLst<br>2 setRange<br>A toggle_automode<br>b backClick<br>c callCalculator<br>c showChart<br>C showTimeDate<br>e scrollTo Bottom<br>f forward<br>g gotoNum<br>H showHelp<br>I set time interval<br>l listAll<br>r randomNum<br>R removeNumFmIgnoreLst<br>s setRange<br>S toggle_showSrcSwitch<br>T alertTotal<br>t scrollTo Top<br>v viewIgnoreLst<br>x showAnswer<br>z showTenYear<br>o open image in new window")
 
 window.addEventListener('click', function (evt) {
   if (evt.detail === 3) {
