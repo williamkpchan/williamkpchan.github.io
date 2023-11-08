@@ -8362,6 +8362,100 @@ Sub KillProcessbyName(FileName)
     Next
 End Sub
 
+<h3>vbscript view all running processes</h3>
+<b>Using TaskList Command</b>
+
+TaskList Command can be used to display a list of all running applications and services with their details and Process IDs(PIDs).
+
+<code>
+Dim ProTFPath, ProTF, StrPrInfo, StrPrInfoA, PrInfo
+
+Set WshShell = WScript.CreateObject("Wscript.Shell")
+Set FSO = WScript.CreateObject("Scripting.FileSystemObject")
+
+ProTFPath = "C:\Users\User\Desktop\PROCESSES.txt"
+
+WshShell.Run "CMD /C TASKLIST /V /FO LIST > """ + ProTFPath + """", 0, True
+' Here Run is used instead Exec to avoid console window flashes.
+
+If FSO.FileExists(ProTFPath) Then
+  Set ProTF = FSO.OpenTextFile(ProTFPath, 1, False)
+End If
+
+StrPrInfoA = ProTF.ReadAll
+
+PrInfo = Split(StrPrInfoA, VbCrLf + VbCrLf)
+
+For I = 0 To UBound(PrInfo)
+  WScript.Echo PrInfo(I)
+Next
+
+Erase PrInfo
+ProTF.Close
+</code>
+
+If you no longer need this file, add following lines to the end of the script:
+<code>
+If FSO.FileExists(ProTFPath) Then
+  FSO.DeleteFile(ProTFPath, True)
+End If
+</code>
+
+by another answer
+EXE_Process = AllProcessRunningEXE(".")
+Vbs_Process = AllProcessRunningVBS (".")
+
+Function AllProcessRunningEXE( strComputerArg )
+strProcessArr = ""
+    Dim Process, strObject
+    strObject   = "winmgmts://" & strComputerArg
+    For Each Process in GetObject( strObject ).InstancesOf( "win32_process" )
+        strProcessArr = strProcessArr & ";" & vbNewLine & Process.name
+    Next
+    AllProcessRunningEXE = Mid(strProcessArr,3,Len(strProcessArr))
+End Function
+
+
+Function AllProcessRunningVBS (strComputerArg)
+    strProcessArr = ""
+    Set objWMIService = GetObject("winmgmts:{impersonationLevel=impersonate}!\\" & strComputerArg & "\root\cimv2")
+    Set colItems = objWMIService.ExecQuery ("Select * from Win32_Process Where Name = 'cscript.exe' OR Name = 'wscript.exe'")
+    For Each objItem in colItems
+        strProcessArr = strProcessArr & ";" & vbNewLine & objItem.CommandLine
+    Next
+    AllProcessRunningVBS = Mid(strProcessArr,3,Len(strProcessArr))
+
+    Set objWMIService = Nothing
+    Set colItems = Nothing
+End Function
+
+<b>VBScript via WMI</b>
+
+This is straightforward script.
+We are only querying the local workstation.
+
+You could conceivably get a list of processes on machine B from machine A, and even stop/start those processes.
+All remotely.
+<code>
+Option Explicit
+
+Dim objWMIService, objProcess, colProcess
+Dim strComputer, strList
+
+strComputer = "."
+
+Set objWMIService = GetObject("winmgmts:{impersonationLevel=impersonate}!\\" & strComputer & "\root\cimv2")
+
+Set colProcess = objWMIService.ExecQuery ("Select * from Win32_Process")
+
+For Each objProcess in colProcess
+
+    strList = strList & vbCr & objProcess.Name
+
+Next
+
+WSCript.Echo strList
+</code>
 
 
 
