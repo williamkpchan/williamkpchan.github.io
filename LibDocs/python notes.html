@@ -21833,13 +21833,12 @@ Being able to add and remove columns and rows can be quite useful when it comes 
 <a href="#conclusion" target="_self">Conclusion</a>
 </div>
 
-video course: <a class="stretched-link text-success" href="/courses/editing-excel-python-openpyxl/"><strong>Editing Excel Spreadsheets in Python With openpyxl</strong></a>
 <h3 id="getting-started-with-openpyxl">Getting Started</h3>
 Python Packages for Excel
 1. openpyxl
 2. xlrd
 3. xlsxwriter
-4.xlwt
+4. xlwt
 5. xlutils
 
 $ pip install openpyxl
@@ -23228,6 +23227,446 @@ fig.show()
 
 <h2>execute a script within the Python interpreter</h2>
 exec(open("test.py").read())
+
+<h2>PaddleOCR</h2>
+<k>1.先决条件</k>
+确保您的计算机上安装了以下必要先决条件：
+
+Python（3.6 或更高版本）
+PaddleOCR 库
+其他必要的依赖项（例如 NumPy、pandas 等）
+您可以使用以下 pip 命令安装 PaddleOCR：
+
+<code>pip install paddleocr</code>
+<k>2.设置 PaddleOCR</k>一旦您安装了 Python 和所需的库，我们来设置 PaddleOCR。
+
+您可以使用 PaddleOCR 的预训练模型，这些模型可用于文本检测和识别。
+<k>代码概览</k>使用 PaddleOCR 进行文本检测和识别的代码片段包括以下主要组件：
+<k>图像预处理：
+</k>加载输入图像并执行必要的预处理步骤，例如调整大小或归一化。
+<k>文本检测：
+</k>使用 PaddleOCR 文本检测模型来定位输入图像中文本区域的边界框。
+<k>文本识别：
+</k>对于每个检测到的边界框，使用 PaddleOCR 文本识别模型来提取相应的文本。
+<k>后处理：
+</k>整理检测到的文本和识别结果以进行进一步分析或显示。
+<k>3.逐步实现</k>让我们分解代码片段，详细解释每个步骤：
+<k>文本检测</k>该代码是一个名为 DecMain 的类的一部分，该类专为使用真实数据进行光学字符识别（OCR）评估而设计。
+
+它使用 PaddleOCR 从图像中提取文本，然后计算指标（如准确率、召回率和字符错误率 [CER]）来评估 OCR 系统的性能。
+
+<code>class DecMain:
+    def __init__(self, image_folder_path, label_file_path, output_file):
+        self.image_folder_path = image_folder_path
+        self.label_file_path = label_file_path
+        self.output_file = output_file
+
+    def run_dec(self):
+        # Check and update the ground truth file
+        CheckAndUpdateGroundTruth(self.label_file_path).check_and_update_ground_truth_file()
+
+        df = OcrToDf(image_folder=self.image_folder_path, label_file=self.label_file_path, det=True, rec=True, cls=False).ocr_to_df()
+
+        ground_truth_data = ReadGroundTruthFile(self.label_file_path).read_ground_truth_file()
+
+        # Get the extracted text as a list of dictionaries (representing the OCR results)
+        ocr_results = df.to_dict(orient="records")
+
+        # Calculate precision, recall, and CER
+        precision, recall, total_samples = CalculateMetrics(ground_truth_data, ocr_results).calculate_precision_recall()
+
+        CreateSheet(dataframe=df, precision=precision, recall=recall, total_samples=total_samples, file_name=self.output_file).create_sheet()</code>
+让我们分解代码并解释每个部分：
+
+<code>class DecMain:
+
+def __init__(self, image_folder_path, label_file_path, output_file):
+
+self.image_folder_path = image_folder_path
+
+self.label_file_path = label_file_path
+
+self.output_file = output_file</code>
+DecMain 类有一个 __init__方法，用以下参数初始化对象：
+
+image_folder_path：
+用于 OCR 的输入图像所在文件夹的路径。
+
+label_file_path：
+
+包含图像的实际文本内容的真实标签文件的路径。
+
+output_file：
+评估结果将保存在的输出文件的文件名。
+
+<code>def run_dec(self):
+       # Check and update the ground truth file
+       CheckAndUpdateGroundTruth(self.label_file_path).check_and_update_ground_truth_file()
+</code>run_dec方法负责运行 OCR 评估过程。
+首先，它使用 CheckAndUpdateGroundTruth 类来检查并更新真实标签文件。
+
+<code>df = OcrToDf(image_folder=self.image_folder_path, label_file=self.label_file_path, det=True, rec=True, cls=False).ocr_to_df()</code>
+OcrToDf 类用于将 OCR 结果转换为 pandas DataFrame（`df`）。
+
+它接受以下参数：
+
+image_folder：
+包含 OCR 输入图像的文件夹的路径。
+
+label_file：
+真实标签文件的路径。
+
+det=True和 rec=True参数表示 DataFrame 将包含文本检测和识别结果。
+
+<code>ground_truth_data = ReadGroundTruthFile(self.label_file_path).read_ground_truth_file()</code>
+ReadGroundTruthFile 类用于读取真实标签文件并将其内容加载到 ground_truth_data变量中。
+
+<code># Get the extracted text as a list of dictionaries (representing the OCR results)
+        ocr_results = df.to_dict(orient="records")</code>
+从 DataFrame df 中获取的 OCR 结果转换为字典列表（ocr_results），每个字典代表单个图像的 OCR 结果。
+
+<code># Calculate precision, recall, and CER
+        precision, recall, total_samples = CalculateMetrics(ground_truth_data, ocr_results).calculate_precision_recall()</code>
+CalculateMetrics 类用于计算 OCR 评估指标：
+
+准确率、召回率和评估的总样本数。
+该类将真实数据和 OCR 结果作为输入。
+
+<code>CreateSheet(dataframe=df, precision=precision, recall=recall, total_samples=total_samples, file_name=self.output_file).create_sheet()</code>
+CreateSheet 类负责创建输出表格（例如 Excel 或 CSV），其中包含评估指标和 OCR 结果。
+
+它接受 DataFrame `df`、准确率、召回率、总样本数和输出文件名作为输入。
+总的来说，DecMain 类提供了一种有条理的方式，使用真实数据和 PaddleOCR 的文本检测和识别功能来评估 OCR 模型的性能。
+它计算重要的评估指标，并将结果存储在指定的输出文件中，以供进一步分析。
+
+<k>注意：
+真实标签文件的格式</k>要使用 DecMain 类和提供的代码进行 OCR 评估，必须正确格式化真实标签文件。
+真实标签文件应采用 JSON 格式，其结构如下所示：
+
+<em>image_name.jpg [{"transcription": "215mm 18", "points": [[199, 6], [357, 6], [357, 33], [199, 33]], "difficult": False, "key_cls": "digits"}, {"transcription": "XZE SA", "points": [[15, 6], [140, 6], [140, 36], [15, 36]], "difficult": False, "key_cls": "text"}]</em>真实标签文件应为 JSON 格式。
+文件的每一行代表图像的 OCR 真实标签。
+每一行包含图像的文件名，后跟 JSON 对象形式的该图像的 OCR 结果。
+
+JSON 对象应具有以下几点：
+"transcription"：
+图像的真实文本转录。
+
+"points"：
+表示图像中文本区域边界框坐标的四个点的列表。
+"difficult"：
+
+一个布尔值，指示文本区域是否难以识别。
+"key_cls"：
+OCR 结果的类别标签，例如 "digits" 或 "text"。
+
+在创建用于准确评估 OCR 模型性能的真实标签文件时，请确保遵循此格式。
+<k>文本识别</k>代码定义了一个名为 RecMain 的类，该类旨在使用预训练的 OCR 模型在图像文件夹上运行文本识别（OCR）并生成一个评估 Excel 表格。
+
+<code>class RecMain:
+    def __init__(self, image_folder, rec_file, output_file):
+        self.image_folder = image_folder
+        self.rec_file = rec_file
+        self.output_file = output_file
+
+    def run_rec(self):
+        image_paths = GetImagePathsFromFolder(self.image_folder, self.rec_file).\get_image_paths_from_folder()
+
+        ocr_model = LoadRecModel().load_model()
+
+        results = ProcessImages(ocr=ocr_model, image_paths=image_paths).process_images()
+
+        ground_truth_data = ConvertTextToDict(self.rec_file).convert_txt_to_dict()
+
+        model_predictions, ground_truth_texts, image_names, precision, recall, \
+            overall_model_precision, overall_model_recall, cer_data_list = EvaluateRecModel(results, ground_truth_data).evaluate_model()
+
+        # Create Excel sheet
+        CreateMetricExcel(image_names, model_predictions, ground_truth_texts, precision, recall, cer_data_list, overall_model_precision, overall_model_recall, self.output_file).create_excel_sheet()</code>
+让我们分解代码并解释每个部分：
+
+<code>class RecMain:
+    def __init__(self, image_folder, rec_file, output_file):
+        self.image_folder = image_folder
+        self.rec_file = rec_file
+        self.output_file = output_file</code>
+RecMain类有一个__init__方法，用以下参数初始化对象：
+
+image_folder: 包含用于文本识别的输入图像的文件夹路径。
+
+rec_file: 包含图像实际文本内容的地面真实标签文件的路径。
+
+output_file: 保存评估结果的输出Excel表格的文件名。
+
+<code>def run_rec(self):
+        image_paths = GetImagePathsFromFolder(self.image_folder, self.rec_file).get_image_paths_from_folder()</code>
+run_rec方法负责运行文本识别过程。
+
+它首先使用GetImagePathsFromFolder类来获取指定image_folder内所有图像的图像路径列表。
+这一步确保OCR模型将处理给定目录内的所有图像。
+
+<code>ocr_model = LoadRecModel().load_model()</code>
+LoadRecModel类用于加载用于文本识别的预训练OCR模型。
+
+它可能使用PaddleOCR或其他OCR库来加载模型。
+
+<code>results = ProcessImages(ocr=ocr_model, image_paths=image_paths).process_images()</code>
+ProcessImages类负责使用加载的OCR模型来处理图像。
+它以OCR模型（ocr_model）和图像路径列表（image_paths）作为输入。
+
+<code>ground_truth_data = ConvertTextToDict(self.rec_file).convert_txt_to_dict()</code>
+ConvertTextToDict类用于读取地面实况标签文件并将其转换为字典格式（ground_truth_data）。
+这一转换准备了地面实况数据，以便与OCR模型的预测进行比较。
+
+<code>model_predictions, ground_truth_texts, image_names, precision, recall, \
+            overall_model_precision, overall_model_recall, cer_data_list = EvaluateRecModel(results, ground_truth_data).evaluate_model()</code>
+EvaluateRecModel类负责将OCR模型的预测与地面实况数据进行比较，并计算评估指标，如精度、召回率和字符错误率（CER）。
+
+它以OCR模型的预测（results）和地面实况数据（ground_truth_data）作为输入。
+
+<code># Create Excel sheet
+        CreateMetricExcel(image_names, model_predictions, ground_truth_texts, precision, recall, cer_data_list, overall_model_precision, overall_model_recall, self.output_file).create_excel_sheet()</code>
+CreateMetricExcel类负责创建包含评估指标和OCR结果的输出Excel表。
+它接受各种输入数据，包括图像名称、模型预测、地面实况文本、评估指标和输出文件名（self.output_file）。
+
+总之，RecMain类组织了整个文本识别过程，从加载OCR模型到生成包含详细指标的评估Excel表。
+它提供了一种有组织和可重复使用的方法，用于评估OCR模型在给定一组图像上的性能。
+注：
+
+地面实况文本文件格式使用RecMain类和提供的代码进行OCR评估时，正确格式化地面实况（GT）文本文件至关重要。
+GT文本文件应采用以下格式：
+<em>image_name.jpg text</em>文件的每一行表示一个图像的GT文本。
+
+每一行包含图像的文件名，后跟一个制表符（\t），然后是该图像的GT文本。
+确保GT文本文件包含图像文件夹中指定的所有图像的GT文本条目。
+GT文本应与图像中实际文本内容相匹配。
+
+这种格式对于准确评估OCR模型的性能是必需的。
+您可以在这里找到源代码：
+https://github.com/vinodbaste/paddleOCR_rec_dec?source=post_page<k>结论</k>我们探讨了如何使用基于深度学习的PaddleOCR进行文本检测和识别的过程。
+
+我们逐步演示了文本检测和识别的实现。
+有了PaddleOCR强大的预训练模型和易于使用的API，对图像执行OCR变得更加容易。
+
+<h2>微信爬虫Wechat_Articles_Spider</h2>
+wechat_articles_spider是一个用于爬取微信公众号文章的开源Python工具。
+
+wechat_articles_spider具有以下特点：
+自动化爬取：
+它能够自动化地从指定的微信公众号中抓取文章数据，省去了手动复制粘贴的繁琐过程。
+多线程支持：
+该工具支持多线程操作，可以同时处理多个公众号，提高了爬取效率。
+高度可定制化：
+用户可以根据自己的需求，配置爬取的范围、时间间隔、存储格式等参数，以满足不同的应用场景。
+数据持久化：
+爬取的文章数据可以方便地保存到本地或数据库中，供后续分析和使用。
+
+安装和使用方法
+步骤 1：确保您的系统已安装Python环境，并且具备pip包管理工具。
+步骤 2：打开终端或命令提示符，并执行以下命令安装wechat_articles_spider：
+<code>pip install wechatarticles</code>
+步骤 3：安装完成后，您可以通过导入wechat_articles_spider模块来使用该工具：
+<code>import wechat_articles_spider</code>
+
+示例代码
+下面是一个简单的示例代码，演示如何使用wechat_articles_spider来爬取微信公众号文章：
+<code>import wechat_articles_spider
+# 创建一个爬虫实例
+spider = wechat_articles_spider.WechatSpider()
+
+# 设置要爬取的公众号名称
+spider.set_official_account("公众号名称")
+
+# 设置爬取的文章数量
+spider.set_article_count(10)
+
+# 开始爬取文章
+spider.start()
+
+# 获取爬取结果
+articles = spider.get_articles()
+
+# 打印文章标题和链接
+for article in articles:
+    print("标题：", article['title'])
+    print("链接：", article['url'])</code>
+
+应用场景
+wechat_articles_spider可以应用于多种场景，包括但不限于：
+
+数据分析和挖掘：通过爬取微信公众号文章，可以获取大量的文本数据，用于进行数据分析、情感分析、关键词提取等任务。
+新闻媒体监测：可以用于监测特定公众号的文章更新情况，及时获取相关新闻信息。
+
+优缺点
+优点：
+简单易用，提供了丰富的功能和配置选项。
+高效快速，支持多线程操作，提高了爬取效率。
+可定制化，用户可以根据需求自定义爬取范围和参数设置。
+
+缺点：
+依赖于微信公众号的网页结构，如果微信公众号的页面结构发生变化，可能需要对代码进行适配。
+使用该工具需要遵守相关法律法规和网站的使用规则，避免滥用和侵犯他人权益。
+
+<h2>two independent programs to communicate with each other</h2>
+The best way for two independent programs to communicate with each other depends on the specific use case and requirements of the programs. 
+Both reading and writing to a file and using a local TCP connection are common methods for inter-process communication.
+
+Reading and writing to a file can be a simple and effective way to share data between programs. 
+However, it may not be the best option for real-time communication or when large amounts of data need to be exchanged frequently.
+
+Using a local TCP connection can provide more real-time communication and can handle larger amounts of data. 
+
+However, it requires more setup and configuration, and may not be necessary for simpler communication needs.
+Both methods are commonly used in inter-process communication.
+
+To use a local TCP connection for communication between two independent programs, you need to follow these general steps:
+
+Establish a TCP server in one program:
+Choose one of the programs to act as the server that will listen for incoming connections.
+
+Create a TCP socket in the server program and bind it to a specific port.
+The port number can be any available port that is not already in use.
+Here's an example of how to set up a TCP server in Python:
+python
+
+import socket
+# Create a TCP socket
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+# Bind the socket to a specific address and port
+server_address = ('localhost', 5000)  # Replace 'localhost' with the server's IP address if needed
+server_socket.bind(server_address)
+
+# Listen for incoming connections
+server_socket.listen(1)
+
+# Accept a client connection
+client_socket, client_address = server_socket.accept()
+
+# Now the server is ready to communicate with the client
+Connect the TCP client to the server:
+
+In the other program, create a TCP socket and connect it to the server's IP address and port.
+Once the connection is established, the client program can send and receive data to/from the server.
+
+Here's an example of how the <k>client program</k> can send and receive data to/from the server using the local TCP connection:
+
+python
+import socket
+
+# Create a TCP socket
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+# Connect to the server
+server_address = ('localhost', 5000)  # Replace 'localhost' with the server's IP address if needed
+client_socket.connect(server_address)
+
+# Send data to the server
+data_to_send = "Hello, server!"
+client_socket.sendall(data_to_send.encode())
+
+# Receive data from the server
+received_data = client_socket.recv(1024).decode()
+print("Received data from server:", received_data)
+
+# Close the connection
+client_socket.close()
+In this example, the client program creates a TCP socket, connects to the server's IP address and port, and sends data to the server using the sendall() method after encoding the data as bytes.
+
+It then waits to receive a response from the server using the recv() method, specifying the maximum number of bytes to receive (1024 in this case).
+The received data is decoded from bytes to a string and printed.
+
+On the server side, you can use a similar approach to receive data from the client and send a response back.
+
+Remember to replace 'localhost' with the appropriate IP address if the server is running on a different machine.
+Additionally, you can add exception handling to gracefully handle errors during the connection and communication process.
+
+Here's an example of how the <k>server</k> can receive data from the client and send a response back using the local TCP connection:
+
+python
+import socket
+
+# Create a TCP socket
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+# Bind the socket to a specific address and port
+server_address = ('localhost', 5000)  # Replace 'localhost' with the server's IP address if needed
+server_socket.bind(server_address)
+
+# Listen for incoming connections
+server_socket.listen(1)
+
+# Accept a client connection
+client_socket, client_address = server_socket.accept()
+
+# Receive data from the client
+received_data = client_socket.recv(1024).decode()
+print("Received data from client:", received_data)
+
+# Process the received data (e.g., perform calculations, generate a response)
+
+# Send a response back to the client
+response_data = "Hello, client!"
+client_socket.sendall(response_data.encode())
+
+# Close the connection
+client_socket.close()
+server_socket.close()
+
+In this example, after accepting the client connection, the server program waits to receive data from the client using the recv() method, specifying the maximum number of bytes to receive (1024 in this case).
+The received data is then decoded from bytes to a string and processed as needed. In this case, we simply generate a response message.
+
+After processing the data and generating a response, the server uses the sendall() method to send the response back to the client.
+The response data is encoded as bytes before sending.
+
+Finally, the server and client sockets are closed to release the resources and terminate the connection.
+
+Remember to replace 'localhost' with the appropriate IP address if the server is running on a different machine. Similarly, you can add exception handling to handle errors gracefully during the connection and communication process.
+
+使用Python读取日期和时间
+可以使用内置的文件操作功能和日期时间处理模块。
+
+import datetime
+
+# 读取闹钟日期和时间的文本文件路径
+file_path = "path/to/alarms.txt"
+
+# 存储闹钟日期和时间的列表
+alarms = []
+
+# 打开文本文件并读取闹钟日期和时间
+with open(file_path, "r") as file:
+    for line in file:
+        alarm = line.strip()
+        alarms.append(alarm)
+
+# 处理每个闹钟
+for alarm in alarms:
+    # 获取当前日期和时间
+    current_datetime = datetime.datetime.now()
+    alarm_datetime = datetime.datetime.strptime(alarm, "%Y-%m-%d %H:%M:%S")
+
+    # 计算下一个闹钟日期和时间
+    if alarm_datetime < current_datetime:
+        next_alarm = alarm_datetime + datetime.timedelta(days=1)
+    else:
+        next_alarm = alarm_datetime
+
+    # 计算闹钟触发时间间隔（秒）
+    interval = (next_alarm - current_datetime).total_seconds()
+
+    # 等待时间间隔并触发闹钟
+    import time
+    time.sleep(interval)
+    print("闹钟日期和时间：", alarm)
+    print("闹钟响铃！")
+
+在这个示例代码中，您需要将 file_path 变量设置为包含闹钟日期和时间的文本文件的路径。
+代码将打开文件并逐行读取闹钟的日期和时间，然后将其存储在 alarms 列表中。
+
+每个闹钟的日期和时间应以 "YYYY-MM-DD HH:MM:SS" 的格式存储在文本文件中，每行一个闹钟。
+
+代码处理每个闹钟，计算下一个闹钟日期和时间，并使用 time.sleep 函数等待时间间隔，然后触发闹钟。
+在示例代码中，我使用 print 语句来显示闹钟日期和时间以及响铃提醒，您可以根据需要进行调整。
 
 
 
