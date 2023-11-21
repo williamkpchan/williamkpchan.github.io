@@ -16146,7 +16146,473 @@ The loop continues until strtok returns NULL, printing each token on a new line 
 
 Make sure to include the necessary header files (<stdio.h> and <string.h>) at the top of your file to use the required functions and NULL constant.
 
+<H2>EMBEDDED SQL IN C</H2>
+<div class="toc">
+<A HREF = "#sqlintroduction" target="_self">Introduction</A>
+<A HREF = "#sqlsyntax" target="_self">Syntax</A>
+<A HREF = "#sqlsqlca" target="_self"><TT>SQLCA</TT></A>
+<A HREF = "#sqldclgen" target="_self">DEClaration GENerator</A>
+<A HREF = "#sqlcursor" target="_self">The cursor</A>
+<A HREF = "#sqlexample" target="_self">Example program</A>
+<A HREF = "#sqlnote" target="_self">Final note on empty fields</A>
+</div>
 
+<A NAME = "sqlintroduction"></A>
+<H3>1. INTRODUCTION</H3>
+Embedded SQL is an embedding of the database language SQL into a procedural programming language (C in this document) referred to as the host language.
+
+<A NAME = "sqlsyntax"></A>
+<H3>2. SYNTAX</H3>
+The syntax of a SQL database statement embedded in any host language is as follows:
+
+(margin) EXEC SQL SQL_STATEMENT (terminator)
+
+In C there is no specified margin, the terminator is ";".
+
+<H3>2.1 An example program outline</H3>
+Below is given a (very rough) outline of an example embedded SQL program which features the elements common to most embedded SQL applications.
+The program retrieves an employee's <TT>name</TT> where <TT>emp_number</TT> is equal to <TT>10001</TT> from a table called <TT>employees</TT> contained in a database called <TT>frans</TT> and then prints them.
+
+/* Begin program */
+
+EXEC SQL INCLUDE SQLCA;
+
+EXEC SQL BEGIN DECLARE SECTION
+         host_name character_string(20)
+         host_emp_number integer
+EXEC SQL END DECLARE SECTION
+
+EXEC SQL WHENEVER SQLERROR STOP
+
+EXEC SQL CONNECT frans
+
+/* Formulate query, something like: */
+
+EXEC SQL SELECT name emp_number
+         INTO host_name host_emp_number
+         FROM employees
+         WHERE emp_number = 10001
+
+/* Print host_name and host_emp_number */
+
+EXEC SQL DISCONNECT
+
+/* End program */
+
+
+All statements that begin <TT>EXEC SQL</TT> are embedded SQL database statements.
+The function of some of the above statements are obvious others require some additional explanation as follows:
+
+ EXEC SQL INCLUDE SQLCA: Incorporates SQL's error handling mechanism (SQL Communications Area).
+ DECLARE SECTION: Host variables must be declared to SQL prior to their use in any embedded SQL statements (the variable names used may be identical to those contained in the actual table).
+ EXEC SQL WHENEVER SQLERROR STOP:
+An error handling mechanism must precede all executable embedded SQL statements in a program.
+ EXEC SQL CONNECT personnel: Initiates access to the <TT>frans</TT> data base.
+A <TT>CONNECT</TT> statement must precede any references to a database.
+ EXEC SQL SELECT: This is the familiar SQL <TT>select</TT> statement.
+It is followed by an <TT>INTO</TT> clause.
+This associates retrieved values with host variables in the program.
+ EXEC SQL DISCONNECT: Severs the connection between the program and the database.
+
+We are not limited to <TT>SELECT</TT> statements.
+We can embed any statement available in standard SQL.
+For example we can create a table as follows:
+
+EXEC SQL CREATE TABLE employees
+          (name c20,
+          emp_number int)
+
+This creates a table called <TT>employees</TT> that has two fields, <TT>name</TT> a character field with 20 characters and <TT>emp_number</TT> an integer field.
+
+
+<A NAME = "sqlsqlca"></A>
+<H3>3. SQLCA</H3>
+One of the results of issuing an <TT>INCLUDE SQLCA</TT> statement is the declaration of the SQLCA structure, which can be used for error handling.
+This structure is as follows:
+ typedef struct {
+        char sqlcaid[8];
+        long sqlcabc;
+        long sqlcode;
+        struct {
+                short sqlerrml;
+                char sqlerrmc [70];
+        } sqlerrm;
+        struct {
+                char sqlwarn0;
+                char sqlwarn1;
+                char sqlwarn2;
+                char sqlwarn3;
+                char sqlwarn4;
+                char sqlwarn5;
+                char sqlwarn6;
+                char sqlwarn7;
+        } sqlwarn
+        char sqlext[8];
+} IISQLCA; static IISQLCA sqlca = {0};
+
+Many of the variables defined by the IISQLCA structure are not used.
+However the following should be noted:
+
+The SQLCA is initialised after the connect statement is issued.
+The fields <TT>sqlcaid</TT> and <TT>sqlcabc</TT> are initialised to the string "SQCLA" and the constant 136, respectively.
+These values do not change.
+The nested structure <TT>sqlerrm</TT> is a varying length character string consisting of two variables <TT>sqlerrml</TT> and <TT>sqlerrmc</TT>.
+If
+<TT>sqlerrml</TT> is set to 1 an error has been encountered, otherwise it is set to 0.
+<TT>sqlcode</TT> is an integer which is set as follows:
+ 0 = Statement executed successfully.
+ &lt 0 = An error has occurred.
+The value is the negative of the error number.
+ &gt 0 = Statement executed successfully but some exceptional condition has occurred, e.g. no data processed (empty field encountered).
+
+N.B.
+<TT>sqlcode</TT> = 100: empty row encountered.
+<TT>sqlcode</TT> = -40202: row containing empty fields encountered.
+
+ The <TT>sqlerrd</TT> array is a set of six 4 byte integers.
+Only sqlerrd(3) is used to indicate the number of rows affected by an
+<TT>INSERT</TT>, <TT>UPDATE</TT> or <TT>DELETE</TT> statement.
+ Variables <TT>sqlwarn0</TT> to <TT>sqlwarn7</TT> denote warnings.
+
+Error handling with SQCLA can be done implicitly by using <TT>WHENEVER</TT> statements, or explicitly by checking the contents of the SQLCA fields
+<TT>sqlcode</TT>, <TT>sqlerrml</TT> and <TT>sqlwarn[3]</TT>.
+
+
+<A NAME = "sqldclgen"></A>
+<H3>4. DCLGEN (DEClaration GENerator).</H3>
+<TT>DCLGEN</TT> is a structure-generating utility that maps the columns of a database table into a structure that you can include in a variable declaration.
+<TT>DCLGEN</TT> is invoked thus:
+ dclgen language dbname tablename filename structurename
+ where:
+
+ <TT>language</TT> = The embedded SQL host language, for example <TT>C</TT>.
+<TT>dbname</TT> = Name of database containing the table of interest, for example <TT>frans</TT>.
+ <TT>tablename</TT> = Name of table, for example <TT>employees</TT>.
+ <TT>filename</TT> = Output filename in which the output declaration is placed, for example </TT>employees.dcl</TT>.
+ <TT>structurename</TT> = Name of the host language structure that the command generates, for example <TT>employees_struct</TT>.
+
+Thus:
+ dclgen c frans employees employees.dcl employees_struct
+
+If you invoke this you should see output of the form:
+
+INGRES DCLGEN -- Copyright (c) 1985, 1993 Ingres Corporation
+DCLGEN: Working .
+. .
+
+DCLGEN: Describing table 'employees' .
+. .
+
+The file employees.dcl created by this command will contain a comment and two statements as follows:
+
+/* Description of table employees from database frans */
+  EXEC SQL DECLARE employees TABLE
+        (emp_number     integer,
+         name   c20);
+
+  struct employees_struct_ {
+        long    emp_number;
+        char    name[21];
+  } employees_struct;
+
+Note that the structure tag is the structure name followed by an underscore character "_".
+Note also that the length of the character buffers has been increased by 1 to accommodate the C null terminator.
+To incorporate this file into a C program it must be compiled into c code using the <TT>esqlc</TT> compiler.
+Thus:
+ esqlc employees.dcl
+
+This will produce a file <TT>employees.c</TT> as follows:
+
+/* Description of table employees from database frans */
+/* # line 6 "employees.dcl" */  /* host code */
+  struct employees_struct_ {
+        long    emp_number;
+        char    name[21];
+  } employees_struct;
+
+No specific reference to this file will be made in the application embedded sql in C source code, however, it is required when this source code compiled.
+
+
+<A NAME = "sqlcursor"></A>
+<H3>5. THE CURSOR.</H3>
+We have noted that data can be retrieved from an INGRES database using the <TT>select</TT>
+SQL statement.
+However the <TT>select</TT> statement is not in it self sufficient to perform this task in embedded SQL.
+This is because an application needs to process each record, or row, individually.
+The syntax of the <TT>select</TT> statement offers no way of doing this in an embedded setting.
+To do this embedded SQL uses a cursor.
+This can be thought of as a row marker.
+Special cursor-oriented statements are available.
+What ever the case a cursor must be declared before it can be used.
+For example:
+
+EXEC SQL DECLARE empcsr CURSOR FOR
+        SELECT name, emp_number
+        FROM employees
+        WHERE emp_number = 10001;
+
+Once declared we must "open" the cursor:
+
+EXEC SQL OPEN empcsr;
+
+<H3>5.1. "<TT>FETCHING</TT>" the data</H3>
+The data retrieved using a <TT>select</TT> statement can be assigned to the host variables, a single row at a time, with the <TT>FETCH</TT> statement.
+For example:
+
+EXEC SQL FETCH empcsr
+        INTO :host_name, :host_emp_number;
+ where <TT>empcsr</TT> is the cursor name (declared earlier), <TT>host_name</TT> and <TT>host_emp_number</TT> are host variable names, note the use of the ":" symbol preceding each host name.
+The statement performs two functions.
+First it moves the cursor to the next row in the table, which becomes the current row.
+Then it loads the values indicated in the <TT>SELECT</TT> part of the <TT>DECLARE CURSOR</TT> statement into the host variables.
+The data can then be processed as required.
+When a cursor is no longer required it should be "closed":
+
+EXEC SQL CLOSE empcsr
+
+<H3>5.2 The SQL <TT>WHENEVER</TT> statement</H3>
+<TT>WHENEVER</TT> provides a convenient method for handling error and exception conditions arising from embedded SQL database statements.
+It stipulates that some action occurs when the program attains a specific condition.
+The following conditions may be tested for:
+
+<TT>SQLWARNING</TT>.
+Indicates that the last embedded SQL statement produced a warning condition.
+<TT>SQLERROR</TT>.
+Indicates that an error occurred in the last SQL statement.
+<TT>NOTFOUND</TT>.
+Indicates that an SQL <TT>SELECT</TT>, <TT>FETCH</TT>, <TT>UPDATE</TT> or <TT>DELETE</TT> statement affected no rows.
+
+Possible actions may be one of the following:
+
+<TT>COPY SQLERROR</TT>.
+Allows access to the text of an error message.
+If a program has determined that an error has occurred (<TT>sqlcode</TT> is negative) it can use this statement to put the text of the error message into a variable that can be printed.
+<TT>CONTINUE</TT>.
+<TT>STOP</TT>.
+<TT>GOTO</TT>.
+<TT>CALL</TT>
+
+<H3>5.3 Putting The Above Together</H3>
+Below the example outline embedded SQL program given in Section 2.1 has been extended to illustrate cursor processing (and to make it more <TT>c</TT> like).
+
+/* Begin program */
+
+EXEC SQL INCLUDE SQLCA;
+
+EXEC SQL BEGIN DECLARE SECTION;
+         host_name character_string(21);
+         host_emp_number int;
+EXEC SQL END DECLARE SECTION ;
+
+EXEC SQL WHENEVER SQLERROR STOP;
+
+EXEC SQL CONNECT frans;
+
+/* Define and open cursor */
+
+EXEC SQL DECLARE empcsr CURSOR FOR
+        SELECT name, emp_number
+        FROM employees
+        WHERE emp_number = 10001;
+
+EXEC SQL OPEN empcsr;
+
+EXEC SQL WHENEVER NOT FOUND GOTO close_empcsr;
+
+/* Loop indefinitely (the WHENEVER NOT FOUND statement will cause the loop to be terminated when the end of the table is encountered.
+*/
+
+/* Commence loop */
+        EXEC SQL FETCH
+                INTO :host_name, :host_emp_number;
+
+        /* Print host_name and host_emp_number */
+
+/* End loop */
+
+/* Close and disconnect */
+ close_empcsr:
+        EXEC SQL CLOSE close_empcsr;
+
+EXEC SQL DISCONNECT
+
+/* End program */
+
+
+<A NAME = "sqlexample"></A>
+<H3>6. WRITING AN EMBEDDED SQL FILE IN C</H3>
+To write an executable embedded SQL in C program the following sequence of steps should be followed:
+
+Run the <TT>dclgen</TT> utility: dclgen language dbname tablename filname1 structurename
+Compile the resulting <TT>.dcl</TT> file using the appropriate <TT>esql</TT> compiler, <TT>esqlc</TT> in the case of the C programming language: esqlc filename1.dcl
+Write the C source code but give it the post fix <TT>.sc</TT> (not <TT>.c</TT>).
+Compile the SQL routines in the .sc source file into C using the appropriate <TT>esql</TT> compiler (i.e.
+<TT>esqlc</TT> this case): esqlc filename.sc
+This creates a file <TT>filename.c</TT> which can be examined.
+ Compile the <TT>.c</TT> file using cc -Aa -o filename filename.c /cs/apps3/ingres/ingres/lib/libingres.a -lm -lc or using the shorthand version: ingcc -o filename filename.c
+This then creates a file <TT>filename</TT> which is the final executable.
+
+<H3>6.1 An embedded SQL in C example program</H3>
+We will now put all of the above together to produce a <TT></TT> program, <TT>tempest</TT>, that retrieves an employee's <TT>name</TT> where <TT>emp_number</TT> is equal to <TT>10001</TT> from a table called <TT>employees</TT> contained in a database called <TT>frans</TT> and then prints the result.
+The <TT>.sc</TT> code is as follows:
+
+/* ---------------------------------------- */
+/*                                          */
+/*      EMBEDDED SQL IN C TEST PROGRAM      */
+/*                                          */
+/*               Frans Coenen               */
+/*             (20 March, 1998)             */
+/*                                          */
+/* ---------------------------------------- */
+
+/* To compile (assuming an appropriate .dcl file exists):
+"esqlc tempest.sc" and then "cc -Aa -o tempest tempest.c
+/cs/apps3/ingres/ingres/lib/libingres.a -lm -lc" */
+
+/* Include statements.
+*/
+
+#include<stdio.h>
+EXEC SQL INCLUDE SQLCA;
+
+/* Function prototypes */
+ void cleanUp(void);
+
+/* ------ MAIN ------ */
+
+/* Top level function */
+ void main(void)
+{
+EXEC SQL BEGIN DECLARE SECTION;
+        char host_name[21];
+        int host_emp_number;
+        EXEC SQL INCLUDE "employees.dcl";
+EXEC SQL END DECLARE SECTION;
+
+EXEC SQL DECLARE empcsr CURSOR FOR
+        SELECT name, emp_number
+        FROM employees
+        WHERE emp_number = 10001;
+
+/* An error when opening the frans database will cause the error to be printed and the program to be aborted */
+
+EXEC SQL WHENEVER SQLERROR STOP;
+
+EXEC SQL CONNECT frans;
+
+/* Errors from here on will cause the program to clean up */
+
+EXEC SQL WHENEVER SQLERROR CALL cleanUp;
+
+EXEC SQL OPEN empcsr;
+ printf("Some values from the /"employees/" table /n");
+
+/* When ever no more rows are fetched, close the cursor */
+
+EXEC SQL WHENEVER NOT FOUND GOTO close_empcsr;
+
+/* The last executable SQL statement was OPEN so we know that the value of "sqlcode" cannot be SQLERROR or NOT FOUND */
+ while(sqlca.sqlcode == 0) {     /* Loop is broken by NOT FOUND */
+        EXEC SQL FETCH empcsr
+                INTO :host_name, :host_emp_number;
+
+/* This "printf" does not execute after the previous FETCH returns the
+NOT FOUND condition */
+
+        printf("%s %d/n",host_name,host_emp_number);
+        }
+
+/* From this point onwards the program ignore all errors.
+Also turn off the NOT FOUND condition for consistency */
+
+EXEC SQL WHENEVER SQLERROR CONTINUE;
+EXEC SQL WHENEVER NOT FOUND CONTINUE;
+ close_empcsr:
+        EXEC SQL CLOSE empcsr;
+
+EXEC SQL DISCONNECT;
+}
+
+/* ------ CLEAN UP ------ */
+
+/* Error handling procedure (print error and disconnect) */
+ void cleanUp(void)
+{
+EXEC SQL BEGIN DECLARE SECTION;
+        char errmsg[10];
+EXEC SQL END DECLARE SECTION;
+
+EXEC SQL INQUIRE_SQL (:errmsg = ERRORTEXT); /* Get error message.
+*/
+/* Alternatively to get only the error number
+EXEC SQL COPY SQLERROR INTO :errmsg WITH 256; */
+ printf("Aborting because of error: /n%s/n",errmsg);
+
+EXEC SQL DISCONNECT; exit(-1);
+}
+
+Remember that a label in C begins with an alphabetic character or an underscore, it must be the first word on the line and must be terminated with a ":", thus <TT>close_empcsr:</TT>.
+
+Alternatively. to select all records in the <TT>employees</TT> table we would define the cursor as follows:
+
+EXEC SQL DECLARE empcsr CURSOR FOR
+          SELECT name, emp_number
+          FROM employees;
+
+<H3>6.2 Discussion</H3>
+<TT>EXEC SQL INCLUDE</TT>: The <TT>INCLUDE</TT> statement provides a means of including external SQL files in the source code.
+Here it is used to include the <TT>SQLCA</TT> structure and the <TT>papers.dcl</TT> files.
+ <TT>EXEC SQL BEGIN ....
+END DECLARE SECTION</TT>:
+Host variables must be declared prior to their use.
+The declaration types must match those in the .dcl file.
+Also note the
+<TT>EXEC SQL INCLUDE</TT> "papers.dcl" statement.
+Host variables can be global or local.
+ <TT>EXEC SQL DECLARE CURSOR</TT>: Names a cursor for use with a specified set of retrieval criteria.
+Once declared the cursor can be opened, using an <TT>OPEN</TT> statement, which causes the select statement specified in <TT>DECLARE CURSOR</TT> to be executed.
+The run time retrieval actually occurs when a <TT>FETCH</TT> is subsequently performed.
+When all processing has been completed the cursor can be closed with the <TT>CLOSE</TT> statement.
+ <TT>EXEC SQL WHENEVER SQLERROR STOP</TT>: The <TT>WHENEVER</TT> statement stipulates that some action occurs when a given condition is satisfied.
+In this case the action is
+<TT>STOP</TT> and the condition <TT>SQLERROR</TT>.
+The <TT>SQLERROR</TT> condition is satisfied if <TT>sqlcode</TT> in the <TT>SQCLA</TT> structure is negative (this indicates that an error has occurred.) The <TT>STOP</TT> action simply terminates program execution after printing an error message.
+ <TT>EXEC SQL CONNECT</TT>: Connects the program to the named database.
+The statement must precede any statements using the database.
+ <TT>EXEC SQL WHENEVER SQLERROR CALL</TT>: Similar to 4. The <TT>CALL</TT> action is used to call a host language procedure (<TT>cleanUp</TT> in this case).
+No arguments can be passed to the procedure.
+ <TT>EXEC SQL OPEN</TT>: Opens the cursor (<TT>empcsr</TT>) for processing.
+A cursor must be opened before any data manipulation statements can be performed e.g. a <TT>FETCH</TT> statement.
+ <TT>EXEC SQL WHENEVER NOT FOUND GOTO</TT>: Similar to 4 and 6. The <TT>NOT FOUND</TT> condition becomes true when
+<TT>sqlcode</TT> in the SQLCA structure is set to a value of 100 thus indicating that (say) a <TT>FETCH</TT> statement affected no rows.
+The <TT>GOTO</TT> action is the same as the "goto" statement in C (apologies to
+Dijkstra!).
+ <TT>EXEC SQL FETCH</TT>: Used by the cursor (<TT>empcsr</TT>).
+It first advances the open cursor one row.
+Next it loads the values indicated in the <TT>SELECT</TT> clause of the
+<TT>DECLARE CURSOR</TT> statement into the host variables listed in its <TT>INTO</TT> clause.
+Once loaded into the host variables  the values can be further processed.
+ <TT>EXEC SQL WHENEVER SQLERROR CONTINUE</TT> and
+EXEC SQL WHENEVER NOT FOUND CONTINUE: Similar to 4, 6 and 8. The <TT>CONTINUE</TT> action simply means that no action should be taken based on the associated condition, the program proceeds to the next statement.
+ <TT>EXEC SQL CLOSE</TT>: Close the open cursor (<TT>empcsr</TT>)
+ <TT>EXEC SQL DISCONNECT</TT>: Terminate access to the (<TT>frans</TT>) database.
+ <TT>EXEC SQL COPY SQLERROR</TT>: Allows access to text of error messages.
+Thus when an error occurs, i.e.
+<TT>sqlcode</TT> is negative, the text of the error message can be put into the name variable <TT>errmsg</TT>) and printed.
+
+
+<A NAME = "sqlnote"></A>
+<H3>7. NOTE ON EMPTY FIELDS.</H3>
+To list all fields in a table which includes empty fields will result in an error
+(<TT>sqlcode</TT> = -40202) when ever an empty field is encountered.
+We can test for this and over ride the error.
+However the result is that the entry from the last occasion when an instantiated value for the field was encountered is printed.
+This can not be tested for as entries for fields may correctly be repeated.
+Further there is no indication of which fields are empty.
+The error code only indicates that one or more empty field in a row have been encountered and not the position of the field or fields within the row.
+At present the only solution would appear to be to include a null string in empty character fields and a value of zero in empty numeric fields.
+This will be quite acceptable in the database under discussion here, however in some applications a numeric value of zero may be a legitimate value.
+It is hoped that a solution will be found in the near future!
 
 
 
