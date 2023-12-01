@@ -327,10 +327,11 @@ function showHelp() {
   alert(showHelpTxt)
 }
 function settimeInterval() {
-  timeInt = prompt("enter timeInt in sec: ", timeInterval);
+  timeInt = prompt("enter timeInt in sec: ", timeInterval/1000);
     if (timeInt != null && timeInt != ""){
       timeInterval = Number(timeInt)*1000
-      toggle_automode()
+      clearInterval(autoInterval)
+      //toggle_automode() // turn off and on to reset parameters
       toggle_automode()
     }
 }
