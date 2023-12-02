@@ -22,7 +22,8 @@
 <style>
 #dateTime {  text-align: left;}
 #cmtNote, #instruction, #message, #usstock{display:none;}
-#amtLst {font-size:12px;}
+#amtLst, #actions {font-size:12px;}
+#actions {  text-align: left; margin-left: 1%; }
 select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
 </style>
 
@@ -32,6 +33,7 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
 <br>
 <canvas id="cvs" width="1150" height="600" ondblclick="askforCode()">[No canvas support]</canvas>
 <br>
+<p id="actions"></p>
 <p id="amtLst"></p>
 <canvas id="accel" width="1150" height="240" ondblclick="window.location = '#commands'; window.scrollTo(window.scrollX, window.scrollY + 800);">[No canvas support]</canvas>
 <br>
@@ -612,11 +614,11 @@ $("#lastValues").append(statusMsg);
 
 		// ddiffaccel
 		ddiffaccel = []
-		ddiffaccel.push(diffaccel[0].map(function(item, index) { return item - diffaccel[2][index]; }))
+		ddiffaccel.push(diffaccel[0].map(function(item, index) { return item - diffaccel[1][index]; }))
 		ddiffaccel.push(diffaccel[1].map(function(item, index) { return item - diffaccel[2][index]; }))
-		ddiffaccel.push(diffaccel[2].map(function(item, index) { return item - diffaccel[2][index]; }))
-		ddiffaccel.push(diffaccel[3].map(function(item, index) { return item - diffaccel[2][index]; }))
-		ddiffaccel.push(diffaccel[4].map(function(item, index) { return item - diffaccel[2][index]; }))
+		ddiffaccel.push(diffaccel[2].map(function(item, index) { return item - diffaccel[3][index]; }))
+		//ddiffaccel.push(diffaccel[3].map(function(item, index) { return item - diffaccel[4][index]; }))
+		//ddiffaccel.push(diffaccel[4].map(function(item, index) { return item - diffaccel[5][index]; }))
 		//ddiffaccel[0].fill(null,0,intv3); //array.fill(value, start, end)
 		//ddiffaccel[1].fill(null,0,intv3); //array.fill(value, start, end)
 		//ddiffaccel[2].fill(null,0,intv3); //array.fill(value, start, end)
@@ -632,6 +634,52 @@ $("#lastValues").append(statusMsg);
 		stochmax1 = Math.max(...stoch1);
 		stochmin1 = Math.min(...stoch1);
 		drawTrend(stoch1, stochmax1, stochmin1, '强弱50');
+
+
+        // evaluate B/S
+        lastdayPtr = mydata[0].length-1
+        statBegin = lastdayPtr - 14
+        actionStr = ""
+        for (var i = statBegin; i < (lastdayPtr+1); i++) {
+          // define references
+          Mvalue = mydata[0][i]
+          Hvalue = mydata[1][i]
+          Lvalue = mydata[5][i]
+          hRefvalue = mydata[2][i]
+          lRefvalue = mydata[6][i]
+          h2Refvalue = mydata[3][i]
+          l2Refvalue = mydata[7][i]
+          acRefvalue = diffaccel[1][i]
+          // compare indicators
+          Hdiff = (Hvalue - hRefvalue).toFixed(2)
+          Ldiff = (Lvalue - lRefvalue).toFixed(2)
+          H2diff = (Hvalue - h2Refvalue).toFixed(2)
+          L2diff = (Lvalue - l2Refvalue).toFixed(2)
+          Mhdiff = (Mvalue - h2Refvalue).toFixed(2)
+          Mldiff = (Mvalue - l2Refvalue).toFixed(2)
+          acdiff = (diffaccel[0][i] - diffaccel[1][i]).toFixed(2)
+
+          if(Hdiff >0){Hdiff = "<span class='red'>" +Hdiff + "</span>"}
+          if(Ldiff >0){Ldiff = "<span class='red'>" +Ldiff + "</span>"}
+          if(H2diff >0){H2diff = "<span class='red'>" +H2diff + "</span>"}
+          if(L2diff >0){L2diff = "<span class='red'>" +L2diff + "</span>"}
+          if(Mhdiff >0){Mhdiff = "<r>" +Mhdiff + "</r>"}
+          else{Mhdiff = "<k>" +Mhdiff + "</k>"}
+          if(Mldiff >0){Mldiff = "<r>" +Mldiff + "</r>"}
+          else{Mldiff = "<k>" +Mldiff + "</k>"}
+          if(acdiff >0){acdiff = "<r>" +acdiff + "</r>"}
+          else{acdiff = "<gr>" +acdiff + "</gr>"}
+
+          closeValue = lowLst[i]
+          dateValue = dateLst[i]
+
+          // decision conditions
+          actionStr = actionStr + dateValue + "&emsp;C: " + closeValue +"\tHdiff: " + Hdiff + "\tLdiff: " + Ldiff + "\tH2diff: " + H2diff + "\tL2diff: " + L2diff + "\tMhdiff: " + Mhdiff + "\tMldiff: " + Mldiff + "\tacdiff: " + acdiff + "<br>" 
+
+          if(Hdiff>0){action = "buy"}
+        }
+        actionStr = "<pre>" + actionStr + "</pre>"
+        $("#actions").html(actionStr);
 
      }
 
