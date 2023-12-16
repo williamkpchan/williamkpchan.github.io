@@ -340,4 +340,4 @@ window.addEventListener("hashchange", function () {
 // learningMode package complete//
 
 randomWL();
-$("#mustWatch").append('<pre><br><span class="silver">快捷键: <br>r, 5 跳任意书签 R, 跳任意题目 b, 4 前一题目 f, 6 下一题目<br><br>t, 8 目录顶 l, 2 目录底 7 目录中部<br><br>T 网页顶 e 网页底 m 必看<br><br>K 设特定书签 k 跳到特定书签</span><br>多书签管理- R 跳任意书签; + 目前题目加入书签; - 目前题目删除书签; a 手动书签<br>w 设定多书签容量<br>按space 继续往下</pre>');
+$("#mustWatch").append('<pre><br><span class="silver">快捷键: <br>r, 5 跳任意书签 R, 跳任意题目 b, 4 前一题目 f, 6 下一题目<br><br>t, 8 目录顶 l, 2 目录底 7 目录中部<br><br>T 网页顶 e 网页底 m 必看<br><br>K 设特定书签 k 跳到特定书签</span><br>多书签管理- R 跳任意书签; + 目前题目加入书签; - 目前题目删除书签; a 手动书签<br>w 设定多书签容量<br>按space 继续往下<br>+ add to WL<br>- rvFmWL</pre>');
