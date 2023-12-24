@@ -61,11 +61,6 @@ function init_theRange(newRange) {
   rm_ignoreLst();
   tipsListIdx = allIdx.slice(0, selectRange); // select the leading items
 
-  // shuffle the remaining pointers
-  if (noShuffle == false) {
-    tipsListIdx = shuffle(tipsListIdx)
-  }
-
   topicpointer = 0
 
   if( old_selectRange != selectRange ) {
