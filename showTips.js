@@ -53,6 +53,7 @@ init_theRange(selectRange)
 
 function init_theRange(newRange) {
   old_selectRange = selectRange
+  topicpointer = 0
   if(newRange > 10 && newRange <= tipLimit && selectRange <= tipLimit){
     selectRange = newRange
   }else{
@@ -66,7 +67,6 @@ function init_theRange(newRange) {
     tipsListIdx = shuffle(tipsListIdx)
   }
 
-  topicpointer = 0
 
   if( old_selectRange != selectRange ) {
       alert("selected tips number: " + selectRange)
