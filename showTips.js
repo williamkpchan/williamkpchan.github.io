@@ -65,6 +65,7 @@ function init_theRange(newRange) {
   // shuffle the remaining pointers
   if (noShuffle === false) {
     tipsListIdx = shuffle(tipsListIdx)
+    topicpointer = Math.floor(Math.random() * (tipsListIdx.length -1))
   }
 
 
