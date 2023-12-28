@@ -106,6 +106,7 @@ function generateTip() {
      console.log("showSrcSwitch ", showSrcSwitch)
      $(".Notes").text('')
   }
+  flipSw() // trigger an extra function
 }
 
 function forward() {
