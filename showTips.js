@@ -80,7 +80,7 @@ function generateTip() {
   if(topicpointer>tipsListIdx.length){
      topicpointer = Math.floor(Math.random() * (tipsListIdx.length -1))
   }
-  console.log("IdxPointer: ", tipsListIdx[topicpointer])
+
   tip = tipsList[tipsListIdx[topicpointer]];
   if(breakLine == true){
     tip = tip.split("\t");
@@ -94,11 +94,11 @@ function generateTip() {
 
   $('.answer-tip').hide();
 
-
   $("#dateAndTime").click()
   document.querySelector('.tip-button').innerHTML = tipsListIdx[topicpointer] + " of " + tipsList.length
-  document.querySelector('.tip-button').focus();
-
+  if(focusSwitch == true){
+    document.querySelector('.tip-button').focus();
+  }
   if(showSrcSwitch == true){
      console.log("showSrcSwitch ", showSrcSwitch)
      $(".Notes").text('\n'+ $('.js-tip').find('img').attr('src') )
@@ -106,7 +106,7 @@ function generateTip() {
      console.log("showSrcSwitch ", showSrcSwitch)
      $(".Notes").text('')
   }
-  flipSw() // trigger an extra function
+  flipSw(); // trigger an extra function
 }
 
 function forward() {
