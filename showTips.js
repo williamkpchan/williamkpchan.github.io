@@ -67,6 +67,9 @@ function init_theRange(newRange) {
     tipsListIdx = shuffle(tipsListIdx)
     topicpointer = Math.floor(Math.random() * (tipsListIdx.length -1))
   }
+  if (noShuffle == true) {
+    topicpointer = Math.floor(Math.random() * (tipsListIdx.length -1))
+  }
 
 
   if( old_selectRange != selectRange ) {
