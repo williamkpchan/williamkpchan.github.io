@@ -63,7 +63,7 @@ function init_theRange(newRange) {
   tipsListIdx = allIdx.slice(0, selectRange); // select the leading items
 
   // shuffle the remaining pointers
-  if (noShuffle === false) {
+  if ((noShuffle === false)|(noShuffle === null)) {
     tipsListIdx = shuffle(tipsListIdx)
     topicpointer = Math.floor(Math.random() * (tipsListIdx.length -1))
   }
