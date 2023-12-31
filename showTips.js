@@ -346,6 +346,7 @@ function gotoNum() {
  pointer = prompt("goto Item Number: ", "");
  tip = tipsList[pointer];
  document.querySelector('.js-tip').innerHTML = tip;
+ topicpointer = pointer;
 }
 
 function listAll() {
