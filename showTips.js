@@ -169,8 +169,6 @@ function chkKey() {
   else if(testkey == 'q'){window.open('https://www.quora.com/');}
   else if(testkey == 'Q'){window.open('https://news.qq.com/zt2020/page/feiyan.htm');}
 
-  else if(testkey == 'S'){window.open("https://williamkpchan.github.io/Hour STK Charts.html");}
-
   else if(testkey == 't'){window.open("https://my.weather.gov.hk/tc/myindex.htm");}
 
   else if(testkey == 'u'){window.open("https://www.worldometers.info/coronavirus/");}
