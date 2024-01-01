@@ -109,7 +109,7 @@ function generateTip() {
      console.log("showSrcSwitch ", showSrcSwitch)
      $(".Notes").text('')
   }
-  flipSw(); // trigger an extra function
+  flipSw(); // trigger an extra function on sexpage\sexhd.picsBig.html function flipSw(){
 }
 
 function forward() {
@@ -344,9 +344,10 @@ function settimeInterval() {
 
 function gotoNum() {
  pointer = prompt("goto Item Number: ", "");
- tip = tipsList[pointer];
- document.querySelector('.js-tip').innerHTML = tip;
+ // tip = tipsList[pointer];
+ // document.querySelector('.js-tip').innerHTML = tip;
  topicpointer = pointer;
+ generateTip();
 }
 
 function listAll() {
