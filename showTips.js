@@ -154,6 +154,7 @@ function chkKey() {
   else if(testkey == 'v'){viewIgnoreLst();}
   else if(testkey == 'T'){alertTotal();}
   else if(testkey == 'x'){showAnswer();}
+  else if(testkey == 'c'){clickImg();}
   else if(testkey == 'I'){settimeInterval();}
   else if(testkey == 't'){window.scrollTo(0,-100);}
   else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
@@ -362,6 +363,10 @@ function listAll() {
       tipsListChop.push(tipbit)
     }
     document.querySelector('.js-tip').innerHTML = tipsListChop.join("<br>");
+}
+
+function clickImg() {
+   $(".js-tip a").click()
 }
 
 forward();
