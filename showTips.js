@@ -112,6 +112,12 @@ function generateTip() {
   flipSw(); // trigger an extra function on sexpage\sexhd.picsBig.html function flipSw(){
 }
 
+function rtClick(event) {
+    if (event.which == 3) {
+        backClick()
+    }
+}
+
 function forward() {
     console.log("topicpointer", topicpointer)
     if (!(topicpointer >= 0 && topicpointer < (selectRange-1) && topicpointer < (tipLimit-1) ) ){
