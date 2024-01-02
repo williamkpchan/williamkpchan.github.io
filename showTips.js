@@ -355,6 +355,7 @@ function gotoNum() {
  // tip = tipsList[pointer];
  // document.querySelector('.js-tip').innerHTML = tip;
  topicpointer = pointer;
+ console.log("topicpointeraf: ", topicpointer)
  generateTip();
 }
 
@@ -373,7 +374,9 @@ function listAll() {
 }
 
 function clickImg() {
-   $(".js-tip a").click()
+   $(".js-tip a").click(function() {
+     alert("Your anchor is clicked.");
+   });
 }
 
 forward();
