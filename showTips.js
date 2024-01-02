@@ -137,7 +137,7 @@ function chkKey() {
   if(testkey == 'a'){window.open("https://williamkpchan.github.io/apptechno.html");}
   else if(testkey == 'A'){toggle_automode();}
   else if(testkey == 'b'){backClick();}
-  else if(testkey == 'c'){callCalculator();}
+  else if(testkey == 'c'){clickImg();}
   else if(testkey == 'd'){window.open("https://www.youdao.com/");}
   else if(testkey == 'E'){window.open("https://williamkpchan.github.io/LibDocs/English Conversation.html");}
   else if(testkey == 'f'){forward();}
@@ -154,7 +154,6 @@ function chkKey() {
   else if(testkey == 'v'){viewIgnoreLst();}
   else if(testkey == 'T'){alertTotal();}
   else if(testkey == 'x'){showAnswer();}
-  else if(testkey == 'c'){clickImg();}
   else if(testkey == 'I'){settimeInterval();}
   else if(testkey == 't'){window.scrollTo(0,-100);}
   else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
@@ -227,9 +226,11 @@ function getChar(event) {
 }
 
 function randomNum() {
+ console.log("topicpointerbf: ", topicpointer)
  topicpointer = Math.floor(Math.random() * (tipsList.length -1))
+ console.log("topicpointeraf: ", topicpointer)
  generateTip();
-}
+} 
 
 function shuffle(arrayLst) {
  var i = arrayLst.length, j = 0, temp;
@@ -372,8 +373,6 @@ function clickImg() {
 forward();
 
 $(".tip-button").after("<br><br><br>shortcut Keys:<br>+ addToIgnoreLst<br>- removeFmIgnoreLst<br>2 setRange<br><r onclick='toggle_automode()'>A toggle_automode</r><br>b backClick<br>c callCalculator<br>c showChart<br>C showTimeDate<br>e scrollTo Bottom<br>f forward<br>g gotoNum<br>H showHelp<br>I set time interval<br>l listAll<br>r randomNum<br>R removeNumFmIgnoreLst<br>s setRange<br>S toggle_showSrcSwitch<br>T alertTotal<br>t scrollTo Top<br>v viewIgnoreLst<br>x showAnswer<br>z showTenYear<br>o open image in new window")
-$(".tip-number").onclick("forward()")
-$(".tip-number").ondblclick("randomNum()")
 
 window.addEventListener('click', function (evt) {
   if (evt.detail === 3) {
