@@ -374,9 +374,8 @@ function listAll() {
 }
 
 function clickImg() {
-   $(".js-tip a").click(function() {
-     alert("Your anchor is clicked.");
-   });
+  console.log($("pre.js-tip a").href)
+  window.open($(".js-tip a").href)
 }
 
 forward();
