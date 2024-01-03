@@ -1391,6 +1391,1487 @@ Unfortunately, Classic Bluetooth is not (yet?) implemented in MicroPython.
 On the other hand, BLE is a somewhat more complex ESP32MicroPythontopic that would go beyond the scope here.
 And honestly, I have some learning to do on this ESP32MicroPythontopic as well.
 
+<h2>ESP32/ESP8266 MicroPython Web Server</h2>
+
+<div id="MicroPythonWebServertoc" class="toc"><a href="#MicroPythonWebServertopic-0" target="_self">Prerequisites</a><br><a href="#MicroPythonWebServertopic-1" target="_self"><k>-Parts required</k></a><br><a href="#MicroPythonWebServertopic-2" target="_self">Preparing the Files</a><br><a href="#MicroPythonWebServertopic-3" target="_self"><k>-Creating the <em>main.py</em> file on your board</k></a><br><a href="#MicroPythonWebServertopic-4" target="_self"><k>-boot.py</k></a><br><a href="#MicroPythonWebServertopic-5" target="_self"><k>-main.py</k></a><br><a href="#MicroPythonWebServertopic-6" target="_self"><k>-Creating a socket server</k></a><br><a href="#MicroPythonWebServertopic-7" target="_self">Testing the Web Server</a><br><a href="#MicroPythonWebServertopic-8" target="_self">Wrapping Up</a><br></div>
+We’ll build a web server with ON and OFF buttons to control the on-board LED of the ESP32/ESP8266.
+We’ll use sockets and the Python socket API.
+
+<img src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/11/esp32-led-server-micropython.jpg">
+
+<h3 id="MicroPythonWebServertopic-0">Prerequisites</h3>
+To program the ESP32 and ESP8266 with MicroPython, we use uPyCraft IDE as a programming environment.
+Follow the next tutorials to install uPyCraft IDE and flash MicroPython firmware on your board:
+
+Install uPyCraft IDE: <a href="https://randomnerdtutorials.com/install-upycraft-ide-windows-pc-instructions/" target="_blank">Windows PC</a>, 
+<a href="https://randomnerdtutorials.com/install-upycraft-ide-mac-os-x-instructions/" target="_blank">MacOS X</a>, or 
+<a href="https://randomnerdtutorials.com/install-upycraft-ide-linux-ubuntu-instructions/" target="_blank">Linux Ubuntu</a>
+
+<a href="https://randomnerdtutorials.com/flash-upload-micropython-firmware-esp32-esp8266/" target="_blank">Flash/Upload MicroPython Firmware to ESP32 and ESP8266</a>
+
+If this is your first time dealing with MicroPython you may find these next tutorials useful:
+
+<a href="https://randomnerdtutorials.com/getting-started-micropython-esp32-esp8266/" target="_blank">Getting Started with MicroPython on ESP32 and ESP8266</a>
+
+<a href="https://randomnerdtutorials.com/micropython-programming-basics-esp32-esp8266/" target="_blank">MicroPython Programming Basics with ESP32 and ESP8266</a>
+
+<a href="https://randomnerdtutorials.com/micropython-gpios-esp32-esp8266/" target="_blank">MicroPython with ESP32 and ESP8266: Interacting with GPIOs</a>
+
+<h3 id="MicroPythonWebServertopic-1"><k>-Parts required</k></h3>
+For this tutorial you need an ESP32 or ESP8266 board:
+
+<a href="https://makeradvisor.com/tools/esp32-dev-board-wi-fi-bluetooth/" target="_blank">ESP32 DEVKIT DOIT board</a> – read <a href="https://makeradvisor.com/esp32-development-boards-review-comparison/" target="_blank">ESP32 Development Boards Review and Comparison</a>
+
+<a href="https://makeradvisor.com/tools/esp8266-esp-12e-nodemcu-wi-fi-development-board/" target="_blank">ESP8266-12E NodeMCU Kit</a> – read <a href="https://makeradvisor.com/best-esp8266-wi-fi-development-board/" target="_blank">Best ESP8266 Wi-Fi Development Board</a>
+
+You can use the preceding links or go directly to <a href="https://makeradvisor.com/tools/?utm_source=rnt&amp;utm_medium=post&amp;utm_campaign=post" target="_blank">MakerAdvisor.com/tools</a> to find all the parts for your projects at the best price!
+
+<h3 id="MicroPythonWebServertopic-2">Preparing the Files</h3>
+Connect the ESP32 or ESP8266 board to your computer.
+Open uPyCraft IDE, and go to <strong>Tools</strong> &gt; <strong>Serial</strong> and select the serial port.
+
+<img decoding="async" src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/10/uPyCraft-IDE-Select-Serial-Port-COM5.png">
+
+You should see the files on the ESP32/ESP8266 board on the device folder.
+By default, when you burn MicroPython firmware, a <em>boot.py</em> file is created.
+
+For this project you’ll need a <em>boot.py</em> file and a <em>main.py</em> file.
+The <em>boot.py</em> file has the code that only needs to run once on boot.
+This includes importing libraries, network credentials, instantiating pins, connecting to your network, and other configurations.
+
+The <em>main.py</em> file will contain the code that runs the web server to serve files and perform tasks based on the requests received by the client.
+
+<h3 id="MicroPythonWebServertopic-3"><k>-Creating the <em>main.py</em> file on your board</k></h3>
+
+Press the “<strong>New file</strong>” button to create a new file.
+
+Press the “<strong>Save file</strong>” button to save the file in your computer.
+<img src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/10/uPycraft-ide-tools-menu-save-file.png">
+
+A new window opens, name your file <em>main.py </em>and save it in your computer:
+
+<img src="https://i1.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/10/new-file-created-uPyCraft-IDE.png">
+
+After that, you should see the following in your uPyCraft IDE (the <em>boot.py</em> file in your device and a new tab with the<em> main.py</em> file):
+
+<img src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/10/main-py-file-created.png">
+
+Click the <strong>“Download and run</strong>” button to upload the file to your ESP board:
+
+<img src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/10/uPycraft-ide-tools-menu-download-and-run.png">
+
+The device directory should now load the <em>main.py</em> file.
+Your ESP has the file <em>main.py </em>stored.
+
+<img src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/10/upload-file-to-esp32.png">
+
+<h3 id="MicroPythonWebServertopic-4"><k>-boot.py</k></h3>
+Copy the following code to the ESP32/ESP8266 <em>boot.py</em> file.
+
+# Complete project details at https://RandomNerdTutorials.com
+
+try:
+  import usocket as socket
+except:
+  import socket
+
+from machine import Pin
+import network
+
+import esp
+esp.osdebug(None)
+
+import gc
+gc.collect()
+
+ssid = 'REPLACE_WITH_YOUR_SSID'
+password = 'REPLACE_WITH_YOUR_PASSWORD'
+
+station = network.WLAN(network.STA_IF)
+
+station.active(True)
+station.connect(ssid, password)
+
+while station.isconnected() == False:
+  pass
+
+print('Connection successful')
+print(station.ifconfig())
+
+led = Pin(2, Pin.OUT)
+
+<a href="https://github.com/RuiSantosdotme/Random-Nerd-Tutorials/raw/master/Projects/ESP-MicroPython/esp_web_server_boot.py" target="_blank">View raw code</a>
+
+As mentioned previously, we create our web server using sockets and the Python socket API.
+The official documentation imports the socket library as follows:
+
+try:
+  import usocket as socket
+except:
+  import socket
+
+We need to import the Pin class from the machine module to be able to interact with the GPIOs.
+
+from machine import Pin
+
+After importing the socket library, we need to import the network library.
+The network library allows us to connect the ESP32 or ESP8266 to a Wi-Fi network.
+
+import network
+
+The following lines turn off vendor OS debugging messages:
+
+import esp
+esp.osdebug(None)
+
+Then, we run a garbage collector:
+
+import gc
+gc.collect()
+
+A garbage collector is a form of automatic memory management.
+This is a way to reclaim memory occupied by objects that are no longer in used by the program.
+This is useful to save space in the flash memory.
+
+The following variables hold your network credentials:
+
+ssid = 'REPLACE_WITH_YOUR_SSID'
+password = 'replace_with_your_password'
+
+You should replace the words highlighted in red with your network SSID and password, so that the ESP is able to connect to your router.
+
+Then, set the ESP32 or ESP8266 as a Wi-Fi station:
+
+station = network.WLAN(network.STA_IF)
+
+After that, activate the station:
+
+station.active(True)
+
+Finally, the ESP32/ESP8266 connects to your router using the SSID and password defined earlier:
+
+station.connect(ssid, password)
+
+The following statement ensures that the code doesn’t proceed while the ESP is not connected to your network.
+
+while station.isconnected() == False:
+  pass
+
+After a successful connection, print network interface parameters like the ESP32/ESP8266 IP address – use the ifconfig() method on the station object.
+
+print('Connection successful')
+print(station.ifconfig())
+
+Create a Pin object called led that is an output, that refers to the ESP32/ESP8266 GPIO2:
+
+led = Pin(2, Pin.OUT)
+
+<h3 id="MicroPythonWebServertopic-5"><k>-main.py</k></h3>
+Copy the following code to the ESP32/ESP8266 <em>main.py</em> file.
+
+# Complete project details at https://RandomNerdTutorials.com
+
+def web_page():
+  if led.value() == 1:
+    gpio_state="ON"
+  else:
+    gpio_state="OFF"
+  
+  html = """&lt;html&gt;&lt;head&gt; &lt;title&gt;ESP Web Server&lt;/title&gt; &lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
+  &lt;link rel="icon" href="data:,"&gt; &lt;style&gt;html{font-family: Helvetica; display:inline-block; margin: 0px auto; text-align: center;}
+  h1{color: #0F3376; padding: 2vh;}p{font-size: 1.5rem;}.button{display: inline-block; background-color: #e7bd3b; border: none; 
+  border-radius: 4px; color: white; padding: 16px 40px; text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}
+  .button2{background-color: #4286f4;}&lt;/style&gt;&lt;/head&gt;&lt;body&gt; &lt;h2&gt;ESP Web Server&lt;/h2&gt; 
+  &lt;p&gt;GPIO state: &lt;strong&gt;""" + gpio_state + """&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&lt;a href="/?led=on"&gt;&lt;button class="button"&gt;ON&lt;/button&gt;&lt;/a&gt;&lt;/p&gt;
+  &lt;p&gt;&lt;a href="/?led=off"&gt;&lt;button class="button button2"&gt;OFF&lt;/button&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;"""
+  return html
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind(('', 80))
+s.listen(5)
+
+while True:
+  conn, addr = s.accept()
+  print('Got a connection from %s' % str(addr))
+  request = conn.recv(1024)
+  request = str(request)
+  print('Content = %s' % request)
+  led_on = request.find('/?led=on')
+  led_off = request.find('/?led=off')
+  if led_on == 6:
+    print('LED ON')
+    led.value(1)
+  if led_off == 6:
+    print('LED OFF')
+    led.value(0)
+  response = web_page()
+  conn.send('HTTP/1.1 200 OK\n')
+  conn.send('Content-Type: text/html\n')
+  conn.send('Connection: close\n\n')
+  conn.sendall(response)
+  conn.close()
+
+<a href="https://github.com/RuiSantosdotme/Random-Nerd-Tutorials/raw/master/Projects/ESP-MicroPython/esp_web_server_main.py" target="_blank">View raw code</a>
+
+The script starts by creating a function called web_page().
+This function returns a variable called html that contains the HTML text to build the web page.
+
+def web_page():
+
+The web page displays the current GPIO state.
+So, before generating the HTML text, we need to check the LED state.
+We save its state on the gpio_state variable:
+
+if led.value() == 1:
+  gpio_state="ON"
+else:
+  gpio_state="OFF"
+
+After that, the gpio_state variable is incorporated into the HTML text using “+” signs to concatenate strings.
+
+html = """&lt;html&gt;&lt;head&gt; &lt;title&gt;ESP Web Server&lt;/title&gt; &lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
+&lt;link rel="icon" href="data:,"&gt; &lt;style&gt;html{font-family: Helvetica; display:inline-block; margin: 0px auto; text-align: center;}
+h1{color: #0F3376; padding: 2vh;}p{font-size: 1.5rem;}.button{display: inline-block; background-color: #e7bd3b; border: none; 
+border-radius: 4px; color: white; padding: 16px 40px; text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}
+.button2{background-color: #4286f4;}&lt;/style&gt;&lt;/head&gt;&lt;body&gt; &lt;h2&gt;ESP Web Server&lt;/h2&gt; 
+&lt;p&gt;GPIO state: &lt;strong&gt;""" + <strong>gpio_state</strong> + """&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&lt;a href="/?led=on"&gt;&lt;button &gt;ON&lt;/button&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href="/?led=off"&gt;&lt;button &gt;OFF&lt;/button&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;"""
+
+<h3 id="MicroPythonWebServertopic-6"><k>-Creating a socket server</k></h3>
+After creating the HTML to build the web page, we need to create a listening socket to listen for incoming requests and send the HTML text in response.
+For a better understanding, the following figure shows a diagram on how to create sockets for server-client interaction:
+
+<img src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/10/socket-server.png">
+
+Create a socket using socket.socket(), and specify the socket type.
+We create a new socket object called s with the given address family, and socket type.
+This is a STREAM TCP socket:
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+Next, bind the socket to an address (network interface and port number) using the bind() method.
+The bind() method accepts a tupple variable with the ip address, and port number:
+
+s.bind(('', 80))
+
+In our example, we are passing an empty string ‘ ‘ as an IP address and port 80.
+In this case, the empty string refers to the localhost IP address (this means the ESP32 or ESP8266 IP address).
+
+The next line enables the server to accept connections; it makes a “listening” socket.
+The argument specifies the maximum number of queued connections.
+The maximum is 5.
+
+s.listen(5)
+
+In the while loop is where we listen for requests and send responses.
+When a client connects, the server calls the accept() method to accept the connection.
+When a client connects, it saves a new socket object to accept and send data on the conn variable, and saves the client address to connect to the server on the addr variable.
+
+conn, addr = s.accept()
+
+Then, print the address of the client saved on the addr variable.
+
+print('Got a connection from %s' % str(addr))
+
+The data is exchanged between the client and server using the send() and recv() methods.
+
+The following line gets the request received on the newly created socket and saves it in the request variable.
+
+request = conn.recv(1024)
+
+The recv() method receives the data from the client socket (remember that we’ve created a new socket object on the conn variable).
+The argument of the recv() method specifies the maximum data that can be received at once.
+
+The next line simply prints the content of the request:
+
+print('Content = %s' % str(request))
+
+Then, create a variable called response that contains the HTML text returned by the web_page() function:
+
+response = web_page()
+
+Finally, send the response to the socket client using the send() and sendall() methods:
+
+conn.send('HTTP/1.1 200 OK\n')
+conn.send('Content-Type: text/html\n')
+conn.send('Connection: close\n\n')
+conn.sendall(response)
+
+In the end, close the created socket.
+
+conn.close()
+
+<h3 id="MicroPythonWebServertopic-7">Testing the Web Server</h3>
+Upload the <em>main.py</em> and <em>boot.py</em> files to the ESP32/ESP8266.
+Your <em>device</em> folder should contain two files: <em>boot.py</em> and <em>main.py</em>.
+
+After uploading the files, press the ESP EN/RST on-board button.
+
+<img src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/10/esp32-EN-enable-button.jpg">
+
+After a few seconds, it should establish a connection with your router and print the IP address on the Shell.
+
+<img src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/11/ip-address.png">
+
+Open your browser, and type your ESP IP address you’ve just found.
+You should see the web server page as shown below.
+
+<img src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/11/micropython-web-server-browser.png">
+
+When you press the ON button, you make a request on the ESP IP address followed by /?led=on.
+The ESP32/ESP8266 on-board LED turns on, and the GPIO state is updated on the page.
+
+<strong>Note:</strong> some ESP8266 on-board LEDs turn on the LED with an OFF command, and turn off the LED with the ON command.
+
+<img src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/11/DSC02551.jpg">
+
+When you press the OFF button, you make a request on the ESP IP address followed by /?led=off.
+The LED turns off, and the GPIO state is updated.
+
+<img src="https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/11/DSC02584.jpg">
+
+<strong>Note:</strong> to keep this tutorial simple, we’re controlling the on-board LED that corresponds to GPIO 2.
+You can control any other GPIO with any other output (a relay, for example) using the same method.
+Also, you can modify the code to control multiple GPIOs or change the HTML text to create a different web page.
+
+<h3 id="MicroPythonWebServertopic-8">Wrapping Up</h3>
+This tutorial showed you how to build a simple web server with MicroPython firmware to control the ESP32/ESP8266 GPIOs using sockets and the Python socket library.
+If you’re looking for a web server tutorial with Arduino IDE, you can check the following resources:
+
+<a href="https://randomnerdtutorials.com/esp32-web-server-arduino-ide/" target="_blank">ESP32 Web Server – Arduino IDE</a>
+
+<a href="https://randomnerdtutorials.com/esp8266-web-server/" target="_blank">ESP8266 Web Server – Arduino IDE</a>
+
+<h2>MicroPython Web Server Guide W Examples</h2>
+
+<div id="WebServerGuidetoc" class="toc"><a href="#WebServerGuidetopic-0" target="_self">Brief Overview of a Web Server</a><br><a href="#WebServerGuidetopic-1" target="_self">Prerequisites</a><br><a href="#WebServerGuidetopic-2" target="_self">MicroPython Web Server Example 1: Control GPIOs in ESP32</a><br><a href="#WebServerGuidetopic-3" target="_self"><k>-Uploading Code – ESP32 MicroPython Web Server</k></a><br><a href="#WebServerGuidetopic-4" target="_self"><k>-Control GPIOs from any Browser</k></a><br><a href="#WebServerGuidetopic-5" target="_self"><k>-MicroPython Code Explanation</k></a><br><a href="#WebServerGuidetopic-6" target="_self">MicroPython Web Server Example 2: Read Sensor using Raspberry Pi Pico W </a><br><a href="#WebServerGuidetopic-7" target="_self"><k>-Upload Web Server Code to Raspberry Pi Pico W</k></a><br><a href="#WebServerGuidetopic-8" target="_self"><k>-Read Temperature Sensor Data on Browser</k></a><br><a href="#WebServerGuidetopic-9" target="_self">Troubleshooting: “OSError: [Errno 98] EADDRINUSE” &amp; Others</a><br><a href="#WebServerGuidetopic-10" target="_self">Wrapping Up</a><br></div>
+
+In this guide, learn how to control GPIOs and read sensor data remotely using a MicroPython web server.
+Examples are discussed using Raspberry Pi Pico W and ESP32 development boards.
+The web server code discussed here is robust and can automatically make reconnection attempts in case of connection failure.
+The code can be easily adapted for other development boards such as the ESP8266.
+
+Your microcontroller has to be connected to the same network as your computer or mobile phone to access the web server from a browser.
+Connecting to the web server from anywhere via the internet is out of the scope of this article.
+
+<h3 id="WebServerGuidetopic-0">Brief Overview of a Web Server</h3> <a href="#top" target="_self"><b>⇧</b></a><br>
+In the context of embedded systems and IoT, a web server is a specialized software application running on a microcontroller or microprocessor that enables the device to respond to HTTP (Hypertext Transfer Protocol) requests.
+HTTP is a protocol used for transmitting data on the World Wide Web.
+
+<img class="lazy" data-src="https://electrocredible.com/wp-content/uploads/2023/12/webserver-1024x640.webp">
+
+So, a web server running on a microcontroller helps to communicate and exchange information with other devices, typically through a web browser.
+This can be used for remote monitoring and control.
+For example, you might access the settings of a smart thermostat or a network-connected sensor through a web browser.
+Behind the scenes, a web server will handle the communication and serve the requested web pages.
+
+<h3 id="WebServerGuidetopic-1">Prerequisites</h3> <a href="#top" target="_self"><b>⇧</b></a><br>
+
+The following components will be used in this guide:
+
+Raspberry Pi Pico W development board.
+
+ESP32 development board.
+ESP-WROOM-32 is used here, but you can select any alternative.
+
+LEDs and current limiting resistors.
+
+You will also have to flash MicroPython firmware on your development board.
+If you are using ESP32, read these guides:
+
+<a href="https://electrocredible.com/micropython-esp32-upycraft-flash-example/">
+Getting Started: MicroPython On ESP32 Using uPyCraft IDE</a>.
+
+<a href="https://electrocredible.com/micropython-on-esp32-thonny-example/">
+How-To: MicroPython On ESP32 Using Thonny IDE (Flash/Upload)</a>.
+
+To flash and run MicroPython firmware on Raspberry Pi Pico / Pico W, read:
+
+<a href="https://electrocredible.com/raspberry-pi-pico-tutorial-for-beginners/" target="_blank">
+Getting Started – Raspberry Pi Pico &amp; Pico W with MicroPython</a>
+
+<h3 id="WebServerGuidetopic-2">MicroPython Web Server Example 1: Control GPIOs in ESP32</h3> <a href="#top" target="_self"><b>⇧</b></a><br>
+
+This web server example will display a graphical user interface (GUI) in a browser which will give control of the GPIOs of ESP32.
+
+The schematic below shows how to connect two LEDs to the GPIOs of ESP32.
+I have used an ESP-WROOM-32 board in this tutorial, but any other ESP32 board will also work.
+
+Connect two LEDs to ESP32 as shown:
+
+<img class="lazy" data-src="https://electrocredible.com/wp-content/uploads/2023/12/esp32-led-schematic.webp">
+
+Make sure to use proper current limiting resistors with the LEDs.
+
+<h3 id="WebServerGuidetopic-3"><k>-Uploading Code – ESP32 MicroPython Web Server</k></h3> <a href="#top" target="_self"><b>⇧</b></a><br>
+After the connections are done and the <a href="https://electrocredible.com/micropython-on-esp32-thonny-example/#Flashing_MicroPython_On_ESP32_Using_Thonny_IDE" target="_blank" rel="noreferrer noopener">MicroPython <em>.bin</em> </a>file has been uploaded to ESP32, you can proceed with uploading the code to ESP32.
+The code will run a web server in ESP32 and listen for HTTP requests from clients.
+
+The steps below explain how to upload web server MicroPython code to ESP32 using Thonny IDE.
+
+In Thonny IDE, set the interpreter to ESP32 by navigating to <k>Tools</k>&gt;<k>Options</k>&gt;<k>Interpreter</k>.
+
+<img class="lazy" data-src="https://electrocredible.com/wp-content/uploads/2023/12/interpreter-to-esp32-1.webp">
+
+Create a new file by clicking on <k>File</k>&gt;<k>New</k> and paste the following MicroPython code for the web server.
+
+from machine import Pin
+import network
+import socket
+import time
+
+# Define GPIO pins
+GPIO1 = Pin(22, Pin.OUT)
+GPIO2 = Pin(23, Pin.OUT)
+
+# Initialize GPIO states
+GPIO1.value(0)  # OFF
+GPIO2.value(0)  # OFF
+
+GPIO1_state = "GPIO 1 is OFF"
+GPIO2_state = "GPIO 2 is OFF"
+
+#WiFi credentials
+ssid = 'YOUR_SSID'
+password = 'YOUR_PASSWORD'
+
+wlan = network.WLAN(network.STA_IF)
+
+#function to connect to Wi-Fi network
+def cnctWifi():
+    wlan.active(True)
+    print('Attempting to connect to the network...')
+    wlan.connect(ssid, password)        
+    max_wait = 10
+    while max_wait &gt; 0:
+        if wlan.isconnected():
+            break
+        max_wait -= 1
+        print('waiting for connection...')
+        time.sleep(1)
+    
+    # Manage connection errors
+    if not wlan.isconnected():
+        print('Network Connection has failed')
+    else:
+        print('Connected to the network successfully.')
+        status = wlan.ifconfig()
+        print( 'Enter this address in browser = ' + status[0] )
+
+#HTML + CSS for webpage
+html = """&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
+  &lt;title&gt;MicroPython Web Server&lt;/title&gt;
+  &lt;style&gt;
+    html {
+      font-family: Arial;
+      display: inline-block;
+      margin: 0px auto;
+      text-align: center;
+    }
+    
+    h1 {
+      font-family: Arial;
+      color: #2551cc;
+    }
+    
+    .button1,
+    .button2 {
+      -webkit-border-radius: 10;
+      -moz-border-radius: 10;
+      border-radius: 10px;
+      font-family: Arial;
+      color: #ffffff;
+      font-size: 30px;
+      padding: 10px 20px 10px 20px;
+      text-decoration: none;
+      display: inline-block;
+      margin: 5px;
+    }
+    
+    .button1 {
+      background: #339966;
+    }
+    
+    .button2 {
+      background: #993300;
+    }
+  &lt;/style&gt;
+&lt;/head&gt;
+
+&lt;body&gt;
+  &lt;h1&gt;MicroPython Web Server&lt;/h1&gt;
+  &lt;p&gt;%s&lt;/p&gt;
+  &lt;p&gt;
+    &lt;a href="/GPIO1/on"&gt;&lt;button &gt;GPIO 1 ON&lt;/button&gt;&lt;/a&gt;
+    &lt;a href="/GPIO1/off"&gt;&lt;button &gt;GPIO 1 OFF&lt;/button&gt;&lt;/a&gt;
+  &lt;/p&gt;
+  &lt;p&gt;%s&lt;/p&gt;
+  &lt;p&gt;
+    &lt;a href="/GPIO2/on"&gt;&lt;button &gt;GPIO 2 ON&lt;/button&gt;&lt;/a&gt;
+    &lt;a href="/GPIO2/off"&gt;&lt;button &gt;GPIO 2 OFF&lt;/button&gt;&lt;/a&gt;
+  &lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+"""
+# Connect to Wi-Fi
+cnctWifi()
+    
+# Set up socket for web server
+addr = socket.getaddrinfo('0.0.0.0', 80)[0][-1]
+s = socket.socket()
+s.setblocking(0)
+s.bind(addr)
+s.listen(1)
+
+print('listening on', addr)
+
+# Main loop for handling client requests
+while True:
+    if not wlan.isconnected():
+        print("Connection failed.
+Trying to reconnect")
+        wlan.disconnect()
+        cnctWifi()
+    try:
+        cl, addr = s.accept()
+        print('client connected from', addr)
+        request = cl.recv(1024)
+        print(request)
+
+        request = str(request)
+        GPIO1_on = request.find('/GPIO1/on')
+        GPIO1_off = request.find('/GPIO1/off')
+        GPIO2_on = request.find('/GPIO2/on')
+        GPIO2_off = request.find('/GPIO2/off')
+
+        if GPIO1_on == 6:
+            print("GPIO 1 is on")
+            GPIO1.value(1)
+            GPIO1_state = "GPIO 1 is ON"
+
+        if GPIO1_off == 6:
+            print("GPIO 1 is off")
+            GPIO1.value(0)
+            GPIO1_state = "GPIO 1 is OFF"
+
+        if GPIO2_on == 6:
+            print("GPIO 2 is on")
+            GPIO2.value(1)
+            GPIO2_state = "GPIO 2 is ON"
+
+        if GPIO2_off == 6:
+            print("GPIO 2 is off")
+            GPIO2.value(0)
+            GPIO2_state = "GPIO 2 is OFF"
+
+        response = html % (GPIO1_state, GPIO2_state)
+        cl.send('HTTP/1.0 200 OK\r\nContent-type: text/html\r\n\r\n')
+        cl.send(response)
+        cl.close()
+
+    except:
+        pass
+    time.sleep(0.1)<small>Code language: Python (python)</small>
+
+The code is explained shortly below.
+You will have to change the Wi-Fi credentials to your own in the code by replacing YOUR_SSID and YOUR_PASSWORD.
+
+ssid = 'YOUR_SSID'
+password = 'YOUR_PASSWORD'<small>Code language: JavaScript (javascript)</small>
+
+Save the file by clicking on <k>File</k>&gt;<k>Save as</k> or by using the shortcut <k>Ctrl</k>+<k>Shift</k>+<k>S</k>.
+Select <k>MicroPython Device</k> on the window that appears to save the code to ESP32.
+
+<img class="lazy" data-src="https://electrocredible.com/wp-content/uploads/2023/11/thonny-select-micropython-device.webp">
+
+Set the filename as <k>webserver.py</k> in the next dialog box.
+You can save it as <k>main.py</k> if you wish your code to run automatically when ESP32 boots.
+
+<h3 id="WebServerGuidetopic-4"><k>-Control GPIOs from any Browser</k></h3> <a href="#top" target="_self"><b>⇧</b></a><br>
+In Thonny IDE, click the shortcut <k>F5</k> or the Run button to run the web server script that you saved to ESP32.
+
+<img class="lazy" data-src="https://electrocredible.com/wp-content/uploads/2022/05/run-button-Thonny-1.webp">
+
+If you face an error while running the script, refer to the <a href="https://electrocredible.com/micropython-web-server-tutorial-examples/#Troubleshooting_%E2%80%9COSError_Errno_98_EADDRINUSE%E2%80%9D_Others">troubleshooting section</a> below.
+
+Thereafter you must see some information in the shell of Thonny IDE.
+The output messages will help you to know if a proper connection is established.
+
+<img class="lazy" data-src="https://electrocredible.com/wp-content/uploads/2023/12/Thonny-shell-ESP32-webserver-message.webp">
+
+When a connection is successfully established, you will be presented with an IP address.
+This IP address has to be entered in a browser connected to the same network.
+
+When you enter the IP address in a browser, you should see the webpage as shown below.
+
+<img class="lazy" data-src="https://electrocredible.com/wp-content/uploads/2023/12/micropython-web-server.webp">
+
+When we click a button on the webpage, an HTTP request will be made.
+For example, if we click the button to switch on GPIO1, the request will be like – 192.168.xx.xx//GPIO1/on.
+This can be seen below in the screenshot taken after clicking on the button ‘GPIO 1 ON’.
+
+<img class="lazy" data-src="https://electrocredible.com/wp-content/uploads/2023/12/webserver-command-GPIO1-on.webp">
+
+Similarly, each button click will send a unique request, and in response, the status of the toggled GPIO will also be displayed on the webpage.
+
+<h3 id="WebServerGuidetopic-5"><k>-MicroPython Code Explanation</k></h3> <a href="#top" target="_self"><b>⇧</b></a><br>
+Firstly, import the necessary libraries/modules The Pin class from the  machine module is used to interact with GPIO.
+The network module provides functionality related to network connections via Wi-Fi.
+The socket module is used for working with sockets, which facilitate the sending and receiving of data over a network.
+The time module is used for introducing delays in the code.
+
+from machine import Pin
+import network
+import socket
+import time<small>Code language: JavaScript (javascript)</small>
+
+We then initialize two GPIO pins GPIO1 and GPIO2 with ESP32 PINs 22 and 23, respectively.
+Both pins are configured for output (Pin.OUT).
+The initial state of both pins is set to “OFF” (logic level 0), and corresponding state variables (GPIO1_state and GPIO2_state) are defined with their initial states as strings.
+
+# Define GPIO pins
+GPIO1 = Pin(22, Pin.OUT)
+GPIO2 = Pin(23, Pin.OUT)
+
+# Initialize GPIO states
+GPIO1.value(0)  # OFF
+GPIO2.value(0)  # OFF
+
+GPIO1_state = "GPIO 1 is OFF"
+GPIO2_state = "GPIO 2 is OFF"<small>Code language: PHP (php)</small>
+
+You should replace YOUR_SSID with the actual name of your Wi-Fi network and YOUR_PASSWORD with the actual password for that network.
+These credentials are necessary for the device to successfully connect to the Wi-Fi network.
+
+ssid = 'YOUR_SSID'
+password = 'YOUR_PASSWORD'<small>Code language: JavaScript (javascript)</small>
+
+The next line of code creates a WLAN interface in Station mode (STA_IF) and assigning it to the variable wlan
+
+wlan = network.WLAN(network.STA_IF)
+
+There are two Wi-Fi interfaces available: one for the&nbsp;<k>station</k>&nbsp;and one for the&nbsp;<k>access point</k>.
+In station mode, Raspberry Pi Pico can connect to a&nbsp;<k>Wi-Fi router</k>.
+In the Access Point mode, Raspberry Pi Pico can act as a&nbsp;<k>WiFi hotspot</k>.
+You can learn more about it: <a href="https://electrocredible.com/raspberry-pi-pico-internet-connection-micropython/">
+Raspberry Pi Pico W Wi-Fi Guide – Internet Access Example</a>.
+
+<img class="lazy" data-src="https://electrocredible.com/wp-content/uploads/2022/12/RASPBERRY-PI-PICO-WiFi-Interfaces-1024x536.webp">
+
+<h4>Connecting to Wi-Fi</h4>
+
+Next, define a function cnctWifi() to make robust connections to the Wi-Fi network.
+The function can make multiple attempts to connect and print an IP address which can be used to access the web server.
+
+def cnctWifi():
+    wlan.active(True)
+    print('Attempting to connect to the network...')
+    wlan.connect(ssid, password)        
+    max_wait = 10
+    while max_wait &gt; 0:
+        if wlan.isconnected():
+            break
+        max_wait -= 1
+        print('waiting for connection...')
+        time.sleep(1)
+    
+    # Manage connection errors
+    if not wlan.isconnected():
+        print('Network Connection has failed')
+    else:
+        print('Connected to the network successfully.')
+        status = wlan.ifconfig()
+        print( 'Enter this address in browser = ' + status[0] )<small>Code language: Python (python)</small>
+
+Thereafter, define a multiline string (html) containing both HTML and CSS code to create a simple web page.
+The code contains the HTML structure, CSS styling, Buttons with hyperlinks, and placeholders for dynamic content.
+The %s within code acts as a placeholder for dynamic content that will be inserted at those positions.
+The dynamic content here is the status of the GPIOs that will be changed.
+
+<h4>Socket Setup</h4>
+
+<img class="lazy" data-src="https://electrocredible.com/wp-content/uploads/2023/12/socket.gif"><figcaption>Image credit: <a href="https://www.ibm.com/docs/en/i/7.2?WebServerGuidetopic=programming-how-sockets-work" target="_blank" rel="noreferrer noopener nofollow">IBM</a></figcaption>
+
+A&nbsp;<a href="https://en.wikipedia.org/wiki/Network_socket" target="_blank" rel="noreferrer noopener">socket</a>&nbsp;is one endpoint of two-way communication.
+We set up a basic server socket with the following lines of code.
+
+addr = socket.getaddrinfo('0.0.0.0', 80)[0][-1]
+s = socket.socket()
+s.setblocking(0)
+s.bind(addr)
+s.listen(1)<small>Code language: JavaScript (javascript)</small>
+
+Here is a brief explanation:
+
+<ol>
+addr = socket.getaddrinfo('0.0.0.0', 80)[0][-1]:
+
+Retrieves address information for ‘0.0.0.0’ (which typically means listen on all available interfaces) on port 80 and stores it in the addr variable.
+
+s = socket.socket():
+
+Creates a new socket and assigns it to the variable s.
+
+s.setblocking(0):
+
+Sets the socket to non-blocking mode, meaning it won’t block the program’s execution while waiting for operations.
+
+s.bind(addr):
+
+Binds the socket to the address specified in the addr variable (in this case, ‘0.0.0.0’ on port 80).
+
+s.listen(1):
+
+Configures the socket to listen for incoming connections with a backlog of 1, allowing the server to accept one connection at a time.
+
+</ol>
+
+An infinite while loop maintains a connection to Wi-Fi and does client request handling.
+Each time the loop runs, it first checks if the Wi-Fi connection is active.
+If not, it makes attempts to reconnect.
+
+if not wlan.isconnected():
+        print("Connection failed.
+Trying to reconnect")
+        wlan.disconnect()
+        cnctWifi()<small>Code language: Python (python)</small>
+
+In a try block, the code handles incoming client requests, interprets them to control GPIO pins, and sends back an HTTP response.
+Let’s break down the key parts:
+
+<h4>Accept a Client Connection</h4>
+
+        cl, addr = s.accept()
+        print('client connected from', addr)<small>Code language: PHP (php)</small>
+
+Accepts an incoming connection (s.accept()).
+
+cl is a new socket object representing the connection.
+
+addr is the address of the client.
+
+<h4>Receive and Process Request</h4>
+
+        request = cl.recv(1024)
+        print(request)<small>Code language: PHP (php)</small>
+
+Receives the client’s request data (up to 1024 bytes) and prints it in the shell of the IDE.
+
+<h4>Parsing the Request for GPIO Control</h4>
+
+        request = str(request)
+        GPIO1_on = request.find('/GPIO1/on')
+        GPIO1_off = request.find('/GPIO1/off')
+        GPIO2_on = request.find('/GPIO2/on')
+        GPIO2_off = request.find('/GPIO2/off')<small>Code language: JavaScript (javascript)</small>
+
+Converts the request to a string.
+
+Uses the find method to locate specific patterns in the request string, indicating GPIO control commands.
+
+<h4>GPIO State Changes</h4>
+
+        if GPIO1_on == 6:
+            print("GPIO 1 is on")
+            GPIO1.value(1)
+            GPIO1_state = "GPIO 1 is ON"
+            # ...
+(similar blocks for other GPIO states)<small>Code language: PHP (php)</small>
+
+Checks if specific patterns indicating GPIO state changes are found.
+
+If found, it prints a corresponding message, updates the GPIO states, and sets state-related variables.
+
+<h4>Preparing an HTTP Response</h4>
+
+response = html % (GPIO1_state, GPIO2_state)
+cl.send('HTTP/1.0 200 OK\r\nContent-type: text/html\r\n\r\n')
+cl.send(response)
+<small>Code language: JavaScript (javascript)</small>
+
+Prepares an HTTP response using the HTML template (html) with dynamic content replaced by GPIO states.
+These variables will update the %s placeholders as discussed earlier.
+
+Sends an HTTP header indicating a successful response and the content to the client.
+
+<h4>Closing the Connection</h4>
+
+Finally, cl.close() closes the connection after processing the client’s request.
+A delay of 0.1 seconds ( time.sleep(0.1) ) is added at the end of the loop to prevent high CPU usage and to ensure stability while working with an IDE.
+
+Advertisement<a href="https://www.pcbway.com/orderonline.aspx?from=electrocredible" aria-label="banner(300×250)-gif"><img class="lazy" data-src="https://electrocredible.com/wp-content/uploads/2023/05/banner300x250-gif.gif"></a><br style="clear: both; display: block; float: none;"><h3 id="WebServerGuidetopic-6">MicroPython Web Server Example 2: Read Sensor using Raspberry Pi Pico W </h3> <a href="#top" target="_self"><b>⇧</b></a><br>
+
+In the first example, we learned how to control GPIOs and view their status via a browser.
+In this example, the internal temperature sensor in Raspberry Pi Pico W is monitored using a MicroPython web server.
+
+<img class="lazy" data-src="https://electrocredible.com/wp-content/uploads/2022/05/RASPBERRY-PI-PICO-W-ONBOARD-INTERNAL-TEMPERATURE-SENSOR-1024x576.jpg">
+
+<h3 id="WebServerGuidetopic-7"><k>-Upload Web Server Code to Raspberry Pi Pico W</k></h3> <a href="#top" target="_self"><b>⇧</b></a><br>
+The steps to upload code are explained using Thonny IDE.
+
+Connect Raspberry Pi Pico W to the computer.
+Open Thonny IDE and set the interpreter to Raspberry Pi Pico by navigating to <k>Tools</k>&gt;<k>Options</k>&gt;<k>Interpreter</k>.
+
+<img class="lazy" data-src="https://electrocredible.com/wp-content/uploads/2023/12/Thonny-IDE-select-interpreter-as-MicroPython-Raspberry-Pi-Pico.webp">
+
+Create a new file by clicking on <k>File</k>&gt;<k>New</k> and paste the following MicroPython code for the web server.
+
+from machine import ADC
+import network
+import socket
+import time
+
+# WiFi credentials
+ssid = 'Accesspoint'
+password = '11110000'
+
+wlan = network.WLAN(network.STA_IF)
+
+adc = ADC(4)  # ADC pin on Pico W for internal temperature sensor
+
+# Function to connect to Wi-Fi network
+#function to connect to Wi-Fi network
+def cnctWifi():
+    wlan.active(True)
+    print('Attempting to connect to the network...')
+    wlan.connect(ssid, password)        
+    max_wait = 10
+    while max_wait &gt; 0:
+        if wlan.isconnected():
+            break
+        max_wait -= 1
+        print('waiting for connection...')
+        time.sleep(1)
+    
+    # Manage connection errors
+    if not wlan.isconnected():
+        print('Network Connection has failed')
+    else:
+        print('Connected to the network successfully.')
+        status = wlan.ifconfig()
+        print( 'Enter this address in browser = ' + status[0] )
+
+# HTML + CSS for webpage
+html = """&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
+  &lt;title&gt;MicroPython Web Server&lt;/title&gt;
+  &lt;style&gt;
+    html {
+      font-family: Arial;
+      display: inline-block;
+      margin: 0px auto;
+      text-align: center;
+    }
+    
+    h1 {
+      font-family: Arial;
+      color: #2551cc;
+    }
+  &lt;/style&gt;
+&lt;/head&gt;
+
+&lt;body&gt;
+  &lt;h1&gt;MicroPython Web Server&lt;/h1&gt;
+  &lt;p&gt;Temperature:&lt;/p&gt;
+  &lt;p&gt; %s ℃ &lt;/p&gt;
+  &lt;p&gt; %s ℉ &lt;/p&gt;
+  
+&lt;/body&gt;
+&lt;/html&gt;
+"""
+
+# Connect to Wi-Fi
+cnctWifi()
+
+# Set up socket for web server
+addr = socket.getaddrinfo('0.0.0.0', 80)[0][-1]
+s = socket.socket()
+s.settimeout(0.5)
+s.bind(addr)
+s.listen(1)
+
+print('Listening on', addr)
+
+# Main loop for handling client requests
+while True:
+    if not wlan.isconnected():
+        print("Connection failed.
+Trying to reconnect")
+        wlan.disconnect()
+        cnctWifi()
+    try:
+        cl, addr = s.accept()
+        print('Client connected from', addr)
+        request = cl.recv(1024)
+        print(request)
+
+        ADC_voltage = adc.read_u16() * (3.3 / (65535))  # Convert ADC reading to voltage
+        temp_celcius = 27 - (ADC_voltage - 0.706)/0.001721  # Convert voltage to temperature
+        temp_celcius= round(temp_celcius, 2)
+        temp_celcius=temp_celcius-15
+        temp_fahrenheit=32+(1.8*temp_celcius)
+        
+        response = html % (temp_celcius, temp_fahrenheit)
+        cl.send('HTTP/1.0 200 OK\r\nContent-type: text/html\r\n\r\n')
+        cl.send(response)
+        cl.close()
+
+    except:
+        pass
+    time.sleep(0.1)<small>Code language: Python (python)</small>
+
+You will have to change the Wi-Fi credentials to your own in the code by replacing YOUR_SSID and YOUR_PASSWORD.
+The code is almost similar to our previous MicroPython web server example with a few modifications.
+
+We create an&nbsp;adc&nbsp;instance to read the voltage from the fifth ADC channel of Raspberry Pi Pico W (ADC4 refers to the fifth channel).
+
+adc = ADC(4)
+
+The following code reads the ADC voltage and converts it into temperature data.
+
+        ADC_voltage = adc.read_u16() * (3.3 / (65535))  # Convert ADC reading to voltage
+        temp_celcius = 27 - (ADC_voltage - 0.706)/0.001721  # Convert voltage to temperature
+        temp_celcius= round(temp_celcius, 2)
+        temp_celcius=temp_celcius-15
+        temp_fahrenheit=32+(1.8*temp_celcius)<small>Code language: PHP (php)</small>
+
+There is a temperature sensor in the Raspberry Pi Pico W connected to the 5th ADC channel.
+You can learn more by reading:
+
+<a href="https://electrocredible.com/raspberry-pi-pico-temperature-sensor-tutorial/" target="_blank">
+Raspberry Pi Pico Onboard Temperature Sensor Tutorial</a>.
+
+<a href="https://electrocredible.com/raspberry-pi-pico-adc-micropython-potentiometer/">
+How to Use ADC in Raspberry Pi Pico W</a>.
+
+Save the web server MicroPython file by clicking on <k>File</k>&gt;<k>Save as</k> or using the shortcut <k>Ctrl</k>+<k>Shift</k>+<k>S</k>.
+Select <k>Raspberry Pi Pico</k> on the dialog box that appears to save the code to your Pico W.
+
+<img class="lazy" data-src="https://electrocredible.com/wp-content/uploads/2022/06/save-to.webp">
+
+Set the filename as <k>webserver.py</k> in the next dialog box.
+You can save it as <k>main.py</k> if you wish your code to run automatically when Pico W boots.
+
+<h3 id="WebServerGuidetopic-8"><k>-Read Temperature Sensor Data on Browser</k></h3> <a href="#top" target="_self"><b>⇧</b></a><br>
+In Thonny IDE, click the shortcut <k>F5</k> or the Run button to run the web server script that you saved to Raspberry Pi Pico W.
+
+<img class="lazy" data-src="https://electrocredible.com/wp-content/uploads/2022/05/run-button-Thonny-1.webp">
+
+If you face any error while running the script, refer to the <a href="https://electrocredible.com/micropython-web-server-tutorial-examples/#Troubleshooting_%E2%80%9COSError_Errno_98_EADDRINUSE%E2%80%9D_Others">troubleshooting section</a> below.
+
+Some information will be printed in the shell of the IDE to assist you in determining whether a proper connection has been made.
+You will be shown an IP address after a connection is successfully made, which you must enter into a browser that is also connected to the same network.
+
+<img class="lazy" data-src="https://electrocredible.com/wp-content/uploads/2023/12/webserver-IP-address-output-Thonny-IDE-Raspberry-Pi-Pico-W-1.webp">
+
+When you enter the IP address, you should see the webpage below.
+The webpage should display the temperature data in the Celcius and Fahrenheit scale.
+
+<img class="lazy" data-src="https://electrocredible.com/wp-content/uploads/2023/12/MicroPython-web-server-temp-sensor.webp">
+
+<h3 id="WebServerGuidetopic-9">Troubleshooting: “OSError: [Errno 98] EADDRINUSE” &amp; Others</h3> <a href="#top" target="_self"><b>⇧</b></a><br>
+
+In some instances such as re-running the web server script shortly after stopping it, you may be presented with an error such as “OSError: [Errno 98] EADDRINUSE”.
+The image below shows the error screenshot in the shell of Thonny IDE.
+
+<img class="lazy" data-src="https://electrocredible.com/wp-content/uploads/2023/12/EADDRINUSE-error.webp">
+
+This is due to how TCP/IP network stack connections are managed.
+A socket is a combination of an IP address and a port number.
+There is a timeout of around 30 and 120 seconds for reuse of a particular socket.
+This helps in keeping the connection robust to mitigate <a href="https://en.wikipedia.org/wiki/Network_packet" target="_blank" rel="noreferrer noopener">packet-related</a> problems.
+You can read more about this error in this <a href="https://forum.micropython.org/viewWebServerGuidetopic.php?t=10412" target="_blank" rel="noreferrer noopener">thread in the MicroPython forum</a>.
+
+When this error shows up, you can try to <a href="https://electrocredible.com/how-to-reset-raspberry-pi-pico-w/">
+reset Raspberry Pi Pico</a> or ESP32(by pressing the reset button), or disconnect and reconnect the USB cable physically.
+
+After entering the IP address in a browser, if you do not see any webpage, then recheck that you are connected to the same network on both devices.
+
+<h3 id="WebServerGuidetopic-10">Wrapping Up</h3> <a href="#top" target="_self"><b>⇧</b></a><br>
+
+In this guide, we discussed two examples of creating a MicroPython web server.
+An ESP32 MicroPython web server to control GPIOS was demonstrated.
+Using Raspberry Pi Pico W, we saw how we can monitor sensors remotely via a web browser.
+
+You can further experiment by displaying the IP address in an <a href="https://electrocredible.com/raspberry-pi-pico-oled-display-interfacing-tutorial/">
+OLED display</a> so that you can easily connect to the web server.
+Instead of the internal temperature sensor in Raspberry Pi Pico, you can use sensors such as the <a href="https://electrocredible.com/bme280-pinout-specs-applications/">
+BME280</a>, <a href="https://electrocredible.com/bmp280-pinout-specifications-applications/">
+BMP280</a>, <a href="https://electrocredible.com/raspberry-pi-pico-dht22-micropython-tutorial/">
+DHT22</a>, or <a href="https://electrocredible.com/raspberry-pi-pico-ds18b20-temperature-sensor/">
+DS18B20</a>.
+
+<h2>ESP32 - Web Server</h2>
+In this step-by-step tutorial, we'll show you how to program to make an ESP32 board become a web server.
+You'll be able to access web pages hosted on the ESP32 using a web browser on your computer or smartphone, enabling you to view data from the ESP32 and control it.
+To make it easy, we will progress from simple to more challenging steps as follows:
+ESP32 Web Server - Showing simple text on web page.
+ESP32 Web Server - Monitoring sensor values from the ESP32 via a web.
+ESP32 Web Server - Controlling the ESP32 via a web.
+ESP32 Web Server - Separating HTML content (HTML, CSS, and Javascript) from ESP32 code and putting it into another files on the Arduino IDE.
+ESP32 Web Server - Creating multiple pages such as index.html, temperature.html, led.html, error_404.html, and error_405.html..., and more.
+
+<img src="https://esp32io.com/images/cover/esp32-web-server.jpg">
+
+<h3>Hardware Used In This Tutorial</h3>
+<table>
+<tbody><tr><td>1</td><td>×</td><td><a href="https://amzn.to/49Mb0ck" target="_blank">ESP-WROOM-32 Dev Module</a></td><td><i></i></td></tr>
+<tr><td>1</td><td>×</td><td><a href="https://amzn.to/3Q1bHGV" target="_blank">USB Cable Type-C</a></td><td><i></i></td></tr>
+<tr><td>1</td><td>×</td><td><a href="https://amzn.to/46FK8s3" target="_blank">(Recommended) ESP32 Screw Terminal Adapter</a></td><td><i></i></td></tr>
+</tbody></table>
+Or you can buy the following sensor kit:
+<table>
+<tbody><tr><td>1</td><td>×</td><td><a href="https://amzn.to/3WXoCLL" target="_blank">DIYables Sensor Kit 30 types, 69 units</a></td><td><i></i></td></tr>
+</tbody></table>
+
+Disclosure: some of these links are affiliate links.
+We may earn a commission on your purchase at no extra cost to you.
+We appreciate it.
+
+<h3>Reading the sensor value from ESP32 via Web</h3>
+This is relatively simple.
+The ESP32 code does the following tasks:
+
+Creating a web server that listens for HTTP requests from a web browser.
+
+Upon receiving a request from a web browser, the ESP32 responds with the following information:
+
+HTTP header
+HTTP body: This includes HTML content and the value read from the sensor.
+
+Below is the ESP32 code that performs the above tasks:
+
+/*
+ * This ESP32 code is created by esp32io.com
+ *
+ * This ESP32 code is released in the public domain
+ *
+ * For more detail (instruction and wiring diagram), visit https://esp32io.com/tutorials/esp32-web-server
+ */
+
+#include &lt;WiFi.h>
+#include &lt;ESPAsyncWebServer.h>
+
+const char* ssid = "YOUR_WIFI_SSID"; // CHANGE IT
+const char* password = "YOUR_WIFI_PASSWORD"; // CHANGE IT
+
+AsyncWebServer server(80);
+
+void setup() {
+  Serial.begin(9600);
+
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  Serial.println("Connected to WiFi");
+
+  // Print the ESP32's IP address
+  Serial.print("ESP32 Web Server's IP address: ");
+  Serial.println(WiFi.localIP());
+
+  // Define a route to serve the HTML page
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
+    Serial.println("ESP32 Web Server: New request received:");  // for debugging
+    Serial.println("GET /");        // for debugging
+    request->send(200, "text/html", "&lt;html>&lt;body>&lt;h1>Hello, ESP32!&lt;/h1>&lt;/body>&lt;/html>");
+  });
+
+  // Start the server
+  server.begin();
+}
+
+void loop() {
+  // Your code here
+}
+
+<h4>Quick Instructions</h4>
+
+If this is the first time you use ESP32, see <a href="https://esp32io.com/tutorials/esp32-software-installization">how to setup environment for ESP32 on Arduino IDE</a>.
+
+Do the wiring as above image.
+
+Connect the ESP32 board to your PC via a micro USB cable
+
+Open Arduino IDE on your PC.
+
+Select the right ESP32 board (e.g.
+ESP32 Dev Module) and COM port.
+
+Copy the above code and open with Arduino IDE
+
+Change the wifi information (SSID and password) in the code to yours
+
+Click Upload button on Arduino IDE to upload code to ESP32
+
+Open the Serial Monitor
+
+Check out the result on Serial Monitor.
+
+COM6
+Send
+Connecting to WiFi...
+Connected to WiFi
+ESP32 Web Server's IP address: 192.168.0.2
+
+Autoscroll
+Show timestamp
+
+Clear output
+
+9600 baud  
+
+Newline  
+
+Take note of the IP address displayed, and enter this address into the address bar of a web browser on your smartphone or PC.
+
+As a result, you will see the following output on the Serial Monitor.
+
+COM6
+Send
+Connecting to WiFi...
+Connected to WiFi
+ESP32 Web Server's IP address: 192.168.0.2
+ESP32 Web Server: New request received:
+GET /
+
+Autoscroll
+Show timestamp
+
+Clear output
+9600 baud  
+Newline  
+
+Once you access the web browser using the IP address, you will be presented with a very basic web page displaying "Hello, ESP32!".
+The page will look like the following:
+
+<img src="https://esp32io.com/images/tutorial/esp32-web-server.jpg">
+
+<h3>Reading the sensor value from ESP32 via Web</h3>
+Below is the ESP32 code that prints the temperature value to web page:
+
+<i></i>
+
+/*
+ * This ESP32 code is created by esp32io.com
+ *
+ * This ESP32 code is released in the public domain
+ *
+ * For more detail (instruction and wiring diagram), visit https://esp32io.com/tutorials/esp32-web-server
+ */
+
+#include &lt;WiFi.h>
+#include &lt;ESPAsyncWebServer.h>
+
+const char* ssid = "YOUR_WIFI_SSID"; // CHANGE IT
+const char* password = "YOUR_WIFI_PASSWORD"; // CHANGE IT
+
+AsyncWebServer server(80);
+
+float getTemperature() {
+  // YOUR SENSOR IMPLEMENTATION HERE
+  // simulate the temperature value
+  float temp_x100 = random(0, 10000);  // a ramdom value from 0 to 10000
+  return temp_x100 / 100;              // return the simulated temperature value from 0 to 100 in float
+}
+
+void setup() {
+  Serial.begin(9600);
+
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  Serial.println("Connected to WiFi");
+
+  // Print the ESP32's IP address
+  Serial.print("ESP32 Web Server's IP address: ");
+  Serial.println(WiFi.localIP());
+
+  // Define a route to serve the HTML page
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
+    Serial.println("ESP32 Web Server: New request received:");  // for debugging
+    Serial.println("GET /");                                    // for debugging
+
+    // get temperature from sensor
+    float temperature = getTemperature();
+    // Format the temperature with two decimal places
+    String temperatureStr = String(temperature, 2);
+
+    String html = "&lt;!DOCTYPE HTML>";
+    html += "&lt;html>";
+    html += "&lt;head>";
+    html += "&lt;link rel=\"icon\" href=\"data:,\">";
+    html += "&lt;/head>";
+    html += "&lt;p>";
+    html += "Temperature: &lt;span style=\"color: red;\">";
+    html += temperature;
+    html += "&amp;deg;C&lt;/span>";
+    html += "&lt;/p>";
+    html += "&lt;/html>";
+
+    request->send(200, "text/html", html);
+  });
+
+  // Start the server
+  server.begin();
+}
+
+void loop() {
+  // Your code here
+}
+
+<h4>Quick Instructions</h4>
+
+Copy the above code and open with Arduino IDE
+
+Change the wifi information (SSID and password) in the code to yours
+
+Upload  the code to ESP32
+
+Once you access the web browser using the IP address, you will be presented with a very basic web page displaying information about the ESP32 board.
+The page will look like the following:
+
+<img src="https://esp32io.com/images/tutorial/esp32-temperature-web-server.jpg">
+To make the web page look fantastic with a graphic user interface (UI), check out the final section of this tutorial.
+
+<i><b>※ NOTE THAT:</b></i>
+With the code provided above, to get the termperature update, you have to reload the page on the web browser.
+In a next part, we will learn how to make web page update the temperature value on backround without reloading the webpage.
+
+<h3>Controlling the ESP32 via Web</h3>
+Controlling something connected to ESP32 is a bit more challenging than just reading a value.
+That's because ESP32 has to understand the request it receives from the web browser to know what action to take.
+For a more comprehensive and detailed example, I recommend checking out the tutorials listed below:
+
+<a href="https://esp32io.com/tutorials/esp32-controls-led-via-web">ESP32 - controls LED via Web</a>
+
+<a href="https://esp32io.com/tutorials/esp32-controls-relay-via-web">ESP32 - controls Relay via Web</a>
+
+<a href="https://esp32io.com/tutorials/esp32-controls-servo-motor-via-web">ESP32 - controls Servo Motor via Web</a>
+
+<a href="https://esp32io.com/tutorials/esp32-controls-car-via-web">ESP32 - controls Robot Car via Web</a>
+
+<h3>Separating HTML content into another file on Arduino IDE</h3>
+If you want to create a simple web page with minimal content, you can embed the HTML directly into the ESP32 code, as explained earlier.
+However, if you want to make a more sophisticated and impressive web page with larger content, it becomes inconvenient to include all the HTML, CSS, and Javascript directly in the ESP32 code.
+In this situation, you can use a different approach to manage the code:
+
+The ESP32 code will be placed in a .ino file, just like before.
+
+The HTML code (HTML, CSS, Javascript) will be placed in a separate .h file.
+This allows you to keep the web page content separate from the ESP32 code, making it easier to manage and modify.
+
+To do so, we need to do two major  steps:
+
+Preparing HTML content
+
+Programming ESP32
+
+<h3><k>-Preparing HTML content</k></h3>
+
+Create an HTML file on your local PC that contains the HTML content (HTML, CSS, and Javascript) for your UI design.
+
+In the HTML file, where data from ESP32 should be displayed, use an arbitrary value.
+
+Test and modify it until you are satisfied.
+
+We will put the HTML content in the .h file on the Arduino IDE.
+See the next step.
+
+<h3><k>-Programming ESP32</k></h3>
+
+Open the Arduino IDE and create a new sketch.
+Give it a name, for example, esp32io.com.ino.
+
+Copy the code provided below and paste it to the created file.
+
+<i></i>
+
+/*
+ * This ESP32 code is created by esp32io.com
+ *
+ * This ESP32 code is released in the public domain
+ *
+ * For more detail (instruction and wiring diagram), visit https://esp32io.com/tutorials/esp32-web-server
+ */
+
+#include &lt;WiFi.h>
+#include &lt;ESPAsyncWebServer.h>
+#include "index.h"  // Include the index.h file
+
+const char* ssid = "YOUR_WIFI_SSID"; // CHANGE IT
+const char* password = "YOUR_WIFI_PASSWORD"; // CHANGE IT
+
+AsyncWebServer server(80);
+
+float getTemperature() {
+  // YOUR SENSOR IMPLEMENTATION HERE
+  // simulate the temperature value
+  float temp_x100 = random(0, 10000);  // a ramdom value from 0 to 10000
+  return temp_x100 / 100;              // return the simulated temperature value from 0 to 100 in float
+}
+
+void setup() {
+  Serial.begin(9600);
+
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  Serial.println("Connected to WiFi");
+
+  // Print the ESP32's IP address
+  Serial.print("ESP32 Web Server's IP address: ");
+  Serial.println(WiFi.localIP());
+
+  // Serve the HTML page from the file
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
+    Serial.println("ESP32 Web Server: New request received:");  // for debugging
+    Serial.println("GET /");                                    // for debugging
+
+    request->send(200, "text/html", webpage);
+  });
+
+  // Define a route to get the temperature data
+  server.on("/temperature", HTTP_GET, [](AsyncWebServerRequest* request) {
+    Serial.println("ESP32 Web Server: New request received:");  // for debugging
+    Serial.println("GET /temperature");                         // for debugging
+    float temperature = getTemperature();
+    // Format the temperature with two decimal places
+    String temperatureStr = String(temperature, 2);
+    request->send(200, "text/plain", temperatureStr);
+  });
+
+  // Start the server
+  server.begin();
+}
+
+void loop() {
+  // Your code here
+}
+
+Change the WiFi information (SSID and password) in the code to yours
+
+Create the index.h file On Arduino IDE by:
+
+<img src="https://esp32io.com/images/tutorial/arduino-ide-2-adds-file.jpg">
+
+Either click on the button just below the serial monitor icon and choose New Tab, or use Ctrl+Shift+N keys.
+
+Give file's name index.h and click OK button
+
+<img src="https://esp32io.com/images/tutorial/arduino-ide-2-adds-file-html.jpg">
+
+Copy the below code and paste it to the index.h.
+
+<i></i>
+
+/*
+ * This ESP32 code is created by esp32io.com
+ *
+ * This ESP32 code is released in the public domain
+ *
+ * For more detail (instruction and wiring diagram), visit https://esp32io.com/tutorials/esp32-web-server
+ */
+
+#ifndef WEBPAGE_H
+#define WEBPAGE_H
+
+const char* webpage = R"=====(
+REPLACE_YOUR_HTML_CONTENT_HERE
+)=====";
+
+#endif
+
+Replace the line REPLACE_YOUR_HTML_CONTENT_HERE by your HTML content you prepared before.
+There is no problem with new line character.
+The below is an example of index.h file:
+
+<i></i>
+
+/*
+ * This ESP32 code is created by esp32io.com
+ *
+ * This ESP32 code is released in the public domain
+ *
+ * For more detail (instruction and wiring diagram), visit https://esp32io.com/tutorials/esp32-web-server
+ */
+
+#ifndef WEBPAGE_H
+#define WEBPAGE_H
+
+const char* webpage = R"=====(
+&lt;!DOCTYPE html>
+&lt;html>
+&lt;head>
+    &lt;title>ESP32 Temperature&lt;/title>
+&lt;/head>
+&lt;body>
+    &lt;h1>ESP32 Temperature&lt;/h1>
+    &lt;p>Temperature: &lt;span style="color: red;">&lt;span id="temperature">Loading...&lt;/span> &amp;#8451;&lt;/span>&lt;/p>
+    &lt;script>
+        function fetchTemperature() {
+            fetch("/temperature")
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById("temperature").textContent = data;
+                });
+        }
+
+        fetchTemperature();
+        setInterval(fetchTemperature, 4000); // Update temperature every 4 seconds
+    &lt;/script>
+&lt;/body>
+&lt;/html>
+)=====";
+
+#endif
+
+Now you have the code in two files: esp32io.com.ino and index.h
+
+Click Upload button on Arduino IDE to upload code to ESP32
+
+Access the web page of ESP32 board via web browser as before.
+You will see it as below:
+
+<img src="https://esp32io.com/images/tutorial/esp32-temperature-web-browser.jpg">
+
+<i><b>※ NOTE THAT:</b></i>
+In the above codes:
+
+The HTML code is designed to update the temperature in the background at regular intervals, currently set to every 4 seconds in the code.
+This means that the temperature value is automatically refreshed without the need to manually reload the webpage.
+You can adjust the update interval in the code to suit your preferences.
+
+ESP32 code serves two requests from the web browser.
+
+One request to return the HTML content of the webpage
+
+The other to return the temperature value requested by the webpage on the backround
+
+For a more comprehensive and detailed illustration, please refer to the <a href="https://esp32io.com/tutorials/esp32-temperature-via-web">ESP32 - DS18B20 Temperature Sensor via Web</a> tutorial
+
+<i><b>※ NOTE THAT:</b></i>
+
+If you make changes to the HTML content within the index.h file but don't modify anything in the esp32io.com.ino file, the Arduino IDE won't refresh or update the HTML content when you compile and upload the code to the ESP32.
+
+To force the Arduino IDE to update the HTML content in this situation, you need to make a modification in the esp32io.com.ino file.
+For example, you can add an empty line or insert a comment.
+This action triggers the IDE to recognize that there have been changes in the project, ensuring that your updated HTML content gets included in the upload.
 
 
 
