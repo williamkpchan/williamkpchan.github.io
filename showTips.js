@@ -84,6 +84,8 @@ function generateTip() {
      topicpointer = Math.floor(Math.random() * (tipsListIdx.length -1))
   }
 
+  document.querySelector('.tip-number').after(topicpointer);
+
   tip = tipsList[tipsListIdx[topicpointer]];
   if(breakLine == true){
     tip = tip.split("\t");
