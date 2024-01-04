@@ -83,8 +83,7 @@ function generateTip() {
   if(topicpointer>tipsListIdx.length){
      topicpointer = Math.floor(Math.random() * (tipsListIdx.length -1))
   }
-
-  document.querySelector('.tip-number').after(topicpointer);
+  document.querySelector('.tip-number').innerText = document.title+" "+topicpointer
 
   tip = tipsList[tipsListIdx[topicpointer]];
   if(breakLine == true){
