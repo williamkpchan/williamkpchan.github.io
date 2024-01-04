@@ -375,8 +375,7 @@ function listAll() {
 }
 
 function clickImg() {
-  console.log($("pre.js-tip a").href)
-  window.open($(".js-tip a").href)
+  window.open($("pre.js-tip a").attr('href'))
 }
 
 forward();

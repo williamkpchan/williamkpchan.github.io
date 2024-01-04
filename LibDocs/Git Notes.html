@@ -3576,6 +3576,11 @@ Then, run your original command again.
 
 
 <h2>git ls-remote</h2>
+remote: error: File big.html is 229.72 MB; this exceeds GitHub's file size limit of 100.00 MB
+remote: error: GH001: Large files detected.
+You may want to try Git Large File Storage - https://git-lfs.github.com.
+error: failed to push some refs
+
 Displays references available in a remote repository along with the associated commit IDs
 
 git ls-remote
@@ -3590,6 +3595,86 @@ git show-ref
 454b0b3be972a18fdeedad5bca50c6b60ace6cd7 refs/heads/main
 73f683026f1b7eb75f457ee38b0f07d323dec7e5 refs/remotes/origin/main
 
+<h2>把檔案從 Git 裡拔掉</h2>
+用 filter-branch 指令應該是相對較方便的。
+
+舉例來說，目前的 Commit 紀錄是這樣：
+current commits
+我想要把所有 Commit 的 config/database.yml 這個檔案刪掉：
+
+git filter-branch --tree-filter "rm -f config/database.yml"
+Rewrite 27f6ed6da50dbee5adbb68102266a91dc097ad3f (7/7) (0 seconds passed, remaining 0 predicted)
+Ref 'refs/heads/master' was rewritten
+
+這樣看起來好像刪掉了…假的，其實那些東西都還在，隨時都可以取消剛剛這個指令，把剛剛被刪的檔案救回來：
+$ git reset refs/original/refs/heads/master --hard
+HEAD is now at 27f6ed6 add dog 2
+
+全部斷乾淨！
+再重頭來一次：
+git filter-branch -f --tree-filter "rm -f config/database.yml"
+Rewrite 27f6ed6da50dbee5adbb68102266a91dc097ad3f (7/7) (1 seconds passed, remaining 0 predicted)
+Ref 'refs/heads/master' was rewritten
+
+跟前面不太一樣，這次多加了 -f 參數，是因為要強制覆寫 filter-branch 的備份點。
+
+這邊使用 filter-branch 指令把檔案從工作目錄裡移掉，這時候 database.yml 的確已不見，但還有好幾個跟資源回收有關的事情需要處理一下：
+$ rm .git/refs/original/refs/heads/master
+這個檔案還對剛剛做的 filter-branch 動作念念不忘（也就是備份點啦），隨時可以透過它再跳回去，所以先斷這條線。
+
+再來，念念不忘的還有 Reflog，所以它也要清一下：
+$ git reflog expire --all --expire=now
+這個指令是要求 Reflog 現在立刻過期（不然預設要等 30 天）。
+
+接著再用 git fsck 指令就可以看到很多 Unreachable 的物件了：
+$ git fsck --unreachable
+Checking object directories: 100% (256/256), done.
+
+unreachable tree c8da8b6accf7029a2fb89eed130365822692b603
+unreachable commit ca40fc9b31c777b1d3434453448c945fa2ffae11
+unreachable commit cd82f29acbdce60c7f5f6894619585bd445797b5
+
+unreachable tree 9e941fe91d47bf5174bd5a3d3e73ff257598b0ca
+unreachable tree 5e01e02411507c504c77bca53c508a3174c9a06f
+unreachable tree 607f055180d1195c81e0534d264d131d5abfdc27
+unreachable commit 1de207637a6eed2cc86507dca37a38c7a932e53c
+unreachable tree a21100f9f3aae37858cc84fd402663992ccca681
+unreachable commit 27f6ed6da50dbee5adbb68102266a91dc097ad3f
+unreachable tree a618ce33da8d21bca841f18e6432fcabf15d4477
+unreachable commit 2bab3e7aff03a30ed9f53b5a7d3e02e1c0fc8c7c
+unreachable tree 70c6b4db190a452b22c28998d7c2487efb8026b2
+unreachable commit 382a2a5cec96b94e9c5cb42bf92b4b236f4ad8ac
+
+最後，啟動 Git 的資源回收機制，請垃圾車來立刻把它們載走：
+$ git gc --prune=now
+
+Counting objects: 14, done.
+Delta compression using up to 4 threads.
+Compressing objects: 100% (12/12), done.
+
+Writing objects: 100% (14/14), done.
+Total 14 (delta 5), reused 0 (delta 0)
+檢查一下：
+
+$ git fsck
+Checking object directories: 100% (256/256), done.
+Checking objects: 100% (14/14), done.
+
+看來垃圾都載走了。
+我們試試看用偷吃步能不能 Reset 得回去：
+$ git reset 27f6ed6 --hard
+
+fatal: ambiguous argument '27f6ed6': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git &lt;command> [&lt;revision>...] -- [&lt;file>...]'
+
+看來不行了，Git 已經找不到原來的那個 SHA-1 值了。
+提醒一下，如果這些內容已經推出去的話，別忘了最後再加一步 git push -f 把線上的紀錄蓋掉喔。
+
+小結
+檔案進了 Git 就跟得罪方丈一樣，想走沒那麼容易，需要全部都斷乾淨才行。
+關於 Git 的資源回收的相關介紹，請參閱
+https://stackoverflow.com/questions/31648386/how-to-trash-all-local-git-changes-and-revert-to-old-commit
 
 
 
