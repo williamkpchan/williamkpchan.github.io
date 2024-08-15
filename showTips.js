@@ -1,3 +1,5 @@
+showHelpTxt = 'A toggle_automode\nb backClick\nc clickImg\nf forward\ng gotoNum\nl listAll\n+ addToIgnoreLst\n- removeFmIgnoreLst\nR removeNumFmIgnoreLst\ns setRange\nS toggle_showSrcSwitch\n2 setRange\nv viewIgnoreLst\nT alertTotal\nx showAnswer\nI settimeInterval\nt gotop\ne go end\nH showHelp\nz showTenYear\no imgSrc\n'
+
 ignoreLstName = bookid + "IgnoreLst"
 if (typeof showSrcSwitch == 'undefined') {
     showSrcSwitch = false;  // showSrcSwitch to control display dom content
@@ -6,14 +8,15 @@ if (typeof breakLine == 'undefined') {
     breakLine = false;  // breakLine to break content into two parts
 }
 
-ignoreLst = localStorage.getItem(window["ignoreLstName"]);
-if (ignoreLst === null) {
-    ignoreLst = []
-    localStorage.setItem(window["ignoreLstName"], ignoreLst);
-} else{
-    ignoreLst = localStorage.getItem(window["ignoreLstName"]).split(',');
-    ignoreLst = ignoreLst.map(unaryOp)
-}
+//ignoreLst = localStorage.getItem(window["ignoreLstName"]);
+ignoreLst = null;
+//if (ignoreLst === null) {
+//    ignoreLst = []
+//    localStorage.setItem(window["ignoreLstName"], ignoreLst);
+//} else{
+//    ignoreLst = localStorage.getItem(window["ignoreLstName"]).split(',');
+//    ignoreLst = ignoreLst.map(unaryOp)
+//}
 
 automodeSwitch = false
 tipLimit = tipsList.length; // Tip Limit counter
@@ -65,10 +68,10 @@ function init_theRange(newRange) {
   // shuffle the remaining pointers, or typeof noShuffle === 'undefined'
   if ((noShuffle === false)||(noShuffle === null)) {
     tipsListIdx = shuffle(tipsListIdx)
-    topicpointer = Math.floor(Math.random() * (tipsListIdx.length -1))
+    topicpointer = Math.floor(Math.random() * (tipLimit -1))
   }
   if (noShuffle == true) {
-    topicpointer = Math.floor(Math.random() * (tipsListIdx.length -1))
+    topicpointer = Math.floor(Math.random() * (tipLimit -1))
   }
 
 
@@ -80,9 +83,13 @@ function init_theRange(newRange) {
 }
 
 function generateTip() {
-  if(topicpointer>tipsListIdx.length){
-     topicpointer = Math.floor(Math.random() * (tipsListIdx.length -1))
+  console.log("tp bf generateTip: ", topicpointer, " of ", tipLimit)
+  if(topicpointer>tipLimit){
+     topicpointer = 0
   }
+  console.log("tp bf generateTip: ", topicpointer, " of ", tipLimit)
+
+  document.querySelector('.tip-number').innerText = document.title+" "+topicpointer
 
   tip = tipsList[tipsListIdx[topicpointer]];
   if(breakLine == true){
@@ -109,14 +116,25 @@ function generateTip() {
      console.log("showSrcSwitch ", showSrcSwitch)
      $(".Notes").text('')
   }
-  flipSw(); // trigger an extra function
+  //flipSw(); // trigger an extra function on sexpage\sexhd.picsBig.html function flipSw(){
+  console.log("topicpointer after generateTip: ", topicpointer)
+
+}
+
+function rtClick(event) {
+    if (event.which == 3) {
+        backClick()
+    }
 }
 
 function forward() {
     console.log("topicpointer", topicpointer)
-    if (!(topicpointer >= 0 && topicpointer < (selectRange-1) && topicpointer < (tipLimit-1) ) ){
+    if (!(topicpointer >= 0
+         && topicpointer < (selectRange-1)
+         && topicpointer < (tipLimit-1) ) ){
        init_theRange(selectRange)
        topicpointer = -1
+       console.log("inited theRange")
     }
     topicpointer = topicpointer + 1;
     generateTip();
@@ -137,7 +155,7 @@ function chkKey() {
   if(testkey == 'a'){window.open("https://williamkpchan.github.io/apptechno.html");}
   else if(testkey == 'A'){toggle_automode();}
   else if(testkey == 'b'){backClick();}
-  else if(testkey == 'c'){callCalculator();}
+  else if(testkey == 'c'){clickImg();}
   else if(testkey == 'd'){window.open("https://www.youdao.com/");}
   else if(testkey == 'E'){window.open("https://williamkpchan.github.io/LibDocs/English Conversation.html");}
   else if(testkey == 'f'){forward();}
@@ -226,9 +244,11 @@ function getChar(event) {
 }
 
 function randomNum() {
+ console.log("topicpointer before: ", topicpointer)
  topicpointer = Math.floor(Math.random() * (tipsList.length -1))
+ console.log("topicpointer after: ", topicpointer)
  generateTip();
-}
+} 
 
 function shuffle(arrayLst) {
  var i = arrayLst.length, j = 0, temp;
@@ -343,10 +363,12 @@ function settimeInterval() {
 }
 
 function gotoNum() {
- pointer = prompt("goto Item Number: ", "");
- tip = tipsList[pointer];
- document.querySelector('.js-tip').innerHTML = tip;
- topicpointer = pointer;
+ ItemNum = prompt("goto Item Number: ", "");
+ // tip = tipsList[ItemNum];
+ // document.querySelector('.js-tip').innerHTML = tip;
+ topicpointer = ItemNum;
+ console.log("topicpointer goto: ", topicpointer)
+ generateTip();
 }
 
 function listAll() {
@@ -361,6 +383,10 @@ function listAll() {
       tipsListChop.push(tipbit)
     }
     document.querySelector('.js-tip').innerHTML = tipsListChop.join("<br>");
+}
+
+function clickImg() {
+  window.open($("pre.js-tip a").attr('href'))
 }
 
 forward();

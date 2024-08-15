@@ -49,5 +49,5 @@ proverbList = [
 "知人者智，自知者明。勝人者有力，自勝者強。\n知足者富。強行者有志。不失其所者久。死而不亡者壽。",
 "避免使用“以上对下”的口吻跟他人说话 当对方不想听你讲的时候，请不要多嘴\n避免用指责的方式说话 考虑对方的感受 不要问一些不该问的问题",
 "冷嘲热讽、尖酸刻薄的话让人反感；\n阿谀奉承、献媚讨好的话让人觉得很没品；\n好为人师、颐指气使的话让人厌烦；\n关怀体贴、善解人意的话则会让人觉得贴心。",
-
+"“Always remember that your calmness under fire is your best defense in any argument or discussion” ~ Robert Greene",
 ]

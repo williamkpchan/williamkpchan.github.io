@@ -1,0 +1,789 @@
+<base target="_blank"><html><head><title>nodejs sqlite tutorial</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="https://williamkpchan.github.io/lazyload.min.js"></script>
+<script src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/commonfunctions.js"></script>
+<script>
+  var showTopicNumber = false;
+  var topicEnd = "<br>";
+  var bookid = "nodejs sqlite tutorial"
+  var markerName = "h2"
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:24px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>nodejs sqlite tutorial</h1>
+<div id="toc"></div></center><br><br>
+<pre><br><br>
+
+<h2><pk>Connecting To SQLite Database Using Node.js</pk></h2>
+
+<k>Summary</k>: in this tutorial, you will learn how to connect to an SQLite database from Node.js applications.
+
+<h2>&emsp;Installing sqlite3 module</h2>
+To interact with the SQLite database, you need to download and install <a href="https://github.com/mapbox/node-sqlite3"><gr>sqlite3</gr></a> module. You can use <gr>npm</gr> to do so using the following command:
+
+<gr>> npm install sqlite3</gr>
+
+After installing the <gr>sqlite3</gr> module, you are ready to connect to an SQLite database from a Node.js application.
+
+To connect to an SQLite database, you need to:
+
+First, import the <gr>sqlite3</gr> module
+Second, call the <gr>Database()</gr> function of the <gr>sqlite3</gr> module and pass the database information such as database file, opening mode, and a callback function.
+
+<h2>&emsp;Connecting to the in-memory database</h2>
+To open a database connection to an in-memory database, you use the following steps.
+
+First, import the <gr>sqlite3</gr> module:
+
+<gr>const sqlite3 = require('sqlite3').verbose();</gr>
+
+Notice that the execution mode is set to verbose to produce long stack traces.
+
+Second, create a <gr>Database</gr> object:
+
+<gr>let db = new sqlite3.Database(':memory:');</gr>
+
+The <gr>sqlite3.Database()</gr> returns a <gr>Database</gr> object and opens the database connection automatically.
+
+The <gr>sqlite3.Database()</gr> accepts a callback function that will be called when the database opened successfully or when an error occurred.
+
+The callback function has the <gr>error</gr> object as the first parameter. If an <gr>error</gr> occurred, the <gr>error</gr> object is not <gr>null</gr>, otherwise, it is <gr>null</gr>.
+
+If you don’t provide the callback function and an error occurred during opening the database, an <gr>error</gr> event will be emitted. In case the database is opened successfully, the <gr>open</gr> event is emitted regardless of whether a callback is provided or not.
+
+So you now can open an SQLite database and provide the detailed information if an error occurred as follows:
+
+<gr>let db = new sqlite3.Database(':memory:', (err) => {
+  if (err) {
+    return console.error(err.message);
+  }
+  console.log('Connected to the in-memory SQlite database.');
+});</gr>
+
+It is a good practice to close a database connection when you are done with it. To close a database connection, you call the <gr>close()</gr> method of the <gr>Database</gr> object as follows:
+
+<gr>db.close();</gr>
+
+The <gr>close()</gr> method will wait for all pending queries completed before actually closing the database.
+
+Similar to the <gr>Database()</gr>, the <gr>close()</gr> method also accepts a callback that indicates whether an error occurred during closing the database connection.
+
+<gr>db.close((err) => {
+  if (err) {
+    return console.error(err.message);
+  }
+  console.log('Close the database connection.');
+});</gr>
+
+The following illustrates the complete code for opening and closing an in-memory SQLite database:
+
+<gr>const sqlite3 = require('sqlite3').verbose();
+
+// open database in memory
+let db = new sqlite3.Database(':memory:', (err) => {
+  if (err) {
+    return console.error(err.message);
+  }
+  console.log('Connected to the in-memory SQlite database.');
+});
+
+// close the database connection
+db.close((err) => {
+  if (err) {
+    return console.error(err.message);
+  }
+  console.log('Close the database connection.');
+});</gr>
+
+Let’s run the program to see how it works.
+
+<gr>> node connect.js
+Connected to the in-memory SQlite database.
+Close the database connection.</gr>
+
+As you can see, it works perfectly as expected.
+
+<h2>&emsp;Connecting to a disk file database</h2>
+To connect to a disk file database, instead of passing the <gr>':memory:'</gr> string, you pass the path to the database file.
+
+For example, to connect to the <gr>chinook</gr> database file stored in the <gr>db</gr> folder, you use the following statement:
+
+<gr>let db = new sqlite3.Database('./db/chinook.db', (err) => {
+  if (err) {
+    console.error(err.message);
+  }
+  console.log('Connected to the chinook database.');
+});</gr>
+
+There are three opening modes:
+
+<gr>sqlite3.OPEN_READONLY</gr>: open the database for read-only.
+
+<gr>sqlite3.OPEN_READWRITE</gr> : open the database for reading and writting.
+
+<gr>sqlite3.OPEN_CREATE</gr>: open the database, if the database does not exist, create a new database.
+
+The <gr>sqlite3.Database()</gr> accepts one or more mode as the second argument. By default, it uses the <gr>OPEN_READWRITE | OPEN_CREATE</gr> mode. It means that if the database does not exist, the new database will be created and is ready for read and write.
+
+To open the <gr>chinook</gr> sample database for read and write, you can do it as follows:
+
+<gr>let db = new sqlite3.Database('./db/chinook.db', sqlite3.OPEN_READWRITE, (err) => {
+  if (err) {
+    console.error(err.message);
+  }
+  console.log('Connected to the chinook database.');
+});</gr>
+
+The following example shows the complete code for opening the <gr>chinook</gr> database, querying data from the <gr>playlists</gr> table, and closing the database connection.
+
+<gr>const sqlite3 = require('sqlite3').verbose();
+
+// open the database
+let db = new sqlite3.Database('./db/chinook.db', sqlite3.OPEN_READWRITE, (err) => {
+  if (err) {
+    console.error(err.message);
+  }
+  console.log('Connected to the chinook database.');
+});
+
+db.serialize(() => {
+  db.each(`SELECT PlaylistId as id,
+                  Name as name
+           FROM playlists`, (err, row) => {
+    if (err) {
+      console.error(err.message);
+    }
+    console.log(row.id + "\t" + row.name);
+  });
+});
+
+db.close((err) => {
+  if (err) {
+    console.error(err.message);
+  }
+  console.log('Close the database connection.');
+});</gr>
+
+Note that you will learn <a href="https://www.sqlitetutorial.net/sqlite-nodejs/query/">how to query data</a> in the next tutorial.
+
+In this tutorial, you have learned how to connect to an SQLite database either in-memory or disk file based database.
+
+<h2><pk>Querying Data in SQLite Database from Node.js Applications</pk></h2>
+
+<k>Summary</k>: in this tutorial, you will learn how to query data from the SQLite database from a Node.js application using sqlite3 API.
+
+To query data in SQLite database from a Node.js application, you use these steps:
+
+<a href="https://www.sqlitetutorial.net/sqlite-nodejs/connect/">Open a database connection</a>.
+Execute a <gr><a href="https://www.sqlitetutorial.net/sqlite-python/sqlite-python-select/">SELECT</a></gr> statement and process the result set.
+Close the database connection.
+
+The <gr>sqlite3</gr> module provides you with some methods for querying data such as <gr>all()</gr>, <gr>each()</gr> and <gr>get()</gr>.
+
+<h2>&emsp;Querying all rows with all() method</h2>
+The <gr>all()</gr> method allows you to execute an SQL query with specified parameters and call a callback to access the rows in the result set.
+
+The following is the signature of the <gr>all()</gr> method:
+
+<gr>db.all(sql,params,(err, rows ) => {
+    // process rows here    
+});
+</gr>
+
+The <gr>err</gr> argument stores the error detail in case there was an error occurred during the execution of the query. Otherwise, the <gr>err</gr> will be <gr>null</gr>.
+
+If the query is executed successfully, the <gr>rows</gr> argument contains the result set.
+
+Because the <gr>all()</gr> method retrieves all rows and places them in the memory, therefore, for the large result set, you should use the <gr>each()</gr> method.
+
+The following example illustrates how to query data from the <gr>playlists</gr> table in the sample database using the <gr>all()</gr> method:
+
+<gr>const sqlite3 = require('sqlite3').verbose();
+
+// open the database
+let db = new sqlite3.Database('./db/chinook.db');
+
+let sql = `SELECT DISTINCT Name name FROM playlists
+           ORDER BY name`;
+
+db.all(sql, [], (err, rows) => {
+  if (err) {
+    throw err;
+  }
+  rows.forEach((row) => {
+    console.log(row.name);
+  });
+});
+
+// close the database connection
+db.close();
+</gr>
+
+Let’s run the program.
+
+<gr>>node all.js
+90's Music
+Audiobooks
+Brazilian Music
+Classical
+Classical 101 - Deep Cuts
+Classical 101 - Next Steps
+Classical 101 - The Basics
+Grunge
+Heavy Metal Classic
+Movies
+Music
+Music Videos
+On-The-Go 1
+TV Shows
+</gr>
+
+The output shows all playlists as expected.
+
+<h2>&emsp;Query the first row in the result set</h2>
+When you know that the result set contains zero or one row e.g., querying a row based on the primary key or querying with only one aggregate function such as count, sum, max, min, etc., you can use the <gr>get()</gr> method of <gr>Database</gr> object.
+
+<gr>db.get(sql, params, (err, row) => {
+    // process the row here 
+});
+</gr>
+
+The <gr>get()</gr> method executes an SQL query and calls the callback function on the first result row. In case the result set is empty, the <gr>row</gr> argument is <gr>undefined</gr>.
+
+The following <gr>get.js</gr> program demonstrates how to query a playlist by its id:
+
+<gr>const sqlite3 = require('sqlite3').verbose();
+
+// open the database
+let db = new sqlite3.Database('./db/chinook.db');
+
+let sql = `SELECT PlaylistId id,
+                  Name name
+           FROM playlists
+           WHERE PlaylistId  = ?`;
+let playlistId = 1;
+
+// first row only
+db.get(sql, [playlistId], (err, row) => {
+  if (err) {
+    return console.error(err.message);
+  }
+  return row
+    ? console.log(row.id, row.name)
+    : console.log(`No playlist found with the id ${playlistId}`);
+
+});
+
+// close the database connection
+db.close();
+</gr>
+
+Let’s run the <gr>get.js</gr> program.
+
+<gr>>node get.js
+1 'Music'
+</gr>
+
+The output shows the <gr>Music</gr> playlist which is correct.
+
+If you change the <gr>playlistId</gr> to 0 and execute the <gr>get.js</gr> program again:
+
+<gr>>node get.js
+No playlist found with the id 0
+</gr>
+
+It showed that no playlist was found with id 0 as expected.
+
+<h2>&emsp;Query rows with each() method</h2>
+The <gr>each()</gr> method executes an SQL query with specified parameters and calls a callback for every row in the result set.
+
+The following illustrates the <gr>each()</gr> method:
+
+<gr>db.each(sql,params, (err, result) => {
+   // process each row here
+});
+</gr>
+
+If the result set is empty, the callback is never called. In case there is an error, the <gr>err</gr> parameter contains detailed information.
+
+The following <gr>each.js</gr> program illustrates how to use the <gr>each()</gr> method to query customers’ data from the <gr>customers</gr> table.
+
+<gr>const sqlite3 = require('sqlite3').verbose();
+
+// open the database
+let db = new sqlite3.Database('../db/chinook.db');
+
+let sql = `SELECT FirstName firstName,
+                  LastName lastName,
+                  Email email
+            FROM customers
+            WHERE Country = ?
+            ORDER BY FirstName`;
+
+db.each(sql, ['USA'], (err, row) => {
+  if (err) {
+    throw err;
+  }
+  console.log(`${row.firstName} ${row.lastName} - ${row.email}`);
+});
+
+// close the database connection
+db.close();
+</gr>
+
+Let’s run the <gr>each.js</gr> program:
+
+<gr>>node each.js
+Dan Miller - <a href="/cdn-cgi/l/email-protection" data-cfemail="b5d1d8dcd9d9d0c7f5d6dad8d6d4c6c19bd6dad8">[email protected]</a>
+Frank Harris - <a href="/cdn-cgi/l/email-protection" data-cfemail="badcd2dbc8c8d3c9faddd5d5ddd6df94d9d5d7">[email protected]</a>
+Frank Ralston - <a href="/cdn-cgi/l/email-protection" data-cfemail="533521323f20273c3d13343e323a3f7d303c3e">[email protected]</a>
+Heather Leacock - <a href="/cdn-cgi/l/email-protection" data-cfemail="a0c8ccc5c1c3cfc3cbe0c7cdc1c9cc8ec3cfcd">[email protected]</a>
+Jack Smith - <a href="/cdn-cgi/l/email-protection" data-cfemail="7a101b19110917130e123a171319081509151c0e54191517">[email protected]</a>
+John Gordon - <a href="/cdn-cgi/l/email-protection" data-cfemail="48222720262f273a2c27267a7a083129202727662b2725">[email protected]</a>
+Julia Barnett - <a href="/cdn-cgi/l/email-protection" data-cfemail="e68c9384879488839292a6818b878f8ac885898b">[email protected]</a>
+Kathy Chase - <a href="/cdn-cgi/l/email-protection" data-cfemail="761d17151e170513361e19021b171f1a5815191b">[email protected]</a>
+Michelle Brooks - <a href="/cdn-cgi/l/email-protection" data-cfemail="c8a5a1aba0ada4a4adaa88a9a7a4e6aba7a5">[email protected]</a>
+Patrick Gray - <a href="/cdn-cgi/l/email-protection" data-cfemail="42322336302b21296c2530233b02232d2e6c212d2f">[email protected]</a>
+Richard Cunningham - <a href="/cdn-cgi/l/email-protection" data-cfemail="36445f554358585f58515e575b765e59425b575f5a1855595b">[email protected]</a>
+Tim Goyer - <a href="/cdn-cgi/l/email-protection" data-cfemail="1064777f697562507160607c753e737f7d">[email protected]</a>
+Victor Stevens - <a href="/cdn-cgi/l/email-protection" data-cfemail="1a6c696e7f6c7f74695a637b72757534797577">[email protected]</a>
+</gr>
+
+As you see, the callback function was called for each row to print out the customer’s information.
+
+In this tutorial, you have learned how to use various methods of the <gr>Database</gr> object to query data from the SQLite database.
+
+<h2><pk>Controlling the Execution Flow of Statements</pk></h2>
+
+<k>Summary</k>: in this tutorial, you will learn how to control the execution flow of statements.
+
+The <gr>sqlite3</gr> module provides you with two methods for controlling the execution flow of statements. The <gr>serialize()</gr> method allows you to execute statements in serialized mode, while the <gr>parallelize()</gr> method executes the statements in parallel.
+
+Let’s look into each method in detail to understand how it works.
+
+<h2>&emsp;Executing statement in serialized mode with Database.serialize</h2>
+The <gr>serialize()</gr> method puts the execution mode into serialized mode. It means that only one statement can execute at a time. Other statements will wait in a queue until all the previous statements are executed.
+
+After the <gr>serialize()</gr> method returns, the execution mode is set to the original mode again.
+
+It’s safe to nest the <gr>serialize()</gr> method as follows:
+
+<gr>db.serialize(() => {
+  // queries will execute in serialized mode
+  db.serialize(() => {
+    // queries will execute in serialized mode
+  });
+  // queries will execute in serialized mode
+});
+</gr>
+
+Suppose, you want to execute the following three statements in sequence:
+
+Create a new table.
+Insert data into the table.
+Query data from the table.
+
+To do this, you place these statements in the <gr>serialize()</gr> method as follows:
+
+<gr>const sqlite3 = require('sqlite3').verbose();
+
+// open the database connection
+let db = new sqlite3.Database(':memory:', (err) => {
+  if (err) {
+    console.error(err.message);
+  }
+});
+
+db.serialize(() => {
+  // Queries scheduled here will be serialized.
+  db.run('CREATE TABLE greetings(message text)')
+    .run(`INSERT INTO greetings(message)
+          VALUES('Hi'),
+                ('Hello'),
+                ('Welcome')`)
+    .each(`SELECT message FROM greetings`, (err, row) => {
+      if (err){
+        throw err;
+      }
+      console.log(row.message);
+    });
+});
+
+// close the database connection
+db.close((err) => {
+  if (err) {
+    return console.error(err.message);
+  }
+});
+</gr>
+
+Because the <gr>run()</gr> method returns a <gr>Database</gr> object so that we could chain the method calls.
+
+Let’s run the program to see how it works.
+
+<gr>> node serialize.js
+Hi
+Hello
+Welcome
+</gr>
+
+It works as expected.
+
+Notice that if you don’t place three statements in the <gr>serialize()</gr> method, all the three statements may execute in parallel which would cause an error.
+
+<h2>&emsp;Executing statements in parallel with Database.parallelize</h2>
+If you want the scheduled queries to execute in parallel, you place them in the <gr>parallelize()</gr> method.
+
+Similar to the <gr>serialize()</gr> method, it is safe to nest the <gr>parallelize()</gr> method as follows:
+
+<gr>db.parallelize(() => {
+  // queries will execute in parallel mode
+  db.parallelize(() => {
+    // queries will execute in parallel mode
+  });
+  // queries will execute in parallel mode
+});
+</gr>
+
+For the demonstration, we will create a new function that calculates the sum of two numbers using SQLite database and place the function calls in the <gr>parallelize()</gr> method as shown in the following example:
+
+<gr>const sqlite3 = require('sqlite3').verbose();
+
+// open a database connection
+let db = new sqlite3.Database(':memory:', (err) => {
+  if (err) {
+    console.error(err.message);
+  }
+});
+
+db.parallelize(() => {
+  dbSum(1, 1, db);
+  dbSum(2, 2, db);
+  dbSum(3, 3, db);
+  dbSum(4, 4, db);
+  dbSum(5, 5, db);
+});
+
+// close the database connection
+db.close((err) => {
+  if (err) {
+    return console.error(err.message);
+  }
+});
+
+function dbSum(a, b, db) {
+  db.get('SELECT (? + ?) sum', [a, b], (err, row) => {
+    if (err) {
+      console.error(err.message);
+    }
+    console.log(`The sum of ${a} and ${b} is ${row.sum}`);
+  });
+}
+</gr>
+
+Let’s run the <gr>parallelize.js</gr> program.
+
+<gr>>node parallelize.js
+The sum of 5 and 5 is 10
+The sum of 1 and 1 is 2
+The sum of 4 and 4 is 8
+The sum of 3 and 3 is 6
+The sum of 2 and 2 is 4
+</gr>
+
+As you see in the output, the order of execution is not the same as it was called in the program.
+
+Notice that the statements execute in parallel, therefore, each time you run the program, the order of execution may be different.
+
+In this tutorial, you have learned how to control the execution flow of the statements.
+
+<h2><pk>Inserting Data Into an SQLite Table from a Node.js Application</pk></h2>
+
+<k>Summary</k>: in this tutorial, you will learn how to insert one or more row into an SQLite table from a Node.js application.
+
+To insert data into an SQLite table from a Node.js application, you follow these steps:
+
+<a href="https://www.sqlitetutorial.net/sqlite-nodejs/connect/">Open a database connection</a>.
+Execute an <gr><a href="https://www.sqlitetutorial.net/sqlite-nodejs/insert/">INSERT</a></gr> statement.
+Close the database connection.
+
+For the demonstration, we will create a new database named <gr>sample.db</gr> in the <gr>db</gr> folder.
+
+When you open a database connection in the default mode, the database is created if it does not exist.
+
+<gr>let db = new sqlite3.Database('./db/sample.db');
+</gr>
+
+In the <gr>sample.db</gr> database, we <a href="https://www.sqlitetutorial.net/sqlite-create-table/">create a table</a> called <gr>langs</gr> for storing programming languages:
+
+<gr>db.run('CREATE TABLE langs(name text)');
+</gr>
+
+You can run the program to create the <gr>sample.db</gr> database and <gr>langs</gr> table as follows:
+
+<gr>const sqlite3 = require('sqlite3').verbose();
+
+let db = new sqlite3.Database('../db/sample.db');
+
+db.run('CREATE TABLE langs(name text)');
+
+db.close();
+</gr>
+
+Now, we are ready to insert data into the <gr>langs</gr> table.
+
+<h2>&emsp;Insert one row into a table</h2>
+To execute an <gr><a href="https://www.sqlitetutorial.net/sqlite-insert/">INSERT</a></gr> statement, you use the <gr>run()</gr> method of the <gr>Database</gr> object:
+
+<gr>db.run(sql, params, function(err){
+  // 
+});
+</gr>
+
+The <gr>run()</gr> method executes an <gr>INSERT</gr> statement with specified parameters and calls a callback afterwards.
+
+If an error occurred, you can find the detailed information in the <gr>err</gr> argument of the callback function.
+
+In case the statement is executed successfully, the <gr>this</gr> object of the callback function will contain two properties:
+
+<ul>
+
+<gr>lastID</gr> property stores the value of the last inserted row ID.
+
+<gr>changes</gr> property stores the rows affected by the query.
+</ul>
+The following <gr>insert.js</gr> program illustrates how to insert a row into the <gr>langs</gr> table:
+
+<gr>  const sqlite3 = require('sqlite3').verbose();
+
+  let db = new sqlite3.Database('./db/sample.db');
+
+  // insert one row into the langs table
+  db.run(`INSERT INTO langs(name) VALUES(?)`, ['C'], function(err) {
+    if (err) {
+      return console.log(err.message);
+    }
+    // get the last insert id
+    console.log(`A row has been inserted with rowid ${this.lastID}`);
+  });
+
+  // close the database connection
+  db.close();
+</gr>
+
+Let’s run the <gr>insert.js</gr> program:
+
+<gr>>node insert.js
+A row has been inserted with rowid 1
+</gr>
+
+It worked as expected.
+
+<h2>&emsp;Insert multiple rows into a table at a time</h2>
+To <a href="https://www.sqlitetutorial.net/sqlite-insert/">insert multiple rows</a> at a time into a table, you use the following form of the <gr>INSERT</gr> statement:
+
+<gr>INSERT INTO table_name(column_name)
+VALUES(value_1), (value_2), (value_3),...
+</gr>
+
+To simulate this in the Node.js application, we first need to construct the <gr>INSERT</gr> statement with multiple placeholders:
+
+<gr>INSERT INTO table_name(column_name)
+VALUES(?), (?), (?),...
+</gr>
+
+Suppose, you want to insert rows into the <gr>langs</gr> table with the data from the following <gr>languages</gr> array:
+
+<gr>let languages = ['C++', 'Python', 'Java', 'C#', 'Go'];
+</gr>
+
+To construct the <gr>INSERT</gr> statement, we use the <gr>map()</gr> method to map each element in the <gr>languages</gr> array into <gr>(?)</gr> and then join all placeholders together.
+
+<gr>let placeholders = languages.map((language) => '(?)').join(',');
+let sql = 'INSERT INTO langs(name) VALUES ' + placeholders;
+</gr>
+
+The following <gr>insert-many.js</gr> program illustrates how to insert multiple rows into the <gr>langs</gr> table:
+
+<gr>const sqlite3 = require('sqlite3').verbose();
+
+// open the database connection
+let db = new sqlite3.Database('../db/sample.db');
+
+let languages = ['C++', 'Python', 'Java', 'C#', 'Go'];
+
+// construct the insert statement with multiple placeholders
+// based on the number of rows
+let placeholders = languages.map((language) => '(?)').join(',');
+let sql = 'INSERT INTO langs(name) VALUES ' + placeholders;
+
+// output the INSERT statement
+console.log(sql);
+
+db.run(sql, languages, function(err) {
+  if (err) {
+    return console.error(err.message);
+  }
+  console.log(`Rows inserted ${this.changes}`);
+});
+
+// close the database connection
+db.close();
+</gr>
+
+Let’s run the <gr>insert-many.js</gr> program to see how it works.
+
+<gr>> node insert-many.js
+INSERT INTO langs(name) VALUES (?),(?),(?),(?),(?)
+Rows inserted 5
+</gr>
+
+It inserted 5 rows into the <gr>langs</gr> table which is what we expected.
+
+In this tutorial, you have learned how to insert one or more rows into an SQLite table from a Node.js application.
+
+<h2><pk>Updating Data in SQLite Database from a Node.js Application</pk></h2>
+
+<k>Summary</k>: this tutorial shows you how to update data in the SQLite database from a Node.js application.
+
+To update data in the SQLite database from a Node.js application, you use these steps:
+
+<a href="https://www.sqlitetutorial.net/sqlite-nodejs/connect/">Open a database connection</a>.
+Execute an <gr><a href="https://www.sqlitetutorial.net/sqlite-update/">UPDATE</a></gr> statement.
+Close the database connection.
+
+For the demonstration, we will use the <gr>langs</gr> table in the <gr>sample.db</gr> database that we created in the <a href="https://www.sqlitetutorial.net/sqlite-nodejs/insert/">previous tutorial</a>.
+
+<h2>&emsp;Updating data example</h2>
+To update data in a table, you use the <gr>UPDATE</gr> statement as follows:
+
+<gr>UPDATE table_name
+SET column_name = value_1
+WHERE id = id_value;
+</gr>
+
+To execute the <gr>UPDATE</gr> statement in the Node.js application, you call the <gr>run()</gr> method of the <gr>Database</gr> object:
+
+<gr>db.run(sql, params, function(err){
+  // 
+});
+</gr>
+
+The <gr>run()</gr> method executes an <gr>UPDATE</gr> statement with specified parameters and calls a callback afterwards.
+
+The <gr>err</gr> argument of the callback stores the error detail in case the execution has any problem e.g., syntax error, locking, etc.
+
+If the <gr>UPDATE</gr> statement is executed successfully, the <gr>this</gr> object of the callback function will contain the <gr>changes</gr> property that stores the number of rows updated.
+
+The following <gr>update.js</gr> program illustrates how to update a row in the <gr>langs</gr> table from <gr>C</gr> to <gr>Ansi C</gr>:
+
+<gr>const sqlite3 = require('sqlite3').verbose();
+
+// open a database connection
+let db = new sqlite3.Database('./db/sample.db');
+
+//
+let data = ['Ansi C', 'C'];
+let sql = `UPDATE langs
+            SET name = ?
+            WHERE name = ?`;
+
+db.run(sql, data, function(err) {
+  if (err) {
+    return console.error(err.message);
+  }
+  console.log(`Row(s) updated: ${this.changes}`);
+
+});
+
+// close the database connection
+db.close();
+</gr>
+
+Let’s test the <gr>update.js</gr> program.
+
+<gr>>node update.js
+Row(s) updated: 1
+</gr>
+
+The output showed that one row has been updated which is correct.
+
+In this tutorial, you have learned how to update data in the SQLite database from a Node.js application.
+
+<h2><pk>SQLite Node.js – Deleting Data</pk></h2>
+
+<k>Summary</k>: in this tutorial, you will learn how to delete data in the SQLite database from a Node.js application.
+
+To delete data in the SQLite database from a Node.js application, you use the following steps:
+
+<a href="https://www.sqlitetutorial.net/sqlite-nodejs/connect/">Open a database connection</a>.
+Execute a <gr><a href="https://www.sqlitetutorial.net/sqlite-delete/">DELETE</a></gr> statement.
+Close the database connection.
+
+For the demonstration, we will use the <gr>langs</gr> table in the <gr>sample.db</gr> database that we created in the <a href="https://www.sqlitetutorial.net/sqlite-nodejs/insert/">previous tutorial</a>.
+
+<h2>&emsp;Deleting data example</h2>
+To delete data from a table, you use the <gr>DELETE</gr> statement as follows:
+
+<gr>DELETE FROM table_name
+WHERE column_name = value;</gr>
+
+To execute the <gr>DELETE</gr> statement from a Node.js application, you call the <gr>run()</gr> method of the <gr>Database</gr> object as follows:
+
+<gr>db.run(sql, params, function(err) {
+  // 
+});
+</gr>
+
+The <gr>run()</gr> method allows you to execute a <gr>DELETE</gr> statement with specified parameters and calls a callback function afterward.
+
+If there was any error during the execution of <gr>DELETE</gr> statement, the <gr>err</gr> argument of the callback function will provide the details.
+
+If the <gr>DELETE</gr> statement executed successfully, the <gr>this</gr> object of the callback function will contain the <gr>changes</gr> property that stores the number of rows deleted.
+
+The following <gr>delete.js</gr> program illustrates how to delete a row from the <gr>langs</gr> table:
+
+<gr>const sqlite3 = require('sqlite3').verbose();
+
+// open a database connection
+let db = new sqlite3.Database('./db/sample.db', (err) => {
+  if (err) {
+    console.error(err.message);
+  }
+});
+
+let id = 1;
+// delete a row based on id
+db.run(`DELETE FROM langs WHERE rowid=?`, id, function(err) {
+  if (err) {
+    return console.error(err.message);
+  }
+  console.log(`Row(s) deleted ${this.changes}`);
+});
+
+// close the database connection
+db.close((err) => {
+  if (err) {
+    return console.error(err.message);
+  }
+});
+</gr>
+
+Let’s test the <gr>update.js</gr> program.
+
+<gr>>node delete.js
+Row(s) deleted: 1</gr>
+
+The output showed that one row had been deleted successfully.
+
+In this tutorial, you have learned how to delete data in the SQLite database from a Node.js application.
+<script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
+</pre></body></html>

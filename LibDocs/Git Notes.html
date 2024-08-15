@@ -3565,6 +3565,430 @@ rm .git/refs/remotes/origin/master
 git fetch
 
 
+<h2>fatal: the remote end hung up unexpectedly</h2>
+This is due to git/https buffer settings.
+
+Solution: Navigate to repo.
+Run this to increase the buffer to 500MB:
+
+git config http.postBuffer 524288000
+Then, run your original command again.
+
+
+<h2>git ls-remote</h2>
+remote: error: File big.html is 229.72 MB; this exceeds GitHub's file size limit of 100.00 MB
+remote: error: GH001: Large files detected.
+You may want to try Git Large File Storage - https://git-lfs.github.com.
+error: failed to push some refs
+
+Displays references available in a remote repository along with the associated commit IDs
+
+git ls-remote
+From https://github.com/williamkpchan/stdrvest
+73f683026f1b7eb75f457ee38b0f07d323dec7e5        HEAD
+73f683026f1b7eb75f457ee38b0f07d323dec7e5        refs/heads/
+
+git show-ref
+Displays references available in a local repository along with the associated commit IDs.
+
+git show-ref
+454b0b3be972a18fdeedad5bca50c6b60ace6cd7 refs/heads/main
+73f683026f1b7eb75f457ee38b0f07d323dec7e5 refs/remotes/origin/main
+
+<h2>把檔案從 Git 裡拔掉</h2>
+用 filter-branch 指令應該是相對較方便的。
+
+舉例來說，目前的 Commit 紀錄是這樣：
+current commits
+我想要把所有 Commit 的 config/database.yml 這個檔案刪掉：
+
+git filter-branch --tree-filter "rm -f config/database.yml"
+Rewrite 27f6ed6da50dbee5adbb68102266a91dc097ad3f (7/7) (0 seconds passed, remaining 0 predicted)
+Ref 'refs/heads/master' was rewritten
+
+這樣看起來好像刪掉了…假的，其實那些東西都還在，隨時都可以取消剛剛這個指令，把剛剛被刪的檔案救回來：
+$ git reset refs/original/refs/heads/master --hard
+HEAD is now at 27f6ed6 add dog 2
+
+全部斷乾淨！
+再重頭來一次：
+git filter-branch -f --tree-filter "rm -f config/database.yml"
+Rewrite 27f6ed6da50dbee5adbb68102266a91dc097ad3f (7/7) (1 seconds passed, remaining 0 predicted)
+Ref 'refs/heads/master' was rewritten
+
+跟前面不太一樣，這次多加了 -f 參數，是因為要強制覆寫 filter-branch 的備份點。
+
+這邊使用 filter-branch 指令把檔案從工作目錄裡移掉，這時候 database.yml 的確已不見，但還有好幾個跟資源回收有關的事情需要處理一下：
+$ rm .git/refs/original/refs/heads/master
+這個檔案還對剛剛做的 filter-branch 動作念念不忘（也就是備份點啦），隨時可以透過它再跳回去，所以先斷這條線。
+
+再來，念念不忘的還有 Reflog，所以它也要清一下：
+$ git reflog expire --all --expire=now
+這個指令是要求 Reflog 現在立刻過期（不然預設要等 30 天）。
+
+接著再用 git fsck 指令就可以看到很多 Unreachable 的物件了：
+$ git fsck --unreachable
+Checking object directories: 100% (256/256), done.
+
+unreachable tree c8da8b6accf7029a2fb89eed130365822692b603
+unreachable commit ca40fc9b31c777b1d3434453448c945fa2ffae11
+unreachable commit cd82f29acbdce60c7f5f6894619585bd445797b5
+
+unreachable tree 9e941fe91d47bf5174bd5a3d3e73ff257598b0ca
+unreachable tree 5e01e02411507c504c77bca53c508a3174c9a06f
+unreachable tree 607f055180d1195c81e0534d264d131d5abfdc27
+unreachable commit 1de207637a6eed2cc86507dca37a38c7a932e53c
+unreachable tree a21100f9f3aae37858cc84fd402663992ccca681
+unreachable commit 27f6ed6da50dbee5adbb68102266a91dc097ad3f
+unreachable tree a618ce33da8d21bca841f18e6432fcabf15d4477
+unreachable commit 2bab3e7aff03a30ed9f53b5a7d3e02e1c0fc8c7c
+unreachable tree 70c6b4db190a452b22c28998d7c2487efb8026b2
+unreachable commit 382a2a5cec96b94e9c5cb42bf92b4b236f4ad8ac
+
+最後，啟動 Git 的資源回收機制，請垃圾車來立刻把它們載走：
+$ git gc --prune=now
+
+Counting objects: 14, done.
+Delta compression using up to 4 threads.
+Compressing objects: 100% (12/12), done.
+
+Writing objects: 100% (14/14), done.
+Total 14 (delta 5), reused 0 (delta 0)
+檢查一下：
+
+$ git fsck
+Checking object directories: 100% (256/256), done.
+Checking objects: 100% (14/14), done.
+
+看來垃圾都載走了。
+我們試試看用偷吃步能不能 Reset 得回去：
+$ git reset 27f6ed6 --hard
+
+fatal: ambiguous argument '27f6ed6': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git &lt;command> [&lt;revision>...] -- [&lt;file>...]'
+
+看來不行了，Git 已經找不到原來的那個 SHA-1 值了。
+提醒一下，如果這些內容已經推出去的話，別忘了最後再加一步 git push -f 把線上的紀錄蓋掉喔。
+
+小結
+檔案進了 Git 就跟得罪方丈一樣，想走沒那麼容易，需要全部都斷乾淨才行。
+關於 Git 的資源回收的相關介紹，請參閱
+https://stackoverflow.com/questions/31648386/how-to-trash-all-local-git-changes-and-revert-to-old-commit
+
+<h2>revert Git LFS file</h2>
+To revert a file tracked by Git LFS (Large File Storage) back to its original state, you'll need to follow these general steps:
+
+Ensure you have the necessary access and permissions:
+Make sure you have write access to the repository and the necessary permissions to modify files.
+
+Determine the original version:
+Identify the commit or version of the file that you want to revert to.
+You can use Git commands such as git log or a Git client to view the commit history and find the desired version.
+
+Retrieve the original version:
+Use Git to retrieve the original version of the file.
+You can do this using the git checkout command, specifying the commit or version you want to revert to, and the path to the file.
+
+For example:
+applescript
+git checkout <commit> -- <file_path>
+```
+
+Replace `<commit>` with the commit hash or the branch/tag name, and `<file_path>` with the path to the file within the repository.
+
+Note:
+This command will update the file in your local working directory to the specified version.
+If you want to revert the file for others as well, you'll need to push the changes back to the remote repository.
+
+Stage and commit the changes (optional):
+If you want to keep a record of the reversion, you can stage and commit the changes using Git.
+This step is optional but can be useful for tracking the history of the file or collaborating with others.
+
+git add <file_path>
+git commit -m "Revert file to original version"
+```
+
+Replace `<file_path>` with the path to the file you reverted.
+
+Push the changes (optional):
+If you've made a commit in the previous step and want to share the reversion with others, you need to push the changes to the remote repository using the appropriate Git command (e.g., git push).
+
+By following these steps, you should be able to revert the LFS file back to its original version.
+Remember to exercise caution when modifying files, especially if you're working in a collaborative environment.
+
+<h2>to revert the LFS file back to the original one</h2>
+<a href="https://git-scm.com/docs/gitattributes" class="whitebut ">gitattributes</a>
+used <k>git lfs pull</k> to download original file then <k>git lfs uninstall,</k> after that removed the <k>.gitattributes</k> file and commit again.
+
+git lfs uninstall
+this removes hooks and smudge/clean filter configuration
+and this is only the beginning.
+
+<k">git lfs ls-files</k> — view lfs filesfor each file, use globs if you can:
+<k>git rm --cached myfile.psd</k> — "remove" the lfs file
+<k>git add myfile.psd</k> — add the "normal" file
+<k>git commit -m "restore files from lfs"</k>
+
+gitattributes - Defining attributes per path
+$GIT_DIR/info/attributes, .gitattributes
+
+DESCRIPTION
+A <k>gitattributes</k> file is a simple text file that gives <k>attributes</k> to pathnames.
+.gitattributes 是用來告訴 Git 此專案要客製化的部份，為什麼要客製呢，因為 LFS 的使用條件就是你必須要告訴 Git，”這個檔案是 LFS 檔，請用 LFS 的方式處理“，但我們不需要自己設定，透過 git lfs 指令操作即可。
+
+其實不只大型檔案，所有的檔案都可以用 .gitattributes 來告訴 Git 該怎麼處理這個檔案。
+<a href="https://haway.30cm.gg/git-lfs/" class="whitebut ">Git LFS 原理</a>
+
+Each line in <k>gitattributes</k> file is of form:
+
+<k>pattern attr1 attr2 ...</k>
+
+That is, a pattern followed by an attributes list,
+separated by whitespaces.
+Leading and trailing whitespaces are ignored.
+Lines that begin with <em>#</em> are ignored.
+Patterns that begin with a double quote are quoted in C style.
+When the pattern matches the path in question, the attributes listed on the line are given to the path.
+
+
+<h2>展示 10 大 Git 命令</h2>
+
+<div id="show10gitstoc" class="toc"><a href="#show10gitstopic-0" target="_self">合并</a><br><a href="#show10gitstopic-1" target="_self">Fast-forward (—ff)</a><br><a href="#show10gitstopic-2" target="_self">No-fast-foward (—no-ff)</a><br><a href="#show10gitstopic-3" target="_self">合并冲突</a><br><a href="#show10gitstopic-4" target="_self">变基（Rebasing）</a><br><a href="#show10gitstopic-5" target="_self">交互式变基（Interactive Rebase）</a><br><a href="#show10gitstopic-6" target="_self">重置（Resetting）</a><br><a href="#show10gitstopic-7" target="_self">软重置</a><br><a href="#show10gitstopic-8" target="_self">硬重置</a><br><a href="#show10gitstopic-9" target="_self">还原（Reverting）</a><br><a href="#show10gitstopic-10" target="_self">拣选（Cherry-picking）</a><br><a href="#show10gitstopic-11" target="_self">取回（Fetching）</a><br><a href="#show10gitstopic-12" target="_self">拉取（Pulling）</a><br><a href="#show10gitstopic-13" target="_self">Reflog</a><br></div></center>
+
+链接：
+https://dev.to/lydiahallie/cs-visualized-useful-git-commands-37p1
+
+git merge、
+git rebase、
+git reset、
+git revert、
+git fetch、
+git pull、
+git reflog……
+这些 git 命令执行的究竟是什么任务吗？
+
+<img src="https://mmbiz.qpic.cn/mmbiz_png/KmXPKA19gWicpG4ibricDjhseFOGY3Qnc47QerrsJKNIjX2kiaUcH5vgEhxWiavM0YewFoJF5EicMrkf03sibglPia8esQ/640">
+
+使用 Git 时，在头脑里可视化地想象它会非常有用：
+当我执行一个特定命令时，这些分支会如何交互，又会怎样影响历史记录？
+为什么当我在 master 上执行硬重启，force push 到原分支以及 rimraf 我们的 .git 文件夹时，我的同事哭了？
+我觉得创建一些最常用且最有用的 Git 命令的可视化示例会是一个完美的用例！下面我将介绍的很多命令都有可选参数——你可以使用这些参数来改变对应命令的行为。
+
+而我的示例只会涵盖命令的默认行为，而不会添加（或添加太多）可选配置！
+<h3 id="show10gitstopic-0">合并</h3>
+拥有多个分支是很方便的，这样可以将不同的新修改互相隔离开，而且还能确保你不会意外地向生产代码推送未经许可或破损的代码修改。
+
+但一旦这些修改得到了批准许可，我们就需要将其部署到我们的生产分支中！
+可将一个分支的修改融入到另一个分支的一种方式是执行 git merge。
+
+Git 可执行两种类型的合并：
+fast-forward 和 no-fast-forward。
+
+现在你可能分不清，但我们马上就来看看它们的差异所在。
+
+<h3 id="show10gitstopic-1">Fast-forward (—ff)</h3>
+在当前分支相比于我们要合并的分支没有额外的提交（commit）时，可以执行 fast-forward 合并。
+
+Git 很懒，首先会尝试执行最简单的选项：
+fast-forward！这类合并不会创建新的提交，而是会将我们正在合并的分支上的提交直接合并到当前分支。
+
+<img src="https://mmbiz.qpic.cn/mmbiz_gif/KmXPKA19gWicpG4ibricDjhseFOGY3Qnc47Kz7RJZr7Ixu1VbjVwTqIiactHDBAvQK7P5R1B60sic3XYd9SzXpo55cg/640">
+
+完美！现在，我们在 dev 分支上所做的所有改变都合并到了 master 分支上。
+
+那么 no-fast-forward 又是什么意思呢？
+<h3 id="show10gitstopic-2">No-fast-foward (—no-ff)</h3>
+如果你的当前分支相比于你想要合并的分支没有任何提交，那当然很好，但很遗憾现实情况很少如此！如果我们在当前分支上提交我们想要合并的分支不具备的改变，那么 git 将会执行 no-fast-forward 合并。
+
+使用 no-fast-forward 合并时，Git 会在当前活动分支上创建新的 merging commit。
+
+这个提交的父提交（parent commit）即指向这个活动分支，也指向我们想要合并的分支！
+<img src="https://mmbiz.qpic.cn/mmbiz_gif/KmXPKA19gWicpG4ibricDjhseFOGY3Qnc47ql3frSRERzLickHicN04LoI3M9wYriac2wzJhQAyxJMKvC5rXdGoO4LRg/640">
+
+没什么大不了的，完美的合并！现在，我们在 dev 分支上所做的所有改变都合并到了 master 分支上。
+
+<h3 id="show10gitstopic-3">合并冲突</h3>
+尽管 Git 能够很好地决定如何合并分支以及如何向文件添加修改，但它并不总是能完全自己做决定。
+
+当我们想要合并的两个分支的同一文件中的同一行代码上有不同的修改，或者一个分支删除了一个文件而另一个分支修改了这个文件时，Git 就不知道如何取舍了。
+
+在这样的情况下，Git 会询问你想要保留哪种选择？假设在这两个分支中，我们都编辑了 README.md 的第一行。
+
+<img src="https://mmbiz.qpic.cn/mmbiz_png/KmXPKA19gWicpG4ibricDjhseFOGY3Qnc475FpViatGnClianJn5r0Jbw6OQcueK4qy2PTEiaPjATdPg33BDmF4xbZkA/640">
+
+如果我们想把 dev 合并到 master，就会出现一个合并冲突：
+你想要标题是 Hello! 还是 Hey!？
+当尝试合并这些分支时，Git 会向你展示冲突出现的位置。
+
+我们可以手动移除我们不想保留的修改，保存这些修改，再次添加这个已修改的文件，然后提交这些修改。
+
+<img src="https://mmbiz.qpic.cn/mmbiz_gif/KmXPKA19gWicpG4ibricDjhseFOGY3Qnc47CCw7uLSaAYZWvaf9uic6Lgiaic6oicPTiaWwJdBdj2gnu8kN9Jknib1hXgUQ/640">
+
+完成！尽管合并冲突往往很让人厌烦，但这是合理的：
+Git 不应该瞎猜我们想要保留哪些修改。
+
+<h3 id="show10gitstopic-4">变基（Rebasing）</h3>
+我们刚看到可通过执行 git merge 将一个分支的修改应用到另一个分支。
+
+另一种可将一个分支的修改融入到另一个分支的方式是执行 git rebase。
+
+git rebase 会将当前分支的提交复制到指定的分支之上。
+
+<img src="https://mmbiz.qpic.cn/mmbiz_gif/KmXPKA19gWicpG4ibricDjhseFOGY3Qnc47FiaRJ1xKcJMYB3pBQMgiaLBzK6iaOLbuR4gH7BuBhPiaaiahmookDvqgpiaw/640">
+
+完美，现在我们在 dev 分支上获取了 master 分支上的所有修改。
+
+变基与合并有一个重大的区别：
+Git 不会尝试确定要保留或不保留哪些文件。
+
+我们执行 rebase 的分支总是含有我们想要保留的最新近的修改！这样我们不会遇到任何合并冲突，而且可以保留一个漂亮的、线性的 Git 历史记录。
+
+上面这个例子展示了在 master 分支上的变基。
+
+但是，在更大型的项目中，你通常不需要这样的操作。
+
+git rebase 在为复制的提交创建新的 hash 时会修改项目的历史记录。
+
+如果你在开发一个 feature 分支并且 master 分支已经更新过，那么变基就很好用。
+
+你可以在你的分支上获取所有更新，这能防止未来出现合并冲突。
+
+<h3 id="show10gitstopic-5">交互式变基（Interactive Rebase）</h3>
+在为提交执行变基之前，我们可以修改它们！我们可以使用交互式变基来完成这一任务。
+
+交互式变基在你当前开发的分支上以及想要修改某些提交时会很有用。
+
+在我们正在 rebase 的提交上，我们可以执行以下 6 个动作：
+
+reword：
+修改提交信息；
+edit：
+修改此提交；
+squash：
+将提交融合到前一个提交中；
+fixup：
+将提交融合到前一个提交中，不保留该提交的日志消息；
+exec：
+在每个提交上运行我们想要 rebase 的命令；
+drop：
+移除该提交。
+
+很棒！这样我们就能完全控制我们的提交了。
+
+如果你想要移除一个提交，只需 drop 即可。
+
+<img src="https://mmbiz.qpic.cn/mmbiz_gif/KmXPKA19gWicpG4ibricDjhseFOGY3Qnc47FDicRVQzOh1vlCQqE23BENZgIicDq2muUskwgibkZria8mlWEVb4pzicGbg/640">
+
+如果你想把多个提交融合到一起以便得到清晰的提交历史，那也没有问题！
+<img src="https://mmbiz.qpic.cn/mmbiz_gif/KmXPKA19gWicpG4ibricDjhseFOGY3Qnc47Sc3LdpTun3jytlmFwzxgCfZeQ5M0VyUH2CsCUbjlIM8hFBiabSqSpibw/640">
+
+交互式变基能为你在 rebase 时提供大量控制，甚至可以控制当前的活动分支。
+
+<h3 id="show10gitstopic-6">重置（Resetting）</h3>
+当我们不想要之前提交的修改时，就会用到这个命令。
+
+也许这是一个 WIP 提交或者可能是引入了 bug 的提交，这时候就要执行 git reset。
+
+git reset 能让我们不再使用当前台面上的文件，让我们可以控制 HEAD 应该指向的位置。
+
+<h3 id="show10gitstopic-7">软重置</h3>
+软重置会将 HEAD 移至指定的提交（或与 HEAD 相比的提交的索引），而不会移除该提交之后加入的修改！
+假设我们不想保留添加了一个 style.css 文件的提交 9e78i，而且我们也不想保留添加了一个 index.js 文件的提交 035cc。
+
+但是，我们确实又想要保留新添加的 style.css 和 index.js 文件！这是软重置的一个完美用例。
+
+<img src="https://mmbiz.qpic.cn/mmbiz_gif/KmXPKA19gWicpG4ibricDjhseFOGY3Qnc478EJlujcsicVPVaJJdS5IJxsWibc4Cx1gHwJfKZiciawXOyv7a00pXlJfFQ/640">
+
+输入 git status 后，你会看到我们仍然可以访问在之前的提交上做过的所有修改。
+
+这很好，这意味着我们可以修复这些文件的内容，之后再重新提交它们！
+<h3 id="show10gitstopic-8">硬重置</h3>
+有时候我们并不想保留特定提交引入的修改。
+
+不同于软重置，我们应该再也无需访问它们。
+
+Git 应该直接将整体状态直接重置到特定提交之前的状态：
+这甚至包括你在工作目录中和暂存文件上的修改。
+
+<img src="https://mmbiz.qpic.cn/mmbiz_gif/KmXPKA19gWicpG4ibricDjhseFOGY3Qnc47LykI1SUAn2jH2ap0PAwrkS56v1cI2iahkgc6xtjzQZxmJZ6XVzGzXTA/640">
+
+Git 丢弃了 9e78i 和 035cc 引入的修改，并将状态重置到了 ec5be 的状态。
+
+<h3 id="show10gitstopic-9">还原（Reverting）</h3>
+另一种撤销修改的方法是执行 git revert。
+
+通过对特定的提交执行还原操作，我们会创建一个包含已还原修改的新提交。
+
+假设 ec5be 添加了一个 index.js 文件。
+
+但之后我们发现其实我们再也不需要由这个提交引入的修改了。
+
+那就还原 ec5be 提交吧！
+<img src="https://mmbiz.qpic.cn/mmbiz_gif/KmXPKA19gWicpG4ibricDjhseFOGY3Qnc47pTrKzKv4jkibqvicsfSAPiaEQsn9sFIxlCo3D2uEXfupoztIpN6lTAgCQ/640">
+
+完美！提交 9e78i 还原了由提交 ec5be 引入的修改。
+
+在撤销特定的提交时，git revert 非常有用，同时也不会修改分支的历史。
+
+<h3 id="show10gitstopic-10">拣选（Cherry-picking）</h3>
+当一个特定分支包含我们的活动分支需要的某个提交时，我们对那个提交执行 cherry-pick！对一个提交执行 cherry-pick 时，我们会在活动分支上创建一个新的提交，其中包含由拣选出来的提交所引入的修改。
+
+假设 dev 分支上的提交 76d12 为 index.js 文件添加了一项修改，而我们希望将其整合到 master 分支中。
+
+我们并不想要整个 dev 分支，而只需要这个提交！
+<img src="https://mmbiz.qpic.cn/mmbiz_gif/KmXPKA19gWicpG4ibricDjhseFOGY3Qnc47AuQfYgNQZReR1KdnSOcYCmRk64Cq7S46cqSiaTuCsKG3w0m8FiagfxFQ/640">
+
+现在 master 分支包含 76d12 引入的修改了。
+
+<h3 id="show10gitstopic-11">取回（Fetching）</h3>
+如果你有一个远程 Git 分支，比如在 GitHub 上的分支，当远程分支上包含当前分支没有的提交时，可以使用取回。
+
+比如当合并了另一个分支或你的同事推送了一个快速修复时。
+
+通过在这个远程分支上执行 git fetch，我们就可在本地获取这些修改。
+
+这不会以任何方式影响你的本地分支：
+fetch 只是单纯地下载新的数据而已。
+
+<img src="https://mmbiz.qpic.cn/mmbiz_gif/KmXPKA19gWicpG4ibricDjhseFOGY3Qnc47Bx4YIoUIIhIGEF5tXxJHSa5Xf0YnYFptBcZUSMjABVict7u4uNkPK0Q/640">
+
+现在我们可以看到自上次推送以来的所有修改了。
+
+这些新数据也已经在本地了，我们可以决定用这些新数据做什么了。
+
+<h3 id="show10gitstopic-12">拉取（Pulling）</h3>
+尽管 git fetch 可用于获取某个分支的远程信息，但我们也可以执行 git pull。
+
+git pull 实际上是两个命令合成了一个：
+git fetch 和 git merge。
+
+当我们从来源拉取修改时，我们首先是像 git fetch 那样取回所有数据，然后最新的修改会自动合并到本地分支中。
+
+<img src="https://mmbiz.qpic.cn/mmbiz_gif/KmXPKA19gWicpG4ibricDjhseFOGY3Qnc47NETOdP0oAicDBxb8z19moncy4NyzBbHpz8QnNFFWRNy2M9OUcrSvfCQ/640">
+
+很好，我们现在与远程分支完美同步了，并且也有了所有最新的修改！
+<h3 id="show10gitstopic-13">Reflog</h3>
+每个人都会犯错，但犯错其实没啥！有时候你可能感觉你把 git repo 完全搞坏了，让你想完全删了了事。
+
+git reflog 是一个非常有用的命令，可以展示已经执行过的所有动作的日志。
+
+包括合并、重置、还原，基本上包含你对你的分支所做的任何修改。
+
+<img src="https://mmbiz.qpic.cn/mmbiz_gif/KmXPKA19gWicpG4ibricDjhseFOGY3Qnc474QeRST8xHPslv0faicoHF7k1PsvgAzIfFw5qocicNuLA0HS19ORdQyGQ/640">
+
+如果你犯了错，你可以根据 reflog 提供的信息通过重置 HEAD 来轻松地重做！
+假设我们实际上并不需要合并原有分支。
+
+当我们执行 git reflog 命令时，我们可以看到这个 repo 的状态在合并前位于 HEAD@{1}。
+
+那我们就执行一次 git reset，将 HEAD 重新指向在 HEAD@{1} 的位置。
+
+<img src="https://mmbiz.qpic.cn/mmbiz_gif/KmXPKA19gWicpG4ibricDjhseFOGY3Qnc47zdHjpJwlq4oLrOBmMgJLNGSjKXpJQvIzzPnrw2pbtF1X4aDcdxW11w/640">
+
+我们可以看到最新的动作已被推送给 reflog。
+
+
 
 
 

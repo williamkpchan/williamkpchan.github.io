@@ -1,0 +1,1317 @@
+<base target="_blank"><html><head><title>htmx Examples</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>
+<script src="https://williamkpchan.github.io/lazyload.min.js"></script>
+<script src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/commonfunctions.js"></script>
+<script>
+  var showTopicNumber = true;
+  var topicEnd = "<br>";
+  var bookid = "htmx Examples"
+  var markerName = "h2"
+</script>
+<style>
+body{width:80%;margin-left: 10%; font-size:24px;}
+h1, h2 {color: gold;}
+strong {color: orange;}
+img {max-width:90%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px;}
+</style></head><body onkeypress="chkKey()"><center>
+<h1>htmx Examples</h1>
+<div id="toc"></div></center><br><br>
+<pre><br><br>
+
+
+<h2><pk>Click to Edit</pk></h2>
+
+This pattern starts with a UI that shows the details of a contact.
+The div has a button that will get the editing UI for the contact from <gr>/contact/1/edit</gr>
+
+<gr>&lt;div hx-target="this" hx-swap="outerHTML"&gt;
+    &lt;div&gt;&lt;label&gt;First Name&lt;/label&gt;: Joe&lt;/div&gt;
+    &lt;div&gt;&lt;label&gt;Last Name&lt;/label&gt;: Blow&lt;/div&gt;
+    &lt;div&gt;&lt;label&gt;Email&lt;/label&gt;: joe@blow.com&lt;/div&gt;
+    &lt;button hx-get="/contact/1/edit" class="btn primary"&gt;
+    Click To Edit
+    &lt;/button&gt;
+&lt;/div&gt;</gr>
+
+This returns a form that can be used to edit the contact
+
+<gr>&lt;form hx-put="/contact/1" hx-target="this" hx-swap="outerHTML"&gt;
+  &lt;div&gt;
+    &lt;label&gt;First Name&lt;/label&gt;
+    &lt;input type="text" name="firstName" value="Joe"&gt;
+  &lt;/div&gt;
+  &lt;div class="form-group"&gt;
+    &lt;label&gt;Last Name&lt;/label&gt;
+    &lt;input type="text" name="lastName" value="Blow"&gt;
+  &lt;/div&gt;
+  &lt;div class="form-group"&gt;
+    &lt;label&gt;Email Address&lt;/label&gt;
+    &lt;input type="email" name="email" value="joe@blow.com"&gt;
+  &lt;/div&gt;
+  &lt;button class="btn"&gt;Submit&lt;/button&gt;
+  &lt;button class="btn" hx-get="/contact/1"&gt;Cancel&lt;/button&gt;
+&lt;/form&gt;</gr>
+
+The form issues a <gr>PUT</gr> back to <gr>/contact/1</gr>, following the usual REST-ful pattern.
+
+
+<h2><pk>Bulk Update</pk></h2>
+
+accomplished by putting a form around a table, with checkboxes in the table, and then including the checked values in the form submission (<gr>POST</gr> request):
+<gr>&lt;form id="checked-contacts"
+      hx-post="/users"
+      hx-swap="outerHTML settle:3s"
+      hx-target="#toast"&gt;
+    &lt;table&gt;
+      &lt;thead&gt;
+      &lt;tr&gt;
+        &lt;th&gt;Name&lt;/th&gt;
+        &lt;th&gt;Email&lt;/th&gt;
+        &lt;th&gt;Active&lt;/th&gt;
+      &lt;/tr&gt;
+      &lt;/thead&gt;
+      &lt;tbody id="tbody"&gt;
+        &lt;tr&gt;
+          &lt;td&gt;Joe Smith&lt;/td&gt;
+          &lt;td&gt;joe@smith.org&lt;/td&gt;
+          &lt;td&gt;&lt;input type="checkbox" name="active:joe@smith.org"&gt;&lt;/td&gt;
+        &lt;/tr&gt;
+        ...
+      &lt;/tbody&gt;
+    &lt;/table&gt;
+    &lt;input type="submit" value="Bulk Update" class="btn primary"&gt;
+    &lt;span id="toast"&gt;&lt;/span&gt;
+&lt;/form&gt;</gr>
+The server will bulk-update the statuses based on the values of the checkboxes.
+We respond with a small toast message about the update to inform the user, and use ARIA to politely announce the update for accessibility.
+<gr>#toast.htmx-settling {
+  opacity: 100;
+}
+
+#toast {
+  background: #E1F0DA;
+  opacity: 0;
+  transition: opacity 3s ease-out;
+}</gr>
+The cool thing is that, because HTML form inputs already manage their own state,
+we don’t need to re-render any part of the users table. The active users are already checked and the inactive ones unchecked!
+You can see a working example of this code below.
+
+
+<h2><pk>Click to Load</pk></h2>
+
+the final row:
+<gr>&lt;tr id="replaceMe"&gt;
+  &lt;td colspan="3"&gt;
+    &lt;button class='btn primary' hx-get="/contacts/?page=2"
+                        hx-target="#replaceMe"
+                        hx-swap="outerHTML"&gt;
+         Load More Agents... &lt;img class="htmx-indicator" src="/img/bars.svg"&gt;
+    &lt;/button&gt;
+  &lt;/td&gt;
+&lt;/tr&gt;</gr>
+This row contains a button that will replace the entire row with the next page of results (which will contain a button to load the <em>next</em> page of results).
+And so on.
+
+
+<h2><pk>Delete Row</pk></h2>
+
+table body:
+<gr>&lt;table class="table delete-row-example"&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Name&lt;/th&gt;
+      &lt;th&gt;Email&lt;/th&gt;
+      &lt;th&gt;Status&lt;/th&gt;
+      &lt;th&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody hx-confirm="Are you sure?" hx-target="closest tr" hx-swap="outerHTML swap:1s"&gt;
+    ...
+  &lt;/tbody&gt;
+&lt;/table&gt;</gr>
+The table body has a <a href="https://htmx.org/attributes/hx-confirm/"><gr>hx-confirm</gr></a> attribute to confirm the delete action.
+It also set the target to be the <gr>closest tr</gr> that is, the closest table row, for all the buttons (<a href="https://htmx.org/attributes/hx-target/"><gr>hx-target</gr></a>
+is inherited from parents in the DOM.)  The swap specification in <a href="https://htmx.org/attributes/hx-swap/"><gr>hx-swap</gr></a> says to swap the entire target out and to wait 1 second after receiving a response.
+This last bit is so that we can use the following CSS:
+<gr>tr.htmx-swapping td {
+  opacity: 0;
+  transition: opacity 1s ease-out;
+}</gr>
+To fade the row out before it is swapped/removed.
+Each row has a button with a <a href="https://htmx.org/attributes/hx-delete/"><gr>hx-delete</gr></a> attribute containing the url on which to issue a <gr>DELETE</gr>
+request to delete the row from the server. This request responds with a <gr>200</gr> status code and empty content, indicating that the row should be replaced with nothing.
+<gr>&lt;tr&gt;
+  &lt;td&gt;Angie MacDowell&lt;/td&gt;
+  &lt;td&gt;angie@macdowell.org&lt;/td&gt;
+  &lt;td&gt;Active&lt;/td&gt;
+  &lt;td&gt;
+    &lt;button class="btn danger" hx-delete="/contact/1"&gt;
+      Delete
+    &lt;/button&gt;
+  &lt;/td&gt;
+&lt;/tr&gt;</gr>
+
+
+<h2><pk>Edit Row</pk></h2>
+
+<gr>&lt;table class="table delete-row-example"&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Name&lt;/th&gt;
+      &lt;th&gt;Email&lt;/th&gt;
+      &lt;th&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody hx-target="closest tr" hx-swap="outerHTML"&gt;
+    ...
+  &lt;/tbody&gt;
+&lt;/table&gt;</gr>
+This will tell the requests from within the table to target the closest enclosing row that the request is triggered on and to replace the entire row.
+Here is the HTML for a row:
+<gr>&lt;tr&gt;
+      &lt;td&gt;${contact.name}&lt;/td&gt;
+      &lt;td&gt;${contact.email}&lt;/td&gt;
+      &lt;td&gt;
+        &lt;button class="btn danger"
+                hx-get="/contact/${contact.id}/edit"
+                hx-trigger="edit"
+                onClick="let editing = document.querySelector('.editing')
+                         if(editing) {
+                           Swal.fire({title: 'Already Editing',
+                                      showCancelButton: true,
+                                      confirmButtonText: 'Yep, Edit This Row!',
+                                      text:'Hey!  You are already editing a row!  Do you want to cancel that edit and continue?'})
+                           .then((result) =&gt; {
+                                if(result.isConfirmed) {
+                                   htmx.trigger(editing, 'cancel')
+                                   htmx.trigger(this, 'edit')
+                                }
+                            })
+                         } else {
+                            htmx.trigger(this, 'edit')
+                         }"&gt;
+          Edit
+        &lt;/button&gt;
+      &lt;/td&gt;
+    &lt;/tr&gt;</gr>
+Here we are getting a bit fancy and only allowing one row at a time to be edited, using some JavaScript.
+We check to see if there is a row with the <gr>.editing</gr> class on it and confirm that the user wants to edit this row and dismiss the other one.
+If so, we send a cancel event to the other row so it will issue a request to go back to its initial state.
+We then trigger the <gr>edit</gr> event on the current element, which triggers the htmx request to get the editable version of the row.
+Note that if you didn’t care if a user was editing multiple rows, you could omit the hyperscript and custom <gr>hx-trigger</gr>,
+and just let the normal click handling work with htmx.
+You could also implement mutual exclusivity by simply targeting the entire table when the Edit button was clicked.
+Here we wanted to show how to integrate htmx and JavaScript to solve the problem and narrow down the server interactions a bit, plus we get to use a nice SweetAlert confirm dialog.
+Finally, here is what the row looks like when the data is being edited:
+<gr>&lt;tr hx-trigger='cancel' class='editing' hx-get="/contact/${contact.id}"&gt;
+  &lt;td&gt;&lt;input name='name' value='${contact.name}'&gt;&lt;/td&gt;
+  &lt;td&gt;&lt;input name='email' value='${contact.email}'&gt;&lt;/td&gt;
+  &lt;td&gt;
+    &lt;button class="btn danger" hx-get="/contact/${contact.id}"&gt;
+      Cancel
+    &lt;/button&gt;
+    &lt;button class="btn danger" hx-put="/contact/${contact.id}" hx-include="closest tr"&gt;
+      Save
+    &lt;/button&gt;
+  &lt;/td&gt;
+&lt;/tr&gt;</gr>
+Here we have a few things going on:  First off the row itself can respond to the <gr>cancel</gr> event, which will bring back the read-only version of the row.
+There is a cancel button that allows cancelling the current edit.
+Finally, there is a save button that issues a <gr>PUT</gr> to update the contact.
+Note that there is an <a href="https://htmx.org/attributes/hx-include/"><gr>hx-include</gr></a> that includes all the inputs in the closest row.
+Tables rows are notoriously difficult to use with forms due to HTML constraints (you can’t put a <gr>form</gr> directly inside a <gr>tr</gr>) so this makes things a bit nicer to deal with.
+
+
+<h2><pk>Lazy Loading</pk></h2>
+
+state that looks like this:
+<gr>&lt;div hx-get="/graph" hx-trigger="load"&gt;
+  &lt;img  alt="Result loading..." class="htmx-indicator" width="150" src="/img/bars.svg"/&gt;
+&lt;/div&gt;</gr>
+Which shows a progress indicator as we are loading the graph.
+The graph is then loaded and faded gently into view via a settling CSS transition:
+<gr>.htmx-settling img {
+  opacity: 0;
+}
+img {
+ transition: opacity 300ms ease-in;
+}</gr>
+
+
+<h2><pk>Inline Validation</pk></h2>
+
+we need to create a form with an input that <gr>POST</gr>s back to the server with the value to be validated and updates the DOM with the validation results.
+We start with this form:
+<gr>&lt;h3&gt;Signup Form&lt;/h3&gt;
+&lt;form hx-post="/contact"&gt;
+  &lt;div hx-target="this" hx-swap="outerHTML"&gt;
+    &lt;label&gt;Email Address&lt;/label&gt;
+    &lt;input name="email" hx-post="/contact/email" hx-indicator="#ind"&gt;
+    &lt;img id="ind" src="/img/bars.svg" class="htmx-indicator"/&gt;
+  &lt;/div&gt;
+  &lt;div class="form-group"&gt;
+    &lt;label&gt;First Name&lt;/label&gt;
+    &lt;input type="text" class="form-control" name="firstName"&gt;
+  &lt;/div&gt;
+  &lt;div class="form-group"&gt;
+    &lt;label&gt;Last Name&lt;/label&gt;
+    &lt;input type="text" class="form-control" name="lastName"&gt;
+  &lt;/div&gt;
+  &lt;button class="btn primary"&gt;Submit&lt;/button&gt;
+&lt;/form&gt;</gr>
+Note that the first div in the form has set itself as the target of the request and specified the <gr>outerHTML</gr>
+swap strategy, so it will be replaced entirely by the response.
+The input then specifies that it will
+<gr>POST</gr> to <gr>/contact/email</gr> for validation, when the <gr>changed</gr> event occurs (this is the default for inputs).
+It also specifies an indicator for the request.
+When a request occurs, it will return a partial to replace the outer div.
+It might look like this:
+<gr>&lt;div hx-target="this" hx-swap="outerHTML" class="error"&gt;
+  &lt;label&gt;Email Address&lt;/label&gt;
+  &lt;input name="email" hx-post="/contact/email" hx-indicator="#ind" value="test@foo.com"&gt;
+  &lt;img id="ind" src="/img/bars.svg" class="htmx-indicator"/&gt;
+  &lt;div class='error-message'&gt;That email is already taken.
+Please enter another email.&lt;/div&gt;
+&lt;/div&gt;</gr>
+Note that this div is annotated with the <gr>error</gr> class and includes an error message element.
+This form can be lightly styled with this CSS:
+<gr>  .error-message {
+    color:red;
+  }
+  .error input {
+      box-shadow: 0 0 3px #CC0000;
+   }
+  .valid input {
+      box-shadow: 0 0 3px #36cc00;
+   }</gr>
+To give better visual feedback.
+Below is a working demo of this example.
+The only email that will be accepted is <gr>test@test.com</gr>.
+
+
+<h2><pk>Infinite Scroll</pk></h2>
+
+Let’s focus on the final row (or the last element of your content):
+<gr>&lt;tr hx-get="/contacts/?page=2"
+    hx-trigger="revealed"
+    hx-swap="afterend"&gt;
+  &lt;td&gt;Agent Smith&lt;/td&gt;
+  &lt;td&gt;void29@null.org&lt;/td&gt;
+  &lt;td&gt;55F49448C0&lt;/td&gt;
+&lt;/tr&gt;</gr>
+This last element contains a listener which, when scrolled into view, will trigger a request. The result is then appended after it.
+The last element of the results will itself contain the listener to load the <em>next</em> page of results, and so on.
+<blockquote>
+<gr>revealed</gr> - triggered when an element is scrolled into the viewport (also useful for lazy-loading). If you are using <gr>overflow</gr> in css like <gr>overflow-y: scroll</gr> you should use <gr>intersect once</gr> instead of <gr>revealed</gr>.
+</blockquote>
+
+
+<h2><pk>Active Search</pk></h2>
+
+We start with a search input and an empty table:
+<gr>&lt;h3&gt; 
+  Search Contacts 
+  &lt;span class="htmx-indicator"&gt; 
+    &lt;img src="/img/bars.svg"/&gt; Searching... 
+   &lt;/span&gt; 
+&lt;/h3&gt;
+&lt;input class="form-control" type="search" 
+       name="search" placeholder="Begin Typing To Search Users..." 
+       hx-post="/search" 
+       hx-trigger="input changed delay:500ms, search" 
+       hx-target="#search-results" 
+       hx-indicator=".htmx-indicator"&gt;
+
+&lt;table class="table"&gt;
+    &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;First Name&lt;/th&gt;
+      &lt;th&gt;Last Name&lt;/th&gt;
+      &lt;th&gt;Email&lt;/th&gt;
+    &lt;/tr&gt;
+    &lt;/thead&gt;
+    &lt;tbody id="search-results"&gt;
+    &lt;/tbody&gt;
+&lt;/table&gt;</gr>
+The input issues a <gr>POST</gr> to <gr>/search</gr> on the <a rel="noopener" target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/input_event"><gr>input</gr></a> event and sets the body of the table to be the resulting content. Note that the <gr>keyup</gr> event could be used as well, but would not fire if the user pasted text with their mouse (or any other non-keyboard method).
+We add the <gr>delay:500ms</gr> modifier to the trigger to delay sending the query until the user stops typing.
+Additionally,
+we add the <gr>changed</gr> modifier to the trigger to ensure we don’t send new queries when the user doesn’t change the value of the input (e.g. they hit an arrow key, or pasted the same value).
+Since we use a <gr>search</gr> type input we will get an <gr>x</gr> in the input field to clear the input. 
+To make this trigger a new <gr>POST</gr> we have to specify another trigger. We specify another trigger by using a comma to 
+separate them. The <gr>search</gr> trigger will be run when the field is cleared but it also makes it possible to override 
+the 500 ms <gr>input</gr> event delay by just pressing enter.
+Finally, we show an indicator when the search is in flight with the <gr>hx-indicator</gr> attribute. 
+
+
+<h2><pk>Progress Bar</pk></h2>
+
+We start with an initial state with a button that issues a <gr>POST</gr> to <gr>/start</gr> to begin the job:
+<gr>&lt;div hx-target="this" hx-swap="outerHTML"&gt;
+  &lt;h3&gt;Start Progress&lt;/h3&gt;
+  &lt;button class="btn primary" hx-post="/start"&gt;
+            Start Job
+  &lt;/button&gt;
+&lt;/div&gt;</gr>
+This div is then replaced with a new div containing status and a progress bar that reloads itself every 600ms:
+<gr>&lt;div hx-trigger="done" hx-get="/job" hx-swap="outerHTML" hx-target="this"&gt;
+  &lt;h3 role="status" id="pblabel" tabindex="-1" autofocus&gt;Running&lt;/h3&gt;
+
+  &lt;div
+    hx-get="/job/progress"
+    hx-trigger="every 600ms"
+    hx-target="this"
+    hx-swap="innerHTML"&gt;
+    &lt;div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="pblabel"&gt;
+      &lt;div id="pb" class="progress-bar" style="width:0%"&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+</gr>
+This progress bar is updated every 600 milliseconds, with the “width” style attribute and <gr>aria-valuenow</gr> attributed set to current progress value.
+Because there is an id on the progress bar div, htmx will smoothly transition between requests by settling the style attribute into its new value.
+This, when coupled with CSS transitions, makes the visual transition continuous rather than jumpy.
+Finally, when the process is complete, a server returns <gr>HX-Trigger: done</gr> header, which triggers an update of the UI to “Complete” state with a restart button added to the UI (we are using the <a rel="noopener" target="_blank" href="https://github.com/bigskysoftware/htmx-extensions/blob/main/src/class-tools/README.md"><gr>class-tools</gr></a> extension in this example to add fade-in effect on the button):
+<gr>&lt;div hx-trigger="done" hx-get="/job" hx-swap="outerHTML" hx-target="this"&gt;
+  &lt;h3 role="status" id="pblabel" tabindex="-1" autofocus&gt;Complete&lt;/h3&gt;
+
+  &lt;div
+    hx-get="/job/progress"
+    hx-trigger="none"
+    hx-target="this"
+    hx-swap="innerHTML"&gt;
+      &lt;div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="122" aria-labelledby="pblabel"&gt;
+        &lt;div id="pb" class="progress-bar" style="width:122%"&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;button id="restart-btn" class="btn primary" hx-post="/start" classes="add show:600ms"&gt;
+    Restart Job
+  &lt;/button&gt;
+&lt;/div&gt;</gr>
+This example uses styling cribbed from the bootstrap progress bar:
+<gr>.progress {
+    height: 20px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.1);
+}
+.progress-bar {
+    float: left;
+    width: 0%;
+    height: 100%;
+    font-size: 12px;
+    line-height: 20px;
+    color: #fff;
+    text-align: center;
+    background-color: #337ab7;
+    -webkit-box-shadow: inset 0 -1px 0 rgba(0,0,0,.15);
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,.15);
+    -webkit-transition: width .6s ease;
+    -o-transition: width .6s ease;
+    transition: width .6s ease;
+}</gr>
+
+
+<h2><pk>Cascading Selects</pk></h2>
+
+To begin we start with a default value for the <gr>make</gr> select: Audi.
+We render the <gr>model</gr> select for this make.
+We then have the <gr>make</gr> select trigger a <gr>GET</gr> to <gr>/models</gr> to retrieve the models options and target the <gr>models</gr> select.
+Here is the code:
+<gr>&lt;div&gt;
+    &lt;label &gt;Make&lt;/label&gt;
+    &lt;select name="make" hx-get="/models" hx-target="#models" hx-indicator=".htmx-indicator"&gt;
+      &lt;option value="audi"&gt;Audi&lt;/option&gt;
+      &lt;option value="toyota"&gt;Toyota&lt;/option&gt;
+      &lt;option value="bmw"&gt;BMW&lt;/option&gt;
+    &lt;/select&gt;
+  &lt;/div&gt;
+  &lt;div&gt;
+    &lt;label&gt;Model&lt;/label&gt;
+    &lt;select id="models" name="model"&gt;
+      &lt;option value="a1"&gt;A1&lt;/option&gt;
+      ...
+    &lt;/select&gt;
+    &lt;img class="htmx-indicator" width="20" src="/img/bars.svg"&gt;
+&lt;/div&gt;</gr>
+When a request is made to the <gr>/models</gr> end point, we return the models for that make:
+<gr>&lt;option value='325i'&gt;325i&lt;/option&gt;
+&lt;option value='325ix'&gt;325ix&lt;/option&gt;
+&lt;option value='X5'&gt;X5&lt;/option&gt; </gr>
+And they become available in the <gr>model</gr> select.
+
+
+<h2><pk>Animations</pk></h2>
+
+to add smooth animations and transitions to your web page using only CSS and HTML.
+Below are a few examples of various animation techniques.
+htmx also allows you to use the new <a rel="noopener" target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API">View Transitions API</a>
+for creating animations.
+<h3>Basic CSS Animations</h3>
+<h3>Color Throb</h3>
+The simplest animation technique in htmx is to keep the <gr>id</gr> of an element stable across a content swap.
+If the
+<gr>id</gr> of an element is kept stable, htmx will swap it in such a way that CSS transitions can be written between the old version of the element and the new one.
+Consider this div:
+<gr>&lt;style&gt;
+.smooth {
+  transition: all 1s ease-in;
+}
+&lt;/style&gt;
+&lt;div id="color-demo" class="smooth" style="color:red"
+      hx-get="/colors" hx-swap="outerHTML" hx-trigger="every 1s"&gt;
+  Color Swap Demo
+&lt;/div&gt;
+</gr>
+This div will poll every second and will get replaced with new content which changes the <gr>color</gr> style to a new value
+(e.g. <gr>blue</gr>):
+<gr>&lt;div id="color-demo" class="smooth" style="color:blue"
+      hx-get="/colors" hx-swap="outerHTML" hx-trigger="every 1s"&gt;
+  Color Swap Demo
+&lt;/div&gt;</gr>
+Because the div has a stable id, <gr>color-demo</gr>, htmx will structure the swap such that a CSS transition, defined on the
+<gr>.smooth</gr> class, applies to the style update from <gr>red</gr> to <gr>blue</gr>, and smoothly transitions between them.
+
+
+<h2>&emsp;Swap Transitions</h2>
+<h3>Fade Out On Swap</h3>
+If you want to fade out an element that is going to be removed when the request ends, you want to take advantage of the <gr>htmx-swapping</gr> class with some CSS and extend the swap phase to be long enough for your animation to complete.
+This can be done like so:
+<gr>&lt;style&gt;
+.fade-me-out.htmx-swapping {
+  opacity: 0;
+  transition: opacity 1s ease-out;
+}
+&lt;/style&gt;
+&lt;button class="fade-me-out"
+        hx-delete="/fade_out_demo"
+        hx-swap="outerHTML swap:1s"&gt;
+        Fade Me Out
+&lt;/button&gt;</gr>
+
+
+
+<h2>&emsp;Settling Transitions</h2>
+<h3>Fade In On Addition</h3>
+Building on the last example, we can fade in the new content by using the <gr>htmx-added</gr> class during the settle phase.
+You can also write CSS transitions against the target, rather than the new content, by using the <gr>htmx-settling</gr>
+class.
+<gr>&lt;style&gt;
+#fade-me-in.htmx-added {
+  opacity: 0;
+}
+#fade-me-in {
+  opacity: 1;
+  transition: opacity 1s ease-out;
+}
+&lt;/style&gt;
+&lt;button id="fade-me-in"
+        class="btn primary"
+        hx-post="/fade_in_demo"
+        hx-swap="outerHTML settle:1s"&gt;
+        Fade Me In
+&lt;/button&gt;</gr>
+
+
+
+<h2>&emsp;Request In Flight Animation</h2>
+You can also take advantage of the <gr>htmx-request</gr> class, which is applied to the element that triggers a request.
+Below is a form that on submit will change its look to indicate that a request is being processed:
+<gr>&lt;style&gt;
+  form.htmx-request {
+    opacity: .5;
+    transition: opacity 300ms linear;
+  }
+&lt;/style&gt;
+&lt;form hx-post="/name" hx-swap="outerHTML"&gt;
+&lt;label&gt;Name:&lt;/label&gt;&lt;input name="name"&gt;&lt;br/&gt;
+&lt;button class="btn primary"&gt;Submit&lt;/button&gt;
+&lt;/form&gt;</gr>
+
+
+<h2>&emsp;Using the htmx <gr>class-tools</gr> Extension</h2>
+Many interesting animations can be created by using the <a rel="noopener" target="_blank" href="https://github.com/bigskysoftware/htmx-extensions/blob/main/src/class-tools/README.md"><gr>class-tools</gr></a> extension.
+Here is an example that toggles the opacity of a div.
+Note that we set the toggle time to be a bit longer than the transition time.
+This avoids flickering that can happen if the transition is interrupted by a class change.
+<gr>&lt;style&gt;
+.demo.faded {
+  opacity:.3;
+}
+.demo {
+  opacity:1;
+  transition: opacity ease-in 900ms;
+}
+&lt;/style&gt;
+&lt;div class="demo" classes="toggle faded:1s"&gt;Toggle Demo&lt;/div&gt;</gr>
+
+
+<h3>Using the View Transition API</h3>
+htmx provides access to the new  <a rel="noopener" target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API">View Transitions API</a>
+via the <gr>transition</gr> option of the <a href="/attributes/hx-swap"><gr>hx-swap</gr></a> attribute.
+Below is an example of a swap that uses a view transition.
+The transition is tied to the outer div via a
+<gr>view-transition-name</gr> property in CSS, and that transition is defined in terms of <gr>::view-transition-old</gr>
+and <gr>::view-transition-new</gr>, using <gr>@keyframes</gr> to define the animation.
+(Fuller details on the View Transition API can be found on the <a rel="noopener" target="_blank" href="https://developer.chrome.com/docs/web-platform/view-transitions/">Chrome Developer Page</a> on them.)
+The old content of this transition should slide out to the left and the new content should slide in from the right.
+Note that, as of this writing, the visual transition will only occur on Chrome 111+, but more browsers are expected to implement this feature in the near future.
+<gr>&lt;style&gt;
+   @keyframes fade-in {
+     from { opacity: 0; }
+   }
+
+   @keyframes fade-out {
+     to { opacity: 0; }
+   }
+
+   @keyframes slide-from-right {
+     from { transform: translateX(90px); }
+   }
+
+   @keyframes slide-to-left {
+     to { transform: translateX(-90px); }
+   }
+
+   .slide-it {
+     view-transition-name: slide-it;
+   }
+
+   ::view-transition-old(slide-it) {
+     animation: 180ms cubic-bezier(0.4, 0, 1, 1) both fade-out,
+     600ms cubic-bezier(0.4, 0, 0.2, 1) both slide-to-left;
+   }
+   ::view-transition-new(slide-it) {
+     animation: 420ms cubic-bezier(0, 0, 0.2, 1) 90ms both fade-in,
+     600ms cubic-bezier(0.4, 0, 0.2, 1) both slide-from-right;
+   }
+&lt;/style&gt;
+
+&lt;div class="slide-it"&gt;
+   &lt;h1&gt;Initial Content&lt;/h1&gt;
+   &lt;button class="btn primary" hx-get="/new-content" hx-swap="innerHTML transition:true" hx-target="closest div"&gt;
+     Swap It!
+   &lt;/button&gt;
+&lt;/div&gt;</gr>
+
+
+
+<h2><pk>File Upload</pk></h2>
+
+with a progress bar.
+We will show two different implementation, one in pure javascript (using some utility methods in htmx) and one in <a rel="noopener" target="_blank" href="https://hyperscript.org">hyperscript</a>
+First the pure javascript version.
+
+We have a form of type <gr>multipart/form-data</gr> so that the file will be properly encoded
+
+We post the form to <gr>/upload</gr>
+
+We have a <gr>progress</gr> element
+
+We listen for the <gr>htmx:xhr:progress</gr> event and update the <gr>value</gr> attribute of the progress bar based on the <gr>loaded</gr> and <gr>total</gr> properties in the event detail.
+
+<gr>    &lt;form id='form' hx-encoding='multipart/form-data' hx-post='/upload'&gt;
+        &lt;input type='file' name='file'&gt;
+        &lt;button&gt;
+            Upload
+        &lt;/button&gt;
+        &lt;progress id='progress' value='0' max='100'&gt;&lt;/progress&gt;
+    &lt;/form&gt;
+    &lt;script&gt;
+        htmx.on('#form', 'htmx:xhr:progress', function(evt) {
+          htmx.find('#progress').setAttribute('value', evt.detail.loaded/evt.detail.total * 100)
+        });
+    &lt;/script&gt;</gr>
+The Hyperscript version is very similar, except:
+
+The script is embedded directly on the form element
+
+Hyperscript offers nicer syntax (although the htmx API is pretty nice too!)
+
+<gr>    &lt;form hx-encoding='multipart/form-data' hx-post='/upload'
+          _='on htmx:xhr:progress(loaded, total) set #progress.value to (loaded/total)*100'&gt;
+        &lt;input type='file' name='file'&gt;
+        &lt;button&gt;
+            Upload
+        &lt;/button&gt;
+        &lt;progress id='progress' value='0' max='100'&gt;&lt;/progress&gt;
+    &lt;/form&gt;</gr>
+Note that hyperscript allows you to destructure properties from <gr>details</gr> directly into variables
+
+<h2><pk>Preserving File Inputs after Form Errors</pk></h2>
+
+To overcome the problem of losing file input value in simple cases, you can adopt the following approach:
+Before:
+<gr>&lt;form method="POST" id="binaryForm" enctype="multipart/form-data" hx-swap="outerHTML" hx-target="#binaryForm"&gt;
+    &lt;input type="file" name="binaryFile"&gt;
+    &lt;button type="submit"&gt;Submit&lt;/button&gt;
+&lt;/form&gt;</gr>
+After:
+<gr>&lt;input form="binaryForm" type="file" name="binaryFile"&gt;
+
+&lt;form method="POST" id="binaryForm" enctype="multipart/form-data" hx-swap="outerHTML" hx-target="#binaryForm"&gt;
+    &lt;button type="submit"&gt;Submit&lt;/button&gt;
+&lt;/form&gt;</gr>
+<ol>
+
+Form Restructuring: Move the binary file input outside the main form element in the HTML structure.
+
+Using the form Attribute: Enhance the binary file input by adding the form attribute and setting its value to the ID of the main form. This linkage associates the binary file input with the form, even when it resides outside the form element.
+
+</ol>
+
+
+          
+
+
+<h2><pk>Dialogs</pk></h2>
+
+<gr>&lt;div&gt;
+  &lt;button class="btn primary"
+          hx-post="/submit"
+          hx-prompt="Enter a string"
+          hx-confirm="Are you sure?"
+          hx-target="#response"&gt;
+    Prompt Submission
+  &lt;/button&gt;
+  &lt;div id="response"&gt;&lt;/div&gt;
+&lt;/div&gt;</gr>
+The value provided by the user to the prompt dialog is sent to the server in a <gr>HX-Prompt</gr> header.
+In this case, the server simply echos the user input back.
+<gr>User entered &lt;i&gt;${response}&lt;/i&gt;</gr>
+
+
+<h2><pk>Modal Dialogs with UIKit</pk></h2>
+
+This example shows how to use HTMX to display dynamic dialog using UIKit, and how to 
+trigger its animation styles with little or no Javascript.
+We start with a button that triggers the dialog, along with a DIV at the bottom of your 
+markup where the dialog will be loaded:
+This is an example of using HTMX to remotely load modal dialogs using UIKit.
+In this example we will use
+<a rel="noopener" target="_blank" href="https://hyperscript.org">Hyperscript</a> to demonstrate how cleanly that scripting language allows you to glue htmx and other libraries together.
+<gr>&lt;button 
+	id="showButton"
+	hx-get="/uikit-modal.html" 
+	hx-target="#modals-here" 
+	class="uk-button uk-button-primary" 
+	_="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal"&gt;Open Modal&lt;/button&gt;
+
+&lt;div id="modals-here"&gt;&lt;/div&gt;</gr>
+This button uses a <gr>GET</gr> request to <gr>/uikit-modal.html</gr> when this button is clicked.
+The contents of this file will be added to the DOM underneath the <gr>#modals-here</gr> DIV.
+Rather than using the standard UIKit Javascript library we are using a bit of Hyperscript, 
+which triggers UIKit’s smooth animations. It is delayed by 10ms so that UIKit’s animations will run correctly.
+Finally, the server responds with a slightly modified version of UIKit’s standard modal
+<gr>&lt;div id="modal" class="uk-modal" style="display:block;"&gt;
+	&lt;div class="uk-modal-dialog uk-modal-body"&gt;
+		&lt;h2 class="uk-modal-title"&gt;Modal Dialog&lt;/h2&gt;
+		&lt;p&gt;This modal dialog was loaded dynamically by HTMX.&lt;/p&gt;
+
+		&lt;form _="on submit take .uk-open from #modal"&gt;
+			&lt;div class="uk-margin"&gt;
+				&lt;input class="uk-input" placeholder="What is Your Name?"&gt;
+			&lt;/div&gt;
+			&lt;button type="button" class="uk-button uk-button-primary"&gt;Save Changes&lt;/button&gt;
+			&lt;button 
+				id="cancelButton"
+				type="button" 
+				class="uk-button uk-button-default" 
+				_="on click take .uk-open from #modal wait 200ms then remove #modal"&gt;Close&lt;/button&gt;
+		&lt;/form&gt;
+	&lt;/div&gt;
+&lt;/div&gt;</gr>
+Hyperscript on the button and the form trigger animations when this dialog is completed or canceled.
+If you didn’t use this Hyperscript, the modals will still work but UIKit’s fade in animations will not be triggered.
+You can, of course, use JavaScript rather than Hyperscript for this work, it’s just a lot more code:
+<gr>
+// This triggers the fade-in animation when a modal dialog is loaded and displayed window.document.getElementById("showButton").addEventListener("htmx:afterOnLoad", function() {
+	setTimeout(function(){
+		window.document.getElementById("modal").classList.add("uk-open")
+	}, 10)
+})
+
+// This triggers the fade-out animation when the modal is closed.
+window.document.getElementById("cancelButton").addEventListener("click", function() {
+	window.document.getElementById("modal").classList.remove("uk-open")
+	setTimeout(function(){
+		window.document.getElementById("modals-here").innerHTML = ""
+		,200
+	})
+})</gr>
+
+
+
+<h2><pk>Modal Dialogs in Bootstrap</pk></h2>
+
+This example shows how to use HTMX alongside original JavaScript provided by Bootstrap.
+We start with a button that triggers the dialog, along with a DIV at the bottom of your markup where the dialog will be loaded:
+<gr>&lt;button
+    hx-get="/modal"
+    hx-target="#modals-here"
+    hx-trigger="click"
+    data-bs-toggle="modal"
+    data-bs-target="#modals-here"
+    class="btn primary"&gt;Open Modal&lt;/button&gt;
+
+&lt;div id="modals-here"
+    class="modal modal-blur fade"
+    style="display: none"
+    aria-hidden="false"
+    tabindex="-1"&gt;
+    &lt;div class="modal-dialog modal-lg modal-dialog-centered" role="document"&gt;
+        &lt;div class="modal-content"&gt;&lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</gr>
+This button uses a <gr>GET</gr> request to <gr>/modal</gr> when this button is clicked.
+The contents of this file will be added to the DOM underneath the <gr>#modals-here</gr> DIV.
+The server responds with a slightly modified version of Bootstrap’s standard modal
+<gr>&lt;div class="modal-dialog modal-dialog-centered"&gt;
+  &lt;div class="modal-content"&gt;
+    &lt;div class="modal-header"&gt;
+      &lt;h5 class="modal-title"&gt;Modal title&lt;/h5&gt;
+    &lt;/div&gt;
+    &lt;div class="modal-body"&gt;
+      &lt;p&gt;Modal body text goes here.&lt;/p&gt;
+    &lt;/div&gt;
+    &lt;div class="modal-footer"&gt;
+      &lt;button type="button" class="btn btn-secondary" data-bs-dismiss="modal"&gt;Close&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</gr>
+
+
+<h2><pk>Custom Modal Dialogs</pk></h2>
+
+it easy to build modal dialogs from scratch.
+Here is a quick example of one way to build them.
+Click here to see a demo of the final result:
+<button hx-get="/modal" hx-target="body" hx-swap="beforeend">Open a Modal</button>
+
+<h2>&emsp;High Level Plan</h2>
+We’re going to make a button that loads remote content from the server, then displays it in a modal dialog.
+The modal content will be added to the end of the <gr>&lt;body&gt;</gr> element, in a div named <gr>#modal</gr>.
+In this demo we’ll define some nice animations in CSS, and then use some <a rel="noopener" target="_blank" href="https://hyperscript.org">Hyperscript</a> to remove the modals from the DOM when the user is done.
+Hyperscript is <em>not</em> required with htmx, but the two were designed to be used together and it is much nicer for writing async &amp; event oriented code than JavaScript, which is why we chose it for this example.
+
+<h2>&emsp;Main Page HTML</h2>
+<gr>&lt;button class="btn primary" hx-get="/modal" hx-target="body" hx-swap="beforeend"&gt;Open a Modal&lt;/button&gt;</gr>
+
+<h2>&emsp;Modal HTML Fragment</h2>
+<gr>&lt;div id="modal" _="on closeModal add .closing then wait for animationend then remove me"&gt;
+	&lt;div class="modal-underlay" _="on click trigger closeModal"&gt;&lt;/div&gt;
+	&lt;div class="modal-content"&gt;
+		&lt;h1&gt;Modal Dialog&lt;/h1&gt;
+		This is the modal content.
+		You can put anything here, like text, or a form, or an image.
+		&lt;br&gt;
+		&lt;br&gt;
+		&lt;button class="btn danger" _="on click trigger closeModal"&gt;Close&lt;/button&gt;
+	&lt;/div&gt;
+&lt;/div&gt;</gr>
+
+<h2>&emsp;Custom Stylesheet</h2>
+<gr>/***** MODAL DIALOG ****/
+#modal {
+	/* Underlay covers entire screen. */
+	position: fixed;
+	top:0px;
+	bottom: 0px;
+	left:0px;
+	right:0px;
+	background-color:rgba(0,0,0,0.5);
+	z-index:1000;
+
+	/* Flexbox centers the .modal-content vertically and horizontally */
+	display:flex;
+	flex-direction:column;
+	align-items:center;
+
+	/* Animate when opening */
+	animation-name: fadeIn;
+	animation-duration:150ms;
+	animation-timing-function: ease;
+}
+
+#modal &gt; .modal-underlay {
+	/* underlay takes up the entire viewport. This is only
+	required if you want to click to dismiss the popup */
+	position: absolute;
+	z-index: -1;
+	top:0px;
+	bottom:0px;
+	left: 0px;
+	right: 0px;
+}
+
+#modal &gt; .modal-content {
+	/* Position visible dialog near the top of the window */
+	margin-top:10vh;
+
+	/* Sizing for visible dialog */
+	width:80%;
+	max-width:600px;
+
+	/* Display properties for visible dialog*/
+	border:solid 1px #999;
+	border-radius:8px;
+	box-shadow: 0px 0px 20px 0px rgba(0,0,0,0.3);
+	background-color:white;
+	padding:20px;
+
+	/* Animate when opening */
+	animation-name:zoomIn;
+	animation-duration:150ms;
+	animation-timing-function: ease;
+}
+
+#modal.closing {
+	/* Animate when closing */
+	animation-name: fadeOut;
+	animation-duration:150ms;
+	animation-timing-function: ease;
+}
+
+#modal.closing &gt; .modal-content {
+	/* Animate when closing */
+	animation-name: zoomOut;
+	animation-duration:150ms;
+	animation-timing-function: ease;
+}
+
+@keyframes fadeIn {
+	0% {opacity: 0;}
+	100% {opacity: 1;}
+}
+
+@keyframes fadeOut {
+	0% {opacity: 1;}
+	100% {opacity: 0;}
+}
+
+@keyframes zoomIn {
+	0% {transform: scale(0.9);}
+	100% {transform: scale(1);}
+}
+
+@keyframes zoomOut {
+	0% {transform: scale(1);}
+	100% {transform: scale(0.9);}
+}</gr>
+
+
+<h2><pk>Tabs (Using HATEOAS)</pk></h2>
+
+
+<h2>&emsp;Example Code (Main Page)</h2>
+The main page simply includes the following HTML to load the initial tab into the DOM.
+<gr>&lt;div id="tabs" hx-get="/tab1" hx-trigger="load delay:100ms" hx-target="#tabs" hx-swap="innerHTML"&gt;&lt;/div&gt;</gr>
+
+<h2>&emsp;Example Code (Each Tab)</h2>
+Subsequent tab pages display all tabs and highlight the selected one accordingly.
+<gr>&lt;div class="tab-list" role="tablist"&gt;
+	&lt;button hx-get="/tab1" class="selected" role="tab" aria-selected="true" aria-controls="tab-content"&gt;Tab 1&lt;/button&gt;
+	&lt;button hx-get="/tab2" role="tab" aria-selected="false" aria-controls="tab-content"&gt;Tab 2&lt;/button&gt;
+	&lt;button hx-get="/tab3" role="tab" aria-selected="false" aria-controls="tab-content"&gt;Tab 3&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;div id="tab-content" role="tabpanel" class="tab-content"&gt;
+	Commodo normcore truffaut VHS duis gluten-free keffiyeh iPhone taxidermy godard ramps anim pour-over.
+	Pitchfork vegan mollit umami quinoa aute aliquip kinfolk eiusmod live-edge cardigan ipsum locavore.
+	Polaroid duis occaecat narwhal small batch food truck.
+	PBR&amp;B venmo shaman small batch you probably haven't heard of them hot chicken readymade.
+	Enim tousled cliche woke, typewriter single-origin coffee hella culpa.
+	Art party readymade 90's, asymmetrical hell of fingerstache ipsum.
+&lt;/div&gt;</gr>
+
+
+
+
+<h2><pk>Tabs (Using JavaScript)</pk></h2>
+
+some duplication by offloading some of the work of re-rendering the tab HTML from your application server to your clients’ browsers.
+You may also consider <a href="https://htmx.org/examples/tabs-hateoas/">a more idiomatic approach</a> that follows the principle of <a rel="noopener" target="_blank" href="https://en.wikipedia.org/wiki/HATEOAS">Hypertext As The Engine Of Application State</a>.
+
+<h2>&emsp;Example Code</h2>
+The HTML below displays a list of tabs, with added HTMX to dynamically load each tab pane from the server.
+A simple JavaScript event handler uses the <a rel="noopener" target="_blank" href="https://hyperscript.org/commands/take/"><gr>take</gr> function</a> to switch the selected tab when the content is swapped into the DOM.
+<gr>
+&lt;div id="tabs" hx-target="#tab-contents" role="tablist"
+     hx-on:htmx-after-on-load="let currentTab = document.querySelector('[aria-selected=true]');
+                               currentTab.setAttribute('aria-selected', 'false')
+                               currentTab.classList.remove('selected')
+                               let newTab = event.target
+                               newTab.setAttribute('aria-selected', 'true')
+                               newTab.classList.add('selected')"&gt;
+    &lt;button role="tab" aria-controls="tab-contents" aria-selected="true" hx-get="/tab1" class="selected"&gt;Tab 1&lt;/button&gt;
+    &lt;button role="tab" aria-controls="tab-contents" aria-selected="false" hx-get="/tab2"&gt;Tab 2&lt;/button&gt;
+    &lt;button role="tab" aria-controls="tab-contents" aria-selected="false" hx-get="/tab3"&gt;Tab 3&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;div id="tab-contents" role="tabpanel" hx-get="/tab1" hx-trigger="load"&gt;&lt;/div&gt;</gr>
+
+
+<h2><pk>Keyboard Shortcuts</pk></h2>
+
+We start with a simple button that loads some content from the server:
+<gr>&lt;button class="btn primary" hx-trigger="click, keyup[altKey&amp;&amp;shiftKey&amp;&amp;key=='D'] from:body"
+        hx-post="/doit"&gt;Do It! (alt-shift-D)&lt;/button&gt;</gr>
+Note that the button responds to both the <gr>click</gr> event (as usual) and also the keyup event when <gr>alt-shift-D</gr> is pressed.
+The <gr>from:</gr> modifier is used to listen for the keyup event on the <gr>body</gr> element, thus making it a “global” keyboard shortcut.
+You can trigger the demo below by either clicking on the button, or by hitting alt-shift-D.
+You can find out the conditions needed for a given keyboard shortcut here:
+<a rel="noopener" target="_blank" href="https://javascript.info/keyboard-events">https://javascript.info/keyboard-events</a>
+
+
+<h2><pk>Sortable</pk></h2>
+
+javascript library with htmx.
+To begin we initialize the <gr>.sortable</gr> class with the <gr>Sortable</gr> javascript library:
+<gr>htmx.onLoad(function(content) {
+    var sortables = content.querySelectorAll(".sortable");
+    for (var i = 0; i &lt; sortables.length; i++) {
+      var sortable = sortables[i];
+      var sortableInstance = new Sortable(sortable, {
+          animation: 150,
+          ghostClass: 'blue-background-class',
+
+          // Make the `.htmx-indicator` unsortable
+          filter: ".htmx-indicator",
+          onMove: function (evt) {
+            return evt.related.className.indexOf('htmx-indicator') === -1;
+          },
+
+          // Disable sorting on the `end` event
+          onEnd: function (evt) {
+            this.option("disabled", true);
+          }
+      });
+
+      // Re-enable sorting on the `htmx:afterSwap` event
+      sortable.addEventListener("htmx:afterSwap", function() {
+        sortableInstance.option("disabled", false);
+      });
+    }
+})</gr>
+Next, we create a form that has some sortable divs within it, and we trigger an ajax request on the <gr>end</gr> event, fired by Sortable.js:
+<gr>&lt;form class="sortable" hx-post="/items" hx-trigger="end"&gt;
+  &lt;div class="htmx-indicator"&gt;Updating...&lt;/div&gt;
+  &lt;div&gt;&lt;input type='hidden' name='item' value='1'/&gt;Item 1&lt;/div&gt;
+  &lt;div&gt;&lt;input type='hidden' name='item' value='2'/&gt;Item 2&lt;/div&gt;
+  &lt;div&gt;&lt;input type='hidden' name='item' value='3'/&gt;Item 3&lt;/div&gt;
+  &lt;div&gt;&lt;input type='hidden' name='item' value='4'/&gt;Item 4&lt;/div&gt;
+  &lt;div&gt;&lt;input type='hidden' name='item' value='5'/&gt;Item 5&lt;/div&gt;
+&lt;/form&gt;</gr>
+Note that each div has a hidden input inside of it that specifies the item id for that row.
+When the list is reordered via the Sortable.js drag-and-drop, the <gr>end</gr> event will be fired.
+htmx will then post the item ids in the new order to <gr>/items</gr>, to be persisted by the server.
+That’s it!
+
+
+<h2><pk>Updating Other Content</pk></h2>
+
+<blockquote>
+“I need to update other content on the screen.
+How do I do this?” 
+</blockquote>
+There are multiple ways to do so, and in this example will walk you through some of them.
+We’ll use the following basic UI to discuss this concept: a simple table of contacts, and a form below it to add new contacts to the table using <a href="https://htmx.org/attributes/hx-post/">hx-post</a>.
+<gr>&lt;h2&gt;Contacts&lt;/h2&gt;
+&lt;table class="table"&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Name&lt;/th&gt;
+      &lt;th&gt;Email&lt;/th&gt;
+      &lt;th&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody id="contacts-table"&gt;
+    ...
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2&gt;Add A Contact&lt;/h2&gt;
+&lt;form hx-post="/contacts"&gt;
+  &lt;label&gt;
+    Name
+        &lt;input name="name" type="text"&gt;  &lt;/label&gt;
+  &lt;label&gt;
+    Email
+        &lt;input name="email" type="email"&gt;  &lt;/label&gt;
+&lt;/form&gt;</gr>
+The problem here is that when you submit a new contact in the form, you want the contact table above to refresh and include the contact that was just added by the form.
+What solutions to we have?
+
+<h2>&emsp;Solution 1: Expand the Target</h2>
+The easiest solution here is to “expand the target” of the form to enclose both the table <em>and</em> the form.
+For example, 
+you could wrap the whole thing in a <gr>div</gr> and then target that <gr>div</gr> in the form:
+<gr>&lt;div id="table-and-form"&gt;
+    &lt;h2&gt;Contacts&lt;/h2&gt;
+    &lt;table class="table"&gt;
+      &lt;thead&gt;
+        &lt;tr&gt;
+          &lt;th&gt;Name&lt;/th&gt;
+          &lt;th&gt;Email&lt;/th&gt;
+          &lt;th&gt;&lt;/th&gt;
+        &lt;/tr&gt;
+      &lt;/thead&gt;
+      &lt;tbody id="contacts-table"&gt;
+        ...
+      &lt;/tbody&gt;
+    &lt;/table&gt;
+    &lt;h2&gt;Add A Contact&lt;/h2&gt;
+    &lt;form hx-post="/contacts" hx-target="#table-and-form"&gt;
+      &lt;label&gt;
+        Name
+            &lt;input name="name" type="text"&gt;      &lt;/label&gt;
+      &lt;label&gt;
+        Email
+            &lt;input name="email" type="email"&gt;      &lt;/label&gt;
+    &lt;/form&gt;
+&lt;/div&gt;</gr>
+Note that we are targeting the enclosing div using the <a href="https://htmx.org/attributes/hx-target/">hx-target</a> attribute.
+You would need to render both the table and the form in the response to the <gr>POST</gr> to <gr>/contacts</gr>.
+This is a simple and reliable approach, although it might not feel particularly elegant.
+
+<h2>&emsp;Solution 2: Out of Band Responses</h2>
+A more sophisticated approach to this problem would use <a href="https://htmx.org/attributes/hx-swap-oob/">out of band swaps</a> to swap in updated content to the DOM.
+Using this approach, the HTML doesn’t need to change from the original setup at all:
+<gr>&lt;h2&gt;Contacts&lt;/h2&gt;
+&lt;table class="table"&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Name&lt;/th&gt;
+      &lt;th&gt;Email&lt;/th&gt;
+      &lt;th&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody id="contacts-table"&gt;
+    ...
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2&gt;Add A Contact&lt;/h2&gt;
+&lt;form hx-post="/contacts"&gt;
+  &lt;label&gt;
+    Name
+        &lt;input name="name" type="text"&gt;  &lt;/label&gt;
+  &lt;label&gt;
+    Email
+        &lt;input name="email" type="email"&gt;  &lt;/label&gt;
+&lt;/form&gt;</gr>
+Instead of modifying something on the front end, in your response to the <gr>POST</gr> to <gr>/contacts</gr> you would include some additional content:
+<gr>&lt;tbody hx-swap-oob="beforeend:#contacts-table"&gt;
+  &lt;tr&gt;
+    &lt;td&gt;Joe Smith&lt;/td&gt;
+    &lt;td&gt;joe@smith.com&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+
+&lt;label&gt;
+  Name
+      &lt;input name="name" type="text"&gt;
+&lt;/label&gt;
+&lt;label&gt;
+  Email
+      &lt;input name="email" type="email"&gt;
+&lt;/label&gt;</gr>
+This content uses the <a href="https://htmx.org/attributes/hx-swap-oob/">hx-swap-oob</a> attribute to append itself to the <gr>#contacts-table</gr>, updating the table after a contact is added successfully.
+
+<h2>&emsp;Solution 3: Triggering Events</h2>
+An even more sophisticated approach would be to trigger a client side event when a successful contact is created and then listen for that event on the table, causing the table to refresh.
+<gr>&lt;h2&gt;Contacts&lt;/h2&gt;
+&lt;table class="table"&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Name&lt;/th&gt;
+      &lt;th&gt;Email&lt;/th&gt;
+      &lt;th&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody id="contacts-table" hx-get="/contacts/table" hx-trigger="newContact from:body"&gt;
+    ...
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2&gt;Add A Contact&lt;/h2&gt;
+&lt;form hx-post="/contacts"&gt;
+  &lt;label&gt;
+    Name
+        &lt;input name="name" type="text"&gt;  &lt;/label&gt;
+  &lt;label&gt;
+    Email
+        &lt;input name="email" type="email"&gt;  &lt;/label&gt;
+&lt;/form&gt;</gr>
+We have added a new end-point <gr>/contacts/table</gr> that re-renders the contacts table.
+Our trigger for this request is a custom event, <gr>newContact</gr>.
+We listen for this event on the <gr>body</gr> because when it is triggered by the response to the form, it will end up hitting the body due to event bubbling.
+When a successful contact creation occurs during a POST to <gr>/contacts</gr>, the response includes 
+an <a href="https://htmx.org/headers/hx-trigger/">HX-Trigger</a> response header that looks like this:
+<gr>HX-Trigger:newContact</gr>
+This will trigger the table to issue a <gr>GET</gr> to <gr>/contacts/table</gr> and this will render the newly added contact row<br>
+(in addition to the rest of the table.)
+Very clean, event driven programming!
+
+<h2>&emsp;Solution 4: Using the Path Dependencies Extension</h2>
+A final approach is to use REST-ful path dependencies to refresh the table.
+Intercooler.js, the predecessor 
+to htmx, had <a rel="noopener" target="_blank" href="https://intercoolerjs.org/docs.html#dependencies">path-based dependencies</a> integrated into the 
+library.
+htmx dropped this as a core feature, but supports an extension, <a rel="noopener" target="_blank" href="https://github.com/bigskysoftware/htmx-extensions/blob/main/src/path-deps/README.md">path deps</a>, that gives you 
+similar functionality.
+Updating our example to use the extension would involve loading the extension javascript and then annotating our HTML like so:
+<gr>&lt;h2&gt;Contacts&lt;/h2&gt;
+&lt;table class="table"&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Name&lt;/th&gt;
+      &lt;th&gt;Email&lt;/th&gt;
+      &lt;th&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody id="contacts-table" hx-get="/contacts/table" hx-ext="path-deps"  hx-trigger="path-deps" path-deps="/contacts"&gt;
+    ...
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2&gt;Add A Contact&lt;/h2&gt;
+&lt;form hx-post="/contacts"&gt;
+  &lt;label&gt;
+    Name
+        &lt;input name="name" type="text"&gt;  &lt;/label&gt;
+  &lt;label&gt;
+    Email
+        &lt;input name="email" type="email"&gt;  &lt;/label&gt;
+&lt;/form&gt;</gr>
+Now, when the form posts to the <gr>/contacts</gr> URL, the <gr>path-deps</gr> extension will detect that and trigger an <gr>path-deps</gr>
+event on the contacts table, therefore triggering a request.
+The advantage here is that you don’t need to do anything fancy with response headers.
+The downside is that a request will be issued on every <gr>POST</gr>, even if a contact was not successfully created.
+
+<h2>&emsp;Which should I use?</h2>
+Generally I would recommend the first approach, expanding your target, especially if the elements that need to be 
+updated are reasonably close to one another in the DOM.
+It is simple and reliable.
+After that, I would say it is a tossup between the custom event and an OOB swap approaches.
+I would lean towards the custom event approach because I like event-oriented systems, but that’s a personal preference.
+Which one you choose should be dictated by your own software engineering tastes and which of the two matches up better with your server side technology of choice.
+Finally, the path-deps approach is interesting, and if it fits well with your mental model and overall system architecture,
+it can be a fun way to avoid explicit refreshing.
+I would look at it last, however, unless the concept really grabs you.
+
+<h2><pk>A Customized Confirmation UI</pk></h2>
+
+action.
+This uses the default <gr>confirm()</gr> function in javascript which, while trusty, may not be consistent with your 
+applications UX.
+In this example we will see how to use <a rel="noopener" target="_blank" href="https://sweetalert2.github.io">sweetalert2</a>  to implement a custom confirmation dialog. Below are two 
+examples, one using a click+custom event method, and one using the built-in <gr>hx-confirm</gr> attribute and the <a href="https://htmx.org/events/#htmx:confirm"><gr>htmx:confirm</gr></a> event.
+
+<h2>&emsp;Using on click+custom event</h2>
+<gr>&lt;script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"&gt;&lt;/script&gt;
+&lt;button hx-get="/confirmed" 
+        hx-trigger='confirmed'
+        onClick="Swal.fire({title: 'Confirm', text:'Do you want to continue?'}).then((result)=&gt;{
+            if(result.isConfirmed){
+              htmx.trigger(this, 'confirmed');            } 
+        })"&gt;
+  Click Me
+&lt;/button&gt;</gr>
+Here we use javascript to show a Sweet Alert 2 on a click, asking for confirmation.
+If the user confirms the dialog, we then trigger the request by triggering the custom “confirmed” event which is then picked up by <gr>hx-trigger</gr>.
+
+<h2>&emsp;Vanilla JS, hx-confirm</h2>
+<gr>&lt;script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"&gt;&lt;/script&gt;
+&lt;script&gt;
+  document.addEventListener("htmx:confirm", function(e) {
+    e.preventDefault()
+    Swal.fire({
+      title: "Proceed?",
+      text: `I ask you... ${e.detail.question}`
+    }).then(function(result) {
+      if(result.isConfirmed) e.detail.issueRequest(true) // use true to skip window.confirm
+    })
+  })
+&lt;/script&gt;
+&lt;button hx-get="/confirmed" hx-confirm="Some confirm text here"&gt;
+  Click Me
+&lt;/button&gt;</gr>
+We add some javascript to invoke Sweet Alert 2 on a click, asking for confirmation.
+If the user confirms the dialog, we trigger the request by calling the <gr>issueRequest</gr> method. We pass <gr>skipConfirmation=true</gr> as argument to skip <gr>window.confirm</gr>.
+This allows to use <gr>hx-confirm</gr>’s value in the prompt which is convenient when the question depends on the element e.g. a django list:
+<gr>{% for client in clients %}
+&lt;button hx-post="/delete/{{client.pk}}" hx-confirm="Delete {{client.name}}??"&gt;Delete&lt;/button&gt;
+{% endfor %}</gr>
+
+<h2><pk>Async Authentication</pk></h2>
+
+The technique we will use here will take advantage of the fact that you can delay requests using the <a href="https://htmx.org/events/#htmx:confirm"><gr>htmx:confirm</gr></a> event.
+We first have a button that should not issue a request until an auth token has been retrieved:
+<gr>  &lt;button hx-post="/example" hx-target="next output"&gt;
+    An htmx-Powered button
+  &lt;/button&gt;
+  &lt;output&gt;
+    --
+  &lt;/output&gt;</gr>
+Next we will add some scripting to work with an <gr>auth</gr> promise (returned by a library):
+<gr>&lt;script&gt;
+  // auth is a promise returned by our authentication system
+
+  // await the auth token and store it somewhere
+  let authToken = null;
+  auth.then((token) =&gt; {
+    authToken = token
+  })
+  // gate htmx requests on the auth token
+  htmx.on("htmx:confirm", (e)=&gt; {
+    // if there is no auth token
+    if(authToken == null) {
+      // stop the regular request from being issued
+      e.preventDefault() 
+      // only issue it once the auth promise has resolved
+      auth.then(() =&gt; e.detail.issueRequest()) 
+    }
+  })
+
+  // add the auth token to the request as a header
+  htmx.on("htmx:configRequest", (e)=&gt; {
+    e.detail.headers["AUTH"] = authToken
+  })
+&lt;/script&gt;</gr>
+Here we use a global variable, but you could use <gr>localStorage</gr> or whatever preferred mechanism you want to communicate the authentication token to the <gr>htmx:configRequest</gr> event.
+With this code in place, htmx will not issue requests until the <gr>auth</gr> promise has been resolved.
+
+<h2><pk>Web Components</pk></h2>
+
+By default, HTMX doesn’t know anything about your web components, and won’t see anything inside their shadow DOM. Because of this, you’ll need to manually tell HTMX about your component’s shadow DOM by using 
+<a rel="noopener" target="_blank" href="https://htmx.org/api/#process"><gr>htmx.process</gr></a>.
+<gr>customElements.define('my-component', class MyComponent extends HTMLElement {
+  // This method runs when your custom element is added to the page
+  connectedCallback() {
+    const root = this.attachShadow({ mode: 'closed' })
+    root.innerHTML = `
+      &lt;button hx-get="/my-component-clicked" hx-target="next div"&gt;Click me!&lt;/button&gt;
+      &lt;div&gt;&lt;/div&gt;
+    `
+    htmx.process(root) // Tell HTMX about this component's shadow DOM
+  }
+})</gr>
+Once you’ve told HTMX about your component’s shadow DOM, most things should work as expected. However, note that selectors such as in <gr>hx-target</gr> will only see elements inside the same shadow DOM - if you need to access things outside of your web components, you can use one of the following options:
+
+<gr>host</gr>: Selects the element hosting the current shadow DOM
+
+<gr>global</gr>: If used as a prefix, selects from the main document instead of the current shadow DOM
+
+The same principles generally apply to web components that don’t use shadow DOM as well; while selectors won’t be encapsulated like with shadow DOM, you’ll still have to point HTMX to your component’s content by calling <gr>htmx.process</gr>.
+<script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+    elements_selector: ".lazy"
+});
+</script>
