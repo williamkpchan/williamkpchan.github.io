@@ -3,11 +3,19 @@ var allMusicNames = ['1979 抉擇 .mp3','black tape.mp3','bodypainting.mp3','DEE
 var options = '';  // build the List select option
 listlen = allMusicNames.length;
 urlHeader = ''
-
+sndVolume = 0.04
 for (var i = 0; i < listlen; i++) {
          options += '<option value="' + urlHeader + allMusicNames[i]+ '">' + allMusicNames[i] + '</option>';
 }
 $("#selectList").html(options);
+
+function adjvol() {
+  vol = Number(prompt("expected sound vol: 0.01~0.1"))
+  if( vol != 0){
+    myaudio.volume = vol; 
+    sndVolume = vol
+  }
+}
 
 function changeAudioSource(source) {
   selectElement = document.getElementById('selectList');
@@ -17,7 +25,7 @@ function changeAudioSource(source) {
   myaudio.src = selectedOption;
   myaudio.load();
   myaudio.play();
-  myaudio.volume = 0.05;
+  myaudio.volume = sndVolume;
 }
 
 window.onload=function(){
@@ -38,7 +46,7 @@ console.log("urlHeader: ", urlHeader)
 console.log(url)
     myaudio.setAttribute('src', url);
     myaudio.load();
-    myaudio.volume = 0.05;
+    myaudio.volume = sndVolume;
     myaudio.play();
 
     myaudio.addEventListener("ended", function(){
@@ -48,7 +56,7 @@ console.log(url)
       myaudio.src = url;
       myaudio.load();
       myaudio.play();
-      myaudio.volume = 0.05;
+      myaudio.volume = sndVolume;
     });
 
 

@@ -34416,6 +34416,124 @@ Timesheet.js 是一个简单易用的工具，让你的在不需要复杂编码�
 <h4>引用链接</h4>
 <em>https://github.com/sbstjn/timesheet.js</em>
 
+<h2>如何获取 blob里面的值</h2>
+<div id="blobValuetoc" class="toc"><a href="#blobValuetopic-0" target="_self">1.1. JSON 数据</a><br><a href="#blobValuetopic-1" target="_self">1.2. 文本数据</a><br><a href="#blobValuetopic-2" target="_self">1.3. 图像数据</a><br><a href="#blobValuetopic-3" target="_self">1.4. 其他二进制数据</a><br><a href="#blobValuetopic-4" target="_self">1.5. 示例</a><br></div></center>
+
+要从Blob对象中获取其内容需要根据Blob的内容类型采取不同的策略。
+
+<h3 id="blobValuetopic-0">1.1. JSON 数据</h3>
+如果Blob包含的是JSON格式的数据，你可以使用TextDecoder来读取它，并将其解析为JSON。
+
+const blob = new Blob([/* ... */], { type: 'application/json' });
+
+// 创建一个读取器
+const reader = new FileReader();
+
+reader.onloadend = function() {
+  const jsonContent = this.result; // 这里是字符串形式的JSON
+  try {
+    const jsonData = JSON.parse(jsonContent);
+    console.log(jsonData); // 解析后的JSON对象
+  } catch (error) {
+    console.error('Error parsing JSON', error);
+  }
+};
+
+reader.readAsText(blob); // 读取Blob作为文本
+
+<h3 id="blobValuetopic-1">1.2. 文本数据</h3>
+如果Blob包含的是普通的文本数据，同样可以使用FileReader的readAsText方法。
+
+const blob = new Blob([/* ... */], { type: 'text/plain' });
+
+const reader = new FileReader();
+
+reader.onloadend = function() {
+  const textContent = this.result;
+  console.log(textContent); // 文本内容
+};
+
+reader.readAsText(blob); // 读取Blob作为文本
+
+<h3 id="blobValuetopic-2">1.3. 图像数据</h3>
+如果Blob包含的是图像数据，你可以使用URL.createObjectURL来创建一个临时的URL，然后在&lt;img&gt;标签中显示这个URL。
+
+const blob = new Blob([/* ... */], { type: 'image/jpeg' });
+
+const imageUrl = URL.createObjectURL(blob);
+
+const imgElement = document.createElement('img');
+imgElement.src = imageUrl;
+document.body.appendChild(imgElement); // 显示图像
+
+<h3 id="blobValuetopic-3">1.4. 其他二进制数据</h3>
+对于其他类型的二进制数据，可以使用readAsArrayBuffer方法来读取。
+
+const blob = new Blob([/* ... */], { type: 'application/octet-stream' });
+
+const reader = new FileReader();
+
+reader.onloadend = function() {
+  const arrayBuffer = this.result;
+  // 在这里可以使用arrayBuffer进行进一步处理
+  // 比如转换为Uint8Array或其他形式
+};
+
+reader.readAsArrayBuffer(blob);
+
+<h3 id="blobValuetopic-4">1.5. 示例</h3>
+假设你有一个fetch请求返回了一个Blob对象，你可以这样处理：
+fetch('/your-endpoint')
+  .then(response =&gt; {
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return response.blob(); // 获取Blob对象
+  })
+  .then(blob =&gt; {
+    // 根据Content-Type确定如何处理
+    if (blob.type.startsWith('application/json')) {
+      // 处理JSON数据
+      const reader = new FileReader();
+      reader.onloadend = () =&gt; {
+        const jsonContent = reader.result;
+        const jsonData = JSON.parse(jsonContent);
+        console.log(jsonData);
+      };
+      reader.readAsText(blob);
+    } else if (blob.type.startsWith('image/')) {
+      // 处理图像数据
+      const imageUrl = URL.createObjectURL(blob);
+      const imgElement = document.createElement('img');
+      imgElement.src = imageUrl;
+      document.body.appendChild(imgElement);
+    } else if (blob.type === 'text/plain') {
+      // 处理纯文本数据
+      const reader = new FileReader();
+      reader.onloadend = () =&gt; {
+        const textContent = reader.result;
+        console.log(textContent);
+      };
+      reader.readAsText(blob);
+    } else {
+      // 处理其他类型的数据
+      const reader = new FileReader();
+      reader.onloadend = () =&gt; {
+        const arrayBuffer = reader.result;
+        console.log(new Uint8Array(arrayBuffer)); // 以Uint8Array的形式显示数据
+      };
+      reader.readAsArrayBuffer(blob);
+    }
+  })
+  .catch(error =&gt; console.error('There has been a problem with your fetch operation:', error));
+
+
+请注意，在处理完Blob之后，记得释放创建的临时URL以避免内存泄漏：
+// 当不再需要时
+URL.revokeObjectURL(imageUrl);
+
+
+
 
 
 
