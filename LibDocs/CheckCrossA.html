@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <meta http-equiv="refresh" content="300">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -47,7 +46,9 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
 <a href="#0" target="_self">statistics</a>
  <a href="#1" target="_self">NewUpcross</a>
  <a href="#2" target="_self"><gr>NewDncross<gr></gr></gr></a>
- <a href="#3" target="_self">cross status</a> </div>
+ <a href="#3" target="_self">NewHUpcross</a>
+ <a href="#4" target="_self"><gr><gr>NewLDncross<gr><gr></gr></gr></a>
+ <a href="#5" target="_self">cross status</a> </div>
 </center>
 <br>
 <pre>
@@ -60,8 +61,19 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
 <h2 id="2"><gr>NewDncross<gr></h2>
 <div id="NewDncross"></div>
 
-<h2 id="3">cross status</h2>
+<h2 id="3">NewHUpcross</h2>
+<div id="NewHUpcross"></div>
+
+<h2 id="4"><gr>NewLDncross<gr></h2>
+<div id="NewLDncross"></div>
+
+
+
+<h2 id="9">cross status</h2>
 <div id="upcrossResult"></div>
+
+
+
 </pre>
 
 <script>
@@ -75,8 +87,15 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
      upcrossResulttxt = "";
      NewUpcross = ""
      NewDncross = ""
+     NewHUpcross = ""
+     NewLDncross = ""
+     HContUp = ""
+     LContDn = ""
+
      upcrossCnt = 0
      dncrossCnt = 0
+     hupcrossCnt = 0
+     ldncrossCnt = 0
 
      thestkdata = [];
      dateLst = [];
@@ -174,7 +193,8 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
 
         storeCode(theCode);
           if( theCode.substring(0, 2) == "us"){
-              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/usfqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,1000,qfq';
+              // number of day klines shold be small to avoid slow response, even drop out
+              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/usfqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,300,qfq';
               imageCode = theCode
           }else{
 
@@ -1073,6 +1093,7 @@ function docLoaded() {
 
     function chkCross(highLst, midLst, theCode, lastPrice) { // includes main chart and aux charts
 
+      // mid data
       traceLine0 = midLst
       traceLine1 = makeMovAve(midLst, intv1)
       traceLine2 = makeMovAve(midLst, intv2)
@@ -1087,6 +1108,8 @@ function docLoaded() {
       pprevL1 = traceLine1[indexlast-2]
       pprevL2 = traceLine2[indexlast-2]
 
+
+      // H data
       traceLine3 = highLst
       traceLine4 = makeMovAve(highLst, intv1)
       traceLine5 = makeMovAve(highLst, intv2)
@@ -1101,22 +1124,46 @@ function docLoaded() {
       pprevHL1 = traceLine4[indexlast-2]
       pprevHL2 = traceLine5[indexlast-2]
 
-      // checkX(prevL, prevS, curL, curS)
+      // L data
+      traceLine6 = lowLst
+      traceLine7 = makeMovAve(lowLst, intv1)
+      traceLine8 = makeMovAve(lowLst, intv2)
+
+      curLS = traceLine6[indexlast]
+      curLL1 = traceLine7[indexlast]
+      curLL2 = traceLine8[indexlast]
+      prevLS = traceLine6[indexlast-1]
+      prevLL1 = traceLine7[indexlast-1]
+      prevLL2 = traceLine8[indexlast-1]
+      pprevLS = traceLine6[indexlast-2]
+      pprevLL1 = traceLine7[indexlast-2]
+      pprevLL2 = traceLine8[indexlast-2]
+
+
+      // checkX(prevL, prevS, curL, curS) check mid
       prevfirstChk = checkX(pprevL1, pprevS, prevL1, prevS)
       firstChk = checkX(prevL1, prevS, curL1, curS)
       secChk = checkX(prevL2, prevS, curL2, curS)
 
+
         prevfirstWarn = "prev 1st sig: " + prevfirstChk
         firstWarn = " 1st sig: " + firstChk
         secondWarn = " 2nd sig: " + secChk
-
-      prevHfirstChk = checkX(pprevHL1, pprevHS, prevHL1, prevHS)
+      // checkH
+      // checkX(prevL, prevS, curL, curS) 
+      prevfirstHChk = checkX(pprevHL1, pprevHS, prevHL1, prevHS)
       firstHChk = checkX(prevHL1, prevHS, curHL1, curHS)
       secHChk = checkX(prevHL2, prevHS, curHL2, curHS)
 
-        prevHfirstWarn = "prevH 1st sig: " + prevHfirstChk
+        prevHfirstWarn = "prevH 1st sig: " + prevfirstHChk
         firstHWarn = " 1st sig: " + firstHChk
         secondHWarn = " 2nd sig: " + secHChk
+
+      // checkX(prevLL, prevLS, curLL, curLS) checkL
+      prevfirstLChk = checkX(pprevLL1, pprevLS, prevLL1, prevLS)
+      firstLChk = checkX(prevLL1, prevLS, curLL1, curLS)
+      secLChk = checkX(prevLL2, prevLS, curLL2, curLS)
+
 
       // show status
       upcrossResulttxt = `<k onclick="xunbao('` + theCode + `')">`+ theCode + " " + stkName+ '</k>' + ": " 
@@ -1126,8 +1173,9 @@ function docLoaded() {
       oldmsg = document.getElementById("upcrossResult").innerHTML
       document.getElementById("upcrossResult").innerHTML = oldmsg + upcrossResulttxt;
 
+
       // show UpX 
-      UpX = firstHChk.match(/UpCross/gi);
+      UpX = firstChk.match(/UpCross/gi);
       if( UpX != null){
         upcrosstxt = `<k onclick="xunbao('` + theCode + `')">`+ theCode + " <r>" + stkName+ '</r></k>&emsp;'
         upcrossCnt = upcrossCnt +1
@@ -1138,8 +1186,9 @@ function docLoaded() {
       oldUpcrossmsg = document.getElementById("NewUpcross").innerHTML
       document.getElementById("NewUpcross").innerHTML = oldUpcrossmsg + upcrosstxt;
 
+
       // show DnX 
-      DnX = firstHChk.match(/DownCross/gi);
+      DnX = firstChk.match(/DownCross/gi);
       if( DnX != null){
         dncrosstxt = `<k onclick="xunbao('` + theCode + `')">`+ theCode + " <gr>" + stkName+ '</gr></k>&emsp;'
         dncrossCnt = dncrossCnt +1
@@ -1150,8 +1199,42 @@ function docLoaded() {
       oldDncrossmsg = document.getElementById("NewDncross").innerHTML
       document.getElementById("NewDncross").innerHTML = oldDncrossmsg + dncrosstxt;
 
+
+      // show hUpX 
+      hUpX = firstHChk.match(/UpCross/gi);
+      if( hUpX != null){
+        hupcrosstxt = `<k onclick="xunbao('` + theCode + `')">`+ theCode + " <r>" + stkName+ '</r></k>&emsp;'
+        hupcrossCnt = hupcrossCnt +1
+      }else{
+        hupcrosstxt = ""
+      }
+
+      oldhUpcrossmsg = document.getElementById("NewHUpcross").innerHTML
+      document.getElementById("NewHUpcross").innerHTML = oldhUpcrossmsg + hupcrosstxt;
+
+
+      // show LdnX 
+      LdnX = firstLChk.match(/DownCross/gi);
+      if( LdnX != null){
+        Ldncrosstxt = `<k onclick="xunbao('` + theCode + `')">`+ theCode + " <gr>" + stkName+ '</gr></k>&emsp;'
+        ldncrossCnt = ldncrossCnt +1
+      }else{
+        Ldncrosstxt = ""
+      }
+
+      oldLdncrossmsg = document.getElementById("NewLDncross").innerHTML
+      document.getElementById("NewLDncross").innerHTML = oldLdncrossmsg + Ldncrosstxt;
+
+
       // show stat
-      document.getElementById("statistics").innerHTML = "UpCross Count: <r>"+ upcrossCnt + "</r> DnCross Count: <gr>"+ dncrossCnt + "</gr> Sample Total: " + codetable.length;
+      document.getElementById("statistics").innerHTML =
+        "MUpCross Count: <r>"+ upcrossCnt +
+        "</r> MDnCross Count: <gr>"+ dncrossCnt + 
+        "</gr> " + 
+        "HUpCross Count: <r>"+ hupcrossCnt +
+        "</r> LDnCross Count: <gr>"+ ldncrossCnt + 
+        "</gr> " + 
+        "Sample Total: " + codetable.length;
 
     }
 
