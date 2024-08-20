@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<meta http-equiv="refresh" content="300">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <html>
 <head>
@@ -38,8 +39,18 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
 
 </head>
 <body onkeypress="chkKey()">
+<center>
 <h1>Check Cross</h1>
+<span class="goldword">&rarr;</span> <span id="dateAndTime" onclick="showDateAndTime()"><script>showDateAndTime();</script></span><br>
+<div id="toc"></div></center><br>
 <pre>
+<h2>statistics</h2>
+<div id="statistics"></div>
+<h2>NewUpcross</h2>
+<div id="NewUpcross"></div>
+<h2><gr>NewDncross<gr></h2>
+<div id="NewDncross"></div>
+<h2>cross status</h2>
 <div id="upcrossResult"></div>
 </pre>
 
@@ -52,6 +63,10 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
 
       // loop to collect data and chkCross, results in here
      upcrossResulttxt = "";
+     NewUpcross = ""
+     NewDncross = ""
+     upcrossCnt = 0
+     dncrossCnt = 0
 
      thestkdata = [];
      dateLst = [];
@@ -146,7 +161,6 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
       }
 
       function collectStkData(theCode) {
-console.log("theCode: ", theCode)
 
         storeCode(theCode);
           if( theCode.substring(0, 2) == "us"){
@@ -203,7 +217,8 @@ console.log("theCode: ", theCode)
           thedrawdata = [];
           amtLst.length = 0;
 
-          RGraph.AJAX.getJSON(theurl, function (rawJSON){
+          $.get(theurl).done(function(rawJSON) { 
+              rawJSON = eval(rawJSON)
               var keys = Object.keys(rawJSON); // read the structure keys ["code", "msg", "data"]
 
               var insideDatakey = Object.keys(rawJSON)[2] //
@@ -240,8 +255,6 @@ console.log("theCode: ", theCode)
               theNameObj = tempdata[Object.keys(tempdata)[1]];
               theNameObjName  = theNameObj[Object.keys(theNameObj)[0]];
               stkName = theNameObjName[1]
-console.log("theCode: ", theCode)
-console.log("stkName: ", stkName)
 
               /* data is arranged in days array, tempdata[320] is last set
               tempdata[320][0]  // date, tempdata[320][1]  // open, tempdata[320][3]  // high
@@ -277,6 +290,7 @@ console.log("stkName: ", stkName)
               lastPrice = closeLst[closeLst.length-1]
               chkCross(highLst, midLst, theCode, lastPrice) // must put inside the RGraph.AJAX.getJSON
            });
+
 
            //showActivity(theCode)
            window.scrollTo(0,0);
@@ -1094,11 +1108,41 @@ function docLoaded() {
         firstHWarn = " 1st sig: " + firstHChk
         secondHWarn = " 2nd sig: " + secHChk
 
+      // show status
       upcrossResulttxt = `<k onclick="xunbao('` + theCode + `')">`+ theCode + " " + stkName+ '</k>' + ": " 
          + prevfirstWarn + firstWarn + secondWarn + " latest Price: " + lastPrice + "<br>"
          + "               " + prevHfirstWarn + firstHWarn + secondHWarn  + "<br><br>";
+
       oldmsg = document.getElementById("upcrossResult").innerHTML
       document.getElementById("upcrossResult").innerHTML = oldmsg + upcrossResulttxt;
+
+      // show UpX 
+      UpX = firstHChk.match(/UpCross/gi);
+      if( UpX != null){
+        upcrosstxt = `<k onclick="xunbao('` + theCode + `')">`+ theCode + " <r>" + stkName+ '</r></k>&emsp;'
+        upcrossCnt = upcrossCnt +1
+      }else{
+        upcrosstxt = ""
+      }
+
+      oldUpcrossmsg = document.getElementById("NewUpcross").innerHTML
+      document.getElementById("NewUpcross").innerHTML = oldUpcrossmsg + upcrosstxt;
+
+      // show DnX 
+      DnX = firstHChk.match(/DownCross/gi);
+      if( DnX != null){
+        dncrosstxt = `<k onclick="xunbao('` + theCode + `')">`+ theCode + " <gr>" + stkName+ '</gr></k>&emsp;'
+        dncrossCnt = dncrossCnt +1
+      }else{
+        dncrosstxt = ""
+      }
+
+      oldDncrossmsg = document.getElementById("NewDncross").innerHTML
+      document.getElementById("NewDncross").innerHTML = oldDncrossmsg + dncrosstxt;
+
+      // show stat
+      document.getElementById("statistics").innerHTML = "UpCross Count: <r>"+ upcrossCnt + "</r> DnCross Count: <gr>"+ dncrossCnt + "</gr> Sample Total: " + codetable.length;
+
     }
 
     function checkX(prevL, prevS, curL, curS) {
@@ -1108,7 +1152,6 @@ function docLoaded() {
 		if ((prevL<prevS) && (curS > curL )){return '<span class="brownword">cont.Up</span>' } // c must > prevC, this is not correct, further check for condition
 		if ((prevL>prevS) && (curS < curL )){return '<span class="limeword">cont.Dn</span>' }
 	}
-
 
 </script>
 
@@ -1123,5 +1166,7 @@ function docLoaded() {
        }
      }
 </script>
+<script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
+
 </body>
 </html>
