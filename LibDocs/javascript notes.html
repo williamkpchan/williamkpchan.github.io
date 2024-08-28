@@ -35570,6 +35570,272 @@ KaTeX 的设计注重于减少页面重排，提供更流畅的用户体验。
 
 <img src="https://mmbiz.qpic.cn/mmbiz_png/gHJkXW0CVr1rjJENkOib4V3mEEEY7NhacgSnczfrMDsP2HlNgRPxYdIiaduGfHLmqXJ4vwacFBOictXhy8RCAZwuw/640">
 
+<h2>javascript image manipulation</h2>
+
+Sharp.js
+Cropper.js
+Merge Images.js
+LooksSame.js
+Jimp.js
+
+https://sharp.pixelplumbing.com/api-resize#extract
+
+<h2>browser tesseract</h2>
+&lt;script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'>&lt;/script>
+&lt;script>
+
+(async () => {
+  const worker = await createWorker('eng');
+  const ret = await worker.recognize('https://tesseract.projectnaptha.com/img/eng_bw.png');
+  console.log(ret.data.text);
+  await worker.terminate();
+})();
+
+(async () => {
+  const worker = await Tesseract.createWorker('chi_sim'); // chi_tra, eng
+  //const ret = await worker.recognize('https://tesseract.projectnaptha.com/img/eng_bw.png');
+  const ret = await worker.recognize('https://media.istockphoto.com/id/1701859331/zh/%E5%90%91%E9%87%8F/set-of-numbers-written-by-brush.jpg?s=1024x1024&w=is&k=20&c=s_Khcm5ovYBy3APVOO9kfpZp6cYdF2pX5iU15KCCxuM=');
+  console.log(ret.data.text);
+  await worker.terminate();
+})();
+
+  // A worker is created once and used every time a user uploads a new file.  
+&lt;/script>
+
+When recognizing multiple images, users should create a worker once, run worker.recognize for each image, and then run worker.terminate() once at the end (rather than running the above snippet for every image).
+
+<h2>web实现drag拖拽布局</h2>
+这种拖拽布局功能其实在电脑操作系统或者桌面应用里面是经常使用的基础功能，只是有时候在进行web开发的时候，对这个功能需求量不够明显，但却是很好用，也很实用。
+
+<k>静态效果：</k>
+
+<img src="https://mmbiz.qpic.cn/mmbiz_png/ODiaMNroZ9tibibkzqaehu7VpvZJ4AicRL4Zia5c858KCANsibbNCpDQiaic8CdEAR143By6KGbtv4krD8UXMNXQZOsyYA/640">
+
+<k>动态效果：</k>
+<img src="https://mmbiz.qpic.cn/mmbiz_gif/ODiaMNroZ9tibibkzqaehu7VpvZJ4AicRL4ZeIJZdR4HDP7s9fuL5b0BicAtLx6EgdlbBOhQIS7xpUJMKZ9xqrsINBw/640">
+
+为了查看更佳效果，需要把源码在浏览器上运行起来。
+
+另一个值得关心的事项：案例中左右盒子是可以完全拖拽关闭的，也就是宽度为0px。
+
+实际应用中可能不需要这种效果，没关系，可以限制左右盒子的最小宽度，判断小于最小宽度就不再进行缩小即可，放大限制 也是类似的。
+
+<k>实现原理</k>
+
+想象一下，拖拽布局一般都需要两个div盒子，同时需要一个可以拖拽的class=resize盒子（以下简称resize），它们都是块元素。
+
+然后加上HTML标签和css的基础左右布局样式，大致轮廓就出来了。
+
+到这里还没有实现拖拽resize布局逻辑，接着往下看。
+
+拖拽resize原理分析：
+
+当用户把鼠标移动到resize盒子上面，此时出现可以左右拖拽的标识，这个标识可以用css的cursor: w-resize来实现。
+
+如果用户按下鼠标左键，可以监听鼠标按下事件，获得鼠标按下的startX = evt.clientX，也能获得resize相对于父元素的左偏移值offsetLeft。
+
+<code>resizeBar.onmousedown(evt) {
+  var startX = e.clientX;
+  resizeBar.left = resizeBar.offsetLeft;
+}</code>
+
+如果用户按住鼠标左键开始向左或者向右拖拽，需要精确计算用户拖拽的实际距离，也是鼠标移动的实际距离。
+
+计算方式：resize的左偏移值offsetLeft+（鼠标移动实际距离 + 鼠标按下距离）= 实际移动距离movelen。
+
+<code> document.onmousemove = function (e) {
+   var moveLen = resizeBar.left + (e.clientX - startX);
+ }</code>
+那么，resize的左边距离移动实际距离就是这样获得的。
+
+<code>document.onmousemove = function (e) {
+   var moveLen = resizeBar.left + (e.clientX - startX);
+   resizeBar.style.left = moveLen + 'px';
+}</code>
+左边|右边盒子宽度就可以得到了。
+
+<code>document.onmousemove = function (e) {
+   var moveLen = resizeBar.left + (e.clientX - startX);
+   resizeBar.style.left = moveLen + 'px';
+   leftBox.style.width = moveLen + "px";
+   rightBox.style.width = 
+   boxWidth - resizeWidth - moveLen + "px";
+}</code>
+到这里拖拽核心逻辑就结束了，为了更好的理解拖拽过程，于是就有了下方不怎么好看的抽象图，画的不好，多多理解。
+
+<img src="https://mmbiz.qpic.cn/mmbiz_png/ODiaMNroZ9tibibkzqaehu7VpvZJ4AicRL4Z7CdnvPR5opawkbUicvhlAfENSqHCCgZzNEpkbYnKAGTGicibF76cYjNhQ/640">
+
+<k>源码贴上</k>
+<k>HTML</k>
+
+<code>&lt;body&gt;
+&lt;div&gt;
+    &lt;div&gt;
+        &lt;p&gt;左边盒子&lt;/p&gt;
+    &lt;/div&gt;
+    &lt;div&gt;&lt;/div&gt;
+    &lt;div&gt;
+        &lt;p&gt;右边盒子&lt;/p&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+&lt;/body&gt;</code>
+
+<k>CSS</k>
+
+<code>&lt;style&gt;
+.box {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+}
+.left {
+    background: lightblue;
+}
+.resize {
+    width: 10px;
+    height: 100%;
+    background-color: #399aef;
+    cursor: w-resize;
+}
+.right {
+    background: rgba(0, 0, 0, 0.4);
+}
+p {
+    padding: 20px;
+    text-align: center;
+    font-size: 25px;
+    font-weight: 600;
+}
+[class*="overflow"] {
+    width: 49%;
+    height: 100%;
+    overflow: hidden;
+}
+.userselect {
+    -webkit-user-select: none; 
+    -moz-user-select: none; 
+    -ms-user-select: none; 
+    user-select: none;
+}
+&lt;/style&gt;</code>
+
+<k>JavaScript</k>
+
+<code>&lt;script&gt;
+function dragResize() {
+    var resizeBar = document.querySelector(".resize");
+    var leftBox = document.querySelector(".left");
+    var box = document.querySelector(".box");
+    var rightBox = document.querySelector(".right");
+    var resizeWidth = resizeBar.offsetWidth;
+    var boxWidth = box.offsetWidth;
+    resizeBar.onmousedown = function (e) {
+        var startX = e.clientX;
+        resizeBar.left = resizeBar.offsetLeft;
+
+        // 鼠标拖动事件
+        document.onmousemove = function (e) {
+            var moveLen = resizeBar.left + (e.clientX - startX);
+            resizeBar.style.left = moveLen + 'px';
+            leftBox.style.width = moveLen + "px";
+            rightBox.style.width = boxWidth - resizeWidth - moveLen + "px";
+            e.target.style.cursor = "w-resize"
+            // 拖拽过程中，禁止选中文本
+            leftBox.classList.add('userselect')
+            rightBox.classList.add('userselect')
+        };
+
+        // 鼠标松开事件
+        document.onmouseup = function (evt) {
+            document.onmousemove = null;
+            document.onmouseup = null;
+            // 清空cursor
+            leftBox.style.cursor = "default"
+            rightBox.style.cursor = "default"
+            leftBox.classList.remove('userselect')
+            rightBox.classList.remove('userselect')
+        };
+    };
+}
+dragResize()</code>
+
+<h2>JavaScript 的 Rest 和 Spread 操作符</h2>
+<h3>Rest 和 Spread 操作符简介</h1>
+<k>Rest 操作符（...）</k>允许你将多个元素收集到一个数组或对象中，通常用于函数参数中，将参数列表转换为数组。
+而 <k>Spread 操作符（...）</k>则用于将数组或对象展开为单个元素，这在复制、合并或传递数组和对象时特别有用。
+
+理解并掌握这些操作符可以大大提升你的 JavaScript 编码水平，使代码更加简洁和富有表现力。
+
+<h3>Rest 操作符的应用</h1>
+<k>函数参数处理</k>
+
+Rest 操作符在函数定义中非常有用，可以处理不定数量的参数：
+
+<gr>function multiply(...numbers) {
+  return numbers.reduce((product, number) =&gt; product * number, 1);
+}
+console.log(multiply(2, 3, 4)); // 输出: 24</gr>
+在这个例子中，<gr>multiply</gr> 函数接受任意数量的参数并进行相乘。
+Rest 操作符将所有参数收集到 <gr>numbers</gr> 数组中，使得可以轻松应用 <gr>reduce</gr> 等数组方法。
+
+<k>数组解构</k>
+Rest 操作符还可以在数组解构中使用，将剩余元素收集到一个新数组中：
+
+<gr>const [head, ...tail] = ['a', 'b', 'c', 'd'];
+console.log(head);  // 输出: 'a'
+console.log(tail);  // 输出: ['b', 'c', 'd']</gr>
+在这个例子中，数组的第一个元素被赋值给 <gr>head</gr>，其余元素则被收集到 <gr>tail</gr> 数组中。
+
+<h3>Spread 操作符的应用</h1>
+<k>数组合并</k>
+使用 Spread 操作符，数组合并变得非常简单：
+
+<gr>const fruits = ['apple', 'banana'];
+const vegetables = ['carrot', 'potato'];
+const food = [...fruits, ...vegetables];
+console.log(food); // 输出: ['apple', 'banana', 'carrot', 'potato']</gr>
+在这个例子中，Spread 操作符将 <gr>fruits</gr> 和 <gr>vegetables</gr> 展开为单个元素并合并到 <gr>food</gr> 数组中。
+
+<k>数组复制</k>
+
+创建数组副本同样很方便：
+
+<gr>const numbers = [1, 2, 3];
+const numbersCopy = [...numbers];
+console.log(numbersCopy); // 输出: [1, 2, 3]</gr>
+这样创建了一个包含与 <gr>numbers</gr> 数组相同元素的新数组 <gr>numbersCopy</gr>，修改 <gr>numbersCopy</gr> 不会影响 <gr>numbers</gr>。
+
+<k>对象合并</k>
+
+Spread 操作符还可以用于对象的合并：
+
+<gr>const person = { name: 'Alice', age: 25 };
+const job = { title: 'developer', company: 'Tech Co.' };
+const employee = { ...person, ...job };
+console.log(employee); // 输出: { name: 'Alice', age: 25, title: 'developer', company: 'Tech Co.' }</gr>
+在这个例子中，<gr>person</gr> 和 <gr>job</gr> 被合并到 <gr>employee</gr> 对象中，形成一个新的对象。
+
+<h3>高级技巧</h1>
+<k>对象解构中的 Rest 操作符</k>
+
+Rest 操作符可以在对象解构中使用，收集剩余的属性：
+
+<gr>const { title, ...details } = { title: 'Book', author: 'John Doe', year: 2021 };
+console.log(title);    // 输出: 'Book'
+console.log(details);  // 输出: { author: 'John Doe', year: 2021 }</gr>
+这个例子展示了如何提取特定属性（<gr>title</gr>），同时将剩余属性收集到 <gr>details</gr> 对象中。
+
+<k>Spread 操作符用于函数参数</k>
+
+在调用接受多个参数的函数时，Spread 操作符可以简化传递数组元素作为参数：
+
+<gr>function concatenate(str1, str2, str3) {
+  return str1 + str2 + str3;
+}
+const words = ['Hello', ' ', 'World!'];
+console.log(concatenate(...words)); // 输出: 'Hello World!'</gr>
+通过展开 <gr>words</gr> 数组，每个元素作为独立参数传递给 <gr>concatenate</gr> 函数。
+
 
 
 
