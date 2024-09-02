@@ -3,18 +3,13 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>fivedayStat</title>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-<script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.common.core.js" ></script>
-<script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.common.csv.js" ></script>
-<script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.common.dynamic.js"></script>
-<script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.line.js" ></script>
-<script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.common.tooltips.js"></script>
 <script src='https://williamkpchan.github.io/mainscript.js'></script>
 <script src="https://williamkpchan.github.io/stkcodeMin.js"></script>
 <script src="https://williamkpchan.github.io/showAllCharts.js"></script>
 <script src="https://williamkpchan.github.io/LibDocs/stkComments.js"></script>
 <script src="https://williamkpchanhp.github.io/LibDocs/longHistList.js"></script>
 <script src="https://williamkpchanhp.github.io/LibDocs/filterResulitLib.txt"></script>
-<script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.drawing.yaxis.js"></script>
+<script src="https://code.jquery.com/mobile/1.5.0-alpha.1/jquery.mobile-1.5.0-alpha.1.min.js"></script>
 
 <link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
 
@@ -32,47 +27,10 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
 .violetword{color: violet;}
 .yellowword{color: yellow;}
 .orangeword{color: orange;}
-.dropbtn {
-    background-color: black;
-    color: gold;
-    padding: 8px;
-    font-size: 20px;
-    border: 1px solid gold;
-    cursor: pointer;
-}
-
 .dropbtn:hover, .dropbtn:focus {
     background-color: darkblue;
 }
-
-.dropdown {
-    display: inline-block;
-    border-radius:8%;
-    right: 2%;
-    position: left;
-}
-
-.dropdown-content {
-    display: inline-block;
-    display: none;
-    background-color: black;
-    min-width: 160px;
-    overflow: auto;
-    box-shadow: 0px 4px 4px 0px rgba(0,5,3,0.6);
-    z-index: 1;
-}
-
-.dropdown-content a {
-    color: black;
-    padding: 12px 12px;
-    text-decoration: none;
-    display: block;
-}
-
-.dropdown a:hover {background-color: #ddd}
-
 .show {display:block;}
-#myDropdown {line-height:2;}
 #refreshTimer {color: red;}
 </style>
 
@@ -89,12 +47,7 @@ let theString ="";
 let theurlHead = 'https://web.ifzq.gtimg.cn/appstock/app/day/query?code=hk'
 // let theurlTail = ',day,,,320,qfq'
 
-if (localStorage.getItem("minuteLayersTimer") === null) {
-      localStorage.setItem("minuteLayersTimer", 20000)
-      minuteLayersTimer = 20000;
-} else{
-      minuteLayersTimer = Number(localStorage.getItem("minuteLayersTimer"))
-}
+minuteLayersTimer = 300000;
 
 var theCode = "";
 var theStartCode = theCode; // loaded from the _init()
@@ -167,6 +120,7 @@ function startToRoll(theCode) {
           }
 
  	theStartCode = theCode;
+
 	thestkdata = [];
 	thedrawdata = [];
 	closeLst = [];
@@ -186,18 +140,14 @@ function startToRoll(theCode) {
       }
 
 
-  if(fraudSTK.includes(theCode)){
-    $('#alertMsg').show()
-  }else{
-    $('#alertMsg').hide()
-  }
 
 	//var theurl = theurlHead + theStartCode
-	RGraph.AJAX.getJSON(theurl, function (rawJSON){
-		keys = Object.keys(rawJSON); // read the structure keys ["code", "msg", "data"]
+     $.get(theurl).done(function(rawJSON) {
+          rawJSON = JSON.parse(rawJSON)
+          var keys = Object.keys(rawJSON); // read the structure keys ["code", "msg", "data"]
 		var insideDatakey = Object.keys(rawJSON)[2] //
 		// myobj[Object.keys(myobj)[0]] this is the extract method
-
+		closeLst = [] // init closeLst
 		var thedata = rawJSON[Object.keys(rawJSON)[2]]
 		thestkkey = Object.keys(thedata)[0] // this is the stk key name
 		var tempdata = thedata[Object.keys(thedata)[0]]; // {data: Array(5), qt: {…}, vcm: ""} five sets of data here
@@ -215,9 +165,9 @@ function startToRoll(theCode) {
 		theNameObj = tempdata[Object.keys(tempdata)[1]];
 		theNameObjName  = theNameObj[Object.keys(theNameObj)[0]];
 		stkName = theNameObjName[1]
+console.log(stkName)
 
 		thedrawdata =[closeLst]; //closeLst is already originally an array
-
 		// calculate different ma lines and stuff inside thedrawdata.
 		thedrawdata.push(makeMovAve(thedrawdata[0], Math.ceil(intv1/2))); // add new trend line
 		thedrawdata.push(makeMovAve(thedrawdata[1], Math.ceil(intv1/2))); // add new trend line
@@ -244,14 +194,14 @@ function startToRoll(theCode) {
 		//thedrawdata.push(thedrawdata-stddev);
           //console.log(thedrawdata[7])
 		thedrawdata[0] = thedrawdata[0].slice(intv7);
-		thedrawdata[1] = thedrawdata[1].slice(intv7+1);
-		thedrawdata[2] = thedrawdata[2].slice(intv7+1);
-		thedrawdata[3] = thedrawdata[3].slice(intv7+1);
-		thedrawdata[4] = thedrawdata[4].slice(intv7+1);
-		thedrawdata[5] = thedrawdata[5].slice(intv7+1);
-		thedrawdata[6] = thedrawdata[6].slice(intv7+1);
-		thedrawdata[7] = thedrawdata[7].slice(intv7+1);
-		thedrawdata[8] = thedrawdata[8].slice(intv7+1);
+		thedrawdata[1] = thedrawdata[1].slice(intv7);
+		thedrawdata[2] = thedrawdata[2].slice(intv7);
+		thedrawdata[3] = thedrawdata[3].slice(intv7);
+		thedrawdata[4] = thedrawdata[4].slice(intv7);
+		thedrawdata[5] = thedrawdata[5].slice(intv7);
+		thedrawdata[6] = thedrawdata[6].slice(intv7);
+		thedrawdata[7] = thedrawdata[7].slice(intv7);
+		thedrawdata[8] = thedrawdata[8].slice(intv7);
 		//thedrawdata[9] = thedrawdata[9].slice(intv7+1);
 
 		// thedrawdata[9] = thedrawdata[9].slice(intv7+1);
@@ -278,9 +228,8 @@ function startToRoll(theCode) {
 
 		// find derivative
 		derivative = diff(makeMovAve(thedrawdata[2], 3));
-		derivative.unshift(0);
+		derivative.unshift(0,0);
 		derivative.fill(null,0,intv1+3); //array.fill(value, start, end)
-
 
 		// find derivative7
 		//derivative7 = diff(makeMovAve(thedrawdata[7], 10));
@@ -323,16 +272,12 @@ function startToRoll(theCode) {
 
 
 		// drawchart
-		showStatus();
 		showComments();
-		detectX();
 		detectTrend();
-		statusMsg = '<br><span class="cyanword">淺藍</span> ' + thedrawdata[3][lastPtr-1].toFixed(3) + "&emsp;" + 
-		'<span class="blueword">深藍</span> ' + thedrawdata[4][lastPtr-1].toFixed(3) + "&emsp;" + 
-		'<span class="brownword">橙</span> ' + thedrawdata[5][lastPtr-1].toFixed(3) + "&emsp;" + 
-		'<span class="redword">red</span> ' + thedrawdata[6][lastPtr-1].toFixed(3) + "&emsp;" + 
-		"<br>commands: c, v, f, b, r, m<br>" + "trends: " + minSteps + "<br>";
-		$("#msg").append(statusMsg);
+          $("#msg").append(`<br><b onclick="openchart('` + theCode + `')">` + theCode +" "+ stkName + "</b>: ");
+          lastPtr = thedrawdata[0].length-1
+		showStatus();
+		detectX();
 		$("#refreshTimer").html(minuteLayersTimer/1000 +" sec ");
 
 	});
@@ -384,6 +329,7 @@ function startToRoll(theCode) {
 
 
 function makeMovAve(bigArray, intv) {
+     //return array length is correct
 	return bigArray.slice(0, intv-1).concat(calcMovAve(bigArray, intv));
 }
 function calcAve(aveArray) {
@@ -453,6 +399,7 @@ function transpose(thisArr) { // Swap rows with columns of a matrix
 
 
 function detectX(){
+
 // var intv1, intv2, intv3, intv4, intv5, intv6, intv7(intv7 disabled)
 // localStorage.stkintv1 = "5"; "10"; "20"; "40"; "80"; "160";
 // thedrawdata[0] current data 白綫
@@ -463,62 +410,54 @@ function detectX(){
 // thedrawdata[5] 80 minute 橙綫
 // thedrawdata[6] 160 minute 紅綫
 
-//警報情況：白綫上穿 黃綫, 白綫上穿 藍綫, 白綫上穿 橙綫, 白綫上穿 紅綫, 白綫上穿 紫綫, 綠綫 上穿 黃綫, 綠綫 上穿 淺藍, 藍綫 上穿 橙綫, 紅線轉勢, 橙線轉勢, 
-
 //	處理白綫
 	curS = thedrawdata[0][thedrawdata[0].length-1] // current data
 	prevS = thedrawdata[0][thedrawdata[0].length-2]
 
-	curL = thedrawdata[2][thedrawdata[0].length-1] // the 10 minute
+	curL = thedrawdata[1][thedrawdata[0].length-1] // the 10 minute
+	prevL = thedrawdata[1][thedrawdata[0].length-2]
+     //checkXMsg = " curS "+curS +" prevS "+prevS +" curL "+curL.toFixed(3) +" prevL "+prevL.toFixed(3) +"<k> L0XL1 </k>"+checkX(prevL, prevS, curL, curS)
+     checkXMsg = "<k> L0XL1 </k>"+checkX(prevL, prevS, curL, curS)
+     $("#msg").append(checkXMsg);
+
+	curL = thedrawdata[2][thedrawdata[0].length-1] // the 5th trend, 40minute
 	prevL = thedrawdata[2][thedrawdata[0].length-2]
-	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;上穿 黃綫" ,"yellowword")}
-	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;下破 黃綫", "yellowword")}
+     checkXMsg = "<k> L0XL2 </k>"+checkX(prevL, prevS, curL, curS)
+     $("#msg").append(checkXMsg);
 
-	curL = thedrawdata[4][thedrawdata[0].length-1] // the 5th trend, 40minute
-	prevL = thedrawdata[4][thedrawdata[0].length-2]
-	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;上穿 藍綫" ,"blueword")}
-	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;下破 藍綫", "blueword")}
+	curL = thedrawdata[3][thedrawdata[0].length-1]
+	prevL = thedrawdata[3][thedrawdata[0].length-2]
+     checkXMsg = "<k> L0XL3 </k>"+checkX(prevL, prevS, curL, curS)
+     $("#msg").append(checkXMsg);
 
-	curL = thedrawdata[5][thedrawdata[0].length-1]
-	prevL = thedrawdata[5][thedrawdata[0].length-2]
-	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;上穿 橙綫" ,"orangeword")}
-	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;下破 橙綫", "orangeword")}
-
-	curL = thedrawdata[6][thedrawdata[0].length-1]
-	prevL = thedrawdata[6][thedrawdata[0].length-2]
-	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;上穿 紅綫" ,"redword")}
-	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;下破 紅綫", "redword")}
-
-//	curL = thedrawdata[7][thedrawdata[0].length-1]
-//	prevL = thedrawdata[7][thedrawdata[0].length-2]
-//	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;上穿 紫綫" ,"whiteword")}
-//	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;下破 紫綫", "whiteword")}
-
-//	處理綠綫
+     // check second line cross
 	curS = thedrawdata[1][thedrawdata[0].length-1] // current data
 	prevS = thedrawdata[1][thedrawdata[0].length-2]
 
-	curL = thedrawdata[2][thedrawdata[0].length-1] // the 10 minute
+	curL = thedrawdata[2][thedrawdata[0].length-1]
 	prevL = thedrawdata[2][thedrawdata[0].length-2]
-	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;綠綫 上穿 黃綫" ,"goldword")}
-	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;綠綫 下破 黃綫", "goldword")}
+     checkXMsg = "<k> L1XL2 </k>"+checkX(prevL, prevS, curL, curS)
+     $("#msg").append(checkXMsg);
 
-	curL = thedrawdata[3][thedrawdata[0].length-1] // the 20 minute
+	curL = thedrawdata[3][thedrawdata[0].length-1]
 	prevL = thedrawdata[3][thedrawdata[0].length-2]
-	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;綠綫 上穿 淺藍" ,"goldword")}
-	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;綠綫 下破 淺藍", "goldword")}
+     checkXMsg = "<k> L1XL3 </k>"+checkX(prevL, prevS, curL, curS)
+     $("#msg").append(checkXMsg);
 
-//	處理藍綫
-	curS = thedrawdata[4][thedrawdata[0].length-1] // current 40minute
-	prevS = thedrawdata[4][thedrawdata[0].length-2]
+     // check third line cross
+     // check second line cross
+	curS = thedrawdata[2][thedrawdata[0].length-1] // current data
+	prevS = thedrawdata[2][thedrawdata[0].length-2]
 
-	curL = thedrawdata[5][thedrawdata[0].length-1] // the 6th trend, 80minute
-	prevL = thedrawdata[5][thedrawdata[0].length-2]
-	if (checkUpX(prevL, prevS, curL, curS)=="UpY"){reportIt("&#x25B2;藍綫 上穿 橙綫" ,"goldword")}
-	if (checkDnX(prevL, prevS, curL, curS)=="DnY"){reportIt("&#x25BC;藍綫 下破 橙綫", "goldword")}
+	curL = thedrawdata[3][thedrawdata[0].length-1]
+	prevL = thedrawdata[3][thedrawdata[0].length-2]
+     checkXMsg = "<k> L2XL3 </k>"+checkX(prevL, prevS, curL, curS)
+     $("#msg").append(checkXMsg);
 
-//	vol changes
-//	
+	curL = thedrawdata[4][thedrawdata[0].length-1]
+	prevL = thedrawdata[4][thedrawdata[0].length-2]
+     checkXMsg = "<k> L2XL4 </k>"+checkX(prevL, prevS, curL, curS)
+     $("#msg").append(checkXMsg);
 
 }
 
@@ -541,32 +480,8 @@ function reportIt(alarmMsg, color){
 	alarmM = alarmMsg
 	alarmM = '<span class="' + color + '">' + alarmM + ', </span>'
 	$("#msg").append(alarmM);
-//	alert(alarmMsg);
-	document.getElementById('alarmPt').play();
-
-	document.getElementById('audioPop').src = 'https://gget.it/u1urz3zh/popsound.mp3';
-	document.getElementById('audioPop').load();
-	document.getElementById('audioPop').play();
-//	alert(alarmMsg);
-	beep(60,620,200);
-	setTimeout(function(){ beep(60,550,200); }, 50);
-
-//	alarmSound.play();
-//	navigator.vibrate([500]);
 }
 
-a=new AudioContext();
-function beep(vol, freq, duration){
-	v=a.createOscillator();
-	u=a.createGain();
-	v.connect(u);
-	v.frequency.value=freq;
-	v.type="triangle";
-	u.connect(a.destination);
-	u.gain.value=vol*0.01;
-	v.start(a.currentTime);
-	v.stop(a.currentTime+ duration*0.001)
-}
 
 //	comparison:
 //	up cross
@@ -589,32 +504,21 @@ function checkDnX(prevL, prevS, curL, curS){
 	}
 }
 
+function checkX(prevL, prevS, curL, curS) {
+    if (curS == curL){return "critical" }
+    if (((prevL == prevS) && (curS > curL )) || ((prevL>prevS) && (curS > curL ))){return "<span class='redrose'>UpCross</span>" }
+    if (((prevL == prevS) && (curS < curL )) || ((prevL<prevS) && (curS < curL ))){return "<gr>DownCross</gr>" }
+    if ((prevL<prevS) && (curS > curL )){return '<span class="brownword">cont.Up</span>' } // c must > prevC, this is not correct, further check for condition
+    if ((prevL>prevS) && (curS < curL )){return '<span class="limeword">cont.Dn</span>' }
+}
+
+
 function chkKey() {
 	var testkey = getChar(event);
 	if(testkey == '\\'){        
         prevcode = localStorage.getItem("previousCode")
         changeCode(prevcode);
      }
-	if(testkey == 'c'){askCode();}
-     if(testkey == '0'){storeCode('sh000001');startToRoll('sh000001');}
-     if(testkey == '3'){storeCode('sz399001');startToRoll('sz399001');}
-     if(testkey == '1'){storeCode('HSI');startToRoll('HSI');}
-     if(testkey == '2'){storeCode('02013');startToRoll('02013');}
-     if(testkey == '4'){storeCode('01766');startToRoll('01766');}
-     if(testkey == '5'){storeCode('02009');startToRoll('02009');}
-     if(testkey == '6'){storeCode('01186');startToRoll('01186');}
-     if(testkey == '7'){storeCode('00788');startToRoll('00788');}
-     if(testkey == '8'){storeCode('00308');startToRoll('00308');}
-     if(testkey == '9'){storeCode('00390');startToRoll('00390');}
-
-     if(testkey == 'a'){window.location = '#cvs';}
-     if(testkey == 's'){window.location = '#accel';}
-     //if(testkey == 's'){storeCode(theCode); window.open("mline11MinuteSto.html");}
-     if(testkey == 'd'){window.location = '#accaccel';}
-  	//if(testkey == 'd'){window.open("mline11chart.html");}
-     //if(testkey == 'v'){window.location = '#imgp6';}
-	if(testkey == 'v'){sCt(theStartCode);}
-
      if(testkey == 'w'){window.scrollTo(0,0);}
      if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
 
@@ -623,34 +527,11 @@ function chkKey() {
      if(testkey == "'"){window.open("swipeChart.html");}
      if(testkey == '.'){localStorage.setItem("randomcode", thecode); window.open("mlineMinutechart.html");}
 
-     if(testkey == 'X'){storeCode(theCode); window.open("Random Charts.html");}
-	if(testkey == 'f'){jpforward();}
-	if(testkey == 'b'){jpback();}
-	// if(testkey == 'B'){baseIdx();}
-	if(testkey == 'T'){jpTop();}
 	if(testkey == 'I'){fullinit();}
 	//if(testkey == 'R'){jprandom();}
      if(testkey == 'R'){askRefreshTime();} // change RefreshTime period
 
 	if(testkey == 't'){window.scrollTo(0,0);}
-	if(testkey == 'w'){askWidth();}
-	if(testkey == 'i'){chgInterval();}
-	if(testkey == 'z'){toggleMinPeriod();}
-	if(testkey == 'l'){askList()}
-	if(testkey == 'q'){qList()}
-
-	if(testkey == 'j'){chgIntv(120);}
-	if(testkey == 'k'){chgIntv(10);}
-
-     if(testkey == 'r'){
-       localStorage.setItem("randomcode", theCode);
-       window.open('Random Charts.html');
-     }
-     if(testkey == 'Z'){
-       thecode = localStorage.getItem("randomcode");
-       localStorage.setItem("stkCode", thecode);
-       window.open("minBor.html", "_blank");
-     }
 }
 
 function getChar(event) {
@@ -686,9 +567,6 @@ function FormatNumberLength(num) {
 </head>
 
 <body onkeypress="chkKey()" onload="autoRefresh();">
-<select id="selectList" onchange="assignList()"></select>
-
-<span id="alertMsg" class="bordred1 borRad15 blinkred whiteback goldbs">提防老千 !!! </span>
 <span class="orangebut gold brownblackgrad embossts" onclick="localStorage.setItem('randomcode', theCode);
        window.open('Random Charts.html');">尋寶</span>
 
@@ -703,30 +581,12 @@ function FormatNumberLength(num) {
 <a href="OHLCOtherCode.html" target="_blank"><span class="bordwhite1 borRad10 brownblackgrad white blackts"><span class="glare"></span>OtherDaily</span></a>
 <a href="OHLCOtherCode2.html" target="_blank" class="bordred1 borRad10 gold brownblackgrad gold2bs">OD2</a>
 <span id="refreshTimer"></span>
-<span onclick=askCode() class="goldbut white blueblackgrad whitebs">编号</span> <b onclick=sCt(theStartCode)>&clubs;</b>  <a href="http://finance.sina.com.cn/money/globalindex/" class="bordred1 borRad10 greenblackgrad embossts white" target="_blank">Gblo</a>
 <span id="dateAndTime" onclick="showDateAndTime()"><script>showDateAndTime();</script></span>
-<div class="dropdown">
-<button onclick="toggleButton()" class="dropbtn">stkCode</button>
-  <div id="myDropdown" class="dropdown-content">
-        <span onclick=changeCode("HSI")>恒指</span><br>
-        <span onclick=changeCode("000001.sh")>上证</span><br>
-        <span onclick=changeCode("399001.sz")>深证</span><br>
-        <span onclick=changeCode("600519.sh")>茅台</span><br>
-        <span onclick=changeCode("700")>700</span><br>
-        <span onclick=changeCode("388")>388</span><br>
-        <span onclick=changeCode("2318")>2318</span><br>
-        <span onclick=changeCode("7500")>7500</span><br>
-        <span onclick=changeCode("7200")>7200</span><br>
-        <span onclick=changeCode("981")>981</span><br>
-        <span onclick=changeCode("09988")>9988</span><br>
-        <span onclick=changeCode("03690")>3690</span><br>
-  </div>
-</div>
-<center>
-<br>
 
 <br>
 
+<br>
+<div id="settings"></div>
 <div id="msg"></div>
 
 <audio id="alarmPt" src="stringVibrate.mp3" preload="auto"></audio>
@@ -771,39 +631,6 @@ z toggleMinPeriod
 function drawTrend(therange,maxValue, minValue, chartID) {
    // dataTooltips = therange.map(item => Math.round(item * 1000) / 1000)
    // dataTooltips = dataTooltips.map(String)
-   RGraph.reset(document.getElementById(chartID));
-   line = new RGraph.Line({
-   	id:chartID, data:therange,
-   	options: {
-   		title: chartID + ", "+theStartCode + " " + stkName,
-			titleColor: 'grey', 
-			titleSize: 10,
-   		backgroundGrid: true, axisColor: '#864', textColor: '#ccc',
-   		colors: chartColor,
-		numxticks: 0, colors: chartColor, scaleDecimals: 2,
-   		tickmarksDotLinewidth: 0,ticksize: 1, linewidth: 1, 
-          tickmarks: 'plus',
-   		ymax: maxValue, ymin: minValue,
-   		spline: false, shadow: false,
-          // tooltips: dataTooltips,
-   		backgroundGridColor: '#001000', backgroundGridVlines: false,
-   		gutterLeft: 0, gutterRight: 50, gutterTop: 25, gutterBottom: 25
-   	}
-   }).trace();
-
-		trendyminpct = 100 - (maxValue-minValue)*100/maxValue,
-		trendymaxpct = 100,
-
-          trendyaxis1 = new RGraph.Drawing.YAxis(chartID, 1250)
-                .Set('colors', ['gold'])
-                .Set('text.color', 'gray')
-                .Set('text.size', 8)
-                .Set('max', trendymaxpct)
-                .Set('min', trendyminpct)
-                .Set('linewidth', 2)
-                .Set('tickmarkslength', 5)
-                .Set('title', '% pct')
-                .Draw();
 };
 
 function diff(arr) {
@@ -835,7 +662,7 @@ function _init() {
 }
 function fullinit() {
 		localStorage.otherCode = "HSI";
-		intvB = 20
+		intvB = 100
 		intv1 = intvB *1
  		intv2 = intvB *2
  		intv3 = intvB *3
@@ -843,30 +670,18 @@ function fullinit() {
  		intv5 = intvB *5
  		intv6 = intvB *6
  		intv7 = intvB *7
-		localStorage.otherCodeshowWidth = "350";
-
-		localStorage.setItem("otherCode","HSI");
           minSteps = [intv1,intv2,intv3,intv4,intv5,intv6,intv7];
-          localStorage.setItem("minSteps", JSON.stringify(minSteps));
-		localStorage.setItem("otherCodeshowWidth","350");
-		alert("full init: HSI," + minSteps)
+		// alert("full init: HSI," + minSteps)
+          showWidth = 1600;
+          datawidth = showWidth + intv6;
+
+          $("#settings").html("<lg>settings:</lg> intv1 " + intv1 + " intv2 " +
+            intv2 + " intv3 " + intv3 + " intv4 " + intv4 + " showWidth " + showWidth +
+            " datawidth " +datawidth);
 }
 function initdata() {
 	// theCode = localStorage.otherCode; // changed to align with random chart
-	theCode = localStorage.randomcode;
-	if(localStorage.minSteps !== undefined) {
-	  minSteps = JSON.parse(localStorage.getItem("minSteps"));
-	  intv1 = parseInt(minSteps[0]);
-	  intv2 = parseInt(minSteps[1]);
-	  intv3 = parseInt(minSteps[2]);
-	  intv4 = parseInt(minSteps[3]);
-	  intv5 = parseInt(minSteps[4]);
-	  intv6 = parseInt(minSteps[5]);
-	  intv7 = parseInt(minSteps[6]);
-	}else{fullinit();}
-
-	showWidth = Number(localStorage.otherCodeshowWidth);
-	datawidth = showWidth + intv6;
+     fullinit();
 }
 
 function askWidth() {
@@ -1029,32 +844,27 @@ function sCt(stkcode) {
   imgWindow.document.write(imgAdr);
 }
 
+function openchart(codenum) {
+  localStorage.setItem("randomcode", codenum); window.open("Random Charts.html");
+}
+
 function showStatus() {
-	lastPtr = thedrawdata[0].length-1
+	//lastPtr = thedrawdata[0].length-1
      closeValue = thedrawdata[2][lastPtr]*100
      prevPt = lastPtr-1
+     if((thedrawdata[0][lastPtr]-thedrawdata[0][lastPtr-1])>0){
+        beginTag = "<r>"
+        endTag = "</r>"
+     }else{
+        beginTag = "<lg>"
+        endTag = "</lg>"
+     }
+
 	theStr = //thedrawdata[0] is the close value
-	"<span class='yellowword'>C " + thedrawdata[0][lastPtr].toFixed(3) + "</span>&emsp;" +
-	"<span class='yellow'>" + 
+	"<y>C " + thedrawdata[0][lastPtr].toFixed(3) + "</y>&emsp;" + beginTag +
      (thedrawdata[0][lastPtr]-thedrawdata[0][lastPtr-1]).toFixed(3) + "&emsp;" + "c% "+
-     ((thedrawdata[0][lastPtr]/thedrawdata[0][lastPtr-1])*100-100).toFixed(1) + "&emsp;" + 
-	"<span class='cyan'>ss " + ((closeValue/thedrawdata[3][lastPtr])-100).toFixed(1) + "&emsp;" + 
-	"(sd " + (100*(thedrawdata[3][lastPtr]-thedrawdata[3][prevPt])/thedrawdata[3][prevPt]).toFixed(1) + ")</span>&emsp;" + 
-
-	"<span class='blue'>sm " + ((closeValue/thedrawdata[4][lastPtr])-100).toFixed(1) + "&emsp;" + 
-	"(md " + (100*(thedrawdata[4][lastPtr]-thedrawdata[4][prevPt])/thedrawdata[4][prevPt]).toFixed(1) + ")</span>&emsp;" + 
-
-	"<span class='brown'>sl " + ((closeValue/thedrawdata[6][lastPtr])-100).toFixed(1) + "&emsp;" + 
-	"(ld " + (100*(thedrawdata[6][lastPtr]-thedrawdata[6][prevPt])/thedrawdata[6][prevPt]).toFixed(1) + ")</span>&emsp;" + 
-
-//	"ma4 " + thedrawdata[6][lastPtr].toFixed(toFixedLen) + 
-	"%<br>";
- 
- 
-	finalString = 'Report: <span class="redword">' + '<span onclick=sCt("' + theStartCode + '")>' + showTime()+ '</span>' + "</span>&emsp;" + theStr
-
-	$("#msg").html("");
-	$("#msg").html(finalString);
+     ((thedrawdata[0][lastPtr]/thedrawdata[0][lastPtr-1])*100-100).toFixed(1) + endTag;
+	$("#msg").append(theStr);
 }
 
 //for(let i = 0; i<5; i++){
@@ -1063,8 +873,16 @@ function showStatus() {
 //}
 _init();
 initdata();
-console.log("theCode "+theCode)
-startToRoll(theCode);
+
+codetable = ['HSI','00700','00388','09988','09888','00788','00308','00390','03988','01810','03690','06618','02388','00175','00291','02333','00136','01171','01610','00001','00002','00003','00005','00006','00011','00012','00016','00017','00027','00066','00101','00241','00267','00288','00316','00322','00386','00669','00688','00762','00823','00857','00868','00881','00883','00939','00941','00960','00968','00981','00992','01038','01044','01088','01093','01109','01113','01177','01209','01211','01299','01378','01398','01876','01928','01929','01997','02020','02269','02313','02318','02319','02331','02382','02628','02688','03692','03968','06098','06690','06862','09618','09633','09999','01613','02013','01186','02009','01766'];
+codetableLen = codetable.length
+  // main loop
+  finalString = '<r>' + showDate() +" "+ showTime() + "</r>"
+  $("#msg").append(finalString + " <lg>Total Num</lg>:", codetableLen + "<br>");
+
+  for (var i = 0; i < codetable.length; i++) {
+         startToRoll(codetable[i])
+  }
 
 // calculate the trend, the previous trend
 // detect the cross
