@@ -16729,6 +16729,477 @@ void HideSphere(float R, int alfa, int beta, int HideFlag, int X, int Y)
   }
 }</code>
 
+<h2>有限状态机FSM</h2>
+<div id="FSMtoc" class="toc"><a href="#FSMtopic-0" target="_self">状态机的初识</a><br><a href="#FSMtopic-1" target="_self">有限状态机和状态模式的关系</a><br><a href="#FSMtopic-2" target="_self">维基百科对状态模式的解释</a><br><a href="#FSMtopic-3" target="_self">FSM核心要素</a><br><a href="#FSMtopic-4" target="_self">状态机的基础实现</a><br><a href="#FSMtopic-5" target="_self">状态抽象</a><br><a href="#FSMtopic-6" target="_self">基础状态机实现：</a><br><a href="#FSMtopic-7" target="_self">Entity误区</a><br><a href="#FSMtopic-8" target="_self">单例状态</a><br><a href="#FSMtopic-9" target="_self">通过Context监听事件</a><br><a href="#FSMtopic-10" target="_self">数据和行为分离的状态模式</a><br><a href="#FSMtopic-11" target="_self">基础状态机的小缺陷</a><br><a href="#FSMtopic-12" target="_self">状态之间需要相互了解</a><br><a href="#FSMtopic-13" target="_self">复杂的状态迁移图（不支持层次化结构）</a><br><a href="#FSMtopic-14" target="_self">缺少运行结果（Status）</a><br><a href="#FSMtopic-15" target="_self">更适合执行而非决策</a><br><a href="#FSMtopic-16" target="_self">基础状态机的优点</a><br></div></center><br><br>
+
+很少使用基础的有限状态机（FSM）实现，多使用行为树（通用任务树）来代替，但基础的FSM还是有必要讲一讲，有两个原因：
+有限状态机（FSM）永远是你最有用的工具之一，虽然形式上可能有差别，但内核是不变的。
+
+我们需要了解FSM的优缺点，才能更好的使用它，以及知道什么时候放弃它。
+
+在开始之前，我提醒几点：
+每个人对FSM的理解可能是不同的，分享的侧重点也是不同的，建议大家多查查资料，集思广益。
+
+一定要阅读《游戏人工智能编程案例精粹》中关于FSM的内容，因为游戏AI中的FSM和基础的FSM实现稍有不同，而作者讲得非常好；
+
+本文不会详细解释状态模式，但状态模式是FSM的基础。
+
+<h3 id="FSMtopic-0">状态机的初识</h3>
+对游戏的AI和战斗部分
+Npc的AI便是状态机实现的
+
+<h3 id="FSMtopic-1">有限状态机和状态模式的关系</h3>
+FSM的内核有一种只可意会不可言传的感觉
+
+对于这些抽象的东西，不建议大家抠文字，而是多在实践中学习和理解，多看他人优秀的代码，通过外在理解本质。
+
+<h3 id="FSMtopic-2">维基百科对状态模式的解释</h3>
+状态模式是一种行为类型的软件设计模式，它可以让物件在其内部状态有变化时，改为其行为。
+
+这种模式有点像有限状态机的概念。
+
+状态模式可以被当成成一种策略模式，它能够在调用模式界面中所定义的方法来切换策略。
+
+计算机编程中，状态模式用于，当同一物件基于其内部状态而有不同行为，将其行为进行封装。
+
+对于物件来说，这可以是一种更为简洁方式，可以在运行时更改其行为而无需诉诸条件语句，从而提高可维护性。
+
+对于状态模式，我补充一个解释：
+状态模式是 将该状态相关的数据和行为封装为状态对象，通过切换状态对象，实现行为的切换。
+
+它与策略模式的区别是：状态可以通过上下文发起状态切换请求，因此状态对象之间通常是互相了解的；
+
+而策略对象不能发起切换策略请求，因此策略之间互不了解。
+
+如果按照百科对FSM的解释，FSM和状态模式其实没太大关系，看下面这段代码：
+
+// 计算从1加到5的和
+public int func() {
+    int r = 0;
+    for(int i = 1; i &lt;= 5; i++) {
+        r += i;
+    }
+    return r;}
+这段代码和状态模式有关系吗？
+
+一点关系也没有。
+
+那这段代码和FSM有关系吗？
+
+这就是个有限状态机。
+
+这里的核心在于：状态是普遍的，有数据就状态，但状态模式是局限与OOP的。
+
+不过，我们日常说的FSM，并不是广义上的FSM，而是一种对状态模式的封装（也可以看做一种模式），它仍然是符合广义FSM定义的。
+
+<h3 id="FSMtopic-3">FSM核心要素</h3>
+上下文（Context）—— 上下文总是核心要素。
+
+委托，对象将一部分逻辑委托给当前状态（State）。
+
+事件驱动，状态切换多基于事件（含输入）。
+
+状态转移表（状态迁移表）
+
+<h3 id="FSMtopic-4">状态机的基础实现</h3>
+下面给出基础的状态和状态机抽象，然后基于这个基础实现，来讨论常见的状态机实现中的一些问题。
+
+<h3 id="FSMtopic-5">状态抽象</h3>
+public interface IState&lt;E&gt; {
+// 进入状态时调用    void enter(E entity);
+// 每帧调用    void execute(E entity); 
+// 退出状态调用    void exit(E entity); 
+// 收到外部事件    void onEvent(E entity, Object event);}
+
+<h3 id="FSMtopic-6">基础状态机实现：</h3>
+
+
+public class StateMachine&lt;E, S extends IState&gt; {
+    private E entity; // 实体，或者说上下文    private S curState; // 当前状态
+
+public E getEntity() {
+        return entity;
+    }
+    
+public void setEntity(E entity) {
+        this.entity = entity;
+    }
+// 获取当前状态    
+public S getCurState() {
+        return curState;
+    }
+// 是否在指定状态    
+public boolean isInState(Class&lt;?&gt; type) {
+    
+// 注意：通常不使用instanceof测试        return curState != null &amp;&amp; curState.getClass() == type;
+    }
+// 每帧调用，驱动当前状态运行    
+public void update() {
+        if (curState != null) {
+            curState.execute(entity);
+        }
+    }
+// 请求切换到新状态    
+public void changeState(S newState) {
+        if (curState != null) {
+            curState.exit(entity);
+        }
+        curState = newState;
+        if (newState != null) {
+            newState.enter(entity);
+        }
+    }
+// 收到外部事件 -- 接口与具体需求有关    
+public void onEvent(Object event) {
+        if (curState != null) {
+            curState.onEvent(entity, event);
+        }
+    }}
+
+<h3 id="FSMtopic-7">Entity误区</h3>
+在游戏开发中，我们实现FSM时，通常将State的依赖（入参）命名Entity。
+
+这种做法，可能会对新手程序员形成误导，认为状态的依赖是实体（Entity） —— 一些写FSM框架的程序员的也有这样的误解。
+
+实际上，状态依赖的是上下文（Context），而不是实体（Entity）。
+
+我们在日常的编码中很少定义额外的Context类，是因为多数情况下不需要为对象封装额外的数据和功能；
+
+另外，在游戏开发中，我们通常是针对GameObject编码，而我们又习惯称GameObject这类对象为Entity（实体），久而久之，游戏开发中的FSM和State的参数都变成了Entity —— 所以，这一误解在游戏开发中较为常见。
+
+下面这种基于Context的状态模式实现，才是更为通用的组织方式。
+
+
+public class Context {
+    IState curState;
+// Context的其它数据    
+
+public void changeState(IState newState) {
+        if (curState != null) {
+            curState.exit(this);
+        }
+        curState = newState;
+        if (newState != null) {
+            newState.enter(this);
+        }
+    }
+    
+public void onEvent(Object event) {
+        curState.onEvent(this, event);
+    }}
+
+<h3 id="FSMtopic-8">单例状态</h3>
+我发现许多书籍在讲解状态模式时，都谈到了单例状态，但依据我个人的编程经验，我认为单例状态的适用性过于狭窄 —— 许多项目的将状态实现为单例的，实则并未做到“单例”。
+
+通常，导致单例不适用的原因是：State有自己的临时数据要维护。
+
+针对这个问题，我们可以将这些临时数据也存储在上下文中（即数据与行为分离）来解决 —— 这是很常用的方案。
+
+
+public class Context {
+    EStateType stateType;
+// 标签类，平铺所有状态的数据 ...}
+
+有些人认为这样做以后，单例状态就没有障碍了；
+
+但在实际的项目开发中，FSM的状态通常还涉及到事件监听。
+
+我们在进入新状态时，许多时候都需要监听一些事件，一种常见的写法是这样的：
+
+
+public class MyState implements IState&lt;GameObject&gt; {
+    
+public void enter(GameObject entity) {
+    
+// 可能是监听实体自身的事件，也可能是监听外部的事件        addEventHandler(EventType.customEvent, (event) -&gt; onEvent(entity, event));
+    }}
+看起来是不是没啥问题？
+
+非也。
+
+由于我们在Lambda中捕获了entity，这创建了一个中间对象，这使得我们的单例名存实亡。
+
+这个问题的根本是：状态（State）的上下文不全，状态在处理事件时，缺少Entity这个上下文。
+
+实际上，我们可以通过将Entity 存储在当前状态上，以避免Lambda捕获entity。
+
+// 调整后的State接口
+public interface IState&lt;E&gt; extends IEventHandler&lt;FSMEvent&gt; {
+// 进入状态前调用    void setEntity(E entity);
+// 进入状态时调用    void enter();
+// 每帧调用    void execute(); 
+// 退出状态调用    void exit();
+// 收到外部事件 -- 继承自EvntHandler接口    @Override    void onEvent(FSMEvent event);}
+// 具体状态示例：
+public class MyState implements IState&lt;GameObject&gt; {
+    private GameObject entity;
+    @Override    
+public void setEntity(GameObject entity) {
+        this.entity = entity;
+        }
+    @Override    
+public void enter() {
+    
+// 自身便是EventHandler        addEventHandler(EventType.customEvent,  this);
+    }
+    @Override    
+public void onEvent(FSMEvent event) {
+    
+//...
+
+   }}
+
+对应的，我们需要调整一下状态机的实现，这里只写出changeState方法的修改：
+
+
+public class StateMachine&lt;E, S extends IState&gt; {
+// 请求切换到新状态    
+public void changeState(S newState) {
+        if (curState != null) {
+            curState.exit();
+        
+// 退出状态后清理上下文            curState.setEntity(null);
+        }
+        curState = newState;
+        if (newState != null) {
+        
+// 进入状态前注入上下文            newState.setEntity(entity);
+             newState.enter();
+        }
+    }}
+不过，这么修改以后，State便不能是单例。
+
+Q：那如果不主动监听事件，总是外部推送事件给当前状态，可行吗？
+
+A：怎么说呢，我回想了下历史经历的需求，多数情况下可行。
+
+我说个不可行的例子，假设现在有个AI需求是：当周围有敌人施放技能时，如果和对方距离小于5m，则后退一定距离。
+
+现在，我们需要做两件事：
+维护一定范围内的对象列表 —— 不仅仅是敌人。
+
+监听周围对象施放技能事件。
+
+现在，我们必须在目标实体上注册我们的监听器，否则目标对象在施放技能时将不能确定事件的广播范围。
+
+有人可能说：广播场景上所有实体不就行了？
+
+单从逻辑的正确性上讲，确实是可以；
+
+但从性能上讲，广播所有实体将快速耗尽机器的计算资源 —— 观察者模式、发布订阅模式的一个重要作用便是：消息（事件）分流，将广播变为组播。
+
+<h3 id="FSMtopic-9">通过Context监听事件</h3>
+要保持单例状态，这个问题的正确解法是：通过上下文（Context）来监听事件。
+
+注意我们在前文提到的Entity误区，State依赖的其实是上下文，而不单纯是Entity，只是多数情况下确实只依赖Entity便足够；
+
+这里我们将State的依赖恢复为Context。
+
+修改后的State接口如下：
+
+
+public IState&lt;E&gt; {
+// 进入状态时调用    void enter(FSMContext&lt;E&gt; ctx);
+// 每帧调用    void execute(FSMContext&lt;E&gt; ctx); 
+// 退出状态调用    void exit(FSMContext&lt;E&gt; ctx);
+// 收到外部事件    void onEvent(FSMContext&lt;E&gt; ctx, FSMEvent event);}
+
+FSMContext的定义如下：
+
+// Context作为一切逻辑的入口，StateMachine隐藏在Context中
+public class FSMContext&lt;E&gt; implements IEventHandler&lt;FSMEvent&gt; {
+    private E entity;
+    private StateMachine&lt;E&gt; stateMachine;
+
+public void update() {
+        stateMachine.update(this);
+    }
+    
+public void changeState(IState nextState) {
+        stateMachine.changeState(this, nextState);
+    }
+// 所有的外部事件，先回调到Context，再通过Context转发到StateMachine           
+public void onEvent(FSMEvent fsmEvent) {
+        stateMachine.onEvent(this, fsmEvent);
+    }}
+
+具体状态监听事件的调整如下：
+
+
+public class MyState implements IState&lt;GameObject&gt; {
+@Override    
+public void enter(FSMContext&lt;GameObject&gt; ctx) {
+    
+// 使用ctx充当EventHandler        addEventHandler(EventType.customEvent, ctx);
+    }}
+
+虽然通过Context监听事件，可以避免lambda捕获上下文，但这种方案也有一些问题：
+将事件先回调到Context，再转发到StateMachine并不总是合理，这可能产生逻辑上的变化。
+
+比如：在游戏AI中，FSM通常还包含全局状态（globalState），将事件转发至StateMachine可能产生不期望的逻辑。
+
+Context 承担了不必要的职责，既让Context变得复杂，也让使用者感觉莫名其妙。
+
+说实话，如非必要，我一般不会选择单例 —— 单例会让许多问题都变得麻烦；
+
+就游戏中的FSM而言，我通常都不使用单例，因为节省的内存太有限了，真正消耗的内存的地方根本不在这里。
+
+PS：这里给大家留几个思考。
+
+FSMContext 和 StateMachine 是否可以合并？
+
+如果可以合并，那么应当保留谁？
+
+将实体（entity） 替换为 黑板（blackboard），这套结构发生了什么变化？
+
+将FSMContext 替换为 AIComponent，这套结构又发生了什么变化？
+
+<h3 id="FSMtopic-10">数据和行为分离的状态模式</h3>
+在我第一个项目中，还出现了数据和行为分离的状态模式，State仅仅是数据，State的行为全部委托给StateHandler。
+
+以GameObject的AI设计为例，其代码大概是这样的：
+
+
+public interface IState {
+    StateType getType();}
+// 行为转移到StateHandler类
+public interface StateHandler {
+// 进入状态时调用    void enter(GameObject entity, IState state);
+// 每帧调用    void execute(GameObject entity, IState state); 
+// 退出状态调用    void exit(GameObject entity, IState state);
+// 收到外部消息    void onMessage(GameObject entity, IState state, Telegram telegram);}
+// 对象的AI组件
+public class GameObjectAI {
+    private GameObject entity;
+    private IState curState;
+    private final EnumMap&lt;StateType, StateHandler&gt; handlerMap = new EnumMap&lt;&gt;(StateType.class);
+
+public void registerHandler(StateType stateType, StateHandler handler) {
+        handlerMap.put(stateType, handler);
+    }
+    
+public StateHandler getHandler(StateType stateType) {
+        return handlerMap.get(stateType);
+    }
+    
+public void update() {
+        handlerMap.get(curState.getType()).execute(entity, curState);
+    }
+    
+public void onMessage(Telegram telegram) {
+        handlerMap.get(curState.getType()).onMessage(entity, curState, telegram);
+    }}
+
+说实话，这套设计在我离职时（入职三年）都没有理解得很好。
+
+这个设计，不止我有疑惑，另一个维护场景内代码的同事也有这个疑惑，因为这样写有一个很大的问题：总是要多写一个Handler类，还总是需要向下类型转换。
+
+后来，我和同事问了Leader，Leader并未对我们做过多的解释，只是简单地说了两句：数据和行为分离，有更好的扩展性；
+
+不过多数情况下，我们也确实不需要这么高的扩展性，你们也可以不按照这种方式写。
+
+说实话，我当时并没听懂，那时的我还是一个菜鸟，在代码设计上的思考还很欠缺。
+
+后来，我和同事在写副本玩法时，便不再按照State + StateHandler 的方式组织代码，只有AI模块仍然按照这种方式扩展。
+
+这套设计，我认为多数读者是没有见过的，也看不明白这么设计有什么好处，状态的逻辑明明能写在State类中，为什么要舍近求远写在StateHandler类中呢？
+
+就这里的FSM例子，我觉得不太能体现出“更好的扩展性”这一点。
+
+数据和行为分离具有更好的扩展性，主要体现在对象的行为可能产生【多维度的变化】时。
+
+如果用继承来实现多维度的行为变化，一旦出现不同行为之间的组合，继承体系将难以驾驭，而使用组合则容易实现。
+
+（装饰者模式、桥接模式也是用于解决这类问题的）
+
+<article data-content="[{&quot;type&quot;:&quot;block&quot;,&quot;id&quot;:&quot;r1WT-1723645800222&quot;,&quot;name&quot;:&quot;paragraph&quot;,&quot;data&quot;:{},&quot;nodes&quot;:[{&quot;type&quot;:&quot;text&quot;,&quot;id&quot;:&quot;8YJn-1723645800220&quot;,&quot;leaves&quot;:[{&quot;text&quot;:&quot;这里我补充一个优点：&quot;,&quot;marks&quot;:[]},{&quot;text&quot;:&quot;减少了数据类的类层次&quot;,&quot;marks&quot;:[{&quot;type&quot;:&quot;color&quot;,&quot;value&quot;:&quot;#F33232&quot;}]},{&quot;text&quot;:&quot; 。
+
+在游戏开发中，减少数据类类层次是非常重要的，以后详细解释。
+
+&quot;,&quot;marks&quot;:[]}]}],&quot;state&quot;:{}}]">    这里我补充一个优点：减少了数据类的类层次 。
+
+在游戏开发中，减少数据类类层次是非常重要的，以后详细解释。
+
+<k>State + StateHandler 模式的缺点</k>：
+多数情况下，我们并不需要这么高的灵活度，因此数据和行为分离反而增加了我们的开发和维护负担。
+
+StateHandler 需要进行大量的向下类型转换，有额外的开销。
+
+PS：虽然数据与行为分离我也用得很熟练了，但如果不是在这个项目待过，大概也写不出State + StateHandler 这种结构
+
+<h3 id="FSMtopic-11">基础状态机的小缺陷</h3>
+现在我谈一谈在日常使用FSM中遇见的一些问题，这些问题也是使我不再使用基础的FSM的原因。
+
+<h3 id="FSMtopic-12">状态之间需要相互了解</h3>
+虽然许多时候可以由外部来切换状态，比如Context主动发起状态切换，但多数情况下由State自身来切换状态，因此状态之间需要互相了解，这就导致了复杂的依赖。
+
+要解决这个问题：可以通过State在执行完成时，告知Context自身执行完毕（成功或失败），由Context来决定下一步 —— 我们需要实现特殊的Context类。
+
+PS：C# 的 async / await 状态机其实就是这么运作的。
+
+
+public class MyState implements IState {
+    
+public void execute(FSMContext ctx) {
+        if (cond()) {
+            ctx.onComplected(this, Status.SUCCESS);
+            return;
+                }
+    
+// ...    }}
+
+<h3 id="FSMtopic-13">复杂的状态迁移图（不支持层次化结构）</h3>
+由于基础的FSM不支持层次化结构，所有的状态都处于同一层级，且通常状态之间需要相互了解，这在状态数量较多时，会产生非常复杂的状态迁移图，代码的维护复杂度急剧上升。
+
+说起来，以前用FSM实现游戏AI时，并没有遇见特别复杂的状态迁移图，反而是在做玩家的登录状态机（会话生命周期）时，为保证健壮性，维护过复杂的状态机（9个状态）。
+
+在实现登录状态机时，我就发现状态机不能分层是个问题，当服务器和客户端完成【数据库数据】同步后，其实玩家的系统功能操作已经可用，只是场景内的功能尚不可用；
+
+但由于状态机是单层的，因此我不能将完成数据库同步后的状态定义为Playing，而只能选择将进入场景后定义为Playing状态。
+
+针对这个问题，也有一个解决方案：分层状态机（HFSM）。
+
+不过，我并没有写过分层状态机，我直接从基础的FSM过渡到了通用的任务树（TaskTree），因此我在这里不讲HFSM。
+
+<img class="lazy" data-src="https://mmbiz.qpic.cn/mmbiz_png/c2vcRRONwG0QA3CuPdCibGRqYEeEFdElqb0EhRRKySPrG8PjdDu2Jc50lgfxp30icg6q5h8VicvDAmriaUca5vubuw/640">
+
+<h3 id="FSMtopic-14">缺少运行结果（Status）</h3>
+有时我们需要知道当前状态是执行成功而退出，还是失败而退出，而基础的FSM框架中是不包含这部分逻辑的。
+
+不过，这也并不是普遍需求，而且支持它也并不困难，因此是个小问题。
+
+
+public abstract class State {
+// 增加状态的执行结果 UNKNOWN, SUCCESS, FAILED，CANCELLED...    private Status status = Status.UNKNOWN; }
+public class MyState extends State {
+    
+public void execute(FSMContext ctx) {
+    
+// 先设置执行结果，然后调用changeState        setStatus(Status.SUCCESS);
+        ctx.changeState(nextState);
+        return;
+    }}
+PS：状态机可以在ChangeState的时候检查任务的status，如果未赋值，可抛出异常或统一设置为取消。
+
+<h3 id="FSMtopic-15">更适合执行而非决策</h3>
+在基础的FSM实现中，State不包含运行结果，FSM只是简单的执行当前状态，并响应状态切换。
+
+因此FSM并不是控制器，而只是执行器 —— 缺少决策逻辑。
+
+而在游戏AI中，决策是核心，执行是其次。
+
+所以，不论是FSM，还是HFSM，都难以胜任复杂的游戏AI —— 因为它们做出的决策是简单的，“缺少思考”的。
+
+<h3 id="FSMtopic-16">基础状态机的优点</h3>
+三点：简单，高效，强大。
+
+基础的FSM实现是非常简单的，稍有编程经验的程序员都能照猫画虎，很快学会；
+
+而又因为FSM的实现简单，因此其几乎没有额外的开销，因此是高性能的 —— 比行为树高N倍。
+
+不过，虽然FSM的实现是简单的，但FSM并不弱小，反而非常强大，因为FSM可以模拟我们遇见的大部分事物；
+
+所以，有限状态机（FSM）永远是你最有用的工具之一，属于必须掌握的技术。
 
 
 

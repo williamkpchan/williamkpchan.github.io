@@ -35872,6 +35872,107 @@ player.on('volumechange', function(event) {
     volumeControl.value = event.detail.value;
 });
 
+<h2>使用JavaScript读取手机联系人列表</h2>
+<div id="readphonecontactlisttoc" class="toc"><a href="#readphonecontactlisttopic-0" target="_self">API和设备将限制可用的属性</a><br><a href="#readphonecontactlisttopic-1" target="_self">隐私和安全</a><br><a href="#readphonecontactlisttopic-2" target="_self">API和代码</a><br><a href="#readphonecontactlisttopic-3" target="_self">总结</a><br></div></center><br><br>
+
+<a href="https://alvaromontoro.com/blog/68058/read-phone-contact-list-from-javascript" class="whitebut ">Read Phone Contacts with JavaScript</a>
+https://stackoverflow.com/questions/60339201/can-i-get-a-phone-contacts-list-with-javascript
+
+作者注：本文中描述的技术和流程是实验性的，只能在少数浏览器中工作。
+在撰写本文时，联系人选择器API仅支持 Android Chrome（从版本80开始）和iOS Safari（从版本14.5开始）。
+
+在以前使用JavaScript从手机访问联系人数据是不可想象的。
+现在有了联系人选择器API，我们可以使用JavaScript来实现这个功能。
+此功能在需要联系人信息（如电话号码或VoIP）的应用程序，通过这个功能我们可以在社交平台中发现通讯录中的好友(前提需要社交平台有对应的手机号码字段)，或者需要填写联系人表单信息时则无需切换应用程序即可获取到相应的数据。
+
+<h3 id="readphonecontactlisttopic-0">API和设备将限制可用的属性</h3>
+开发者可以选择以下五个标准属性：
+姓名 电话 电子邮件 地址 图标
+以上返回的都是数组形式，因为联系人可以有多个电话、电子邮件或多个地址。
+为了保持一致性，即使它是单个值，返回的数据始终是一个数组。
+<h3 id="readphonecontactlisttopic-1">隐私和安全</h3>存储在手机上的联系人信息可能包含敏感信息，我们必须小心处理。
+我们需要必须考虑到隐私和安全问题：
+<k>联系人选择器API代码必须在顶级浏览上下文中运行。</k>它防止外部代码，如广告或第三方插件，读取手机上的联系人列表。
+ <k>联系人选择器API代码只能在用户手势后运行。</k>开发者不能完全自动化这个过程，用户必须采取行为触发后读取联系人。
+ <k>用户必须允许访问联系人列表。</k>这个是由手机限制而不是JavaScript强加的。
+用户必须授予浏览器访问联系人的权限（如果它还没有授权）。
+ 当他们第一次使用使用联系人选择器API的网站时，他们可能会收到提示
+手机会在每次使用联系人选择器API代码时显示这个弹出窗口，直到用户点击“允许”。
+联系人选择器API在未允许之前不会运行。
+这个一次性的，授权之后不会再弹出。
+<h3 id="readphonecontactlisttopic-2">API和代码</h3>
+联系人选择器API只定义了两个方法：
+getProperties()：返回设备上可读取的属性列表。
+在定义中有五个值："address"（地址）、"email"（电子邮件）、"icon"（这可能不是联系人图片）、"name"（姓名）、"tel"（电话），但设备可能不允许访问所有这些属性。
+ select()：打开联系人弹出窗口，并在用户完成操作后返回选择。
+它接受两个参数：要读取的属性列表和一个可选的对象，包含选项。
+ 两种方法都返回Promise，但考虑到它们触发的操作会阻止应用程序的正常流程，我们在处理它们时应该使用async / await。
+
+如前面隐私和安全部分所述，在调用API之前需要用户操作，因此如果没有用户交互，我们就无法触发任何内容，因此我们新增一个按钮：
+
+&lt;button onclick="getContactData()"&gt;Show contact data&lt;/button&gt;
+主要的代码将在getContactData()函数中。
+但在此之前如果联系人选择器API不可用，显示按钮没有意义，在默认情况下隐藏按钮（添加hidden属性），仅在API可用时才显示它。
+
+通过 "contacts" in navigator判断当前浏览器环境是否支持该API：
+if ("contacts" in navigator) {
+  document.querySelector("button").removeAttribute("hidden");
+}
+接下来是核心的按钮逻辑：
+async function getContactData() {
+  // 指定将读取哪些联系人值
+  const props = ["tel", "name", "email"];
+  try {
+    // 打开本地联系人选择器（在权限被授予后）
+    const contacts = await navigator.contacts.select(props);
+    // 这将在本地联系人选择器关闭后执行
+    if (contacts.length) {
+      // 如果有数据，显示
+      alert("选中的数据: " + JSON.stringify(contacts));
+    } else {
+      // 没有表示没有选择
+      alert("没有选择任何内容");
+    }
+  } catch (ex) {
+    // 如果发生错误，显示错误信息
+    alert(ex.message)
+  }
+}
+一旦按钮触发了这个功能，如果浏览器有权限，联系人选择页将会显示出来，展示基本信息：阅读数据的URL，它将返回什么数据，以及要从中挑选的联系人列表。
+关闭弹窗后，contacts变量将以JSON格式存储数据，作为一个数组，其中包含所请求信息的对象（如果联系人卡片中不可用，则可能为空）。
+
+这是选择了联系人后的结果示例：
+[
+  {
+    "address": [],
+    "email": [ "alvarosemail@gmail.com" ],
+    "icon": [],
+    "name": [ "Alvaro Montoro" ],
+    "tel": [ "555-555-5555", "555-123-4567" ]
+  }
+]
+如果数据包含图标，则它将是带有图像的blob。
+如果数据包含地址，它将是一个更复杂的对象，包含街道、城市、国家、邮政编码等。
+<h2>选择多个联系人 </h2>可以选择多个联系人。
+我们需要向navigator.contacts.select()方法传递第二个参数来指示此选项。
+const props = ["tel", "address", "icon", "name", "email"];
+const options = { multiple: true };
+const contacts = await navigator.contacts.select(props, options);
+结果是一个联系人数组，和上面的示例返回结果是一样的。
+<h3 id="readphonecontactlisttopic-3">总结</h3>
+联系信息是个人身份信息，我们必须以敏感数据所需的所有谨慎和安全性来处理它。
+<k>尊重人们的隐私</k>。
+不要强迫他们分享他们不想分享的信息。
+ <k>以安全的方式小心处理数据</k>。
+如果您正在处理的数据是您自己的数据，您会感到舒适吗？
+ <k>如果不需要，请不要存储数据</k>。
+读它，用它，忘记它。
+不要存储你不使用的数据。
+ <k>只获取您需要的数据</k>。
+获得建立信誉和信任所需的一切。
+ 假设一个Web应用程序试图在选择电话号码时读取地址、姓名或电子邮件。
+如果这种情况发生在我身上，我会拒绝授权并离开这个网站。
+
 
 
 
