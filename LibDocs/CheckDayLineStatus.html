@@ -48,8 +48,12 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
 </center>
 <br>
 <pre>
-<h2 id="10">previous statistics</h2><span class="redbut" onclick="updateStat('ChkXAprevStatus');")>Load Prev Stat</span>
+<h2 id="10">statistics</h2><span class="redbut" onclick="updateStat('CheckDayLineStatus');")>Load Prev Stat</span>
+<k>prev statistics</k>
 <div id="prevstatistics"></div>
+
+<pk>current statistics</pk>
+<div id="currentstatistics"></div>
 
 <h2><dr>M3XM4<dr></h2>
 <div id="M3XM4"></div>
@@ -57,12 +61,27 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
 
 <h2><dr>M2XM3<dr></h2>
 <div id="M2XM3"></div>
+<div id="M2XM3Count"></div>
 
 <h2>M1XM2</h2>
 <div id="M1XM2"></div>
+<div id="M1XM2Count"></div>
 
 <h2><r>M0XM4<r></h2>
 <div id="M0XM4"></div>
+<div id="M0XM4Count"></div>
+
+<h2><bo>M0uXM1<bo></h2>
+<div id="M0uXM1"></div>
+<div id="M0uXM1Count"></div>
+
+<h2><gr>M0 down cross M1<gr></h2>
+<div id="M0dXM1"></div>
+<div id="M0dXM1Count"></div>
+
+<h2><gr>M0 Cont Dn M1<gr></h2>
+<div id="M0ContDnM1"></div>
+<div id="M0ContDnM1Count"></div>
 
 <h2>StkStatus</h2>
 <div id="StkStatus"></div>
@@ -164,6 +183,15 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
       newstail = "/0/all/1"
 
       // main loop
+      M3XM4Count = 0
+      M2XM3Count = 0
+      M1XM2Count = 0
+      M0XM4Count = 0
+      M0uXM1Count = 0
+
+      M0dXM1Count = 0
+      M0ContDnM1Count = 0
+
       for (var i = 0; i < codetable.length; i++) {
          collectStkData(codetable[i])
       }
@@ -179,7 +207,7 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
       }
 
       localStorage.setItem(statname, 
-        document.getElementById("statistics").innerHTML)
+        document.getElementById("currentstatistics").innerHTML)
       }
 
       function askforCode() {
@@ -329,8 +357,33 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
                   amtLst.push(amtvalue);
               }
               // redraw();  // this line must be inside the AJAX because AJAX run last
+
               lastPrice = closeLst[closeLst.length-1]
-              chkCross(stkName, highLst, midLst, theCode, lastPrice) // must put inside the RGraph.AJAX.getJSON
+
+              lastamt = amtLst[amtLst.length-1]
+              lastamt = Number(lastamt.replace(/^.*?;|w.*/g, ""))
+
+              if(lastamt > 0){
+                chkCross(stkName, highLst, midLst, theCode, lastPrice) // must put inside the RGraph.AJAX.getJSON
+                $("#M3XM4Count").html("<k>Total M3XM4Count: </k><bo>"+ M3XM4Count +"</bo>");
+                $("#M2XM3Count").html("<k>Total M2XM3Count: </k><bo>"+ M2XM3Count +"</bo>");
+                $("#M1XM2Count").html("<k>Total M1XM2Count: </k><bo>"+ M1XM2Count +"</bo>");
+                $("#M0XM4Count").html("<k>Total M0XM4Count: </k><bo>"+ M0XM4Count +"</bo>");
+                $("#M0uXM1Count").html("<bo>Total M0uXM1Count: </bo><o>"+ M0uXM1Count +"</o>");
+                $("#M0dXM1Count").html("<gr>Total M0dXM1Count: </gr><blg>"+ M0dXM1Count +"</blg>");
+                $("#M0ContDnM1Count").html("<gr>Total M0ContDnM1Count: </gr><blg>"+ M0ContDnM1Count +"</blg>");
+
+                $("#currentstatistics").html(showDate() +" "+ showTime() + "<br>" +
+                  "<k> Total M3XM4Count: </k><bo>"+ M3XM4Count +"</bo>" +
+                  "<k> Total M2XM3Count: </k><bo>"+ M2XM3Count +"</bo>" +
+                  "<k> Total M1XM2Count: </k><bo>"+ M1XM2Count +"</bo>" +
+                  "<k> Total M0XM4Count: </k><bo>"+ M0XM4Count +"</bo>" + 
+                  "<br><bo>Total M0uXM1Count: </bo><o>"+ M0uXM1Count +"</o>" + 
+                  "<gr> Total M0dXM1Count: </gr><blg>"+ M0dXM1Count +"</blg>" + 
+                  "<gr> Total M0ContDnM1Count: </gr><blg>"+ M0ContDnM1Count +"</blg>"
+                );
+
+              }
            });
 
            //showActivity(theCode)
@@ -356,7 +409,7 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
        else if(testkey == 'U'){ $('#usstock').toggle(); window.location = '#usstock';}
        else if(testkey == 'c'){askforCode();}
        else if(testkey == '+'){addToquickCodeList();}
-       else if(testkey == 'q'){updateStat("ChkXAprevStatus");}
+       else if(testkey == 'q'){updateStat("CheckDayLineStatus");}
        //else if(testkey == 'q'){myfavor();}
        else if(testkey == 'Q'){usequickCodeList();}
        else if(testkey == 'B'){usestkListArr();}
@@ -1106,7 +1159,6 @@ function docLoaded() {
 
     function chkCross(stkName, highLst, midLst, thisCode, lastPrice) { // includes main chart and aux charts
       contUCnt = 0
-      M3XM4Count = 0
         statustxt = `<k onclick="xunbao('` + thisCode + `')">`+ thisCode + " <dr>" + stkName+ '</dr></k>&emsp;'
         $("#StkStatus").append( "<br>" +statustxt);
 
@@ -1174,6 +1226,33 @@ function docLoaded() {
       $("#StkStatus").append(checkXMsg);
       if(checkXMsg.includes('cont.Up')){contUCnt = contUCnt +1}
 
+
+      // check if upCross
+      result = /UpCross/.test(checkXMsg);
+      if(result){
+        uptxt = statustxt.replace(/dr>/g, "o>");
+        $("#M0uXM1").append(uptxt);
+        M0uXM1Count = M0dXM1Count +1
+      }
+
+      // check if DownCross
+      result = /DownCross/.test(checkXMsg);
+      if(result){
+        downtxt = statustxt.replace(/dr>/g, "gr>");
+        $("#M0dXM1").append(downtxt);
+        M0dXM1Count = M0dXM1Count +1
+      }
+
+      // check if cont.Dn
+      result = /cont.Dn/.test(checkXMsg);
+      if(result){
+        downtxt = statustxt.replace(/dr>/g, "gr>");
+        $("#M0ContDnM1").append(downtxt);
+        M0ContDnM1Count = M0ContDnM1Count +1
+      }
+
+
+
       curL = curM2
       prevL = prevM2
       checkXMsg = "<k> M0XM2 </k>"+checkX(prevL, prevS, curL, curS)
@@ -1194,6 +1273,7 @@ function docLoaded() {
 
       if(contUCnt == 4){
         $("#M0XM4").append(statustxt);
+        M0XM4Count++;
       }
 
       curS = curM1
@@ -1206,6 +1286,7 @@ function docLoaded() {
 
       if(contUCnt == 5){
         $("#M1XM2").append(statustxt);
+        M1XM2Count++;
       }
 
       curS = curM2
@@ -1218,6 +1299,7 @@ function docLoaded() {
 
       if(contUCnt == 6){
         $("#M2XM3").append(statustxt);
+        M2XM3Count++;
       }
 
       curS = curM3
@@ -1230,11 +1312,8 @@ function docLoaded() {
 
       if(contUCnt == 7){
         $("#M3XM4").append(statustxt);
-        M3XM4Count++
-        $("#M3XM4Count").html("<k>Total M3XM4Count: </k><bo>"+M3XM4Count+"</bo>");
+        M3XM4Count++;
       }
-
-
     }
 
     function checkX(prevL, prevS, curL, curS) {
