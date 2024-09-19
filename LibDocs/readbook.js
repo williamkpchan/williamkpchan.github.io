@@ -46,7 +46,7 @@ function chkKey() {
   else if(testkey == "+"){ addtoWL();}
   else if(testkey == "-"){ rvFmWL();}
   else if(testkey == "a"){ askNum();}
-  else if(testkey == "w"){ setwaitListSize();}
+  //else if(testkey == "w"){ setwaitListSize();}
   else if(testkey == "z"){ dblClickIt();}
   else if(testkey == 'v'){ viewImgSource();} //imgControl.js
   else if(testkey == '*'){ pageScroll();} //imgControl.js
