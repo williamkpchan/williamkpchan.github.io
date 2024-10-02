@@ -90,7 +90,7 @@ function chkOtherKeys(testkey) {
   else if(testkey == 'u'){window.open("https://www.worldometers.info/coronavirus/");}
   else if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
   else if(testkey == 'x'){showTenYear();}
-  else if(testkey == 'X'){window.open("https://williamkpchan.github.io/LibDocs/Random Charts.html");}
+  else if(testkey == 'X'){window.open("./LibDocs/Random Charts.html");}
 
   else if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
   else if(testkey == '"'){window.open("https://williamkpchan.github.io/LibDocs/mline11Minutechart.html");}
