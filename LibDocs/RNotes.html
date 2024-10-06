@@ -38774,6 +38774,339 @@ do.call(rbind, ll)
 ## 15        15  8.295845 17.77535
 ## 16        16  9.482168 16.35076</gr>
 
+<h2>tidyverse</h2>
+<div id="begintidyversetoc" class="toc"><a href="#begintidyversetopic-0" target="_self">Load the packages</a><br><a href="#begintidyversetopic-1" target="_self"> Learn the "pipe"</a><br><a href="#begintidyversetopic-2" target="_self"> What is tidy data?</a><br><a href="#begintidyversetopic-3" target="_self">The core tidy data principles</a><br><a href="#begintidyversetopic-4" target="_self"> A hypothetical clinical trial to explain variables</a><br><a href="#begintidyversetopic-5" target="_self"> What's an observation?</a><br><a href="#begintidyversetopic-6" target="_self"> What is the data table?</a><br><a href="#begintidyversetopic-7" target="_self">How the "tibble" is better than a table</a><br><a href="#begintidyversetopic-8" target="_self">Using the tidyr package</a><br><a href="#begintidyversetopic-9" target="_self">Using gather</a><br><a href="#begintidyversetopic-10" target="_self"> Using key-value pairs</a><br><a href="#begintidyversetopic-11" target="_self">Using spread</a><br></div></center><br><br>
+
+https://www.storybench.org/getting-started-with-tidyverse-in-r/
+<h3 id="begintidyversetopic-0">Load the packages</h3>
+First, install tidyverse and then load tidyverse and magrittr.
+
+suppressWarnings(suppressMessages(install.packages("tidyverse")))
+suppressWarnings(suppressMessages(library(tidyverse)))
+suppressWarnings(suppressMessages(library(magrittr)))
+
+
+<h4 id="begintidyversetopic-1"> Learn the "pipe"</h4>
+We'll be using the "pipe" throughout this tutorial.
+The pipe makes your code read more like a sentence, branching from left to right.
+So something like this: f(x)becomes this: x %&gt;% f and something like this: h(g(f(x)))becomes this: x %&gt;% f %&gt;% g %&gt;% h
+The "pipe" and is from the magrittr package.
+
+<h4 id="begintidyversetopic-2"> What is tidy data?</h4>
+"Tidy data" is a term that describes a standardized approach to structuring datasets to make analyses and visualizations easier.
+If you've worked with SQL and relational databases, you'll recognize most of these concepts.
+
+<h3 id="begintidyversetopic-3">The core tidy data principles</h3>
+There are three principles for tidy data:
+
+Variable make up the columns
+Observations make up the rows
+Values go into cells
+The third principle is almost a given if you've handled the first two, so we will focus on these.
+<h4 id="begintidyversetopic-4"> A hypothetical clinical trial to explain variables</h4>
+A variable is any measurement that can take multiple values.
+Depending on the field a dataset comes from, variables can be referred to as an independent or dependent variables, features, predictors, outcomes, targets, responses, or attributes.
+
+Variables can generally fit into three categories: <em>fixed variables</em> (characteristics that were known before the data were collected), <em>measured variables</em> (variables containing information captured during a study or investigation), and <em>derived variables</em> (variables that are created during the analysis process from existing variables).
+
+Here's an example: Suppose clinicians were testing a new anti-hypertensive drug.
+They recruit 30 patients, all of whom are being treated for hypertension, and divide them randomly into three groups.
+
+The clinician gives one third of the patients the drug for eight weeks, another third gets a placebo, and the final third gets care as usual.
+At the beginning of the study, the clinicians also collect information about the patients.
+These measurements included the patient's sex, age, weight, height, and baseline blood pressure (pre BP).
+For patients in this hypothetical study, suppose the group they were randomized to (i.e the drug, control, or placebo group), would be considered a <em>fixed variable</em>.
+
+The measured pre BP (and post BP) would be considered the <em>measured variables</em>.
+Suppose that after the trial was over–and all of the data were collected–the clinicians wanted a way of identifying the number of patients in the trial with a reduced blood pressure (yes or no)? One way is to create a new categorical variable that would identify the patients with post BP less than 140 mm Hg (1 = yes, 0 = no).
+This new categorical variable would be considered a <em>derived variable</em>.
+
+The data for the fictional study I've described also contains an underlying dimension of time.
+As the description implies, each patient's blood pressure was measured before and after they took the drug (or placebo).
+So these data could conceivably have variables for <em>date of enrollment </em>(the date a patient entered the study), <em>date of pre blood pressure</em> measurement (baseline measurements),<em> date of drug delivery</em> (patient takes the drug), <em>date of post blood pressure </em>measurement (blood pressure measurement taken at the end of the study).
+
+<h4 id="begintidyversetopic-5"> What's an observation?</h4>
+Observations are the unit of analysis or whatever the "thing" is that's being described by the variables.
+Sticking with our hypothetical blood pressure trial, the patients would be the unit of analysis.
+
+In a <em>tidy</em> dataset, we would expect each row to represent a single patient.
+Observations are a bit like nouns, in a sense that pinning down an exact definition can be difficult, and it often relies heavily on how the data were collected and what kind of questions you're trying to answer.
+Other terms for observations include records, cases, examples, instance, or samples.
+<h4 id="begintidyversetopic-6"> What is the data table?</h4>
+Tables are made up of values.
+And as you have probably already guessed, a value is the thing in a spreadsheet that isn't a row or a column.
+
+I find it helpful to think of values as physical locations in a table – they are what lie at the intersection of a variable and an observation.
+For example, imagine a single number, 75, sitting in a table.
+<table><thead>
+<tr><th></th><th>Column 1</th><th>Column 2</th></tr>
+</thead>
+<tbody><tr><td>Row 1</td><td></td><td></td></tr>
+<tr><td>Row 2</td><td></td><td>75</td></tr>
+</tbody></table>
+We could say this number's location is the intersection of Column 2 and Row 2, but that doesn't tell us much.
+The data, 75, is meaningless sitting in a cell without any information about what it represents.
+A number all alone in a table begs the question, "<em>seventy-five what?</em>"
+
+This is why thinking of a table as being made of variables (in the columns) and observations (in the rows) helps get to the meaning behind the values in each cell.
+After adding variable (column) and observation (row) names, we can see that this 75 is the pre diastolic blood pressure (Pre_Dia_BP) for patient number 3 (patient_3).
+<table><thead>
+<tr><th></th><th>Col 1</th><th>Pre_Dia_BP</th></tr>
+</thead>
+<tbody>
+<tr><td>Row 1</td><td></td><td></td></tr>
+<tr><td>patient_3</td><td></td><td>75</td></tr>
+</tbody></table>
+It's also worth pointing out that this same information could be presented in another way:
+<table><thead>
+<tr><th></th><th>meas_type</th><th>Dia_BP</th></tr>
+</thead>
+<tbody>
+<tr><td>Row 1</td><td></td><td></td></tr>
+<tr><td>patient_3</td><td>pre</td><td>75</td></tr>
+</tbody></table>
+This arrangement is displaying the same information (i.e.
+the pre diastolic blood pressure for patient number 3), but now the column meas_type is containing the information on <em>which</em> blood pressure measurement the 75 represents (pre).
+Which one is <em>tidy</em>? In order to answer this, we will build a pet example to establish some basic <em>tidying</em> terminology.
+<h3 id="begintidyversetopic-7">How the "tibble" is better than a table</h3>
+We will use the call below to create a <em>key-value pair </em>reference tibble.
+tibbles are an optimized way to store data when using packages from the tidyverse and you should read more about them here.
+
+We are going to build a tibble from scratch, defining the columns (variables), rows (observations), and contents of each cell (value).
+By doing this, we'll be able to keep track of what happens as we rearrange these data.
+The goal of this brief exercise is to make key-value pairs easier to see and understand.
+Our new object (key_value) is built with the following underlying logic.
+
+<em>Rows</em> are numbered with a number (1–3) and an underscore (_), and always appear at the front of a value.
+<em>Columns</em> are numbered with an underscore (_) and a number (1–3), and always appear at the end of a value.
+
+library(tidyr)
+library(tibble)
+
+key_value &lt;- tribble(
+     ~row, ~key1, ~key2, ~key3, <o>#</o> These are the names of the columns (indicated with ~)
+     "1", "1_value_1","1_value_2","1_value_3", <o>#</o> Row 1
+     "2", "2_value_1", "2_value_2", "2_value_3", <o>#</o> Row 2
+     "3", "3_value_1", "3_value_2", "3_value_3" <o>#</o> Row 3
+)
+key_value
+
+
+So, the <em>value</em> for key1 and row = 1 is 1_value_1; The <em>value</em> for key2 and row = 2 is 2_value_2; and so on.
+
+The first number #_ represents the row (observation) position, the trailing number _# represents the key_ column (variable) position.
+<h3 id="begintidyversetopic-8">Using the tidyr package</h3>
+tidyr is a package from the tidyverse that helps you structure (or re-structure) your data so its easier to visualize and model.
+Here is a link to the tidyr page.
+<em>Tidying</em> a data set usually involves some combination of either converting rows to columns (spreading), or switching the columns to rows (gathering).
+We can use our key_value object to explore how these functions work.
+<h3 id="begintidyversetopic-9">Using gather</h3>
+"Gather takes multiple columns and collapses into key-value pairs, duplicating all other columns as needed.
+You use gather() when you notice that you have columns that are not variables."
+That's how tidyverse defines <em>gather</em>.
+
+Let's start by gathering the three key columns into a single column, with a new column value that will contain all their values.
+
+kv_gathered &lt;- key_value %&gt;% 
+     gather(key, <o>#</o> this will be the new column for the 3 key columns
+            value, <o>#</o> this will contain the 9 distinct values
+            key1:key3, <o>#</o> this is the range of columns we want gathered
+            na.rm = TRUE <o>#</o> handles missing
+            )
+kv_gathered
+
+
+Notice the structure:
+
+The new key column is now 9 rows, with the values from the three former key1, key2, and key3 columns.
+The value column contains all the content from the cells at each intersection of row and the key1, key2, and key3 columns
+
+I call this arrangement of data "stacked." Wickham refers to this as indexed.
+But the important takeaway is that we've used gather() to scoop up the data that was originally scattered across three columns and placed them into two columns: key and value.
+<img src="https://www.storybench.org/wp-content/uploads/2017/05/tibble1-500x277.png" loading="lazy">
+<h4 id="begintidyversetopic-10"> Using key-value pairs</h4>
+Key-value pairs pair up keys and values.
+This means when we specified key as the name of the new column, the command took the three previous key columns and stacked them in it.
+Then we specified value as the name of the new column with their corresponding value pair.
+<em>What about the row column?</em> We left this column out of the call because we want it to stay in the same arrangement (i.e.
+1,2,3).
+
+When the key and value columns get stacked, these rows get repeated down the column,
+Nothing was lost in the process, either.
+I can still look at row:3,key:2 and see the resulting value 3_value_2.
+<h3 id="begintidyversetopic-11">Using spread</h3>
+Now we'll spread the key and value columns back into their original arrangement (three columns of key_1, key_2, &amp; key_3).
+The spread description reads: <em>"Spread a key-value pair across multiple columns."</em>
+
+kv_spreaded &lt;- kv_gathered %&gt;% 
+     spread(
+          key, 
+          value
+          )
+kv_spreaded
+
+
+Spread moved the values that were stacked in two columns (key and value) into the three distinct key_ columns.
+<img src="https://www.storybench.org/wp-content/uploads/2017/05/spread1-500x148.png" loading="lazy">
+
+The <em>key-value</em> pairs are the indexes we can use to rearrange the data to make it tidy.
+Which version of the key_value is tidy? We stated that tidy data means, <em>"one variable per column, one observation per row,"</em> so the arrangement that satisfied this condition is the key_gathered data set.
+But I want to stress that without knowledge of what these variables and observations actually contain, we can't really know if these data are tidy.
+
+<h2>文本挖掘的15个实用方法</h2>
+<div id="textminingtoc" class="toc"><a href="#textminingtopic-0" target="_self">准备工作:</a><br><a href="#textminingtopic-1" target="_self">1. 文本预处理</a><br><a href="#textminingtopic-2" target="_self">2. 分词</a><br><a href="#textminingtopic-3" target="_self">3. 去除停用词</a><br><a href="#textminingtopic-4" target="_self">4. 词频统计</a><br><a href="#textminingtopic-5" target="_self">5. 创建词云</a><br><a href="#textminingtopic-6" target="_self">6. TF-IDF计算</a><br><a href="#textminingtopic-7" target="_self">7. 情感分析</a><br><a href="#textminingtopic-8" target="_self">8. 词性标注（需要安装并加载 openNLP 包）</a><br><a href="#textminingtopic-9" target="_self">9. 提取名词</a><br><a href="#textminingtopic-10" target="_self">10. 词共现分析</a><br><a href="#textminingtopic-11" target="_self">11. 主题建模 (LDA)</a><br><a href="#textminingtopic-12" target="_self">12. 文本相似度计算</a><br><a href="#textminingtopic-13" target="_self">13. 文本聚类</a><br><a href="#textminingtopic-14" target="_self">14. 关键词提取</a><br><a href="#textminingtopic-15" target="_self">15. 文本摘要（简单版本）</a><br></div></center><br><br>
+
+<h3 id="textminingtopic-0">准备工作:</h3>
+首先，我们需要安装并加载一些常用的包：
+# 安装包
+install.packages(c("tidyverse", "tidytext", "wordcloud", "tm", "textminingtopicmodels", "stringr"))
+
+# 加载包
+library(tidyverse)
+library(tidytext)
+library(wordcloud)
+library(tm)
+library(textminingtopicmodels)
+library(stringr)
+
+# 创建一个示例文本数据集
+text_data &lt;- c(
+"R语言是一种强大的统计计算和图形工具。",
+"Python也是数据科学中常用的编程语言。",
+"文本挖掘可以帮助我们从大量文本中提取有价值的信息。",
+"机器学习算法可以用于文本分类和情感分析。",
+"数据可视化是数据分析中不可或缺的一部分。"
+)
+
+# 创建一个数据框
+df &lt;- data.frame(id = 1:5, text = text_data)
+
+<h4 id="textminingtopic-1">1. 文本预处理</h4>
+# 转换为小写
+df$text_lower &lt;- tolower(df$text)
+
+# 去除标点符号
+df$text_clean &lt;- str_replace_all(df$text_lower, "[[:punct:]]", "")
+
+print(df$text_clean)
+
+<h4 id="textminingtopic-2">2. 分词</h4>
+df_words &lt;- df %&gt;%
+unnest_tokens(word, text_clean)
+print(head(df_words, 10))
+
+<h4 id="textminingtopic-3">3. 去除停用词</h4>
+data(stop_words)
+df_words_clean &lt;- df_words %&gt;%
+anti_join(stop_words)
+print(head(df_words_clean, 10))
+
+<h4 id="textminingtopic-4">4. 词频统计</h4>
+word_freq &lt;- df_words_clean %&gt;%
+count(word, sort = TRUE)
+print(head(word_freq, 10))
+
+<h4 id="textminingtopic-5">5. 创建词云</h4>
+wordcloud(words = word_freq$word, freq = word_freq$n, max.words = 50, random.order = FALSE)
+
+<h4 id="textminingtopic-6">6. TF-IDF计算</h4>
+df_tfidf &lt;- df_words_clean %&gt;%
+count(id, word) %&gt;%
+bind_tf_idf(word, id, n)
+print(head(df_tfidf, 10))
+
+<h4 id="textminingtopic-7">7. 情感分析</h4>
+# 加载情感词典
+sentiments &lt;- get_sentiments("bing")
+df_sentiment &lt;- df_words_clean %&gt;%
+inner_join(sentiments) %&gt;%
+count(id, sentiment) %&gt;%
+spread(sentiment, n, fill = 0)
+print(df_sentiment)
+
+<h4 id="textminingtopic-8">8. 词性标注（需要安装并加载 openNLP 包）</h4>
+# install.packages("openNLP")
+# install.packages("NLP")
+library(openNLP)
+library(NLP)
+
+annotate_text &lt;- function(text) {
+words &lt;- NLP::words(text)
+tags &lt;- openNLP::tagPOS(words)
+return(data.frame(word = words, pos = tags))
+}
+
+df$pos_tags &lt;- lapply(df$text_clean, annotate_text)
+print(df$pos_tags[[1]])
+
+<h4 id="textminingtopic-9">9. 提取名词</h4>
+get_nouns &lt;- function(pos_tags) {
+nouns &lt;- pos_tags[pos_tags$pos %in% c("NN", "NNS", "NNP", "NNPS"), "word"]
+return(paste(nouns, collapse = " "))
+}
+df$nouns &lt;- sapply(df$pos_tags, get_nouns)
+print(df$nouns)
+
+<h4 id="textminingtopic-10">10. 词共现分析</h4>
+word_pairs &lt;- df_words_clean %&gt;%
+pairwise_count(word, id, sort = TRUE)
+print(head(word_pairs, 10))
+
+<h4 id="textminingtopic-11">11. 主题建模 (LDA)</h4>
+dtm &lt;- df_words_clean %&gt;%
+count(id, word) %&gt;%
+cast_dtm(id, word, n)
+
+lda_model &lt;- LDA(dtm, k = 2, control = list(seed = 1234))
+textminingtopics &lt;- tidy(lda_model, matrix = "beta")
+
+top_terms &lt;- textminingtopics %&gt;%
+group_by(textminingtopic) %&gt;%
+top_n(5, beta) %&gt;%
+ungroup() %&gt;%
+arrange(textminingtopic, -beta)
+print(top_terms)
+
+<h4 id="textminingtopic-12">12. 文本相似度计算</h4>
+library(proxy)
+tfidf_matrix &lt;- df_tfidf %&gt;%
+cast_sparse(id, word, tf_idf)
+
+similarity_matrix &lt;- simil(tfidf_matrix, method = "cosine")
+print(similarity_matrix)
+
+<h4 id="textminingtopic-13">13. 文本聚类</h4>
+km_result &lt;- kmeans(tfidf_matrix, centers = 2)
+df$cluster &lt;- km_result$cluster
+print(df[, c("id", "text", "cluster")])
+
+<h4 id="textminingtopic-14">14. 关键词提取</h4>
+extract_keywords &lt;- function(text, n = 5) {
+words &lt;- unlist(strsplit(tolower(text), "\\s+"))
+word_freq &lt;- table(words)
+top_words &lt;- names(sort(word_freq, decreasing = TRUE)[1:n])
+return(paste(top_words, collapse = ", "))
+}
+
+df$keywords &lt;- sapply(df$text_clean, extract_keywords)
+print(df[, c("id", "text", "keywords")])
+
+<h4 id="textminingtopic-15">15. 文本摘要（简单版本）</h4>
+summarize_text &lt;- function(text, n = 2) {
+sentences &lt;- unlist(strsplit(text, "。|！|？"))
+if (length(sentences) &lt;= n) return(text)
+
+sentence_importance &lt;- sapply(sentences, function(s) sum(str_count(s, "\\w+")))
+top_sentences &lt;- sentences[order(sentence_importance, decreasing = TRUE)[1:n]]
+return(paste(top_sentences, collapse = "。 "))
+}
+
+df$summary &lt;- sapply(df$text, summarize_text)
+print(df[, c("id", "text", "summary")])
+
+以上就是使用R进行文本挖掘的15个实用方法。
+这些方法涵盖了文本挖掘过程中的多个方面，<k>从基本的文本预处理到复杂的主题建模</k>。
+文本挖掘是一个需要<k>不断练习和积累经验的过程</k>。
 
 
 <script type='text/javascript' src='readbook.js'></script>
