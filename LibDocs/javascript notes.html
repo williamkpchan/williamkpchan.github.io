@@ -924,12 +924,6 @@ return false;
 &lt;/script>
 ===========================
 <br>
-<h2>$("#codelist").load("HKCodelist.txt")</h2>
-$(document).ready(function(){
-//    $("#codelist").load("HKCodelist.txt");thisImgHead = "&lt;img src='http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=9&indpara1=20&indpara2=2&indpara3=0&indpara4=0&indpara5=0&subChart1=3&ref1para1=5&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&subChart3=12&ref3para1=0&ref3para2=0&ref3para3=0&scheme=3&com=100&chartwidth=580&chartheight=400&stockid=";thisImgPCode= "&period=7";thisImgTail="&type=1&logoStyle=1' ";	$.get('5FC.txt', function (d) {    var theList = d.split(',');	$( "#codelist" ).append("Total: " + theList.length + "&lt;br>");			for( var codeNo = 0; codeNo &lt; theList.length; codeNo++){				theText = theList[codeNo];		theFunccode = thisImgHead + theText + thisImgPCode + thisImgTail + "onclick = \"sCt('" + theText + "')\">";		$( "#codelist" ).append( theFunccode);	};});
-});
-===========================
-<br>
 <h2>function chkKey()</h2>
 Note: the id tag cannot be located inside b, should be p or div
 function chkKey() {
@@ -36661,6 +36655,620 @@ var bookmarkerList = []
 
 <h2>regex replace multiple matches</h2>
 lastamt = Number(lastamt.replace(/^.*?;|w.*/g, "").replace(/,/g, ""))
+
+<h2>load extenal data</h2>
+<h3>.load</h3>
+$("#codelist").load("HKCodelist.txt")
+
+<h3>.get</h3>
+$("button").click(function(){
+  $.get("demo_test.asp", function(data, status){
+    console.log("Data: " + data + "\nStatus: " + status);
+  });
+});
+
+  thisImgHead = "&lt;img src='http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=9&indpara1=20&indpara2=2&indpara3=0&indpara4=0&indpara5=0&subChart1=3&ref1para1=5&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&subChart3=12&ref3para1=0&ref3para2=0&ref3para3=0&scheme=3&com=100&chartwidth=580&chartheight=400&stockid=";
+  thisImgPCode= "&period=7";
+  thisImgTail="&type=1&logoStyle=1' ";
+
+  $.get('5FC.txt', function (data) {
+    var theList = data.split(',');
+    $("#codelist").append("Total: " + theList.length + "&lt;br>");
+    for(var codeNo = 0; codeNo &lt; theList.length; codeNo++){
+      theText = theList[codeNo];
+      theFunccode = thisImgHead + theText + thisImgPCode + thisImgTail + "onclick = \"sCt('" + theText + "')\">";
+      $( "#codelist" ).append( theFunccode);
+    };
+  });
+
+Access to XMLHttpRequest at from origin 'null' has been blocked by CORS policy
+
+<h2>Video Streaming with JavaScript</h2>
+<div id="VideoStreamingtoc" class="toc"><a href="#VideoStreamingtopic-0" target="_self">create index.html</a><br><a href="#VideoStreamingtopic-1" target="_self">To enable the camera</a><br><a href="#VideoStreamingtopic-2" target="_self">processStream</a><br><a href="#VideoStreamingtopic-3" target="_self">VideoBuffer</a><br><a href="#VideoStreamingtopic-4" target="_self">server-side</a><br><a href="#VideoStreamingtopic-5" target="_self">express</a><br><a href="#VideoStreamingtopic-6" target="_self">file upload</a><br><a href="#VideoStreamingtopic-7" target="_self">sendFile</a><br></div></center><br><br>
+
+https://medium.com/@likovalevl/video-streaming-with-javascript-the-easy-way-45ecd7ec3f08
+
+<k>client</k> creates video =&gt;
+<k>client</k> sends video to server =&gt;
+<k>server</k> stores video =&gt;
+<k>client</k> asks server for video =&gt; 
+server loads the video from storage =&gt; 
+server sends video to client =&gt;
+<k>client</k> plays video
+Everything happens with HTTP and doesn’t involve any superfluous code.
+
+Let’s start with the client-side.
+The root of the whole project will be the &lt;video&gt; HTML tag.
+<h3 id="VideoStreamingtopic-0">create index.html</h3>
+like this:
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;title&gt;Streaming&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;video autoplay&gt;&lt;/video&gt;
+    &lt;script src="index.js"&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+
+We’ve added &lt;video&gt; tag with autoplay attribute and &lt;script&gt; to hook our <mgr>index.js</mgr> from the directory root.
+
+Place the <mgr>index.js</mgr> in the same directory.
+<h3 id="VideoStreamingtopic-1">To enable the camera</h3>
+we need to ask the browser if it has a proper API.
+
+For this we use the following function:
+function permittedGetUserMedia() {
+    return !!(navigator.mediaDevices &amp;&amp;
+        navigator.mediaDevices.getUserMedia);
+}
+
+So at the top level of the <mgr>index.js</mgr> we make a trigger:
+
+if (permittedGetUserMedia()) {
+    const video = document.querySelector('video');
+    const mediaSource = new MediaSource();
+    video.src = URL.createObjectURL(mediaSource);
+
+    navigator.mediaDevices.getUserMedia({
+        video: true
+    }).then((stream) =&gt; processStream(stream, mediaSource));
+}
+	
+In this part of code, we check if we have access to the camera, then we get the node of &lt;video&gt; tag.
+This node has the <mgr>src</mgr> attribute.
+
+Typically it should be a URL of the video file, but today we will provide a virtual URL of some object in the browser memory.
+We create <mgr>MediaSource</mgr> and create its URL, that we set as <mgr>video.url</mgr> property.
+
+This <mgr>MediaSource</mgr> will provide the proper interface for &lt;video&gt; node.
+With the last directive, we will ask the user for permission to enable the camera.
+Users will see a notification in a browser and can allow video recording.
+
+If she or he did it, the promise that is returned by this method will be resolved and we will receive <mgr>MediaStream</mgr> object.
+In this example, we will pass it to the <mgr>processStream</mgr> function along with the <mgr>MediaSource</mgr> instance.
+
+In fact, all the rest of the actions here are in vain if you just want to make a cyberpunk mirror.
+You can just make <mgr>(stream) =&gt; {video.srcObject = stream}</mgr> without even bothering about <mgr>MediaSource</mgr>.
+This is also a viable approach.
+But here we are going to simulate the later connection to the server.
+
+<h3 id="VideoStreamingtopic-2">processStream</h3>
+In <mgr>processStream</mgr> we write:
+
+function processStream(stream, mediaSource) {
+    const mediaRecorder = new MediaRecorder(stream)
+    const videoBuffer = mediaSource.addSourceBuffer('video/webm;codecs=vp8');
+
+    mediaRecorder.ondataavailable = (data) =&gt; {
+        let fileReader = new FileReader();
+        let arrayBuffer;
+
+        fileReader.onloadend = () =&gt; {
+            arrayBuffer = fileReader.result;
+            videoBuffer.appendBuffer(arrayBuffer)
+        }
+        fileReader.readAsArrayBuffer(data.data);
+    }
+    mediaRecorder.start()
+
+    setInterval(() =&gt; {
+        mediaRecorder.requestData()
+    }, 1000)
+}
+
+Here we define <mgr>MediaRecord</mgr> instance that will create a kind of media file that we can send to the server later.
+<mgr>MediaRecord</mgr> must be started before use.
+<h3 id="VideoStreamingtopic-3">VideoBuffer</h3>
+<mgr>VideoBuffer</mgr> is a special object that works as an input to <mgr>MediaSource</mgr>.
+It is an instance of <mgr>MediaBuffer</mgr>.
+
+You can have several <mgr>MediaBuffers</mgr> for one <mgr>MediaSource</mgr>.
+Right now <mgr>MediaRecord</mgr> just creates a bunch of video information.
+We can pull if from time to time to send to the server /video player.
+For this, we invoke <mgr>requestData</mgr> method that activates a built-in method of <mgr>MediaRecorder</mgr> called <mgr>ondataavailable</mgr>.
+
+It also cleans previous data so we can call it several times and receive non-overlapping bunches of video.
+For periodical loads of data, we can use <mgr>setInterval</mgr>.
+All the further magic will happen in <mgr>MediaRecorder.ondataavailable</mgr>.
+This method receives old data.
+
+We will feed it to our <mgr>videoBuffer</mgr> — and everything works.
+Except for one little thing: we need to convert the data into <mgr>arrayBuffer</mgr> using FileReader instance.
+This is basically it.
+We received the same cyberpunk mirror but with a little lag.
+Please, don’t try to shave or apply makeup using it.
+
+&lt;<h3 id="VideoStreamingtopic-4">server-side</h3>
+Now we can move to create the server-side.
+Let’s be lazy here and use docker-compose for faster connection of all services.
+For me the project structure looks like this:
+
+<img src="https://miro.medium.com/v2/resize:fit:468/format:webp/1*tJaKXLrsi8RfmkfhlINlaA.jpeg">
+
+The rest of the files are autogenerated.
+I will not go deeper into the environment implementation, I just will show you the contents of the supporting files.
+Docker-compose creates 3 services: <mgr>frontend</mgr>, <mgr>backend</mgr>, and <mgr>nginx</mgr>.
+The last one makes sure that we have the same domain name for API and client:
+
+version: '3'
+
+services:
+  nginx:
+    image: nginx
+    ports:
+      - 80:80
+    restart: always
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+
+  frontend:
+    image: nginx
+    volumes:
+      - ../frontend:/usr/share/nginx/html
+
+  backend:
+    build: ./backend
+    volumes:
+      - ../backend:/app
+    working_dir: /app
+    command: nodemon index.js
+
+Nginx configurations are pretty standard, except I’ve made max body size a little bigger:
+
+user  nginx;
+worker_processes  1;
+
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+events {
+    worker_connections  1024;
+}
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    client_max_body_size 50m;
+
+    sendfile        on;
+
+    keepalive_timeout  65;
+
+    gzip  on;
+
+    include /etc/nginx/conf.d/*.conf;
+}
+
+The default site config is like this:
+
+upstream frontend-upstream {
+    server frontend:80;
+}
+
+upstream backend-upstream {
+    server backend:3000;
+}
+server {
+    listen       80 default;
+    server_name  _;
+    root         /var/www/html;
+
+    location ~ ^/api {
+        rewrite  ^/api/?(.*) /$1 break;
+        proxy_pass http://backend-upstream;
+    }
+
+    location / {
+      proxy_pass http://frontend-upstream;
+    }
+
+}
+
+We set up upstreams for API and client here.
+<mgr>Docekrfile</mgr> for backend looks like this:
+
+FROM node
+RUN npm install nodemon -g
+
+For the sake of development simplicity, I set up <mgr>nodemon</mgr> here for hot-reloading the code.
+Now to the backend.
+I’ve used this package.json:
+
+{
+  "name": "stream-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "express": "^4.17.1",
+    "express-fileupload": "^1.1.6-alpha.6"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" &amp;&amp; exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
+
+<h3 id="VideoStreamingtopic-5">express</h3>
+It has only 2 dependencies: <mgr>express</mgr> and <mgr>express-fileupload</mgr>.
+With a pure node making the same will be a more painful process.
+Believe me, I’ve tried.
+Put empty <mgr>index.js</mgr> file into the backend directory, so on the first start backend container wouldn’t exit with an error.
+Use <mgr>docker-compose up</mgr> to set up the server and access the backend with <mgr>docker-compose exec backend bash</mgr>.
+From there execute <mgr>npm install</mgr> and we’re ready for coding.
+
+
+Prerequisites:
+For the frontend part, we will have the same functions <mgr>permittedGetUserMedia</mgr>, <mgr>processStream</mgr>, and the same <mgr>if</mgr> clause that we used before.
+We will change only <mgr>processStream</mgr>.
+For the backend we will need an obligatory part of express.js:
+
+const fs = require('fs')
+const bodyParser = require('body-parser')
+const express = require('express')
+const fileUpload = require('express-fileupload')
+
+const app = express()
+app.use(bodyParser.urlencoded())
+app.use(bodyParser.json())
+app.use(fileUpload({
+    useTempFiles: true,
+    tempFileDir: '/tmp/'
+}))
+
+const hostname = '0.0.0.0'
+const port = 3000
+
+// CODE GOES HERE
+
+app.listen(port, hostname, () =&gt; {
+    console.log('Starting development server')
+})
+
+<h3 id="VideoStreamingtopic-6">file upload</h3>
+Let’s start with file upload.
+From the frontend point of view, we need to grab the video and send it to the server.
+We can delete all contents of processStream function now and leave only a call of a new function called registerRecord.
+This function will look like this:
+
+function registerRecord(stream) {
+    const mediaRecorder = new MediaRecorder(stream)
+    let countUploadChunk = 0
+
+    mediaRecorder.ondataavailable = (data) =&gt; {
+        sendFile(data.data, countUploadChunk)
+        countUploadChunk++
+    }
+    mediaRecorder.start()
+
+    setInterval(() =&gt; {
+        mediaRecorder.requestData()
+    }, 2000)
+}
+
+We’re creating the same <mgr>MediaRecorder</mgr> instance and define a counter.
+The counter will be used to mark a new part of the video we send to the server.
+We’re using <mgr>MediaRecorder</mgr> instance the same way as before, except now we don’t put the result directly to the player, but send it to the server.
+
+We grow counter here to make a new chunk name every time.
+One step aside here.
+We will need to name our stream somehow.
+The name must be unique and the easiest way is to define it on the client-side.
+I’ve defined it as a global constant:
+
+function sendFile(file, chunkNumber) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('name', STREAM_NAME);
+    formData.append('chunk', chunkNumber);
+    fetch('/api/upload', {
+        method: 'PUT',
+        body: formData
+    });
+}
+
+<h3 id="VideoStreamingtopic-7">sendFile</h3>
+The <mgr>sendFile</mgr> function will look like this:
+
+function sendFile(file, chunkNumber) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('name', STREAM_NAME);
+    formData.append('chunk', chunkNumber);
+    fetch('/api/upload', {
+        method: 'PUT',
+        body: formData
+    });
+}
+
+Nothing special here: we’re just sending a bunch of <mgr>form-data</mgr> including the file itself, name of stream and number of a chunk.
+Now we are sending video to the server at last.
+On backend let’s define a helper function:
+
+const makeDirnameFilename = (name, chunk) =&gt; {
+    const dirname = `/app/uploads/${name}`
+    const filename = `${dirname}/${chunk}.webm`
+    return [dirname, filename]
+}
+
+It will help us to define the name of saving/loading files.
+Now we can work with uploading file:
+
+app.put('/upload', (req, res) =&gt; {
+    const file = req.files.file
+    const [dirname, filename] = makeDirnameFilename(req.body.name, req.body.chunk)
+
+    fs.promises.mkdir(dirname, {recursive: true})
+        .then(
+            file.mv(filename)
+        )
+
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/plain')
+    res.end('Upload\n')
+})
+
+First, we define some helper constants.
+Then, we make sure that the directory for the new file really exists.
+Our file is saved in temporary storage and we just move it to the permanent directory.
+This all happens asynchronously so we return the response before the file is actually saved.
+Now, if you will try the code, it will start saving files, but won’t show you anything.
+
+We proceed with playing functionality.
+For the frontend part, we will add a call of registerPlayer function in processStream function.
+Finally the later will look like this:
+
+function processStream(stream, mediaSource) {
+    registerRecord(stream)
+    registerPlayer(mediaSource)
+}
+
+And here is the whole code of the <mgr>registerPlayer</mgr>:
+
+function registerPlayer(mediaSource) {
+    const videoBuffer = mediaSource.addSourceBuffer('video/webm;codecs=vp8');
+    let countDownloadChunk = 0
+
+    setInterval(() =&gt; {
+        fetch(`/api/download?name=${STREAM_NAME}&amp;chunk=${countDownloadChunk}`)
+            .then((response) =&gt; {
+                if (response.status !== 200) {
+                    throw Error('no such file')
+                }
+                return response.arrayBuffer()
+            }).then((buffer) =&gt; {
+                countDownloadChunk++
+                videoBuffer.appendBuffer(buffer)
+            }).catch(() =&gt; {})
+    }, 1000)
+}
+
+We’re defining <mgr>videoBuffer</mgr> as before.
+And adding one more counter, this time for downloading.
+Downloading intervals will be less then uploading to make sure that we catch all new chunks of video without video freezes.
+
+With <mgr>fetch</mgr>, we grab the file on a specific route using the GET query.
+Then, if a response is 200 (we actually can have 204 here if a new file is not ready), we make <mgr>arrayBuffer</mgr> from file and return it as a next promise resolution.
+
+The resulting <mgr>arrayBuffer</mgr> we will send into <mgr>videoBuffer</mgr>.
+We increment the counter here only on a successful download.
+The last <mgr>catch</mgr> is used to prevent littering console with error messages.
+For the backend we define a new endpoint:
+
+app.get('/download', (req, res) =&gt; {
+    const query = req.query
+    const [dirname, filename] = makeDirnameFilename(query.name, query.chunk)
+
+    fs.promises.readFile(filename)
+        .then((file) =&gt; {
+            res.statusCode = 200
+            res.write(file, 'binary')
+            res.end()
+        }).catch(() =&gt; {
+        res.statusCode = 204
+        res.end()
+    })
+})
+
+First, we create helper constants here and then trying to read the file.
+On success, we just send it to the client, but if we don’t find it — we return 204 for the client like a call to try it later.
+
+If you will return 404, which looks logical, the Chrome browser will show lots of errors in a console later.
+Keep in mind that we’re working with a file as with binary everywhere, so we provide <mgr>binary</mgr> flag on file save and response.
+Now you can open localhost/ in the browser and try the code yourself.
+
+If this didn’t work and you don’t see your picture in 3 seconds, just refresh the page.
+With current code may exist a little bug when the first chunk of code was not created and your player just can't load any further part.
+This bug can be fixed with 2 techniques that I recommend to use: using WebSocket for both uploading and downloading instead of HTTP requests and adding some file mapping that will tell the client which files it can download right now.
+But this goes far from the actual goal of this article.
+
+We’ve just created the real simple streaming workflow.
+This structure, workflow and, especially, work with browser API can be handy to understand the whole background of how modern streaming services work.
+To see the complete code visit the GitHub repo:<a href="https://github.com/hgato/streaming-article" rel="noopener ugc nofollow" target="_blank">https://github.com/hgato/streaming-article</a>.
+
+<h2>stream from camera to web page</h2>
+The Live Streaming either need Streaming Video Server or HTTP Streaming.
+
+<h3>Streaming Video Server</h3>
+IT is the server from which you will stream your video.
+They have to be extremely fast, able to handle many connections at a time, depending on user's connection speed etc.
+To have this, you can Buy your own, or
+Sign up for a hosted streaming plan with an ISP (Internet Service Provider)
+
+<h3>HTTP Streaming</h3>
+Or, you need HTTP Streaming
+To make it as simple as it can be
+Create a video file in a common streaming media format
+Upload the file to your web server
+Make a simple hyperlink to the video file, or use special HTML tags to embed the video in a web page.
+
+<h3>Some helpful posts and plugins</h3>
+<a href="https://stackoverflow.com/questions/4241992/video-streaming-over-websockets-using-javascript">Video streaming over websockets using JavaScript</a>
+
+<a href="http://jqueryvideo-player.com/jquery-webcam-video-streaming.html" rel="nofollow noreferrer">jQuery Video Player</a>: Enables webcam video streaming
+
+<a href="http://freecode.com/articles/video-and-audio-streaming-with-flash-and-open-source-tools" rel="nofollow noreferrer">Video and Audio Streaming with Flash and Open Source Tools</a><br>
+<sub>And yes <code>&lt;object&gt;</code> tag, can be used to embed a video player which stream the data.</sub>
+
+<strong><a href="http://www.codeproject.com/Articles/16092/Streaming-over-HTTP-with-JavaScript-AJAX-video-pla" rel="nofollow noreferrer">Streaming over HTTP with JavaScript: AJAX video player</a> <em><sup>Recommended, step by step guide </sup></em></strong>
+
+<h2>Access Device Camera using Camera API</h2>
+<div id="toc" class="toc"><a href="#topic-0" target="_self">add a html5 video tag</a><br><a href="#topic-1" target="_self">First, check if your browser is supporting <k>navigator.mediaDevices</k></a><br><a href="#topic-2" target="_self">add the camera API code</a><br><a href="#topic-3" target="_self">parameter options</a><br><a href="#topic-4" target="_self">assign a stream</a><br><a href="#topic-5" target="_self">capture the image</a><br><a href="#topic-6" target="_self">final camera.js file</a><br></div></center><br><br>
+
+It doesn’t require any library or module to be installed.
+you can do this by just writing a small code.
+
+<h3 id="topic-0">add a html5 video tag</h3>
+First, you have to add a html5 video tag to your <k>index.html</k>
+&lt;video id="video"&gt;&lt;/video&gt;
+
+In your camera.js file add the following code snippet.
+
+<h3 id="topic-1">First, check if your browser is supporting <k>navigator.mediaDevices</k></h3>
+
+if(navigator &amp;&amp; navigator.mediaDevices){
+    //Your browser is supporting camera API.
+}else{
+    console.log("camera API is not supported by your browser")
+}
+
+<h3 id="topic-2">add the camera API code</h3>
+In the next step, we will add the camera API code.
+if(navigator &amp;&amp; navigator.mediaDevices){
+    navigator.mediaDevices.getUserMedia(options)
+    .then(function(stream) {
+       //use the stream to you code
+    })
+    .catch(function(err) {
+        //Handle error here
+    });
+}else{
+    console.log("camera API is not supported by your browser")
+}
+
+<h3 id="topic-3">parameter options</h3>
+as you can see that in the above code there are parameter options.
+It's a configuration object which we will pass to restrict or allow some of its features.
+
+For example, to allow the audio:
+{ audio: true }
+to access the front camera:
+{ video: { facingMode: "user" } }
+to access the back camera:
+{ video: { facingMode: { exact: "environment" } } }
+
+For more information about configuration, visit <a href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia" rel="noopener ugc nofollow" target="_blank">this doc</a>.
+
+<h3 id="topic-4">assign a stream</h3>
+We are almost done with the configuration, Now will assign a stream to the video tag.
+
+if(navigator &amp;&amp; navigator.mediaDevices){
+    const options = { audio: false, video: { facingMode: "user", width: 200, height: 200  } }
+    navigator.mediaDevices.getUserMedia(options)
+    .then(function(stream) {
+        var video = document.querySelector('video');
+        video.srcObject = stream;
+        video.onloadedmetadata = function(e) {
+          video.play();
+        };
+    })
+    .catch(function(err) {
+        //Handle error here
+    });
+}else{
+    console.log("camera API is not supported by your browser")
+}
+
+<h3 id="topic-5">capture the image</h3>
+So, We are almost done till now, now we will add a button to capture the image from the video and display it on canvas.
+
+<h3 id="topic-6">final camera.js file</h3>
+This is our final camera.js file.
+var video, canvas, ctx;
+if(navigator &amp;&amp; navigator.mediaDevices){
+    const options = { audio: false, video: { facingMode: "user", width: 300, height: 300  } }
+    navigator.mediaDevices.getUserMedia(options)
+    .then(function(stream) {
+        video = document.querySelector('video');
+        video.srcObject = stream;
+        video.onloadedmetadata = function(e) {
+          video.play();
+        };
+        canvas = document.getElementById("myCanvas");
+        ctx = canvas.getContext('2d');
+    })
+    .catch(function(err) {
+        //Handle error here
+    });
+}else{
+    console.log("camera API is not supported by your browser")
+}
+
+function clickPhoto() {
+   ctx.drawImage(video, 0,0, canvas.width, canvas.height);
+ }
+Here is our final index.html file.
+&lt;body&gt;
+     &lt;div style="text-align: center;"&gt;                                                   
+          &lt;video id="video" style="text-align: center; border-radius: 20px;"&gt;&lt;/video&gt;
+        &lt;/div&gt;
+        &lt;div  style="text-align: center;"&gt;
+            &lt;button type="button" class="btn btn-warning" onclick="clickPhoto();"&gt;Take Photo&lt;/button&gt;
+         &lt;/div&gt;
+         &lt;div style="text-align: center;"&gt;
+            &lt;canvas id="myCanvas" width="300" height="300" style="text-align: center; border-radius: 20px;"&gt;&lt;/canvas&gt;
+        &lt;/div&gt;
+&lt;/body&gt;
+<a href="https://github.com/kmtabish/blog-js-camera-api" rel="noopener ugc nofollow" target="_blank">Download</a> the final codebase repo.
+See the <a href="https://blog-js-camera-api.surge.sh/" rel="noopener ugc nofollow" target="_blank">demo</a> here.
+
+<h2>Video Streaming Server</h2>
+https://github.com/thesmartcoder7/video_streaming_server
+
+<h3>Installation</h3>
+Clone this repository or download the source code.
+git clone https://github.com/thesmartcoder7/video-streaming-server.git
+
+From here, navigate to the project directory
+cd video-streaming-server
+
+Install the npm packages
+npm install
+
+<h3>Usage</h3>
+Place your video file (e.g., Chris-Do.mp4) in the root directory of the project.
+
+Start the server by running the following command:
+node server.js
+
+This will start the server, and you will see the message "Listening on port 8000!" in the console, indicating that the server is running.
+
+To access the video stream, open a web browser and navigate to http://localhost:8000/video. You should be able to stream the video.
 
 
 
