@@ -57,7 +57,7 @@ function chkKey() {
 
   else if(testkey == "'"){window.open("https://williamkpchan.github.io/LibDocs/swipeChart.html");}
   else if(testkey == '"'){window.open("https://williamkpchan.github.io/LibDocs/dayLayers.html");}
-  else if(testkey == ";"){window.open("https://williamkpchan.github.io/LibDocs/minuteLayersAcc.html");}
+  else if(testkey == ";"){window.open("https://williamkpchan.github.io/LibDocs/modminuteLayersAcc.html");}
   else if(testkey == ":"){window.open("https://williamkpchan.github.io/LibDocs/minuteLayers.html");}
 
   else if(testkey == ','){window.open("https://williamkpchan.github.io/LibDocs/mlinechart.html");}
