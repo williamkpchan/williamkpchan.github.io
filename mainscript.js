@@ -40,8 +40,7 @@ function chkKey() {
 
 
   else if(testkey == 's'){window.open("https://williamkpchan.github.io/stkListVH.html");}
-  else if(testkey == 'S'){window.open("https://williamkpchan.github.io/Hour STK Charts.html");}
-
+  else if(testkey == 'S'){window.open("./LibDocs/SingleTrendBU.html");}
 
   else if(testkey == 'T'){window.open("https://my.weather.gov.hk/tc/myindex.htm");}
   else if(testkey == 't'){window.scrollTo(0,0);}
