@@ -39109,6 +39109,171 @@ print(df[, c("id", "text", "summary")])
 文本挖掘是一个需要<k>不断练习和积累经验的过程</k>。
 
 
+<h2>tidyr</h2>
+<div id="tidyrtoc" class="toc"><a href="#tidyrtopic-0" target="_self">1 数据形状转换</a><br><a href="#tidyrtopic-1" target="_self">2 列数据分割和合并</a><br><a href="#tidyrtopic-2" target="_self">3 数据扩展与补全</a><br><a href="#tidyrtopic-3" target="_self">4 处理缺失数据</a><br><a href="#tidyrtopic-4" target="_self">5 处理nested数据</a><br><a href="#tidyrtopic-5" target="_self">结语</a><br><a href="#tidyrtopic-6" target="_self">tidyr函数检索表</a><br></div></center><br><br>
+
+tidyr是tidyverse包的一部分，主要用于数据整理。
+
+整洁数据如下图所示：
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxwefRtFZut9x69Tm7RqQ520FYlyDnvNicyIic2QEQo3CImnTXGBqia4ang/640">
+
+其中变量指需要测量的指标，如身高，体重，年龄等。
+每个观测代表每个样本。
+整洁数据描述了一种存储数据的标准方式，在tidyverse中尽可能使用这种方式。
+如果能确保数据整洁，就能减少与工具打交道的时间，把更多时间用在分析数据上。
+
+<k>不整洁数据</k>
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxhDsex29qUlzrnSTm3DmP0X0mGUNbibflkKA8g1omLCmFricSGNkIzkhw/640">
+
+tidyverse中tidyr包提供了多种函数来进行数据转换和清洗的工作。
+
+<h3 id="tidyrtopic-0">1 数据形状转换</h3>
+# pivot_longer 宽数据转换成长数据
+library(tidyverse)
+data(iris)
+head(iris) #这里是一个宽数据
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxlCDfMAya9sRtE7Yv9jgvPlp0ABuvhcqssOfmGoIHWwGVmC1maQZzXw/640">
+
+# 通过pivot_longer函数转换成长数据
+iris_longer = iris %&gt;% 
+     pivot_longer(1:4, names_to = 'measure',values_to = 'values') 
+head(iris_longer)
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxeNuczr2Iprv2YIicImPcNYRn2QDGrQFib4ewTUibHtEwz1qkgNjR3uW5w/640">
+
+# pivot_wider 长数据转换成宽数据
+iris_longer %&gt;% 
+  pivot_wider(names_from = 'measure',values_from = 'values') 
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOx7cgMfGVnpj8nNSLA3tbsiaH1eo1SNqAUAzwGpicRicn3ib6ZOUHa2WJZuA/640">
+我们发现长数据转换成宽数据出现问题了，这里是因为species和measure对应的value是多个的，而不是一个。
+
+那现在我们准备一个species, measure对应单个value的表。
+
+  iris_test1
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxiasKHayagM1ibQEhErkURP2Ol3WFCEo8H99j8yV0LbjbWJn4ibjqe40bg/640">
+
+# pivot_wider 将长数据转换成宽数据
+iris_test1 %&gt;% 
+  pivot_wider(names_from = 'measure',values_from = 'values')
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxqiadeicicmMT2fDSichp87Cl8zztlV8XKeOoTrBlnn5NicXRSWjuIowbo0g/640">
+对单value的表可以进行pivot_wider操作。
+
+<h3 id="tidyrtopic-1">2 列数据分割和合并</h3>
+# unite合并
+iris_test2 = iris_test1 %&gt;% 
+  unite(1:2, sep = '.',col = 'col1')
+iris_test2
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOx7TwcV29nWPwxyMIXDRyQrtIApLtyeDr6ZUBPicccq7bHMeA51sDQKmA/640">
+
+# separate_wider_delim 分割后横向扩展
+iris_test2 %&gt;% 
+  separate_wider_delim(col1, delim = ".",
+                       names = c('species','position','measure1'))
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxuibpRsuHic1rK3pXMfPaibZAeKRUghDC1svX8vzjrq8m0aibXwuffxwHBQ/640">
+
+# separate_longer_delim 分割后纵向扩展
+iris_test2 %&gt;% separate_longer_delim(col1, delim = ".") 
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxwia05OoViczRzPfh7et5dW8T3ibmLKib1aic49m4ySMsfC6icnVT2dFQiaibLA/640">
+这个数据纵向扩展后信息内容被压缩了，这里不适合用这种扩展方向。
+
+<h3 id="tidyrtopic-2">3 数据扩展与补全</h3>
+# 准备示例数据
+iris_test4 
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxKc2G2iaeRDBD4wP9S2f71jQKibbuzdicQloZXGnwD8wO4uF0CQzibx9hUQ/640">
+
+# expand 数据扩展
+iris_test4 %&gt;% expand(species, position, measure1)
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxbnJt3oZKyeYIcCo5xjOLkzJZalXfLmcvwCYJ7pJiac5Kt6UkRCZzxcg/640">
+
+# complete 数据扩展后，用NA补全剩下的值
+
+iris_test4 %&gt;% complete(species, position, measure1)
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxiaQzhVyXL3RJphxgZICmmn2DPkXJMN9icWnjQXibyn7Q7Yuy22NWrmNQw/640">
+
+<h3 id="tidyrtopic-3">4 处理缺失数据</h3>
+# 准备数据
+iris_test5
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxYY6F0QbBFKEQaibzMUedXmx6QibhLwsx9mgL6epz5bxfkTFR0gCXV5yg/640">
+
+# drop_na 去掉含有NA的观测值，也就是含有NA的行
+
+iris_test5 %&gt;% drop_na()
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxq4p8yhupDicId2UKSNmbhiakyDzvcesr9pyLkD8dUPfYdIMFN9AI3cJw/640">
+
+# fill 用前面或后面的值补全NA
+iris_test5 %&gt;% fill(values)
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxkqYRM4ib3Y7k4pEN1Kn2hWSJeECAZibJ7TTGoTSNGzNomYPqXc2P7eUw/640">
+
+# 默认是用NA前面的值替换NA
+# 用 .direction参数指定后面的值替换NA
+iris_test5 %&gt;% fill(values, .direction = 'up')
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxlEKSr8DqZYMHKEDafsFMNnevLGMKQxtyxBa4upiakrwk2UFdfm1SHrw/640">
+
+# replace_na 用特定的值补全NA
+iris_test5 %&gt;% replace_na(list(values = 0))
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOx349ScUINXn7Oj2T0CBuaBiakIeQkC4nYdEmVkauDSV0GndmDKBzkphw/640">
+
+# 用values的平均值补全NA
+iris_test5 %&gt;% 
+  replace_na(list(values = mean(iris_test5$values,na.rm =T)))
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxFiafPELibUdibRAVo56iaaL6NW3eeUx88ObULykWlhtNfcMrYkbSvbgjVg/640">
+
+<h3 id="tidyrtopic-4">5 处理nested数据</h3>
+# nest 数据
+iris_test4 %&gt;% 
+  group_by(species) %&gt;% 
+  nest(data = c(position:measure1))
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOx3G8dnwiaM6YWPUckJPicgciaRAcricy8OdiaMPZGRwbgic825mibsgSK4Ovkw/640">
+
+iris_test4 %&gt;% 
+  group_by(species) %&gt;% 
+  nest(data = c(position:values))
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxwtEsRcRBwINkLm40bfhO2sGWb3iaL1EHWiaLw4qE7USB91vlxeeTH8cw/640">
+
+# unnest数据，将嵌套数据解开
+# 在前面有一个例子，pivot_wider后，产生了嵌套数据，无法用pivot_longer进行恢复
+# 在这里可以使用unnest进行解开
+iris_longer %&gt;% 
+            pivot_wider(names_from = 'measure',values_from = 'values') %&gt;%                     unnest(cols = c(`Sepal.Length`, `Sepal.Width`,
+                     `Petal.Length`, `Petal.Width`))
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxSs8kINzoBwltxj32oGZqud75Ml7YsoDeCvlmgbnR2kBWqUYqv7SqgA/640">
+嵌套数据就是部分列数据由列表组成。
+
+通过nest和unnest进行压缩和解包。
+
+还有一些其它的操作也会产生nest数据。
+在数据分析过程中，我们会通过一些数据处理操作将nest数据整理成标准的data.frame格式，然后进行后续的分析。
+
+<h3 id="tidyrtopic-5">结语</h3>
+我们拿到数据后，往往需要进行数据清洗。
+其中数据的长宽转换和缺失值的处理是比较常见的操作。
+通过这一期，我们也体验到了tidyverse数据分析框架的优雅之处。
+
+<h3 id="tidyrtopic-6">tidyr函数检索表</h3>
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_jpg/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxxbTzwzU8A3ZqnLPoMYsKu3LEOtx0eyQnV16oZ0uaeRr9qPKoUcaNag/640">
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_jpg/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxlR5JiaHxsCBX75qA6yRHsDp9YoQsmuhN0YlI56ibNt8AibF7FOXVtANrw/640">
+<a href="tidyr.pdf" class="whitebut ">tidyr cheat sheet</a>
+
 <script type='text/javascript' src='readbook.js'></script>
 <script>
 var lazyLoadInstance = new LazyLoad({
