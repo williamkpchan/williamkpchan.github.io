@@ -1,7 +1,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>Mod minute layers acc</title>
+<title>Batch minute Status Check</title>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 <script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.common.core.js" ></script>
 <script src="https://williamkpchan.github.io/LibDocs/rchart/RGraph.common.csv.js" ></script>
@@ -24,58 +24,9 @@ body { margin: auto; width: 90%; font-size: 16px; background-color: #000000; col
 
 button, input, select {color: gray; background-color: #001010;  font-size: 18px; }
 select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
-
-.redword{color: red;}
-.greenword{color: lightgreen;}
-.goldword{color: gold;}
-.blueword{color: blue;}
-.whiteword{color: white;}
-.violetword{color: violet;}
-.yellowword{color: yellow;}
-.orangeword{color: orange;}
-.dropbtn {
-    background-color: black;
-    color: gold;
-    padding: 8px;
-    font-size: 20px;
-    border: 1px solid gold;
-    cursor: pointer;
-}
-
-.dropbtn:hover, .dropbtn:focus {
-    background-color: darkblue;
-}
-
-.dropdown {
-    display: inline-block;
-    border-radius:8%;
-    right: 2%;
-    position: left;
-}
-
-.dropdown-content {
-    display: inline-block;
-    display: none;
-    background-color: black;
-    min-width: 160px;
-    overflow: auto;
-    box-shadow: 0px 4px 4px 0px rgba(0,5,3,0.6);
-    z-index: 1;
-}
-
-.dropdown-content a {
-    color: black;
-    padding: 12px 12px;
-    text-decoration: none;
-    display: block;
-}
-
-.dropdown a:hover {background-color: #ddd}
-
 .show {display:block;}
 #myDropdown {line-height:2;}
 #refreshTimer {color: red;}
-#plotlychart {max-height: 560px;}
 </style>
 
 <script>
@@ -83,6 +34,7 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
 var uXSound = new Audio('./mp3/toneBeep.mp3'); 
 var dXSound = new Audio('./mp3/lowBeep.mp3'); 
 var alarmSound = new Audio('./mp3/stringVibrate.mp3'); 
+
 // var alarmSound = new Audio('https://freesound.org/data/previews/459/459145_6142149-lq.mp3'); 
 
 let stkCode, stkName, stkTime, stkPrice, stkMaxprice, stkMinprice, stkVol, stkChange, mytimer;
@@ -93,13 +45,6 @@ let theString ="";
 
 let theurlHead = 'https://web.ifzq.gtimg.cn/appstock/app/day/query?code=hk'
 // let theurlTail = ',day,,,320,qfq'
-
-if (localStorage.getItem("minuteLayersTimer") === null) {
-      localStorage.setItem("minuteLayersTimer", 20000)
-      minuteLayersTimer = 20000;
-} else{
-      minuteLayersTimer = Number(localStorage.getItem("minuteLayersTimer"))
-}
 
 var theCode = "";
 var theStartCode = theCode; // loaded from the _init()
@@ -118,7 +63,6 @@ let closeLst = [];
 chartColor = ['red','green','blue','brown', 'orange','gold','yellow', 'cyan', 'violet','silver', 'coral'];
 minSteps = [];
 
-
 var theMax, theMin;
 var intv1, intv2, intv3, intv4, intv5, intv6, intv7, showWidth, datawidth;
 
@@ -134,8 +78,7 @@ var intv1, intv2, intv3, intv4, intv5, intv6, intv7, showWidth, datawidth;
 
 var stkPointer = 0
 
-function startToRoll(theCode) {
-          $("#minuteStatus").html("");
+function startToRoll(theCode, countnum) {
   // to check A stk or HK stk
 
           codewidth = theCode.length
@@ -178,27 +121,6 @@ function startToRoll(theCode) {
 	thedrawdata = [];
 	closeLst = [];
 
-      var options = '';  // build the List select option
-      for (var i = 0; i < allListNames.length; i++) {
-         options += '<option value="' + allListNames[i]+ '">' + allListNames[i] + '</option>';
-      }
-      $("#selectList").html(options);
-
-      if (localStorage.getItem("stkListArr") === null) {
-        localStorage.stkListArr = "07500";
-        //stkList = 恒指成分
-      } else{
-        stkList = localStorage.getItem("stkListArr").split(' ');
-      //console.log(stkList)
-      }
-
-
-  if(fraudSTK.includes(theCode)){
-    $('#alertMsg').show()
-  }else{
-    $('#alertMsg').hide()
-  }
-
 	//var theurl = theurlHead + theStartCode
 	RGraph.AJAX.getJSON(theurl, function (rawJSON){
 		keys = Object.keys(rawJSON); // read the structure keys ["code", "msg", "data"]
@@ -224,6 +146,13 @@ function startToRoll(theCode) {
 		stkName = theNameObjName[1]
 
 		thedrawdata =[closeLst]; //closeLst is already originally an array
+		if(theCode.length == 8){
+            statustxt = `<k onclick="xunbao('` + theCode.slice(2) + `')">`+ theCode.slice(2) + " <o>" + stkName+ '</o></k>&emsp;'
+		}else{
+            statustxt = `<k onclick="xunbao('` + theCode + `')">`+ theCode + " <o>" + stkName+ '</o></k>&emsp;'
+		}
+
+          $("#minuteStatus").append( "<br>" +statustxt);
 
 		// calculate different ma lines and stuff inside thedrawdata.
 		thedrawdata.push(makeMovAve(thedrawdata[0], Math.ceil(intv1/2))); // add new trend line
@@ -234,21 +163,7 @@ function startToRoll(theCode) {
 		thedrawdata.push(makeMovAve(thedrawdata[1], intv4));
 		thedrawdata.push(makeMovAve(thedrawdata[1], intv5));
 		thedrawdata.push(makeMovAve(thedrawdata[1], intv6));
-		//thedrawdata.push(makeMovAve(thedrawdata[1], intv7)); // length is width + intv7
 
-		// chop and keep the display data only
-
-		// stddev = makeStd(thedrawdata[0], intv4);
-          // addSD = thedrawdata[3].map((a, i) => a + stddev[i]);
-          // minusSD = thedrawdata[3].map((a, i) => a - stddev[i]);
-		// thedrawdata.push(minusSD);
-		// thedrawdata.push(addSD);
-		// console.log(Math.max(...addSD))
-		// console.log(addSD[0], addSD[(addSD.length-1)])
-		// console.log(thedrawdata[0].length)
-		// console.log(thedrawdata[1].length)
-
-		//thedrawdata.push(thedrawdata-stddev);
           //console.log(thedrawdata[7])
 		thedrawdata[0] = thedrawdata[0].slice(intv7+1);
 		thedrawdata[1] = thedrawdata[1].slice(intv7+1);
@@ -270,90 +185,6 @@ function startToRoll(theCode) {
 		checkXStatus(2, 4)
 		checkXStatus(3, 4)
 		checkXStatus(3, 5)
-
-		// thedrawdata[9] = thedrawdata[9].slice(intv7+1);
-		theMax = Math.max(...[].concat.apply([], thedrawdata));
-		theMin = Math.min(...[].concat.apply([], thedrawdata));
-
-		// create datalog table
-		//transp = transpose(thedrawdata);
-
-		//wAveTrendRange = [];  // this is the gap diff
-		//for (var row=0; row < transp.length-1; row++) {
-		//  rowRange = transp[row].slice(1, thedrawdata.length);
-		//  rowMax = Math.max(...rowRange);
-		//  rowMin = Math.min(...rowRange);
-		//  var rowDiff = rowMax - rowMin;
-		//  wAveTrendRange.push(rowDiff);
-		//}
-
-		//wAveTrendRange.fill(null,0,intv4);
-		//wAvemax = Math.max(...wAveTrendRange);
-		//wAvemin = Math.min(...wAveTrendRange);
-		//drawTrend(wAveTrendRange, wAvemax, wAvemin, '癫疯');
-
-
-		// find derivative
-		derivative = diff(makeMovAve(thedrawdata[2], 3));
-		derivative.unshift(0);
-		derivative.fill(null,0,intv1+3); //array.fill(value, start, end)
-
-
-		// find derivative7
-		//derivative7 = diff(makeMovAve(thedrawdata[7], 10));
-		//derivative7.unshift(0);
-		//derivative7.fill(null,0,12);
-		//derivmax7 = Math.max(...derivative7);
-		//derivmin7 = Math.min(...derivative7);
-		//drawTrend(derivative7, derivmax7, derivmin7, '动力7');
-
-		// find stoch
-		stoch1 = makeStoch(thedrawdata[0], 120)
-		stochmax1 = Math.max(...stoch1);
-		stochmin1 = Math.min(...stoch1);
-		// drawTrend(stoch1, stochmax1, stochmin1, '强弱120');
-
-		// diffaccel
-		// diffaccel = thedrawdata[baseSubIdx].map(function(item, index) { return item - thedrawdata[baseMinuIdx][index]; })
-		diffaccel = []
-		diffaccel.push(thedrawdata[1].map(function(item, index) { return item - thedrawdata[8][index]; }))
-		diffaccel.push(thedrawdata[2].map(function(item, index) { return item - thedrawdata[8][index]; }))
-		diffaccel.push(thedrawdata[3].map(function(item, index) { return item - thedrawdata[8][index]; }))
-		diffaccel.push(thedrawdata[4].map(function(item, index) { return item - thedrawdata[8][index]; }))
-		diffaccel.push(thedrawdata[5].map(function(item, index) { return item - thedrawdata[8][index]; }))
-
-		diffaccMax = Math.max(...[].concat.apply([], diffaccel));
-		diffaccMin = Math.min(...[].concat.apply([], diffaccel));
-		// drawTrend(diffaccel, diffaccMax, diffaccMin, 'accel');
-
-		// ddiffaccel
-		ddiffaccel = []
-		ddiffaccel.push(diffaccel[0].map(function(item, index) { return item - diffaccel[4][index]; }))
-		ddiffaccel.push(diffaccel[1].map(function(item, index) { return item - diffaccel[4][index]; }))
-		ddiffaccel.push(diffaccel[2].map(function(item, index) { return item - diffaccel[4][index]; }))
-		ddiffaccel.push(diffaccel[3].map(function(item, index) { return item - diffaccel[4][index]; }))
-
-		ddiffaccMax = Math.max(...[].concat.apply([], ddiffaccel));
-		ddiffaccMin = Math.min(...[].concat.apply([], ddiffaccel));
-		// drawTrend(ddiffaccel, ddiffaccMax, ddiffaccMin, 'accaccel');
-
-
-
-		// drawchart
-		//drawchart(thedrawdata);
-		drawPlotlychart(thedrawdata)
-		showStatus();
-		//showComments();
-		detectX();
-		detectTrend();
-		statusMsg = '<br><span class="cyanword">淺藍</span> ' + thedrawdata[3][lastPtr-1].toFixed(3) + "&emsp;" + 
-		'<span class="blueword">深藍</span> ' + thedrawdata[4][lastPtr-1].toFixed(3) + "&emsp;" + 
-		'<span class="brownword">橙</span> ' + thedrawdata[5][lastPtr-1].toFixed(3) + "&emsp;" + 
-		'<span class="redword">red</span> ' + thedrawdata[6][lastPtr-1].toFixed(3) + "&emsp;" + 
-		"<br>commands: c, v, f, b, r, m<br>" + "trends: " + minSteps + "<br>";
-		$("#msg").append(statusMsg);
-		$("#refreshTimer").html(minuteLayersTimer/1000 +" sec ");
-		window.location = '#plotlychart';
 	});
 }
 	function showComments() {
@@ -424,18 +255,6 @@ function calcWAve(aveArray) {
 		sum += aveArray[i-1] * i;
 	}
 	return (sum / ((1 + aveArray.length)*aveArray.length/2))
-}
-
-function autoRefresh() {
-     setTimeout("location.reload(true);", minuteLayersTimer);
-}
-
-function askRefreshTime() {
-  var refreshTime = prompt("Enter refresh time(sec):", "");
-  if (refreshTime != null && refreshTime != "" && Number(refreshTime) != NaN) {
-    localStorage.setItem("minuteLayersTimer", Number(refreshTime * 1000));
-    location.reload();
-  }
 }
 
 	function makeStoch(bigArray, intv) {
@@ -574,7 +393,6 @@ function reportIt(alarmMsg, color){
 //	navigator.vibrate([500]);
 }
 
-a=new AudioContext();
 function beep(vol, freq, duration){
 	v=a.createOscillator();
 	u=a.createGain();
@@ -704,10 +522,8 @@ function FormatNumberLength(num) {
 
 </head>
 
-<body onkeypress="chkKey()" onload="autoRefresh();">
-<select id="selectList" onchange="assignList()"></select>
-
-<span id="alertMsg" class="bordred1 borRad15 blinkred whiteback goldbs">提防老千 !!! </span>
+<body onkeypress="chkKey()">
+<h2>Batch minute Status Check</h2>
 <span class="orangebut gold brownblackgrad embossts" onclick="localStorage.setItem('randomcode', theCode);
        window.open('Random Charts.html');">尋寶</span>
 
@@ -724,24 +540,6 @@ function FormatNumberLength(num) {
 <span id="refreshTimer"></span>
 <span onclick=askCode() class="goldbut white blueblackgrad whitebs">编号</span> <b onclick=sCt(theStartCode)>&clubs;</b>  <a href="http://finance.sina.com.cn/money/globalindex/" class="bordred1 borRad10 greenblackgrad embossts white" target="_blank">Gblo</a>
 <span id="dateAndTime" onclick="showDateAndTime()"><script>showDateAndTime();</script></span>
-<div class="dropdown">
-<button onclick="toggleButton()" class="dropbtn">stkCode</button>
-  <div id="myDropdown" class="dropdown-content">
-        <span onclick=changeCode("HSI")>恒指</span><br>
-        <span onclick=changeCode("000001.sh")>上证</span><br>
-        <span onclick=changeCode("399001.sz")>深证</span><br>
-        <span onclick=changeCode("600519.sh")>茅台</span><br>
-        <span onclick=changeCode("700")>700</span><br>
-        <span onclick=changeCode("388")>388</span><br>
-        <span onclick=changeCode("2318")>2318</span><br>
-        <span onclick=changeCode("7500")>7500</span><br>
-        <span onclick=changeCode("7200")>7200</span><br>
-        <span onclick=changeCode("981")>981</span><br>
-        <span onclick=changeCode("09988")>9988</span><br>
-        <span onclick=changeCode("03690")>3690</span><br>
-  </div>
-</div>
-<center>
 <br>
 
 <div id="plotlychart"></div>
@@ -932,7 +730,6 @@ function initdata() {
 
 	showWidth = Number(localStorage.otherCodeshowWidth);
 	datawidth = showWidth + intv6;
-	$("#minuteStatus").html("");
 }
 
 function askWidth() {
@@ -943,41 +740,6 @@ function askWidth() {
 		datawidth = showWidth + intv6;
 		startToRoll(theCode);
 	}
-}
-
-function chgInterval() {
-	var baseStep = prompt("Base period:", "");
-	if (baseStep != null && baseStep != "") {
-          baseStep = Number(baseStep);
-          minSteps = [baseStep, baseStep*2, baseStep*3, baseStep*4, baseStep*5, baseStep*6, baseStep*7]
-          localStorage.setItem("minSteps", JSON.stringify(minSteps));
-		window.location.reload(true);
-		}
-}
-function chgIntv(newIntv) {
-          newIntv = Number(newIntv);
-          minSteps = [newIntv, newIntv*2, newIntv*3, newIntv*4, newIntv*5, newIntv*6, newIntv*7]
-          localStorage.setItem("minSteps", JSON.stringify(minSteps));
-		window.location.reload(true);
-}
-function baseIdx(newIntv) {
-		var baseSubIdx = prompt("to subtract line number(1-7):", "");
-		var baseMinuIdx = prompt("to be subtracted line number(2-8):", "");
-
-          baseSubIdx = Number(baseSubIdx);
-          baseMinuIdx = Number(baseMinuIdx);
-          if(baseSubIdx>0 &baseSubIdx<8 & baseMinuIdx>1 & baseMinuIdx<9){
-            subtractIdx = [baseSubIdx, baseMinuIdx]
-            localStorage.setItem("subtractIdx", JSON.stringify(subtractIdx));
-		  window.location.reload(true);
-		}
-}
-
-function toggleMinPeriod() {
- 	if (intv1 == 10) { minSteps = [20,30,40,50,60,70,80];}
-     else{ minSteps = [10,20,40,80,160,320,640];}
-     localStorage.setItem("minSteps", JSON.stringify(minSteps));
-     window.location.reload(true);
 }
 
 function FormatNumberLength5(num) {
@@ -1151,11 +913,9 @@ function showStatus() {
       function checkX(prevL, prevS, curL, curS) {
 		if (curS == curL){return "critical" }
 		if (((prevL == prevS) && (curS > curL )) || ((prevL>prevS) && (curS > curL ))){
-            uXSound.play();
             return "<span class='redrose'>UpCross</span>"
           }
 		if (((prevL == prevS) && (curS < curL )) || ((prevL<prevS) && (curS < curL ))){
-            dXSound.play();
             return "<gr>DownCross</gr>"
           }
 		if ((prevL<prevS) && (curS > curL )){return '<span class="brownword">cont.Up</span>' } // c must > prevC, this is not correct, further check for condition
@@ -1176,21 +936,27 @@ function showStatus() {
         $("#minuteStatus").append(checkXMsg);
       }
 
-//for(let i = 0; i<5; i++){
-//	RGraph.reset(document.getElementById('cvs'));
-//	setTimeout(startToRoll(stkList[i]),25000);
-//}
+     function xunbao(xunbaocode) {
+       localStorage.setItem("randomcode", xunbaocode)
+       localStorage.setItem("otherCode", xunbaocode)
+       localStorage.setItem("stkCode", xunbaocode)
+
+       window.open("Random Charts.html");
+       // locs = ["HIghLowTrend.html", "Random Charts.html", ]
+       //  window.open("HIghLowTrend.html")
+     }
+
 _init();
 initdata();
-console.log("theCode "+theCode)
-startToRoll(theCode);
+codetableStr = localStorage.getItem("batchMinuteStatusCheck")
+codetable = codetableStr.split(" ")
+codetable.shift()
 
+$("#minuteStatus").html("<o>inspection date</o>:"+showTime()+" <y>" + showDate()+ "</y> codetable.length: <lg>" + codetable.length+ "</lg><br>");
+for (var i = 0; i < codetable.length; i++) {
+      startToRoll(codetable[i], i)
+}
 
-// calculate the trend, the previous trend
-// detect the cross
-// renew every minute
-// disable draw, add button to draw
-// show alarm notice in report
 </script>
 </center>
 </body>
