@@ -66,35 +66,29 @@ function chkKey() {
   else{chkOtherKeys(testkey)} 
 }
 function chkOtherKeys(testkey) {
-  if(testkey == ','){window.open("https://williamkpchan.github.io/LibDocs/mlinechart.html");}
-  else if(testkey == '.'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutechart.html");}
+  if(testkey == '.'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutechart.html");}
   else if(testkey == '/'){window.open("https://williamkpchan.github.io/LibDocs/mlineMinutecharttest.html");}
-  else if(testkey == 'c'){showChart();}
+  //else if(testkey == 'c'){showChart();}
   else if(testkey == 'C'){alert(showTime() + "\n\n"+showDate());}
   else if(testkey == 'd'){window.open("https://www.youdao.com/");}
   else if(testkey == 'D'){window.open("https://docs.google.com/document/d/1N_f4jh3EmTCfrOJC4nb0MaHDK-5ibw0hZccBkMULd4g/edit");}
   else if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
-  else if(testkey == 'f'){window.open("http://williamkpchan.github.io/ForexChart.htm");}
   else if(testkey == 'G'){window.open("https://keep.google.com/");}
   else if(testkey == 'm'){window.open("https://williamkpchan.github.io/medical.html");}
-  else if(testkey == 'M'){window.open("https://www.google.com.hk/maps/");}
   else if(testkey == 'q'){window.open('https://www.quora.com/');}
   else if(testkey == 'i'){window.open("https://williamkpchan.github.io/LibDocs/InspectChart.html");}
 
   else if(testkey == 'r'){randomLinkTo();}
   else if(testkey == 'R'){window.open("https://williamkpchan.github.io/LibDocs/postProcessReport.html");}
-  else if(testkey == 's'){window.open("https://williamkpchan.github.io/LibDocs/stkListVH.html");}
   else if(testkey == 't'){window.open("https://my.weather.gov.hk/tc/myindex.htm");}
-  else if(testkey == 'T'){window.open("https://translate.google.com/#en/zh-CN");}
   else if(testkey == 'u'){window.open("https://www.worldometers.info/coronavirus/");}
   else if(testkey == 'W'){window.open("https://web.whatsapp.com/");}
   else if(testkey == 'x'){showTenYear();}
   else if(testkey == 'X'){window.open("./LibDocs/Random Charts.html");}
 
   else if(testkey == 'y'){window.open("https://www.youtube.com/feed/subscriptions");}
-  else if(testkey == '"'){window.open("https://williamkpchan.github.io/LibDocs/mline11Minutechart.html");}
-  else if(testkey == ";"){window.open("https://williamkpchan.github.io/LibDocs/otherCode.html");}
-  else if(testkey == "'"){window.open("https://williamkpchan.github.io/LibDocs/mline11chart.html");}
+  //else if(testkey == '"'){window.open("https://williamkpchan.github.io/LibDocs/mline11Minutechart.html");}
+  //else if(testkey == "'"){window.open("https://williamkpchan.github.io/LibDocs/mline11chart.html");}
   else if(testkey == "`"){ readCommand();}
 }
 function getChar(event) {
