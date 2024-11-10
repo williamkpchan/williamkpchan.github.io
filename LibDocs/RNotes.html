@@ -39274,6 +39274,75 @@ iris_longer %&gt;%
 <img src="https://mmbiz.qpic.cn/sz_mmbiz_jpg/SfYfdicSqYmANMnTQj6D6iaWAibnh7pyAOxlR5JiaHxsCBX75qA6yRHsDp9YoQsmuhN0YlI56ibNt8AibF7FOXVtANrw/640">
 <a href="tidyr.pdf" class="whitebut ">tidyr cheat sheet</a>
 
+<h2>R网页文本挖掘</h2>
+从报告中进行文本挖掘，提取高频词，该怎么做呢？
+
+<k>rvest</k>
+library(rvest)
+library(dplyr)
+library(tibble)
+library(tidytext) # this is the key function
+
+url_r = "https://www.cs.com.cn/xwzx/hg/202403/t20240312_6394477.html"
+
+管道操作符%>%将一个函数的输出传递给下一个函数的输入。
+
+read_speech = read_html(url_r) %>% html_elements("p") %>% html_text()
+head(read_speech)
+tail(read_speech)
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/iavoKgCD4nvcIAFJLKuMd8wPUGAsFLRiaPUNbdZWAOV3TzrRFeOWyujzDojbyESRlaQNQKdkPw7qm2iaxEicvjKJHw/640">
+
+接着，我们将所有的数据框转换为tibble（一种更现代的数据框），以便下一步的分析。
+
+speech_r = tibble(paragraph = 1:92, text= read_speech)
+head(speech_r)
+
+因为中文中有很多没有意义的停用词，因此我们自定义一些停用词，例如“我”、“等”，并删去这些停用词。
+
+# 自定义停用词列表
+stop_words = tibble(word = c("我", "的", "是","和","化","等","要","为","性"))
+
+<k>unnest_tokens 是 R 语言中 tidytext 包中的一个函数</k>，用于将文本数据中的单词（或其他单位）拆分成一个词汇表。
+
+这个函数特别适用于文本数据的预处理步骤。
+
+unnest_tokens() 通过将文本中的每个单词（或其他文本单位）拆分成单独的行，从而将文本数据从长格式转换为宽格式。
+
+它的基本语法如下：
+
+unnest_tokens(data, output, input, token ="words", drop = TRUE, ...)
+
+data：包含文本数据的data.frame或tibble。
+output：输出列的名称，存储拆分后的单词（或其他单位）。
+input：包含原始文本的列名。
+token：指定如何拆分文本，默认为“words”，还可以是“sentences”、“characters”等。
+drop：逻辑值，是否丢弃常见的停止词（stop words），默认为 TRUE。
+
+在本文中：
+# 使用 unnest_tokens 拆分成单独的单词
+word_tokens = speech_r %>%
+ unnest_tokens(output = word, input = text) %>%
+ anti_join(stop_words,by="word") %>%
+ count(word, sort = TRUE)
+head(word_tokens)
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/iavoKgCD4nvcIAFJLKuMd8wPUGAsFLRiaP3KMdfic9TXm5Q8D9eux6QLHswhSf3KdribSxde0IDV2Dg69mSPWxflMw/640">
+
+<k>数据可视化</k>
+我们把这些高频词可视化：
+gplot(data = word_tokens[1:10,], aes(n,reorder(word, n))) +
+  geom_col(color = "#FF6885", fill ="#FF6885") +
+  labs(y = NULL) +
+  theme_test()
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/iavoKgCD4nvcIAFJLKuMd8wPUGAsFLRiaPOEw6wIkYcIBzEf7usKlNOLSQ5rxlknqslgk0vT6RUBkoWNcjtuSl3Q/640">
+
+从图可以看出，“发展”仍然是本届政府的重中之重。
+
+
+
+
 <script type='text/javascript' src='readbook.js'></script>
 <script>
 var lazyLoadInstance = new LazyLoad({

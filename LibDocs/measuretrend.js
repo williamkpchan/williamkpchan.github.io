@@ -157,6 +157,17 @@ function convertWeekday(str) {
         $("#RptMsg").append(upDnMsg);
       }
 
+      function compLines(lshortValue, llongValue, LshortNum, LlongNum){
+        if(lshortValue > llongValue){
+          upDnMsg = " L" + LshortNum + "<r>></r>" + "L" + LlongNum
+        }else if(lshortValue < llongValue){
+          upDnMsg = " L" + LshortNum + "<lg><</lg>" + "L" + LlongNum
+        }else{
+          upDnMsg = " L" + LshortNum + "<dg>--</dg>" + "L" + LlongNum
+        }
+        $("#StkStatus").append(upDnMsg);
+      }
+
      function passExam(highLst, midLst, lowLst, closeLst, amtLst) {
         prevdayAmt = amtLst[amtLst.length-2] // previous day
         // console.log("prevdayAmt: ", prevdayAmt)
