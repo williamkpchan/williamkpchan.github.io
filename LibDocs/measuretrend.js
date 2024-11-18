@@ -22,58 +22,60 @@ function convertWeekday(str) {
     return ["SUN","MON","TUE","WED","THU","FRI","SAT"][parse(str).getDay()]
 }
 
-    function diff(arr) {
+function diff(arr) {
       return arr.slice(1).map(function(n, i) { return n - arr[i]; });
-    }
+}
 
-    function storeCode(theCode) {
+function storeCode(theCode) {
         if(typeof(Storage) !== "undefined") {
             localStorage.randomcode = theCode;
         }
-    }
+}
 
-    function FormatNumberLength5(num) {
+function FormatNumberLength5(num) {
         var r = "" + num;
         while (r.length < 5) { r = "0" + r; }
         return r;
-    }
+}
 
-	function makeMovAve(bigArray, intv) {
+function makeMovAve(bigArray, intv) {
 	     // the intv-1 is correct
 		return bigArray.slice(0, intv-1).concat(calcMovAve(bigArray, intv));
-	}
-	function calcAve(aveArray) {
+}
+
+function calcAve(aveArray) {
 		add = (a, b) =>  a + b;
 		return aveArray.reduce(add) / aveArray.length;
-	}
+}
 	
-	function calcMovAve(bigArray, intv) {
+function calcMovAve(bigArray, intv) {
 		var ma = [];
 		for (var i =0 ; i < (bigArray.length-intv+1); i++) {ma[i] = calcWAve(bigArray.slice(i, i+intv));} // points to indicator
 		return ma;
-	}
-	function calcWAve(aveArray) {
+}
+
+function calcWAve(aveArray) {
 		var sum = 0
 		for( var i = 1; i <= aveArray.length; i++ ) {
 			sum += aveArray[i-1] * i;
 		}
 		return (sum / ((1 + aveArray.length)*aveArray.length/2))
-	}
+}
 
-	function makeStoch(bigArray, intv) {
+function makeStoch(bigArray, intv) {
 	     tempArr = bigArray.slice(0, intv-1).concat(calcStoch(bigArray, intv));
 		return tempArr.fill(50,0,intv-1)
-	}
+}
 
-	function calcStoch(bigArray, intv) {
+function calcStoch(bigArray, intv) {
 		var stc = [];
 		for (var i =0 ; i < (bigArray.length-intv+1); i++) {
 			stc[i] = calc1Stoch(bigArray.slice(i, i+intv));
 		}
 		return stc;
-	}
+}
 
-	function calc1Stoch(stcArray) {
+function calc1Stoch(stcArray) {
 			stcMax = Math.max(...stcArray)
 			stcMin = Math.min(...stcArray)
 			lastVal = stcArray[stcArray.length - 1]
@@ -84,34 +86,34 @@ function convertWeekday(str) {
 				stcVal = 100*(lastVal - stcMin) / stcRange
 			}
 			return stcVal
-	}
+}
 
-	function makeStd(bigArray, intv) {
+function makeStd(bigArray, intv) {
 	     // the intv-1 is correct
           newArray = new Array(intv-1).fill(0)
 		newArray = newArray.concat(calcStd(bigArray, intv));
 		return newArray
-	}
+}
 
-	function calcStd(bigArray, intv) {
+function calcStd(bigArray, intv) {
 		var stdArrar = [];
 		for (var i =0 ; i < (bigArray.length-intv+1); i++) {stdArrar[i] = Std(bigArray.slice(i, i+intv));} // points to indicator
 		return stdArrar;
-	}
+}
 
-	function Std(array) {
+function Std(array) {
 	  const n = array.length
 	  const mean = array.reduce((a, b) => a + b) / n
 	  return Math.sqrt(array.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n)
-	}
+}
 
-	function transpose(thisArr) { // Swap rows with columns of a matrix
+function transpose(thisArr) { // Swap rows with columns of a matrix
 	    return Object.keys(thisArr[0]).map(function(column) {
 	        return thisArr.map(function(row) { return row[column]; });
 	    });
-	}
+}
 
-      function checkX(prevL, prevS, curL, curS) {
+function checkX(prevL, prevS, curL, curS) {
 		if (curS == curL){return "level" }
 		if (((prevL == prevS) && (curS > curL )) || ((prevL>prevS) && (curS > curL ))){
             if (allowtoplaysound){uXSound.play(); }
@@ -123,11 +125,11 @@ function convertWeekday(str) {
           }
 		if ((prevL<prevS) && (curS > curL )){return '<span class="brownword">cont.Up</span>' } // c must > prevC, this is not correct, further check for condition
 		if ((prevL>prevS) && (curS < curL )){return '<span class="limeword">cont.Dn</span>' }
-      }
+}
 
 
-      // checkRptMsg(shortline, longline, shortlineNum, longlineNum)
-      function checkRptMsg(shortline, longline, shortlineNum, longlineNum){
+// checkRptMsg(shortline, longline, shortlineNum, longlineNum)
+function checkRptMsg(shortline, longline, shortlineNum, longlineNum){
         lastpt = shortline.length-1
         bflastpt = shortline.length-2
 
@@ -138,10 +140,10 @@ function convertWeekday(str) {
 
         XMsg = " <k> M" + shortlineNum + "XM" + longlineNum +"</k> "+checkX(prevL, prevS, curL, curS)
         $("#RptMsg").append(XMsg);
-      }
+}
 
-      // checkUpDn(linedata, lineNum)
-      function checkUpDn(linedata, lineNum){
+// checkUpDn(linedata, lineNum)
+function checkUpDn(linedata, lineNum){
         lastpt = linedata.length-1
         bflastpt = linedata.length-2
 
@@ -155,9 +157,9 @@ function convertWeekday(str) {
           upDnMsg = "<k> L</k> " + lineNum + "<dg>--</dg>"
         }
         $("#RptMsg").append(upDnMsg);
-      }
+}
 
-      function compLines(lshortValue, llongValue, LshortNum, LlongNum){
+function compLines(lshortValue, llongValue, LshortNum, LlongNum){
         if(lshortValue > llongValue){
           upDnMsg = " L" + LshortNum + "<r>></r>" + "L" + LlongNum
         }else if(lshortValue < llongValue){
@@ -166,9 +168,9 @@ function convertWeekday(str) {
           upDnMsg = " L" + LshortNum + "<dg>--</dg>" + "L" + LlongNum
         }
         $("#StkStatus").append(upDnMsg);
-      }
+}
 
-     function passExam(highLst, midLst, lowLst, closeLst, amtLst) {
+function passExam(highLst, midLst, lowLst, closeLst, amtLst) {
         prevdayAmt = amtLst[amtLst.length-2] // previous day
         // console.log("prevdayAmt: ", prevdayAmt)
         // if(prevdayAmt>5000){  // to filter min amt
@@ -200,4 +202,26 @@ function convertWeekday(str) {
                   return "fail"
               }
           //}
-     }
+}
+
+function storeBatchList() {
+    var stktype = Number(prompt("Select Number:", "1 M0uXM1, 2 M1XM2, 3 M2XM3, 4 M3XM4, 5 M0ContUpM1, 6 M0XM4"))
+    if(stktype == 1){
+      cleanNStore($("#M0uXM1").text())
+    }else if(stktype == 2){
+      cleanNStore($("#M1XM2").text())
+    }else if(stktype == 3){
+      cleanNStore($("#M2XM3").text())
+    }else if(stktype == 4){
+      cleanNStore($("#M3XM4").text())
+    }else if(stktype == 5){
+      cleanNStore($("#M0ContUpM1").text())
+    }else if(stktype == 6){
+      cleanNStore($("#M0XM4").text())
+    }
+}
+function cleanNStore(cleantype) {
+    myArray = cleantype.split(" ");
+    myArray = myArray.map(item => item.split(' ')[0]).join(' ') // join to one string, space separated
+    localStorage.setItem("batchMinuteStatusCheck", batchCheckList)
+}

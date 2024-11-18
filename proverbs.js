@@ -51,4 +51,5 @@ proverbList = [
 "冷嘲热讽、尖酸刻薄的话让人反感；\n阿谀奉承、献媚讨好的话让人觉得很没品；\n好为人师、颐指气使的话让人厌烦；\n关怀体贴、善解人意的话则会让人觉得贴心。",
 "“Always remember that your calmness under fire is your best defense in any argument or discussion” ~ Robert Greene",
 "The United Nations Population Fund (UNFPA) defines GBV as one of the most pervasive human rights violations It includes various forms of violence, not only physical, but also psychological, financial, sexual harassment, and emotional abuse",
+"生如蝼蚁, 当有鸿鹄之志,\n命如纸薄,应有不屈之心，\n大丈夫生于天地间， 岂能郁郁久居人下。\n乾坤未定， 你我皆是黑马。\n",
 ]

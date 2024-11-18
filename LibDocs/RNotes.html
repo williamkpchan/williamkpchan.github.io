@@ -39340,6 +39340,1174 @@ gplot(data = word_tokens[1:10,], aes(n,reorder(word, n))) +
 
 从图可以看出，“发展”仍然是本届政府的重中之重。
 
+<h2>高级R Web爬虫案例</h2>
+<div id="rwebscrapetoc" class="toc"><a href="#rwebscrapetopic-0" target="_self"><o>基础爬虫技术</o></a><br><a href="#rwebscrapetopic-1" target="_self">1. 使用rvest包爬取静态网页</a><br><a href="#rwebscrapetopic-2" target="_self">静态HTML页面</a><br><a href="#rwebscrapetopic-3" target="_self">2. 使用CSS选择器提取特定元素</a><br><a href="#rwebscrapetopic-4" target="_self">3. 处理表格数据</a><br><a href="#rwebscrapetopic-5" target="_self"><o>中级爬虫技术</o></a><br><a href="#rwebscrapetopic-6" target="_self">4. 处理分页数据</a><br><a href="#rwebscrapetopic-7" target="_self">5. 使用httr包发送HTTP请求</a><br><a href="#rwebscrapetopic-8" target="_self">6. <y>处理动态加载的内容</y></a><br><a href="#rwebscrapetopic-9" target="_self">7. 使用代理服务器</a><br><a href="#rwebscrapetopic-10" target="_self"><o>高级爬虫技术</o></a><br><a href="#rwebscrapetopic-11" target="_self">8. 并行爬取提高效率</a><br><a href="#rwebscrapetopic-12" target="_self">9. 处理验证码</a><br><a href="#rwebscrapetopic-13" target="_self">10. 模拟用户行为</a><br><a href="#rwebscrapetopic-14" target="_self">11. 爬取API数据</a><br><a href="#rwebscrapetopic-15" target="_self">12. 处理大规模数据</a><br><a href="#rwebscrapetopic-16" target="_self">13. 处理JavaScript渲染的页面</a><br><a href="#rwebscrapetopic-17" target="_self">14. 处理网站的robots</a><br><a href="#rwebscrapetopic-18" target="_self">15. 创建一个完整的爬虫项目</a><br></div></center><br><br>
+
+<h3 id="rwebscrapetopic-0"><o>基础爬虫技术</o></h3>
+<h3 id="rwebscrapetopic-1">1. 使用rvest包爬取静态网页</h3>
+rvest包是R语言中最常用的Web爬虫包之一，特别适合爬取<k id="rwebscrapetopic-2">静态HTML页面</k>。
+library(rvest)
+
+# 爬取Wikipedia页面
+url = "https://en.wikipedia.org/wiki/Web_scraping"
+page = read_html(url)
+
+# 提取标题
+title = page %&gt;% html_node("h1") %&gt;% html_text()
+print(title)
+
+# 提取段落
+paragraphs = page %&gt;% html_nodes("p") %&gt;% html_text()
+print(paragraphs[1:3])
+
+<h3 id="rwebscrapetopic-3">2. 使用CSS选择器提取特定元素</h3>
+CSS选择器是一种强大的方法，可以精确定位我们想要的HTML元素。
+library(rvest)
+
+# 爬取一个新闻网站
+url = "https://news.ycombinator.com/"
+page = read_html(url)
+
+# 提取新闻标题和链接
+news = page %&gt;%
+  html_nodes(".titlelink") %&gt;%
+  html_text()
+links = page %&gt;%
+  html_nodes(".titlelink") %&gt;%
+  html_attr("href")
+
+# 创建数据框
+news_df = data.frame(title = news, link = links)
+print(head(news_df))
+
+<h3 id="rwebscrapetopic-4">3. 处理表格数据</h3>
+许多网页包含表格数据，我们可以直接将其转换为R的数据框。
+library(rvest)
+
+# 爬取包含表格的页面
+url = "https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)"
+page = read_html(url)
+
+# 提取第一个表格
+table = page %&gt;%
+  html_node("table.wikitable") %&gt;%
+  html_table()
+
+print(head(table))
+
+<h3 id="rwebscrapetopic-5"><o>中级爬虫技术</o></h3>
+<h3 id="rwebscrapetopic-6">4. 处理分页数据</h3>
+很多网站的数据分布在多个页面上，我们需要遍历这些页面。
+library(rvest)
+library(purrr)
+
+# 定义基础URL
+base_url = "https://quotes.toscrape.com/page/"
+
+# 创建一个函数来爬取单个页面
+scrape_page = function(url) {
+  page = read_html(url)
+  quotes = page %&gt;% html_nodes(".quote") %&gt;% html_text()
+  return(quotes)
+}
+
+# 爬取前5页
+all_quotes = map_dfr(1:5, function(i) {
+  url = paste0(base_url, i)
+  data.frame(quote = scrape_page(url), page = i)
+})
+
+print(head(all_quotes))
+
+<h3 id="rwebscrapetopic-7">5. 使用httr包发送HTTP请求</h3>
+httr包提供了更多控制HTTP请求的选项，适合处理需要身份验证或特殊请求头的网站。
+library(httr)
+library(jsonlite)
+
+# 发送GET请求到一个JSON API
+response = GET("https://api.github.com/users/hadley/repos")
+
+# 检查响应状态
+stop_for_status(response)
+
+# 解析JSON响应
+repos = fromJSON(content(response, "text"))
+
+# 打印仓库名称
+print(repos$name)
+
+<h3 id="rwebscrapetopic-8">6. <y>处理动态加载的内容</y></h3>
+一些网站使用JavaScript动态加载内容，这时我们需要使用特殊的工具。
+library(RSelenium)
+
+# 启动Selenium服务器
+driver = rsDriver(browser = "firefox", port = 4545L)
+remote_driver = driver[["client"]]
+
+# 导航到目标网页
+remote_driver$navigate("https://www.example.com")
+
+# 等待动态内容加载
+Sys.sleep(5)
+
+# 获取页面源代码
+page_source = remote_driver$getPageSource()[[1]]
+
+# 使用rvest解析页面源代码
+library(rvest)
+parsed_page = read_html(page_source)
+
+# 提取动态加载的内容
+dynamic_content = parsed_page %&gt;%
+  html_nodes(".dynamic-class") %&gt;%
+  html_text()
+
+print(dynamic_content)
+
+# 关闭浏览器和Selenium服务器
+remote_driver$close()
+driver[["server"]]$stop()
+
+<h3 id="rwebscrapetopic-9">7. 使用代理服务器</h3>
+<pk>使用代理服务器可以帮助我们避免IP被封禁，并可以访问地理限制的内容。</pk>
+library(httr)
+
+# 设置代理服务器
+proxy = use_proxy("proxy.example.com", 8080)
+
+# 发送请求
+response = GET("http://httpbin.org/ip", proxy)
+
+# 打印响应
+print(content(response))
+<h3 id="rwebscrapetopic-10"><o>高级爬虫技术</o></h3>
+<h3 id="rwebscrapetopic-11">8. 并行爬取提高效率</h3>
+对于大量的爬取任务，使用并行计算可以显著提高效率。
+library(parallel)
+library(rvest)
+
+# 定义爬取函数
+scrape_url = function(url) {
+  page = read_html(url)
+  title = page %&gt;% html_node("title") %&gt;% html_text()
+  return(title)
+}
+
+# 准备URL列表
+urls = c("https://www.r-project.org/", "https://cran.r-project.org/", "https://www.rstudio.com/")
+
+# 并行爬取
+cores = detectCores() - 1
+cl = makeCluster(cores)
+results = parLapply(cl, urls, scrape_url)
+stopCluster(cl)
+
+print(results)
+
+<h3 id="rwebscrapetopic-12">9. 处理验证码</h3>
+一些网站使用验证码来防止自动爬取，我们可以使用OCR技术来解决这个问题。
+library(httr)
+library(tesseract)
+
+# 下载验证码图片
+img_url = "https://example.com/captcha.jpg"
+response = GET(img_url)
+writeBin(content(response, "raw"), "captcha.jpg")
+
+# 使用OCR识别验证码
+eng = tesseract("eng")
+text = ocr("captcha.jpg", engine = eng)
+
+print(paste("识别的验证码:", text))
+
+<h3 id="rwebscrapetopic-13">10. 模拟用户行为</h3>
+为了避免被网站识别为爬虫，我们可以模拟真实用户的行为。
+library(RSelenium)
+
+# 启动Selenium服务器
+driver = rsDriver(browser = "firefox", port = 4545L)
+remote_driver = driver[["client"]]
+
+# 导航到登录页面
+remote_driver$navigate("https://example.com/login")
+
+# 输入用户名和密码
+username = remote_driver$findElement(using = "id", value = "username")
+username$sendKeysToElement(list("your_username"))
+
+password = remote_driver$findElement(using = "id", value = "password")
+password$sendKeysToElement(list("your_password"))
+
+# 点击登录按钮
+login_button = remote_driver$findElement(using = "id", value = "login-button")
+login_button$clickElement()
+
+# 等待页面加载
+Sys.sleep(3)
+
+# 获取登录后的页面内容
+page_source = remote_driver$getPageSource()[[1]]
+
+# 关闭浏览器和Selenium服务器
+remote_driver$close()
+driver[["server"]]$stop()
+
+<h3 id="rwebscrapetopic-14">11. 爬取API数据</h3>
+许多网站提供API，我们可以直接通过API获取结构化数据。
+library(httr)
+library(jsonlite)
+
+# 设置API密钥
+api_key = "your_api_key"
+
+# 发送GET请求到API
+response = GET(
+  "https://api.example.com/data",
+  query = list(api_key = api_key, param1 = "value1")
+)
+
+# 检查响应状态
+stop_for_status(response)
+
+# 解析JSON响应
+data = fromJSON(content(response, "text"))
+
+print(head(data))
+
+<h3 id="rwebscrapetopic-15">12. 处理大规模数据</h3>
+当爬取大量数据时，我们需要考虑数据存储和处理的问题。
+library(rvest)
+library(RSQLite)
+
+# 创建SQLite数据库连接
+con = dbConnect(RSQLite::SQLite(), "scraped_data.db")
+
+# 创建表
+dbExecute(con, "CREATE TABLE IF NOT EXISTS articles (title TEXT, content TEXT)")
+
+# 爬取函数
+scrape_and_store = function(url) {
+  page = read_html(url)
+  title = page %&gt;% html_node("h1") %&gt;% html_text()
+  content = page %&gt;% html_node(".article-content") %&gt;% html_text()
+  
+  # 存储到数据库
+  dbExecute(con, "INSERT INTO articles (title, content) VALUES (?, ?)",
+            params = list(title, content))
+}
+
+# 爬取多个URL
+urls = c("https://example.com/article1", "https://example.com/article2")
+lapply(urls, scrape_and_store)
+
+# 查询数据
+result = dbGetQuery(con, "SELECT * FROM articles LIMIT 5")
+print(result)
+
+# 关闭数据库连接
+dbDisconnect(con)
+
+<h3 id="rwebscrapetopic-16">13. 处理JavaScript渲染的页面</h3>
+对于使用JavaScript渲染内容的网站，我们可以使用phantomjs来模拟浏览器环境。
+library(webshot)
+
+# 安装phantomjs（如果尚未安装）
+webshot::install_phantomjs()
+
+# 使用phantomjs渲染页面
+webshot("https://example.com/js-rendered-page", "rendered_page.png")
+
+# 使用tesseract进行OCR
+library(tesseract)
+eng = tesseract("eng")
+text = ocr("rendered_page.png", engine = eng)
+
+print(text)
+
+<h3 id="rwebscrapetopic-17">14. 处理网站的robots</h3>
+.txt遵守网站的robots.txt是一种良好的爬虫实践。
+library(robotstxt)
+
+# 检查是否允许爬取
+url = "https://www.example.com"
+paths_allowed(url)
+
+# 获取整个robots.txt文件
+rt = robotstxt(url)
+print(rt$text)
+
+# 检查特定路径是否允许爬取
+print(rt$check("/path/to/page"))
+
+<h3 id="rwebscrapetopic-18">15. 创建一个完整的爬虫项目</h3>
+最后，让我们把所学的知识整合起来，创建一个完整的爬虫项目。
+library(rvest)
+library(httr)
+library(dplyr)
+library(readr)
+
+# 定义目标网站
+base_url = "https://books.toscrape.com/catalogue/page-"
+
+# 创建爬取函数
+scrape_page = function(url) {
+  page = read_html(url)
+  
+  titles = page %&gt;% html_nodes(".product_pod h3 a") %&gt;% html_attr("title")
+  prices = page %&gt;% html_nodes(".price_color") %&gt;% html_text()
+  ratings = page %&gt;% html_nodes(".star-rating") %&gt;% html_attr("class") %&gt;% 
+    gsub("star-rating ", "", .)
+  
+  data.frame(title = titles, price = prices, rating = ratings)
+}
+
+# 爬取多个页面
+all_books = data.frame()
+for (i in 1:5) {  # 爬取前5页
+  url = paste0(base_url, i, ".html")
+  books = scrape_page(url)
+  all_books = rbind(all_books, books)
+  
+  # 添加延迟以避免对服务器造成压力
+  Sys.sleep(1)
+}
+
+# 数据清理
+all_books = all_books %&gt;%
+  mutate(price = as.numeric(gsub("£", "", price)),
+         rating = factor(rating, levels = c("One", "Two", "Three", "Four", "Five")))
+
+# 保存数据
+write_csv(all_books, "scraped_books.csv")
+
+# 简单的数据分析
+summary(all_books)
+
+<h2>Principal Component Analysis</h2>
+<div id="PrincipalCAtoc" class="toc"><a href="#PrincipalCAtopic-0" target="_self"><pk>How Does PCA Work? A 5-Step Guide</pk></a><br><a href="#PrincipalCAtopic-1" target="_self">Step 1 - Data normalization</a><br><a href="#PrincipalCAtopic-2" target="_self">Step 2 - Covariance matrix</a><br><a href="#PrincipalCAtopic-3" target="_self">Step 3 - Eigenvectors and eigenvalues</a><br><a href="#PrincipalCAtopic-4" target="_self">Step 4 - Selection of principal components</a><br><a href="#PrincipalCAtopic-5" target="_self">Step 5 - Data transformation in new dimensional space</a><br><a href="#PrincipalCAtopic-6" target="_self"><pk>Applications of Principal Component Analysis </pk></a><br><a href="#PrincipalCAtopic-7" target="_self">Finance</a><br><a href="#PrincipalCAtopic-8" target="_self">Image processing</a><br><a href="#PrincipalCAtopic-9" target="_self">Healthcare</a><br><a href="#PrincipalCAtopic-10" target="_self">Security</a><br><a href="#PrincipalCAtopic-11" target="_self"><pk>Real-World Example of PCA in R</pk></a><br><a href="#PrincipalCAtopic-12" target="_self">Setting up the environment </a><br><a href="#PrincipalCAtopic-13" target="_self"> corrr package in R</a><br><a href="#PrincipalCAtopic-14" target="_self"> ggcorrplot package in R</a><br><a href="#PrincipalCAtopic-15" target="_self"> FactoMineR package in R</a><br><a href="#PrincipalCAtopic-16" target="_self"> factoextra package in R</a><br><a href="#PrincipalCAtopic-17" target="_self">Exploring the data</a><br><a href="#PrincipalCAtopic-18" target="_self"> Protein data</a><br><a href="#PrincipalCAtopic-19" target="_self"> Check for null values </a><br><a href="#PrincipalCAtopic-20" target="_self"> Normalizing the data</a><br><a href="#PrincipalCAtopic-21" target="_self">Applying PCA</a><br><a href="#PrincipalCAtopic-22" target="_self">Visualization of the principal components </a><br><a href="#PrincipalCAtopic-23" target="_self"> Scree Plot</a><br><a href="#PrincipalCAtopic-24" target="_self"> Biplot of the attributes</a><br><a href="#PrincipalCAtopic-25" target="_self"> Contribution of each variable </a><br><a href="#PrincipalCAtopic-26" target="_self"> Biplot combined with cos2 </a><br></div></center><br><br>
+
+This article covered its importance in data analytics using the correlation matrix from the corrr package. 
+Using the famous corrr package to apply it to real-life scenarios aim to summarize and visualize multivariate data. 
+
+<h3 id="PrincipalCAtopic-0"><pk>How Does PCA Work? A 5-Step Guide</pk></h3>
+PCA only works with quantitative variables. 
+
+<img loading="lazy" src="https://images.datacamp.com/image/upload/v1676290161/Principal_component_methods_72e4ae8dc4.png">
+
+Principal component methods
+<img loading="lazy" src="https://images.datacamp.com/image/upload/v1676290161/5_main_steps_for_computing_principal_components_7aa5efa2ad.png">
+
+<h3 id="PrincipalCAtopic-1">Step 1 - Data normalization</h3>
+By considering the example in the introduction, let’s consider, for instance, the following information for a given client. 
+
+Monthly expenses: $300
+Age: 27
+Rating: 4.5
+
+This information has different scales and performing PCA using such data will lead to a biased result. 
+
+This is where data normalization comes in. 
+
+It ensures that each attribute has the same level of contribution, preventing one variable from dominating others. 
+
+For each variable, normalization is done by subtracting its mean and dividing by its standard deviation.   
+
+<h3 id="PrincipalCAtopic-2">Step 2 - Covariance matrix</h3>
+As the same suggests, this step is about computing the <k>covariance matrix</k> from the normalized data. 
+
+This is a symmetric matrix, and each element (i, j) corresponds to the covariance between variables i and j.
+
+<h3 id="PrincipalCAtopic-3">Step 3 - Eigenvectors and eigenvalues</h3>
+Geometrically, an <k>eigenvector</k> represents a direction such as “vertical” or “90 degrees”. 
+
+An <k>eigenvalue</k>, on the other hand, is a number representing the amount of variance present in the data for a given direction. 
+Each  eigenvector has its corresponding eigenvalue. 
+
+<h3 id="PrincipalCAtopic-4">Step 4 - Selection of principal components</h3>
+There are as many pairs of eigenvectors and eigenvalues as the number of variables in the data. 
+
+In the data with only monthly expenses, age, and rate, there will be three pairs. 
+
+Not all the pairs are relevant. 
+So, the eigenvector with the highest eigenvalue corresponds to the first principal component. 
+
+The second principal component is the eigenvector with the second highest eigenvalue, and so on.
+
+<h3 id="PrincipalCAtopic-5">Step 5 - Data transformation in new dimensional space</h3>
+This step involves re-orienting the original data onto a new subspace defined by the principal components This reorientation is done by multiplying the original data by the previously computed eigenvectors.
+
+It is important to remember that this transformation does not modify the original data itself but instead provides a new perspective to better represent the data. 
+
+<h3 id="PrincipalCAtopic-6"><pk>Applications of Principal Component Analysis </pk></h3>
+Principal component analysis has a variety of applications in our day-to-day life, including (but by no means limited to) finance, image processing, healthcare, and security.
+
+<h3 id="PrincipalCAtopic-7">Finance</h3>
+Forecasting stock prices from past prices is a notion used in research for years. 
+
+PCA can be used for dimensionality reduction and analyzing the data to help experts find relevant components that account for most of the data’s variability. 
+
+You can learn more about dimensionality reduction in R in our dedicated course. 
+
+<h3 id="PrincipalCAtopic-8">Image processing</h3>
+An image is made of multiple features. 
+PCA is mainly applied in image compression to retain the essential details of a given image while reducing the number of dimensions. 
+
+In addition, PCA can be used for more complicated tasks such as image recognition.   
+
+<h3 id="PrincipalCAtopic-9">Healthcare</h3>
+In the same logic of image compression. 
+PCA is used in magnetic resonance imaging (MRI) scans to reduce the dimensionality of the images for better visualization and medical analysis. 
+
+It can also be integrated into medical technologies used, for instance, to recognize a given disease from image scans.
+
+<h3 id="PrincipalCAtopic-10">Security</h3>
+Biometric systems used for fingerprint recognition can integrate technologies leveraging principal component analysis to extract the most relevant features, such as the texture of the fingerprint and additional information. 
+
+<h3 id="PrincipalCAtopic-11"><pk>Real-World Example of PCA in R</pk></h3>
+Now that you understand the underlying theory of PCA, you are finally ready to see it in action.
+
+This section covers all the steps from installing the relevant packages, loading and preparing the data applying principal component analysis in R, and interpreting the results. 
+The source code is available from DataCamp’s workspace.
+
+<h3 id="PrincipalCAtopic-12">Setting up the environment </h3>
+To successfully perform this tutorial, you’ll need the following libraries, and each one requires two main steps to be used efficiently: 
+
+Install the library to access all the functions.
+Load to be able to use all the functions.
+
+<h4 id="PrincipalCAtopic-13"> corrr package in R</h4>
+This is an R package for correlation analysis. 
+It mainly focuses on creating and handling R data frames. 
+Below are the steps to install and load the library. 
+
+<code>install.packages("corrr")
+library('corrr')</code>
+
+<h4 id="PrincipalCAtopic-14"> ggcorrplot package in R</h4>
+The ggcorrplot package provides multiple functions but is not limited to the ggplot2 function that makes it easy to visualize correlation matrix. 
+
+Similarly to the above instruction, the installation is straightforward.
+
+<code>install.packages("ggcorrplot")
+library(ggcorrplot)</code>
+
+<h4 id="PrincipalCAtopic-15"> FactoMineR package in R</h4>
+
+Mainly used for multivariate exploratory data analysis; the factoMineR package gives access to the PCA module to perform principal component analysis. 
+
+<code>install.packages("FactoMineR")
+library("FactoMineR")</code>
+
+<h4 id="PrincipalCAtopic-16"> factoextra package in R</h4>
+This last package provides all the relevant functions to visualize the outputs of the principal component analysis. 
+
+These functions include but are not limited to scree plot, biplot, only to mention two of the visualization techniques covered later in the article.
+
+<h3 id="PrincipalCAtopic-17">Exploring the data</h3>
+Before loading the data and performing any further exploration, it is good to understand and have the basic information related to the data you will be working with.  
+
+<h4 id="PrincipalCAtopic-18"> Protein data</h4>
+The protein data set is a real-valued multivariate data set describing the average protein consumption by citizens of 25 European countries. 
+
+For each country, there are ten columns. 
+The first eight correspond to the different types of proteins. 
+The last one corresponds to the total value of the average values of proteins.
+
+Let’s have a quick overview of the data. 
+First, we load the data using the <code>read.csv()</code> function, then <code>str()</code> which gives the image below. 
+
+<code>protein_data &lt;- read.csv("protein.csv")
+str(protein_data)</code>
+
+We can see that the data set has 25 observations and 11 columns, and each variable is numerical, except the <k>Country</k> column, which is a text. 
+
+<img loading="lazy" src="https://images.datacamp.com/image/upload/v1676290159/Description_of_the_protein_data_92329ceac9.png">
+Description of the protein data
+
+<h4 id="PrincipalCAtopic-19"> Check for null values </h4>
+The presence of missing values can bias the result of PCA. 
+Therefore, it is highly recommended to perform the appropriate approach to tackle those values.  Our Top Techniques to Handle Missing Values Every Data Scientist Should Know tutorial can help you make the right choice. 
+
+<code>colSums(is.na(protein_data))</code>
+
+The <code>colSums()</code> function combined with the <code>is.na()</code> returns the number of missing values in each column. 
+As we can see below, none of the columns have missing values.
+
+<img loading="lazy" src="https://images.datacamp.com/image/upload/v1676290160/Number_of_missing_values_in_each_column_b1b615586b.png">
+Number of missing values in each column
+
+<h4 id="PrincipalCAtopic-20"> Normalizing the data</h4>
+As stated early in the article, PCA only works with numerical values. 
+So, we need to get rid of the <k>Country</k> column. 
+
+Also, the <k>Total</k> column is not relevant to the analysis since it is the linear combination of the remaining numerical variables.
+The code below creates new data with only numeric columns.
+
+<code>numerical_data &lt;- protein_data[,2:10]
+head(numerical_data)</code>
+
+<img loading="lazy" src="https://images.datacamp.com/image/upload/v1676290160/Before_the_normalization_of_the_data_57dc8d855b.png">
+
+Before the normalization of the data (only the first five columns are shown)
+
+Now, the normalization can be applied using the scale() function. 
+
+<code>data_normalized &lt;- scale(numerical_data)
+head(data_normalized)</code>
+
+<img loading="lazy" src="https://images.datacamp.com/image/upload/v1676290160/Normalized_data_a5064d030c.png">
+Normalized data (only first five columns shown)
+
+<h3 id="PrincipalCAtopic-21">Applying PCA</h3>
+Now, all the resources are available to conduct the PCA analysis. 
+
+First, the <code>princomp()</code> computes the PCA, and <code>summary()</code> function shows the result.
+
+<code>data.pca &lt;- princomp(data_normalized)
+
+summary(data.pca)</code>
+
+Powered By <svg viewBox="0 0 152 36" xml:space="preserve" xmlns="http://www.w3.org/2000/svg"><circle cx="9.194" cy="11.214" fill="var(--wf-brand--text, #05192D)" r="7.194"></circle></svg></pre>
+
+<img loading="lazy" src="https://images.datacamp.com/image/upload/v1676290160/r_pca_summary_62029f378f.png">
+
+R PCA summary 
+
+From the previous screenshot, we notice that nine principal components have been generated (Comp.1 to Comp.9), which also correspond to the number of variables in the data.
+
+Each component explains a percentage of the total variance in the data set. 
+
+In the <k>Cumulative Proportion</k> section, the first principal component explains almost 77% of the total variance. 
+
+This implies that almost two-thirds of the data in the set of 9 variables can be represented by just the first principal component. 
+
+The second one explains 12.08% of the total variance. 
+
+The cumulative proportion of Comp.1 and Comp.2 explains nearly 89% of the total variance. 
+
+This means that the first two principal components can accurately represent the data. 
+
+It’s great to have the first two components, but what do they really mean? 
+
+This can be answered by exploring how they relate to each column using the loadings of each principal component. 
+
+<code>data.pca$loadings[, 1:2]</code>
+
+<img loading="lazy" src="https://images.datacamp.com/image/upload/v1676290161/Loading_matrix_of_the_first_two_principal_components_a3a7c6522c.png">
+
+Loading matrix of the first two principal components
+
+The loading matrix shows that the first principal component has high positive values for both red meat, white meat, eggs, and milk. 
+
+However, the values for cereals, pulses, nuts and oilseeds, and fruits and vegetables are relatively negative. 
+
+This suggests that countries with a higher intake of animal protein are in excess, while countries with a lower intake are in deficit.
+
+When it comes to the second principal component, it has high negative values for fish, starchy foods, and fruits and vegetables.  This implies that the underlying countries’ diets are highly influenced by their location, such as coastal regions for fish, and inland regions for a diet rich in vegetables and potatoes.
+
+<h3 id="PrincipalCAtopic-22">Visualization of the principal components </h3>
+The previous analysis of the loading matrix gave a good understanding of the relationship between each of the first two principal components and the attributes in the data. 
+
+However, it might not be visually appealing. 
+
+There are a couple of standard visualization strategies that can help the user glean insight into the data, and this section aims to cover some of those approaches, starting with the scree plot.  
+
+<h4 id="PrincipalCAtopic-23"> Scree Plot</h4>
+
+The first approach of the list is the scree plot. 
+
+It is used to visualize the importance of each principal component and can be used to determine the number of principal components to retain. 
+
+The scree plot can be generated using the <code>fviz_eig()</code> function. 
+
+<code>fviz_eig(data.pca, addlabels = TRUE)</code>
+
+<img loading="lazy" src="https://images.datacamp.com/image/upload/v1676290160/Scree_plot_of_the_components_148bf98897.png">
+
+Scree plot of the components
+
+This plot shows the eigenvalues in a downward curve, from highest to lowest. 
+
+The first two components can be considered to be the most significant since they contain almost 89% of the total information of the data.
+
+<h4 id="PrincipalCAtopic-24"> Biplot of the attributes</h4>
+
+With the biplot, it is possible to visualize the similarities and dissimilarities between the samples, and further shows the impact of each attribute on each of the principal components.
+
+<code># Graph of the variables
+
+fviz_pca_var(data.pca, col.var = "black")</code>
+
+<img loading="lazy" src="https://images.datacamp.com/image/upload/v1676290161/Biplot_of_the_variables_dcf3eea254.png">
+
+Biplot of the variables with respect to the principal components
+
+Three main pieces of information can be observed from the previous plot. 
+
+First, all the variables that are grouped together are positively correlated to each other, and that is the case  for instance for white/red meat, milk, and eggs have a positive correlation to each. 
+
+This result is surprising because they have the highest values in the loading matrix with respect to the first principal component.
+
+Then, the higher the distance between the variable and the origin, the better represented that variable is. 
+
+From the biplot, eggs, milk, and white meat have higher magnitude compared to red meat, and hence are well represented compared to red meat.
+
+Finally, variables that are negatively correlated are displayed to the opposite sides of the biplot’s origin.<h4 id="PrincipalCAtopic-25"> Contribution of each variable </h4>
+
+The goal of the third visualization is to determine how much each variable is represented in a given component. 
+
+Such a quality of representation is called the Cos2 and corresponds to the square cosine, and it is computed using the <code>fviz_cos2</code> function.
+
+A low value means that the variable is not perfectly represented by that component.A high value, on the other hand, means a good representation of the variable on that component.
+
+<code>fviz_cos2(data.pca, choice = "var", axes = 1:2)</code>
+
+The code above computed the square cosine value for each variable with respect to the first two principal components. 
+
+From the illustration below, cereals, pulse nut oilseeds, eggs, and milk are the top four variables with the highest cos2, hence contributing the most to PC1 and PC2.
+
+<img loading="lazy" src="https://images.datacamp.com/image/upload/v1676290160/Variables_contribution_to_principal_components_ecfbe16df3.png">
+
+Variables’ contribution to principal components
+
+<h4 id="PrincipalCAtopic-26"> Biplot combined with cos2 </h4>
+
+The last two visualization approaches: biplot and attributes importance can be combined to create a single biplot, where attributes with similar cos2 scores will have similar colors.  This is achieved by fine-tuning the <code>fviz_pca_var</code> function as follows:  
+
+<code>fviz_pca_var(data.pca, col.var = "cos2",
+
+gradient.cols = c("black", "orange", "green"),
+
+repel = TRUE)</code>
+
+From the biplot below:
+
+High cos2 attributes are colored in green: Cereals, pulses, oilseeds, eggs, and milk.Mid cos2 attributes have an orange color: white meat, starchy food, fish, and red meat.
+
+Finally, low cos2 attributes have a black color: fruits and vegetables,<img loading="lazy" src="https://images.datacamp.com/image/upload/v1676290160/Combination_of_biplot_and_cos2_score_9a3fd43d54.png">
+
+Combination of biplot and cos2 score
+
+<h2>Dimensionality Reduction</h2>
+<div id="Dimensionalitytoc" class="toc"><a href="#Dimensionalitytopic-0" target="_self"><pk>What Problems Can Dimensionality Reduction Solve?</pk></a><br><a href="#Dimensionalitytopic-1" target="_self"><pk>A Picture Is Worth a Thousand… Beans</pk></a><br><a href="#Dimensionalitytopic-2" target="_self"><pk>A Starter Recipe</pk></a><br><a href="#Dimensionalitytopic-3" target="_self"><pk>Recipes in the Wild</pk></a><br><a href="#Dimensionalitytopic-4" target="_self">Preparing a recipe</a><br><a href="#Dimensionalitytopic-5" target="_self">Baking the recipe</a><br><a href="#Dimensionalitytopic-6" target="_self"><pk>Feature Extraction Techniques</pk></a><br><a href="#Dimensionalitytopic-7" target="_self">Principal component analysis</a><br><a href="#Dimensionalitytopic-8" target="_self">Partial least squares</a><br><a href="#Dimensionalitytopic-9" target="_self">Independent component analysis</a><br><a href="#Dimensionalitytopic-10" target="_self">Uniform manifold approximation and projection</a><br><a href="#Dimensionalitytopic-11" target="_self"><pk>Modeling</pk></a><br><a href="#Dimensionalitytopic-12" target="_self"><pk>Chapter Summary</pk></a><br></div></center><br><br>
+
+Dimensionality reduction transforms a data set from a high-dimensional space into a low-dimensional space, and can be a good choice when you suspect there are “too many” variables.
+An excess of variables, usually predictors, can be a problem because it is difficult to understand or visualize data in higher dimensions.
+
+<h3 id="Dimensionalitytopic-0"><pk>What Problems Can Dimensionality Reduction Solve?</pk></h3>
+Dimensionality reduction can be used either in feature engineering or in exploratory data analysis.
+For example, in high-dimensional biology experiments, one of the first tasks, before any modeling, is to determine if there are any unwanted trends in the data (e.g., effects not related to the question of interest, such as lab-to-lab differences).
+Debugging the data is difficult when there are hundreds of thousands of dimensions, and dimensionality reduction can be an aid for exploratory data analysis.
+Another potential consequence of having a multitude of predictors is possible harm to a model.
+The simplest example is a method like ordinary linear regression where the number of predictors should be less than the number of data points used to fit the model.
+Another issue is multicollinearity, where between-predictor correlations can negatively impact the mathematical operations used to estimate a model.
+If there are an extremely large number of predictors, it is fairly unlikely that there are an equal number of real underlying effects.
+Predictors may be measuring the same latent effect(s), and thus such predictors will be highly correlated.
+Many dimensionality reduction techniques thrive in this situation.
+In fact, most can be effective only when there are such relationships between predictors that can be exploited.
+
+When starting a new modeling project, reducing the dimensions of the data may provide some intuition about how hard the modeling problem may be.
+
+Principal component analysis (PCA) is one of the most straightforward methods for reducing the number of columns in the data set because it relies on linear methods and is unsupervised (i.e., does not consider the outcome data).
+For a high-dimensional classification problem, an initial plot of the main PCA components might show a clear separation between the classes.
+If this is the case, then it is fairly safe to assume that a linear classifier might do a good job.
+However, the converse is not true; a lack of separation does not mean that the problem is insurmountable.
+The dimensionality reduction methods discussed in this chapter are generally <k>not</k> feature selection methods.
+Methods such as PCA represent the original predictors using a smaller subset of new features.
+All of the original predictors are required to compute these new features.
+The exception to this are sparse methods that have the ability to completely remove the impact of predictors when creating the new features.
+
+This chapter has two goals:
+
+Demonstrate how to use recipes to create a small set of features that capture the main aspects of the original predictor set.
+Describe how recipes can be used on their own (as opposed to being used in a workflow object, as in Section 8.2).
+
+The latter is helpful when testing or debugging a recipe.
+However, as described in Section 8.2, the best way to use a recipe for modeling is from within a workflow object.
+In addition to the tidymodels package, this chapter uses the following packages: baguette, beans, bestNormalize, corrplot, discrim, embed, ggforce, klaR, learntidymodels,<sup>32</sup> mixOmics,<sup>33</sup> and uwot.
+
+<h3 id="Dimensionalitytopic-1"><pk>A Picture Is Worth a Thousand… Beans</pk></h3>
+Let’s walk through how to use dimensionality reduction with recipes for an example data set.
+Koklu and Ozkan (2020) published a data set of visual characteristics of dried beans and described methods for determining the varieties of dried beans in an image.
+While the dimensionality of these data is not very large compared to many real-world modeling problems, it does provide a nice working example to demonstrate how to reduce the number of features.
+From their manuscript:
+<blockquote>
+The primary objective of this study is to provide a method for obtaining uniform seed varieties from crop production, which is in the form of population, so the seeds are not certified as a sole variety.
+Thus, a computer vision system was developed to distinguish seven different registered varieties of dry beans with similar features in order to obtain uniform seed classification.
+For the classification model, images of 13,611 grains of 7 different registered dry beans were taken with a high-resolution camera.
+</blockquote>
+Each image contains multiple beans.
+The process of determining which pixels correspond to a particular bean is called <k>image segmentation</k>.
+These pixels can be analyzed to produce features for each bean, such as color and morphology (i.e., shape).
+These features are then used to model the outcome (bean variety) because different bean varieties look different.
+The training data come from a set of manually labeled images, and this data set is used to create a predictive model that can distinguish between seven bean varieties: Cali, Horoz, Dermason, Seker, Bombay, Barbunya, and Sira.
+Producing an effective model can help manufacturers quantify the homogeneity of a batch of beans.
+There are numerous methods for quantifying shapes of objects (Mingqiang, Kidiyo, and Joseph 2008).
+Many are related to the boundaries or regions of the object of interest.
+Example of features include:
+
+The <k>area</k> (or size) can be estimated using the number of pixels in the object or the size of the convex hull around the object.
+We can measure the <k>perimeter</k> using the number of pixels in the boundary as well as the area of the bounding box (the smallest rectangle enclosing an object).
+The <k>major axis</k> quantifies the longest line connecting the most extreme parts of the object.
+The <k>minor axis</k> is perpendicular to the major axis.
+We can measure the <k>compactness</k> of an object using the ratio of the object’s area to the area of a circle with the same perimeter.
+For example, the symbols “•” and “×” have very different compactness.
+There are also different measures of how <k>elongated</k> or oblong an object is.
+For example, the <k>eccentricity</k> statistic is the ratio of the major and minor axes.
+There are also related estimates for roundness and convexity.
+
+Notice the eccentricity for the different shapes in Figure 16.1.
+<img src="https://www.tmwr.org/premade/morphology.svg">
+
+Figure 16.1: Some example shapes and their eccentricity statistics
+
+Shapes such as circles and squares have low eccentricity while oblong shapes have high values.
+Also, the metric is unaffected by the rotation of the object.
+Many of these image features have high correlations; objects with large areas are more likely to have large perimeters.
+There are often multiple methods to quantify the same underlying characteristics (e.g., size).
+In the bean data, 16 morphology features were computed: area, perimeter, major axis length, minor axis length, aspect ratio, eccentricity, convex area, equiv diameter, extent, solidity, roundness, compactness, shape factor 1, shape factor 2, shape factor 3, and shape factor 4.
+The latter four are described in Symons and Fulcher (1988).
+We can begin by loading the data:
+library(tidymodels)
+tidymodels_prefer()
+library(beans)
+
+It is important to maintain good data discipline when evaluating dimensionality reduction techniques, especially if you will use them within a model.
+
+For our analyses, we start by holding back a testing set with initial_split().
+The remaining data are split into training and validation sets:
+set.seed(1601)
+bean_split &lt;- initial_validation_split(beans, strata = class, prop = c(0.75, 0.125))
+#> Warning: Too little data to stratify.
+#> • Resampling will be unstratified.
+bean_split
+#> &lt;Training/Validation/Testing/Total>
+#> &lt;10206/1702/1703/13612>
+
+# Return data frames:
+bean_train &lt;- training(bean_split)
+bean_test &lt;- testing(bean_split)
+bean_validation &lt;- validation(bean_split)
+
+set.seed(1602)
+# Return an 'rset' object to use with the tune functions:
+bean_val &lt;- validation_set(bean_split)
+bean_val$splits[[1]]
+#> &lt;Training/Validation/Total>
+#> &lt;10206/1702/11908>
+To visually assess how well different methods perform, we can estimate the methods on the training set (n = 10,206 beans) and display the results using the validation set (n = 1,702).
+Before beginning any dimensionality reduction, we can spend some time investigating our data.
+Since we know that many of these shape features are probably measuring similar concepts, let’s take a look at the correlation structure of the data in Figure 16.2 using this code.
+library(corrplot)
+tmwr_cols &lt;- colorRampPalette(c("#91CBD765", "#CA225E"))
+bean_train %>% 
+  select(-class) %>% 
+  cor() %>% 
+  corrplot(col = tmwr_cols("black", method = "ellipse")
+
+<img src="https://www.tmwr.org/16-dimensionality-reduction_files/figure-html/beans-corr-plot-1.png">
+
+Figure 16.2: Correlation matrix of the predictors with variables ordered via clustering
+
+Many of these predictors are highly correlated, such as area and perimeter or shape factors 2 and 3.
+While we don’t take the time to do it here, it is also important to see if this correlation structure significantly changes across the outcome categories.
+This can help create better models.
+
+<h3 id="Dimensionalitytopic-2"><pk>A Starter Recipe</pk></h3>
+It’s time to look at the beans data in a smaller space.
+We can start with a basic recipe to preprocess the data prior to any dimensionality reduction steps.
+Several predictors are ratios and so are likely to have skewed distributions.
+Such distributions can wreak havoc on variance calculations (such as the ones used in PCA).
+The bestNormalize package has a step that can enforce a symmetric distribution for the predictors.
+We’ll use this to mitigate the issue of skewed distributions:
+library(bestNormalize)
+bean_rec &lt;-
+  # Use the training data from the bean_val split object
+  recipe(class ~ ., data = bean_train) %>%
+  step_zv(all_numeric_predictors()) %>%
+  step_orderNorm(all_numeric_predictors()) %>% 
+  step_normalize(all_numeric_predictors())
+
+Remember that when invoking the recipe() function, the steps are not estimated or executed in any way.
+
+This recipe will be extended with additional steps for the dimensionality reduction analyses.
+Before doing so, let’s go over how a recipe can be used outside of a workflow.
+
+<h3 id="Dimensionalitytopic-3"><pk>Recipes in the Wild</pk></h3>
+As mentioned in Section 8.2, a workflow containing a recipe uses fit() to estimate the recipe and model, then predict() to process the data and make model predictions.
+There are analogous functions in the recipes package that can be used for the same purpose:
+
+prep(recipe, training) fits the recipe to the training set.
+bake(recipe, new_data) applies the recipe operations to new_data.
+
+Figure 16.3 summarizes this.
+Let’s look at each of these functions in more detail.
+
+<img src="https://www.tmwr.org/premade/recipes-process.svg">
+
+Figure 16.3: Summary of recipe-related functions
+
+
+<h3 id="Dimensionalitytopic-4">Preparing a recipe</h3>
+Let’s estimate bean_rec using the training set data, with prep(bean_rec):
+bean_rec_trained &lt;- prep(bean_rec)
+bean_rec_trained
+#> 
+#> ── Recipe ───────────────────────────────────────────────────────────────────────────
+#> 
+#> ── Inputs
+#> Number of variables by role
+#> outcome:    1
+#> predictor: 16
+#> 
+#> ── Training information
+#> Training data contained 10206 data points and no incomplete rows.
+#> 
+#> ── Operations
+#> • Zero variance filter removed: &lt;none> | Trained
+#> • orderNorm transformation on: area, perimeter, major_axis_length, ...
+| Trained
+#> • Centering and scaling for: area, perimeter, major_axis_length, ...
+| Trained
+
+Remember that prep() for a recipe is like fit() for a model.
+
+Note in the output that the steps have been trained and that the selectors are no longer general (i.e., all_numeric_predictors()); they now show the actual columns that were selected.
+Also, prep(bean_rec) does not require the training argument.
+You can pass any data into that argument, but omitting it means that the original data from the call to recipe() will be used.
+In our case, this was the training set data.
+One important argument to prep() is retain.
+When retain = TRUE (the default), the estimated version of the training set is kept within the recipe.
+This data set has been pre-processed using all of the steps listed in the recipe.
+Since prep() has to execute the recipe as it proceeds, it may be advantageous to keep this version of the training set so that, if that data set is to be used later, redundant calculations can be avoided.
+However, if the training set is big, it may be problematic to keep such a large amount of data in memory.
+Use retain = FALSE to avoid this.
+Once new steps are added to this estimated recipe, reapplying prep() will estimate only the untrained steps.
+This will come in handy when we try different feature extraction methods.
+
+If you encounter errors when working with a recipe, prep() can be used with its verbose option to troubleshoot:
+
+bean_rec_trained %>% 
+  step_dummy(cornbread) %>%  # &lt;- not a real predictor
+  prep(verbose = TRUE)
+#> oper 1 step zv [pre-trained]
+#> oper 2 step orderNorm [pre-trained]
+#> oper 3 step normalize [pre-trained]
+#> oper 4 step dummy [training]
+#> Error in `step_dummy()`:
+#> Caused by error in `prep()`:
+#> ! Can't subset columns that don't exist.
+#> ✖ Column `cornbread` doesn't exist.
+Another option that can help you understand what happens in the analysis is log_changes:
+show_variables &lt;- 
+  bean_rec %>% 
+  prep(log_changes = TRUE)
+#> step_zv (zv_RLYwH): same number of columns
+#> 
+#> step_orderNorm (orderNorm_Jx8oD): same number of columns
+#> 
+#> step_normalize (normalize_GU75D): same number of columns
+
+<h3 id="Dimensionalitytopic-5">Baking the recipe</h3>
+
+Using bake() with a recipe is much like using predict() with a model; the operations estimated from the training set are applied to any data, like testing data or new data at prediction time.
+
+For example, the validation set samples can be processed:
+bean_val_processed &lt;- bake(bean_rec_trained, new_data = bean_validation)
+Figure 16.4 shows histograms of the area predictor before and after the recipe was prepared.
+library(patchwork)
+p1 &lt;- 
+  bean_validation %>% 
+  ggplot(aes(x = area)) + 
+  geom_histogram(bins = "white", fill = "blue", alpha = 
+  ggtitle("Original validation set data")
+
+p2 &lt;- 
+  bean_val_processed %>% 
+  ggplot(aes(x = area)) + 
+  geom_histogram(bins = "white", fill = "red", alpha = 
+  ggtitle("Processed validation set data")
+
+p1 + p2
+
+<img src="https://www.tmwr.org/16-dimensionality-reduction_files/figure-html/bean-area-1.png">
+
+Figure 16.4: The area predictor before and after preprocessing
+
+Two important aspects of bake() are worth noting here.
+First, as previously mentioned, using prep(recipe, retain = TRUE) keeps the existing processed version of the training set in the recipe.
+This enables the user to use bake(recipe, new_data = NULL), which returns that data set without further computations.
+For example:
+bake(bean_rec_trained, new_data = NULL) %>% nrow()
+#> [1] 10206
+bean_train %>% nrow()
+#> [1] 10206
+If the training set is not pathologically large, using this value of retain can save a lot of computational time.
+Second, additional selectors can be used in the call to specify which columns to return.
+The default selector is everything(), but more specific directives can be used.
+We will use prep() and bake() in the next section to illustrate some of these options.
+
+
+<h3 id="Dimensionalitytopic-6"><pk>Feature Extraction Techniques</pk></h3>
+Since recipes are the primary option in tidymodels for dimensionality reduction, let’s write a function that will estimate the transformation and plot the resulting data in a scatter plot matrix via the ggforce package:
+library(ggforce)
+plot_validation_results &lt;- function(recipe, dat = bean_validation) {
+  recipe %>%
+    # Estimate any additional steps
+    prep() %>%
+    # Process the data (the validation set by default)
+    bake(new_data = dat) %>%
+    # Create the scatterplot matrix
+    ggplot(aes(x = .panel_x, y = .panel_y, color = class, fill = class)) +
+    geom_point(alpha = 0.5) +
+    geom_autodensity(alpha = .3) +
+    facet_matrix(vars(-class), layer.diag = 
+    scale_color_brewer(palette = "Dark2") + 
+    scale_fill_brewer(palette = "Dark2")
+}
+We will reuse this function several times in this chapter.
+A series of several feature extraction methodologies are explored here.
+An overview of most can be found in Section 6.3.1 of M.
+Kuhn and Johnson (2020) and the references therein.
+The UMAP method is described in McInnes, Healy, and Melville (2020).
+
+<h3 id="Dimensionalitytopic-7">Principal component analysis</h3>
+We’ve mentioned PCA several times already in this book, and it’s time to go into more detail.
+PCA is an unsupervised method that uses linear combinations of the predictors to define new features.
+These features attempt to account for as much variation as possible in the original data.
+We add step_pca() to the original recipe and use our function to visualize the results on the validation set in Figure 16.5 using:
+bean_rec_trained %>%
+  step_pca(all_numeric_predictors(), num_comp = 4) %>%
+  plot_validation_results() + 
+  ggtitle("Principal Component Analysis")
+
+<img src="https://www.tmwr.org/16-dimensionality-reduction_files/figure-html/bean-pca-1.png">
+
+Figure 16.5: Principal component scores for the bean validation set, colored by class
+
+We see that the first two components PC1 and PC2, especially when used together, do an effective job distinguishing between or separating the classes.
+This may lead us to expect that the overall problem of classifying these beans will not be especially difficult.
+Recall that PCA is unsupervised.
+For these data, it turns out that the PCA components that explain the most variation in the predictors also happen to be predictive of the classes.
+What features are driving performance? The learntidymodels package has functions that can help visualize the top features for each component.
+We’ll need the prepared recipe; the PCA step is added in the following code along with a call to prep():
+library(learntidymodels)
+bean_rec_trained %>%
+  step_pca(all_numeric_predictors(), num_comp = 
+  prep() %>% 
+  plot_top_loadings(component_number &lt;= 
+  scale_fill_brewer(palette = "Paired") +
+  ggtitle("Principal Component Analysis")
+This produces Figure 16.6.
+
+<img src="https://www.tmwr.org/16-dimensionality-reduction_files/figure-html/pca-loadings-1.png">
+
+Figure 16.6: Predictor loadings for the PCA transformation
+
+The top loadings are mostly related to the cluster of correlated predictors shown in the top-left portion of the previous correlation plot: perimeter, area, major axis length, and convex area.
+These are all related to bean size.
+Shape factor 2, from Symons and Fulcher (1988), is the area over the cube of the major axis length and is therefore also related to bean size.
+Measures of elongation appear to dominate the second PCA component.
+
+<h3 id="Dimensionalitytopic-8">Partial least squares</h3>
+PLS, which we introduced in Section 13.5.1, is a supervised version of PCA.
+It tries to find components that simultaneously maximize the variation in the predictors while also maximizing the relationship between those components and the outcome.
+Figure 16.7 shows the results of this slightly modified version of the PCA code:
+bean_rec_trained %>%
+  step_pls(all_numeric_predictors(), outcome = "class", num_comp = 4) %>%
+  plot_validation_results() + 
+  ggtitle("Partial Least Squares")
+
+<img src="https://www.tmwr.org/16-dimensionality-reduction_files/figure-html/bean-pls-1.png">
+
+Figure 16.7: PLS component scores for the bean validation set, colored by class
+
+The first two PLS components plotted in Figure 16.7 are nearly identical to the first two PCA components! We find this result because those PCA components are so effective at separating the varieties of beans.
+The remaining components are different.
+Figure 16.8 visualizes the loadings, the top features for each component.
+bean_rec_trained %>%
+  step_pls(all_numeric_predictors(), outcome = "class", num_comp = 4) %>%
+  prep() %>% 
+  plot_top_loadings(component_number &lt;= "pls") + 
+  scale_fill_brewer(palette = "Paired") +
+  ggtitle("Partial Least Squares")
+
+<img src="https://www.tmwr.org/16-dimensionality-reduction_files/figure-html/pls-loadings-1.png">
+
+Figure 16.8: Predictor loadings for the PLS transformation
+
+Solidity (i.e., the density of the bean) drives the third PLS component, along with roundness.
+Solidity may be capturing bean features related to “bumpiness” of the bean surface since it can measure irregularity of the bean boundaries.
+
+<h3 id="Dimensionalitytopic-9">Independent component analysis</h3>
+ICA is slightly different than PCA in that it finds components that are as statistically independent from one another as possible (as opposed to being uncorrelated).
+It can be thought of as maximizing the “non-Gaussianity” of the ICA components, or separating information instead of compressing information like PCA.
+Let’s use step_ica() to produce Figure 16.9:
+bean_rec_trained %>%
+  step_ica(all_numeric_predictors(), num_comp = 4) %>%
+  plot_validation_results() + 
+  ggtitle("Independent Component Analysis")
+
+<img src="https://www.tmwr.org/16-dimensionality-reduction_files/figure-html/bean-ica-1.png">
+
+Figure 16.9: ICA component scores for the bean validation set, colored by class
+
+Inspecting this plot, there does not appear to be much separation between the classes in the first few components when using ICA.
+These independent (or as independent as possible) components do not separate the bean types.
+
+<h3 id="Dimensionalitytopic-10">Uniform manifold approximation and projection</h3>
+UMAP is similar to the popular t-SNE method for nonlinear dimension reduction.
+In the original high-dimensional space, UMAP uses a distance-based nearest neighbor method to find local areas of the data where the data points are more likely to be related.
+The relationship between data points is saved as a directed graph model where most points are not connected.
+From there, UMAP translates points in the graph to the reduced dimensional space.
+To do this, the algorithm has an optimization process that uses cross-entropy to map data points to the smaller set of features so that the graph is well approximated.
+To create the mapping, the embed package contains a step function for this method, visualized in Figure 16.10.
+library(embed)
+bean_rec_trained %>%
+  step_umap(all_numeric_predictors(), num_comp = 4) %>%
+  plot_validation_results() +
+  ggtitle("UMAP")
+
+<img src="https://www.tmwr.org/16-dimensionality-reduction_files/figure-html/bean-umap-1.png">
+
+Figure 16.10: UMAP component scores for the bean validation set, colored by class
+
+While the between-cluster space is pronounced, the clusters can contain a heterogeneous mixture of classes.
+There is also a supervised version of UMAP:
+bean_rec_trained %>%
+  step_umap(all_numeric_predictors(), outcome = "class", num_comp = 4) %>%
+  plot_validation_results() +
+  ggtitle("UMAP (supervised)")
+
+<img src="https://www.tmwr.org/16-dimensionality-reduction_files/figure-html/bean-umap-supervised-1.png">
+
+Figure 16.11: Supervised UMAP component scores for the bean validation set, colored by class
+
+The supervised method shown in Figure 16.11 looks promising for modeling the data.
+UMAP is a powerful method to reduce the feature space.
+However, it can be very sensitive to tuning parameters (e.g., the number of neighbors and so on).
+For this reason, it would help to experiment with a few of the parameters to assess how robust the results are for these data.
+
+
+<h3 id="Dimensionalitytopic-11"><pk>Modeling</pk></h3>
+Both the PLS and UMAP methods are worth investigating in conjunction with different models.
+Let’s explore a variety of different models with these dimensionality reduction techniques (along with no transformation at all): a single layer neural network, bagged trees, flexible discriminant analysis (FDA), naive Bayes, and regularized discriminant analysis (RDA).
+Now that we are back in “modeling mode,” we’ll create a series of model specifications and then use a workflow set to tune the models in the following code.
+Note that the model parameters are tuned in conjunction with the recipe parameters (e.g., size of the reduced dimension, UMAP parameters).
+library(baguette)
+library(discrim)
+
+mlp_spec &lt;-
+  mlp(hidden_units = tune(), penalty = tune(), epochs = tune()) %>%
+  set_engine('nnet') %>%
+  set_mode('classification')
+
+bagging_spec &lt;-
+  bag_tree() %>%
+  set_engine('rpart') %>%
+  set_mode('classification')
+
+fda_spec &lt;-
+  discrim_flexible(
+    prod_degree = tune()
+  ) %>%
+  set_engine('earth')
+
+rda_spec &lt;-
+  discrim_regularized(frac_common_cov = tune(), frac_identity = tune()) %>%
+  set_engine('klaR')
+
+bayes_spec &lt;-
+  naive_Bayes() %>%
+  set_engine('klaR')
+We also need recipes for the dimensionality reduction methods we’ll try.
+Let’s start with a base recipe bean_rec and then extend it with different dimensionality reduction steps:
+bean_rec &lt;-
+  recipe(class ~ ., data = bean_train) %>%
+  step_zv(all_numeric_predictors()) %>%
+  step_orderNorm(all_numeric_predictors()) %>%
+  step_normalize(all_numeric_predictors())
+
+pls_rec &lt;- 
+  bean_rec %>% 
+  step_pls(all_numeric_predictors(), outcome = "class", num_comp = tune())
+
+umap_rec &lt;-
+  bean_rec %>%
+  step_umap(
+    all_numeric_predictors(),
+    outcome = "class",
+    num_comp = tune(),
+    neighbors = tune(),
+    min_dist = tune()
+  )
+Once again, the workflowsets package takes the preprocessors and models and crosses them.
+The control option parallel_over is set so that the parallel processing can work simultaneously across tuning parameter combinations.
+The workflow_map() function applies grid search to optimize the model/preprocessing parameters (if any) across 10 parameter combinations.
+The multiclass area under the ROC curve is estimated on the validation set.
+ctrl &lt;- control_grid(parallel_over = "everything")
+bean_res &lt;- 
+  workflow_set(
+    preproc = list(basic = class ~., pls = pls_rec, umap = umap_rec), 
+    models = list(bayes = bayes_spec, fda = fda_spec,
+                  rda = rda_spec, bag = bagging_spec,
+                  mlp = mlp_spec)
+  ) %>% 
+  workflow_map(
+    verbose = TRUE,
+    seed = 1603,
+    resamples = bean_val,
+    grid = 10,
+    metrics = metric_set(roc_auc),
+    control = ctrl
+  )
+We can rank the models by their validation set estimates of the area under the ROC curve:
+rankings &lt;- 
+  rank_results(bean_res, select_best = TRUE) %>% 
+  mutate(method = map_chr(wflow_id, ~ str_split(.x, "_", simplify = TRUE)[1])) 
+
+tidymodels_prefer()
+filter(rankings, rank &lt;= dplyr::select(rank, mean, model, method)
+#> # A tibble: 5 × 4
+#>    rank  mean model               method
+#>   &lt;int> &lt;dbl> &lt;chr>               &lt;chr> 
+#> 1     1 0.996 mlp                 pls   
+#> 2     2 0.996 discrim_regularized pls   
+#> 3     3 0.995 discrim_flexible    basic 
+#> 4     4 0.995 naive_Bayes         pls   
+#> 5     5 0.994 naive_Bayes         basic
+Figure 16.12 illustrates this ranking.
+
+<img src="https://www.tmwr.org/16-dimensionality-reduction_files/figure-html/dimensionality-rankings-1.png">
+
+Figure 16.12: Area under the ROC curve from the validation set
+
+It is clear from these results that most models give very good performance; there are few bad choices here.
+For demonstration, we’ll use the RDA model with PLS features as the final model.
+We will finalize the workflow with the numerically best parameters, fit it to the training set, then evaluate with the test set:
+rda_res &lt;- 
+  bean_res %>% 
+  extract_workflow("pls_rda") %>% 
+  finalize_workflow(
+    bean_res %>% 
+      extract_workflow_set_result("pls_rda") %>% 
+      select_best(metric = "roc_auc")
+  ) %>% 
+  last_fit(split = bean_split, metrics = metric_set(roc_auc))
+
+rda_wflow_fit &lt;- extract_workflow(rda_res)
+What are the results for our metric (multiclass ROC AUC) on the testing set?
+collect_metrics(rda_res)
+#> # A tibble: 1 × 4
+#>   .metric .estimator .estimate .config             
+#>   &lt;chr>   &lt;chr>          &lt;dbl> &lt;chr>               
+#> 1 roc_auc hand_till      0.995 Preprocessor1_Model1
+Pretty good! We’ll use this model in the next chapter to demonstrate variable importance methods.
+
+<h3 id="Dimensionalitytopic-12"><pk>Chapter Summary</pk></h3>
+Dimensionality reduction can be a helpful method for exploratory data analysis as well as modeling.
+The recipes and embed packages contain steps for a variety of different methods and workflowsets facilitates choosing an appropriate method for a data set.
+This chapter also discussed how recipes can be used on their own, either for debugging problems with a recipe or directly for exploratory data analysis and data visualization.
 
 
 
