@@ -1557,6 +1557,146 @@ Use this when the toggle switch is off to disable all JavaScript.
 
 On older versions of Chrome, the JavaScript section has a <k>Manage exceptions</k> button, which allows you to override the radio button settings for specific user-defined domains or individual pages.
 
+<h2>Google Chrome: Design Mode = ON</h2>
+let's you edit inline
+
+F12, dev tools -- then enter this in the console:
+document.designMode="on";
+
+Now you can type on any element of the webpage and change what it says.
+
+You can also create a bookmarklet called 'edit' with this as the URL:
+javascript:document.body.contentEditable='true'; document.designMode='on'; void 0
+
+and click it at any time to make any page easy to edit.
+
+<h2>Use Headless Chrome to Convert Html to Pdf</h2>
+<h3>Simple example</h3>
+chrome.exe --headless --print-to-pdf-no-header --print-to-pdf="C:\Output\MyPdf.pdf" "file:///C:/temp/MyHtml.html"
+
+<h3>Example with more parameters</h3>
+This example has more (and quite useful) parameters
+chrome.exe --headless --disable-gpu --run-all-compositor-stages-before-draw --print-to-pdf-no-header --print-to-pdf="C:\Output\MyPdf.pdf" --no-margins "file:///C:/temp/MyHtml.html"
+<h3>More realistic (battle tested) example</h3>
+Here's an <em>actual</em> script I used for converting hundreds of html files into pdf.
+
+$fileNum = 0;
+$numFiles = (dir *.html | measure | % Count);
+$cromyCromy = "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe";
+dir .
+*.html | #select -first 100 |
+% {
+	$fileNum += 1;
+	$ff = $_.Name;
+	$full_ff = "file:///C:/temp/html_files/" + $ff;
+	$pdf_name =        "C:\temp\output\Pdf\$($ff -replace ".html",".pdf")";
+	$commandTime = (measure-command {
+		$argyArgy = "--headless --disable-gpu --run-all-compositor-stages-before-draw --print-to-pdf-no-header --print-to-pdf=""$pdf_name"" --no-margins ""$full_ff""";
+		$x = (Start-Process -FilePath $cromyCromy -ArgumentList $argyArgy -Passthru -wait);
+		write-host "$($x.Id)`t`t" -f red -n;
+		sleep 1;
+	});
+	Write-host "$fileNum / $numFiles`t" -f darkgray -n;
+	Write-Host "$ff`t" -f white -n;
+	Write-Host "`t$($commandTime.TotalMilliseconds)ms";
+}
+This worked nicely.
+
+<h2>Post to google sheets from javascript</h2>
+&lt;!DOCTYPE html>
+&lt;html>
+	&lt;head>&lt;title>Minimal Signup form&lt;/title>&lt;/head>
+	&lt;body>
+		&lt;h2>Minimal Signup form&lt;/h2>
+		&lt;form method="POST" action="https://script.google.com/macros/s/AKfycbxxknLpNqiFLPIJN4uJk9a1olIZVHigYHEn4ifur0_vK6WnB3NW/exec">
+&lt;div>name &lt;input name="name" />&lt;/div>
+&lt;div>email &lt;input name="email" type="email" required />&lt;/div>
+&lt;button>Sign up!&lt;/button>
+		&lt;/form>
+		&lt;script type="text/javascript" src="form-handler.js">&lt;/script>
+	&lt;/body>
+&lt;/html>
+
+And form-handler.js is:
+
+// Based on https://github.com/dwyl/html-form-send-email-via-google-script-without-server
+// get all data in form and return object
+function getFormData() {
+	var elements = document.getElementById("gform").elements; // all form elements
+	var fields = Object.keys(elements).map(function(k) {
+		if(elements[k].name !== undefined) {
+return elements[k].name;
+		// special case for Edge's html collection
+		} else if(elements[k].length > 0) {
+return elements[k].item(0).name;
+		}
+	}).filter(function(item, pos, self) {
+		return self.indexOf(item) == pos &amp;&amp; item;
+	});
+	var data = {};
+	fields.forEach(function(k) {
+		data[k] = elements[k].value;
+		var str = ""; // declare empty string outside of loop to allow
+// it to be appended to for each item in the loop
+		if(elements[k].type === "checkbox") { // special case for Edge's html collection
+str = str + elements[k].checked + ", "; // take the string and append
+// the current checked value to
+// the end of it, along with
+// a comma and a space
+data[k] = str.slice(0, -2); // remove the last comma and space
+// from the  string to make the output
+// prettier in the spreadsheet
+		} else if(elements[k].length) {
+for(var i = 0; i &lt; elements[k].length; i++) {
+if(elements[k].item(i).checked) {
+str = str + elements[k].item(i).value + ", "; // same as above
+data[k] = str.slice(0, -2);
+}
+}
+		}
+	});
+	console.log(data);
+	log(data);
+	return data;
+}
+function handleFormSubmit(event) {  // handles form submit withtout any jquery
+	event.preventDefault();           // we are submitting via xhr below
+	var data = getFormData();         // get the values submitted in the form
+	var url = event.target.action;  //
+	var xhr = new XMLHttpRequest();
+	xhr.open('POST', url);
+	xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+	xhr.onreadystatechange = function() {
+		console.log(xhr.status, xhr.statusText);
+		log(xhr.status);
+		log(xhr.statusText);
+		console.log(xhr.responseText);
+		log(xhr.responseText);
+//document.getElementById('gform').style.display = 'none'; // hide form
+//document.getElementById('thankyou_message').style.display = 'block';
+return;
+	};
+	// url encode form data for sending as post data
+	var encoded = Object.keys(data).map(function(k) {
+		return encodeURIComponent(k) + '=' + encodeURIComponent(data[k])
+	}).join('&amp;')
+	xhr.send(encoded);
+}
+function loaded() {
+	console.log('contact form submission handler loaded successfully');
+	// bind to the submit event of our form
+	var form = document.getElementById('gform');
+	form.addEventListener("submit", handleFormSubmit, false);
+};
+document.addEventListener('DOMContentLoaded', loaded, false);
+function log(text) {
+		//document.getElementById("messages").value += text + "\n";
+}
+
+<h2>text cursor in chrome that appear everywhere</h2>
+There's an options called "Navigate pages with a text cursor" in Accessibility settings, you'll need to disable this option.
+chrome://settings/accessibility
+
 
 
 

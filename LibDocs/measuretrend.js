@@ -223,5 +223,5 @@ function storeBatchList() {
 function cleanNStore(cleantype) {
     myArray = cleantype.split(" ");
     myArray = myArray.map(item => item.split(' ')[0]).join(' ') // join to one string, space separated
-    localStorage.setItem("batchMinuteStatusCheck", batchCheckList)
+    localStorage.setItem("batchMinuteStatusCheck", myArray)
 }
