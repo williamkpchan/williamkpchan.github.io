@@ -310,7 +310,7 @@ var JavaScriptTips = [
 'mouseenter() :<br><br>Attaches/Triggers the mouseenter event',
 'mouseleave() :<br><br>Attaches/Triggers the mouseleave event',
 'mousemove() :<br><br>Attaches/Triggers the mousemove event',
-'mouseout() :<br><br>Attaches/Triggers the mouseout event',
+'mouseout() :<br><br>Attaches/Triggers the mouseout event\nThe mouseout event occurs when the mouse pointer leaves the selected element.\n$("p").mouseout(function(){\n  $("p").css("background-color", "gray");\n});',
 'mouseover() :<br><br>Attaches/Triggers the mouseover event',
 'mouseup() :<br><br>Attaches/Triggers the mouseup event',
 'off() :<br><br>Removes event handlers attached with the on() method',
