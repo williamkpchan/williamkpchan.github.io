@@ -17322,6 +17322,374 @@ CGLM的API设计简洁直观，易于上手，同时其性能优化也使得它�
 无论是开发图形渲染引擎、动画制作工具还是物理模拟系统，CGLM都是一个不可或缺的数学库。
 通过深入解析CGLM的核心功能，我们可以更好地理解和利用这个强大的工具，为图形学应用提供坚实的数学基础。
 
+&lt;h2>Regular expressions in C&lt;/h2>
+Regular expressions actually aren't part of ANSI C.
+The POSIX regular expression library comes with most (all?) *nixes.
+Here's an example of using POSIX regexes in C:
+
+#include &lt;regex.h>
+regex_t regex;
+int reti;
+char msgbuf[100];
+
+/* Compile regular expression */
+reti = regcomp(&regex, "^a[[:alnum:]]", 0);
+if (reti) {
+    fprintf(stderr, "Could not compile regex\n");
+    exit(1);
+}
+
+/* Execute regular expression */
+reti = regexec(&regex, "abc", 0, NULL, 0);
+if (!reti) {
+    puts("Match");
+}
+else if (reti == REG_NOMATCH) {
+    puts("No match");
+}
+else {
+    regerror(reti, &regex, msgbuf, sizeof(msgbuf));
+    fprintf(stderr, "Regex match failed: %s\n", msgbuf);
+    exit(1);
+}
+
+/* Free memory allocated to the pattern buffer by regcomp() */
+regfree(&regex);
+Alternatively, you may want to check out PCRE, a library for Perl-compatible regular expressions in C. The Perl syntax is pretty much that same syntax used in Java, Python, and a number of other languages. The POSIX syntax is the syntax used by grep, sed, vi, etc.
+
+&lt;k>Example of using REG_EXTENDED.
+This regular expression
+"^(-)?([0-9]+)((,|.)([0-9]+))?\n$"
+Allows you to catch decimal numbers.
+
+#include &lt;regex.h>
+#include &lt;stdlib.h>
+#include &lt;stdio.h>
+regex_t regex;
+int reti;
+char msgbuf[100];
+
+int main(int argc, char const *argv[])
+{
+    while(1){
+        fgets( msgbuf, 100, stdin );
+        reti = regcomp(&regex, "^(-)?([0-9]+)((,|.)([0-9]+))?\n$", REG_EXTENDED);
+        if (reti) {
+            fprintf(stderr, "Could not compile regex\n");
+            exit(1);
+        }
+
+        /* Execute regular expression */
+        printf("%s\n", msgbuf);
+        reti = regexec(&regex, msgbuf, 0, NULL, 0);
+        if (!reti) {
+            puts("Match");
+        }
+        else if (reti == REG_NOMATCH) {
+            puts("No match");
+        }
+        else {
+            regerror(reti, &regex, msgbuf, sizeof(msgbuf));
+            fprintf(stderr, "Regex match failed: %s\n", msgbuf);
+            exit(1);
+        }
+
+        /* Free memory allocated to the pattern buffer by regcomp() */
+        regfree(&regex);
+    }
+
+}
+
+man regex.h doesn't show any manual entry for regex.h, but man 3 regex shows a page explaining the POSIX functions for pattern matching.
+The same functions are described in The GNU C Library: Regular Expression Matching, which explains that the GNU C Library supports both the POSIX.2 interface and the interface the GNU C Library has had for many years.
+
+For example, for an hypothetical program that prints which of the strings passed as argument matches the pattern passed as first argument, you could use code similar to the following one.
+
+#include &lt;errno.h>
+#include &lt;regex.h>
+#include &lt;stdio.h>
+#include &lt;stdlib.h>
+#include &lt;string.h>
+   
+void print_regerror (int errcode, size_t length, regex_t *compiled);
+
+int
+main (int argc, char *argv[])
+{
+  regex_t regex;
+  int result;
+
+  if (argc &lt; 3)
+    {
+      // The number of passed arguments is lower than the number of
+      // expected arguments.
+      fputs ("Missing command line arguments\n", stderr);
+      return EXIT_FAILURE;
+    }
+
+  result = regcomp (&regex, argv[1], REG_EXTENDED);
+  if (result)
+    {
+      // Any value different from 0 means it was not possible to 
+      // compile the regular expression, either for memory problems
+      // or problems with the regular expression syntax.
+      if (result == REG_ESPACE)
+        fprintf (stderr, "%s\n", strerror(ENOMEM));
+      else
+        fputs ("Syntax error in the regular expression passed as first argument\n", stderr);
+      return EXIT_FAILURE;               
+    }
+  for (int i = 2; i &lt; argc; i++)
+    {
+      result = regexec (&regex, argv[i], 0, NULL, 0);
+      if (!result)
+        {
+          printf ("'%s' matches the regular expression\n", argv[i]);
+        }
+      else if (result == REG_NOMATCH)
+        {
+          printf ("'%s' doesn't match the regular expression\n", argv[i]);
+        }
+      else
+        {
+          // The function returned an error; print the string 
+          // describing it.
+          // Get the size of the buffer required for the error message.
+          size_t length = regerror (result, &regex, NULL, 0);
+          print_regerror (result, length, &regex);       
+          return EXIT_FAILURE;
+        }
+    }
+
+  /* Free the memory allocated from regcomp(). */
+  regfree (&regex);
+  return EXIT_SUCCESS;
+}
+
+void
+print_regerror (int errcode, size_t length, regex_t *compiled)
+{
+  char buffer[length];
+  (void) regerror (errcode, compiled, buffer, length);
+  fprintf(stderr, "Regex match failed: %s\n", buffer);
+}
+The last argument of regcomp() needs to be at least REG_EXTENDED, or the functions will use basic regular expressions, which means that (for example) you would need to use a\{3\} instead of a{3} used from extended regular expressions, which is probably what you expect to use.
+
+POSIX.2 has also another function for wildcard matching: fnmatch(). It doesn't allow to compile the regular expression, or get the sub-strings matching a sub-expression, but it is very specific for checking when a filename match a wildcard (it uses the FNM_PATHNAME flag).
+
+Creation of Regular Expression 
+For compiling or creating the regular expression regcomp() function is used. It takes three arguments: 
+Syntax: 
+ 
+
+regcomp(&regex, expression, flag)
+where, 
+ 
+
+regex is a pointer to a memory location where expression is matched and stored.
+expression is a string type
+flag to specify the type of compilation
+Return Value: This returns the value as shown below: 
+ 
+
+0: when successful compilation is done.
+Error_code: When there is unsuccessful compilation of the expression.
+Below is the illustration of the regcomp() function:
+// C program for illustration of regcomp()
+#include &lt;regex.h>
+#include &lt;stdio.h>
+ 
+// Driver Code
+int main()
+{
+ 
+    // Variable to create regex
+    regex_t reegex;
+ 
+    // Variable to store the return
+    // value after creation of regex
+    int value;
+ 
+    // Function call to create regex
+    value = regcomp( &reegex, "[:word:]", 0);
+ 
+    // If compilation is successful
+    if (value == 0) {
+        printf("RegEx compiled successfully.");
+    }
+ 
+    // Else for Compilation error
+    else {
+        printf("Compilation error.");
+    }
+    return 0;
+}
+Output
+RegEx compiled successfully.
+
+Matching of Pattern using Regular Expression 
+The regexec() function is used to match a string against a pattern. It takes in five arguments: 
+ 
+
+A precompiled pattern
+A string in which the pattern needs to be searched for.
+Information regarding the location of matches.
+Flags to specify a change in the matching behavior.
+Syntax: 
+ 
+
+regexec(&regex, expression, 0, NULL, 0);
+where, regex = precompiled pattern, 
+expression = pattern to be match in regex, 
+NULL = Information regarding location of the matches. 
+flag = to specify the change in matching behaviour
+Return Value: This returns the value as shown below: 
+ 
+
+0: If there is a match.
+REG_NOMATCH: If there is no match.
+Below is the illustration of the regexec() function:
+ 
+
+
+
+
+// C program to illustrate the regexec() function
+#include &lt;regex.h>
+#include &lt;stdio.h>
+ 
+// Function to print the result
+void print_result(int value)
+{
+ 
+    // If pattern found
+    if (value == 0) {
+        printf("Pattern found.\n");
+    }
+ 
+    // If pattern not found
+    else if (value == REG_NOMATCH) {
+        printf("Pattern not found.\n");
+    }
+ 
+    // If error occurred during Pattern
+    // matching
+    else {
+        printf("An error occurred.\n");
+    }
+}
+ 
+// Driver Code
+int main()
+{
+ 
+    // Variable to store initial regex()
+    regex_t reegex;
+ 
+    // Variable for return type
+    int value;
+    int value2;
+ 
+    // Creation of regEx
+    value = regcomp( &reegex, "Welcome to GfG", 0);
+ 
+    // Comparing pattern "GeeksforGeeks" with
+    // string in reg
+    value = regexec( &reegex, "GeeksforGeeks",
+                    0, NULL, 0);
+ 
+    // Creation of regEx
+    value2 = regcomp( &reegex, "GeeksforGeeks", 0);
+ 
+    // Comparing pattern "Geeks"
+    // with string in reg
+    value2 = regexec( &reegex, "GeeksforGeeks",
+                     0, NULL, 0);
+ 
+    // Print the results
+    print_result(value);
+    print_result(value2);
+    return 0;
+}
+Output
+Pattern not found.
+Pattern found.
+
+<h2>Split string with delimiters in C</h2>
+The strtok() function split a string (and specify the delimiter to use).
+Note that strtok() will modify the string passed into it.
+Example (note it does not handle consecutive delimiters, "JAN,,,FEB,MAR" for example):
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+
+char** str_split(char* a_str, const char a_delim)
+{
+    char** result    = 0;
+    size_t count     = 0;
+    char* tmp        = a_str;
+    char* last_comma = 0;
+    char delim[2];
+    delim[0] = a_delim;
+    delim[1] = 0;
+    /* Count how many elements will be extracted.
+*/
+    while (*tmp)
+    {
+        if (a_delim == *tmp)
+        {
+            count++;
+            last_comma = tmp;
+        }
+        tmp++;
+    }
+    /* Add space for trailing token.
+*/
+    count += last_comma < (a_str + strlen(a_str) - 1);
+    /* Add space for terminating null string so caller
+       knows where the list of returned strings ends.
+*/
+    count++;
+    result = malloc(sizeof(char*) * count);
+    if (result)
+    {
+        size_t idx  = 0;
+        char* token = strtok(a_str, delim);
+        while (token)
+        {
+            assert(idx < count);
+            *(result + idx++) = strdup(token);
+            token = strtok(0, delim);
+        }
+        assert(idx == count - 1);
+        *(result + idx) = 0;
+    }
+    return result;
+}
+int main()
+{
+    char months[] = "JAN,FEB,MAR,APR,MAY,JUN,JUL,AUG,SEP,OCT,NOV,DEC";
+    char** tokens;
+    printf("months=[%s]\n\n", months);
+    tokens = str_split(months, ',');
+    if (tokens)
+    {
+        int i;
+        for (i = 0; *(tokens + i); i++)
+        {
+            printf("month=[%s]\n", *(tokens + i));
+            free(*(tokens + i));
+        }
+        printf("\n");
+        free(tokens);
+    }
+    return 0;
+}
+Output:
+$ ./main.exe
+months=[JAN,FEB,MAR,APR,MAY,JUN,JUL,AUG,SEP,OCT,NOV,DEC]
 
 
 
