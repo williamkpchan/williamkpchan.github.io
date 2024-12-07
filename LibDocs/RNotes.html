@@ -40509,6 +40509,580 @@ Dimensionality reduction can be a helpful method for exploratory data analysis a
 The recipes and embed packages contain steps for a variety of different methods and workflowsets facilitates choosing an appropriate method for a data set.
 This chapter also discussed how recipes can be used on their own, either for debugging problems with a recipe or directly for exploratory data analysis and data visualization.
 
+<h2>tidymodels进行回归模型的一致性推断</h2>
+<div id="Conformalinfertoc" class="toc"><a href="#Conformalinfertopic-0" target="_self">2 生成数据</a><br><a href="#Conformalinfertopic-1" target="_self">3 分割一致性推断</a><br><a href="#Conformalinfertopic-2" target="_self">4 使用重采样结果</a><br><a href="#Conformalinfertopic-3" target="_self">必须确保保存了样本外的预测值以及重采样的模型。</a><br><a href="#Conformalinfertopic-4" target="_self">5 自适应宽度间隔</a><br><a href="#Conformalinfertopic-5" target="_self">5.1 主要缺点</a><br></div></center><br><br>
+
+1 介绍
+Conformal inference（或称为一致性推断）是一种基于数据的推断方法，它能够为预测结果提供置信区间，而不需要对数据的分布做出假设。
+
+这种方法特别适用于那些传统统计方法难以处理的复杂数据结构，或者是当数据分布未知或非标准时。
+
+在回归模型中应用Conformal inference，可以帮助我们对模型的预测结果进行不确定性的量化，从而更好地理解模型预测的可靠性。
+
+这种方法在机器学习、金融风险评估和医疗诊断等领域有着广泛的应用。
+
+library(pacman)
+p_load(future, dplyr, tidymodels)
+
+# 字体和配色
+showtext::showtext_auto(enable = TRUE)
+sysfonts::font_add(family = "simfang", regular = "C:/Drivers/simfang.ttf")
+col &lt;- c("#7AB656", "#7E99F4")
+
+# 设置画图主题
+theme_set(theme_light())
+
+# 多线程
+plan(multisession, workers = 4)
+
+probably包中有函数可以为回归模型创建预测区间。
+
+本文需要安装以下包：nnet、probably和tidymodels。
+
+probably包的版本应该是1.0.2或更高。
+
+<h3 id="Conformalinfertopic-0">2 生成数据</h3>
+生成一组1000个标准正态数据点。
+set.seed(2024)
+reference_data &lt;- tibble(data = rnorm(1000))
+reference_data %&gt;% 
+  ggplot(aes(x = data)) +
+  geom_line(stat = "density", col = col[1])
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/MbGTQPrEX5E5lUR0IgzIoIYVib86pE5ibiamUwl1e6cO9wDu8OFqBjn25OnsHfYE1gka7Wdc9tDOxWADgvCzAF80A/640">
+
+如果有一个新的观测值，并且认为它可能来自相同的分布，该如何（以概率方式）让我们相信它属于原始分布？
+
+如果认为1000是一个足够的样本量，可能会计算这些数据的一些分位数来定义“数据的主流”，下面使用5和95分位数来定义我们期望大多数时候看到的范围的边界：
+
+quants &lt;- quantile(reference_data$data, probs = c(0.05, 0.95))
+reference_data %&gt;% 
+  ggplot(aes(x = data)) +
+  geom_line(stat = "density", col = col[1]) + 
+  geom_vline(xintercept = quants, col = col[2], lty = 2)
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/MbGTQPrEX5E5lUR0IgzIoIYVib86pE5ibia3zlfL6weS7MQkxAnm3G9Wv7GKd9RicsC1lqv1ELApUYVR2MVccvpsbg/640">
+
+如果得到一个新的样本超出这个边界，就可以说大约90%确定新样本不符合原始分布。
+这是在假设数据是可交换的情况下进行的。
+可以将这个相对简单的思想应用到模型预测上。
+
+假设我们创建了一个数值结果的模型。
+如果我们对一个数据集进行预测，可以计算模型残差并创建一种参考误差分布。
+如果我们对一个新的未知样本进行预测，可以将这个参考分布围绕其预测值居中分布。
+
+对于某个显著性水平，我们现在知道了“符合”参考分布中看到的方差的样本值范围，这个范围可以用来定义我们的预测区间。
+probably包已经实现了其中的一些概念。
+举一个简单的例子来说明，首先模拟一个带有单个预测器的数据集以及一些未知样本：
+
+make_data &lt;- function(n, std_dev = 1 / 5) {
+  tibble(x = runif(n, min = -1)) %&gt;%
+    mutate(
+      y = (x^3) + 2 * exp(-6 * (x - 0.3)^2),
+      y = y + rnorm(n, sd = std_dev)
+    )
+}
+n &lt;- 1000
+set.seed(2024)
+train_data &lt;- make_data(n)
+
+train_data %&gt;% 
+  ggplot(aes(x, y)) + 
+  geom_point(alpha = 1 / 10, col = col[1])
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/MbGTQPrEX5E5lUR0IgzIoIYVib86pE5ibiaCWkhO9kKDJYx5DOJicgy7OovpOQsooXGvzOBosDjTngNaUhCUGdrdjg/640">
+
+将这些数据用作训练集并拟合模型：
+set.seed(2024)
+
+# 神经网络模型
+nnet_wflow &lt;- 
+  workflow(y ~ x, mlp(hidden_units = 4) %&gt;% 
+             set_mode("regression"))
+nnet_fit &lt;- nnet_wflow %&gt;% fit(train_data)
+nnet_pred &lt;- augment(nnet_fit, train_data)
+
+train_data %&gt;% 
+  ggplot(aes(x)) + 
+  geom_point(aes(y = y), alpha = 1 / 10, col = col[1]) +
+  geom_line(data = nnet_pred, aes(y = .pred),
+            linewidth = 1, col = col[2])
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/MbGTQPrEX5E5lUR0IgzIoIYVib86pE5ibiaMvQDOCrDwy0Q3oriafn4YPRicmKhdubZGcfTUOSrFF1V9juPt7D1TicUg/640">
+
+有三种方法可以生成预测区间：
+
+<h3 id="Conformalinfertopic-1">3 分割一致性推断</h3>
+最直接的方法是保留一些数据以估计残差分布。
+我们知道简单地重新预测训练集是一个坏主意；
+残差会比应有的小，因为相同的数据被用来创建和评估模型。
+所以模拟另一个包含250个样本的数据集，并称之为“校准集”。
+
+这些数据可以被预测，相应的残差可以用来定义什么是符合模型的。
+还将创建一个大型测试集，以测试模型性能。
+
+set.seed(2024)
+cal_data  &lt;- make_data(250)
+test_data &lt;- make_data(10000)
+
+probably包具有一组带有int_conformal前缀的函数，可用于创建预测区间。
+其中一个是：
+p_load(probably)
+split_int &lt;- int_conformal_split(nnet_fit, cal_data)
+split_int
+
+## Split Conformal inference
+## preprocessor: formula 
+## model: mlp (engine = nnet) 
+## calibration set size: 250 
+## 
+## Use `predict(object, new_data, level)` to compute prediction intervals
+
+为了获得对新数据的预测，对此对象使用predict()方法：
+# 生成90%预测区间
+test_split_res &lt;- 
+  predict(split_int, test_data, level = 0.90) %&gt;% 
+  bind_cols(test_data)
+test_split_res %&gt;% slice(1:5)
+## # A tibble: 5 × 5
+##    .pred .pred_lower .pred_upper      x       y
+##    &lt;dbl&gt;       &lt;dbl&gt;       &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;
+## 1  0.751       0.428       1.07  -0.103  0.760 
+## 2  1.76        1.44        2.09   0.162  2.05  
+## 3  0.553       0.230       0.876 -0.165  0.547 
+## 4 -0.592      -0.915      -0.269 -0.854 -0.400 
+## 5  0.109      -0.215       0.432 -0.357 -0.0123
+
+画图看看：
+ggplot(test_split_res, aes(x = x)) +
+  geom_point(aes(y = y), col = col[1], size = 0.5) +
+  geom_line(aes(y = .pred_lower), col = col[2]) +
+  geom_line(aes(y = .pred_upper), col = col[2])
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/MbGTQPrEX5E5lUR0IgzIoIYVib86pE5ibiaicI4VQ50TlNULpich1t5Qm0Mxd0dgSI95ibHkXhG52jYk9iaLEedgbPTEQ/640">
+由于知道结果值，可以计算这个特定数据集的覆盖率。
+由于创建了一个90%的预测区间，大约90%的结果应该在界限内。
+创建一个函数并将其应用于这些数据：
+
+coverage &lt;- function(x) {
+  x %&gt;% 
+    mutate(in_bound = .pred_lower &lt;= y &amp; .pred_upper &gt;= y) %&gt;% 
+    summarise(coverage = mean(in_bound) * 100)
+}
+
+coverage(test_split_res)
+## # A tibble: 1 × 1
+##   coverage
+##      &lt;dbl&gt;
+## 1     88.5
+
+<h3 id="Conformalinfertopic-2">4 使用重采样结果</h3>
+在某种程度上，校准集的作用类似于传统的验证集。
+由于不能简单地重新预测训练集，需要在一组单独的标记数据上评估模型。
+然而，重采样方法也可以用于同样的目的。
+在重采样期间，可以计算一组没有用于拟合模型的预测。
+
+例如，在10折交叉验证中，有10组保留的预测不受简单重新预测训练集时发生的严重偏差的影响。
+CV+估计器（Barber等人，2021年）可以用来组装残差的参考分布。
+如果使用fit_resamples()或tune_*()函数之一，可以收集这些残差并用它们来创建预测区间。
+
+<k id="Conformalinfertopic-3">必须确保保存了样本外的预测值以及重采样的模型。</k>
+control_*()函数可以设置save_pred = TRUE以保存预测值。
+对于重采样的模型，可以使用工具通过extract参数提取模型。
+使用I()函数返回每个重采样的拟合工作流：
+
+ctrl &lt;- control_resamples(save_pred = TRUE, extract = I)
+使用10折交叉验证来重采样神经网络：
+set.seed(2024)
+folds &lt;- vfold_cv(train_data)
+nnet_rs &lt;- 
+  nnet_wflow %&gt;% 
+  fit_resamples(folds, control = ctrl)
+collect_metrics(nnet_rs)
+
+## # A tibble: 2 × 6
+##   .metric .estimator  mean     n std_err .config             
+##   &lt;chr&gt;   &lt;chr&gt;      &lt;dbl&gt; &lt;int&gt;   &lt;dbl&gt; &lt;chr&gt;               
+## 1 rmse    standard   0.198    10 0.00382 Preprocessor1_Model1
+## 2 rsq     standard   0.953    10 0.00226 Preprocessor1_Model1
+
+该模型的估计均方根误差为0.198，R2为0.95。
+可以创建另一个对象来计算区间：
+cv_int &lt;- int_conformal_cv(nnet_rs)
+cv_int
+
+## Conformal inference via CV+
+## preprocessor: formula 
+## model: mlp (engine = nnet) 
+## number of models: 10 
+## training set size: 1,000 
+## 
+## Use `predict(object, new_data, level)` to compute prediction intervals
+
+test_cv_res &lt;- 
+  predict(cv_int, test_data, level = 0.90) %&gt;% 
+  bind_cols(test_data)
+test_cv_res %&gt;% slice(1:5)
+
+## # A tibble: 5 × 5
+##   .pred_lower  .pred .pred_upper      x       y
+##         &lt;dbl&gt;  &lt;dbl&gt;       &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;
+## 1       0.402  0.735       1.07  -0.103  0.760 
+## 2       1.45   1.78        2.11   0.162  2.05  
+## 3       0.196  0.529       0.862 -0.165  0.547 
+## 4      -0.951 -0.618      -0.285 -0.854 -0.400 
+## 5      -0.229  0.104       0.437 -0.357 -0.0123
+
+此方法的覆盖率要好一些，因为它更接近90%：
+coverage(test_cv_res)
+
+## # A tibble: 1 × 1
+##   coverage
+##      &lt;dbl&gt;
+## 1     89.9
+
+画图看看：
+ggplot(test_cv_res, aes(x = x)) +
+  geom_point(aes(y = y), col = col[1], size = 0.5) +
+  geom_line(aes(y = .pred_lower), col = col[2]) +
+  geom_line(aes(y = .pred_upper), col = col[2])
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/MbGTQPrEX5E5lUR0IgzIoIYVib86pE5ibiaflHtP9pgXeZjLkVYEOYsORD6ubA6Qa6JgibibZE8TXEDtQZImvyrpLhg/640">
+
+<h3 id="Conformalinfertopic-4">5 自适应宽度间隔</h3>
+之前使用的模拟数据具有恒定的误差方差（constant error variance），意味着在这些模拟数据中，无论预测变量的值如何变化，误差的分布都是相同的。
+这种假设对于某些统计方法（如文中提到的两种方法）是适用的，因为这些方法产生的预测区间宽度是固定的。
+
+然而，现实世界的数据并不总是具有恒定的变异性（constant variation）。
+在现实世界中，数据的误差方差可能会随着预测变量的变化而变化，这种变化性需要在建模时考虑。
+为了展示这种动态变化的方差，在之前的模拟系统中引入一个随预测变量范围动态变化的方差，方差不再是一个固定的值，而是随着预测变量的不同值而变化，从而更贴近现实世界数据的特性。
+
+make_variable_data &lt;- function(n, std_dev = 1 / 5) {
+  tibble(x = runif(n, min = -1)) %&gt;%
+    mutate(
+      y = (x^3) + 2 * exp(-6 * (x - 0.3)^2),
+      y = y + rnorm(n, sd = std_dev * abs(x))
+    )
+
+}
+
+make_variable_data(1000) %&gt;% 
+  ggplot(aes(x, y)) + 
+  geom_point(alpha = 1 / 5, col = col[1])
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/MbGTQPrEX5E5lUR0IgzIoIYVib86pE5ibiaqnseVI1QnjgRMkBL3Axv0nib8Xp8YwyHuxZGqBXC9CiblBDFSMrDrZOg/640">
+
+
+创建新的数据集并重新拟合模型：
+set.seed(2024)
+train_variable_data &lt;- make_variable_data(n)
+cal_variable_data &lt;- make_variable_data(250)
+test_variable_data &lt;- make_variable_data(10000)
+nnet_variable_fit &lt;- nnet_wflow %&gt;% fit(train_variable_data)
+nnet_variable_pred &lt;- augment(nnet_variable_fit, train_variable_data)
+
+为新数据集重新创建置信区间：
+nnet_variable_full_fit &lt;- int_conformal_split(nnet_variable_fit, train_variable_data)
+nnet_variable_full_fit
+## Split Conformal inference
+## preprocessor: formula 
+## model: mlp (engine = nnet) 
+## calibration set size: 1,000 
+## 
+## Use `predict(object, new_data, level)` to compute prediction intervals
+
+平均覆盖率不错：
+test_full_variable_res &lt;- 
+  predict(nnet_variable_full_fit, test_variable_data, level = 0.90) %&gt;% 
+  bind_cols(test_variable_data)
+
+coverage(test_full_variable_res)
+
+## # A tibble: 1 × 1
+##   coverage
+##      &lt;dbl&gt;
+## 1     89.6
+ggplot(test_full_variable_res, aes(x = x)) +
+  geom_point(aes(y = y), col = col[1], size = 0.5) +
+  geom_line(aes(y = .pred_lower), col = col[2]) +
+  geom_line(aes(y = .pred_upper), col = col[2])
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/MbGTQPrEX5E5lUR0IgzIoIYVib86pE5ibiaUpVMg97mhj3RGjwB9kEyVuvyib5qJyfFW6wMCF5iawsqB20niaCu0NCEg/640">
+
+虽然之前使用的模拟数据具有恒定的误差方差，这对于某些方法来说是有效的，因为它们产生的区间宽度总是相同的。
+然而，现实世界的数据并不总是具有恒定的变化性，这可能导致某些区域的预测区间要么太宽，要么太窄。
+为了解决这个问题，“Conformalized quantile regression”的方法可以根据训练数据中观察到的情况适当地调整区间的宽度。
+这种方法首先拟合一个分位数回归模型，并需要一个分割的数据集，比如校准数据。
+但在tidymodels中，可以使用分位数回归森林（quantile regression forests），因为一些模型需要非线性项、交互作用和其他特性来充分模拟数据。
+随机森林用于分位数回归适应性强，维护成本低，并且对调整参数的设定具有鲁棒性。
+这种分析的函数int_conformal_quantile()与之前的函数接口略有不同。
+它需要训练集和校准集，并且必须提前设定置信水平。
+下面将向quantregForest()函数传递一个参数，使用2000棵树来构建森林。
+p_load(quantregForest)
+quant_int &lt;-
+  int_conformal_quantile(
+    nnet_variable_fit, 
+    train_data = train_variable_data,
+    cal_data = cal_variable_data, 
+    level = 0.90,
+    ntree = 2000)
+
+quant_int
+## Split Conformal inference via Quantile Regression
+## preprocessor: formula 
+## model: mlp (engine = nnet) 
+## calibration set size: 250 
+## confidence level: 0.9 
+## 
+## Use `predict(object, new_data)` to compute prediction intervals
+test_quant_res &lt;- 
+  predict(quant_int, test_variable_data) %&gt;% 
+  bind_cols(test_variable_data)
+test_quant_res %&gt;% slice(1:5)
+## # A tibble: 5 × 5
+##   .pred .pred_lower .pred_upper      x     y
+##   &lt;dbl&gt;       &lt;dbl&gt;       &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;
+## 1 1.56        1.42         1.76 0.538  1.53 
+## 2 1.70        1.62         1.80 0.139  1.72 
+## 3 0.939       0.690        1.11 0.938  0.776
+## 4 0.995       0.680        1.01 0.809  0.958
+## 5 1.53        1.46         1.65 0.0935 1.51
+ggplot(test_quant_res, aes(x = x)) +
+  geom_point(aes(y = y), col = col[1], size = 0.5) +
+  geom_line(aes(y = .pred_lower), col = col[2]) +
+  geom_line(aes(y = .pred_upper), col = col[2])
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/MbGTQPrEX5E5lUR0IgzIoIYVib86pE5ibian5wl5KicRwefXJRGkemN85ibodXNokTavTjUogibPITgznZpicJuQZjVoA/640">
+
+使用基于树的模型（如随机森林）进行分位数回归时，预测区间的边界可能会出现不平滑（bumpiness）的现象。
+这是因为树模型在处理数据时会将数据分割成不同的区域，每个区域内部的预测可能是线性的，但在区域之间可能会有跳跃，导致整体的预测边界看起来不平滑。
+尽管存在边界不平滑的问题，但这种模型的预测区间宽度能够根据数据的变化进行调整，以适应数据的特性。
+
+所以使用这种模型得到的预测区间的覆盖率（即预测区间包含真实值的比例）仍然接近目标水平，模型在大多数情况下能够较好地预测数据，并给出合理的预测区间。
+
+coverage(test_quant_res)
+## # A tibble: 1 × 1
+##   coverage
+##      &lt;dbl&gt;
+## 1     89.6
+<h4 id="Conformalinfertopic-5">5.1 主要缺点</h4>当我们的预测涉及到外推（即预测超出训练数据范围的值）时，预测结果的置信区间可能会非常不准确。
+基于树的模型（如决策树、随机森林等）在预测超出训练集范围时，与其他类型的模型相比可能会表现出很大的不同；
+即使预测变量的值趋向于无穷大，它们也会遵循一个静态的趋势。
+神经网络与分位数回归森林的表现差异： 
+- 在超出训练集范围的情况下，神经网络模型的预测表现相对较好。
+- 与神经网络不同，分位数回归森林模型在预测时会延续其在训练集上观察到的趋势，即使这些趋势在新的数据点上可能不再适用。
+
+------------
+
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247483824&amp;idx=1&amp;sn=c4d93d5e1ccb736fa562a95c1a214b3d&amp;chksm=ce98e8ebf9ef61fd4be2f75ec3a0d622cfdad580ddf4270c77ae4c776eaaef312f32cf1e2454&amp;scene=21#wechat_redirect" textvalue="案例：R语言分析北京市二手房价" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2" hasload="1">案例：R语言分析北京市二手房价</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247483979&amp;idx=1&amp;sn=7b0880dce5271e3302db29b06088507f&amp;chksm=ce98eb10f9ef620616a66e87d2e38f36c5f7119dfec79cfda6f2d1733fbc80d2bccfc924de79&amp;scene=21#wechat_redirect" textvalue="7-消费者金融投诉数据集分类研究：基于tidymodels分类" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2" hasload="1">7-消费者金融投诉数据集分类研究：基于tidymodels分类</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247483976&amp;idx=1&amp;sn=a5432d1c26f69144ecdc3021f4185b19&amp;chksm=ce98eb13f9ef6205f90eb9990bbcc856be434087e410fa9b1e53db27603074939a62d96425b9&amp;scene=21#wechat_redirect" textvalue="4-如何优化电商商品标题—基于tidymodels的回归分析" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2" hasload="1">4-如何优化电商商品标题—基于tidymodels的回归分析</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247483888&amp;idx=1&amp;sn=5a2edbf32437838fc24932e4c266d367&amp;chksm=ce98e8abf9ef61bd4beac902ff1a67b83b801dd09cc203092b1f3a27fabb8b01e1d49481a8cb&amp;scene=21#wechat_redirect" textvalue="使用R语言进行面板数据分析（数据）" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2" hasload="1">使用R语言进行面板数据分析（数据）</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247483887&amp;idx=1&amp;sn=65a44155bcb93d01c599281f87b4a174&amp;chksm=ce98e8b4f9ef61a288a40baf629799a3411952fab57c5e0295ebe96ecfe36611227123ed862f&amp;scene=21#wechat_redirect" textvalue="R语言分析IT售前的职业前景及歧视现状" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2" hasload="1">R语言分析IT售前的职业前景及歧视现状</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247483866&amp;idx=1&amp;sn=76feb90d53ad94d725a672e5518f47f6&amp;chksm=ce98e881f9ef619733fa2045bfbb0fcd8528c43f2a20bdf76379e8c0337f1bde0d4f8fb7b96f&amp;scene=21#wechat_redirect" textvalue="案例：R语言分析奥巴马国会演讲" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2" hasload="1">案例：R语言分析奥巴马国会演讲</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484032&amp;idx=1&amp;sn=5101521ebc0dd0d9403b0ef1e027f5eb&amp;chksm=ce98ebdbf9ef62cd5e0086b56a6b451d7edef686f02997b672aa436a8d19d954a8ae3683207d&amp;scene=21#wechat_redirect" textvalue="R语言评论文本中提取特征观点对" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2" hasload="1">R语言评论文本中提取特征观点对</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484039&amp;idx=1&amp;sn=c466080ddb56257a7c68f494a5f80ea0&amp;chksm=ce98ebdcf9ef62ca878798023795b110c29aef456ee8467916508fa70ae2e872e2646b54ff9b&amp;scene=21#wechat_redirect" textvalue="案例：某网站数据抓取及分析" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2" hasload="1">案例：某网站数据抓取及分析</a>
+<a localeditorid="7dwwd1iru0s00000000" href="https://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484217&amp;idx=1&amp;sn=6543b758c01ee15e7a82765f561636a9&amp;chksm=ce98ea62f9ef637465865b03f153b8afcafa452b2b5fcf0347e77b5efde8c017c941f2c30846&amp;scene=21#wechat_redirect" textvalue="tidymodels中的核心包介绍及示例" target="_blank" data-linktype="2">tidymodels中的核心包介绍及示例</a>
+<a localeditorid="8pinqdoy8c000000000" href="https://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484263&amp;idx=1&amp;sn=f83f7d91baba383ea499c4e54d92ed36&amp;chksm=ce98ea3cf9ef632a41035627576e8aab5334492a3bd10af9244faebb3a006a282de75c6263cc&amp;scene=21#wechat_redirect" textvalue="tidymodels中rsample包重采样方式介绍" target="_blank" data-linktype="2">tidymodels中rsample包重采样方式介绍</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484105&amp;idx=1&amp;sn=8e7c6461b2542f16535d6be652cc538a&amp;chksm=ce98eb92f9ef62847f43ecedc13bd9ffc713cf77738e26a33e8316293f8566ea24082b856ec6&amp;scene=21#wechat_redirect" textvalue="tidymodels中的预处理函数" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2" hasload="1">tidymodels中的预处理函数</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484265&amp;idx=1&amp;sn=d0ffd4761bf645ae3225c4fac60d4c66&amp;chksm=ce98ea32f9ef63249a07f4e5ab9e29313a62e864246bd5a7ef4c954b66afa423fb705a8915a3&amp;scene=21#wechat_redirect" textvalue="tidymodels使用workflowsets高效优化和比较模型" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2" hasload="1">tidymodels使用workflowsets高效优化和比较模型</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484272&amp;idx=1&amp;sn=0b2e4c7c70f68de0b65aab1fecd847d5&amp;chksm=ce98ea2bf9ef633dcab744b1955b1357a1cea371bf950aa21a31b4b469c83e0f62fca803b125&amp;scene=21#wechat_redirect" textvalue="tidymodels中使用finetune高效优化模型参数" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2" hasload="1">tidymodels中使用finetune高效优化模型参数</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484197&amp;idx=1&amp;sn=ff1a81eb2826452b14964dffbfbd0efe&amp;chksm=ce98ea7ef9ef6368955d73273e6022e6eaebaf160b030d91d1cc1a495c61e120485bd8d18e2f&amp;scene=21#wechat_redirect" textvalue="tidymodels分类模型建模流程汇总" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2" hasload="1">tidymodels分类模型建模流程汇总</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484209&amp;idx=1&amp;sn=11030e4e5d97299cc5c81bbb1037da01&amp;chksm=ce98ea6af9ef637c75cc4112808ea65b36082020c60cc3c96ba66a2faa6d69c57d1cb58707b9&amp;scene=21#wechat_redirect" textvalue="tidymodels包对比不同预处理下KNN性能" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2" hasload="1">tidymodels包对比不同预处理下KNN性能</a>
+<a localeditorid="hhzxuzc8lw800000000" href="https://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484331&amp;idx=1&amp;sn=262a7fce63d9b6fcc01a48099c92897a&amp;chksm=ce98eaf0f9ef63e6adbd828a08878ad401a8b446b3581391299e1989ab85105f91be16cddd0f&amp;scene=21#wechat_redirect" textvalue="tidymodels中使用finetune优化KNN参数" target="_blank" data-linktype="2">tidymodels中使用finetune优化KNN参数</a>
+<a localeditorid="5bspmi1taio00000000" href="https://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484311&amp;idx=1&amp;sn=f4086eb83b4601b12871bceb2a6dea5c&amp;chksm=ce98eaccf9ef63dacb08fd1425cc998f3145ef0433b82fa1781ab657974fe54324a6c0643572&amp;scene=21#wechat_redirect" textvalue="tidymodels包优化决策树模型超参数" target="_blank" data-linktype="2">tidymodels包优化决策树模型超参数</a>
+<a localeditorid="83abrafgmho0000000" href="https://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484333&amp;idx=1&amp;sn=1f39755e9000923d18f78ab32e789cd5&amp;chksm=ce98eaf6f9ef63e0651539091bc1125d2821a3b2b9bf7370d9da83c954231ecbfda3ac36c426&amp;scene=21#wechat_redirect" textvalue="tidymodels中两种不同的拟合模型方法介绍" target="_blank" data-linktype="2">tidymodels中两种不同的拟合模型方法介绍</a>
+<a localeditorid="6aoanj9zf1s0000000" href="https://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484334&amp;idx=1&amp;sn=02868e284f670d06700542d8b23d3a49&amp;chksm=ce98eaf5f9ef63e399d8248f2143f63216ac7ea4eea9c61070ddfd8cc24aaf00a7751aa50a36&amp;scene=21#wechat_redirect" textvalue="R语言使用broom包整理相关分析和回归分析结果" target="_blank" data-linktype="2">R语言使用broom包整理相关分析和回归分析结果</a>
+<a localeditorid="rlsq6l06tkw0000000" href="https://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484337&amp;idx=1&amp;sn=cb035d89cc2a39a612d8b7970d9d650a&amp;chksm=ce98eaeaf9ef63fcd4487f6769fe2fe4d6f42d4cf62ade14f0510976949a2bc9a5db8e210f1b&amp;scene=21#wechat_redirect" textvalue="从tidymodels拟合的重采样模型中抽取系数" target="_blank" data-linktype="2">从tidymodels拟合的重采样模型中抽取系数</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484338&amp;idx=1&amp;sn=f13c84c3688dab359c2e247d3abc9415&amp;chksm=ce98eae9f9ef63ffa4efbb10f52e172cd723c2f96fc783d21cecfdf0fe227d6e9fdc4b716dc3&amp;scene=21#wechat_redirect" textvalue="tidymodels中使用bootstrap估计非线性模型参数" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2" hasload="1">tidymodels中使用bootstrap估计非线性模型参数</a>
+<a localeditorid="56sxylv2u1400000000" href="https://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484355&amp;idx=1&amp;sn=2c389919f12c379f7080b63776b53cc1&amp;chksm=ce98ea98f9ef638e1b20075fc325b99dab93f6c691c7a97a124a602af7b293015d1acef053e6&amp;scene=21#wechat_redirect" textvalue="tidymodels网格搜索SVM模型的最佳参数" target="_blank" data-linktype="2">tidymodels网格搜索SVM模型的最佳参数</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484356&amp;idx=1&amp;sn=23769cde46c0b43c58251563695307fe&amp;chksm=ce98ea9ff9ef6389ad1fad65b87d9dc2626ed538022c19526b159df1e90fb222914142f3e03c&amp;scene=21#wechat_redirect" textvalue="tidymodels使用嵌套重采样更精确调优SVM参数" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2">tidymodels使用嵌套重采样更精确调优SVM参数</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484410&amp;idx=1&amp;sn=0b847fe66d70b39345414a79fab69e2d&amp;chksm=ce98eaa1f9ef63b7fdc164f74819bbcc8418902dbe845f0bfa8da2b685d219c75affb53456df&amp;scene=21#wechat_redirect" textvalue="tidymodels进行类不平衡的子采样" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2">tidymodels进行类不平衡的子采样</a>
+<a localeditorid="gy41lrc0j0g0000000" href="https://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484409&amp;idx=1&amp;sn=a2aac4c02f723e942434973a45738656&amp;chksm=ce98eaa2f9ef63b4684b8a59bc9a3f7b97bbe6550af24a77408380a75c9887477062b41c087f&amp;scene=21#wechat_redirect" textvalue="tidymodels调优文本分析模型参数" target="_blank" data-linktype="2">tidymodels调优文本分析模型参数</a>
+<a localeditorid="3fycpd6cb4i0000000" href="https://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484403&amp;idx=1&amp;sn=93123294f75b5720c9ae6a19da300e9e&amp;chksm=ce98eaa8f9ef63be66353dcc43db386a2f5501c0af3c77d6d47a3ec696648274440a16325572&amp;scene=21#wechat_redirect" textvalue="tidymodels处理时间序列数据-workflowsets工作流集合建模" target="_blank" data-linktype="2">tidymodels处理时间序列数据-workflowsets工作流集合建模</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484425&amp;idx=1&amp;sn=d02f6f0fd413cade31a468590b15a8b8&amp;chksm=ce98ed52f9ef64440f06c48151cfff33dd5379faff043d2b90f525a95093ae5a8a510e901622&amp;scene=21#wechat_redirect" textvalue="tidymodels中使用重采样评估时间序列模型性能" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2">tidymodels中使用重采样评估时间序列模型性能</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484465&amp;idx=1&amp;sn=6c656341edad70361487f614c5c60af8&amp;chksm=ce98ed6af9ef647c1bb776617c74c52f2f51962602f31c50b0444d23e15e091c51bba5bd5345&amp;scene=21#wechat_redirect" textvalue="tidymodels在H2O平台是进行自动机器学习（AutoML）" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2">tidymodels在H2O平台是进行自动机器学习（AutoML）</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484429&amp;idx=1&amp;sn=6eda3ffc1917031f0eef5aabf0b05598&amp;chksm=ce98ed56f9ef6440038d7c9301fdec50572d52f39e9e0d7306517e9d15340edf1156b3aec8f8&amp;scene=21#wechat_redirect" textvalue="tidymodels基于重采样和tidy数据的假设检验" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2">tidymodels基于重采样和tidy数据的假设检验</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484422&amp;idx=1&amp;sn=876634f5e181bd9eb81359b2c1e706a5&amp;chksm=ce98ed5df9ef644b88f5477f456a0044a0d48c79a0ccd77c8c7629c0d16fb1f3aa8df57bdf88&amp;scene=21#wechat_redirect" textvalue="R语言使用kimi提取PDF文本内容" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2">R语言使用kimi提取PDF文本内容</a>
+往期专题
+------------
+<a localeditorid="5ijy6a4rbjs0000000" href="https://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484408&amp;idx=1&amp;sn=067a56384e17968c0dc4d6c96b9d7619&amp;chksm=ce98eaa3f9ef63b5dff22e925674a459fd69340300842411149c3614171ff330e1661b1a5b77&amp;scene=21#wechat_redirect" textvalue="开始数据分析前，你必须知道的六件事" target="_blank" data-linktype="2">开始数据分析前，你必须知道的六件事</a>
+<a target="_blank" href="https://mp.weixin.qq.com/mp/appmsgalbum?__biz=Mzg2OTY2Mjc3Mg==&amp;action=getalbum&amp;album_id=1990486569933160453#wechat_redirect" textvalue="R语言文本分析基础" linktype="text" imgurl="" imgdata="null" tab="innerlink" data-linktype="2" localeditorid="izk7l8hw65k0000000">R语言文本分析基础</a><a target="_blank" href="https://mp.weixin.qq.com/mp/appmsgalbum?__biz=Mzg2OTY2Mjc3Mg==&amp;action=getalbum&amp;album_id=1990486568272216066#wechat_redirect" textvalue="R语言文本分析的监督机器学习——基于tidymodels" linktype="text" imgurl="" imgdata="null" tab="innerlink" data-linktype="2">R语言文本分析的监督机器学习——基于tidymodels</a><a target="_blank" href="https://mp.weixin.qq.com/mp/appmsgalbum?__biz=Mzg2OTY2Mjc3Mg==&amp;action=getalbum&amp;album_id=3683410326415802368#wechat_redirect" textvalue="R语言非监督机器学习" linktype="text" imgurl="" imgdata="null" tab="innerlink" data-linktype="2">R语言非监督机器学习</a><a target="_blank" href="https://mp.weixin.qq.com/mp/appmsgalbum?__biz=Mzg2OTY2Mjc3Mg==&amp;action=getalbum&amp;album_id=3658666953016672261#wechat_redirect" textvalue="使用quanteda进行文本分析" linktype="text" imgurl="" imgdata="null" tab="innerlink" data-linktype="2">使用quanteda进行文本分析</a><a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484059&amp;idx=1&amp;sn=34cd9556fd0bb18f00943d1986c29ebd&amp;chksm=ce98ebc0f9ef62d6e1fccc05a8382573d66dc8a28dbc2cd3a318416c214d15950dab0a61b80f&amp;scene=21#wechat_redirect" textvalue="R语言基于tidyverse的数据整理" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2" hasload="1">R语言基于tidyverse的数据整理</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484203&amp;idx=1&amp;sn=a5fe69ee413f7a9b03a71fc4c89e2085&amp;chksm=ce98ea70f9ef6366e6a5b13c9f3c4a3e0d51c52e314ddbe33753507ee42a42927b1854330108&amp;scene=21#wechat_redirect" textvalue="R语言基于tidyverse的字符整理" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2" hasload="1">R语言基于tidyverse的字符整理</a><a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484388&amp;idx=1&amp;sn=9a5caff0dbc892eff861e7b352a21f60&amp;chksm=ce98eabff9ef63a938b81762ee7e75177295b92fe5495de68408716faaa8023a8a7016615de9&amp;scene=21#wechat_redirect" textvalue="R语言论文高清图表汇总—主要基于ggplot2" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2">R语言论文高清图表汇总—主要基于ggplot2</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484402&amp;idx=1&amp;sn=1e443ec0c551cb59ec629430da031fbd&amp;chksm=ce98eaa9f9ef63bfe492496e2ee57671286af5be76cfd4f35799408cbb3ab7db1f96df99176a&amp;scene=21#wechat_redirect" textvalue="R语言t-SNE/UMAP降维实现高维数据可视化" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2">R语言t-SNE/UMAP降维实现高维数据可视化</a>
+<a target="_blank" href="http://mp.weixin.qq.com/s?__biz=Mzg2OTY2Mjc3Mg==&amp;mid=2247484423&amp;idx=1&amp;sn=3f69858b4bb5084ae678da934b440bac&amp;chksm=ce98ed5cf9ef644a8e86d960ec3c247849cb56dc4e70de9445aff2871f3874a470f400852972&amp;scene=21#wechat_redirect" textvalue="tidyverse编码风格最佳实践指南" linktype="text" imgurl="" imgdata="null" data-itemshowtype="0" tab="innerlink" data-linktype="2">tidyverse编码风格最佳实践指南</a>
+
+<h2>描述型统计</h2>
+<div id="descriptStattoc" class="toc"><a href="#descriptStattopic-0" target="_self">一、描述性统计的核心内容</a><br><a href="#descriptStattopic-1" target="_self">二、准备工作：安装和加载必要的包</a><br><a href="#descriptStattopic-2" target="_self">三、集中趋势的计算</a><br><a href="#descriptStattopic-3" target="_self">四、离散程度的测量</a><br><a href="#descriptStattopic-4" target="_self">五、分布形状的描述：偏度和峰度</a><br><a href="#descriptStattopic-5" target="_self">六、频数分布与可视化</a><br><a href="#descriptStattopic-6" target="_self">七、总结多变量：描述性统计表</a><br></div></center><br><br>
+<pre><br><br>
+
+描述性统计是数据分析的第一步，用来总结和概括数据的特征。
+在生物信息学、医学统计等领域，它常用于对实验数据进行初步分析，比如基因表达数据的分布、样本之间的差异等。
+
+<h3 id="descriptStattopic-0">一、描述性统计的核心内容</h3>
+描述性统计主要包括：
+<k>集中趋势</k>（如均值、中位数）
+<k>离散程度</k>（如方差、标准差）
+<k>分布形状</k>（如偏度、峰度）
+<k>频数分布</k>（如直方图、频率表）
+
+接下来，我们用R实现这些统计内容。
+
+<h3 id="descriptStattopic-1">二、准备工作：安装和加载必要的包</h3>
+为了方便操作，建议安装tidyverse和psych包。
+
+# 安装必要包
+install.packages("tidyverse")
+install.packages("psych")
+
+# 加载包
+library(tidyverse)
+library(psych)
+
+此外，我们用内置的mtcars数据集作为示例数据。
+它包含32辆汽车的11个变量信息。
+
+<h3 id="descriptStattopic-2">三、集中趋势的计算</h3>
+集中趋势是描述数据“集中”位置的指标，包括均值、中位数和众数。
+
+# 查看数据结构
+head(mtcars)
+
+# 计算某变量的均值和中位数
+mean_mpg &lt;- mean(mtcars$mpg)   # 均值
+median_mpg &lt;- median(mtcars$mpg) # 中位数
+
+# 众数计算
+table_mpg &lt;- table(mtcars$mpg)
+mode_mpg &lt;- names(table_mpg[table_mpg == max(table_mpg)])
+cat("均值:", mean_mpg, "\n中位数:", median_mpg, "\n众数:", mode_mpg, "\n")
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmAuMmyZ4LYCyr8DeFsoBNxBmsQk4gZ2QfWqdpClLKRBnapYwGibnptX2eqC5LEWLfw9o7H01E95EfA/640">
+
+<h3 id="descriptStattopic-3">四、离散程度的测量</h3>
+离散程度指标包括方差、标准差、范围等。
+# 方差和标准差
+var_mpg &lt;- var(mtcars$mpg)     # 方差
+sd_mpg &lt;- sd(mtcars$mpg)       # 标准差
+
+# 极差（范围）
+range_mpg &lt;- range(mtcars$mpg)
+range_diff &lt;- diff(range_mpg)
+cat("方差:", var_mpg, "\n标准差:", sd_mpg, "\n范围:", range_mpg, "\n极差:", range_diff, "\n")
+
+
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmAuMmyZ4LYCyr8DeFsoBNxBkLRQSXqrb8Co0GupanMzWRua9SXRq6eDfWIyVcHjheOkbePtPnpXnw/640">
+
+<h3 id="descriptStattopic-4">五、分布形状的描述：偏度和峰度</h3>
+偏度和峰度用来描述数据分布的形状。
+# 偏度和峰度计算
+skewness_mpg &lt;- psych::skew(mtcars$mpg)  # 偏度
+kurtosis_mpg &lt;- psych::kurtosi(mtcars$mpg) # 峰度
+cat("偏度:", skewness_mpg, "\n峰度:", kurtosis_mpg, "\n")
+
+<h3 id="descriptStattopic-5">六、频数分布与可视化</h3>
+频数分布直观展示数据分布情况，配合可视化工具更加直观。
+
+# 频率表
+mpg_table &lt;- table(cut(mtcars$mpg, breaks = 5))
+mpg_table
+
+# 绘制直方图和密度曲线
+ggplot(mtcars, aes(x = mpg)) +
+  geom_histogram(binwidth = 2, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_density(color = "red", size = 1) +
+  labs(title = "MPG的直方图与密度曲线", x = "MPG", y = "频率")
+
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmAuMmyZ4LYCyr8DeFsoBNxBNB1puNbllE1Kr0SibGw6WK9SwgiatYxib0aviafxmc7AISpbzZrhkuXB3Q/640">
+
+<h3 id="descriptStattopic-6">七、总结多变量：描述性统计表</h3>
+有时我们需要对多个变量同时总结，可以使用summary函数或更强大的工具如describe。
+
+# 使用summary函数
+summary(mtcars)
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmAuMmyZ4LYCyr8DeFsoBNxBmClhv7N7Oy3GYZMHsgNzY5stQTvdTgicLoIJEC21aPaILYbDyrSoz5A/640">
+# 使用psych包的describe函数
+describe(mtcars)
+<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/SfYfdicSqYmAuMmyZ4LYCyr8DeFsoBNxBT4kB7ukibLarBW6CLGD65qF15NJnn9lD9bAXdToZY5iaVmD6icrXAZ8Vw/640">
+
+<h2>R数据清洗</h2>
+<div id="datacleaningtoc" class="toc"><a href="#datacleaningtopic-0" target="_self">1.<bpk>为什么数据清洗如此重要？</bpk></a><br><a href="#datacleaningtopic-1" target="_self">2.<bpk>数据清洗的基本步骤</bpk></a><br><a href="#datacleaningtopic-2" target="_self">3.<bpk>导入数据</bpk></a><br><a href="#datacleaningtopic-3" target="_self">4.<bpk>处理缺失值</bpk></a><br><a href="#datacleaningtopic-4" target="_self">4.1  查找缺失值</a><br><a href="#datacleaningtopic-5" target="_self">4.2  删除缺失值</a><br><a href="#datacleaningtopic-6" target="_self">4.3  填充缺失值</a><br><a href="#datacleaningtopic-7" target="_self">5.<bpk>处理重复值</bpk></a><br><a href="#datacleaningtopic-8" target="_self">6.<bpk>处理数据类型不一致</bpk></a><br><a href="#datacleaningtopic-9" target="_self">6.1  转换日期格式</a><br><a href="#datacleaningtopic-10" target="_self">6.2  转换为分类变量</a><br><a href="#datacleaningtopic-11" target="_self">7.<bpk>处理异常值</bpk></a><br><a href="#datacleaningtopic-12" target="_self">7.1  查找异常值</a><br><a href="#datacleaningtopic-13" target="_self">7.2  可视化异常值</a><br><a href="#datacleaningtopic-14" target="_self">7.3  删除或替换异常值</a><br><a href="#datacleaningtopic-15" target="_self">8.<bpk>数据清洗后的可视化对比</bpk></a><br><a href="#datacleaningtopic-16" target="_self">8.1  示例代码：数据清洗前后的可视化</a><br><a href="#datacleaningtopic-17" target="_self">进行数据清洗的代码</a><br></div></center><br><br>
+
+<h4 id="datacleaningtopic-0">1.<bpk>为什么数据清洗如此重要？</bpk></h4>
+现实世界中的数据往往是不完美的。
+你可能会遇到以下常见问题：缺失值：部分数据缺失，导致模型无法完整地利用所有信息。
+重复值：数据集中包含多个相同的条目，影响分析结果的精确度。
+不一致的格式：日期、时间、数值和分类数据可能采用不同的格式，导致分析时出现问题。
+异常值：一些极端值会严重影响模型的表现，需要仔细处理。
+数据清洗的主要目标是提高数据质量，减少模型偏差，并使分析结果更加准确和具有解释性。
+
+<h4 id="datacleaningtopic-1">2.<bpk>数据清洗的基本步骤</bpk></h4>下面，我们将通过R语言演示一些常见的数据清洗任务，包括处理缺失值、重复值、不一致格式和异常值。
+
+<h4 id="datacleaningtopic-2">3.<bpk>导入数据</bpk></h4>首先，使用read.csv()函数导入数据集：# 读取数据集
+data &lt;- read.csv("your_dataset.csv", stringsAsFactors = FALSE)
+
+<h4 id="datacleaningtopic-3">4.<bpk>处理缺失值</bpk></h4>缺失值是数据清洗中的常见问题。
+在R中，我们可以使用is.na()函数来检查缺失值，并使用多种方法进行处理。
+<h5 id="datacleaningtopic-4">4.1  查找缺失值</h5># 查看每一列中的缺失值
+colSums(is.na(data))
+<h5 id="datacleaningtopic-5">4.2  删除缺失值</h5>如果某些行中的缺失值过多，可以删除这些行：# 删除包含缺失值的行
+clean_data &lt;- na.omit(data)
+<h5 id="datacleaningtopic-6">4.3  填充缺失值</h5>另一种处理方法是填补缺失值，可以使用均值或中位数：# 用均值填充缺失值
+data$column_name[is.na(data$column_name)] &lt;- mean(data$column_name, na.rm = TRUE)
+
+<h4 id="datacleaningtopic-7">5.<bpk>处理重复值</bpk></h4>重复值会影响数据分析结果。
+使用duplicated()函数可以查找和删除重复条目：# 查看重复行
+duplicated_rows &lt;- data[duplicated(data), ]
+# 删除重复行
+data &lt;- data[!duplicated(data), ]
+
+<h4 id="datacleaningtopic-8">6.<bpk>处理数据类型不一致</bpk></h4>数据中的日期、时间等字段可能格式不统一。
+使用as.Date()可以将字符串转换为日期格式，或使用factor()将字符转换为分类变量。
+<h5 id="datacleaningtopic-9">6.1  转换日期格式</h5># 将字符串转换为日期格式
+data$date_column &lt;- as.Date(data$date_column, format = "%Y-%m-%d")
+<h5 id="datacleaningtopic-10">6.2  转换为分类变量</h5># 将字符型数据转换为因子
+data$category_column &lt;- as.factor(data$category_column)
+
+<h4 id="datacleaningtopic-11">7.<bpk>处理异常值</bpk></h4>异常值（outliers）是极端且可能不合理的值。
+在进行模型分析前，通常需要处理这些值。
+<h5 id="datacleaningtopic-12">7.1  查找异常值</h5>使用summary()函数检查数据的分布情况，帮助找出异常值：# 检查数据分布
+summary(data$numeric_column)
+<h5 id="datacleaningtopic-13">7.2  可视化异常值</h5>使用箱线图查看异常值的分布：# 生成箱线图
+boxplot(data$numeric_column, main = "Boxplot for Numeric Column")
+<h5 id="datacleaningtopic-14">7.3  删除或替换异常值</h5>通过逻辑条件删除异常值：# 删除异常值
+data &lt;- data[data$numeric_column &lt; upper_threshold &amp; data$numeric_column &gt; lower_threshold, ]
+
+<h4 id="datacleaningtopic-15">8.<bpk>数据清洗后的可视化对比</bpk></h4>数据清洗不仅是修改数据，还需要通过可视化来直观地了解清洗前后的差异。
+我们可以通过散点图来展示数据清洗前后的分布差异。
+<h5 id="datacleaningtopic-16">8.1  示例代码：数据清洗前后的可视化</h5># 加载必要的包
+library(ggplot2)
+# 假设我们有一个数据集，包含缺失值和异常值
+set.seed(123)
+raw_data &lt;- data.frame(
+  x = c(rnorm(100, mean = 50, sd = 10), NA, 200, 250),  # 包含异常值和缺失值
+  y = c(rnorm(100, mean = 50, sd = 10), NA, 300, -100)  # 包含异常值和缺失值
+)
+# 数据清洗前的可视化
+ggplot(raw_data, aes(x = x, y = y)) +
+  geom_point(color = "red") +
+  ggtitle("数据清洗前的散点图") +
+  theme_minimal()
+<img src="https://mmbiz.qpic.cn/mmbiz_png/1f4iaibNia9ljp0ygFCfpuIPuIpojLSQdicT53NkN01xscrb7RFrvZs8tiajuJ9OplicXDT9N3NwQDVG2aaVR12XKricQ/640">
+
+<k id="datacleaningtopic-17">进行数据清洗的代码</k># 进行数据清洗：去除缺失值和异常值
+clean_data &lt;- na.omit(raw_data)
+clean_data &lt;- clean_data[clean_data$x &lt; 150 &amp; clean_data$y &gt; 0 &amp; clean_data$y &lt; 150, ]
+# 数据清洗后的可视化
+ggplot(clean_data, aes(x = x, y = y)) +
+  geom_point(color = "blue") +
+  ggtitle("数据清洗后的散点图") +
+  theme_minimal()
+<img src="https://mmbiz.qpic.cn/mmbiz_png/1f4iaibNia9ljp0ygFCfpuIPuIpojLSQdicTqs3n8oBkfsia8JbsbQtic7Trvia6uruI9ttgNXgduq5iaAsicPITqksia7TA/640">
+数据清洗前：图中使用红色散点表示原始数据，其中包含缺失值和异常值。
+可以明显看到一些极端的点与数据的主流分布相差较远，表明数据中存在异常值。
+数据清洗后：清洗后，我们删除了缺失值，并过滤掉了极端的异常值。
+蓝色散点显示了清洗后的数据，分布更加集中，异常值被移除，数据更具分析意义。
+
 
 
 <script type='text/javascript' src='readbook.js'></script>
