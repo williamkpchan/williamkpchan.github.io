@@ -25,7 +25,8 @@ function chkKey() {
 
   else if(testkey == 'h'){window.open("https://williamkpchan.github.io/LibDocs/News Points.html");}
   else if(testkey == 'J'){window.location = '#_jiaoyu';}
-  else if(testkey == 'l'){window.open("https://www.deepl.com/en/translator");}
+  else if(testkey == 'l'){window.location = '#dushu';}
+  //else if(testkey == 'l'){window.open("https://www.deepl.com/en/translator");}
   //if(testkey == 'L'){openLogFile();}
   else if(testkey == 'L'){window.open("https://williamkpchan.github.io/LibDocs/mlinechart.html");}
   else if(testkey == 'm'){window.open("https://williamkpchan.github.io/medical.html");}

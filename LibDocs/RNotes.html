@@ -41083,6 +41083,1389 @@ ggplot(clean_data, aes(x = x, y = y)) +
 数据清洗后：清洗后，我们删除了缺失值，并过滤掉了极端的异常值。
 蓝色散点显示了清洗后的数据，分布更加集中，异常值被移除，数据更具分析意义。
 
+<h2>5行R语言做出聚类分析热图</h2>
+<div id="heatmapclustertoc" class="toc"><a href="#heatmapclustertopic-0" target="_self">什么是聚类分析？</a><br><a href="#heatmapclustertopic-1" target="_self"><pk>常用的聚类方法</pk></a><br><a href="#heatmapclustertopic-2" target="_self">层次聚类：</a><br><a href="#heatmapclustertopic-3" target="_self">K均值聚类：</a><br><a href="#heatmapclustertopic-4" target="_self">密度聚类（如DBSCAN）</a><br><a href="#heatmapclustertopic-5" target="_self"><pk>常用的距离度量</pk></a><br><a href="#heatmapclustertopic-6" target="_self">欧几里得距离</a><br><a href="#heatmapclustertopic-7" target="_self">曼哈顿距离</a><br><a href="#heatmapclustertopic-8" target="_self">相关性距离</a><br><a href="#heatmapclustertopic-9" target="_self"><pk>三、为什么将热图和聚类分析结合使用？</pk></a><br><a href="#heatmapclustertopic-10" target="_self"><pk>四、R语言绘制热图及聚类分析：实操教程</pk></a><br><a href="#heatmapclustertopic-11" target="_self">步骤 1：加载数据和所需包</a><br><a href="#heatmapclustertopic-12" target="_self">步骤 2：计算相关性矩阵</a><br><a href="#heatmapclustertopic-13" target="_self">步骤 3：绘制热图并进行聚类分析</a><br><a href="#heatmapclustertopic-14" target="_self">步骤 4：个性化热图设置</a><br></div></center><br><br>
+
+<k id="heatmapclustertopic-0">什么是聚类分析？</k>
+聚类分析是一种无监督学习方法，旨在将数据集中的对象分为若干组，组内对象的相似性较高，而不同组间的差异较大。
+
+聚类分析能够在不依赖于标签的情况下，揭示数据间的内在结构，应用广泛，如数据挖掘、市场细分、生物信息学等。
+
+<h3 id="heatmapclustertopic-1"><pk>常用的聚类方法</pk></h3>
+聚类方法多种多样，常见的有：
+<k id="heatmapclustertopic-2">层次聚类：</k>构建层次结构，将样本逐步合并或拆分，形成树状图（树状图即聚类的树形图结构）。
+它分为凝聚层次聚类（由个体逐步合并）和分裂层次聚类（由整体逐渐分裂）。
+
+<k id="heatmapclustertopic-3">K均值聚类：</k>将数据分为K个簇，使每个簇内的样本均方误差最小。
+K均值聚类对数据的形状和数量较为敏感。
+
+<k id="heatmapclustertopic-4">密度聚类（如DBSCAN）</k>：基于样本密度分组，能够发现任意形状的聚类，适用于非线性分布的聚类问题。
+
+<h3 id="heatmapclustertopic-5"><pk>常用的距离度量</pk></h3>
+聚类分析依赖于样本间的距离测量，常见的距离度量包括：
+<k id="heatmapclustertopic-6">欧几里得距离</k>：
+衡量点间的直线距离，适合处理数值型变量。
+<k id="heatmapclustertopic-7">曼哈顿距离</k>：
+衡量各维度的绝对差值之和，适合离散数据或高维数据。
+<k id="heatmapclustertopic-8">相关性距离</k>：
+基于相关系数的距离度量，在基因表达等高维数据分析中广泛应用。
+
+<h3 id="heatmapclustertopic-9"><pk>三、为什么将热图和聚类分析结合使用？</pk></h3>
+将热图与聚类分析结合在同一张图片中，不仅可以展示数据的分布和大小，还能按相似性将数据进行重新排列。
+
+通过对行和列分别进行聚类分析，我们可以更直观地观察到变量或样本之间的相似性。
+结合的聚类树状图（dendrogram）提供了群体间关系的结构化信息，使得热图中的分布模式更具解释性。
+
+<h3 id="heatmapclustertopic-10"><pk>四、R语言绘制热图及聚类分析：实操教程</pk></h3>
+接下来，我们将基于R语言内置的mtcars数据集，进行热图和聚类分析的绘制。
+mtcars数据集记录了汽车的各类性能指标，是学习多变量分析的经典数据集。
+我们将用pheatmap包来绘制热图和聚类树。
+
+<k id="heatmapclustertopic-11">步骤 1：加载数据和所需包</k>
+在R中，使用mtcars数据集，并加载绘制热图的pheatmap包。
+确保已安装pheatmap，否则先安装。
+# 加载pheatmap包
+library(pheatmap)
+
+# 查看mtcars数据集
+data("mtcars")
+head(mtcars)
+##                    mpg cyl disp  hp drat    wt  qsec vs am gear carb
+## Mazda RX4         21.0   6  160 110 3.90 2.620 16.46  0  1    4    4
+## Mazda RX4 Wag     21.0   6  160 110 3.90 2.875 17.02  0  1    4    4
+## Datsun 710        22.8   4  108  93 3.85 2.320 18.61  1  1    4    1
+## Hornet 4 Drive    21.4   6  258 110 3.08 3.215 19.44  1  0    3    1
+## Hornet Sportabout 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2
+## Valiant           18.1   6  225 105 2.76 3.460 20.22  1  0    3    1
+<k id="heatmapclustertopic-12">步骤 2：计算相关性矩阵</k>
+我们首先计算mtcars数据集中变量的相关性矩阵。
+这里使用皮尔逊相关系数来衡量各变量的相似性。
+# 计算相关性矩阵
+cor_matrix &lt;- cor(mtcars)
+<k id="heatmapclustertopic-13">步骤 3：绘制热图并进行聚类分析</k>
+使用pheatmap函数绘制热图，同时对行和列进行聚类分析。
+聚类将基于样本的相似性，将相似的变量和样本排列在一起。
+# 绘制热图，进行行和列的聚类分析
+pheatmap(cor_matrix, 
+         clustering_distance_rows = "euclidean",
+         clustering_distance_cols = "euclidean",
+         clustering_method = "complete",
+         display_numbers = TRUE,
+         color = colorRampPalette(c("blue", "white", "red"))(100))
+
+<img src="https://mmbiz.qpic.cn/mmbiz_png/1f4iaibNia9ljpn552L3TOFAYEnX7EMTKtMicIkooJXSLzh6C86yVuib0icnyB39WyWcwGA3PwfnHAVVmASMMjtHahxg/640">
+在上述代码中：
+clustering_distance_rows 和 clustering_distance_cols 参数指定行和列的距离度量，这里使用欧几里得距离（“euclidean”）。
+
+clustering_method 指定了聚类方法，选择完全链接法（“complete”）。
+
+display_numbers = TRUE 允许在热图中显示具体数值。
+
+color 参数设置颜色梯度，从蓝到红反映数据相关性的高低。
+<k id="heatmapclustertopic-14">步骤 4：个性化热图设置</k>
+通过自定义颜色、字体、图形边框等，可以使热图更加美观并适应实际需求。
+# 个性化设置热图
+pheatmap(cor_matrix,
+         clustering_distance_rows = "euclidean",
+         clustering_distance_cols = "euclidean",
+         clustering_method = "average",
+         display_numbers = TRUE,
+         color = colorRampPalette(c("navy", "white", "firebrick3"))(100),
+         fontsize = 10,
+         fontsize_row = 8,
+         fontsize_col = 8,
+         main = "mtcars Data Correlation Heatmap",
+         border_color = NA)
+<img src="https://mmbiz.qpic.cn/mmbiz_png/1f4iaibNia9ljpn552L3TOFAYEnX7EMTKtMmWNakl12R4zLiab9I0JjJWcSseWgR5hx6tnAXdiaG7YvXq6N0RwfQ5IA/640">
+
+<h2>Clustering in Machine Learning</h2>
+<div id="Clusteringtoc" class="toc"><a href="#Clusteringtopic-0" target="_self"><pk>What is Clustering ?</pk></a><br><a href="#Clusteringtopic-1" target="_self"><pk>Types of Clustering</pk></a><br><a href="#Clusteringtopic-2" target="_self">Hard Clustering: </a><br><a href="#Clusteringtopic-3" target="_self">Soft Clustering: </a><br><a href="#Clusteringtopic-4" target="_self"><pk>Uses of Clustering</pk></a><br><a href="#Clusteringtopic-5" target="_self"><pk>Types of Clustering Algorithms</pk></a><br><a href="#Clusteringtopic-6" target="_self">1.Centroid-based Clustering (Partitioning methods)</a><br><a href="#Clusteringtopic-7" target="_self">2.Density-based Clustering (Model-based methods)</a><br><a href="#Clusteringtopic-8" target="_self">3.Connectivity-based Clustering (Hierarchical clustering)</a><br><a href="#Clusteringtopic-9" target="_self"> Divisive Clustering</a><br><a href="#Clusteringtopic-10" target="_self"> Agglomerative Clustering</a><br><a href="#Clusteringtopic-11" target="_self">4.Distribution-based Clustering</a><br><a href="#Clusteringtopic-12" target="_self"><pk>Applications of Clustering in different fields</pk></a></div></center><br><br>
+
+In real world, not every data we work upon has a target variable.
+This kind of data cannot be analyzed using supervised learning algorithms.
+We need the help of unsupervised algorithms.
+
+One of the most popular type of analysis under unsupervised learning is Cluster analysis.
+
+When the goal is to group similar data points in a dataset, then we use cluster analysis.
+
+In practical situations, we can use cluster analysis for customer segmentation for targeted advertisements, or in medical imaging to find unknown or new infected areas and many more use cases that we will discuss further in this article.
+
+<h3 id="Clusteringtopic-0"><pk>What is Clustering ?</pk></h3>
+This method is defined under the branch of Unsupervised Learning, which aims at gaining insights from unlabelled data points, that is, unlike supervised learning we don’t have a target variable.
+
+Clustering aims at forming groups of homogeneous data points from a heterogeneous dataset.
+
+It evaluates the similarity based on a metric like Euclidean distance, Cosine similarity, Manhattan distance, etc.
+
+and then group the points with highest similarity score together.
+
+For Example, In the graph given below, we can clearly see that there are 3 circular clusters forming on the basis of distance.
+
+<img src="https://media.geeksforgeeks.org/wp-content/uploads/merge3cluster.jpg">
+
+Now it is not necessary that the clusters formed must be circular in shape.
+
+The shape of clusters can be arbitrary.
+
+There are many algortihms that work well with detecting arbitrary shaped clusters.
+
+For example, In the below given graph we can see that the clusters formed are not circular in shape.
+
+<img src="https://media.geeksforgeeks.org/wp-content/uploads/clusteringg.jpg">
+
+<h3 id="Clusteringtopic-1"><pk>Types of Clustering</pk></h3>
+Broadly speaking, there are 2 types of clustering that can be performed to group similar data points:
+
+<k id="Clusteringtopic-2">Hard Clustering: </k>In this type of clustering, each data point belongs to a cluster completely or not.
+
+For example, Let’s say there are 4 data point and we have to cluster them into 2 clusters.
+
+So each data point will either belong to cluster 1 or cluster 2.
+
+Data Points	Clusters
+A		C1
+B		C2
+C		C2
+D		C1
+
+<k id="Clusteringtopic-3">Soft Clustering: </k>In this type of clustering, instead of assigning each data point into a separate cluster, a probability or likelihood of that point being that cluster is evaluated.
+
+For example, Let’s say there are 4 data point and we have to cluster them into 2 clusters.
+
+So we will be evaluating a probability of a data point belonging to both clusters.
+
+This probability is calculated for all data points.
+
+Data Points	Probability of C1	Probability of C2
+A			0.91				0.09
+B			0.3				0.7
+C			0.17				0.83
+D			1				0
+
+<h3 id="Clusteringtopic-4"><pk>Uses of Clustering</pk></h3>
+Now before we begin with types of clustering algorithms, we will go through the use cases of Clustering algorithms.
+
+Clustering algorithms are majorly used for:
+Market Segmentation – Businesses use clustering to group their customers and use targeted advertisements to attract more audience.
+
+Market Basket Analysis – Shop owners analyze their sales and figure out which items are majorly bought together by the customers.
+
+For example, In USA, according to a study diapers and beers were usually bought together by fathers.
+
+Social Network Analysis – Social media sites use your data to understand your browsing behaviour and provide you with targeted friend recommendations or content recommendations.
+
+Medical Imaging – Doctors use Clustering to find out diseased areas in diagnostic images like X-rays.
+
+Anomaly Detection – To find outliers in a stream of real-time dataset or forecasting fraudulent transactions we can use clustering to identify them.
+
+Simplify working with large datasets – Each cluster is given a cluster ID after clustering is complete.
+
+Now, you may reduce a feature set’s whole feature set into its cluster ID.
+
+Clustering is effective when it can represent a complicated case with a straightforward cluster ID.
+
+Using the same principle, clustering data can make complex datasets simpler.
+
+There are many more use cases for clustering but there are some of the major and common use cases of clustering.
+
+Moving forward we will be discussing Clustering Algorithms that will help you perform the above tasks.
+
+<h3 id="Clusteringtopic-5"><pk>Types of Clustering Algorithms</pk></h3>
+At the surface level, clustering helps in the analysis of unstructured data.
+
+Graphing, the shortest distance, and the density of the data points are a few of the elements that influence cluster formation.
+
+Clustering is the process of determining how related the objects are based on a metric called the similarity measure.
+
+Similarity metrics are easier to locate in smaller sets of features.
+
+It gets harder to create similarity measures as the number of features increases.
+
+Depending on the type of clustering algorithm being utilized in data mining, several techniques are employed to group the data from the datasets.
+
+In this part, the clustering techniques are described.
+
+Various types of clustering algorithms are:
+
+Centroid-based Clustering (Partitioning methods)
+
+Density-based Clustering (Model-based methods)
+
+Connectivity-based Clustering (Hierarchical clustering)
+
+Distribution-based Clustering
+
+We will be going through each of these types in brief.
+
+<h4 id="Clusteringtopic-6">1.Centroid-based Clustering (Partitioning methods)</h4>
+
+Partitioning methods are the most easiest clustering algorithms.
+
+They group data points on the basis of their closeness.
+
+Generally, the similarity measure chosen for these algorithms are Euclidian distance, Manhattan Distance or Minkowski Distance.
+
+The datasets are separated into a predetermined number of clusters, and each cluster is referenced by a vector of values.
+
+When compared to the vector value, the input data variable shows no difference and joins the cluster.
+
+The primary drawback for these algorithms is the requirement that we establish the number of clusters, “k,” either intuitively or scientifically (using the Elbow Method) before any clustering machine learning system starts allocating the data points.
+
+Despite this, it is still the most popular type of clustering.
+
+K-means and K-medoids clustering are some examples of this type clustering.
+
+<h4 id="Clusteringtopic-7">2.Density-based Clustering (Model-based methods)</h4>
+
+Density-based clustering, a model-based method, finds groups based on the density of data points.
+
+Contrary to centroid-based clustering, which requires that the number of clusters be predefined and is sensitive to initialization, density-based clustering determines the number of clusters automatically and is less susceptible to beginning positions.
+
+They are great at handling clusters of different sizes and forms, making them ideally suited for datasets with irregularly shaped or overlapping clusters.
+
+These methods manage both dense and sparse data regions by focusing on local density and can distinguish clusters with a variety of morphologies.
+
+In contrast, centroid-based grouping, like k-means, has trouble finding arbitrary shaped clusters.
+
+Due to its preset number of cluster requirements and extreme sensitivity to the initial positioning of centroids, the outcomes can vary.
+
+Furthermore, the tendency of centroid-based approaches to produce spherical or convex clusters restricts their capacity to handle complicated or irregularly shaped clusters.
+
+In conclusion, density-based clustering overcomes the drawbacks of centroid-based techniques by autonomously choosing cluster sizes, being resilient to initialization, and successfully capturing clusters of various sizes and forms.
+
+The most popular density-based clustering algorithm is DBSCAN.
+
+<h4 id="Clusteringtopic-8">3.Connectivity-based Clustering (Hierarchical clustering)</h4>
+
+A method for assembling related data points into hierarchical clusters is called hierarchical clustering.
+
+Each data point is initially taken into account as a separate cluster, which is subsequently combined with the clusters that are the most similar to form one large cluster that contains all of the data points.
+
+Think about how you may arrange a collection of items based on how similar they are.
+
+Each object begins as its own cluster at the base of the tree when using hierarchical clustering, which creates a dendrogram, a tree-like structure.
+
+The closest pairings of clusters are then combined into larger clusters after the algorithm examines how similar the objects are to one another.
+
+When every object is in one cluster at the top of the tree, the merging process has finished.
+
+Exploring various granularity levels is one of the fun things about hierarchical clustering.
+
+To obtain a given number of clusters, you can select to cut the dendrogram at a particular height.
+
+The more similar two objects are within a cluster, the closer they are.
+
+It’s comparable to classifying items according to their family trees, where the nearest relatives are clustered together and the wider branches signify more general connections.
+
+There are 2 approaches for Hierarchical clustering:
+
+<k id="Clusteringtopic-9"> Divisive Clustering</k>
+It follows a top-down approach, here we consider all data points to be part one big cluster and then this cluster is divide into smaller groups.
+
+<k id="Clusteringtopic-10"> Agglomerative Clustering</k>
+It follows a bottom-up approach, here we consider all data points to be part of individual clusters and then these clusters are clubbed together to make one big cluster with all data points.
+
+<h4 id="Clusteringtopic-11">4.Distribution-based Clustering</h4>
+Using distribution-based clustering, data points are generated and organized according to their propensity to fall into the same probability distribution (such as a Gaussian, binomial, or other) within the data.
+
+The data elements are grouped using a probability-based distribution that is based on statistical distributions.
+
+Included are data objects that have a higher likelihood of being in the cluster.
+
+A data point is less likely to be included in a cluster the further it is from the cluster’s central point, which exists in every cluster.
+
+A notable drawback of density and boundary-based approaches is the need to specify the clusters a priori for some algorithms, and primarily the definition of the cluster form for the bulk of algorithms.
+
+There must be at least one tuning or hyper-parameter selected, and while doing so should be simple, getting it wrong could have unanticipated repercussions.
+
+Distribution-based clustering has a definite advantage over proximity and centroid-based clustering approaches in terms of flexibility, accuracy, and cluster structure.
+
+The key issue is that, in order to avoid overfitting, many clustering methods only work with simulated or manufactured data, or when the bulk of the data points certainly belong to a preset distribution.
+
+The most popular distribution-based clustering algorithm is Gaussian Mixture Model.
+
+<h3 id="Clusteringtopic-12"><pk>Applications of Clustering in different fields</pk></h3>
+<y>Marketing:</y> It can be used to characterize &amp; discover customer segments for marketing purposes.
+
+<y>Biology:</y> It can be used for classification among different species of plants and animals.
+
+<y>Libraries:</y> It is used in clustering different books on the basis of Clusteringtopics and information.
+
+<y>Insurance:</y> It is used to acknowledge the customers, their policies and identifying the frauds.
+
+<y>City Planning: </y>It is used to make groups of houses and to study their values based on their geographical locations and other factors present.
+
+<y>Earthquake studies: </y>By learning the earthquake-affected areas we can determine the dangerous zones.
+
+<y>Image Processing</y>: Clustering can be used to group similar images together, classify images based on content, and identify patterns in image data.
+
+<y>Genetics:</y> Clustering is used to group genes that have similar expression patterns and identify gene networks that work together in biological processes.
+
+<y>Finance:</y> Clustering is used to identify market segments based on customer behavior, identify patterns in stock market data, and analyze risk in investment portfolios.
+
+<y>Customer Service:</y> Clustering is used to group customer inquiries and complaints into categories, identify common issues, and develop targeted solutions.
+
+<y>Manufacturing</y>: Clustering is used to group similar products together, optimize production processes, and identify defects in manufacturing processes.
+
+<y>Medical diagnosis:</y> Clustering is used to group patients with similar symptoms or diseases, which helps in making accurate diagnoses and identifying effective treatments.
+
+<y>Fraud detection:</y> Clustering is used to identify suspicious patterns or anomalies in financial transactions, which can help in detecting fraud or other financial crimes.
+
+<y>Traffic analysis:</y> Clustering is used to group similar patterns of traffic data, such as peak hours, routes, and speeds, which can help in improving transportation planning and infrastructure.
+
+<y>Social network analysis:</y> Clustering is used to identify communities or groups within social networks, which can help in understanding social behavior, influence, and trends.
+
+<y>Cybersecurity:</y> Clustering is used to group similar patterns of network traffic or system behavior, which can help in detecting and preventing cyberattacks.
+
+<y>Climate analysis:</y> Clustering is used to group similar patterns of climate data, such as temperature, precipitation, and wind, which can help in understanding climate change and its impact on the environment.
+
+<y>Sports analysis: </y>Clustering is used to group similar patterns of player or team performance data, which can help in analyzing player or team strengths and weaknesses and making strategic decisions.
+
+<y>Crime analysis: </y>Clustering is used to group similar patterns of crime data, such as location, time, and type, which can help in identifying crime hotspots, predicting future crime trends, and improving crime prevention strategies.
+
+<h2>Overview of clustering methods in R</h2>
+<div id="clusteringmethodstoc" class="toc"><a href="#clusteringmethodstopic-0" target="_self">Clustering</a><br><a href="#clusteringmethodstopic-1" target="_self"><pk>What is clustering?</pk></a><br><a href="#clusteringmethodstopic-2" target="_self">Cluster analysis</a><br><a href="#clusteringmethodstopic-3" target="_self">unsupervised learning</a><br><a href="#clusteringmethodstopic-4" target="_self"> What is it good for?</a><br><a href="#clusteringmethodstopic-5" target="_self">  Classification to groups</a><br><a href="#clusteringmethodstopic-6" target="_self">  Anomaly detection</a><br><a href="#clusteringmethodstopic-7" target="_self">  Data compression</a><br><a href="#clusteringmethodstopic-8" target="_self"><pk>Types of clustering methods</pk></a><br><a href="#clusteringmethodstopic-9" target="_self">hierarchical</a><br><a href="#clusteringmethodstopic-10" target="_self">non-hierarchical</a><br><a href="#clusteringmethodstopic-11" target="_self">hierarchical clustering</a><br><a href="#clusteringmethodstopic-12" target="_self">non-hierarchical clustering</a><br><a href="#clusteringmethodstopic-13" target="_self">Non-hierarchical</a><br><a href="#clusteringmethodstopic-14" target="_self">Hierarchical</a><br><a href="#clusteringmethodstopic-15" target="_self"> Centroid-based</a><br><a href="#clusteringmethodstopic-16" target="_self">  K-means</a><br><a href="#clusteringmethodstopic-17" target="_self">K-means - example</a><br><a href="#clusteringmethodstopic-18" target="_self">  K-medoids</a><br><a href="#clusteringmethodstopic-19" target="_self">K-medoids - example</a><br><a href="#clusteringmethodstopic-20" target="_self">  The determination of the number of clusters</a><br><a href="#clusteringmethodstopic-21" target="_self">  Elbow diagram</a><br><a href="#clusteringmethodstopic-22" target="_self"> Model-based</a><br><a href="#clusteringmethodstopic-23" target="_self">Gaussian Mixture Models (GMM)</a><br><a href="#clusteringmethodstopic-24" target="_self">  GMM</a><br><a href="#clusteringmethodstopic-25" target="_self">EM</a><br><a href="#clusteringmethodstopic-26" target="_self">  BIC</a><br><a href="#clusteringmethodstopic-27" target="_self"> Density-based</a><br><a href="#clusteringmethodstopic-28" target="_self">DBSCAN</a><br><a href="#clusteringmethodstopic-29" target="_self">OPTICS</a><br><a href="#clusteringmethodstopic-30" target="_self">  DBSCAN</a><br><a href="#clusteringmethodstopic-31" target="_self">DBSCAN</a><br><a href="#clusteringmethodstopic-32" target="_self">DBSCAN</a><br><a href="#clusteringmethodstopic-33" target="_self">  Bananas - DBSCAN result</a><br><a href="#clusteringmethodstopic-34" target="_self">  Bananas - K-means result</a><br><a href="#clusteringmethodstopic-35" target="_self"> Spectral clustering</a><br><a href="#clusteringmethodstopic-36" target="_self">  Typical use case for spectral clustering</a><br><a href="#clusteringmethodstopic-37" target="_self"> Hierarchical clustering</a><br><a href="#clusteringmethodstopic-38" target="_self">  IRIS dataset use case</a><br><a href="#clusteringmethodstopic-39" target="_self"><pk>Connected data</pk></a><br><a href="#clusteringmethodstopic-40" target="_self">  DBSCAN - result for connected data</a><br><a href="#clusteringmethodstopic-41" target="_self">  K-means - result for connected data</a><br><a href="#clusteringmethodstopic-42" target="_self">  Gaussian model-based clustering result</a><br><a href="#clusteringmethodstopic-43" target="_self">  Spectral clustering result</a><br><a href="#clusteringmethodstopic-44" target="_self"> Other types of clustering methods</a><br><a href="#clusteringmethodstopic-45" target="_self"><pk>Conclusions</pk></a><br></div></center><br><br>
+
+<k id="clusteringmethodstopic-0">Clustering</k> is a very popular technique in data science because of its unsupervised characteristic – we don’t need true labels of groups in data.
+In this blog post, I will give you a “quick” survey of various clustering methods applied to synthetic but also real datasets.
+
+<h3 id="clusteringmethodstopic-1"><pk>What is clustering?</pk></h3>
+<k id="clusteringmethodstopic-2">Cluster analysis</k> or clustering is the task of grouping a set of objects in such a way that objects in the same group (called a cluster) are more similar (in some sense or another) to each other than to those in other groups (clusters).
+It is a technique of <k id="clusteringmethodstopic-3">unsupervised learning</k>, so clustering is used when no a priori information about data is available.
+This makes clustering a very strong technique for gaining insights into data and making more accurate decisions.
+
+<h4 id="clusteringmethodstopic-4"> What is it good for?</h4>
+Clustering is used for:
+To gain insight into data, generate hypotheses, detect anomalies, and identify salient features,
+To identify the degree of similarity among objects (i.e.
+organisms),
+As a method for organizing the data and summarising it through cluster prototypes (compression).
+
+<h4 id="clusteringmethodstopic-5">  Classification to groups</h4>
+The first use case is to group data, e.g. classify them into groups.
+For explanation purposes, I will generate synthetic data from three normal distributions plus three outliers (anomalies).
+Let’s load needed packages, generate randomly some data, and show the first use case in the visualization:
+
+library(data.table) # data handling
+library(ggplot2) # visualisations
+library(gridExtra) # visualisations
+library(grid) # visualisations
+library(cluster) # PAM - K-medoids
+set.seed(54321)
+
+data_example &lt;- data.table(x = c(rnorm(10, 3.5, 0.1), rnorm(10, 2, 0.1),
+rnorm(10, 4.5, 0.1), c(5, 1.9, 3.95)),
+y = c(rnorm(10, 3.5, 0.1), rnorm(10, 2, 0.1),
+rnorm(10, 4.5, 0.1), c(1.65, 2.9, 4.2)))
+gg1 &lt;- ggplot(data_example, aes(x, y)) +
+geom_point(alpha = 0.75, size = 8) +
+theme_bw()
+kmed_res &lt;- pam(data_example, 3)$clustering
+data_example[, class := as.factor(kmed_res)]
+gg2 &lt;- ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+theme_bw()
+define_region &lt;- function(row, col){
+viewport(layout.pos.row = row, layout.pos.col = col)
+}
+
+grid.newpage()
+# Create layout : nrow = 2, ncol = 2
+pushViewport(viewport(layout = grid.layout(1, 2)))
+# Arrange the plots
+print(gg1, vp = define_region(1, 1))
+print(gg2, vp = define_region(1, 2))
+
+library(data.table) # data handling
+library(ggplot2) # visualisations
+library(gridExtra) # visualisations
+library(grid) # visualisations
+library(cluster) # PAM - K-medoids
+set.seed(54321)
+
+data_example &lt;- data.table(x = c(rnorm(10, 3.5, 0.1), rnorm(10, 2, 0.1),
+rnorm(10, 4.5, 0.1), c(5, 1.9, 3.95)),
+y = c(rnorm(10, 3.5, 0.1), rnorm(10, 2, 0.1),
+rnorm(10, 4.5, 0.1), c(1.65, 2.9, 4.2)))
+gg1 &lt;- ggplot(data_example, aes(x, y)) +
+geom_point(alpha = 0.75, size = 8) +
+theme_bw()
+kmed_res &lt;- pam(data_example, 3)$clustering
+data_example[, class := as.factor(kmed_res)]
+gg2 &lt;- ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+theme_bw()
+define_region &lt;- function(row, col){
+viewport(layout.pos.row = row, layout.pos.col = col)
+}
+grid.newpage()
+
+# Create layout : nrow = 2, ncol = 2
+pushViewport(viewport(layout = grid.layout(1, 2)))
+# Arrange the plots
+print(gg1, vp = define_region(1, 1))
+print(gg2, vp = define_region(1, 2))
+
+library(data.table) # data handling
+library(ggplot2) # visualisations
+library(gridExtra) # visualisations
+library(grid) # visualisations
+library(cluster) # PAM - K-medoids
+set.seed(54321)
+data_example &lt;- data.table(x = c(rnorm(10, 3.5, 0.1), rnorm(10, 2, 0.1),
+rnorm(10, 4.5, 0.1), c(5, 1.9, 3.95)),
+y = c(rnorm(10, 3.5, 0.1), rnorm(10, 2, 0.1),
+rnorm(10, 4.5, 0.1), c(1.65, 2.9, 4.2)))
+gg1 &lt;- ggplot(data_example, aes(x, y)) +
+geom_point(alpha = 0.75, size = 8) +
+theme_bw()
+kmed_res &lt;- pam(data_example, 3)$clustering
+data_example[, class := as.factor(kmed_res)]
+gg2 &lt;- ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+theme_bw()
+define_region &lt;- function(row, col){
+viewport(layout.pos.row = row, layout.pos.col = col)
+}
+grid.newpage()
+# Create layout : nrow = 2, ncol = 2
+pushViewport(viewport(layout = grid.layout(1, 2)))
+# Arrange the plots
+print(gg1, vp = define_region(1, 1))
+print(gg2, vp = define_region(1, 2))
+<img src="https://i0.wp.com/petolau.github.io/images/post_16/unnamed-chunk-1-1.png">
+
+We can see three nicely divided groups of data.
+
+<h4 id="clusteringmethodstopic-6">  Anomaly detection</h4>
+Clustering can be also used as an anomaly detection technique, some methods of clustering can detect automatically outliers (anomalies).
+Let’s show visually what it looks like.
+anom &lt;- c(rep(1, 30), rep(0, 3))
+data_example[, class := as.factor(anom)]
+levels(data_example$class) &lt;- c("Anomaly", "Normal")
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+theme_bw()
+anom &lt;- c(rep(1, 30), rep(0, 3))
+data_example[, class := as.factor(anom)]
+levels(data_example$class) &lt;- c("Anomaly", "Normal")
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+theme_bw()
+anom &lt;- c(rep(1, 30), rep(0, 3))
+data_example[, class := as.factor(anom)]
+levels(data_example$class) &lt;- c("Anomaly", "Normal")
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+theme_bw()
+<img src="https://i1.wp.com/petolau.github.io/images/post_16/unnamed-chunk-2-1.png">
+
+<h4 id="clusteringmethodstopic-7">  Data compression</h4>
+In an era of a large amount of data (also many times used buzzword - big data), we have problems processing them in real time.
+Here clustering can help to reduce dimensionality by its compression feature.
+Created clusters, that incorporate multiple points (data), can be replaced by their representatives (prototypes) - so one point.
+In this way, points were replaced by its cluster representative (“+”):
+data_example[, class := as.factor(kmed_res)]
+centroids &lt;- data_example[, .(x = mean(x), y = mean(y)), by = class]
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+geom_point(data = centroids, aes(x, y), color = "black", shape = "+", size = 18) +
+theme_bw()
+data_example[, class := as.factor(kmed_res)]
+centroids &lt;- data_example[, .(x = mean(x), y = mean(y)), by = class]
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+geom_point(data = centroids, aes(x, y), color = "black", shape = "+", size = 18) +
+theme_bw()
+data_example[, class := as.factor(kmed_res)]
+centroids &lt;- data_example[, .(x = mean(x), y = mean(y)), by = class]
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+geom_point(data = centroids, aes(x, y), color = "black", shape = "+", size = 18) +
+theme_bw()
+<img src="https://i1.wp.com/petolau.github.io/images/post_16/unnamed-chunk-3-1.png">
+
+<h3 id="clusteringmethodstopic-8"><pk>Types of clustering methods</pk></h3>
+Since cluster analysis has been here for more than 50 years, there are a large amount of available methods.
+The basic classification of clustering methods is based on the objective to which they aim: <k id="clusteringmethodstopic-9">hierarchical</k>, <k id="clusteringmethodstopic-10">non-hierarchical</k>.
+The <k id="clusteringmethodstopic-11">hierarchical clustering</k> is a multi-level partition of a dataset that is a branch of classification (clustering).
+Hierarchical clustering has two types of access to data.
+The first one, divisive clustering, starts with one big cluster that is then divided into smaller clusters.
+The second one, agglomerative clustering, starts with individual objects that are single-element clusters, and then they are gradually merged.
+The whole process of hierarchical clustering can be expressed (visualized) as a dendrogram.
+The <k id="clusteringmethodstopic-12">non-hierarchical clustering</k> is dividing a dataset into a system of disjunctive subsets (clusters) so that an intersection of clusters would be an empty set.
+Clustering methods can be also divided in more detail based on the processes in the method (algorithm) itself:
+<k id="clusteringmethodstopic-13">Non-hierarchical</k>:
+Centroid-based
+Model-based
+Density-based
+Grid-based
+<k id="clusteringmethodstopic-14">Hierarchical</k>:
+Agglomerative
+Divisive
+But which to choose in your use case? Let’s dive deeper into the most known methods and discuss their advantages and disadvantages.
+
+<h4 id="clusteringmethodstopic-15"> Centroid-based</h4>
+The most basic (maybe just for me) type of clustering method is centroid-based.
+This type of clustering creates prototypes of clusters - centroids or medoids.
+The best well-known methods are:
+K-means
+K-medians
+K-medoids
+K-modes
+
+<h4 id="clusteringmethodstopic-16">  K-means</h4>
+Steps:
+Create random K clusters (and compute centroids).
+Assign points to the nearest centroids.
+Update centroids.
+Go to step 2 while the centroids are changing.
+Pros and cons:
+[+] Fast to compute.
+Easy to understand.
+[-] Various initial clusters can lead to different final clustering.
+[-] Scale-dependent.
+[-] Creates only convex (spherical) shapes of clusters.
+[-] Sensitive to outliers.
+<k id="clusteringmethodstopic-17">K-means - example</k>
+It is very easy to try K-means in R (by the kmeans
+kmeans function), only needed parameter is a number of clusters.
+km_res &lt;- kmeans(data_example, 3)$cluster
+data_example[, class := as.factor(km_res)]
+centroids &lt;- data_example[, .(x = mean(x), y = mean(y)), by = class]
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+geom_point(data = centroids, aes(x, y), color = "black", shape = "+", size = 18) +
+theme_bw()
+km_res &lt;- kmeans(data_example, 3)$cluster
+data_example[, class := as.factor(km_res)]
+centroids &lt;- data_example[, .(x = mean(x), y = mean(y)), by = class]
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+geom_point(data = centroids, aes(x, y), color = "black", shape = "+", size = 18) +
+theme_bw()
+km_res &lt;- kmeans(data_example, 3)$cluster
+data_example[, class := as.factor(km_res)]
+centroids &lt;- data_example[, .(x = mean(x), y = mean(y)), by = class]
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+geom_point(data = centroids, aes(x, y), color = "black", shape = "+", size = 18) +
+theme_bw()
+<img src="https://i0.wp.com/petolau.github.io/images/post_16/unnamed-chunk-4-1.png">
+
+We can see example, when K-means fails most often, so when there are outliers in the dataset.
+
+<h4 id="clusteringmethodstopic-18">  K-medoids</h4>
+The problem with outliers solves K-medoids because prototypes are medoids - members of the dataset.
+So, not artificially created centroids, which helps to tackle outliers.
+Pros and cons:
+[+] Easy to understand.
+[+] Less sensitive to outliers.
+[+] Possibility to use any distance measure.
+[-] Various initial clusters can lead to different final clustering.
+[-] Scale-dependent.
+[-] Slower than K-means.
+<k id="clusteringmethodstopic-19">K-medoids - example</k>
+K-medoids problem can be solved by the Partition Around Medoids (PAM) algorithm (function pam
+pam in cluster
+cluster package).
+kmed_res &lt;- pam(data_example[, .(x, y)], 3)
+data_example[, class := as.factor(kmed_res$clustering)]
+medoids &lt;- data.table(kmed_res$medoids, class = as.factor(1:3))
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+geom_point(data = medoids, aes(x, y, shape = class),
+           color = "black", size = 11, alpha = 0.7) +
+theme_bw() +
+guides(shape = "none")
+kmed_res &lt;- pam(data_example[, .(x, y)], 3)
+data_example[, class := as.factor(kmed_res$clustering)]
+medoids &lt;- data.table(kmed_res$medoids, class = as.factor(1:3))
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+geom_point(data = medoids, aes(x, y, shape = class),
+           color = "black", size = 11, alpha = 0.7) +
+theme_bw() +
+guides(shape = "none")
+kmed_res &lt;- pam(data_example[, .(x, y)], 3)
+data_example[, class := as.factor(kmed_res$clustering)]
+medoids &lt;- data.table(kmed_res$medoids, class = as.factor(1:3))
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+geom_point(data = medoids, aes(x, y, shape = class),
+           color = "black", size = 11, alpha = 0.7) +
+theme_bw() +
+guides(shape = "none")
+<img src="https://i0.wp.com/petolau.github.io/images/post_16/unnamed-chunk-5-1.png">
+
+We can see that medoids stayed nicely in the three main groups of data.
+
+<h4 id="clusteringmethodstopic-20">  The determination of the number of clusters</h4>
+The disadvantage of centroid-based methods is that the number of clusters needs to be known in advance (it is a parameter of the methods).
+However, we can determine the number of clusters by its Internal validation (index).
+Basic steps are based on that we compute some internal validation index with many ( K ) and we choose ( K ) with the best index value.
+Many indexes are there…
+Silhouette
+Davies-Bouldin index
+Dunn index
+etc.
+However, every index has similar characteristics:
+<mfrac><mrow><mi>w</mi><mi>i</mi><mi>t</mi><mi>h</mi><mi>i</mi><mi>n</mi><mo>&amp;#x2212;</mo><mi>c</mi><mi>l</mi><mi>u</mi><mi>s</mi><mi>t</mi><mi>e</mi><mi>r</mi><mo>&amp;#x2212;</mo><mi>s</mi><mi>i</mi><mi>m</mi><mi>i</mi><mi>l</mi><mi>a</mi><mi>r</mi><mi>i</mi><mi>t</mi><mi>y</mi></mrow><mrow><mi>b</mi><mi>e</mi><mi>t</mi><mi>w</mi><mi>e</mi><mi>e</mi><mi>n</mi><mo>&amp;#x2212;</mo><mi>c</mi><mi>l</mi><mi>u</mi><mi>s</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>s</mi><mo>&amp;#x2212;</mo><mi>s</mi><mi>i</mi><mi>m</mi><mi>i</mi><mi>l</mi><mi>a</mi><mi>r</mi><mi>i</mi><mi>t</mi><mi>y</mi></mrow></mfrac><mo>.</mo>" role="presentation"&gt;<nobr aria-hidden="true">within−cluster−similaritybetween−clusters−similarity.</nobr><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mfrac><mrow><mi>w</mi><mi>i</mi><mi>t</mi><mi>h</mi><mi>i</mi><mi>n</mi><mo>−</mo><mi>c</mi><mi>l</mi><mi>u</mi><mi>s</mi><mi>t</mi><mi>e</mi><mi>r</mi><mo>−</mo><mi>s</mi><mi>i</mi><mi>m</mi><mi>i</mi><mi>l</mi><mi>a</mi><mi>r</mi><mi>i</mi><mi>t</mi><mi>y</mi></mrow><mrow><mi>b</mi><mi>e</mi><mi>t</mi><mi>w</mi><mi>e</mi><mi>e</mi><mi>n</mi><mo>−</mo><mi>c</mi><mi>l</mi><mi>u</mi><mi>s</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>s</mi><mo>−</mo><mi>s</mi><mi>i</mi><mi>m</mi><mi>i</mi><mi>l</mi><mi>a</mi><mi>r</mi><mi>i</mi><mi>t</mi><mi>y</mi></mrow></mfrac><mo>.</mo></math>
+so, it is the ratio of the average distances in clusters and between clusters.
+
+<h4 id="clusteringmethodstopic-21">  Elbow diagram</h4>
+The Elbow diagram is a simple method (rule) how to determine the number of clusters - we compute the internal index with a set of K and choose K where positive change is largest.
+So for example, I chose the Davies-Bouldin index implemented in the clusterCrit
+clusterCrit package.
+For our simple dataset, I will generate clusterings with 2-6 number of clusters and compute the index.
+library(clusterCrit)
+km_res_k &lt;- lapply(2:6, function(i) kmeans(data_example[, .(x, y)], i)$cluster)
+km_res_k
+library(clusterCrit)
+km_res_k &lt;- lapply(2:6, function(i) kmeans(data_example[, .(x, y)], i)$cluster)
+km_res_k
+library(clusterCrit)
+km_res_k &lt;- lapply(2:6, function(i) kmeans(data_example[, .(x, y)], i)$cluster)
+km_res_k
+## [[1]]
+##  [1] 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 1 2
+## 
+## [[2]]
+##  [1] 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 3 2 1
+## 
+## [[3]]
+##  [1] 1 1 1 1 1 1 1 1 1 1 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 4 3
+## 
+## [[4]]
+##  [1] 5 5 5 5 5 5 5 5 5 5 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 3 4 1 3
+## 
+## [[5]]
+##  [1] 1 1 1 1 1 1 1 5 5 1 6 6 6 6 6 6 6 6 6 6 3 3 3 3 3 3 3 3 3 3 2 6 4
+## [[1]]
+##  [1] 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 1 2
+## 
+## [[2]]
+##  [1] 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 3 2 1
+## 
+## [[3]]
+##  [1] 1 1 1 1 1 1 1 1 1 1 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 4 3
+## 
+## [[4]]
+##  [1] 5 5 5 5 5 5 5 5 5 5 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 3 4 1 3
+## 
+## [[5]]
+##  [1] 1 1 1 1 1 1 1 5 5 1 6 6 6 6 6 6 6 6 6 6 3 3 3 3 3 3 3 3 3 3 2 6 4
+## [[1]]
+##  [1] 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 1 2
+## 
+## [[2]]
+##  [1] 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 3 2 1
+## 
+## [[3]]
+##  [1] 1 1 1 1 1 1 1 1 1 1 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 2 4 3
+## 
+## [[4]]
+##  [1] 5 5 5 5 5 5 5 5 5 5 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 3 4 1 3
+## 
+## [[5]]
+##  [1] 1 1 1 1 1 1 1 5 5 1 6 6 6 6 6 6 6 6 6 6 3 3 3 3 3 3 3 3 3 3 2 6 4
+db_km &lt;- lapply(km_res_k, function(j) intCriteria(data.matrix(data_example[, .(x, y)]),
+j,
+"Davies_bouldin")$davies_bouldin)
+ggplot(data.table(K = 2:6, Dav_Boul = unlist(db_km)), aes(K, Dav_Boul)) +
+geom_line() +
+geom_point() +
+theme_bw()
+db_km &lt;- lapply(km_res_k, function(j) intCriteria(data.matrix(data_example[, .(x, y)]),
+j,
+"Davies_bouldin")$davies_bouldin)
+ggplot(data.table(K = 2:6, Dav_Boul = unlist(db_km)), aes(K, Dav_Boul)) +
+geom_line() +
+geom_point() +
+theme_bw()
+db_km &lt;- lapply(km_res_k, function(j) intCriteria(data.matrix(data_example[, .(x, y)]),
+j,
+"Davies_bouldin")$davies_bouldin)
+ggplot(data.table(K = 2:6, Dav_Boul = unlist(db_km)), aes(K, Dav_Boul)) +
+geom_line() +
+geom_point() +
+theme_bw()
+<img src="https://i1.wp.com/petolau.github.io/images/post_16/unnamed-chunk-6-1.png">
+
+data_example[, class := as.factor(km_res_k[[which.min(c(0,diff(unlist(db_km))))]])]
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+theme_bw()
+data_example[, class := as.factor(km_res_k[[which.min(c(0,diff(unlist(db_km))))]])]
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+theme_bw()
+data_example[, class := as.factor(km_res_k[[which.min(c(0,diff(unlist(db_km))))]])]
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+theme_bw()
+<img src="https://i1.wp.com/petolau.github.io/images/post_16/unnamed-chunk-7-1.png">
+
+We can see that the Elbow diagram rule chose 4 clusters - makes sense to me actually…
+We can also try it with PAM - K-medoids.
+kmed_res_k &lt;- lapply(2:6, function(i) pam(data_example[, .(x, y)], i)$clustering)
+db_kmed &lt;- lapply(kmed_res_k, function(j) intCriteria(data.matrix(data_example[, .(x, y)]),
+j,
+"Davies_bouldin")$davies_bouldin)
+ggplot(data.table(K = 2:6, Dav_Boul = unlist(db_kmed)), aes(K, Dav_Boul)) +
+geom_line() +
+geom_point() +
+theme_bw()
+kmed_res_k &lt;- lapply(2:6, function(i) pam(data_example[, .(x, y)], i)$clustering)
+db_kmed &lt;- lapply(kmed_res_k, function(j) intCriteria(data.matrix(data_example[, .(x, y)]),
+j,
+"Davies_bouldin")$davies_bouldin)
+ggplot(data.table(K = 2:6, Dav_Boul = unlist(db_kmed)), aes(K, Dav_Boul)) +
+geom_line() +
+geom_point() +
+theme_bw()
+kmed_res_k &lt;- lapply(2:6, function(i) pam(data_example[, .(x, y)], i)$clustering)
+db_kmed &lt;- lapply(kmed_res_k, function(j) intCriteria(data.matrix(data_example[, .(x, y)]),
+j,
+"Davies_bouldin")$davies_bouldin)
+ggplot(data.table(K = 2:6, Dav_Boul = unlist(db_kmed)), aes(K, Dav_Boul)) +
+geom_line() +
+geom_point() +
+theme_bw()
+<img src="https://i0.wp.com/petolau.github.io/images/post_16/unnamed-chunk-8-1.png">
+
+data_example[, class := as.factor(kmed_res_k[[which.min(c(0,diff(unlist(db_km))))]])]
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+theme_bw()
+data_example[, class := as.factor(kmed_res_k[[which.min(c(0,diff(unlist(db_km))))]])]
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+theme_bw()
+data_example[, class := as.factor(kmed_res_k[[which.min(c(0,diff(unlist(db_km))))]])]
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+theme_bw()
+<img src="https://i0.wp.com/petolau.github.io/images/post_16/unnamed-chunk-9-1.png">
+
+It is the same result.
+
+<h4 id="clusteringmethodstopic-22"> Model-based</h4>
+Model-based clustering methods are based on some probabilistic distribution.
+It can be:
+Gaussian normal distribution
+Gamma distribution
+Student’s t-distribution
+Poisson distribution
+etc.
+Since we cluster multivariate data, model-based clustering uses Multivariate distributions and a so-called Mixture of models (Mixtures -&gt; clusters).
+When using clustering with Gaussian normal distribution, we are using the theory of <k id="clusteringmethodstopic-23">Gaussian Mixture Models (GMM)</k>.
+
+<h4 id="clusteringmethodstopic-24">  GMM</h4>
+The target is to maximize likelihood:
+<mi>L</mi><mo stretchy="&quot;false&quot;">(</mo><msub><mi mathvariant="&quot;bold-italic&quot;">&amp;#x03BC;</mi><mn mathvariant="&quot;bold&quot;">1</mn></msub><mo>,</mo><mo>&amp;#x2026;</mo><mo>,</mo><msub><mi mathvariant="&quot;bold-italic&quot;">&amp;#x03BC;</mi><mi mathvariant="&quot;bold-italic&quot;">k</mi></msub><mo>,</mo><msub><mi mathvariant="&quot;bold&quot;">&amp;#x03A3;</mi><mn mathvariant="&quot;bold&quot;">1</mn></msub><mo>,</mo><mo>&amp;#x2026;</mo><mo>,</mo><msub><mi mathvariant="&quot;bold&quot;">&amp;#x03A3;</mi><mi mathvariant="&quot;bold-italic&quot;">k</mi></msub><mrow class="&quot;MJX-TeXAtom-ORD&quot;"><mo stretchy="&quot;false&quot;">|</mo></mrow><msub><mi mathvariant="&quot;bold-italic&quot;">x</mi><mn mathvariant="&quot;bold&quot;">1</mn></msub><mo>,</mo><mo>&amp;#x2026;</mo><mo>,</mo><msub><mi mathvariant="&quot;bold-italic&quot;">x</mi><mi mathvariant="&quot;bold-italic&quot;">n</mi></msub><mo stretchy="&quot;false&quot;">)</mo><mo>.</mo>" role="presentation"&gt;<nobr aria-hidden="true">L(μ1,…,μk,Σ1,…,Σk|x1,…,xn).</nobr><math xmlns="http://www.w3.org/1998/Math/MathML"><mi>L</mi><mo stretchy="false">(</mo><msub><mi mathvariant="bold-italic">μ</mi><mn mathvariant="bold">1</mn></msub><mo>,</mo><mo>…</mo><mo>,</mo><msub><mi mathvariant="bold-italic">μ</mi><mi mathvariant="bold-italic">k</mi></msub><mo>,</mo><msub><mi mathvariant="bold">Σ</mi><mn mathvariant="bold">1</mn></msub><mo>,</mo><mo>…</mo><mo>,</mo><msub><mi mathvariant="bold">Σ</mi><mi mathvariant="bold-italic">k</mi></msub><mrow><mo stretchy="false">|</mo></mrow><msub><mi mathvariant="bold-italic">x</mi><mn mathvariant="bold">1</mn></msub><mo>,</mo><mo>…</mo><mo>,</mo><msub><mi mathvariant="bold-italic">x</mi><mi mathvariant="bold-italic">n</mi></msub><mo stretchy="false">)</mo><mo>.</mo></math>
+Here, cluster is represented by mean (( \mathbf{\mu} )) and covariance matrix (( \mathbf{\Sigma} )).
+So not just centroid as in the case of K-means.
+This optimization problem is typically solved by the <k id="clusteringmethodstopic-25">EM</k> algorithm (Expectation Maximization).
+Pros and cons:
+[+] Ellipsoidal clusters,
+[+] Can be parameterized by covariance matrix,
+[+] Scale-independent,
+[-] Very slow for high-dimensional data,
+[-] Can be difficult to understand.
+EM algorithm with GMM is implemented in the mclust
+mclust package.
+You can optimize various shapes of mixtures (clusters) by the modelNames
+modelNames parameter (check the ?mclustModelNames
+?mclustModelNames function for more details).
+library(mclust)
+res &lt;- Mclust(data_example[, .(x, y)], G = 3, modelNames = "VVV", verbose = FALSE)
+plot(res, what = "classification")
+library(mclust)
+res &lt;- Mclust(data_example[, .(x, y)], G = 3, modelNames = "VVV", verbose = FALSE)
+plot(res, what = "classification")
+library(mclust)
+res &lt;- Mclust(data_example[, .(x, y)], G = 3, modelNames = "VVV", verbose = FALSE)
+plot(res, what = "classification")
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i2.wp.com/petolau.github.io/images/post_16/unnamed-chunk-10-1.png?w=578&amp;ssl=1">
+Pretty interesting red ellipse that was created, but generally clustering is OK.
+
+<h4 id="clusteringmethodstopic-26">  BIC</h4>
+The Bayesian Information Criterion (BIC) for choosing the optimal number of clusters can be used with model-based clustering.
+In the mclust
+mclust package, you can just add multiple modelNames
+modelNames and it chooses by BIC the best one.
+We can try also to vary the dependency of covariance matrix ( \mathbf{\Sigma} ).
+res &lt;- Mclust(data_example[, .(x, y)], G = 2:6, modelNames = c("VVV", "EEE", "VII", "EII"), verbose = FALSE)
+res
+res &lt;- Mclust(data_example[, .(x, y)], G = 2:6, modelNames = c("VVV", "EEE", "VII", "EII"), verbose = FALSE)
+res
+res &lt;- Mclust(data_example[, .(x, y)], G = 2:6, modelNames = c("VVV", "EEE", "VII", "EII"), verbose = FALSE)
+res
+## 'Mclust' model object: (EII,6) 
+## 
+## Available components: 
+##  [1] "call"           "data"           "modelName"      "n"              "d"              "G"              "BIC"            "loglik"         "df"             "bic"            "icl"           
+## [12] "hypvol"         "parameters"     "z"              "classification" "uncertainty"
+## 'Mclust' model object: (EII,6) 
+## 
+## Available components: 
+##  [1] "call"           "data"           "modelName"      "n"              "d"              "G"              "BIC"            "loglik"         "df"             "bic"            "icl"           
+## [12] "hypvol"         "parameters"     "z"              "classification" "uncertainty"
+## 'Mclust' model object: (EII,6) 
+## 
+## Available components: 
+##  [1] "call"           "data"           "modelName"      "n"              "d"              "G"              "BIC"            "loglik"         "df"             "bic"            "icl"           
+## [12] "hypvol"         "parameters"     "z"              "classification" "uncertainty"
+plot(res, what = "BIC")
+plot(res, what = "BIC")
+plot(res, what = "BIC")
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i0.wp.com/petolau.github.io/images/post_16/unnamed-chunk-11-1.png?w=578&amp;ssl=1">
+The result:
+plot(res, what = "classification")
+plot(res, what = "classification")
+plot(res, what = "classification")
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i1.wp.com/petolau.github.io/images/post_16/unnamed-chunk-12-1.png?w=578&amp;ssl=1">
+So, the methodology chose 6 clusters - 3 main groups of data and all 3 anomalies in separate clusters.
+
+<h4 id="clusteringmethodstopic-27"> Density-based</h4>
+Density-based clusters are based on maximally connected components of the set of points that lie within some defined distance from some core object.
+Methods:
+<a href="https://en.wikipedia.org/wiki/DBSCAN" rel="nofollow" target="_blank"><k id="clusteringmethodstopic-28">DBSCAN</k></a>
+<a href="https://en.wikipedia.org/wiki/OPTICS_algorithm" rel="nofollow" target="_blank"><k id="clusteringmethodstopic-29">OPTICS</k></a>
+HDBSCAN
+Multiple densities (Multi-density) methods
+
+<h4 id="clusteringmethodstopic-30">  DBSCAN</h4>
+In the well-known method <a href="https://en.wikipedia.org/wiki/DBSCAN" rel="nofollow" target="_blank"><k id="clusteringmethodstopic-31">DBSCAN</k></a>, density is defined as <em>neighborhood</em>, where points have to be reachable within a defined distance (( \epsilon ) distance - first parameter of the method), however, clusters must have at least some number of minimal points (second parameter of the method).
+Points that weren’t connected with any cluster and did not pass the minimal points criterion are marked as noise (outliers).
+Pros and cons:
+[+] Extracts automatically outliers,
+[+] Fast to compute,
+[+] Can find clusters of arbitrary shapes,
+[+] The number of clusters is determined automatically based on data,
+[-] Parameters (( \epsilon ), minPts) must be set by a practitioner,
+[-] Possible problem with neighborhoods - can be connected.
+<k id="clusteringmethodstopic-32">DBSCAN</k> is implemented in the same named function and package, so let’s try it.
+library(dbscan)
+res &lt;- dbscan(data_example[, .(x, y)], eps = 0.4, minPts = 5)
+table(res$cluster)
+library(dbscan)
+res &lt;- dbscan(data_example[, .(x, y)], eps = 0.4, minPts = 5)
+table(res$cluster)
+library(dbscan)
+res &lt;- dbscan(data_example[, .(x, y)], eps = 0.4, minPts = 5)
+table(res$cluster)
+## 
+##  0  1  2  3 
+##  3 10 10 10
+## 
+##  0  1  2  3 
+##  3 10 10 10
+## 
+##  0  1  2  3 
+##  3 10 10 10
+data_example[, class := as.factor(res$cluster)]
+levels(data_example$class)[1] &lt;- c("Noise")
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+theme_bw() +
+scale_shape_manual(values = c(3,16,17,18))
+data_example[, class := as.factor(res$cluster)]
+levels(data_example$class)[1] &lt;- c("Noise")
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+theme_bw() +
+scale_shape_manual(values = c(3,16,17,18))
+data_example[, class := as.factor(res$cluster)]
+levels(data_example$class)[1] &lt;- c("Noise")
+ggplot(data_example, aes(x, y, color = class, shape = class)) +
+geom_point(alpha = 0.75, size = 8) +
+theme_bw() +
+scale_shape_manual(values = c(3,16,17,18))
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i2.wp.com/petolau.github.io/images/post_16/unnamed-chunk-13-1.png?w=578&amp;ssl=1">
+We can see that DBSCAN found 3 clusters and 3 outliers correctly when parameters are wisely chosen.
+
+<h4 id="clusteringmethodstopic-33">  Bananas - DBSCAN result</h4>
+To demonstrate the strength of DBSCAN, researchers created many dummy artificial datasets, which are many times called bananas.
+bananas &lt;- fread("_rmd/t7.10k.dat")
+db_res &lt;- dbscan(bananas, eps = 10, minPts = 15)
+data_all &lt;- data.table(bananas, class = as.factor(db_res$cluster))
+library(ggsci)
+ggplot(data_all, aes(V1, V2, color = class, shape = class)) +
+geom_point(alpha = 0.75) +
+scale_color_d3() +
+scale_shape_manual(values = c(3, rep(16, 9))) +
+theme_bw()
+bananas &lt;- fread("_rmd/t7.10k.dat")
+db_res &lt;- dbscan(bananas, eps = 10, minPts = 15)
+data_all &lt;- data.table(bananas, class = as.factor(db_res$cluster))
+library(ggsci)
+ggplot(data_all, aes(V1, V2, color = class, shape = class)) +
+geom_point(alpha = 0.75) +
+scale_color_d3() +
+scale_shape_manual(values = c(3, rep(16, 9))) +
+theme_bw()
+bananas &lt;- fread("_rmd/t7.10k.dat")
+db_res &lt;- dbscan(bananas, eps = 10, minPts = 15)
+data_all &lt;- data.table(bananas, class = as.factor(db_res$cluster))
+library(ggsci)
+ggplot(data_all, aes(V1, V2, color = class, shape = class)) +
+geom_point(alpha = 0.75) +
+scale_color_d3() +
+scale_shape_manual(values = c(3, rep(16, 9))) +
+theme_bw()
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i1.wp.com/petolau.github.io/images/post_16/unnamed-chunk-14-1.png?w=578&amp;ssl=1">
+
+<h4 id="clusteringmethodstopic-34">  Bananas - K-means result</h4>
+km_res &lt;- kmeans(bananas, 9)
+data_all[, class := as.factor(km_res$cluster)]
+ggplot(data_all, aes(V1, V2, color = class)) +
+geom_point(alpha = 0.75) +
+scale_color_d3() +
+theme_bw()
+km_res &lt;- kmeans(bananas, 9)
+data_all[, class := as.factor(km_res$cluster)]
+ggplot(data_all, aes(V1, V2, color = class)) +
+geom_point(alpha = 0.75) +
+scale_color_d3() +
+theme_bw()
+km_res &lt;- kmeans(bananas, 9)
+data_all[, class := as.factor(km_res$cluster)]
+ggplot(data_all, aes(V1, V2, color = class)) +
+geom_point(alpha = 0.75) +
+scale_color_d3() +
+theme_bw()
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i1.wp.com/petolau.github.io/images/post_16/unnamed-chunk-15-1.png?w=578&amp;ssl=1">
+K-means here is not a good choice obviously…but these datasets are far from real-world either.
+
+<h4 id="clusteringmethodstopic-35"> Spectral clustering</h4>
+Spectral clustering methods are based on the spectral decomposition of data, so the creation of eigen vectors and eigen values.
+Steps:
+N = number of data, d = dimension of data,
+( \mathbf{A} ) = affinity matrix, ( A_{ij} = \exp(- (data_i - data_j)^2 / (2*\sigma^2) ) ) - N by N matrix,
+( \mathbf{D} ) = diagonal matrix whose (i,i)-element is the sum of ( \mathbf{A} ) i-th row - N by N matrix,
+( \mathbf{L} ) = ( \mathbf{D}^{-1/2} \mathbf{A} \mathbf{D}^{-1/2} ) - N by N matrix,
+( \mathbf{X} ) = union of k largest eigenvectors of ( \mathbf{L} ) - N by k matrix,
+Renormalising each of ( \mathbf{X} ) rows to have unit length - N by k matrix,
+Run K-means algorithm on ( \mathbf{X} ).
+
+<h4 id="clusteringmethodstopic-36">  Typical use case for spectral clustering</h4>
+We will try spectral clustering on the Spirals artificial dataset.
+data_spiral &lt;- fread("_rmd/data_spiral.csv")
+ggplot(data_spiral, aes(x, y, color = as.factor(label), shape = as.factor(label))) +
+geom_point(size = 2) +
+theme_bw()
+data_spiral &lt;- fread("_rmd/data_spiral.csv")
+ggplot(data_spiral, aes(x, y, color = as.factor(label), shape = as.factor(label))) +
+geom_point(size = 2) +
+theme_bw()
+data_spiral &lt;- fread("_rmd/data_spiral.csv")
+ggplot(data_spiral, aes(x, y, color = as.factor(label), shape = as.factor(label))) +
+geom_point(size = 2) +
+theme_bw()
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i2.wp.com/petolau.github.io/images/post_16/unnamed-chunk-16-1.png?w=578&amp;ssl=1">
+Spectral clustering is implemented in the kernlab
+kernlab package and specc
+specc function.
+library(kernlab)
+res &lt;- specc(data.matrix(data_spiral[, .(x, y)]), centers = 3)
+data_spiral[, class := as.factor(res)]
+ggplot(data_spiral, aes(x, y, color = class, shape = class)) +
+geom_point(size = 2) +
+theme_bw()
+library(kernlab)
+res &lt;- specc(data.matrix(data_spiral[, .(x, y)]), centers = 3)
+data_spiral[, class := as.factor(res)]
+ggplot(data_spiral, aes(x, y, color = class, shape = class)) +
+geom_point(size = 2) +
+theme_bw()
+library(kernlab)
+res &lt;- specc(data.matrix(data_spiral[, .(x, y)]), centers = 3)
+data_spiral[, class := as.factor(res)]
+ggplot(data_spiral, aes(x, y, color = class, shape = class)) +
+geom_point(size = 2) +
+theme_bw()
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i0.wp.com/petolau.github.io/images/post_16/unnamed-chunk-17-1.png?w=578&amp;ssl=1">
+Let’s it try on more advanced data - compound data.
+data_compound &lt;- fread("_rmd/data_compound.csv")
+ggplot(data_compound, aes(x, y, color = as.factor(label), shape = as.factor(label))) +
+geom_point(size = 2) +
+theme_bw()
+data_compound &lt;- fread("_rmd/data_compound.csv")
+ggplot(data_compound, aes(x, y, color = as.factor(label), shape = as.factor(label))) +
+geom_point(size = 2) +
+theme_bw()
+data_compound &lt;- fread("_rmd/data_compound.csv")
+ggplot(data_compound, aes(x, y, color = as.factor(label), shape = as.factor(label))) +
+geom_point(size = 2) +
+theme_bw()
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i0.wp.com/petolau.github.io/images/post_16/unnamed-chunk-18-1.png?w=578&amp;ssl=1">
+res &lt;- specc(data.matrix(data_compound[, .(x, y)]), centers = 6)
+data_compound[, class := as.factor(res)]
+ggplot(data_compound, aes(x, y, color = class, shape = class)) +
+geom_point(size = 2) +
+theme_bw()
+res &lt;- specc(data.matrix(data_compound[, .(x, y)]), centers = 6)
+data_compound[, class := as.factor(res)]
+ggplot(data_compound, aes(x, y, color = class, shape = class)) +
+geom_point(size = 2) +
+theme_bw()
+res &lt;- specc(data.matrix(data_compound[, .(x, y)]), centers = 6)
+data_compound[, class := as.factor(res)]
+ggplot(data_compound, aes(x, y, color = class, shape = class)) +
+geom_point(size = 2) +
+theme_bw()
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i2.wp.com/petolau.github.io/images/post_16/unnamed-chunk-18-2.png?w=578&amp;ssl=1">
+This is not a good result, let’s try DBSCAN.
+db_res &lt;- dbscan(data.matrix(data_compound[, .(x, y)]), eps = 1.4, minPts = 5)
+# db_res
+data_compound[, class := as.factor(db_res$cluster)]
+ggplot(data_compound, aes(x, y, color = class, shape = class)) +
+geom_point(size = 2) +
+theme_bw()
+db_res &lt;- dbscan(data.matrix(data_compound[, .(x, y)]), eps = 1.4, minPts = 5)
+# db_res
+data_compound[, class := as.factor(db_res$cluster)]
+ggplot(data_compound, aes(x, y, color = class, shape = class)) +
+geom_point(size = 2) +
+theme_bw()
+db_res &lt;- dbscan(data.matrix(data_compound[, .(x, y)]), eps = 1.4, minPts = 5)
+# db_res
+data_compound[, class := as.factor(db_res$cluster)]
+ggplot(data_compound, aes(x, y, color = class, shape = class)) +
+geom_point(size = 2) +
+theme_bw()
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i0.wp.com/petolau.github.io/images/post_16/unnamed-chunk-19-1.png?w=578&amp;ssl=1">
+Again, the nice result for DBSCAN on the artificial dataset.
+
+<h4 id="clusteringmethodstopic-37"> Hierarchical clustering</h4>
+The result of a hierarchical clustering is a dendrogram.
+The dendrogram can be cut at any height to form a partition of the data into clusters.
+How data points are connected in the dendrogram has multiple possible ways (linkages) and criteria:
+Single-linkage
+Complete-linkage
+Average-linkage
+Centroid-linkage
+Ward’s minimum variance method
+etc.
+Criteria:
+single-linkage: ( \min { d(a,b):a\in A, b\in B } )
+complete-linkage: ( \max { d(a,b):a\in A, b\in B } )
+  <table>
+    <tbody>
+      <tr>
+        <td>average-linkage: ( \frac{1}{</td>
+        <td>A</td>
+        <td>&nbsp;</td>
+        <td>B</td>
+        <td>}\sum_{a\in A}\sum_{b\in B}d(a,b) )</td>
+      </tr>
+    </tbody>
+  </table>
+  <table>
+    <tbody>
+      <tr>
+        <td>centroid-linkage: (</td>
+        <td>&nbsp;</td>
+        <td>c_t - c_s</td>
+        <td>&nbsp;</td>
+        <td>), where ( c_s ) and ( c_t ) are the centroids of clusters ( s ) and ( t ).</td>
+      </tr>
+    </tbody>
+  </table>
+where ( d(a,b) ) is the distance between points ( a ) and ( b ).
+
+<h4 id="clusteringmethodstopic-38">  IRIS dataset use case</h4>
+Let’s try hierarchical clustering on the IRIS dataset.
+ggplot(iris, aes(Sepal.Length, Sepal.Width, color = Species)) +
+geom_point(alpha = 0.8, size = 5) +
+theme_bw()
+ggplot(iris, aes(Sepal.Length, Sepal.Width, color = Species)) +
+geom_point(alpha = 0.8, size = 5) +
+theme_bw()
+ggplot(iris, aes(Sepal.Length, Sepal.Width, color = Species)) +
+geom_point(alpha = 0.8, size = 5) +
+theme_bw()
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i0.wp.com/petolau.github.io/images/post_16/unnamed-chunk-20-1.png?w=578&amp;ssl=1">
+Single linkage:
+library(ggdendro)
+library(dendextend)
+data_m &lt;- iris[,-5]
+hie_single &lt;- hclust(dist(data_m), method = "single")
+dend &lt;- as.dendrogram(hie_single)
+dend &lt;- dend %&gt;% set("branches_k_color", k = 3) %&gt;%
+set("branches_lwd", 1.2) %&gt;% 
+set("labels", rep(c("set", "ver", "vir"), each = 50)) %&gt;%
+set("labels_colors", rep(c("red", "green", "blue"), each = 50)) %&gt;%
+set("labels_cex", 0.6)
+ggd1 &lt;- as.ggdend(dend)
+ggplot(ggd1)
+library(ggdendro)
+library(dendextend)
+data_m &lt;- iris[,-5]
+hie_single &lt;- hclust(dist(data_m), method = "single")
+dend &lt;- as.dendrogram(hie_single)
+dend &lt;- dend %&gt;% set("branches_k_color", k = 3) %&gt;%
+set("branches_lwd", 1.2) %&gt;% 
+set("labels", rep(c("set", "ver", "vir"), each = 50)) %&gt;%
+set("labels_colors", rep(c("red", "green", "blue"), each = 50)) %&gt;%
+set("labels_cex", 0.6)
+ggd1 &lt;- as.ggdend(dend)
+ggplot(ggd1)
+library(ggdendro)
+library(dendextend)
+data_m &lt;- iris[,-5]
+hie_single &lt;- hclust(dist(data_m), method = "single")
+dend &lt;- as.dendrogram(hie_single)
+dend &lt;- dend %&gt;% set("branches_k_color", k = 3) %&gt;%
+set("branches_lwd", 1.2) %&gt;% 
+set("labels", rep(c("set", "ver", "vir"), each = 50)) %&gt;%
+set("labels_colors", rep(c("red", "green", "blue"), each = 50)) %&gt;%
+set("labels_cex", 0.6)
+ggd1 &lt;- as.ggdend(dend)
+ggplot(ggd1)
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i1.wp.com/petolau.github.io/images/post_16/unnamed-chunk-21-1.png?w=578&amp;ssl=1">
+Complete linkage:
+hie_complete &lt;- hclust(dist(data_m), method = "complete")
+dend &lt;- as.dendrogram(hie_complete)
+dend &lt;- dend %&gt;% set("branches_k_color", k = 3) %&gt;%
+set("branches_lwd", 1.2) %&gt;% 
+set("labels", rep(c("set", "ver", "vir"), each = 50)) %&gt;%
+set("labels_colors", rep(c("red", "green", "blue"), each = 50)) %&gt;%
+set("labels_cex", 0.6)
+ggd1 &lt;- as.ggdend(dend)
+ggplot(ggd1)
+hie_complete &lt;- hclust(dist(data_m), method = "complete")
+dend &lt;- as.dendrogram(hie_complete)
+dend &lt;- dend %&gt;% set("branches_k_color", k = 3) %&gt;%
+set("branches_lwd", 1.2) %&gt;% 
+set("labels", rep(c("set", "ver", "vir"), each = 50)) %&gt;%
+set("labels_colors", rep(c("red", "green", "blue"), each = 50)) %&gt;%
+set("labels_cex", 0.6)
+ggd1 &lt;- as.ggdend(dend)
+ggplot(ggd1)
+hie_complete &lt;- hclust(dist(data_m), method = "complete")
+dend &lt;- as.dendrogram(hie_complete)
+dend &lt;- dend %&gt;% set("branches_k_color", k = 3) %&gt;%
+set("branches_lwd", 1.2) %&gt;% 
+set("labels", rep(c("set", "ver", "vir"), each = 50)) %&gt;%
+set("labels_colors", rep(c("red", "green", "blue"), each = 50)) %&gt;%
+set("labels_cex", 0.6)
+ggd1 &lt;- as.ggdend(dend)
+ggplot(ggd1)
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i0.wp.com/petolau.github.io/images/post_16/unnamed-chunk-22-1.png?w=578&amp;ssl=1">
+Average linkage:
+hie_ave &lt;- hclust(dist(data_m), method = "average")
+dend &lt;- as.dendrogram(hie_ave)
+dend &lt;- dend %&gt;% set("branches_k_color", k = 3) %&gt;% 
+set("branches_lwd", 1.2) %&gt;% 
+set("labels", rep(c("set", "ver", "vir"), each = 50)) %&gt;%
+set("labels_colors", rep(c("red", "green", "blue"), each = 50)) %&gt;%
+set("labels_cex", 0.6)
+ggd1 &lt;- as.ggdend(dend)
+ggplot(ggd1)
+hie_ave &lt;- hclust(dist(data_m), method = "average")
+dend &lt;- as.dendrogram(hie_ave)
+dend &lt;- dend %&gt;% set("branches_k_color", k = 3) %&gt;% 
+set("branches_lwd", 1.2) %&gt;% 
+set("labels", rep(c("set", "ver", "vir"), each = 50)) %&gt;%
+set("labels_colors", rep(c("red", "green", "blue"), each = 50)) %&gt;%
+set("labels_cex", 0.6)
+ggd1 &lt;- as.ggdend(dend)
+ggplot(ggd1)
+hie_ave &lt;- hclust(dist(data_m), method = "average")
+dend &lt;- as.dendrogram(hie_ave)
+dend &lt;- dend %&gt;% set("branches_k_color", k = 3) %&gt;% 
+set("branches_lwd", 1.2) %&gt;% 
+set("labels", rep(c("set", "ver", "vir"), each = 50)) %&gt;%
+set("labels_colors", rep(c("red", "green", "blue"), each = 50)) %&gt;%
+set("labels_cex", 0.6)
+ggd1 &lt;- as.ggdend(dend)
+ggplot(ggd1)
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i0.wp.com/petolau.github.io/images/post_16/unnamed-chunk-23-1.png?w=578&amp;ssl=1">
+Let’s compute the precision of these three clusterings with the clusterCrit
+clusterCrit package:
+extCriteria(as.integer(iris[,5]), cutree(hie_single, 3), crit = "Precision")
+extCriteria(as.integer(iris[,5]), cutree(hie_single, 3), crit = "Precision")
+extCriteria(as.integer(iris[,5]), cutree(hie_single, 3), crit = "Precision")
+## $precision
+## [1] 0.5985951
+## $precision
+## [1] 0.5985951
+## $precision
+## [1] 0.5985951
+extCriteria(as.integer(iris[,5]), cutree(hie_complete, 3), crit = "Precision")
+extCriteria(as.integer(iris[,5]), cutree(hie_complete, 3), crit = "Precision")
+extCriteria(as.integer(iris[,5]), cutree(hie_complete, 3), crit = "Precision")
+## $precision
+## [1] 0.7225295
+## $precision
+## [1] 0.7225295
+## $precision
+## [1] 0.7225295
+extCriteria(as.integer(iris[,5]), cutree(hie_ave, 3), crit = "Precision")
+extCriteria(as.integer(iris[,5]), cutree(hie_ave, 3), crit = "Precision")
+extCriteria(as.integer(iris[,5]), cutree(hie_ave, 3), crit = "Precision")
+## $precision
+## [1] 0.8191682
+## $precision
+## [1] 0.8191682
+## $precision
+## [1] 0.8191682
+The best results were obtained with average linkage with precision of 81.9%.
+
+<h3 id="clusteringmethodstopic-39"><pk>Connected data</pk></h3>
+I have prepared for you the last use case for most shown methods where data (and clusters) are closely connected, so the closest scenario of real data.
+set.seed(5)
+library(MASS)
+data_connected &lt;- as.data.table(rbind(
+mvrnorm(220, mu = c(3.48, 3.4), Sigma = matrix(c(0.005, -0.015, -0.01, 0.09), nrow = 2)),
+mvrnorm(280, mu = c(3.8, 3.8), Sigma = matrix(c(0.05, 0, 0, 0.05), nrow = 2)),
+mvrnorm(220, mu = c(3.85, 2.9), Sigma = matrix(c( 0.1, 0.03, 0.03, 0.017), nrow = 2))
+))
+setnames(data_connected, c("V1", "V2"), c("x", "y"))
+ggplot(data_connected, aes(x, y)) +
+geom_point(alpha = 0.75, size = 2) +
+theme_bw()
+set.seed(5)
+library(MASS)
+data_connected &lt;- as.data.table(rbind(
+mvrnorm(220, mu = c(3.48, 3.4), Sigma = matrix(c(0.005, -0.015, -0.01, 0.09), nrow = 2)),
+mvrnorm(280, mu = c(3.8, 3.8), Sigma = matrix(c(0.05, 0, 0, 0.05), nrow = 2)),
+mvrnorm(220, mu = c(3.85, 2.9), Sigma = matrix(c( 0.1, 0.03, 0.03, 0.017), nrow = 2))
+))
+setnames(data_connected, c("V1", "V2"), c("x", "y"))
+ggplot(data_connected, aes(x, y)) +
+geom_point(alpha = 0.75, size = 2) +
+theme_bw()
+set.seed(5)
+library(MASS)
+data_connected &lt;- as.data.table(rbind(
+mvrnorm(220, mu = c(3.48, 3.4), Sigma = matrix(c(0.005, -0.015, -0.01, 0.09), nrow = 2)),
+mvrnorm(280, mu = c(3.8, 3.8), Sigma = matrix(c(0.05, 0, 0, 0.05), nrow = 2)),
+mvrnorm(220, mu = c(3.85, 2.9), Sigma = matrix(c( 0.1, 0.03, 0.03, 0.017), nrow = 2))
+))
+setnames(data_connected, c("V1", "V2"), c("x", "y"))
+ggplot(data_connected, aes(x, y)) +
+geom_point(alpha = 0.75, size = 2) +
+theme_bw()
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i2.wp.com/petolau.github.io/images/post_16/unnamed-chunk-25-1.png?w=578&amp;ssl=1">
+
+<h4 id="clusteringmethodstopic-40">  DBSCAN - result for connected data</h4>
+Chosen parameters are ( \epsilon = 0.08 ), ( minPts = 18 ).
+db_res &lt;- dbscan(data_connected, eps = 0.08, minPts = 18)
+db_res &lt;- dbscan(data_connected, eps = 0.08, minPts = 18)
+db_res &lt;- dbscan(data_connected, eps = 0.08, minPts = 18)
+data_all &lt;- data.table(data_connected, class = as.factor(db_res$cluster))
+ggplot(data_all, aes(x, y, color = class)) +
+geom_point(alpha = 0.75, size = 2) +
+theme_bw()
+data_all &lt;- data.table(data_connected, class = as.factor(db_res$cluster))
+ggplot(data_all, aes(x, y, color = class)) +
+geom_point(alpha = 0.75, size = 2) +
+theme_bw()
+data_all &lt;- data.table(data_connected, class = as.factor(db_res$cluster))
+ggplot(data_all, aes(x, y, color = class)) +
+geom_point(alpha = 0.75, size = 2) +
+theme_bw()
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i2.wp.com/petolau.github.io/images/post_16/unnamed-chunk-27-1.png?w=578&amp;ssl=1">
+The result is quite good enough, where the main three core groups are identified.
+Let’s change minPts to 10.
+db_res &lt;- dbscan(data_connected, eps = 0.08, minPts = 10)
+data_all &lt;- data.table(data_connected, class = as.factor(db_res$cluster))
+ggplot(data_all, aes(x, y, color = class)) +
+geom_point(alpha = 0.75, size = 2) +
+theme_bw()
+db_res &lt;- dbscan(data_connected, eps = 0.08, minPts = 10)
+data_all &lt;- data.table(data_connected, class = as.factor(db_res$cluster))
+ggplot(data_all, aes(x, y, color = class)) +
+geom_point(alpha = 0.75, size = 2) +
+theme_bw()
+db_res &lt;- dbscan(data_connected, eps = 0.08, minPts = 10)
+data_all &lt;- data.table(data_connected, class = as.factor(db_res$cluster))
+ggplot(data_all, aes(x, y, color = class)) +
+geom_point(alpha = 0.75, size = 2) +
+theme_bw()
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i1.wp.com/petolau.github.io/images/post_16/unnamed-chunk-28-1.png?w=578&amp;ssl=1">
+We can see a use case where DBSCAN is very sensitive to parameter settings, and you have to be very careful with some automatic settings of these parameters (in your use cases).
+
+<h4 id="clusteringmethodstopic-41">  K-means - result for connected data</h4>
+km_res &lt;- kmeans(data_connected, 3)
+data_all[, class := as.factor(km_res$cluster)]
+ggplot(data_all, aes(x, y, color = class)) +
+geom_point(alpha = 0.75, size = 2) +
+theme_bw()
+km_res &lt;- kmeans(data_connected, 3)
+data_all[, class := as.factor(km_res$cluster)]
+ggplot(data_all, aes(x, y, color = class)) +
+geom_point(alpha = 0.75, size = 2) +
+theme_bw()
+km_res &lt;- kmeans(data_connected, 3)
+data_all[, class := as.factor(km_res$cluster)]
+ggplot(data_all, aes(x, y, color = class)) +
+geom_point(alpha = 0.75, size = 2) +
+theme_bw()
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i2.wp.com/petolau.github.io/images/post_16/unnamed-chunk-29-1.png?w=578&amp;ssl=1">
+Nice result to be fair for this simple method.
+
+<h4 id="clusteringmethodstopic-42">  Gaussian model-based clustering result</h4>
+m_res &lt;- Mclust(data_connected, G = 3, modelNames = "VVV", verbose = FALSE)
+data_all[, class := as.factor(m_res$classification)]
+ggplot(data_all, aes(x, y, color = class)) +
+geom_point(alpha = 0.75, size = 2) +
+theme_bw()
+m_res &lt;- Mclust(data_connected, G = 3, modelNames = "VVV", verbose = FALSE)
+data_all[, class := as.factor(m_res$classification)]
+ggplot(data_all, aes(x, y, color = class)) +
+geom_point(alpha = 0.75, size = 2) +
+theme_bw()
+m_res &lt;- Mclust(data_connected, G = 3, modelNames = "VVV", verbose = FALSE)
+data_all[, class := as.factor(m_res$classification)]
+ggplot(data_all, aes(x, y, color = class)) +
+geom_point(alpha = 0.75, size = 2) +
+theme_bw()
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i2.wp.com/petolau.github.io/images/post_16/unnamed-chunk-30-1.png?w=578&amp;ssl=1">
+Almost perfect result, but due to the normality of sampled data.
+
+<h4 id="clusteringmethodstopic-43">  Spectral clustering result</h4>
+res &lt;- specc(data.matrix(data_connected[, .(x, y)]), centers = 3)
+data_all[, class := as.factor(res)]
+ggplot(data_all, aes(x, y, color = class)) +
+geom_point(alpha = 0.75, size = 2) +
+theme_bw()
+res &lt;- specc(data.matrix(data_connected[, .(x, y)]), centers = 3)
+data_all[, class := as.factor(res)]
+ggplot(data_all, aes(x, y, color = class)) +
+geom_point(alpha = 0.75, size = 2) +
+theme_bw()
+res &lt;- specc(data.matrix(data_connected[, .(x, y)]), centers = 3)
+data_all[, class := as.factor(res)]
+ggplot(data_all, aes(x, y, color = class)) +
+geom_point(alpha = 0.75, size = 2) +
+theme_bw()
+<img src="https://www.r-bloggers.com/wp-content/plugins/jetpack/modules/lazy-images/images/1x1.trans.gif" data-recalc-dims="1" data-lazy-src="https://i0.wp.com/petolau.github.io/images/post_16/unnamed-chunk-31-1.png?w=578&amp;ssl=1">
+Very nice result again!
+
+<h4 id="clusteringmethodstopic-44"> Other types of clustering methods</h4>
+Other types of clustering methods that were not covered in this blog post are:
+Grid-based
+Subspace clustering
+Multi-view clustering
+Based on artificial neural networks (e.g.SOM)
+Consensus (ensemble) clustering
+Data stream(s) clustering etc.
+
+<h3 id="clusteringmethodstopic-45"><pk>Conclusions</pk></h3>
+We have many types of clustering methods
+Different datasets need different clustering methods
+Automatic determination of a number of clusters can be tricky
+Real datasets are usually connected - density-based methods can fail
+Outliers (anomalies) can significantly influence clustering results - the solution is to preprocess the data or use density-based clustering
+Some methods are not suited for large (or high-dimensional) datasets - model-based or spectral clustering
+Some methods are not suited for non-convex clusters - K-means, basic hierarchical clustering
+
 
 
 <script type='text/javascript' src='readbook.js'></script>
