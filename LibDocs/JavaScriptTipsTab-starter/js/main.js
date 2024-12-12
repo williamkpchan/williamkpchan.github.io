@@ -94,7 +94,7 @@ var JavaScriptTips = [
 'modular operator (%) :<br><br>returns the division remainder. var z = x % y',
 'increment operator (++) :<br><br>increments numbers. x++;',
 'Exponentiation ** :<br><br>10 ** 2',
-'Shift left &lt;&lt; :<br><br>x &lt;&lt; 2',
+'Shift left &lt;&lt; :<br><br>x &lt;&lt; 2<br>The left shift(<<) is a binary operator that takes two numbers,<br>left shifts the bits of the first operand,<br>and the second operand decides number of places to shift.<br><br>Left-shifting is equivalent to multiplying (2 raised to power b)<br><br>',
 'Shift right (unsigned) &gt;&gt;&gt; :<br><br>x &gt;&gt;&gt; 2',
 'Equal comparator :<br><br>x == y',
 'Strict equal :<br><br>x === y<br>equal value and type<br>	5 === "5"	false',
