@@ -170,10 +170,11 @@ function compLines(lshortValue, llongValue, LshortNum, LlongNum){
         $("#StkStatus").append(upDnMsg);
 }
 
-function compHML(curH, prevH, curM, prevM, curL, prevL){
+function compHMLC(curH, prevH, curM, prevM, curL, prevL, curC, prevC, stkName, theCode){
         compMsg = " - H"+compVal(curH, prevH)+"pH,"
         compMsg = compMsg + " M"+compVal(curM, prevM)+"pM,"
         compMsg = compMsg + " L"+compVal(curL, prevL)+"pL,"
+        compMsg = compMsg + " C"+compVal(curC, prevC)+"pC,"
         $("#StkStatus").append(compMsg);
 }
 function compVal(curV, prevV){
@@ -240,4 +241,14 @@ function cleanNStore(cleantype) {
     myArray = cleantype.split(" ");
     myArray = myArray.map(item => item.split(' ')[0]).join(' ') // join to one string, space separated
     localStorage.setItem("batchMinuteStatusCheck", myArray)
+}
+
+function xunbao(xunbaocode) {
+       localStorage.setItem("randomcode", xunbaocode)
+       localStorage.setItem("otherCode", xunbaocode)
+       localStorage.setItem("stkCode", xunbaocode)
+
+       window.open("Random Charts.html");
+       // locs = ["HIghLowTrend.html", "Random Charts.html", ]
+       //  window.open("HIghLowTrend.html")
 }
