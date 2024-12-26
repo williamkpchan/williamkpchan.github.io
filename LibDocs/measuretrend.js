@@ -170,6 +170,22 @@ function compLines(lshortValue, llongValue, LshortNum, LlongNum){
         $("#StkStatus").append(upDnMsg);
 }
 
+function compHML(curH, prevH, curM, prevM, curL, prevL){
+        compMsg = " - H"+compVal(curH, prevH)+"pH,"
+        compMsg = compMsg + " M"+compVal(curM, prevM)+"pM,"
+        compMsg = compMsg + " L"+compVal(curL, prevL)+"pL,"
+        $("#StkStatus").append(compMsg);
+}
+function compVal(curV, prevV){
+        if(curV > prevV){
+          return "<r>></r>"
+        }else if(curV < prevV){
+          return "<gr><</gr>"
+        }else{
+          return "="
+        }
+}
+
 function passExam(highLst, midLst, lowLst, closeLst, amtLst) {
         prevdayAmt = amtLst[amtLst.length-2] // previous day
         // console.log("prevdayAmt: ", prevdayAmt)
