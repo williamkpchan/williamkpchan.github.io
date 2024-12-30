@@ -162,12 +162,17 @@ function checkUpDn(linedata, lineNum){
 function compLines(lshortValue, llongValue, LshortNum, LlongNum){
         if(lshortValue > llongValue){
           upDnMsg = " L" + LshortNum + "<r>></r>" + "L" + LlongNum
+          $("#StkStatus").append(upDnMsg);
+          return ">"
         }else if(lshortValue < llongValue){
           upDnMsg = " L" + LshortNum + "<lg><</lg>" + "L" + LlongNum
+          $("#StkStatus").append(upDnMsg);
+          return "<"
         }else{
           upDnMsg = " L" + LshortNum + "<dg>--</dg>" + "L" + LlongNum
+          $("#StkStatus").append(upDnMsg);
+          return "--"
         }
-        $("#StkStatus").append(upDnMsg);
 }
 
 function compHMLC(curH, prevH, curM, prevM, curL, prevL, curC, prevC, stkName, theCode){
@@ -176,6 +181,7 @@ function compHMLC(curH, prevH, curM, prevM, curL, prevL, curC, prevC, stkName, t
         compMsg = compMsg + " L"+compVal(curL, prevL)+"pL,"
         compMsg = compMsg + " C"+compVal(curC, prevC)+"pC,"
         $("#StkStatus").append(compMsg);
+        return compMsg
 }
 function compVal(curV, prevV){
         if(curV > prevV){
