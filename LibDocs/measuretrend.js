@@ -1,3 +1,4 @@
+allowtoplaysound = false
 var uXSound = new Audio('./mp3/toneBeep.mp3'); 
 var dXSound = new Audio('./mp3/lowBeep.mp3'); 
 
