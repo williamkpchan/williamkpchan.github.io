@@ -14,3 +14,23 @@ personalQuality = [
 '<r>內部與外部客人</r>\n何謂顧客？\n\n外在顧客：泛指在工作上我們需要服務的對象\n–公司組織外的顧客。\n–除了商品或服務之使用者或接受者外，還包括經銷商、代理商及零售商等，甚至是流程中的關係或機構。\n\n內在顧客：\n–公司內部的員工\n–工作中與我們工作互動及需要負責的人或部門\n',
 '何謂期望落差(Expectation Gap)\n(1)顧客對機構所提供的服務抱有期望\n(2)顧客在接受提供的服務時與期望有分別（落差）\n',
 ]
+
+improveEnglish = [
+'agreed to continue coordinating closely',
+'to promote economic, trade, industrial, and energy cooperation between the two countries',
+'According to state media',
+'highlighted the significant growth in bilateral trade',
+'with turnover reaching an estimated USD 2.2 billion',
+'marking a nearly 34 percent increase',
+'purchase and sale of electricity and mining products',
+'shown promising results',
+'not only aims to meet needs',
+'Bridge Close to Completion\nFriendship Bridge across the River\nlinking Provinces in Laos Thailand\nis now 96 percent complete',
+'Lower Inflation in 2024, inflation rate dropped\naccording to official reports\nDespite this decline',
+'addresses Illegal Workers Abroad\ngovernment has revealed that some workers are currently working abroad illegally,\nparticularly in neighboring countries,\ndespite the government\'s efforts to create domestic job opportunities',
+'held its close-out ceremony today\nThe event recognised the organisation\'s dedication and the contributions it made',
+'New Bus Project: A Step Forward or a Traffic Gamble?\ndaily commutes are largely dominated by private vehicles, with public buses playing only a minor role\nHowever, efforts are underway',
+'Ends Visa Special Exemption Policy\nhas officially ended its visa exemption and extended stay policy for several countries,\nwhich were specifically introduced during Visit Laos Year\ntourists will need to follow standard visa regulations',
+'instructed all immigration checkpoints to revert to pre-2024 visa rules,\nincluding 30-day visas on arrival and embassy-issued visas\nbooked through accredited travel agencies',
+'is once again in the spotlight with a fresh tourism draw',
+]
