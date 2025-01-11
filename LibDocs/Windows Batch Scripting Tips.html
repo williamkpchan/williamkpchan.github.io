@@ -27,14 +27,14 @@ td {color:gray;}
 button {color:white;}
 a, select {font-size: 24px}
 img { margin: auto; display: block;}
-#schRst {font-size: 20px}
+#schRst, #markLst {font-size: 20px}
 
 @media only screen and (max-width: 1080px) {
   .mainFrame {width:100%; font-size: 24px}
   pre {width:100%; font-size: 24px}
   img {width:100%}
   button {margin-top: 5px;}
-  #schRst {font-size: 20px}
+  #schRst, #markLst {font-size: 20px}
 }
 </style>
 </head>
@@ -54,6 +54,7 @@ img { margin: auto; display: block;}
 <button onclick=jpback()>back</button>
 <button onclick=gotoQues()>goto</button>
 <button onclick=ignoreIt()>ignoreIt</button>
+<button onclick=markIt()>markIt</button>
 <button onclick=findkeyword()>findkey</button>
 </div>
 <span class="normalsize">select card box:</span> <select id="myChoice" onchange="useChosen()">
@@ -73,6 +74,7 @@ img { margin: auto; display: block;}
 <option>品德教育</option>
 <option>networkTips</option>
 <option>MedicalTips</option>
+<option>pictList</option>
 </select>
 <br>
 <button onclick=gototop();>top</button>
@@ -80,6 +82,7 @@ img { margin: auto; display: block;}
 <button onclick=window.scrollTo(0,Number(document.body.scrollHeight/2))>half</button>
 <button onclick=window.scrollTo(0,Number(document.body.scrollHeight*3/4))>3 quad</button>
 <br>
+<div id="markLst"></div>
 <div id="schRst"></div>
 <br>
 
@@ -90,6 +93,8 @@ tipsListName = ""
 suffleTable = []
 ignoreList = [];
 ignoreListname = ""
+markList = [];
+markListname = ""
 topicNo = ""
 actualID = ""
 questionList = []
@@ -165,7 +170,16 @@ function ignoreIt() {
   ignoreList.push(actualID);
   ignoreListStr = ignoreList.join(" ");
   localStorage.setItem(ignoreListname, ignoreListStr)
-  document.querySelector('#schRst').innerHTML = "<br><y>topic ignored:</y> <r>" + topicNo
+  document.querySelector('#schRst').innerHTML = "<br><y>topic ignored:</y> <r>" + topicNo + "</r>"
+}
+
+function markIt() {
+  actualID = suffleTable[topicNo]
+  markList.push(actualID);
+  markList = [...new Set(markList)];
+  markListStr = markList.join(" ");
+  localStorage.setItem(markListname, markListStr)
+  showmarkList(markList)
 }
 
 function findkeyword() {
@@ -240,6 +254,7 @@ function chkKey() {
   else if(testkey == 'f'){jpButClick();}
   else if(testkey == 'F'){findkeyword();}
   else if(testkey == 'i'){ignoreIt();}
+  else if(testkey == 'm'){markIt();}
   else if(testkey == 'g'){gotoQues();}
   else if(testkey == 's'){speak();}
   else if(testkey == 't'){gototop();}
@@ -268,12 +283,14 @@ function loadArray(filename) {
     url = "https://williamkpchan.github.io/LibDocs/" + "JavaScriptTipsTab-starter/js/main.js"
   }else if(filename == "proverbs"){
     url = "https://williamkpchanhp.github.io/LibDocs/literature/proverbs.js"
+  }else if(filename == "phpQuiz"){
+    url = "https://williamkpchan.github.io/LibDocs/RNotes.js"
   }else if(filename == "improveEnglish"){
     url = "https://williamkpchan.github.io/LibDocs/personalQuality.js"
   }else{
     url = "https://williamkpchan.github.io/LibDocs/" + filename + ".js"
   }
-console.log(url)
+
     script = document.createElement('script');
     script.src = url
     script.type = 'text/javascript';
@@ -281,19 +298,42 @@ console.log(url)
     script.onload = function () { // remember to put all waiting jobs inside here 
        questionList = eval(filename);
        ignoreListname = "ignore" + filename
-console.log(ignoreListname)
+       markListname = "mark" + filename
        if (localStorage.getItem(ignoreListname) === null) {
          ignoreList = [];
        } else{
          ignoreList = localStorage.getItem(ignoreListname).split(' ').map(Number);
        }
-console.log(questionList.length)
+
+       if (localStorage.getItem(markListname) === null) {
+         markList = [];
+       } else{
+         markList = localStorage.getItem(markListname).split(' ').map(Number);
+       }
        init()  // showTopic
+       showmarkList(markList)
     };
 
     document.head.appendChild(script);
 }
 
+function showmarkList(markList) {
+  if(markList.length >0){
+    markListStr = ""
+    markList = [...new Set(markList)];
+
+    for ( i = 0; i < markList.length; i++) {
+      markListStr = markListStr + "<span class='redbut' onclick=showPointerQue("
+      + suffleTable.indexOf(markList[i])
+      + ")>"
+      + suffleTable.indexOf(markList[i])
+      + "</span> "
+    }
+    document.querySelector('#markLst').innerHTML = "<br><y>marked Topics:</y> " + markListStr+ "<br>"
+  }else{
+    document.querySelector('#markLst').innerHTML = "<br><y>marked Topics: <r>None!</r></y><br>";
+  }
+}
 
 $("body").on( "swipeleft", function( event ) {jpback();} );
 $("body").on( "swiperight", function( event ) {jpButClick();});
