@@ -147,4 +147,5 @@ improveEnglish = [
 'stifled starry-eyed vision\n扼杀过分乐观的幻想',
 'superstructure, coordinated hierarchical superstructure\n上层建筑 上部构造, 协调的分层上层建筑',
 'the deck being stacked against them\n对他们不利堆叠的甲板',
-'to top it all off\n更有甚者 最妙的是 最糟糕的是',]
+'to top it all off\n更有甚者 最妙的是 最糟糕的是',
+]
