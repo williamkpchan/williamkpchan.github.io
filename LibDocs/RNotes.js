@@ -1365,4 +1365,5 @@ phpQuiz=[
 'Comparison Operator Spaceship, An integer less than, equal to, or greater than zero when $a is less than, equal to, or greater than $b, respectively. Available as of PHP 7.\n\n<k>$a &lt;=> $b</k>',
 '?: ternary operator\n\n<k>$action = (empty($_POST[\'action\'])) ? \'default\' : $_POST[\'action\'];</k>',
 'find modulus remainder and quotient\n\n<k>$x = 10;\n$y = 6;\necho $x % $y;  // remainder\necho (int)($x/$y);  //quotient</k>',
+'<a href="https://www.w3schools.com/php/phptryit.asp?filename=tryphp_func_var_print_r" class="whitebut " target="_blank">w3 test php</a>',
 ]

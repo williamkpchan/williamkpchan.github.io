@@ -520,6 +520,13 @@ var JavaScriptTips = [
 'to chop a string by space character:\n  str = "123 r"\n  myArray = str.split(" ");  // ["123", "r"]\nto chop an array of strings by space character:\n  str = ["123 r", "456 t"]\n  myArray = str.map(item => item.split(" ")[0]); // ["123", "456"]\n\n',
 'to join array into one string with space separated\n  str = ["123", "456"]\n  myArray = str.join(" ") // "123 456"',
 '<a href="https://mochajs.org/" class="whitebut ">Mocha</a>\nMocha is a JavaScript test framework running on Node.js and in the browser, making asynchronous testing simple and fun.\nMocha tests run serially, allowing for flexible and accurate reporting, while mapping uncaught exceptions to the correct test cases.\nHosted on GitHub.\n<a href="https://www.chaijs.com/" class="whitebut ">Chai is a BDD / TDD assertion library for node and the browser that can be paired with any javascript testing framework.</a>\n<a href="https://junit.org/junit5/" class="whitebut ">testing framework for Java and the JVM</a>\n<a href="https://www.freecodecamp.org/news/how-to-start-unit-testing-javascript/" class="whitebut ">How to Test JavaScript Code</a>',
+'<a href="https://www.w3schools.com/js/tryit.asp?filename=tryjs_statements" class="whitebut " target="_blank">w3 js test</a>',
+'<o>生成随机数</o>\n得益于箭头函数、解构赋值、扩展运算符、Set和Map等特性。\n生成指定范围内的随机整数，只需一行代码：\nconst getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;\n使用示例：\nconsole.log(getRandomInt(1, 100)); // 1到100之间的随机整数\n',
+'<o>数组去重</o>\n利用Set的天然去重特性，一行代码解决数组去重问题：\nconst uniqueArray = (arr) => [...new Set(arr)];\n使用示例：\nconsole.log(uniqueArray([1, 2, 2, 3, 4, 4, 5])); // [1, 2, 3, 4, 5]\n',
+'<o>检查变量类型</o>\n准确获取变量类型，一行代码搞定：\nconst getType = (value) => Object.prototype.toString.call(value).slice(8, -1).toLowerCase();\n使用示例：\nconsole.log(getType(123)); // 'number'\nconsole.log(getType([]));  // 'array'\n',
+'<o>深拷贝对象</o>\n简单高效的深拷贝，只需一行代码：\nconst cloneDeep = (obj) => JSON.parse(JSON.stringify(obj));\n使用示例：\nconst original = { a: 1, b: { c: 2 } };\nconst cloned = cloneDeep(original);\nconsole.log(cloned); // { a: 1, b: { c: 2 } }\n',
+'<o>交换两个变量的值</o>\nES6的解构赋值，让变量交换变得简单：\nlet x = 1, y = 2;\n[x, y] = [y, x];\n使用示例：\nconsole.log(x, y); // 2, 1\n',
+'<o>生成UUID</o>\n快速生成符合规范的UUID，一行代码即可：\nconst generateUUID = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => (Math.random() * 16) | 0).toString(16);\n使用示例：\nconsole.log(generateUUID()); // 例如 'e4e6c7c4-d5ad-4cc1-9be8-d497c1a9d461'\n',
 ];
 bookid = "C Tips"
 initSelectRange = 50
