@@ -85,14 +85,16 @@ function splitString(textArr) {
 function showQuiz() {
   quiz = "<i>Quiz " + quizListIdx[topicpointer] + ":</i> "+QArray[quizListIdx[topicpointer]];
   answerPoolIdx = get5Choices(allSetIdx)
-  quizAnswer = "<i>Answer:</i><ol>";
+
+  quizAnswer ="<k>Please click on your answer!</k><br>";
+  quizAnswer =  quizAnswer + "<i>Answer:</i><ol>";
   for(i=0; i<answerPoolIdx.length; i++){
     quizAnswer = quizAnswer + "<li>" + AArray[answerPoolIdx[i]] + "\n</li>"
   }
-  quizAnswer = quizAnswer + "</ol><k>Please choose your answer</k>";
+  quizAnswer =  quizAnswer + "</ol>";
 
   document.querySelector('.js-quiz').innerHTML = quiz
-  document.querySelector('.js-quiz-answer').innerHTML = quizAnswer
+  document.querySelector('#js-quiz-answer').innerHTML = quizAnswer
 
   $("#dateAndTime").click()
   document.querySelector('#records').innerHTML = "&emsp; <i>Total Pass:</i> " + ignoreQuiz.length + " &emsp;<i>All Quizzes:</i> " + quizList.length
@@ -294,10 +296,9 @@ function alertTotal() {
 function checkAnswer(thisChoice) {
     if(thisChoice == answerIs){
       document.querySelector('#lastResult').innerHTML = "<c>Last Answer Correct!</c> "  + answerIs
-
       addToIgnoreQuiz()
     }else{
-      document.querySelector('#lastResult').innerHTML = "<ic>Last Answer Incorrect!</ic> "  + answerIs
+      document.querySelector('#lastResult').innerHTML = "<ic>Last Answer:</ic> "  + answerIs
     }
 
     document.querySelector('#lastQuiz').innerHTML = quiz + "<br><i>Answer</i>: " + AArray[answerPoolIdx[answerIs-1]]
@@ -307,4 +308,13 @@ function checkAnswer(thisChoice) {
 forward();
 
 $(".quizbutton").after("<br><br><br>shortcut Keys:<br>b backward<br>f forward<br>+ add To IgnoreQuiz<br>- remove Fm IgnoreQuiz<br>R remove Num Fm IgnoreQuiz<br>v view IgnoreQuiz<br>s setRange<br>T total length<br>")
+
+
+var ans = document.getElementById('js-quiz-answer');
+//ans.addEventListener('click', dosomething)
+
+$('#js-quiz-answer li').bind('click', function (){
+    selectedIs = $(this).index().toString();
+    checkAnswer(selectedIs)
+});
 
