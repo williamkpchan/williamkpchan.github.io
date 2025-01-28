@@ -313,8 +313,9 @@ $(".quizbutton").after("<br><br><br>shortcut Keys:<br>b backward<br>f forward<br
 var ans = document.getElementById('js-quiz-answer');
 //ans.addEventListener('click', dosomething)
 
-$('#js-quiz-answer li').bind('click', function (){
+$('#js-quiz-answer li').off('click').on('click', function (){
     selectedIs = $(this).index().toString();
     checkAnswer(selectedIs)
 });
+
 
