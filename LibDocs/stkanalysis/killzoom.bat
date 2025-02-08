@@ -1,0 +1,11 @@
+taskkill /IM "Zoom.exe" /T /F
+taskkill /IM "conhost.exe" /T /F
+taskkill /IM "ShellExperienceHost.exe" /T /F
+taskkill /IM "QQPY*" /T /F
+taskkill /IM "dasHost.exe" /T /F
+taskkill /IM "StartMenuExperienceHost.exe" /T /F
+taskkill /IM "iFlyInput.exe" /T /F
+taskkill /IM "iFlyPlatform.exe" /T /F
+taskkill /IM "ctfmon.exe" /T /F
+taskkill /IM "QQPYUserCenter.exe" /T /F
+taskkill /IM "QQPYClipMonitor.exe" /T /F
