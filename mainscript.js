@@ -13,7 +13,7 @@ function chkKey() {
   if(testkey == 'a'){window.open("https://williamkpchan.github.io/apptechno.html");}
   else if(testkey == 'b'){window.open("https://williamkpchanhp.github.io/listofcharts.html");}
   else if(testkey == 'Y'){window.location = '#media';}
-  else if(testkey == 'B'){window.open("http://xh.5156edu.com/bs.html");}
+  else if(testkey == 'B'){window.open("https://www.doubao.com/chat/");}
   else if(testkey == 'c'){callCalculator();}
 // calculator  else if(testkey == 'C'){window.open("https://www.desmos.com/fourfunction");}
   else if(testkey == 'd'){window.open("https://www.youdao.com/");}
@@ -25,6 +25,7 @@ function chkKey() {
 
   else if(testkey == 'h'){window.open("https://williamkpchan.github.io/LibDocs/News Points.html");}
   else if(testkey == 'J'){window.location = '#_jiaoyu';}
+  else if(testkey == 'k'){window.open("https://chat.deepseek.com/");}
   else if(testkey == 'l'){window.location = '#dushu';}
   //else if(testkey == 'l'){window.open("https://www.deepl.com/en/translator");}
   //if(testkey == 'L'){openLogFile();}

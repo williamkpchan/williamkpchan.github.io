@@ -181,7 +181,6 @@ function compHMLC(curH, prevH, curM, prevM, curL, prevL, curC, prevC, stkName, t
         compMsg = compMsg + " M"+compVal(curM, prevM)+"pM,"
         compMsg = compMsg + " L"+compVal(curL, prevL)+"pL,"
         compMsg = compMsg + " C"+compVal(curC, prevC)+"pC,"
-        $("#StkStatus").append(compMsg);
         return compMsg
 }
 function compVal(curV, prevV){
