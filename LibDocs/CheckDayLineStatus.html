@@ -435,6 +435,7 @@ Total: <span class="totalcount" id="TripleDncount"></span>
               midLst = [];
               closeLst = [];
               amtLst = [];
+              amtNumber = [];
 
               for (let i = starti; i < thestkdata.length; i++) {
                   dateLst.push(thestkdata[i][0]);
@@ -443,6 +444,7 @@ Total: <span class="totalcount" id="TripleDncount"></span>
                   lowLst.push(Number(thestkdata[i][4]));
                   midLst.push((Number(thestkdata[i][3]) + Number(thestkdata[i][4]))/2);
                   closeLst.push(Number(thestkdata[i][2]));
+                  amtNumber.push(Number(thestkdata[i][8]));
                   amtvalue = "&emsp;" + Math.round(Number(thestkdata[i][8])).toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",") +"w ";
                   amtLst.push(amtvalue);
               }
@@ -456,6 +458,9 @@ Total: <span class="totalcount" id="TripleDncount"></span>
               if(todayDay != lastTradeDay){
                 stkName = stkName+"<y>*</y>"
               }
+
+              // calc 10 day average
+              amtavg = averageOfLastTen(amtNumber);
 
               lastamt = amtLst[amtLst.length-1]
               lastamt = Number(lastamt.replace(/^.*?;|w.*/g, "").replace(/,/g, ""))
@@ -499,13 +504,17 @@ Total: <span class="totalcount" id="TripleDncount"></span>
                     minlowLst = Math.min(...lastlowLst)
                     maxhighLst = Math.max(...lasthighLst)
                     curPosition = Math.round((curC - minlowLst)*100/ (maxhighLst-minlowLst))
+                    curAmtPosition = Math.round((amtNumber[amtNumber.length-1] / amtavg)*100)
+                    if(curAmtPosition>100){
+                      curAmtPosition = "<y>"+curAmtPosition+"</y>"
+                    }
 
                 compareMsg = compHMLC(curH, prevH, curM, prevM, curL, prevL, curC, prevC, stkName, theCode)
                 $("#StkStatus").append(compMsg);
 
                 // if up
+                HLtxt = `<k id="` +theCode + `" onclick="xunbao('` + theCode + `')">`+ theCode + " <dr>" + stkName+ '</dr><md>: ' + curPosition + " - " + curAmtPosition +'</md></k>&emsp;'
                 if(compareMsg ==" - H<r>></r>pH, M<r>></r>pM, L<r>></r>pL, C<r>></r>pC,"){
-                  HLtxt = `<k id="` +theCode + `" onclick="xunbao('` + theCode + `')">`+ theCode + " <dr>" + stkName+ '</dr><md>: ' + curPosition + '</md></k>&emsp;'
                   $("#HLSignatures").append( HLtxt);
                   batchMinuteCheckList = batchMinuteCheckList + " " + theCode
                   HLSignaturescount = HLSignaturescount +1
@@ -514,16 +523,14 @@ Total: <span class="totalcount" id="TripleDncount"></span>
                   // check prev day status for double up
                   prevCompMsg = compHMLC(prevH, pprevH, prevM, pprevM, prevL, pprevL, prevC, pprevC, stkName, theCode)
                   if(prevCompMsg ==" - H<r>></r>pH, M<r>></r>pM, L<r>></r>pL, C<r>></r>pC,"){
-                    prevtxt = `<k id="` +theCode + `" onclick="xunbao('` + theCode + `')">`+ theCode + " <dr>" + stkName+ '</dr><md>: ' + curPosition + '</md></k>&emsp;'
-                    $("#doubleUp").append( prevtxt);
+                    $("#doubleUp").append( HLtxt);
                     doubleUpcount = doubleUpcount +1
                     $("#doubleUpcount").html(doubleUpcount);
 
                     // check pprev day status for triple up
                     pprevCompMsg = compHMLC(pprevH, ppprevH, pprevM, ppprevM, pprevL, ppprevL, pprevC, ppprevC, stkName, theCode)
                     if(pprevCompMsg ==" - H<r>></r>pH, M<r>></r>pM, L<r>></r>pL, C<r>></r>pC,"){
-                      pprevtxt = `<k id="` +theCode + `" onclick="xunbao('` + theCode + `')">`+ theCode + " <dr>" + stkName+ '</dr><md>: ' + curPosition + '</md></k>&emsp;'
-                      $("#TripleUp").append( pprevtxt);
+                      $("#TripleUp").append( HLtxt);
                       TripleUpcount = TripleUpcount +1
                       $("#TripleUpcount").html(TripleUpcount);
                     }
@@ -532,7 +539,6 @@ Total: <span class="totalcount" id="TripleDncount"></span>
 
                 // if Dn
                 if(compareMsg ==" - H<gr><</gr>pH, M<gr><</gr>pM, L<gr><</gr>pL, C<gr><</gr>pC,"){
-                  HLtxt = `<k id="` +theCode + `" onclick="xunbao('` + theCode + `')">`+ theCode + " <dr>" + stkName+ '</dr><md>: ' + curPosition + '</md></k>&emsp;'
                   $("#GoingDn").append( HLtxt);
 
                   GoingDncount = GoingDncount +1
@@ -541,16 +547,14 @@ Total: <span class="totalcount" id="TripleDncount"></span>
                   // check prev day status for double Dn
                   prevCompMsg = compHMLC(prevH, pprevH, prevM, pprevM, prevL, pprevL, prevC, pprevC, stkName, theCode)
                   if(prevCompMsg ==" - H<gr><</gr>pH, M<gr><</gr>pM, L<gr><</gr>pL, C<gr><</gr>pC,"){
-                    prevtxt = `<k id="` +theCode + `" onclick="xunbao('` + theCode + `')">`+ theCode + " <dr>" + stkName+ '</dr><md>: ' + curPosition + '</md></k>&emsp;'
-                    $("#doubleDn").append( prevtxt);
+                    $("#doubleDn").append( HLtxt);
                     doubleDncount = doubleDncount +1
                     $("#doubleDncount").html(doubleDncount);
 
                     // check pprev day status for triple Dn
                     pprevCompMsg = compHMLC(pprevH, ppprevH, pprevM, ppprevM, pprevL, ppprevL, pprevC, ppprevC, stkName, theCode)
                     if(pprevCompMsg ==" - H<gr><</gr>pH, M<gr><</gr>pM, L<gr><</gr>pL, C<gr><</gr>pC,"){
-                      pprevtxt = `<k id="` +theCode + `" onclick="xunbao('` + theCode + `')">`+ theCode + " <dr>" + stkName+ '</dr><md>: ' + curPosition + '</md></k>&emsp;'
-                      $("#TripleDn").append( pprevtxt);
+                      $("#TripleDn").append( HLtxt);
                       TripleDncount = TripleDncount +1
                       $("#TripleDncount").html(TripleDncount);
                     }
@@ -1554,6 +1558,23 @@ function docLoaded() {
          codetable = JSON.parse(theCodetable);
          location.reload();
        }
+     }
+
+     function averageOfLastTen(arr) {
+         // Check if the array has at least 10 elements
+         if (arr.length < 10) {
+             throw new Error("Array must have at least 10 elements");
+         }
+
+         // Slice the last 10 elements
+         const lastTen = arr.slice(-10);
+
+         // Calculate the sum of the last 10 elements
+         const sum = lastTen.reduce((acc, val) => acc + val, 0);
+
+         // Calculate the average
+         const average = sum / 10;
+         return average;
      }
 
       // checkDayUpDn(linedata, lineNum)
