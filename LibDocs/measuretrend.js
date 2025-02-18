@@ -258,3 +258,34 @@ function xunbao(xunbaocode) {
        // locs = ["HIghLowTrend.html", "Random Charts.html", ]
        //  window.open("HIghLowTrend.html")
 }
+
+function calcCurAmtPosition(amtArray) {
+     console.log(amtArray.length)
+     amtavg = averageOfLastTen(amtArray);
+     console.log(amtavg)
+     amtArray = amtArray.slice(amtArray.length - 10)
+     console.log(amtArray)
+     curAmtPosition = Math.round((amtArray[amtArray.length-1] / amtavg)*100)
+     if(curAmtPosition>100){
+          curAmtPosition = "<y>"+curAmtPosition+"</y>"
+     }
+     console.log(curAmtPosition)
+}
+
+     function averageOfLastTen(arr) {
+         // Check if the array has at least 10 elements
+         if (arr.length < 10) {
+             throw new Error("Array must have at least 10 elements");
+         }
+
+         // Slice the last 10 elements
+         const lastTen = arr.slice(-10);
+
+         // Calculate the sum of the last 10 elements
+         const sum = lastTen.reduce((acc, val) => acc + val, 0);
+
+         // Calculate the average
+         const average = sum / 10;
+         return average;
+     }
+
