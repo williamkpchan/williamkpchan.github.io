@@ -36,9 +36,10 @@ table {width:100%;}
     <tr>
       <th>编号</th>
       <th>股名</th>
-      <th>价格变化 %</th>
-      <th>成交金额变化 %</th>
-      <th>金额分钟变化 %</th>
+      <th>日价格变化 %</th>
+      <th>分钟价格变化 %</th>
+      <th>日金额变化 %</th>
+      <th>分钟金额变化 %</th>
       <th>金额指数</th>
     </tr>
   </thead>
@@ -149,6 +150,7 @@ async function fetchDataChunks(url) {
         // Check if BaseObj has data for this stock code
         if (BaseObj[stknum] && BaseObj[stknum].avgAmt) {
           const currentAmt = parseFloat(columns[37]); // Current amount from the API
+          const todaypct = parseFloat(columns[32]); // Current amount from the API
           const avgAmt = BaseObj[stknum].avgAmt; // Average amount from BaseObj
           const stkname = BaseObj[stknum].stockName
           const amtIdx = BaseObj[stknum].amtIdx
@@ -161,15 +163,18 @@ async function fetchDataChunks(url) {
 
           if (!firstTime) {
             amtdiff = amtPercentage - prevallResults[stknum].amt;
+            pricediff = (todaypct - prevallResults[stknum].pct).toFixed(2);
           }else{
             amtdiff = 0
+            pricediff = 0
           }
 
           // Store the result in allResults
           allResults[stknum] = {
             code: codeStr,
             name: stkname,
-            pct: columns[32],
+            pct: todaypct,
+            pctdiff: pricediff,
             amt: amtPercentage, // Replace amt with the calculated percentage
             amtdiff: amtdiff,
             amtIdx: amtIdx,
@@ -191,12 +196,12 @@ function updateHTML() {
     sortedResults = Object.keys(allResults).sort((a, b) => {
       return allResults[b].amt - allResults[a].amt;
     });
-    $('#mode').html("<y>转分钟排序</y>")
+    $('#mode').html("<y>转分钟金额排序</y>")
   }else{
     sortedResults = Object.keys(allResults).sort((a, b) => {
       return allResults[b].amtdiff - allResults[a].amtdiff;
     });
-    $('#mode').html("转变化排序")
+    $('#mode').html("转日金额排序")
   }
   sortmode = !sortmode;
 
@@ -211,16 +216,24 @@ function updateHTML() {
     const cell4 = row.insertCell(3);
     const cell5 = row.insertCell(4);
     const cell6 = row.insertCell(5);
+    const cell7 = row.insertCell(6);
 
     cell1.innerHTML  = allResults[stockCode].code;
     cell2.textContent = allResults[stockCode].name;
-    cell3.textContent = allResults[stockCode].pct;
     if(allResults[stockCode].pct<0){
       cell3.innerHTML = "<r>"+allResults[stockCode].pct+"</r>";
+    }else{
+      cell3.textContent = allResults[stockCode].pct;
     }
-    cell4.textContent = allResults[stockCode].amt;
-    cell5.textContent = allResults[stockCode].amtdiff;
-    cell6.textContent = allResults[stockCode].amtIdx;
+
+    if(allResults[stockCode].pctdiff<0){
+      cell4.innerHTML = "<r>"+allResults[stockCode].pctdiff+"</r>";
+    }else{
+      cell4.textContent = allResults[stockCode].pctdiff;
+    }
+    cell5.textContent = allResults[stockCode].amt;
+    cell6.textContent = allResults[stockCode].amtdiff;
+    cell7.textContent = allResults[stockCode].amtIdx;
   });
 }
 
