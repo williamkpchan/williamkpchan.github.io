@@ -177,6 +177,51 @@ if(markerName != "h0"){
   });
 }
 
+
+// process subtopics with minorTopics
+if (typeof minorTp == 'undefined') {
+  minorTp = 'h3';
+}
+
+// Select all elements with the subtopic class
+let subtopics = $('.subtopic');
+
+// Iterate through each subtopic
+subtopics.each(function(i) {
+    let subtopic = $(this);
+    let topicNumber = i + 1; // Assuming you want to start numbering from 1
+
+    // Create a new div for the sub-TOC
+    let subTocDiv = $('<div class="subtoc"></div>');
+
+    // Find all minorTopics within the current subtopic
+    let minorTopics = subtopic.find(minorTp);
+
+    // Iterate through each minorTopic and create links for the sub-TOC
+    minorTopics.each(function(j) {
+        let minorTopic = $(this);
+        let minorTopicNumber = j + 1; // Assuming you want to start numbering from 1
+
+        // Create a unique ID for the minorTopic
+        let minorTopicId = 'subtopic-' + topicNumber + '-minortp-' + minorTopicNumber;
+        minorTopic.attr('id', minorTopicId);
+
+        // Create a link for the sub-TOC
+        let minorTopicLink = $('<a></a>')
+            .attr('href', '#' + minorTopicId)
+            .attr('target', '_self')
+            .text(minorTopic.text());
+
+        // Append the link to the sub-TOC div
+        subTocDiv.append(minorTopicLink);
+        subTocDiv.append('<br>'); // Add a line break after each link
+    });
+
+    // Insert the sub-TOC at the top of the current subtopic
+    subtopic.prepend(subTocDiv);
+});
+
+
 totalLength = topicLength
 notvisitedList = [...Array(totalLength).keys()];
 imgnotvisitedList = notvisitedList
