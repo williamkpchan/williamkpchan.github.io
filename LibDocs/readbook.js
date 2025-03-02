@@ -192,7 +192,7 @@ subtopics.each(function(i) {
     let topicNumber = i + 1; // Assuming you want to start numbering from 1
 
     // Create a new div for the sub-TOC
-    let subTocDiv = $('<div class="subtoc"></div>');
+    let subTocDiv = $('<center><div class="subtoc"></div></center>');
 
     // Find all minorTopics within the current subtopic
     let minorTopics = subtopic.find(minorTp);
@@ -205,7 +205,7 @@ subtopics.each(function(i) {
         // Create a unique ID for the minorTopic
         let minorTopicId = 'subtopic-' + topicNumber + '-minortp-' + minorTopicNumber;
         minorTopic.attr('id', minorTopicId);
-
+console.log("minorTopicId", minorTopicId, minorTopic.text())
         // Create a link for the sub-TOC
         let minorTopicLink = $('<a></a>')
             .attr('href', '#' + minorTopicId)
