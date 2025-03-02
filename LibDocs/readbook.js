@@ -183,6 +183,7 @@ if (typeof minorTp == 'undefined') {
   minorTp = 'h3';
 }
 
+
 // Select all elements with the subtopic class
 let subtopics = $('.subtopic');
 
@@ -192,20 +193,19 @@ subtopics.each(function(i) {
     let topicNumber = i + 1; // Assuming you want to start numbering from 1
 
     // Create a new div for the sub-TOC
-    let subTocDiv = $('<center><div class="subtoc"></div></center>');
+    let subTocDiv = $('<div class="subtoc"></div>');
 
     // Find all minorTopics within the current subtopic
-    let minorTopics = subtopic.find(minorTp);
-
+    let minorTopics = subtopic.find(minorTopic);
     // Iterate through each minorTopic and create links for the sub-TOC
     minorTopics.each(function(j) {
         let minorTopic = $(this);
         let minorTopicNumber = j + 1; // Assuming you want to start numbering from 1
 
         // Create a unique ID for the minorTopic
-        let minorTopicId = 'subtopic-' + topicNumber + '-minortp-' + minorTopicNumber;
+        let minorTopicId = 'subtopic-' + topicNumber + '-minortopic-' + minorTopicNumber;
         minorTopic.attr('id', minorTopicId);
-console.log("minorTopicId", minorTopicId, minorTopic.text())
+
         // Create a link for the sub-TOC
         let minorTopicLink = $('<a></a>')
             .attr('href', '#' + minorTopicId)
