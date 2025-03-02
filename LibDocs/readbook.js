@@ -183,6 +183,9 @@ if (typeof minorTp == 'undefined') {
   minorTp = 'h3';
 }
 
+if (typeof minorTp == 'undefined') {
+  minorTp = 'h3';
+}
 
 // Select all elements with the subtopic class
 let subtopics = $('.subtopic');
@@ -197,6 +200,7 @@ subtopics.each(function(i) {
 
     // Find all minorTopics within the current subtopic
     let minorTopics = subtopic.find(minorTopic);
+
     // Iterate through each minorTopic and create links for the sub-TOC
     minorTopics.each(function(j) {
         let minorTopic = $(this);
