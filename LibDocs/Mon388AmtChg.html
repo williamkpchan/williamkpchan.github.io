@@ -38,6 +38,7 @@ table {width:100%;}
     <tr>
       <th>编号</th>
       <th>股名</th>
+      <th>现价</th>
       <th>日价格变化 %</th>
       <th>分钟价格变化 %</th>
       <th>日金额变化 %</th>
@@ -222,10 +223,12 @@ async function fetchDataChunks(url) {
         if (BaseObj[stknum] && BaseObj[stknum].avgAmt) {
           const currentAmt = parseFloat(columns[37]); // Current amount from the API
           const todaypct = parseFloat(columns[32]); // Current amount from the API
+          const currentPrice = parseFloat(columns[3]); // Current amount from the API
           const avgAmt = BaseObj[stknum].avgAmt; // Average amount from BaseObj
           const stkname = BaseObj[stknum].stockName
           const amtIdx = BaseObj[stknum].amtIdx
           const codeStr = `<o onclick="xunbao('` + columns[2] + `')">`+ columns[2] + "</o>"
+          // console.log(stknum, stkname, currentPrice)
 
           // Calculate the percentage
           const amtPercentage = Math.round((currentAmt / avgAmt)/100); // unit size diff
@@ -291,6 +294,7 @@ async function fetchDataChunks(url) {
           allResults[stknum] = {
             code: codeStr,
             name: stkname,
+            cPrice: currentPrice,
             pct: todaypct,
             pctdiff: pricediff,
             amt: amtPercentage, // Replace amt with the calculated percentage
@@ -327,14 +331,14 @@ function updateUniqueItems(elemId) {  // set unique items in history record
 function updateHTML() {
   if(sortmode == false){
     sortedResults = Object.keys(allResults).sort((a, b) => {
-      return allResults[b].amt - allResults[a].amt;
+      return allResults[b].pctdiff - allResults[a].pctdiff;
     });
     $('#mode').html("<y>转分钟金额排序</y>")
   }else{
     sortedResults = Object.keys(allResults).sort((a, b) => {
       return allResults[b].amtdiff - allResults[a].amtdiff;
     });
-    $('#mode').html("转日金额排序")
+    $('#mode').html("转分钟价差排序")
   }
   sortmode = !sortmode;
 
@@ -343,36 +347,39 @@ function updateHTML() {
 
   sortedResults.forEach(stockCode => {
     const row = tableBody.insertRow();
-    const cell1 = row.insertCell(0);
-    const cell2 = row.insertCell(1);
-    const cell3 = row.insertCell(2);
-    const cell4 = row.insertCell(3);
-    const cell5 = row.insertCell(4);
-    const cell6 = row.insertCell(5);
-    const cell7 = row.insertCell(6);
+    const cell1 = row.insertCell(0); // code number
+    const cell2 = row.insertCell(1); // stk name
+    const cell3 = row.insertCell(2); // current price
+    const cell4 = row.insertCell(3); // day pricediff
+    const cell5 = row.insertCell(4); // min pricediff
+    const cell6 = row.insertCell(5); // day amtchg
+    const cell7 = row.insertCell(6); // min amt chg
+    const cell8 = row.insertCell(7); // amtIdx
 
     cell1.innerHTML  = allResults[stockCode].code;
     cell2.textContent = allResults[stockCode].name;
+    cell3.textContent = allResults[stockCode].cPrice;
+
     if(allResults[stockCode].pct<0){
-      cell3.innerHTML = "<r>"+allResults[stockCode].pct+"</r>";
+      cell4.innerHTML = "<r>"+allResults[stockCode].pct+"</r>";
     }else{
-      cell3.textContent = allResults[stockCode].pct;
+      cell4.textContent = allResults[stockCode].pct;
     }
 
     if(allResults[stockCode].pctdiff<0){
-      cell4.innerHTML = "<r>"+allResults[stockCode].pctdiff+"</r>";
+      cell5.innerHTML = "<r>"+allResults[stockCode].pctdiff+"</r>";
     }else{
-      cell4.textContent = allResults[stockCode].pctdiff;
+      cell5.textContent = allResults[stockCode].pctdiff;
     }
 
     if (allResults[stockCode].amt>allResults[stockCode].amtIdx) {
-      cell5.innerHTML = "<lg>"+allResults[stockCode].amt+"</lg>";
+      cell6.innerHTML = "<lg>"+allResults[stockCode].amt+"</lg>";
     }else{
-      cell5.textContent = allResults[stockCode].amt;
+      cell6.textContent = allResults[stockCode].amt;
     }
 
-    cell6.textContent = allResults[stockCode].amtdiff;
-    cell7.textContent = allResults[stockCode].amtIdx;
+    cell7.textContent = allResults[stockCode].amtdiff;
+    cell8.textContent = allResults[stockCode].amtIdx;
   });
 }
 
