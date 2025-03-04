@@ -180,37 +180,37 @@ async function fetchDataChunks(url) {
 
 
           // check grades
-          if(amtdiff>30 && pricediff>0){
+          if(amtdiff>28 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade30").append( warnMsg);
             $("#grade30Hist").append( warnMsg);
             grade30Count=grade30Count+1
-          }else if(amtdiff>25 && pricediff>0){
+          }else if(amtdiff>21 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade25").append( warnMsg);
             $("#grade25Hist").append( warnMsg);
             grade25Count=grade25Count+1
-          }else if(amtdiff>20 && pricediff>0){
+          }else if(amtdiff>15 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade20").append( warnMsg);
             $("#grade20Hist").append( warnMsg);
             grade20Count=grade20Count+1
-          }else if(amtdiff>15 && pricediff>0){
+          }else if(amtdiff>10 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade15").append( warnMsg);
             $("#grade15Hist").append( warnMsg);
             grade15Count=grade15Count+1
-          }else if(amtdiff>10 && pricediff>0){
+          }else if(amtdiff>6 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade10").append( warnMsg);
             $("#grade10Hist").append( warnMsg);
             grade10Count=grade10Count+1
-          }else if(amtdiff>5 && pricediff>0){
+          }else if(amtdiff>3 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade05").append( warnMsg);
             $("#grade05Hist").append( warnMsg);
             grade05Count=grade05Count+1
-          }else if(amtdiff>1.1 && pricediff>0){
+          }else if(amtdiff>=1 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade01").append( warnMsg);
             $("#grade01Hist").append( warnMsg);
