@@ -6,6 +6,8 @@ sortmode = false
 upcount = 0
 dncount = 0
 
+let freqTable = {};
+
   // prepare basic materials
   const baseurl = "https://sqt.gtimg.cn/?q=";
   const chunkSize = 60;
@@ -102,6 +104,33 @@ async function collectdata(stknum) {
   }
 }
 
+// Function to add a new element or increment the counts
+function addToFreqTable(obj, stknumber, stkname, counts) {
+ const key = stknumber;
+ if (!obj[key]) {
+  // If the key is not present, add a new object
+  obj[key] = { stkname, counts };
+ } else {
+  // If the key is already present, increment the counts
+  obj[key].counts += counts;
+ }
+}
+
+// Function to generate an HTML table from the freqTable data
+function generateTable(freqTable) {
+ let table = '<table><tr><th>Stock Number</th><th>Stock Name</th><th>Counts</th></tr>';
+ // Loop through each key-value pair in the freqTable object
+ for (const key in freqTable) {
+  table += '<tr>';
+  table += `<td>${key}</td>`;
+  table += `<td>${freqTable[key].stkname}</td>`;
+  table += `<td>${freqTable[key].counts}</td>`;
+  table += '</tr>';
+ }
+ table += '</table>';
+ return table;
+}
+
 // Function to calculate the average of the last 10 elements
 function averageOfLastN(arr, n) {
   if (arr.length < n) {
@@ -185,36 +214,49 @@ async function fetchDataChunks(url) {
             $("#grade30").append( warnMsg);
             $("#grade30Hist").append( warnMsg);
             grade30Count=grade30Count+1
+            addToFreqTable(freqTable, codeStr, stkname, 1); // Adding a new object
+
           }else if(amtdiff>21 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade25").append( warnMsg);
             $("#grade25Hist").append( warnMsg);
             grade25Count=grade25Count+1
+            addToFreqTable(freqTable, codeStr, stkname, 1); // Adding a new object
+
           }else if(amtdiff>15 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade20").append( warnMsg);
             $("#grade20Hist").append( warnMsg);
             grade20Count=grade20Count+1
+            addToFreqTable(freqTable, codeStr, stkname, 1); // Adding a new object
+
           }else if(amtdiff>10 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade15").append( warnMsg);
             $("#grade15Hist").append( warnMsg);
             grade15Count=grade15Count+1
+            addToFreqTable(freqTable, codeStr, stkname, 1); // Adding a new object
+
           }else if(amtdiff>6 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade10").append( warnMsg);
             $("#grade10Hist").append( warnMsg);
             grade10Count=grade10Count+1
+            addToFreqTable(freqTable, codeStr, stkname, 1); // Adding a new object
+
           }else if(amtdiff>3 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade05").append( warnMsg);
             $("#grade05Hist").append( warnMsg);
             grade05Count=grade05Count+1
+            addToFreqTable(freqTable, codeStr, stkname, 1); // Adding a new object
+
           }else if(amtdiff>=1 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade01").append( warnMsg);
             $("#grade01Hist").append( warnMsg);
             grade01Count=grade01Count+1
+            addToFreqTable(freqTable, codeStr, stkname, 1); // Adding a new object
           }
 
           updateUniqueItems("#grade30Hist");
@@ -384,6 +426,12 @@ async function updateInfo() {
   updnStr = " <lg>Up "+ upcount + "</lg> <r>Dn " + dncount +"</r>"
 
   $("#dateAndTime").html("<y>"+showDate() +"</y> "+ showTime() + updnStr)
+
+  // Call the function to generate the freqTable
+  htmlTable = generateTable(freqTable);
+  // Display the HTML table on the page
+  $('#FreqTable').innerHTML = htmlTable;
+
 }
 
 // Start the main process
