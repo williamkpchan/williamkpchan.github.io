@@ -8,7 +8,7 @@ dncount = 0
 
   // prepare basic materials
   const baseurl = "https://sqt.gtimg.cn/?q=";
-  const chunkSize = 32;
+  const chunkSize = 60;
   const chunks = [];
   const urlReqStr = [];
 
@@ -48,12 +48,12 @@ async function processQueue() {
 // Add requests to the queue
 codetable.forEach(code => {
  requestQueue.push(async () => {
-  await collectdata(code);
+  await collectdata(code); // collect 10 days data
  });
 });
 
 // Start processing the queue
-processQueue();
+// processQueue();
 
 
 // Function to collect data for a single stock code
@@ -345,7 +345,7 @@ function getChar(event) {
 }
 
 
-// Main function to run the data collection and update process
+// Main function to collect basic data
 async function main() {
   await processQueue();
   await updateInfo();
@@ -363,23 +363,23 @@ async function updateChanges() {
   upcount = 0
   dncount = 0
   await updateInfo()
-
 }
 
 async function updateInfo() {
   firstTime = false
   if (Object.keys(prevallResults).length === 0 && Object.keys(allResults).length == 0 ) {
     firstTime = true
-  }
-  if (Object.keys(prevallResults).length === 0 && Object.keys(allResults).length != 0 ) {
+  }else if (Object.keys(allResults).length != 0 ) {
     prevallResults = { ...allResults };
-    console.log("check value:",prevallResults["02800"])
     firstTime = false
   }
   for (let i = 0; i < urlReqStr.length; i++) {
     await fetchDataChunks(urlReqStr[i]);
     // console.log(urlReqStr[i])
   }
+  //console.log("check prevallResults value:",prevallResults["00388"])
+  //console.log("check allResults value:",allResults["00388"])
+  //console.log("firstTime",firstTime)
   updateHTML();
   updnStr = " <lg>Up "+ upcount + "</lg> <r>Dn " + dncount +"</r>"
 
