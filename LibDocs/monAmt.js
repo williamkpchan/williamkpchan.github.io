@@ -6,6 +6,14 @@ sortmode = false
 upcount = 0
 dncount = 0
 
+// Initialize variables for data recording
+let upCounterArr = [];
+let downCounterArr = [];
+
+// Initialize variables for data recording
+let upCounter = [];
+let downCounter = [];
+
 let freqTable = {};
 
   // prepare basic materials
@@ -21,6 +29,61 @@ let freqTable = {};
   for (let i = 0; i < chunks.length; i++) {
     urlReqStr.push(baseurl + chunks[i].map(element => "r_hk" + element).join(","));
   }
+
+  // Get the canvas element for the chart
+  const ctx = document.getElementById('ChartRecord').getContext('2d');
+  
+  // Initialize Chart.js and create a line chart
+        const ChartRecord = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Up Counts',
+                        data: upCounter,
+                        borderColor: 'blue', // Blue-green color
+                        borderWidth: 2,
+                        fill: false
+                    },
+                    {
+                        label: 'Down Counts',
+                        data: downCounter,
+                        borderColor: 'red', // Red color
+                        borderWidth: 2,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: 'white' // Legend text color
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: 'white' // X-axis tick text color
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)' // X-axis grid color
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            color: 'white' // Y-axis tick text color
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)' // Y-axis grid color
+                        }
+                    }
+                }
+            }
+        });
+
 
 // queue
 
@@ -226,6 +289,10 @@ async function fetchDataChunks(url) {
 
             if(pricediff>0){upcount = upcount +1}
             if(pricediff<0){dncount = dncount +1}
+            // Record the data
+            upCounterArr.push(upcount);
+            downCounterArr.push(dncount);
+
           }else{
             amtdiff = 0
             pricediff = 0
@@ -459,7 +526,18 @@ async function updateInfo() {
   htmlTable = generateTable(freqTable, 'upCounts');
   // Display the HTML table on the page
   $('#FreqTable').html(htmlTable);
+  updateChart();
 }
+
+  // Function to update chart
+  function updateChart() {
+   // Update the chart data
+   timemark = showTime().split(':')
+   timemark = timemark[0]+timemark[1]
+
+   ChartRecord.data.labels.push(timemark);
+   ChartRecord.update();
+  }
 
 // Start the main process
 main();
