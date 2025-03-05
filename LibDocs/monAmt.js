@@ -104,31 +104,55 @@ async function collectdata(stknum) {
   }
 }
 
-// Function to add a new element or increment the counts
-function addToFreqTable(obj, stknumber, stkname, counts) {
+// Function to add a new element, increment the up counts, and add timestamps
+function addToFreqTable(obj, stknumber, stkname, counts, direction) {
  const key = stknumber;
+ timestamp = showTime().split(':')
+ timestamp = timestamp[0]+timestamp[1]
+
  if (!obj[key]) {
-  // If the key is not present, add a new object
-  obj[key] = { stkname, counts };
- } else {
-  // If the key is already present, increment the counts
-  obj[key].counts += counts;
+  // If the key is not present, add a new object with the first timestamp
+  obj[key] = { stkname, upCounts: 0, downCounts: 0, timestamps: [timestamp] };
+ }
+
+ if (direction === 'up') {
+  // Increment the up counts and add a new timestamp
+  obj[key].upCounts += counts;
+ } else if (direction === 'down') {
+  // Increment the down counts and add a new timestamp
+  obj[key].downCounts += counts;
  }
 }
 
-// Function to generate an HTML table from the freqTable data
-function generateTable(freqTable) {
- let table = '<table><tr><th>Stock Number</th><th>Stock Name</th><th>Counts</th></tr>';
- // Loop through each key-value pair in the freqTable object
- for (const key in freqTable) {
-  table += '<tr>';
-  table += `<td>${key}</td>`;
-  table += `<td>${freqTable[key].stkname}</td>`;
-  table += `<td>${freqTable[key].counts}</td>`;
-  table += '</tr>';
- }
- table += '</table>';
- return table;
+// Function to generate an HTML table from the freqTable data sorted by upCounts or downCounts
+function generateTable(freqTable, sortBy) {
+    // Convert the freqTable object into an array of objects
+    const tableData = Object.keys(freqTable).map(key => ({ 
+        key, 
+        stkname: freqTable[key].stkname, 
+        upCounts: freqTable[key].upCounts, 
+        downCounts: freqTable[key].downCounts, 
+        timestamps: freqTable[key].timestamps 
+    }));
+
+    // Sort the tableData array based on the sortBy key (upCounts or downCounts)
+    tableData.sort((a, b) => b[sortBy] - a[sortBy]);
+
+    let table = '<table><tr><th>Stock Number</th><th>Stock Name</th><th>upCounts</th><th>downCounts</th><th>Firsttime</th></tr>';
+
+    // Loop through each object in the sorted tableData array
+    tableData.forEach(data => {
+        table += '<tr>';
+        table += `<td>${data.key}</td>`;
+        table += `<td>${data.stkname}</td>`;
+        table += `<td>${data.upCounts}</td>`;
+        table += `<td>${data.downCounts}</td>`;
+        table += `<td>${data.timestamps}</td>`;
+        table += '</tr>';
+    });
+
+    table += '</table>';
+    return table;
 }
 
 // Function to calculate the average of the last 10 elements
@@ -209,54 +233,58 @@ async function fetchDataChunks(url) {
 
 
           // check grades
+          if(amtdiff>=1 && pricediff<0){
+            warnMsg = codeStr + stkname+", "
+            addToFreqTable(freqTable, codeStr, stkname, 1, 'down');
+          }
           if(amtdiff>28 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade30").append( warnMsg);
             $("#grade30Hist").append( warnMsg);
             grade30Count=grade30Count+1
-            addToFreqTable(freqTable, codeStr, stkname, 1); // Adding a new object
+            addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>21 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade25").append( warnMsg);
             $("#grade25Hist").append( warnMsg);
             grade25Count=grade25Count+1
-            addToFreqTable(freqTable, codeStr, stkname, 1); // Adding a new object
+            addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>15 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade20").append( warnMsg);
             $("#grade20Hist").append( warnMsg);
             grade20Count=grade20Count+1
-            addToFreqTable(freqTable, codeStr, stkname, 1); // Adding a new object
+            addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>10 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade15").append( warnMsg);
             $("#grade15Hist").append( warnMsg);
             grade15Count=grade15Count+1
-            addToFreqTable(freqTable, codeStr, stkname, 1); // Adding a new object
+            addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>6 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade10").append( warnMsg);
             $("#grade10Hist").append( warnMsg);
             grade10Count=grade10Count+1
-            addToFreqTable(freqTable, codeStr, stkname, 1); // Adding a new object
+            addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>3 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade05").append( warnMsg);
             $("#grade05Hist").append( warnMsg);
             grade05Count=grade05Count+1
-            addToFreqTable(freqTable, codeStr, stkname, 1); // Adding a new object
+            addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>=1 && pricediff>0){
             warnMsg = codeStr + stkname+", "
             $("#grade01").append( warnMsg);
             $("#grade01Hist").append( warnMsg);
             grade01Count=grade01Count+1
-            addToFreqTable(freqTable, codeStr, stkname, 1); // Adding a new object
+            addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
           }
 
           updateUniqueItems("#grade30Hist");
@@ -428,10 +456,9 @@ async function updateInfo() {
   $("#dateAndTime").html("<y>"+showDate() +"</y> "+ showTime() + updnStr)
 
   // Call the function to generate the freqTable
-  htmlTable = generateTable(freqTable);
+  htmlTable = generateTable(freqTable, 'upCounts');
   // Display the HTML table on the page
-  $('#FreqTable').innerHTML = htmlTable;
-
+  $('#FreqTable').html(htmlTable);
 }
 
 // Start the main process

@@ -20,7 +20,8 @@ function chkKey() {
   else if(testkey == 'e'){window.location = '#ertong';}
   else if(testkey == 'E'){window.open("https://williamkpchan.github.io/LibDocs/English Conversation.html");}
   else if(testkey == 'f'){window.open("https://williamkpchan.github.io/ForexChart.htm");}
-  else if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
+  // else if(testkey == 'F'){window.open("http://fanyi.baidu.com/");}
+  else if(testkey == 'F'){window.location = '#FreqTable';}
   else if(testkey == 'g'){window.open("https://mail.google.com/");}
 
   else if(testkey == 'h'){window.open("https://williamkpchan.github.io/LibDocs/News Points.html");}
