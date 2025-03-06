@@ -7,8 +7,7 @@ upcount = 0
 dncount = 0
 
 // Initialize variables for data recording
-let upCounterArr = [];
-let downCounterArr = [];
+let upDnDiffArr = [];
 
 // Initialize variables for data recording
 let upCounter = [];
@@ -32,58 +31,30 @@ let freqTable = {};
 
   // Get the canvas element for the chart
   const ctx = document.getElementById('ChartRecord').getContext('2d');
-  
-  // Initialize Chart.js and create a line chart
-        const ChartRecord = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [
-                    {
-                        label: 'Up Counts',
-                        data: upCounter,
-                        borderColor: 'blue', // Blue-green color
-                        borderWidth: 2,
-                        fill: false
-                    },
-                    {
-                        label: 'Down Counts',
-                        data: downCounter,
-                        borderColor: 'red', // Red color
-                        borderWidth: 2,
-                        fill: false
-                    }
-                ]
-            },
-            options: {
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: 'white' // Legend text color
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        ticks: {
-                            color: 'white' // X-axis tick text color
-                        },
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.1)' // X-axis grid color
-                        }
-                    },
-                    y: {
-                        ticks: {
-                            color: 'white' // Y-axis tick text color
-                        },
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.1)' // Y-axis grid color
-                        }
-                    }
-                }
-            }
-        });
-
+  const ChartRecord = new Chart(ctx, {
+   type: 'line',
+   data: {
+    labels: [],
+    datasets: [
+     {
+        label: 'upDnDiff',
+        data: upDnDiffArr,
+        borderColor: 'green', // Blue-green color
+        borderWidth: 1,
+        fill: false,
+        pointStyle: 'dash', // Set the point shape
+     },
+    ]
+   },
+   options: {
+    scales: {
+     y: {
+      beginAtZero: true,
+      display: true,
+     }
+    }
+   }
+  });
 
 // queue
 
@@ -290,9 +261,6 @@ async function fetchDataChunks(url) {
             if(pricediff>0){upcount = upcount +1}
             if(pricediff<0){dncount = dncount +1}
             // Record the data
-            upCounterArr.push(upcount);
-            downCounterArr.push(dncount);
-
           }else{
             amtdiff = 0
             pricediff = 0
@@ -387,6 +355,7 @@ async function fetchDataChunks(url) {
           $("#grade05Count").html("Total:"+"<r>"+grade05Count+"</r>");
           $("#grade01Count").html("Total:"+"<r>"+grade01Count+"</r>");
 
+
   } catch (error) {
     console.error("Error fetching data:", error);
   }
@@ -434,12 +403,16 @@ function updateHTML() {
 
     if(allResults[stockCode].pct<0){
       cell4.innerHTML = "<r>"+allResults[stockCode].pct+"</r>";
+    }else if(allResults[stockCode].pct>0){
+      cell4.innerHTML = "<lg>"+allResults[stockCode].pct+"</lg>";
     }else{
       cell4.textContent = allResults[stockCode].pct;
     }
 
     if(allResults[stockCode].pctdiff<0){
       cell5.innerHTML = "<r>"+allResults[stockCode].pctdiff+"</r>";
+    }else if(allResults[stockCode].pctdiff>0){
+      cell5.innerHTML = "<lg>"+allResults[stockCode].pctdiff+"</lg>";
     }else{
       cell5.textContent = allResults[stockCode].pctdiff;
     }
@@ -526,6 +499,7 @@ async function updateInfo() {
   htmlTable = generateTable(freqTable, 'upCounts');
   // Display the HTML table on the page
   $('#FreqTable').html(htmlTable);
+  upDnDiffArr.push(upcount-dncount);
   updateChart();
 }
 
