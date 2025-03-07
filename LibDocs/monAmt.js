@@ -8,6 +8,7 @@ dncount = 0
 
 // Initialize variables for data recording
 let upDnDiffArr = [];
+let upDnDiffMaArr = [];
 
 // Initialize variables for data recording
 let upCounter = [];
@@ -208,6 +209,41 @@ function calcCurAmtPosition(amtArray) {
   return curAmtPosition;
 }
 
+function makeMovAve(bigArray, intv) {
+  // the intv-1 is correct
+  return bigArray.slice(0, intv - 1).concat(calcMovAve(bigArray, intv));
+}
+
+function calcAve(aveArray) {
+  const add = (a, b) => a + b;
+  return aveArray.reduce(add) / aveArray.length;
+}
+
+function calcMovAve(bigArray, intv) {
+  const ma = [];
+  for (let i = 0; i < bigArray.length - intv + 1; i++) {
+    ma[i] = calcWAve(bigArray.slice(i, i + intv));
+  }
+  return ma;
+}
+
+function calcWAve(aveArray) {
+  let sum = 0;
+  for (let i = 1; i <= aveArray.length; i++) {
+    sum += aveArray[i - 1] * i;
+  }
+  return sum / ((1 + aveArray.length) * aveArray.length / 2);
+}
+
+function updateMovAve(bigArray, intv, newElement) {
+  const lastIndex = bigArray.length - 1;
+  const lastIntv = bigArray.slice(lastIndex - intv + 1, lastIndex + 1);
+  const lastMovAve = calcWAve(lastIntv);
+  const updatedMovAve = (lastMovAve * intv - lastIntv[0] + newElement) / intv;
+  return updatedMovAve;
+}
+
+
 // Function to fetch data chunks
 async function fetchDataChunks(url) {
   // backup allResults
@@ -355,7 +391,6 @@ async function fetchDataChunks(url) {
           $("#grade05Count").html("Total:"+"<r>"+grade05Count+"</r>");
           $("#grade01Count").html("Total:"+"<r>"+grade01Count+"</r>");
 
-
   } catch (error) {
     console.error("Error fetching data:", error);
   }
@@ -366,6 +401,14 @@ function updateUniqueItems(elemId) {  // set unique items in history record
     let elemArr = elem.html().split(', ');
     let uniqueItems = [...new Set(elemArr)];
     elem.html(uniqueItems.join(", "));
+}
+
+function countUniqueItems(elemId) {  // set unique items in history record
+    let elem = $(elemId);
+    let elemArr = elem.html().split(', ');
+    let uniqueItems = [...new Set(elemArr)];
+    uniqueItemsLen = uniqueItems.length -1
+    elem.prepend("<lg>Total: " + uniqueItemsLen + "</lg>, ")
 }
 
 // Function to update the HTML page with sorted data
@@ -499,7 +542,10 @@ async function updateInfo() {
   htmlTable = generateTable(freqTable, 'upCounts');
   // Display the HTML table on the page
   $('#FreqTable').html(htmlTable);
-  upDnDiffArr.push(upcount-dncount);
+  newEle = upcount-dncount
+  upDnDiffArr.push(newEle);
+
+  makeMovAve(upDnDiffMaArr, 5)
   updateChart();
 }
 
