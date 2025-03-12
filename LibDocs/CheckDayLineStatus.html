@@ -272,9 +272,34 @@ Total: <span class="totalcount" id="TripleDncount"></span>
       fiveTrendLineUpCnt = 0
       twotrendLineDnCnt = 0
 
-      for (i = 0; i<codetable.length; i++) {
-         collectStkData(codetable[i])
-      }
+// Concurrent request limit
+const MAX_CONCURRENT_REQUESTS = 5; // Set the maximum number of concurrent requests
+
+// Queue to manage concurrent requests
+const requestQueue = [];
+let activeRequests = 0;
+
+// Function to process the next request in the queue
+async function processQueue() {
+ if (activeRequests < MAX_CONCURRENT_REQUESTS && requestQueue.length > 0) {
+  activeRequests++;
+  const request = requestQueue.shift();
+  await request();
+  activeRequests--;
+  processQueue();
+ }
+}
+
+// Add requests to the queue
+codetable.forEach(code => {
+ requestQueue.push(async () => {
+  const result = await collectStkData(code);
+ });
+});
+
+// Start processing the queue
+processQueue();
+
 
       function updateStat(statname) {
       // update stat
@@ -323,7 +348,7 @@ Total: <span class="totalcount" id="TripleDncount"></span>
         storeCode(theCode);
           if( theCode.substring(0, 2) == "us"){
               // number of day klines shold be small to avoid slow response, even drop out
-              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/usfqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,100,qfq';
+              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/usfqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,42,qfq';
               imageCode = theCode
           }else{
 
@@ -333,7 +358,7 @@ Total: <span class="totalcount" id="TripleDncount"></span>
 
           codewidth = theCode.length
           if(theCode == "HSI"){
-              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,100,qfq';
+              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,42,qfq';
               imageCode = "110000"
           }else{
 
@@ -344,7 +369,7 @@ Total: <span class="totalcount" id="TripleDncount"></span>
               codewidth = theCode.length; //update to be used later
               theStartCode = theCode
               imageCode = theCode
-              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,100,qfq';
+              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,42,qfq';
             }else{
               codewidth = theCode.length
               if((codewidth == 6) && !hsReservedCode.includes(theCode)){
@@ -356,15 +381,15 @@ Total: <span class="totalcount" id="TripleDncount"></span>
                     theCode = "sz"+theCode
                  }
                  theStartCode = theCode
-                 theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,100,qfq';
+                 theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,42,qfq';
               }else if(codewidth == 9){
                 imageCode = theCode
                 theCode = theCode.substring(7, 9) + theCode.substring(0, 6);
                 theStartCode = theCode
 
-                theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,100,qfq';
+                theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,42,qfq';
               }else{
-                theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,100,qfq';
+                theurl = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + theCode + ',day,,,42,qfq';
                 theStartCode = theCode
                 imageCode = theCode
               }

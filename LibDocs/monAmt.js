@@ -8,13 +8,17 @@ dncount = 0
 
 // Initialize variables for data recording
 let upDnDiffArr = [];
-let upDnDiffMaArr = [];
+let zeroDiff = [];
+let upDnDiffMaArr10 = [];
+let upDnDiffMaArr20 = [];
+let upDnDiffMaArr30 = [];
 
 // Initialize variables for data recording
 let upCounter = [];
 let downCounter = [];
 
 let freqTable = {};
+let prevfreqTable = {};
 
   // prepare basic materials
   const baseurl = "https://sqt.gtimg.cn/?q=";
@@ -44,6 +48,38 @@ let freqTable = {};
         borderWidth: 1,
         fill: false,
         pointStyle: 'dash', // Set the point shape
+     },
+     {
+        label: 'WMA10',
+        data: upDnDiffMaArr10,
+        borderColor: 'yellow', // Blue-green color
+        borderWidth: 1,
+        fill: false,
+        pointStyle: 'dash', // Set the point shape
+     },
+     {
+        label: 'WMA20',
+        data: upDnDiffMaArr20,
+        borderColor: 'pink', // Blue-green color
+        borderWidth: 1,
+        fill: false,
+        pointStyle: 'dash', // Set the point shape
+     },
+     {
+        label: 'WMA40',
+        data: upDnDiffMaArr30,
+        borderColor: 'orange', // Blue-green color
+        borderWidth: 1,
+        fill: false,
+        pointStyle: 'dash', // Set the point shape
+     },
+     {
+        label: 'zero',
+        data: zeroDiff,
+        borderColor: 'gray', // Blue-green color
+        borderWidth: 1,
+        fill: false,
+        pointStyle: 'line', // Set the point shape
      },
     ]
    },
@@ -147,7 +183,7 @@ function addToFreqTable(obj, stknumber, stkname, counts, direction) {
 
  if (!obj[key]) {
   // If the key is not present, add a new object with the first timestamp
-  obj[key] = { stkname, upCounts: 0, downCounts: 0, timestamps: [timestamp] };
+  obj[key] = { stkname, upCounts: 0, downCounts: 0, difference: 0,  timestamps: [timestamp] };
  }
 
  if (direction === 'up') {
@@ -167,13 +203,14 @@ function generateTable(freqTable, sortBy) {
         stkname: freqTable[key].stkname, 
         upCounts: freqTable[key].upCounts, 
         downCounts: freqTable[key].downCounts, 
+        difference: freqTable[key].upCounts - freqTable[key].downCounts,
         timestamps: freqTable[key].timestamps 
     }));
 
     // Sort the tableData array based on the sortBy key (upCounts or downCounts)
     tableData.sort((a, b) => b[sortBy] - a[sortBy]);
 
-    let table = '<table><tr><th>Stock Number</th><th>Stock Name</th><th>upCounts</th><th>downCounts</th><th>Firsttime</th></tr>';
+    let table = '<table><tr><th>Stock Number</th><th>Stock Name</th><th>upCounts</th><th>downCounts</th><th>difference</th><th>Firsttime</th></tr>';
 
     // Loop through each object in the sorted tableData array
     tableData.forEach(data => {
@@ -182,12 +219,20 @@ function generateTable(freqTable, sortBy) {
         table += `<td>${data.stkname}</td>`;
         table += `<td>${data.upCounts}</td>`;
         table += `<td>${data.downCounts}</td>`;
+        table += `<td>${data.difference}</td>`;
         table += `<td>${data.timestamps}</td>`;
         table += '</tr>';
     });
 
     table += '</table>';
-    return table;
+    sortButton = `<span class="redbut" onclick='generateTable(freqTable, "upCounts")'>up</span><span class="greenbut" onclick='generateTable(freqTable, "downCounts")'>dn</span><span class="goldbut" onclick='generateTable(freqTable, "difference")'>diff</span>`
+    sortButton = sortButton + table
+    $('#FreqTable').html(sortButton);  // 'upCounts' can sort by downCounts
+
+    if (!firstTime) {
+      prevfreqTable = { ...freqTable };
+    }
+
 }
 
 // Function to calculate the average of the last 10 elements
@@ -209,6 +254,21 @@ function calcCurAmtPosition(amtArray) {
   return curAmtPosition;
 }
 
+function singleWMA(arr, n) {
+  if (n > arr.length || n < 1) {
+    return 0;
+  }
+  let weightedSum = 0;
+  let weightSum = 0;
+
+  for (let i = 0; i < n; i++) {
+    weightedSum += arr[arr.length - n + i] * (i + 1);
+    weightSum += (i + 1);
+  }
+
+  return (weightedSum / weightSum).toFixed(1);
+}
+
 function makeMovAve(bigArray, intv) {
   // the intv-1 is correct
   return bigArray.slice(0, intv - 1).concat(calcMovAve(bigArray, intv));
@@ -222,7 +282,7 @@ function calcAve(aveArray) {
 function calcMovAve(bigArray, intv) {
   const ma = [];
   for (let i = 0; i < bigArray.length - intv + 1; i++) {
-    ma[i] = calcWAve(bigArray.slice(i, i + intv));
+    ma[i] = calcWAve(bigArray.slice(i, i + intv)).toFixed(1);
   }
   return ma;
 }
@@ -484,6 +544,8 @@ function xunbao(xunbaocode) {
 function chkKey() {
        var testkey = getChar(event);
        if(testkey == 't'){window.scrollTo(0,0);}
+       if(testkey == 'q'){window.location = '#FreqTable';}
+
        else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
        else if(testkey == 's'){updateHTML();}
        else{chkOtherKeys(testkey)} 
@@ -539,13 +601,13 @@ async function updateInfo() {
   $("#dateAndTime").html("<y>"+showDate() +"</y> "+ showTime() + updnStr)
 
   // Call the function to generate the freqTable
-  htmlTable = generateTable(freqTable, 'upCounts');
-  // Display the HTML table on the page
-  $('#FreqTable').html(htmlTable);
+  generateTable(freqTable, 'difference')
   newEle = upcount-dncount
   upDnDiffArr.push(newEle);
-
-  makeMovAve(upDnDiffMaArr, 5)
+  zeroDiff.push(0);
+  upDnDiffMaArr10.push( singleWMA(upDnDiffArr, 10) );
+  upDnDiffMaArr20.push( singleWMA(upDnDiffArr, 20) );
+  upDnDiffMaArr30.push( singleWMA(upDnDiffArr, 30) );
   updateChart();
 }
 
@@ -558,6 +620,7 @@ async function updateInfo() {
    ChartRecord.data.labels.push(timemark);
    ChartRecord.update();
   }
+
 
 // Start the main process
 main();
