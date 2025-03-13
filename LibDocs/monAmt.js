@@ -225,7 +225,7 @@ function generateTable(freqTable, sortBy) {
     });
 
     table += '</table>';
-    sortButton = `<span class="redbut" onclick='generateTable(freqTable, "upCounts")'>up</span><span class="greenbut" onclick='generateTable(freqTable, "downCounts")'>dn</span><span class="goldbut" onclick='generateTable(freqTable, "difference")'>diff</span>`
+    sortButton = `<span class="redbut" onclick='generateTable(freqTable, "upCounts")'>up</span><span class="greenbut" onclick='generateTable(freqTable, "downCounts")'>dn</span><span class="goldbut" onclick='generateTable(freqTable, "difference")'>diff</span><span class="bluebut" onclick='generateTable(freqTable, "timestamps")'>FirstTime</span>`
     sortButton = sortButton + table
     $('#FreqTable').html(sortButton);  // 'upCounts' can sort by downCounts
 

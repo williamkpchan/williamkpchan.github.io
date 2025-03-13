@@ -15,6 +15,8 @@ function chkKey() {
   else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
   else if(testkey == 'E'){ setElapseTIme();}
   else if(testkey == "f"){ foreward();}
+  else if(testkey == 'F'){window.location = '#FreqTable';}
+
   else if(testkey == 'A'){ autoShowImg(imgnotvisitedList.length);}
   else if(testkey == 'a'){ toggleAutoShowImg();}
   else if(testkey == "j"){ jumpToAsk();}
