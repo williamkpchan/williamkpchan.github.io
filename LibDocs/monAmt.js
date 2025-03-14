@@ -60,7 +60,7 @@ let prevfreqTable = {};
      {
         label: 'WMA20',
         data: upDnDiffMaArr20,
-        borderColor: 'pink', // Blue-green color
+        borderColor: 'orange', // Blue-green color
         borderWidth: 1,
         fill: false,
         pointStyle: 'dash', // Set the point shape
@@ -68,7 +68,7 @@ let prevfreqTable = {};
      {
         label: 'WMA40',
         data: upDnDiffMaArr30,
-        borderColor: 'orange', // Blue-green color
+        borderColor: 'red', // Blue-green color
         borderWidth: 1,
         fill: false,
         pointStyle: 'dash', // Set the point shape
@@ -129,7 +129,7 @@ codetable.forEach(code => {
 // processQueue();
 
 
-// Function to collect data for a single stock code
+// Function to collect day kline data for a single stock code
 async function collectdata(stknum) {
   const stkcode = "hk" + stknum;
   const url = "https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=" + stkcode + ",day,,,10,qfq";
@@ -370,7 +370,7 @@ async function fetchDataChunks(url) {
 
           // check grades
           if(amtdiff>=1 && pricediff<0){
-            warnMsg = codeStr +" "+ stkname + " -"+amtdiff+" "+timestamp +", "
+            warnMsg = codeStr +" "+ stkname + " <r>-"+amtdiff+"</r> "+timestamp +", "
             $("#Downs").append( warnMsg);
             $("#DownsHist").append( warnMsg);
             DownsCount=DownsCount+1
@@ -378,49 +378,49 @@ async function fetchDataChunks(url) {
           }
 
           if(amtdiff>28 && pricediff>0){
-            warnMsg = codeStr +" "+ stkname + " "+amtdiff+" "+timestamp +", "
+            warnMsg = codeStr +" "+ stkname + " <lg>+"+amtdiff+"</lg> "+timestamp +", "
             $("#grade30").append( warnMsg);
             $("#grade30Hist").append( warnMsg);
             grade30Count=grade30Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>21 && pricediff>0){
-            warnMsg = codeStr +" "+ stkname + " "+amtdiff+" "+timestamp +", "
+            warnMsg = codeStr +" "+ stkname + " <lg>+"+amtdiff+"</lg> "+timestamp +", "
             $("#grade25").append( warnMsg);
             $("#grade25Hist").append( warnMsg);
             grade25Count=grade25Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>15 && pricediff>0){
-            warnMsg = codeStr +" "+ stkname + " "+amtdiff+" "+timestamp +", "
+            warnMsg = codeStr +" "+ stkname + " <lg>+"+amtdiff+"</lg> "+timestamp +", "
             $("#grade20").append( warnMsg);
             $("#grade20Hist").append( warnMsg);
             grade20Count=grade20Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>10 && pricediff>0){
-            warnMsg = codeStr +" "+ stkname + " "+amtdiff+" "+timestamp +", "
+            warnMsg = codeStr +" "+ stkname + " <lg>+"+amtdiff+"</lg> "+timestamp +", "
             $("#grade15").append( warnMsg);
             $("#grade15Hist").append( warnMsg);
             grade15Count=grade15Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>6 && pricediff>0){
-            warnMsg = codeStr +" "+ stkname + " "+amtdiff+" "+timestamp +", "
+            warnMsg = codeStr +" "+ stkname + " <lg>+"+amtdiff+"</lg> "+timestamp +", "
             $("#grade10").append( warnMsg);
             $("#grade10Hist").append( warnMsg);
             grade10Count=grade10Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>3 && pricediff>0){
-            warnMsg = codeStr +" "+ stkname + " "+amtdiff+" "+timestamp +", "
+            warnMsg = codeStr +" "+ stkname + " <lg>+"+amtdiff+"</lg> "+timestamp +", "
             $("#grade05").append( warnMsg);
             $("#grade05Hist").append( warnMsg);
             grade05Count=grade05Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>=1 && pricediff>0){
-            warnMsg = codeStr +" "+ stkname + " "+amtdiff+" "+timestamp +", "
+            warnMsg = codeStr +" "+ stkname + " <lg>+"+amtdiff+"</lg> "+timestamp +", "
             $("#grade01").append( warnMsg);
             $("#grade01Hist").append( warnMsg);
             grade01Count=grade01Count+1
