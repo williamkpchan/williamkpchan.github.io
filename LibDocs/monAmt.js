@@ -179,7 +179,7 @@ async function collectdata(stknum) {
 function addToFreqTable(obj, stknumber, stkname, counts, direction) {
  const key = stknumber;
  timestamp = showTime().split(':')
- timestamp = timestamp[0]+timestamp[1]
+ timestamp = timestamp[0]+timestamp[1]+" "+direction
 
  if (!obj[key]) {
   // If the key is not present, add a new object with the first timestamp
@@ -319,6 +319,7 @@ async function fetchDataChunks(url) {
           grade10Count=0
           grade05Count=0
           grade01Count=0
+          DownsCount=0
 
           $("#grade30").text("")
           $("#grade25").text("")
@@ -327,6 +328,7 @@ async function fetchDataChunks(url) {
           $("#grade10").text("")
           $("#grade05").text("")
           $("#grade01").text("")
+          $("#Downs").text("")
 
     rows.forEach(row => {
       const columns = row.split("~");
@@ -362,69 +364,76 @@ async function fetchDataChunks(url) {
             pricediff = 0
           }
 
+           timestamp = showTime().split(':')
+           timestamp = timestamp[0]+timestamp[1]
+
 
           // check grades
           if(amtdiff>=1 && pricediff<0){
-            warnMsg = codeStr + stkname+", "
+            warnMsg = codeStr +" "+ stkname + " -"+amtdiff+" "+timestamp +", "
+            $("#Downs").append( warnMsg);
+            $("#DownsHist").append( warnMsg);
+            DownsCount=DownsCount+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'down');
           }
+
           if(amtdiff>28 && pricediff>0){
-            warnMsg = codeStr + stkname+", "
+            warnMsg = codeStr +" "+ stkname + " "+amtdiff+" "+timestamp +", "
             $("#grade30").append( warnMsg);
             $("#grade30Hist").append( warnMsg);
             grade30Count=grade30Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>21 && pricediff>0){
-            warnMsg = codeStr + stkname+", "
+            warnMsg = codeStr +" "+ stkname + " "+amtdiff+" "+timestamp +", "
             $("#grade25").append( warnMsg);
             $("#grade25Hist").append( warnMsg);
             grade25Count=grade25Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>15 && pricediff>0){
-            warnMsg = codeStr + stkname+", "
+            warnMsg = codeStr +" "+ stkname + " "+amtdiff+" "+timestamp +", "
             $("#grade20").append( warnMsg);
             $("#grade20Hist").append( warnMsg);
             grade20Count=grade20Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>10 && pricediff>0){
-            warnMsg = codeStr + stkname+", "
+            warnMsg = codeStr +" "+ stkname + " "+amtdiff+" "+timestamp +", "
             $("#grade15").append( warnMsg);
             $("#grade15Hist").append( warnMsg);
             grade15Count=grade15Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>6 && pricediff>0){
-            warnMsg = codeStr + stkname+", "
+            warnMsg = codeStr +" "+ stkname + " "+amtdiff+" "+timestamp +", "
             $("#grade10").append( warnMsg);
             $("#grade10Hist").append( warnMsg);
             grade10Count=grade10Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>3 && pricediff>0){
-            warnMsg = codeStr + stkname+", "
+            warnMsg = codeStr +" "+ stkname + " "+amtdiff+" "+timestamp +", "
             $("#grade05").append( warnMsg);
             $("#grade05Hist").append( warnMsg);
             grade05Count=grade05Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>=1 && pricediff>0){
-            warnMsg = codeStr + stkname+", "
+            warnMsg = codeStr +" "+ stkname + " "+amtdiff+" "+timestamp +", "
             $("#grade01").append( warnMsg);
             $("#grade01Hist").append( warnMsg);
             grade01Count=grade01Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
           }
 
-          updateUniqueItems("#grade30Hist");
-          updateUniqueItems("#grade25Hist");
-          updateUniqueItems("#grade20Hist");
-          updateUniqueItems("#grade15Hist");
-          updateUniqueItems("#grade10Hist");
-          updateUniqueItems("#grade05Hist");
-          updateUniqueItems("#grade01Hist");
+          //updateUniqueItems("#grade30Hist");
+          //updateUniqueItems("#grade25Hist");
+          //updateUniqueItems("#grade20Hist");
+          //updateUniqueItems("#grade15Hist");
+          //updateUniqueItems("#grade10Hist");
+          //updateUniqueItems("#grade05Hist");
+          //updateUniqueItems("#grade01Hist");
 
           // Store the result in allResults
           allResults[stknum] = {
