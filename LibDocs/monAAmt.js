@@ -1,5 +1,4 @@
-
-BaseRef = {};
+// mon HK stk big amt
 const BaseObj = {};
 const allResults = {};
 prevallResults = {};
@@ -10,25 +9,43 @@ dncount = 0
 
 // Initialize variables for data recording
 let upDnDiffArr = [];
+let zeroDiff = [];
+let upDnDiffMaArr10 = [];
+let upDnDiffMaArr20 = [];
+let upDnDiffMaArr30 = [];
 
 // Initialize variables for data recording
 let upCounter = [];
 let downCounter = [];
 
 let freqTable = {};
+let prevfreqTable = {};
 
   // prepare basic materials
+  // prepare codetable
+  function convertCodes(codes) {
+    return codes.map(code => {
+        if (code.startsWith('6')) {
+            return 'sh' + code;
+        } else {
+            return 'sz' + code;
+        }
+    });
+  }
+  codetable = convertCodes(codetable)
+  reqCodetable = codetable.map(item => "s_" + item);
+
   const baseurl = "https://sqt.gtimg.cn/?q=";
   const chunkSize = 60;
   const chunks = [];
   const urlReqStr = [];
 
-  for (let i = 0; i < codetable.length; i += chunkSize) {
-    chunks.push(codetable.slice(i, i + chunkSize));
+  for (let i = 0; i < reqCodetable.length; i += chunkSize) {
+    chunks.push(reqCodetable.slice(i, i + chunkSize));
   }
 
   for (let i = 0; i < chunks.length; i++) {
-    urlReqStr.push(baseurl + chunks[i].map(element => "r_hk" + element).join(","));
+    urlReqStr.push(baseurl + chunks[i].join(","));
   }
 
   // Get the canvas element for the chart
@@ -45,6 +62,38 @@ let freqTable = {};
         borderWidth: 1,
         fill: false,
         pointStyle: 'dash', // Set the point shape
+     },
+     {
+        label: 'WMA10',
+        data: upDnDiffMaArr10,
+        borderColor: 'yellow', // Blue-green color
+        borderWidth: 1,
+        fill: false,
+        pointStyle: 'dash', // Set the point shape
+     },
+     {
+        label: 'WMA20',
+        data: upDnDiffMaArr20,
+        borderColor: 'orange', // Blue-green color
+        borderWidth: 1,
+        fill: false,
+        pointStyle: 'dash', // Set the point shape
+     },
+     {
+        label: 'WMA40',
+        data: upDnDiffMaArr30,
+        borderColor: 'red', // Blue-green color
+        borderWidth: 1,
+        fill: false,
+        pointStyle: 'dash', // Set the point shape
+     },
+     {
+        label: 'zero',
+        data: zeroDiff,
+        borderColor: 'gray', // Blue-green color
+        borderWidth: 1,
+        fill: false,
+        pointStyle: 'line', // Set the point shape
      },
     ]
    },
@@ -94,10 +143,10 @@ codetable.forEach(code => {
 // processQueue();
 
 
-// Function to collect data for a single stock code
+// Function to collect day kline data for a single stock code
 async function collectdata(stknum) {
-  const stkcode = "hk" + stknum;
-  const url = "https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=" + stkcode + ",day,,,10,qfq";
+  const stkcode = stknum;
+  const url = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=" + stkcode + ",day,,,10,qfq";
 
   try {
     const responseText = await $.get(url);
@@ -114,7 +163,7 @@ async function collectdata(stknum) {
 
     // Get the array
     dateArray = stockData.map(row => row[0].slice(-2));
-    amtArray = stockData.map(row => Number(row[8]));
+    amtArray = stockData.map(row => Number(row[5]));
     const highArray = stockData.map(row => Number(row[3]));
     const lowArray = stockData.map(row => Number(row[4]));
 
@@ -144,11 +193,11 @@ async function collectdata(stknum) {
 function addToFreqTable(obj, stknumber, stkname, counts, direction) {
  const key = stknumber;
  timestamp = showTime().split(':')
- timestamp = timestamp[0]+timestamp[1]
+ timestamp = timestamp[0]+timestamp[1]+" "+direction
 
  if (!obj[key]) {
   // If the key is not present, add a new object with the first timestamp
-  obj[key] = { stkname, upCounts: 0, downCounts: 0, timestamps: [timestamp] };
+  obj[key] = { stkname, upCounts: 0, downCounts: 0, difference: 0,  timestamps: [timestamp] };
  }
 
  if (direction === 'up') {
@@ -168,13 +217,14 @@ function generateTable(freqTable, sortBy) {
         stkname: freqTable[key].stkname, 
         upCounts: freqTable[key].upCounts, 
         downCounts: freqTable[key].downCounts, 
+        difference: freqTable[key].upCounts - freqTable[key].downCounts,
         timestamps: freqTable[key].timestamps 
     }));
 
     // Sort the tableData array based on the sortBy key (upCounts or downCounts)
     tableData.sort((a, b) => b[sortBy] - a[sortBy]);
 
-    let table = '<table><tr><th>Stock Number</th><th>Stock Name</th><th>upCounts</th><th>downCounts</th><th>Firsttime</th></tr>';
+    let table = '<table><tr><th>Stock Number</th><th>Stock Name</th><th>upCounts</th><th>downCounts</th><th>difference</th><th>Firsttime</th></tr>';
 
     // Loop through each object in the sorted tableData array
     tableData.forEach(data => {
@@ -183,12 +233,20 @@ function generateTable(freqTable, sortBy) {
         table += `<td>${data.stkname}</td>`;
         table += `<td>${data.upCounts}</td>`;
         table += `<td>${data.downCounts}</td>`;
+        table += `<td>${data.difference}</td>`;
         table += `<td>${data.timestamps}</td>`;
         table += '</tr>';
     });
 
     table += '</table>';
-    return table;
+    sortButton = `<span class="redbut" onclick='generateTable(freqTable, "upCounts")'>up</span><span class="greenbut" onclick='generateTable(freqTable, "downCounts")'>dn</span><span class="goldbut" onclick='generateTable(freqTable, "difference")'>diff</span><span class="bluebut" onclick='generateTable(freqTable, "timestamps")'>FirstTime</span>`
+    sortButton = sortButton + table
+    $('#FreqTable').html(sortButton);  // 'upCounts' can sort by downCounts
+
+    if (!firstTime) {
+      prevfreqTable = { ...freqTable };
+    }
+
 }
 
 // Function to calculate the average of the last 10 elements
@@ -210,6 +268,56 @@ function calcCurAmtPosition(amtArray) {
   return curAmtPosition;
 }
 
+function singleWMA(arr, n) {
+  if (n > arr.length || n < 1) {
+    return 0;
+  }
+  let weightedSum = 0;
+  let weightSum = 0;
+
+  for (let i = 0; i < n; i++) {
+    weightedSum += arr[arr.length - n + i] * (i + 1);
+    weightSum += (i + 1);
+  }
+
+  return (weightedSum / weightSum).toFixed(1);
+}
+
+function makeMovAve(bigArray, intv) {
+  // the intv-1 is correct
+  return bigArray.slice(0, intv - 1).concat(calcMovAve(bigArray, intv));
+}
+
+function calcAve(aveArray) {
+  const add = (a, b) => a + b;
+  return aveArray.reduce(add) / aveArray.length;
+}
+
+function calcMovAve(bigArray, intv) {
+  const ma = [];
+  for (let i = 0; i < bigArray.length - intv + 1; i++) {
+    ma[i] = calcWAve(bigArray.slice(i, i + intv)).toFixed(1);
+  }
+  return ma;
+}
+
+function calcWAve(aveArray) {
+  let sum = 0;
+  for (let i = 1; i <= aveArray.length; i++) {
+    sum += aveArray[i - 1] * i;
+  }
+  return sum / ((1 + aveArray.length) * aveArray.length / 2);
+}
+
+function updateMovAve(bigArray, intv, newElement) {
+  const lastIndex = bigArray.length - 1;
+  const lastIntv = bigArray.slice(lastIndex - intv + 1, lastIndex + 1);
+  const lastMovAve = calcWAve(lastIntv);
+  const updatedMovAve = (lastMovAve * intv - lastIntv[0] + newElement) / intv;
+  return updatedMovAve;
+}
+
+
 // Function to fetch data chunks
 async function fetchDataChunks(url) {
   // backup allResults
@@ -225,6 +333,7 @@ async function fetchDataChunks(url) {
           grade10Count=0
           grade05Count=0
           grade01Count=0
+          DownsCount=0
 
           $("#grade30").text("")
           $("#grade25").text("")
@@ -233,6 +342,7 @@ async function fetchDataChunks(url) {
           $("#grade10").text("")
           $("#grade05").text("")
           $("#grade01").text("")
+          $("#Downs").text("")
 
     rows.forEach(row => {
       const columns = row.split("~");
@@ -268,69 +378,76 @@ async function fetchDataChunks(url) {
             pricediff = 0
           }
 
+           timestamp = showTime().split(':')
+           timestamp = timestamp[0]+timestamp[1]
+
 
           // check grades
           if(amtdiff>=1 && pricediff<0){
-            warnMsg = codeStr + stkname+", "
+            warnMsg = codeStr +" "+ stkname + " <r>-"+amtdiff+"</r> "+timestamp +", "
+            $("#Downs").append( warnMsg);
+            $("#DownsHist").append( warnMsg);
+            DownsCount=DownsCount+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'down');
           }
+
           if(amtdiff>28 && pricediff>0){
-            warnMsg = codeStr + stkname+", "
+            warnMsg = codeStr +" "+ stkname + " <lg>+"+amtdiff+"</lg> "+timestamp +", "
             $("#grade30").append( warnMsg);
             $("#grade30Hist").append( warnMsg);
             grade30Count=grade30Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>21 && pricediff>0){
-            warnMsg = codeStr + stkname+", "
+            warnMsg = codeStr +" "+ stkname + " <lg>+"+amtdiff+"</lg> "+timestamp +", "
             $("#grade25").append( warnMsg);
             $("#grade25Hist").append( warnMsg);
             grade25Count=grade25Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>15 && pricediff>0){
-            warnMsg = codeStr + stkname+", "
+            warnMsg = codeStr +" "+ stkname + " <lg>+"+amtdiff+"</lg> "+timestamp +", "
             $("#grade20").append( warnMsg);
             $("#grade20Hist").append( warnMsg);
             grade20Count=grade20Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>10 && pricediff>0){
-            warnMsg = codeStr + stkname+", "
+            warnMsg = codeStr +" "+ stkname + " <lg>+"+amtdiff+"</lg> "+timestamp +", "
             $("#grade15").append( warnMsg);
             $("#grade15Hist").append( warnMsg);
             grade15Count=grade15Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>6 && pricediff>0){
-            warnMsg = codeStr + stkname+", "
+            warnMsg = codeStr +" "+ stkname + " <lg>+"+amtdiff+"</lg> "+timestamp +", "
             $("#grade10").append( warnMsg);
             $("#grade10Hist").append( warnMsg);
             grade10Count=grade10Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>3 && pricediff>0){
-            warnMsg = codeStr + stkname+", "
+            warnMsg = codeStr +" "+ stkname + " <lg>+"+amtdiff+"</lg> "+timestamp +", "
             $("#grade05").append( warnMsg);
             $("#grade05Hist").append( warnMsg);
             grade05Count=grade05Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
 
           }else if(amtdiff>=1 && pricediff>0){
-            warnMsg = codeStr + stkname+", "
+            warnMsg = codeStr +" "+ stkname + " <lg>+"+amtdiff+"</lg> "+timestamp +", "
             $("#grade01").append( warnMsg);
             $("#grade01Hist").append( warnMsg);
             grade01Count=grade01Count+1
             addToFreqTable(freqTable, codeStr, stkname, 1, 'up');
           }
 
-          updateUniqueItems("#grade30Hist");
-          updateUniqueItems("#grade25Hist");
-          updateUniqueItems("#grade20Hist");
-          updateUniqueItems("#grade15Hist");
-          updateUniqueItems("#grade10Hist");
-          updateUniqueItems("#grade05Hist");
-          updateUniqueItems("#grade01Hist");
+          //updateUniqueItems("#grade30Hist");
+          //updateUniqueItems("#grade25Hist");
+          //updateUniqueItems("#grade20Hist");
+          //updateUniqueItems("#grade15Hist");
+          //updateUniqueItems("#grade10Hist");
+          //updateUniqueItems("#grade05Hist");
+          //updateUniqueItems("#grade01Hist");
 
           // Store the result in allResults
           allResults[stknum] = {
@@ -357,7 +474,6 @@ async function fetchDataChunks(url) {
           $("#grade05Count").html("Total:"+"<r>"+grade05Count+"</r>");
           $("#grade01Count").html("Total:"+"<r>"+grade01Count+"</r>");
 
-
   } catch (error) {
     console.error("Error fetching data:", error);
   }
@@ -368,6 +484,14 @@ function updateUniqueItems(elemId) {  // set unique items in history record
     let elemArr = elem.html().split(', ');
     let uniqueItems = [...new Set(elemArr)];
     elem.html(uniqueItems.join(", "));
+}
+
+function countUniqueItems(elemId) {  // set unique items in history record
+    let elem = $(elemId);
+    let elemArr = elem.html().split(', ');
+    let uniqueItems = [...new Set(elemArr)];
+    uniqueItemsLen = uniqueItems.length -1
+    elem.prepend("<lg>Total: " + uniqueItemsLen + "</lg>, ")
 }
 
 // Function to update the HTML page with sorted data
@@ -443,6 +567,8 @@ function xunbao(xunbaocode) {
 function chkKey() {
        var testkey = getChar(event);
        if(testkey == 't'){window.scrollTo(0,0);}
+       if(testkey == 'q'){window.location = '#FreqTable';}
+
        else if(testkey == 'e'){window.scrollTo(0,document.body.scrollHeight);}
        else if(testkey == 's'){updateHTML();}
        else{chkOtherKeys(testkey)} 
@@ -498,10 +624,13 @@ async function updateInfo() {
   $("#dateAndTime").html("<y>"+showDate() +"</y> "+ showTime() + updnStr)
 
   // Call the function to generate the freqTable
-  htmlTable = generateTable(freqTable, 'upCounts');
-  // Display the HTML table on the page
-  $('#FreqTable').html(htmlTable);
-  upDnDiffArr.push(upcount-dncount);
+  generateTable(freqTable, 'difference')
+  newEle = upcount-dncount
+  upDnDiffArr.push(newEle);
+  zeroDiff.push(0);
+  upDnDiffMaArr10.push( singleWMA(upDnDiffArr, 10) );
+  upDnDiffMaArr20.push( singleWMA(upDnDiffArr, 20) );
+  upDnDiffMaArr30.push( singleWMA(upDnDiffArr, 30) );
   updateChart();
 }
 
@@ -515,261 +644,7 @@ async function updateInfo() {
    ChartRecord.update();
   }
 
+
 // Start the main process
 main();
 setInterval(updateChanges, 60000);
-
-
-
-// Function to collect data for a single stock code
-async function collectdata(stkcode) {
- // 10 days kline A 股
- const url = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=" + stkcode + ",day,,,10,qfq";
-
- try {
-  const responseText = await $.get(url);
-  const jsonString = responseText.split("=")[1];
-  const jsonData = JSON.parse(jsonString);
-  const stockName = jsonData.data[stkcode].qt[stkcode][1];
-  $('h1').text(codeNum + " "+ stockName);
-
-  // Check if qfqday or day exists
-  const stockData = jsonData.data[stkcode].qfqday || jsonData.data[stkcode].day;
-
-  if (!stockData || !Array.isArray(stockData)) {
-   throw new Error(`Invalid/missing stock data for ${stkcode} ${url}`);
-  }
-
-  // Get the array
-  const dateArray = stockData.map(row => row[0].replace(/-/g, ''));
-  const closeArray = stockData.map(row => Number(row[2])); // [1] is open
-  const highArray = stockData.map(row => Number(row[3]));
-  const lowArray = stockData.map(row => Number(row[4]));
-  volArray = stockData.map(row => Number(row[5])); // volumn
-
-  volMA5 = calculateMA(volArray, 5) // days
-  volMA2 = calculateMA(volArray, 2) // days
-  volArray = calculateMA(volArray, 3) // days
-
-  // Calculate volIdx for each corresponding pair of elements in volMA5 and volMA2
-  let volIdxArray = [];
-  for (let i = 0; i < volMA5.length; i++) {
-    if (volMA2[i] !== null && volMA5[i] !== null && volMA5[i] !== 0) {
-        let volIdx = Math.round(volMA2[i] / volMA5[i] * 100);
-        volIdxArray.push(volIdx);
-    } else {
-        volIdxArray.push(null);
-    }
-  }
-
-  const maxH = Math.max(...highArray);
-  const minL = Math.min(...lowArray);
-
-  // Store the result in BaseRef
-  BaseRef = {
-    dateArray: dateArray,
-    closeArray: closeArray,
-    volArray: volArray,
-    highArray: highArray,
-    lowArray: lowArray,
-    volIdx: volIdxArray,
-  };
-  console.log("dateArray",dateArray, "closeArray",closeArray, "volArray",volArray)
- } catch (error) {
-  console.error(`Error ${stknum}:`, error);
- }
-}
-
-async function executeAsyncFunction() {
-    await collectdata(codeNum)
-        const objectName = "fdays_data_" + codeNum; // Construct the object name
-        // Access the object dynamically using bracket notation
-        const resultantObject = window[objectName]; // Use `window` if it's in the global scope
-        const code = Object.keys(resultantObject.data);
-
-            resultantObject.data[code].data.forEach((dateObj) => {
-                const date = dateObj.date;
-                BaseRefdateIndex = BaseRef.dateArray.indexOf(date)-1 // previous day
-                basePrice = BaseRef.closeArray[BaseRefdateIndex]
-                baseVol = BaseRef.volArray[BaseRefdateIndex]
-
-                const tableData = [];
-
-                dateObj.data.forEach((row, index) => {
-                    const parts = row.split(' ');
-                    const time = parts[0];
-                    const price = parseFloat(parts[1]);
-                    const vol = parseInt(parts[2]);
-                    const amt = parseFloat(parts[3]/100); // make in wan
-
-                    let pricedifference = 0;
-                    let voldifference=0;
-
-                    if (index > 0) {
-                        const prevRow = tableData[index - 1];
-                        const prevPrice = prevRow.price;
-                        const prevVol = prevRow.vol;
-                        pricedifference = 100*(price - prevPrice) / basePrice;
-                        voldifference = 100*(vol - prevVol) / baseVol;
-                    }
-
-                    tableData.push({
-                        time,
-                        price,
-                        pricedifference,
-                        vol,
-                        voldifference,
-                        amt
-                    });
-                });
-
-
-                // createble of bigamt
-                // Create an h2 element with the date
-                const bigh2 = document.createElement('h2');
-                bigh2.textContent = `${date} BigAmt`;
-                document.body.appendChild(bigh2);
-
-                const bigtable = document.createElement('table');
-                const caption = document.createElement('caption');
-                caption.textContent = `Big Amt ${date}`;
-                bigtable.appendChild(caption);
-
-                const bigthead = document.createElement('thead');
-                const bigheaderRow = document.createElement('tr');
-                const bigheaders = ['Time', 'Price', 'Price Difference (%)', 'Volume', 'Volume Difference (%)', 'Amount(w)'];
-                bigheaders.forEach((headerText) => {
-                    const bigth = document.createElement('th');
-                    bigth.textContent = headerText;
-                    bigheaderRow.appendChild(bigth);
-                });
-                bigthead.appendChild(bigheaderRow);
-                bigtable.appendChild(bigthead);
-
-                const bigtbody = document.createElement('tbody');
-                tableData.forEach((rowData) => {
-                  voldiffval = rowData.voldifference.toFixed(1)
-                  if(voldiffval>=1){
-                    const row = document.createElement('tr');
-
-                    pricediffval = rowData.pricedifference.toFixed(1)
-                    voldiffval = rowData.voldifference.toFixed(1)
-                    if(pricediffval <0){
-                       pricediffval = "<r>"+pricediffval+"</r>"
-                       voldiffval = "<r>"+voldiffval+"</r>"
-                    }else if(pricediffval >=0){
-                       voldiffval = "<lg>"+voldiffval+"</lg>"
-                    }
-                    //amt = parseInt(rowData.amt/10)
-                    amt = parseInt(rowData.amt/100).toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",");
-                    vol = parseInt(rowData.vol).toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",");
-
-                    const cells = [
-                        rowData.time,
-                        rowData.price,
-                        pricediffval,
-                        vol,
-                        voldiffval,
-                        amt
-                    ];
-                    cells.forEach((cellData) => {
-                        const bigtd = document.createElement('td');
-                        bigtd.innerHTML = cellData;
-                        row.appendChild(bigtd);
-                    });
-                    bigtbody.appendChild(row);
-                  }
-                });
-                bigtable.appendChild(bigtbody);
-                document.body.appendChild(bigtable);
-
-                // Create an h2 element with the date
-                const h2 = document.createElement('h2');
-                h2.textContent = `${date}`;
-                document.body.appendChild(h2);
-
-                const table = document.createElement('table');
-                //const caption = document.createElement('caption');
-                //caption.textContent = `Data for ${date}`;
-                //table.appendChild(caption);
-
-                const thead = document.createElement('thead');
-                const headerRow = document.createElement('tr');
-                const headers = ['Time', 'Price', 'Price Difference (%)', 'Volume', 'Volume Difference (%)', 'Amount(w)'];
-                headers.forEach((headerText) => {
-                    const th = document.createElement('th');
-                    th.textContent = headerText;
-                    headerRow.appendChild(th);
-                });
-                thead.appendChild(headerRow);
-                table.appendChild(thead);
-
-                const tbody = document.createElement('tbody');
-                tableData.forEach((rowData) => {
-                    const row = document.createElement('tr');
-
-                    pricediffval = rowData.pricedifference.toFixed(1)
-                    if(pricediffval <0){
-                       pricediffval = "<r>"+pricediffval+"</r>"
-                    }
-
-                    voldiffval = rowData.voldifference.toFixed(1)
-                    if(voldiffval >=5){
-                       voldiffval = "<o>"+voldiffval+"</o>"
-                    }else if(voldiffval >=3){
-                       voldiffval = "<y>"+voldiffval+"</y>"
-                    }else if(voldiffval >=1){
-                       voldiffval = "<dr>"+voldiffval+"</dr>"
-                    }
-
-                    amt = parseInt(rowData.amt/100).toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",");
-                    vol = parseInt(rowData.vol).toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",");
-
-                    const cells = [
-                        rowData.time,
-                        rowData.price,
-                        pricediffval,
-                        vol,
-                        voldiffval,
-                        amt
-                    ];
-                    cells.forEach((cellData) => {
-                        const td = document.createElement('td');
-                        td.innerHTML = cellData;
-                        row.appendChild(td);
-                    });
-                    tbody.appendChild(row);
-                });
-                table.appendChild(tbody);
-                document.body.appendChild(table);
-
-            });
-  // add toc
-  $(markerName).each(function(i) {
-      // prepare for the toc
-      var topic = $(this), topicNumber = i; topicLength = topicNumber +1;
-
-      // make a content list
-      var markerContent = $(this).text();
-      markerList.push(markerContent);
-  
-      // toc coding here
-      if (typeof(showTopicNumber) !== 'undefined'){
-        if (showTopicNumber == true){
-          toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self" onclick="jumpto(' + topicNumber + ')">'+topic.html()+'</a>'+topicEnd);
-        }else{
-          toc.append('<a href="#topic-'+topicNumber+'" target="_self" onclick="jumpto(' + topicNumber + ')">'+topic.html()+'</a>'+topicEnd);
-        }
-      }else{
-        toc.append('<a href="#topic-'+topicNumber+'" target="_self" onclick="jumpto(' + topicNumber + ')">'+topic.html()+'</a><br>');
-      }
-      // toc.append(topicNumber +' <a href="#topic-'+topicNumber+'" target="_self">'+topic.html()+'</a><br>');
-
-      // modify the target id
-      topic.attr('id', 'topic-' + topicNumber);
-      topic.after('&emsp;<a href=#top target="_self"><b>&#8679;</b></a><br>')
-  });
-
-
-}
-executeAsyncFunction();
