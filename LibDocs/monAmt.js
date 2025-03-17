@@ -51,7 +51,7 @@ let prevfreqTable = {};
         pointStyle: 'dash', // Set the point shape
      },
      {
-        label: 'WMA10',
+        label: 'EMA10',
         data: upDnDiffMaArr10,
         borderColor: 'yellow', // Blue-green color
         borderWidth: 1,
@@ -59,7 +59,7 @@ let prevfreqTable = {};
         pointStyle: 'dash', // Set the point shape
      },
      {
-        label: 'WMA20',
+        label: 'EMA20',
         data: upDnDiffMaArr20,
         borderColor: 'orange', // Blue-green color
         borderWidth: 1,
@@ -67,7 +67,7 @@ let prevfreqTable = {};
         pointStyle: 'dash', // Set the point shape
      },
      {
-        label: 'WMA40',
+        label: 'EMA40',
         data: upDnDiffMaArr30,
         borderColor: 'red', // Blue-green color
         borderWidth: 1,
@@ -134,6 +134,7 @@ codetable.forEach(code => {
 async function collectdata(stknum) {
   const stkcode = "hk" + stknum;
   const url = "https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=" + stkcode + ",day,,,10,qfq";
+  //const url = `https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=${stkcode},day,,,10,qfq`;
 
   try {
     const responseText = await $.get(url);
