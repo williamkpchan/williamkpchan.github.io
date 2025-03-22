@@ -10,7 +10,7 @@
 <script src="https://williamkpchan.github.io/mainscript.js"></script>
 <script src="https://williamkpchan.github.io/LibDocs/stkComments.js"></script>
 <script src="https://williamkpchan.github.io/LibDocs/longHistList.js"></script>
-<!--script src="https://williamkpchanhp.github.io/filterResulitLib.txt"></script-->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <link href="..\maincss.css" rel="stylesheet" type="text/css">
 
@@ -21,6 +21,7 @@ body {
   justify-content: center;
   align-content: center;
 }
+canvas {max-width:45%; display: inline-block;}
 select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
 #stkChart {font-size: 18px; font-weight:lighter;}
 img {display: inline-block; width: 48%; padding: 2px; border-radius: 4px;}
@@ -511,7 +512,7 @@ function showTO(stkcode) {
     codewidth = stkcode.length;
     stkcode = stkcode.slice(codewidth-5, codewidth);
     codewidth = stkcode.length; //update to be used later
-    urladdr = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + stkcode + ',day,,,20,qfq';
+    urladdr = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + stkcode + ',day,,,60,qfq';
   }else{
     codewidth = stkcode.length
     if((codewidth == 6) && !hsReservedCode.includes(stkcode)){
@@ -521,7 +522,7 @@ function showTO(stkcode) {
       stkcode = stkcode.substring(7, 9) + stkcode.substring(0, 7);
     }
     codewidth = stkcode.length; //update to be used later
-    urladdr = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + stkcode + ',day,,,20,qfq';
+    urladdr = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + stkcode + ',day,,,60,qfq';
   }
   var script = document.createElement('script');
   script.onload = function() {
@@ -530,17 +531,28 @@ function showTO(stkcode) {
     newObj = Object.values(theObj);
     newObj = Object.values(newObj[0]);
     newObj = Object.values(newObj[0]);
-// console.log(newObj) 20 objs
+// console.log("newObj: ",newObj) //20 objs
 // HK ["2024-11-01", "311.200", "311.400", "314.800", "308.800", "3863084.00", {}, "0", "120483.40"]
 // open 311.2 close 311.4 high 314.8 low 308.8
 
+closeArr = [];
+highArr = [];
+lowArr = [];
+for (let i = 0; i < newObj.length; i++) {
+    closeArr.push(Number(newObj[i][2]));
+    highArr.push(Number(newObj[i][3]));
+    lowArr.push(Number(newObj[i][4]));
+}
+plotBollingerBands(highArr, 10, 1,"high");
+plotBollingerBands(lowArr, 10, 1,"low");
+plotBollingerBands(closeArr, 10, 1,"close");
 // select column: arrayColumn = (newObj, n) => newObj.map(x => x[n]);
 // open: arrayColumn(newObj, 1), close: arrayColumn(newObj, 2)
 // high: arrayColumn(newObj, 3), low: arrayColumn(newObj, 4)
 
 // A stk ["2024-11-01", "7.40", "7.35", "8.20", "6.90", "5483674"]
 // open 7.4  close 7.35 high 8.2 low 6.9
-    for(i=9;i<newObj.length;i++){
+    for(i=49;i<newObj.length;i++){
       thedate = newObj[i][0];  // date
       if(codewidth == 5){
         theAmtIdx = 8;
@@ -556,11 +568,13 @@ function showTO(stkcode) {
         }
       }
       theamt = theamt.toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",");
+
       $("#turnover").append( theamt,"w ");
     }
     theH = Number(newObj[newObj.length-1][3]);  // High
     theL = Number(newObj[newObj.length-1][4]);  // Low
     theClose = Number(newObj[newObj.length-1][2]);  // Close
+
     thePrevClose = Number(newObj[newObj.length-2][2]);  // PrevClose
     theCDiff = Math.round((theClose - thePrevClose)*10000)/10000;
     theCPct = Math.round((theCDiff / thePrevClose)*1000)/10;
@@ -617,6 +631,7 @@ function showTO(stkcode) {
       '</span> Dif '+ theCDiff+ ', ',theCPct+ ' % ' + 
       '<span class="orange">dfluc '+ dfluc+
       '%<span class="yellow"> dPos '+ dPos);
+
   };
   script.src = urladdr;
   document.getElementsByTagName('head')[0].appendChild(script);
@@ -870,7 +885,122 @@ function setupAll() {
      alert("setup complete!")
 }
 
-//shuffle();
+// <y>加权移动平均 (WMA)</y>
+function weightedMovingAverage(data, period) {
+ const weights = Array.from({length: period}, (_, i) => period - i);
+ const wma = new Array(period - 1).fill(null); // <y>填充 null</y>
+ for (let i = period - 1; i < data.length; i++) {
+  let sum = 0;
+  let weightSum = 0;
+  for (let j = 0; j < period; j++) {
+   sum += data[i - j] * weights[j];
+   weightSum += weights[j];
+  }
+  wma.push(sum / weightSum);
+ }
+ return wma;
+}
+
+// <y>标准差</y>
+function standardDeviation(data, period) {
+ const std = new Array(period - 1).fill(null); // <y>填充 null</y>
+ for (let i = period - 1; i < data.length; i++) {
+  const avg = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period;
+  const variance = data.slice(i - period + 1, i + 1).reduce((a, b) => a + Math.pow(b - avg, 2), 0) / period;
+  std.push(Math.sqrt(variance));
+ }
+ return std;
+}
+
+// <y>计算保力加通道</y>
+function bollingerBands(data, period, multiplier) {
+ const wma = weightedMovingAverage(data, period);
+ const std = standardDeviation(data, period);
+ const upperBand = wma.map((val, i) => val === null ? null : val + multiplier * std[i]);
+ const lowerBand = wma.map((val, i) => val === null ? null : val - multiplier * std[i]);
+//console.log("lowerBand: ",lowerBand)
+ return { wma, upperBand, lowerBand, std };
+}
+
+function plotBollingerBands(data, period, multiplier, chartTitle) {
+ // <y>计算保力加通道数据</y>
+ const bands = bollingerBands(data, period, multiplier);
+
+ // <y>创建标题</y>
+ const title = document.createElement('pk');
+ title.textContent = chartTitle;
+ document.body.appendChild(title);
+
+ // <y>动态创建画布</y>
+ const canvas = document.createElement('canvas');
+   canvas.width = 500;
+   canvas.height = 200;
+ document.body.appendChild(canvas);
+
+ // <y>获取画布上下文</y>
+ const ctx = canvas.getContext('2d');
+
+ // <y>绘制图表</y>
+ new Chart(ctx, {
+  type: 'line',
+  data: {
+   labels: Array.from({length: data.length}, (_, i) => i + 1),
+   datasets: [
+    {
+     label: 'Price',
+     data: data,
+     borderColor: 'blue',
+     fill: false,
+     borderWidth: 1,
+     pointStyle: 'dash',
+    },
+    {
+     label: 'WMA',
+     data: bands.wma,
+     borderColor: 'green',
+     fill: false,
+     borderWidth: 1,
+     pointStyle: 'dash',
+    },
+    {
+     label: 'Upper Band',
+     data: bands.upperBand,
+     borderColor: 'red',
+     fill: false,
+     borderWidth: 1,
+     pointStyle: 'dash',
+    },
+    {
+     label: 'Lower Band',
+     data: bands.lowerBand,
+     borderColor: 'pink',
+     fill: false,
+     borderWidth: 1,
+     pointStyle: 'dash',
+    }
+   ]
+  },
+  options: {
+   responsive: true,
+   scales: {
+    x: {
+     display: true,
+     title: {
+      display: false,
+      text: 'Time'
+     }
+    },
+    y: {
+     display: true,
+     title: {
+      display: false,
+      text: 'Price'
+     }
+    }
+   }
+  }
+ });
+}
 
 showSTKChart();
 
