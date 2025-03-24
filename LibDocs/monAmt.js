@@ -13,6 +13,8 @@ let zeroDiff = [];
 let upDnDiffMaArr10 = [];
 let upDnDiffMaArr20 = [];
 let upDnDiffMaArr30 = [];
+let upperBand = [];
+let lowerBand = [];
 
 // Initialize variables for data recording
 let upCounter = [];
@@ -48,7 +50,7 @@ let prevfreqTable = {};
         borderColor: 'green', // Blue-green color
         borderWidth: 1,
         fill: false,
-        pointStyle: 'dash', // Set the point shape
+        pointStyle: false,
      },
      {
         label: 'EMA10',
@@ -56,7 +58,7 @@ let prevfreqTable = {};
         borderColor: 'yellow', // Blue-green color
         borderWidth: 1,
         fill: false,
-        pointStyle: 'dash', // Set the point shape
+        pointStyle: false,
      },
      {
         label: 'EMA20',
@@ -64,7 +66,7 @@ let prevfreqTable = {};
         borderColor: 'orange', // Blue-green color
         borderWidth: 1,
         fill: false,
-        pointStyle: 'dash', // Set the point shape
+        pointStyle: false,
      },
      {
         label: 'EMA40',
@@ -72,7 +74,23 @@ let prevfreqTable = {};
         borderColor: 'red', // Blue-green color
         borderWidth: 1,
         fill: false,
-        pointStyle: 'dash', // Set the point shape
+        pointStyle: false,
+     },
+     {
+        label: 'stdU',
+        data: upperBand,
+        borderColor: 'purple', // Blue-green color
+        borderWidth: 1,
+        fill: false,
+        pointStyle: false,
+     },
+     {
+        label: 'stdD',
+        data: lowerBand,
+        borderColor: 'purple', // Blue-green color
+        borderWidth: 1,
+        fill: false,
+        pointStyle: false,
      },
      {
         label: 'zero',
@@ -619,7 +637,23 @@ async function updateInfo() {
   upDnDiffMaArr10.push( singleWMA(upDnDiffArr, 10) );
   upDnDiffMaArr20.push( singleWMA(upDnDiffArr, 20) );
   upDnDiffMaArr30.push( singleWMA(upDnDiffArr, 30) );
+
+  std = standardDeviation(upDnDiffMaArr30, 30);
+  upperBand = upDnDiffMaArr30.map((val, i) => val === null ? null : val + std[i]);
+  lowerBand = upDnDiffMaArr30.map((val, i) => val === null ? null : val - std[i]);
+
   updateChart();
+}
+
+// <y>标准差</y>
+function standardDeviation(data, period) {
+ const std = new Array(period - 1).fill(null); // <y>填充 null</y>
+ for (let i = period - 1; i < data.length; i++) {
+  const avg = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period;
+  const variance = data.slice(i - period + 1, i + 1).reduce((a, b) => a + Math.pow(b - avg, 2), 0) / period;
+  std.push(Math.sqrt(variance));
+ }
+ return std;
 }
 
   // Function to update chart
@@ -629,7 +663,7 @@ async function updateInfo() {
    timemark = timemark[0]+timemark[1]
 
    ChartRecord.data.labels.push(timemark);
-   ChartRecord.update();
+    ChartRecord.update();
   }
 
 
