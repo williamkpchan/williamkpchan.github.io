@@ -638,10 +638,10 @@ async function updateInfo() {
   upDnDiffMaArr20.push( singleWMA(upDnDiffArr, 20) );
   upDnDiffMaArr30.push( singleWMA(upDnDiffArr, 30) );
 
-  std = standardDeviation(upDnDiffMaArr30, 30);
-  upperBand = upDnDiffMaArr30.map((val, i) => val === null ? null : val + std[i]);
-  lowerBand = upDnDiffMaArr30.map((val, i) => val === null ? null : val - std[i]);
-
+  std = standardDeviation(upDnDiffMaArr30, 2);
+  upperBand = upDnDiffMaArr10.map((val, i) => val === null ? null : val + std[i]);
+  lowerBand = upDnDiffMaArr10.map((val, i) => val === null ? null : val - std[i]);
+console.log("std: ",std)
   updateChart();
 }
 
