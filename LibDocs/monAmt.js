@@ -16,6 +16,10 @@ let upDnDiffMaArr30 = [];
 let upperBand = [];
 let lowerBand = [];
 
+// Global array to store standard deviations
+const period = 10;
+//const std = new Array(period - 1).fill(null); // Initialize with null
+std = []
 // Initialize variables for data recording
 let upCounter = [];
 let downCounter = [];
@@ -45,6 +49,14 @@ let prevfreqTable = {};
     labels: [],
     datasets: [
      {
+        label: 'stdU',
+        data: upperBand,
+        borderColor: 'purple',
+        borderWidth: 1,
+        fill: false,
+        pointStyle: false,
+     },
+     {
         label: 'upDnDiff',
         data: upDnDiffArr,
         borderColor: 'green', // Blue-green color
@@ -69,7 +81,7 @@ let prevfreqTable = {};
         pointStyle: false,
      },
      {
-        label: 'EMA40',
+        label: 'EMA30',
         data: upDnDiffMaArr30,
         borderColor: 'red', // Blue-green color
         borderWidth: 1,
@@ -77,17 +89,9 @@ let prevfreqTable = {};
         pointStyle: false,
      },
      {
-        label: 'stdU',
-        data: upperBand,
-        borderColor: 'purple', // Blue-green color
-        borderWidth: 1,
-        fill: false,
-        pointStyle: false,
-     },
-     {
         label: 'stdD',
         data: lowerBand,
-        borderColor: 'purple', // Blue-green color
+        borderColor: 'purple',
         borderWidth: 1,
         fill: false,
         pointStyle: false,
@@ -95,7 +99,7 @@ let prevfreqTable = {};
      {
         label: 'zero',
         data: zeroDiff,
-        borderColor: 'gray', // Blue-green color
+        borderColor: 'gray',
         borderWidth: 1,
         fill: false,
         pointStyle: 'line', // Set the point shape
@@ -275,6 +279,7 @@ function calcCurAmtPosition(amtArray) {
 }
 
 function singleWMA(arr, n) {
+  arr = arr.map(Number); // Convert to Number
   if (n > arr.length || n < 1) {
     return 0;
   }
@@ -286,7 +291,7 @@ function singleWMA(arr, n) {
     weightSum += (i + 1);
   }
 
-  return (weightedSum / weightSum).toFixed(1);
+  return Number((weightedSum / weightSum).toFixed(1));
 }
 
 function makeMovAve(bigArray, intv) {
@@ -302,7 +307,7 @@ function calcAve(aveArray) {
 function calcMovAve(bigArray, intv) {
   const ma = [];
   for (let i = 0; i < bigArray.length - intv + 1; i++) {
-    ma[i] = calcWAve(bigArray.slice(i, i + intv)).toFixed(1);
+    ma[i] = Number(calcWAve(bigArray.slice(i, i + intv)).toFixed(1));
   }
   return ma;
 }
@@ -374,7 +379,7 @@ async function fetchDataChunks(url) {
 
           if (!firstTime) {
             amtdiff = amtPercentage - prevallResults[stknum].amt;
-            pricediff = (todaypct - prevallResults[stknum].pct).toFixed(2);
+            pricediff = Number((todaypct - prevallResults[stknum].pct).toFixed(2));
 
             if(pricediff>0){upcount = upcount +1}
             if(pricediff<0){dncount = dncount +1}
@@ -633,28 +638,55 @@ async function updateInfo() {
   generateTable(freqTable, 'difference')
   newEle = upcount-dncount
   upDnDiffArr.push(newEle);
-  zeroDiff.push(0);
-  upDnDiffMaArr10.push( singleWMA(upDnDiffArr, 10) );
-  upDnDiffMaArr20.push( singleWMA(upDnDiffArr, 20) );
-  upDnDiffMaArr30.push( singleWMA(upDnDiffArr, 30) );
 
-  std = standardDeviation(upDnDiffMaArr30, 2);
-  upperBand = upDnDiffMaArr10.map((val, i) => val === null ? null : val + std[i]);
-  lowerBand = upDnDiffMaArr10.map((val, i) => val === null ? null : val - std[i]);
-console.log("std: ",std)
+  zeroDiff.push(0);
+
+  wma10 = Number(singleWMA(upDnDiffArr, 10))
+  wma20 = Number(singleWMA(upDnDiffArr, 20))
+  wma30 = Number(singleWMA(upDnDiffArr, 30))
+  upDnDiffMaArr10.push( wma10 );
+  upDnDiffMaArr20.push( wma20 );
+  upDnDiffMaArr30.push( wma30 );
+
+  updateStandardDeviation(upDnDiffMaArr20, 10);
+  upperBand = upDnDiffMaArr20.map((val, i) => val === null ? null : val + std[i]);
+  lowerBand = upDnDiffMaArr20.map((val, i) => val === null ? null : val - std[i]);
+  console.log("wma10: ",wma10, "\nwma20: ",wma20, "\nwma30:",wma30, "\nstd: ",std, "\nupperBand: ",upperBand,"\nlowerBand: ", lowerBand)
   updateChart();
 }
 
 // <y>标准差</y>
 function standardDeviation(data, period) {
+ data = data.map(Number); // Convert to Number
  const std = new Array(period - 1).fill(null); // <y>填充 null</y>
  for (let i = period - 1; i < data.length; i++) {
   const avg = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period;
   const variance = data.slice(i - period + 1, i + 1).reduce((a, b) => a + Math.pow(b - avg, 2), 0) / period;
-  std.push(Math.sqrt(variance));
+  std.push(Number(Math.sqrt(variance).toFixed(1)));
  }
  return std;
 }
+
+// updateStandardDeviation
+function updateStandardDeviation(data, range) {
+    // Ensure data is numeric
+    const numericData = data.map(Number);
+
+    // Only proceed if we have enough data
+    if (numericData.length < range){
+      std.push(0);
+    }else{
+      // Calculate the latest window
+      const latestWindow = numericData.slice(-range); // Take last `range` elements
+      const avg = latestWindow.reduce((a, b) => a + b, 0) / range;
+      const variance = latestWindow.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / range;
+      const latestStd = Number(Math.sqrt(variance).toFixed(1));
+
+      // Push the latest value to the global `std` array
+      std.push(latestStd);
+    }
+}
+
 
   // Function to update chart
   function updateChart() {
