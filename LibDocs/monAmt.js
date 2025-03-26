@@ -43,19 +43,12 @@ let prevfreqTable = {};
 
   // Get the canvas element for the chart
   const ctx = document.getElementById('ChartRecord').getContext('2d');
+  //console.log("\nupDnDiffArr: ",upDnDiffArr, "\nupDnDiffMaArr10: ",upDnDiffMaArr10,"\nupperBand: ",upperBand,"\nlowerBand: ", lowerBand)
   const ChartRecord = new Chart(ctx, {
    type: 'line',
    data: {
     labels: [],
     datasets: [
-     {
-        label: 'stdU',
-        data: upperBand,
-        borderColor: 'purple',
-        borderWidth: 1,
-        fill: false,
-        pointStyle: false,
-     },
      {
         label: 'upDnDiff',
         data: upDnDiffArr,
@@ -84,6 +77,14 @@ let prevfreqTable = {};
         label: 'EMA30',
         data: upDnDiffMaArr30,
         borderColor: 'red', // Blue-green color
+        borderWidth: 1,
+        fill: false,
+        pointStyle: false,
+     },
+     {
+        label: 'stdU',
+        data: upperBand,
+        borderColor: 'purple',
         borderWidth: 1,
         fill: false,
         pointStyle: false,
@@ -648,10 +649,9 @@ async function updateInfo() {
   upDnDiffMaArr20.push( wma20 );
   upDnDiffMaArr30.push( wma30 );
 
-  updateStandardDeviation(upDnDiffMaArr20, 10);
-  upperBand = upDnDiffMaArr20.map((val, i) => val === null ? null : val + std[i]);
-  lowerBand = upDnDiffMaArr20.map((val, i) => val === null ? null : val - std[i]);
-  console.log("wma10: ",wma10, "\nwma20: ",wma20, "\nwma30:",wma30, "\nstd: ",std, "\nupperBand: ",upperBand,"\nlowerBand: ", lowerBand)
+  sdV = updateStandardDeviation(upDnDiffMaArr10, 8);
+  upperBand.push(wma10 + sdV);
+  lowerBand.push(wma10 - sdV);
   updateChart();
 }
 
@@ -670,6 +670,7 @@ function standardDeviation(data, period) {
 // updateStandardDeviation
 function updateStandardDeviation(data, range) {
     // Ensure data is numeric
+    latestStd = 0
     const numericData = data.map(Number);
 
     // Only proceed if we have enough data
@@ -680,11 +681,12 @@ function updateStandardDeviation(data, range) {
       const latestWindow = numericData.slice(-range); // Take last `range` elements
       const avg = latestWindow.reduce((a, b) => a + b, 0) / range;
       const variance = latestWindow.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / range;
-      const latestStd = Number(Math.sqrt(variance).toFixed(1));
+      latestStd = Number(Math.sqrt(variance).toFixed(1));
 
       // Push the latest value to the global `std` array
       std.push(latestStd);
     }
+    return latestStd
 }
 
 
