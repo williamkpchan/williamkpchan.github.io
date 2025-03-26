@@ -52,7 +52,7 @@ let prevfreqTable = {};
      {
         label: 'upDnDiff',
         data: upDnDiffArr,
-        borderColor: 'green', // Blue-green color
+        borderColor: 'darkgreen', // Blue-green color
         borderWidth: 1,
         fill: false,
         pointStyle: false,
@@ -649,7 +649,7 @@ async function updateInfo() {
   upDnDiffMaArr20.push( wma20 );
   upDnDiffMaArr30.push( wma30 );
 
-  sdV = updateStandardDeviation(upDnDiffMaArr10, 8);
+  sdV = updateStandardDeviation(upDnDiffMaArr10, 10);
   upperBand.push(wma10 + sdV);
   lowerBand.push(wma10 - sdV);
   updateChart();
