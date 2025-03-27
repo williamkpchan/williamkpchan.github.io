@@ -649,9 +649,9 @@ async function updateInfo() {
   upDnDiffMaArr20.push( wma20 );
   upDnDiffMaArr30.push( wma30 );
 
-  sdV = updateStandardDeviation(upDnDiffMaArr10, 10);
-  upperBand.push(wma10 + sdV);
-  lowerBand.push(wma10 - sdV);
+  sdV = updateStandardDeviation(upDnDiffArr, 20);
+  upperBand.push(wma20 + sdV);
+  lowerBand.push(wma20 - sdV);
   updateChart();
 }
 
