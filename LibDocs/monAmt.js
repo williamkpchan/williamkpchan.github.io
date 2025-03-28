@@ -12,9 +12,11 @@ let upDnDiffArr = [];
 let zeroDiff = [];
 let upDnDiffMaArr10 = [];
 let upDnDiffMaArr20 = [];
-let upDnDiffMaArr30 = [];
+let upDnDiffMaArr40 = [];
 let upperBand = [];
 let lowerBand = [];
+let upperBWma = [];
+let lowerBWma = [];
 
 // Global array to store standard deviations
 const period = 10;
@@ -43,7 +45,7 @@ let prevfreqTable = {};
 
   // Get the canvas element for the chart
   const ctx = document.getElementById('ChartRecord').getContext('2d');
-  //console.log("\nupDnDiffArr: ",upDnDiffArr, "\nupDnDiffMaArr10: ",upDnDiffMaArr10,"\nupperBand: ",upperBand,"\nlowerBand: ", lowerBand)
+console.log("\nUBWma ", upperBWma)
   const ChartRecord = new Chart(ctx, {
    type: 'line',
    data: {
@@ -74,8 +76,8 @@ let prevfreqTable = {};
         pointStyle: false,
      },
      {
-        label: 'EMA30',
-        data: upDnDiffMaArr30,
+        label: 'EMA40',
+        data: upDnDiffMaArr40,
         borderColor: 'red', // Blue-green color
         borderWidth: 1,
         fill: false,
@@ -97,6 +99,24 @@ let prevfreqTable = {};
         fill: false,
         pointStyle: false,
      },
+     {
+        label: 'UBWma',
+        data: upperBWma,
+        borderColor: 'white',
+        borderWidth: 1,
+        fill: false,
+        pointStyle: false,
+     },
+     {
+        label: 'LBWma',
+        data: lowerBWma,
+        borderColor: 'white',
+        borderWidth: 1,
+        fill: false,
+        pointStyle: false,
+     },
+
+
      {
         label: 'zero',
         data: zeroDiff,
@@ -644,14 +664,17 @@ async function updateInfo() {
 
   wma10 = Number(singleWMA(upDnDiffArr, 10))
   wma20 = Number(singleWMA(upDnDiffArr, 20))
-  wma30 = Number(singleWMA(upDnDiffArr, 30))
+  wma40 = Number(singleWMA(upDnDiffArr, 40))
   upDnDiffMaArr10.push( wma10 );
   upDnDiffMaArr20.push( wma20 );
-  upDnDiffMaArr30.push( wma30 );
+  upDnDiffMaArr40.push( wma40 );
 
   sdV = updateStandardDeviation(upDnDiffArr, 20);
   upperBand.push(wma20 + sdV);
   lowerBand.push(wma20 - sdV);
+
+  upperBWma.push( Number(singleWMA(upperBand, 20)));
+  lowerBWma.push( Number(singleWMA(lowerBand, 20)));
   updateChart();
 }
 
