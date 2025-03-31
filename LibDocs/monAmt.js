@@ -669,7 +669,7 @@ async function updateInfo() {
   upDnDiffMaArr20.push( wma20 );
   upDnDiffMaArr40.push( wma40 );
 
-  sdV = updateStandardDeviation(upDnDiffArr, 20);
+  sdV = updateStandardDeviation(upDnDiffArr, 20)*2/3;
   upperBand.push(wma20 + sdV);
   lowerBand.push(wma20 - sdV);
 
