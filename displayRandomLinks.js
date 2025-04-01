@@ -1,8 +1,8 @@
 let cycleInterval;
 const totalIterations = 200;
-const delayBetweenChanges = 10000; // 10 seconds in milliseconds
+const delayBetweenChanges = 12000; // 10 seconds in milliseconds
 const allLinks = Array.from(document.getElementsByTagName('a'));
-const validLinks = allLinks.filter(link => 
+validLinks = allLinks.filter(link => 
       link.href && !link.href.startsWith('javascript:')
 );
 const duplicateArray = [...validLinks];
