@@ -634,7 +634,6 @@ var tipsList = [
 '<img src="https://i.pinimg.com/564x/4d/bf/57/4dbf57ce9179d8c9481f8ca269fbfa60.jpg">',
 '<img src="https://i.pinimg.com/564x/4d/e0/1f/4de01f401277e44f18c6cf805934e456.jpg">',
 '<img src="https://i.pinimg.com/564x/4e/03/fd/4e03fd272fc7d1230b296caba3c8b3fd.jpg">',
-'<img src="https://i.pinimg.com/564x/4e/3a/c3/4e3ac31168d7d6b4edf263e564d7209a.jpg">',
 '<img src="https://i.pinimg.com/564x/4e/81/ab/4e81ab89abf866e03800cb2c9ecbae9b.jpg">',
 '<img src="https://i.pinimg.com/564x/4e/d4/65/4ed4655e778d336eeb8181062c542189.jpg">',
 '<img src="https://i.pinimg.com/564x/4e/f3/7a/4ef37adda01368126e91ff6c24e1a710.jpg">',
@@ -15975,4 +15974,4 @@ var tipsList = [
 '<img src="https://i.pinimg.com/originals/46/14/4e/46144e80bd4da7bac838b079f907507f.jpg">',
 
 ]
-pictList = tipsList
+pictList = tipsList;
