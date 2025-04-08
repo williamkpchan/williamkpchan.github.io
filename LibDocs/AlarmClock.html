@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Advanced Alarm Clock</title>
+    <style>
+body {
+  background-color: black  !important;
+  color: gray;
+  justify-content: center;
+  align-content: center;
+}
+.alarm-form {
+    background: black;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+.alarm-list {
+    margin-top: 20px;
+}
+.alarm-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #ddd;
+    margin-bottom: 5px;
+    border-radius: 4px;
+}
+.days-selector label {
+    margin-right: 10px;
+}
+.active {
+    background-color: #e0ffe0;
+}
+.disabled {
+    background-color: #ffe0e0;
+}
+button {
+    padding: 5px 10px;
+    margin: 2px;
+}
+    </style>
+</head>
+<body>
+    <div class="alarm-form">
+<h2>Set New Alarm</h2>
+<div>
+    <input type="time" id="alarmTime" required>
+    <div class="days-selector">
+        <label><input type="checkbox" value="0"> Sun</label>
+        <label><input type="checkbox" value="1"> Mon</label>
+        <label><input type="checkbox" value="2"> Tue</label>
+        <label><input type="checkbox" value="3"> Wed</label>
+        <label><input type="checkbox" value="4"> Thu</label>
+        <label><input type="checkbox" value="5"> Fri</label>
+        <label><input type="checkbox" value="6"> Sat</label>
+    </div>
+    <select id="alarmPattern">
+        <option value="standard">Standard</option>
+        <option value="gradual">Gradual Volume</option>
+        <option value="gentle">Gentle Wake</option>
+    </select>
+    <button onclick="createAlarm()">Add Alarm</button>
+</div>
+    </div>
+    <div id="alarmList" class="alarm-list"></div>
+
+    <script>
+class AlarmClock {
+    constructor() {
+this.alarms = [];
+    }
+
+    // Enhanced addAlarm with month scheduling
+    addAlarm(hour, minute, days, monthSettings = {}) {
+const alarm = {
+    id: Date.now(),
+    hour: hour,
+    minute: minute,
+    days: days,
+    enabled: true,
+    monthSettings: {
+        months: monthSettings.months || [], // Array of months [0-11]
+        specificDates: monthSettings.specificDates || [], // Array of dates [1-31]
+        weekInMonth: monthSettings.weekInMonth || null, // 1st, 2nd, 3rd, 4th, or last week
+        repeatYearly: monthSettings.repeatYearly || false
+    }
+};
+this.alarms.push(alarm);
+this.saveAlarms();
+return alarm.id;
+    }
+
+    // Enhanced checkAlarms with month validation
+    checkAlarms() {
+const now = new Date();
+const currentHour = now.getHours();
+const currentMinute = now.getMinutes();
+const currentDay = now.getDay();
+const currentMonth = now.getMonth();
+const currentDate = now.getDate();
+
+return this.alarms.filter(alarm => {
+    if (!alarm.enabled) return false;
+
+    // Basic time match
+    const timeMatch = alarm.hour === currentHour && 
+                    alarm.minute === currentMinute;
+
+    // Check month settings
+    const monthMatch = this.checkMonthMatch(alarm, now);
+
+    // Check day match
+    const dayMatch = this.checkDayMatch(alarm, now);
+
+    return timeMatch && monthMatch && dayMatch;
+});
+    }
+
+    checkMonthMatch(alarm, date) {
+const { monthSettings } = alarm;
+const currentMonth = date.getMonth();
+const currentDate = date.getDate();
+
+// If no month settings, alarm works every month
+if (!monthSettings || Object.keys(monthSettings).length === 0) {
+    return true;
+}
+
+// Check specific months
+if (monthSettings.months.length > 0 && 
+    !monthSettings.months.includes(currentMonth)) {
+    return false;
+}
+
+// Check specific dates
+if (monthSettings.specificDates.length > 0 && 
+    !monthSettings.specificDates.includes(currentDate)) {
+    return false;
+}
+
+// Check week in month
+if (monthSettings.weekInMonth) {
+    const weekNumber = this.getWeekInMonth(date);
+    if (monthSettings.weekInMonth !== weekNumber) {
+        return false;
+    }
+}
+
+return true;
+    }
+
+    getWeekInMonth(date) {
+const currentDate = date.getDate();
+const firstDay = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+const weekNumber = Math.ceil((currentDate + firstDay) / 7);
+
+// Check if it's the last week
+const lastDate = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+if (currentDate > (lastDate - 7)) {
+    return 'last';
+}
+
+return weekNumber;
+    }
+
+    // ... rest of existing code ...
+}
+
+// Usage examples with month scheduling:
+const alarmClock = new AlarmClock();
+
+// Example 1: Alarm for first Monday of every month
+alarmClock.addAlarm(9, 0, [1], {
+    weekInMonth: 1
+});
+
+// Example 2: Alarm for specific dates every month
+alarmClock.addAlarm(10, 0, [1, 2, 3, 4, 5], {
+    specificDates: [1, 15] // 1st and 15th of every month
+});
+
+// Example 3: Alarm for summer months only
+alarmClock.addAlarm(8, 30, [1, 2, 3, 4, 5], {
+    months: [5, 6, 7, 8] // June to September
+});
+
+// Example 4: Last Friday of every month
+alarmClock.addAlarm(17, 0, [5], {
+    weekInMonth: 'last'
+});
+
+// Example 5: Yearly reminder (birthday, anniversary)
+alarmClock.addAlarm(9, 0, [0, 1, 2, 3, 4, 5, 6], {
+    months: [11], // December
+    specificDates: [25], // 25th
+    repeatYearly: true
+});
+
+// Start the alarm clock
+alarmClock.start();
+    </script>
+</body>
+</html>
