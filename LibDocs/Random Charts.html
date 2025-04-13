@@ -137,6 +137,7 @@ button {color:#586;}
 </center>
 	<div id="dateTime" style="margin-left:5%;" class="lime"> </div>
 	<div id="turnover" style="margin-left:5%;"> </div>
+	<div id="trendstatus" style="text-align:center;"> </div>
 	<div id="stkChart" style="text-align:center;"> </div>
 <p id="message"></p>
 <br>
@@ -548,6 +549,12 @@ for (let i = 0; i < newObj.length; i++) {
     highArr.push(Number(newObj[i][3]));
     lowArr.push(Number(newObj[i][4]));
 }
+
+    statusMsg3 = checkXStatus(3, 6) +"&emsp;"
+    statusMsg5 = checkXStatus(5, 10) +"&emsp;"
+    statusMsg10 = checkXStatus(10, 20) +"&emsp;"
+    
+    $("#trendstatus").html(statusMsg3 + statusMsg5 + statusMsg10)
 plotBollingerBands(highArr, 10, 1,"high");
 plotBollingerBands(lowArr, 10, 1,"low");
 plotBollingerBands(closeArr, 10, 1,"close");
@@ -1037,6 +1044,51 @@ function plotBollingerBands(data, period, multiplier, chartTitle) {
  });
 }
 
+function checkX(prevL, prevS, curL, curS) {
+ if (curS == curL){return "<y>平</y>" }
+ if (((prevL == prevS) && (curS > curL )) || ((prevL>prevS) && (curS > curL ))){
+  return '<r>升穿</r>'
+ }
+ if (((prevL == prevS) && (curS < curL )) || ((prevL<prevS) && (curS < curL ))){
+  return '<bgr>跌穿</bgr>'
+ }
+ if ((prevL<prevS) && (curS > curL )){return '<pk>继续升</pk>' } // c must > prevC, this is not correct, further check for condition
+ if ((prevL>prevS) && (curS < curL )){return '<lg>继续跌</lg>' }
+}
+
+
+function calculateWeightedMovingAverage(data, period) {
+ if (data.length < period) {
+  throw new Error("Data array is shorter than the period.");
+ }
+
+ // calculate the weights and sum of weights
+ const weights = Array.from({ length: period }, (_, i) => i + 1);
+ const weightSum = weights.reduce((a, b) => a + b, 0);
+ 
+ // extract recentData
+ const recentData = data.slice(data.length - period);
+
+ // calculate weightedSum, this is still the sum
+ const weightedSum = recentData.reduce((sum, value, index) => {
+  return sum + value * weights[index];
+ }, 0);
+
+ return weightedSum / weightSum;  // this is ema value
+}
+
+function checkXStatus(shortperiod, longperiod) {
+ // Create a new array without the last element
+ prevArray = closeArr.slice(0, closeArr.length - 1);
+
+ prevLWma = calculateWeightedMovingAverage(prevArray, longperiod);
+ prevSWma = calculateWeightedMovingAverage(prevArray, shortperiod);
+ curLWma = calculateWeightedMovingAverage(closeArr, longperiod);
+ curSWma = calculateWeightedMovingAverage(closeArr, shortperiod);
+
+ return (shortperiod + "日线" + checkX(prevLWma, prevSWma, curLWma, curSWma) + longperiod + "日线")
+}
+
 showSTKChart();
 
 </script>
@@ -1311,6 +1363,9 @@ var markerList = []
       topic.attr('id', 'topic-' + topicNumber);
       topic.after('&emsp;<a href=#top target="_self"><b>&#8679;</b></a><br>')
   });
+
+
+
 </script>
 
 </body>
