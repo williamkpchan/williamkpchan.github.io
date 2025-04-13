@@ -16,18 +16,21 @@ function main() {
         const codeHeader = document.createElement("th");
         const nameHeader = document.createElement("th");
         const status3Header = document.createElement("th");
+        const status31Header = document.createElement("th");
         const status5Header = document.createElement("th");
         const status10Header = document.createElement("th");
 
         codeHeader.textContent = "Code";
         nameHeader.textContent = "Stock Name";
         status3Header.textContent = "Status 3";
+        status31Header.textContent = "Status 3.10";
         status5Header.textContent = "Status 5";
         status10Header.textContent = "Status 10";
 
         headerRow.appendChild(codeHeader);
         headerRow.appendChild(nameHeader);
         headerRow.appendChild(status3Header);
+        headerRow.appendChild(status31Header);
         headerRow.appendChild(status5Header);
         headerRow.appendChild(status10Header);
 
@@ -36,6 +39,7 @@ function main() {
         for (let i = 0; i < codeTable.length; i++) {
             await fetchKline(codeTable[i]);
             const statusMsg3 = checkXStatus(3, 6);
+            const statusMsg31 = checkXStatus(3, 10);
             const statusMsg5 = checkXStatus(5, 10);
             const statusMsg10 = checkXStatus(10, 20);
 
@@ -45,18 +49,21 @@ const dataRow = document.createElement("tr");
 const codeCell = document.createElement("td");
 const nameCell = document.createElement("td");
 const status3Cell = document.createElement("td");
+const status31Cell = document.createElement("td");
 const status5Cell = document.createElement("td");
 const status10Cell = document.createElement("td");
 
 codeCell.textContent = codeTable[i];
 nameCell.textContent = stkName;
 status3Cell.innerHTML = statusMsg3;
+status31Cell.innerHTML = statusMsg31;
 status5Cell.innerHTML = statusMsg5;
 status10Cell.innerHTML = statusMsg10;
 
 dataRow.appendChild(codeCell);
 dataRow.appendChild(nameCell);
 dataRow.appendChild(status3Cell);
+dataRow.appendChild(status31Cell);
 dataRow.appendChild(status5Cell);
 dataRow.appendChild(status10Cell);
 
