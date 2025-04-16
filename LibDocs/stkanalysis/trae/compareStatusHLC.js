@@ -114,7 +114,7 @@ function showStat(){
 async function fetchKline(theCode) {
 //console.log(theCode)
     return new Promise((resolve, reject) => {
-        const theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,32,qfq';
+        const theurl = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,10,qfq';
 
         fetch(theurl)
           .then(response => {
