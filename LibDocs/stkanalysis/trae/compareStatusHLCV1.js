@@ -359,7 +359,7 @@ function checkXStatus(shortperiod, longperiod) {
 		if (shortperiod == 10) { status10DnCnt = status10DnCnt + 1 }
 	}
 
-	return (shortTrendMsg + ",<br>" + shortperiod + "日线" + checkX(prevLWma, prevSWma, curLWma, curSWma) + longperiod + "日线");
+	return (shortTrendMsg + ",<br>" + shortperiod + "日" + checkX(prevLWma, prevSWma, curLWma, curSWma) + longperiod + "日");
 }
 
 function compareHLC(stkNum) {
