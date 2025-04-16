@@ -78,7 +78,7 @@ function main() {
 
 		for (let i = 0; i < codeTable.length; i++) {
 			await fetchKline(codeTable[i]);
-			const statusMsgHLC = compareHLC();
+			const statusMsgHLC = compareHLC(codeTable[i]);
 			const statusMsg3 = checkXStatus(3, 6);
 			const statusMsg4 = checkXStatus(4, 10);
 			const statusMsg5 = checkXStatus(5, 10);
@@ -362,12 +362,13 @@ function checkXStatus(shortperiod, longperiod) {
 	return (shortTrendMsg + ",<br>" + shortperiod + "日线" + checkX(prevLWma, prevSWma, curLWma, curSWma) + longperiod + "日线");
 }
 
-function compareHLC() {
+function compareHLC(stkNum) {
 	curPointer = highArr.length - 1
 	curHigh = highArr[curPointer];
 	curLow = lowArr[curPointer];
 	curClose = closeArr[curPointer];
 	curWma3 = calculateWeightedMovingAverage(closeArr, 3); // calc 3 days
+     // console.log("stkNum ", stkNum, " ",curPointer, " H ", curHigh, " L ", curLow, " C ", curClose)
 	if (curHigh > curWma3) {
 		highMsg = "<r>高:高过三日趋势</r>"
 		highpassCnt = highpassCnt + 1
@@ -398,7 +399,7 @@ function compareHLC() {
 		closeMsg = "<y>收:平三日趋势</y>"
 	}
 
-	return (highMsg + ",<br>" + lowMsg + ",<br>" + closeMsg);
+	return (closeMsg + ",<br>" + highMsg + ",<br>" + lowMsg);
 }
 
 
