@@ -17,6 +17,15 @@ status10UpCnt = 0
 status10DnCnt = 0
 upXMsg = ""
 
+statusUpXCnt3 = 0
+statusUpXCnt4 = 0
+statusUpXCnt5 = 0
+statusUpXCnt10 = 0
+statusDnXCnt3 = 0
+statusDnXCnt4 = 0
+statusDnXCnt5 = 0
+statusDnXCnt10 = 0
+
 highpassCnt = 0
 highFailCnt = 0
 lowpassCnt = 0
@@ -92,17 +101,34 @@ function main() {
 
 				if (statusMsg3.includes('升穿')) {
 					upXMsg = upXMsg + "&emsp;" + statusMsg3
+					statusUpXCnt3 = statusUpXCnt3 +1
 				}
 				if (statusMsg4.includes('升穿')) {
 					upXMsg = upXMsg + "&emsp;" + statusMsg4
+					statusUpXCnt4 = statusUpXCnt4 +1
 				}
 				if (statusMsg5.includes('升穿')) {
 					upXMsg = upXMsg + "&emsp;" + statusMsg5
+					statusUpXCnt5 = statusUpXCnt5 +1
 				}
 				if (statusMsg10.includes('升穿')) {
 					upXMsg = upXMsg + "&emsp;" + statusMsg10
+					statusUpXCnt10 = statusUpXCnt10 +1
 				}
 			}
+
+				if (statusMsg3.includes('跌穿')) {
+					statusDnXCnt3 = statusDnXCnt3 +1
+				}
+				if (statusMsg4.includes('跌穿')) {
+					statusDnXCnt4 = statusDnXCnt4 +1
+				}
+				if (statusMsg5.includes('跌穿')) {
+					statusDnXCnt5 = statusDnXCnt5 +1
+				}
+				if (statusMsg10.includes('跌穿')) {
+					statusDnXCnt10 = statusDnXCnt10 +1
+				}
 
 			if (trendstatus) {
 				const dataRow = document.createElement("tr");
@@ -189,7 +215,7 @@ function showStat() {
 	statMsg = statMsg + " 低: 比3日趋势高：<r>" + lowpassCnt + "</r>&emsp;"
 	statMsg = statMsg + " 低: 比3日趋势低：<gr>" + lowFailCnt + "</gr><br><br>"
 	statMsg = statMsg + " <bpk>收</bpk>: 比3日趋势高：<r>" + closepassCnt + "</r>&emsp;"
-	statMsg = statMsg + " <bpk>收</bpk>: 比3日趋势低：<gr>" + closeFailCnt + "</gr><br><br>"
+	statMsg = statMsg + " <bpk>收</bpk>: 比3日趋势低：<gr>" + closeFailCnt + "</gr><br><br><br>"
 
 	statMsg = statMsg + " 3日趋势升：<r>" + status3UpCnt + "</r>&emsp; "
 	statMsg = statMsg + " 3日趋势跌：<gr>" + status3DnCnt + "</gr>" + "<br><br>"
@@ -201,7 +227,19 @@ function showStat() {
 	statMsg = statMsg + " 5日趋势跌：<gr>" + status5DnCnt + "</gr>" + "<br><br>"
 
 	statMsg = statMsg + " 10日趋势升：<r>" + status10UpCnt + "</r>&emsp; "
-	statMsg = statMsg + " 10日趋势跌：<gr>" + status10DnCnt + "</gr>" + "<br><br>"
+	statMsg = statMsg + " 10日趋势跌：<gr>" + status10DnCnt + "</gr>" + "<br><br><br>"
+
+	statMsg = statMsg + " 3日升穿6日：<r>" + statusUpXCnt3 + "</r>&emsp; "
+	statMsg = statMsg + " 3日跌穿6日：<gr>" + statusDnXCnt3 + "</gr>" + "<br><br>"
+
+	statMsg = statMsg + " 4日升穿10日：<r>" + statusUpXCnt4 + "</r>&emsp; "
+	statMsg = statMsg + " 4日跌穿10日：<gr>" + statusDnXCnt4 + "</gr>" + "<br><br>"
+
+	statMsg = statMsg + " 5日升穿10日：<r>" + statusUpXCnt5 + "</r>&emsp; "
+	statMsg = statMsg + " 5日跌穿10日：<gr>" + statusDnXCnt5 + "</gr>" + "<br><br>"
+
+	statMsg = statMsg + " 10日升穿20日：<r>" + statusUpXCnt10 + "</r>&emsp; "
+	statMsg = statMsg + " 10日跌穿20日：<gr>" + statusDnXCnt10 + "</gr>" + "<br><br><br>"
 
 	statElement.innerHTML = statMsg
 
