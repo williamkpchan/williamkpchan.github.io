@@ -1,0 +1,139 @@
+// collect all the data and put it in an object with `code`, `stkname`, and `data` values
+
+//const codeTable = ['00388','02208','01951','01448','01171','02800','00700','09988','00005','00883','02828','00857','00939','02318','01299','03968','00941','01398','00522','09618','00386','01211','02899','03988','09999','01088','00016','01288','02269','09961','01816','02382','00992','01919','01109','00981','00836','00001','09633','01093','02601','01910','00027','00669','06690','02020','00011','02388','00916','01928','00020','00175','02628','00291','01833','01378','00728','02359','09626','00002','02331','06862','01113','00780','00006','01801','00762','09901','02688','03993','01548','02618','09992','00288','06160','02319','01766','00285','01972','01800','00003','00960','06030','01658','00966','01138','02057','00688','06881','01336','03908','02313','01898','00968','02333','03692','03328','01347','01038','03888','09987','01339','01177','02018','02328','01099','02883','00135','01193','01876','06865','02338','01209','03800','00316','01818','00358','02600','01071','01913','00241','00019','01997','03067','02380','00868','03998','02202','00322','02588','00819','00998','00384','00763','01787','02099','00101','00425','00914','03898','00570','01797','00390','00257','00267','00012','00066','06186','00270','00881','03320','02400','00136','02013','03618','01066','01908','01030','00683','06823','01798','03323','01208','03759','01952','06088','01918','01772','00467','01186','03969','01302','00921','01357','06110','09969','01929','02666','00772','06078','00696','03311','00293','00371','03900','00956','02162','02607','00991','06855','02238','00083','01776','02386','06818','00220','00576','06060','01157','00017','03808','01044','02357','00142','03347','01359','06098','01415','00354','01179','00014','03110','02196','01128','00189','03032','00123','01896','02343','00934','00867','01368','00995','00177','00552','01883','00639','00151','09922','00489','00152','00148','00586','01381','01530','00853','01882','00813','03360','00799','00598','02096','00667','09698','01610','01618','02888','01821','03738','06066','02186','06699','00880','02128','00884','01072','06886','00874','01070','01516','00551','06049','02669','02257','01513','09995','02255','00694','01681','01999','01508','00631','01478','01385','00777','01055','00525','01199','02039','01060','03613','00004','00579','00338','00817','02869','02638','00856','00548','01963','06869','00081','00363','00590','00303','01958','00200','03377','00317','03709','01579','01316','00656','01119','01811','00341','06099','00909','02689','03319','00087','03958','00297','01907','02145','02276','01888','01313','00861','01310','00038','06185','09959','02777','00345','00010','03899','01666','02005','09966','00460','02877','00023','00440','06808','00179','00855','00596','02866','02285','00347','06666','01995','01877','02362','06127','01428','01691','02158','01515','02155','03983','01600','00165','02801','00710','09911','00708','00670','02611','02252','00308','00823','01613','02009','02823','02822','07226','07299','02840','01858','01860','07200','07288','03037','00412','00751','02727','02356','02342','06178','03188','00778','00636','07568','07522','07552','00182','07500','03606','06969','00268','00144','00564','03668','00300','06181','01698','02556','01164','00788','02577','09896','01810', '02015', '03690', '06618', '09888', '01024','09926','03033','09868',];
+const codeTable = ['00388', '02208', '02800', '00700'];
+//const codeTable = ['300098','300346','000099','002373','300107','300284','300177','002902','601669','301091','600487','600489','001309','300398','301308'];
+const hsReservedCode = ["110000", "110001", "110002", "110003", "110004", "110010", "110030", "110041", "110050", "110078", "111000", "111100", "221000",]
+
+const curr_date = new Date();
+// Format as YYYY-MM-DD 2025-04-17"
+const currentDate = curr_date.toISOString().split('T')[0];
+
+// This will store all the collected data
+const BaseObj = {};
+
+function checkCodeLen(theCode) {
+	let codewidth = theCode.length;
+	let modifiedCode = "";
+	let url = "";
+
+	if (codewidth <= 5) {
+		theCode = "00000" + theCode;
+		codewidth = theCode.length;
+		theCode = theCode.slice(codewidth - 5, codewidth);
+		codewidth = theCode.length;
+		url = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,60,qfq';
+		modifiedCode = "hk" + theCode;
+	} else {
+		if ((codewidth == 6) && !hsReservedCode.includes(theCode)) {
+			if (theCode.charAt(0) == "6") {
+				modifiedCode = "sh" + theCode;
+			} else {
+				modifiedCode = "sz" + theCode;
+			}
+		} else if (codewidth == 9) {
+			modifiedCode = theCode.substring(7, 9) + theCode.substring(0, 7);
+		}
+		codewidth = modifiedCode.length;
+		url = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + modifiedCode + ',day,,,60,qfq';
+	}
+
+	return { modifiedCode, url };
+}
+
+async function fetchKline(theCode, theurl) {
+	try {
+		const response = await fetch(theurl);
+		if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`);
+		}
+
+		const text = await response.text();
+		const jsonStr = text.replace('kline_dayqfq=', '');
+		const stkdata = JSON.parse(jsonStr);
+
+		if (stkdata.data && stkdata.data[theCode]) {
+			const stkName = stkdata.data[theCode].qt[theCode][1];
+			const dataObj = stkdata.data[theCode].qfqday || stkdata.data[theCode].day;
+
+			const closeArr = [];
+			const lastPointer = dataObj.length - 1;
+			const highValue = dataObj[lastPointer][3];
+			const lowValue = dataObj[lastPointer][4];
+			const lastDate = dataObj[lastPointer][0];
+
+			if (currentDate != lastDate) {
+				alert("Data not up to date: " + lastDate);
+				return null;
+			}
+
+			for (let i = 0; i < dataObj.length; i++) {
+				closeArr.push(Number(dataObj[i][2]));
+			}
+
+			return {
+				theCode: theCode.replace('hk', ''),
+				stkname: stkName,
+				lastDateValue: lastDate,
+				closes: closeArr,
+				high: highValue,
+				low: lowValue,
+			};
+		}
+		throw new Error(`No data found for ${theCode}`);
+	} catch (error) {
+		console.error(`Error fetching data for ${theCode}:`, error);
+		return null;
+	}
+}
+
+async function fetchAllData() {
+	let hasError = false;  // Add flag to track errors
+
+	for (let i = 0; i < codeTable.length; i++) {
+		if (hasError) break;  // Stop if error occurred
+
+		const { modifiedCode, url } = checkCodeLen(codeTable[i]);
+
+		try {
+			const stockData = await fetchKline(modifiedCode, url);
+			if (!stockData) {
+				hasError = true;
+				break;
+			}
+			BaseObj[modifiedCode] = stockData;
+			console.log(`${modifiedCode}`);
+		} catch (error) {
+			console.error(`Error fetching data for ${modifiedCode}:`, error);
+			hasError = true;
+			break;
+		}
+
+		await new Promise(resolve => setTimeout(resolve, 100));
+	}
+
+	return hasError ? null : BaseObj;
+}
+
+// Start the process
+fetchAllData().then(() => {
+	// Show all keys in BaseObj
+	// console.log("BaseObj keys:", Object.keys(BaseObj));
+
+	// Show each key and its associated stock name
+	// Object.keys(BaseObj).forEach(key => {
+	// 	console.log(`${key}: ${BaseObj[key]?.stkname || 'No name'}`);
+	// });
+
+	// Access data after it's loaded
+	// if (BaseObj['hk00388']) {
+	// 	console.log("BaseObj.hk00388.theCode" + "<br>" + BaseObj['hk00388'].theCode);
+	// 	console.log("BaseObj.hk00388.stkname" + "<br>" + BaseObj['hk00388'].stkname);
+	// 	console.log("BaseObj.hk00388.lastDateValue" + "<br>" + BaseObj['hk00388'].lastDateValue);
+	// 	console.log("BaseObj.hk00388.high" + "<br>" + BaseObj['hk00388'].high);
+	// 	console.log("BaseObj.hk00388.low" + "<br>" + BaseObj['hk00388'].low);
+	//   console.log("BaseObj.hk00388.closes" + "<br>" + BaseObj['hk00388'].closes);
+	// }
+}).catch(error => {
+	console.error("Error:", error);
+});

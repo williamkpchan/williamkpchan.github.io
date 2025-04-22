@@ -210,12 +210,12 @@ function showStat() {
 	statElement = document.createElement("div");
 	statMsg = showDate() + " " + showTime() + "<br>" + "趋势统计表 总数：" + codeTable.length + "<br><br>"
 
+	statMsg = statMsg + " <bpk>收</bpk>: 比3日趋势高：<r>" + closepassCnt + "</r>&emsp;"
+	statMsg = statMsg + " <bpk>收</bpk>: 比3日趋势低：<gr>" + closeFailCnt + "</gr><br><br>"
 	statMsg = statMsg + " 高: 比3日趋势高：<r>" + highpassCnt + "</r>&emsp; "
 	statMsg = statMsg + " 高: 比3日趋势低：<gr>" + highFailCnt + "</gr><br><br>"
 	statMsg = statMsg + " 低: 比3日趋势高：<r>" + lowpassCnt + "</r>&emsp;"
-	statMsg = statMsg + " 低: 比3日趋势低：<gr>" + lowFailCnt + "</gr><br><br>"
-	statMsg = statMsg + " <bpk>收</bpk>: 比3日趋势高：<r>" + closepassCnt + "</r>&emsp;"
-	statMsg = statMsg + " <bpk>收</bpk>: 比3日趋势低：<gr>" + closeFailCnt + "</gr><br><br><br>"
+	statMsg = statMsg + " 低: 比3日趋势低：<gr>" + lowFailCnt + "</gr><br><br><br>"
 
 	statMsg = statMsg + " 3日趋势升：<r>" + status3UpCnt + "</r>&emsp; "
 	statMsg = statMsg + " 3日趋势跌：<gr>" + status3DnCnt + "</gr>" + "<br><br>"
