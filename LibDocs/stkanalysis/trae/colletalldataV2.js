@@ -178,16 +178,16 @@ async function updateChanges() {
 	const timestr = timearr[0] + timearr[1]
 	if (!(Number(timestr) > 925 && Number(timestr) < 1201 ||
 		Number(timestr) > 1259 && Number(timestr) < 1601)) {
-		document.getElementById("dateAndTime").innerHTML = "<lg>" + showDate() + "</lg> " + showTime() + "<k class='blinkred'> Market Closed</k>" +"<br> lastDateValue " + BaseObj["00388"].lastDateValue;
+		document.getElementById("dateAndTime").innerHTML = "<lg>" + showDate() + "</lg> " + showTime() + "<k class='blinkred'> Market Closed</k>" + "<br> lastDateValue " + BaseObj["00388"].lastDateValue;
 		return
 	}
 	console.log("updateInfo start", showTime())
 	await updateInfo()
 	console.log("updateInfo complete ", showTime())
 	compareAll()
-     if(closepassArr.length>5){
-       plotChart(closepassArr, "Close pass 3days trend count")
-     }
+	if (closepassArr.length > 5) {
+		plotChart(closepassArr, "Close pass 3days trend count")
+	}
 }
 
 
@@ -395,17 +395,17 @@ function checkXStat(shortperiod, longperiod, stkNum) {  // Add stkNum parameter
 }
 
 function showStat() {
-    statElement = document.createElement("div");
+	statElement = document.createElement("div");
 
-    // Calculate differences first
-    let result = [];
-    if (Object.keys(prevallResults).length !== 0) {
-        result = findDifferences(allResults, prevallResults);
-    } else {
-        result = new Array(22).fill(0); // Create array of zeros for initial state
-    }
+	// Calculate differences first
+	let result = [];
+	if (Object.keys(prevallResults).length !== 0) {
+		result = findDifferences(allResults, prevallResults);
+	} else {
+		result = new Array(22).fill(0); // Create array of zeros for initial state
+	}
 
-    const tableHTML = `
+	const tableHTML = `
         <div class="stat-table">
             <table>
                 <tr>
@@ -552,78 +552,80 @@ function calculateWeightedMovingAverage(data, period, stkNum) {
 
 // <y>标准差</y>
 function standardDeviation(data, period) {
- const std = new Array(period - 1).fill(null); // <y>填充 null</y>
- for (let i = period - 1; i < data.length; i++) {
-  const avg = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period;
-  const variance = data.slice(i - period + 1, i + 1).reduce((a, b) => a + Math.pow(b - avg, 2), 0) / period;
-  std.push(Math.sqrt(variance));
- }
- return std;
+	const std = new Array(period - 1).fill(null); // <y>填充 null</y>
+	for (let i = period - 1; i < data.length; i++) {
+		const avg = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period;
+		const variance = data.slice(i - period + 1, i + 1).reduce((a, b) => a + Math.pow(b - avg, 2), 0) / period;
+		std.push(Math.sqrt(variance));
+	}
+	return std;
 }
 
 
 // <y>计算保力加通道</y>
 function bollingerBands(data, period, multiplier) {
- const wma = calculateWeightedMovingAverage(data, period);
- const std = standardDeviation(data, period);
- const upperBand = wma.map((val, i) => val === null ? null : val + multiplier * std[i]);
- const lowerBand = wma.map((val, i) => val === null ? null : val - multiplier * std[i]);
-//console.log("lowerBand: ",lowerBand)
- return { wma, upperBand, lowerBand, std };
+	const wma = calculateWeightedMovingAverage(data, period);
+	const std = standardDeviation(data, period);
+	const upperBand = wma.map((val, i) => val === null ? null : val + multiplier * std[i]);
+	const lowerBand = wma.map((val, i) => val === null ? null : val - multiplier * std[i]);
+	//console.log("lowerBand: ",lowerBand)
+	return { wma, upperBand, lowerBand, std };
 }
 
 
 function plotChart(data, chartTitle) {
- // <y>创建标题</y>
- const title = document.createElement('pk');
- title.textContent = chartTitle;
- document.body.appendChild(title);
+	// Get existing canvas or create new one if it doesn't exist
+	let canvas = document.getElementById('chartOutput');
+	if (!canvas) {
+		canvas = document.createElement('canvas');
+		canvas.id = 'chartOutput';
+		canvas.width = 800;  // Set default width
+		canvas.height = 400; // Set default height
+		document.getElementById('output').appendChild(canvas);
+	}
 
- // <y>动态创建画布</y>
- const canvas = document.createElement('canvas');
-   canvas.width = 500;
-   canvas.height = 200;
- document.body.appendChild(canvas);
+	// Clear any existing chart
+	if (window.myChart instanceof Chart) {
+		window.myChart.destroy();
+	}
 
- // <y>获取画布上下文</y>
- const ctx = canvas.getContext('2d');
+	const ctx = canvas.getContext('2d');
 
- // <y>绘制图表</y>
- new Chart(ctx, {
-  type: 'line',
-  data: {
-   labels: Array.from({length: data.length}, (_, i) => i + 1),
-   datasets: [
-    {
-     label: 'closepassArr',
-     data: closepassArr,
-     borderColor: 'blue',
-     fill: false,
-     borderWidth: 1,
-     pointStyle: false,
-    },
-   ]
-  },
-  options: {
-   responsive: false,
-   scales: {
-    x: {
-     display: true,
-     title: {
-      display: false,
-      text: 'Time'
-     }
-    },
-    y: {
-     display: true,
-     title: {
-      display: false,
-      text: 'closepassCnt'
-     }
-    }
-   }
-  }
- });
+	// Create new chart
+	window.myChart = new Chart(ctx, {
+		type: 'line',
+		data: {
+			labels: Array.from({ length: data.length }, (_, i) => i + 1),
+			datasets: [{
+				label: 'closepassArr',
+				data: closepassArr,
+				borderColor: 'blue',
+				fill: false,
+				borderWidth: 1,
+				pointStyle: false,
+			}]
+		},
+		options: {
+			responsive: true,
+			maintainAspectRatio: false,
+			scales: {
+				x: {
+					display: true,
+					title: {
+						display: false,
+						text: 'Time'
+					}
+				},
+				y: {
+					display: true,
+					title: {
+						display: false,
+						text: 'closepassCnt'
+					}
+				}
+			}
+		}
+	});
 }
 
 
