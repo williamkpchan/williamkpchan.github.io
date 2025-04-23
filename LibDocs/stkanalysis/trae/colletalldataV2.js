@@ -12,6 +12,7 @@ const currentDate = curr_date.toISOString().split('T')[0];
 const BaseObj = {}; // This will store all the collected data
 allResults = {};
 prevallResults = {};
+closepassArr = []
 firstTime = false
 
 updcnt = 0
@@ -67,7 +68,7 @@ function checkCodeLen(theCode) {
 		codewidth = theCode.length;
 		theCode = theCode.slice(codewidth - 5, codewidth);
 		codewidth = theCode.length;
-		url = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,25,qfq';
+		url = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,26,qfq';
 		modifiedCode = "hk" + theCode;
 	} else {
 		if ((codewidth == 6) && !hsReservedCode.includes(theCode)) {
@@ -135,7 +136,7 @@ async function fetchKline(theCode, theurl) {
 
 async function fetchAllData() {
 	let hasError = false;
-	console.log("fetchAllData... may take long time!", showTime())
+	console.log("fetchAllData...\nmay take long time!\nStart: ", showTime())
 	document.getElementById("dateAndTime").append("趋势统计表 总数：" + codeTable.length)
 
 	timearr = showTime().split(':')
@@ -158,7 +159,7 @@ async function fetchAllData() {
 
 		await new Promise(resolve => setTimeout(resolve, 50));
 	}
-	console.log("fetchAllData... Finished!", showTime())
+	console.log("fetchAllData...\nFinished!\n", showTime())
 	console.log("BaseObj length:", Object.keys(BaseObj).length)
 
 	return Object.keys(BaseObj).length > 0 ? BaseObj : null; // Return BaseObj if any data was fetched
@@ -177,13 +178,16 @@ async function updateChanges() {
 	const timestr = timearr[0] + timearr[1]
 	if (!(Number(timestr) > 925 && Number(timestr) < 1201 ||
 		Number(timestr) > 1259 && Number(timestr) < 1601)) {
-		document.getElementById("dateAndTime").innerHTML = "<lg>" + showDate() + "</lg> " + showTime() + "<k class='blinkred'> Market Closed</k>";
+		document.getElementById("dateAndTime").innerHTML = "<lg>" + showDate() + "</lg> " + showTime() + "<k class='blinkred'> Market Closed</k>" +"<br> lastDateValue " + BaseObj["00388"].lastDateValue;
 		return
 	}
 	console.log("updateInfo start", showTime())
 	await updateInfo()
 	console.log("updateInfo complete ", showTime())
 	compareAll()
+     if(closepassArr.length>5){
+       plotChart(closepassArr, "Close pass 3days trend count")
+     }
 }
 
 
@@ -325,7 +329,7 @@ function compareAll() {
 		statusDnXCnt10: statusDnXCnt10,
 
 	}
-
+	closepassArr.push(closepassCnt)
 	showStat()
 }
 
@@ -392,7 +396,7 @@ function checkXStat(shortperiod, longperiod, stkNum) {  // Add stkNum parameter
 
 function showStat() {
     statElement = document.createElement("div");
-    
+
     // Calculate differences first
     let result = [];
     if (Object.keys(prevallResults).length !== 0) {
@@ -405,7 +409,7 @@ function showStat() {
         <div class="stat-table">
             <table>
                 <tr>
-                    <th colspan="4">${showDate()} ${showTime()}</th>
+                    <th colspan="4">${showDate()} ${showTime()} <r>lastDateValue</r> ${BaseObj["00388"].lastDateValue}</th>
                 </tr>
                 <tr>
                     <td><bpk>收</bpk>: 比3日趋势高：<r>${closepassCnt}</r></td>
@@ -505,7 +509,8 @@ function showStat() {
 
 	statElement.innerHTML = tableHTML;
 	const outputDiv = document.getElementById('output');
-	outputDiv.parentNode.insertBefore(statElement, outputDiv);
+	//outputDiv.parentNode.insertBefore(statElement, outputDiv);
+	outputDiv.innerHTML = tableHTML
 }
 
 
@@ -529,7 +534,7 @@ function findDifferences(objA, objB) {
 
 function calculateWeightedMovingAverage(data, period, stkNum) {
 	if (data.length < period) {
-		console.log("data.length: ", data.length, "period ", period)
+		console.log("stkNum: ", stkNum, "data.length: ", data.length, "period ", period)
 		throw new Error("Data array is shorter than the period. stkNum: ", stkNum);
 	}
 
@@ -543,6 +548,82 @@ function calculateWeightedMovingAverage(data, period, stkNum) {
 	}, 0);
 
 	return weightedSum / weightSum;
+}
+
+// <y>标准差</y>
+function standardDeviation(data, period) {
+ const std = new Array(period - 1).fill(null); // <y>填充 null</y>
+ for (let i = period - 1; i < data.length; i++) {
+  const avg = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period;
+  const variance = data.slice(i - period + 1, i + 1).reduce((a, b) => a + Math.pow(b - avg, 2), 0) / period;
+  std.push(Math.sqrt(variance));
+ }
+ return std;
+}
+
+
+// <y>计算保力加通道</y>
+function bollingerBands(data, period, multiplier) {
+ const wma = calculateWeightedMovingAverage(data, period);
+ const std = standardDeviation(data, period);
+ const upperBand = wma.map((val, i) => val === null ? null : val + multiplier * std[i]);
+ const lowerBand = wma.map((val, i) => val === null ? null : val - multiplier * std[i]);
+//console.log("lowerBand: ",lowerBand)
+ return { wma, upperBand, lowerBand, std };
+}
+
+
+function plotChart(data, chartTitle) {
+ // <y>创建标题</y>
+ const title = document.createElement('pk');
+ title.textContent = chartTitle;
+ document.body.appendChild(title);
+
+ // <y>动态创建画布</y>
+ const canvas = document.createElement('canvas');
+   canvas.width = 500;
+   canvas.height = 200;
+ document.body.appendChild(canvas);
+
+ // <y>获取画布上下文</y>
+ const ctx = canvas.getContext('2d');
+
+ // <y>绘制图表</y>
+ new Chart(ctx, {
+  type: 'line',
+  data: {
+   labels: Array.from({length: data.length}, (_, i) => i + 1),
+   datasets: [
+    {
+     label: 'closepassArr',
+     data: closepassArr,
+     borderColor: 'blue',
+     fill: false,
+     borderWidth: 1,
+     pointStyle: false,
+    },
+   ]
+  },
+  options: {
+   responsive: false,
+   scales: {
+    x: {
+     display: true,
+     title: {
+      display: false,
+      text: 'Time'
+     }
+    },
+    y: {
+     display: true,
+     title: {
+      display: false,
+      text: 'closepassCnt'
+     }
+    }
+   }
+  }
+ });
 }
 
 
