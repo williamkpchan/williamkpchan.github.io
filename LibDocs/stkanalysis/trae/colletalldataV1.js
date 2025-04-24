@@ -116,6 +116,14 @@ async function fetchAllData() {
 }
 
 // Start the process
+async function main() {
+	// fetchAllData --> processQueue -->
+	await fetchAllData()
+	//compareAll()
+	//console.log("fetchAllData loop")
+
+}
+
 fetchAllData().then(() => {
 	// Show all keys in BaseObj
 	// console.log("BaseObj keys:", Object.keys(BaseObj));

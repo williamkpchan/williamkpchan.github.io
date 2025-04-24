@@ -1,7 +1,7 @@
 // collect all the data and put it in an object with `code`, `stkname`, and `data` values
 
-const codeTable = ['00388', '02208', '01951', '01448', '01171', '02800', '00700', '09988', '00005', '00883', '02828', '00857', '00939', '02318', '01299', '03968', '00941', '01398', '00522', '09618', '00386', '01211', '02899', '03988', '09999', '01088', '00016', '01288', '02269', '09961', '01816', '02382', '00992', '01919', '01109', '00981', '00836', '00001', '09633', '01093', '02601', '01910', '00027', '00669', '06690', '02020', '00011', '02388', '00916', '01928', '00020', '00175', '02628', '00291', '01833', '01378', '00728', '02359', '09626', '00002', '02331', '06862', '01113', '00780', '00006', '01801', '00762', '09901', '02688', '03993', '01548', '02618', '09992', '00288', '06160', '02319', '01766', '00285', '01972', '01800', '00003', '00960', '06030', '01658', '00966', '01138', '02057', '00688', '06881', '01336', '03908', '02313', '01898', '00968', '02333', '03692', '03328', '01347', '01038', '03888', '09987', '01339', '01177', '02018', '02328', '01099', '02883', '00135', '01193', '01876', '06865', '02338', '01209', '03800', '00316', '01818', '00358', '02600', '01071', '01913', '00241', '00019', '01997', '03067', '02380', '00868', '03998', '02202', '00322', '02588', '00819', '00998', '00384', '00763', '01787', '02099', '00101', '00425', '00914', '03898', '00570', '01797', '00390', '00257', '00267', '00012', '00066', '06186', '00270', '00881', '03320', '02400', '00136', '02013', '03618', '01066', '01908', '01030', '00683', '06823', '01798', '03323', '01208', '03759', '01952', '06088', '01918', '01772', '00467', '01186', '03969', '01302', '00921', '01357', '06110', '09969', '01929', '02666', '00772', '06078', '00696', '03311', '00293', '00371', '03900', '00956', '02162', '02607', '00991', '06855', '02238', '00083', '01776', '02386', '06818', '00220', '00576', '06060', '01157', '00017', '03808', '01044', '02357', '00142', '03347', '01359', '06098', '01415', '00354', '01179', '00014', '03110', '02196', '01128', '00189', '03032', '00123', '01896', '02343', '00934', '00867', '01368', '00995', '00177', '00552', '01883', '00639', '00151', '09922', '00489', '00152', '00148', '00586', '01381', '01530', '00853', '01882', '00813', '03360', '00799', '00598', '02096', '00667', '09698', '01610', '01618', '02888', '01821', '03738', '06066', '02186', '06699', '00880', '02128', '00884', '01072', '06886', '00874', '01070', '01516', '00551', '06049', '02669', '02257', '01513', '09995', '02255', '00694', '01681', '01999', '01508', '00631', '01478', '01385', '00777', '01055', '00525', '01199', '02039', '01060', '03613', '00004', '00579', '00338', '00817', '02869', '02638', '00856', '00548', '01963', '06869', '00081', '00363', '00590', '00303', '01958', '00200', '03377', '00317', '03709', '01579', '01316', '00656', '01119', '01811', '00341', '06099', '00909', '02689', '03319', '00087', '03958', '00297', '01907', '02145', '02276', '01888', '01313', '00861', '01310', '00038', '06185', '09959', '02777', '00345', '00010', '03899', '01666', '02005', '09966', '00460', '02877', '00023', '00440', '06808', '00179', '00855', '00596', '02866', '02285', '00347', '06666', '01995', '01877', '02362', '06127', '01428', '01691', '02158', '01515', '02155', '03983', '01600', '00165', '02801', '00710', '09911', '00708', '00670', '02611', '02252', '00308', '00823', '01613', '02009', '02823', '02822', '07226', '07299', '02840', '01858', '01860', '07200', '07288', '03037', '00412', '00751', '02727', '02356', '02342', '06178', '03188', '00778', '00636', '07568', '07522', '07552', '00182', '07500', '03606', '06969', '00268', '00144', '00564', '03668', '00300', '06181', '01698', '02556', '01164', '00788', '02577', '09896', '01810', '02015', '03690', '06618', '09888', '01024', '09926', '03033', '09868', '09660'];
-
+const codeTable = ['00388','02208','01951','01448','01171','02800','00700','09988','00005','00883','02828','00857','00939','02318','01299','03968','00941','01398','00522','09618','00386','01211','02899','03988','09999','01088','00016','01288','02269','09961','01816','02382','00992','01919','01109','00981','00836','00001','09633','01093','02601','01910','00027','00669','06690','02020','00011','02388','00916','01928','00020','00175','02628','00291','01833','01378','00728','02359','09626','00002','02331','06862','01113','00780','00006','01801','00762','09901','02688','03993','01548','02618','09992','00288','06160','02319','01766','00285','01972','01800','00003','00960','06030','01658','00966','01138','02057','00688','06881','01336','03908','02313','01898','00968','02333','03692','03328','01347','01038','03888','09987','01339','01177','02018','02328','01099','02883','00135','01193','01876','06865','02338','01209','03800','00316','01818','00358','02600','01071','01913','00241','00019','01997','03067','02380','00868','03998','02202','00322','02588','00819','00998','00384','00763','01787','02099','00101','00425','00914','03898','00570','01797','00390','00257','00267','00012','00066','06186','00270','00881','03320','02400','00136','02013','03618','01066','01908','01030','00683','06823','01798','03323','01208','03759','01952','06088','01918','01772','00467','01186','03969','01302','00921','01357','06110','09969','01929','02666','00772','06078','00696','03311','00293','00371','03900','00956','02162','02607','00991','06855','02238','00083','01776','02386','06818','00220','00576','06060','01157','00017','03808','01044','02357','00142','03347','01359','06098','01415','00354','01179','00014','03110','02196','01128','00189','03032','00123','01896','02343','00934','00867','01368','00995','00177','00552','01883','00639','00151','09922','00489','00152','00148','00586','01381','01530','00853','01882','00813','03360','00799','00598','02096','00667','09698','01610','01618','02888','01821','03738','06066','02186','06699','00880','02128','00884','01072','06886','00874','01070','01516','00551','06049','02669','02257','01513','09995','02255','00694','01681','01999','01508','00631','01478','01385','00777','01055','00525','01199','02039','01060','03613','00004','00579','00338','00817','02869','02638','00856','00548','01963','06869','00081','00363','00590','00303','01958','00200','03377','00317','03709','01579','01316','00656','01119','01811','00341','06099','00909','02689','03319','00087','03958','00297','01907','02145','02276','01888','01313','00861','01310','00038','06185','09959','02777','00345','00010','03899','01666','02005','09966','00460','02877','00023','00440','06808','00179','00855','00596','02866','02285','00347','06666','01995','01877','02362','06127','01428','01691','02158','01515','02155','03983','01600','00165','02801','00710','09911','00708','00670','02611','02252','00308','00823','01613','02009','02823','02822','07226','07299','02840','01858','01860','07200','07288','03037','00412','00751','02727','02356','02342','06178','03188','00778','00636','07568','07522','07552','00182','07500','03606','06969','00268','00144','00564','03668','00300','06181','01698','02556','01164','00788','02577','09896','01810', '02015', '03690', '06618', '09888', '01024','09926','03033','09868',];
+//const codeTable = ['00388', '02208', '02800', '00700'];
 //const codeTable = ['300098','300346','000099','002373','300107','300284','300177','002902','601669','301091','600487','600489','001309','300398','301308'];
 const hsReservedCode = ["110000", "110001", "110002", "110003", "110004", "110010", "110030", "110041", "110050", "110078", "111000", "111100", "221000",]
 
@@ -9,36 +9,51 @@ const curr_date = new Date();
 // Format as YYYY-MM-DD 2025-04-17"
 const currentDate = curr_date.toISOString().split('T')[0];
 
+
 const BaseObj = {}; // This will store all the collected data
-allResults = {};
-prevallResults = {};
-closepassArr = []
-highpassArr = []
-lowpassArr = []
-status3UpArr = []
-cUpPrevCloseArr = []
+
+  // Initialize arrays (with proper declarations)
+  const closeUpArr = new Array(1).fill(null);
+  const closeDnArr = new Array(1).fill(null);
+  const wma3UpArr = new Array(2).fill(null);
+  const wma3DnArr = new Array(2).fill(null);
+  const gtPrevWma3Arr = new Array(2).fill(null);
+  const ltPrevWma3Arr = new Array(2).fill(null);
+  const u3X6Arr = new Array(5).fill(null);
+  const d3X6Arr = new Array(5).fill(null);
+  const u4X10Arr = new Array(9).fill(null);
+  const d4X10Arr = new Array(9).fill(null);
+  const u5X10Arr = new Array(9).fill(null);
+  const d5X10Arr = new Array(9).fill(null);
+  const u10X20Arr = new Array(19).fill(null);
+  const d10X20Arr = new Array(19).fill(null);
 
 
-firstTime = false
+trendline3 = []
+trendline4 = []
+trendline5 = []
+trendline6 = []
+trendline10 = []
+trendline20 = []
 
 updcnt = 0
-status3UpCnt = 0
-status3DnCnt = 0
-status4UpCnt = 0
-status4DnCnt = 0
-status5UpCnt = 0
-status5DnCnt = 0
-status10UpCnt = 0
-status10DnCnt = 0
+trend3UpCnt = 0
+trend3DnCnt = 0
+trend4UpCnt = 0
+trend4DnCnt = 0
+trend5UpCnt = 0
+trend5DnCnt = 0
+trend10UpCnt = 0
+trend10DnCnt = 0
 
-statusUpXCnt3 = 0
-statusUpXCnt4 = 0
-statusUpXCnt5 = 0
-statusUpXCnt10 = 0
-statusDnXCnt3 = 0
-statusDnXCnt4 = 0
-statusDnXCnt5 = 0
-statusDnXCnt10 = 0
+trendUpXCnt3 = 0
+trendUpXCnt4 = 0
+trendUpXCnt5 = 0
+trendUpXCnt10 = 0
+trendDnXCnt3 = 0
+trendDnXCnt4 = 0
+trendDnXCnt5 = 0
+trendDnXCnt10 = 0
 
 highpassCnt = 0
 highFailCnt = 0
@@ -50,23 +65,6 @@ closeFailCnt = 0
 cUpPrevCloseCnt = 0
 cDnPrevCloseCnt = 0
 
-// prepare basic materials
-const baseurl = "https://sqt.gtimg.cn/?q=";
-//   A stk       https://qt.gtimg.cn/?q=sh000001,sz000002 seems the same
-
-const chunkSize = 60;
-const chunks = [];
-const urlReqStr = [];
-
-for (let i = 0; i < codeTable.length; i += chunkSize) {
-	chunks.push(codeTable.slice(i, i + chunkSize));
-}
-
-for (let i = 0; i < chunks.length; i++) {
-	urlReqStr.push(baseurl + chunks[i].map(element => "r_hk" + element).join(","));
-}
-
-
 function checkCodeLen(theCode) {
 	let codewidth = theCode.length;
 	let modifiedCode = "";
@@ -77,7 +75,7 @@ function checkCodeLen(theCode) {
 		codewidth = theCode.length;
 		theCode = theCode.slice(codewidth - 5, codewidth);
 		codewidth = theCode.length;
-		url = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,26,qfq';
+		url = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,100,qfq';
 		modifiedCode = "hk" + theCode;
 	} else {
 		if ((codewidth == 6) && !hsReservedCode.includes(theCode)) {
@@ -174,104 +172,24 @@ async function fetchAllData() {
 	return Object.keys(BaseObj).length > 0 ? BaseObj : null; // Return BaseObj if any data was fetched
 }
 
-
-
-
-
-
-async function updateChanges() {
-	updcnt = updcnt + 1
-	console.log("updateChanges...", updcnt)
-
-	const timearr = showTime().split(':')
-	const timestr = timearr[0] + timearr[1]
-	if (!(Number(timestr) > 925 && Number(timestr) < 1201 ||
-		Number(timestr) > 1259 && Number(timestr) < 1601)) {
-		document.getElementById("dateAndTime").innerHTML = "<lg>" + showDate() + "</lg> " + showTime() + "<k class='blinkred'> Market Closed</k>" + "<br> lastDateValue " + BaseObj["00388"].lastDateValue;
-		return
-	}
-	//console.log("updateInfo start", showTime())
-	await updateInfo()
-	//console.log("updateInfo complete ", showTime())
-	compareAll()
-
-    if (closepassArr.length > 5) {
-     plotChart(cUpPrevCloseArr, 'cUpPrevClose', 'Close over Prev Close', 'red');
-     plotChart(closepassArr, 'closepass', 'Close Over 3 day trend', 'blue');
-     plotChart(status3UpArr, 'status3Up', '3 Day Trend Up', 'green');
-     plotChart(highpassArr, 'highpass', 'High Over 3 day trend', 'orange');
-     plotChart(lowpassArr, 'lowpass', 'Low Over 3 day trend', 'green');
-    }
-
-}
-
-
-async function updateInfo() {
-	//console.log("updateInfo...")
-	firstTime = false
-	if (Object.keys(prevallResults).length === 0 && Object.keys(allResults).length == 0) {
-		firstTime = true
-	} else if (Object.keys(allResults).length != 0) {
-		prevallResults = { ...allResults };
-		firstTime = false
-	}
-	for (let i = 0; i < urlReqStr.length; i++) {
-		await fetchSegments(urlReqStr[i]);
-	}
-	// process data
-}
-
-
-// Function to fetch data chunks
-async function fetchSegments(url) {
-	try {
-		const response = await fetch(url);
-		const data = await response.text();
-		const rows = data.split(";");
-
-		rows.forEach(row => {
-			const columns = row.split("~");
-			if (columns.length > 1) {
-				const stockCode = columns[2];
-				const stknum = stockCode.replace("s_hk", "");
-
-				//console.log("extract: ", stknum)
-				const currentPrice = parseFloat(columns[35]);
-				//console.log("currentPrice: ", currentPrice)
-				BaseObj[stknum].high = parseFloat(columns[33]);
-				//console.log("high: ", BaseObj[stknum].high)
-				BaseObj[stknum].low = parseFloat(columns[34]);
-				//console.log("low: ", BaseObj[stknum].low)
-
-				const closesArray = BaseObj[stknum].closes;
-				closesArray[closesArray.length - 1] = currentPrice;
-
-				//console.log("stknum row extract finish: ", stknum)
-			}
-		});
-	} catch (error) {
-		console.error("Error fetching data:", error);
-	}
-}
-
 function compareAll() {
-	status3UpCnt = 0
-	status3DnCnt = 0
-	status4UpCnt = 0
-	status4DnCnt = 0
-	status5UpCnt = 0
-	status5DnCnt = 0
-	status10UpCnt = 0
-	status10DnCnt = 0
+	trend3UpCnt = 0
+	trend3DnCnt = 0
+	trend4UpCnt = 0
+	trend4DnCnt = 0
+	trend5UpCnt = 0
+	trend5DnCnt = 0
+	trend10UpCnt = 0
+	trend10DnCnt = 0
 
-	statusUpXCnt3 = 0
-	statusUpXCnt4 = 0
-	statusUpXCnt5 = 0
-	statusUpXCnt10 = 0
-	statusDnXCnt3 = 0
-	statusDnXCnt4 = 0
-	statusDnXCnt5 = 0
-	statusDnXCnt10 = 0
+	trendUpXCnt3 = 0
+	trendUpXCnt4 = 0
+	trendUpXCnt5 = 0
+	trendUpXCnt10 = 0
+	trendDnXCnt3 = 0
+	trendDnXCnt4 = 0
+	trendDnXCnt5 = 0
+	trendDnXCnt10 = 0
 
 	highpassCnt = 0
 	highFailCnt = 0
@@ -292,15 +210,15 @@ function compareAll() {
 		const statusMsg5 = checkXStat(5, 10, codeTable[i]);
 		const statusMsg10 = checkXStat(10, 20, codeTable[i]);
 
-		if (statusMsg3.includes('升穿')) { statusUpXCnt3 = statusUpXCnt3 + 1 }
-		if (statusMsg4.includes('升穿')) { statusUpXCnt4 = statusUpXCnt4 + 1 }
-		if (statusMsg5.includes('升穿')) { statusUpXCnt5 = statusUpXCnt5 + 1 }
-		if (statusMsg10.includes('升穿')) { statusUpXCnt10 = statusUpXCnt10 + 1 }
+		if (statusMsg3.includes('升穿')) { trendUpXCnt3 = trendUpXCnt3 + 1 }
+		if (statusMsg4.includes('升穿')) { trendUpXCnt4 = trendUpXCnt4 + 1 }
+		if (statusMsg5.includes('升穿')) { trendUpXCnt5 = trendUpXCnt5 + 1 }
+		if (statusMsg10.includes('升穿')) { trendUpXCnt10 = trendUpXCnt10 + 1 }
 
-		if (statusMsg3.includes('跌穿')) { statusDnXCnt3 = statusDnXCnt3 + 1 }
-		if (statusMsg4.includes('跌穿')) { statusDnXCnt4 = statusDnXCnt4 + 1 }
-		if (statusMsg5.includes('跌穿')) { statusDnXCnt5 = statusDnXCnt5 + 1 }
-		if (statusMsg10.includes('跌穿')) { statusDnXCnt10 = statusDnXCnt10 + 1 }
+		if (statusMsg3.includes('跌穿')) { trendDnXCnt3 = trendDnXCnt3 + 1 }
+		if (statusMsg4.includes('跌穿')) { trendDnXCnt4 = trendDnXCnt4 + 1 }
+		if (statusMsg5.includes('跌穿')) { trendDnXCnt5 = trendDnXCnt5 + 1 }
+		if (statusMsg10.includes('跌穿')) { trendDnXCnt10 = trendDnXCnt10 + 1 }
 	}
 
 	allResults = {
@@ -311,32 +229,32 @@ function compareAll() {
 		lowpassCnt: lowpassCnt,
 		lowFailCnt: lowFailCnt,
 
-		status3UpCnt: status3UpCnt,
-		status3DnCnt: status3DnCnt,
-		status4UpCnt: status4UpCnt,
-		status4DnCnt: status4DnCnt,
-		status5UpCnt: status5UpCnt,
-		status5DnCnt: status5DnCnt,
-		status10UpCnt: status10UpCnt,
-		status10DnCnt: status10DnCnt,
+		trend3UpCnt: trend3UpCnt,
+		trend3DnCnt: trend3DnCnt,
+		trend4UpCnt: trend4UpCnt,
+		trend4DnCnt: trend4DnCnt,
+		trend5UpCnt: trend5UpCnt,
+		trend5DnCnt: trend5DnCnt,
+		trend10UpCnt: trend10UpCnt,
+		trend10DnCnt: trend10DnCnt,
 
-		statusUpXCnt3: statusUpXCnt3,
-		statusDnXCnt3: statusDnXCnt3,
-		statusUpXCnt4: statusUpXCnt4,
-		statusDnXCnt4: statusDnXCnt4,
-		statusUpXCnt5: statusUpXCnt5,
-		statusDnXCnt5: statusDnXCnt5,
-		statusUpXCnt10: statusUpXCnt10,
-		statusDnXCnt10: statusDnXCnt10,
+		trendUpXCnt3: trendUpXCnt3,
+		trendDnXCnt3: trendDnXCnt3,
+		trendUpXCnt4: trendUpXCnt4,
+		trendDnXCnt4: trendDnXCnt4,
+		trendUpXCnt5: trendUpXCnt5,
+		trendDnXCnt5: trendDnXCnt5,
+		trendUpXCnt10: trendUpXCnt10,
+		trendDnXCnt10: trendDnXCnt10,
 
 		cUpPrevClose: cUpPrevCloseCnt,
 		cDnPrevClose: cDnPrevCloseCnt,
 
 	}
-	closepassArr.push(closepassCnt)
-	highpassArr.push(highpassCnt)
-	lowpassArr.push(lowpassCnt)
-	status3UpArr.push(status3UpCnt)
+	closeUpArr.push(closepassCnt)
+	highUpArr.push(highpassCnt)
+	lowUpArr.push(lowpassCnt)
+	trend3UpArr.push(trend3UpCnt)
 	cUpPrevCloseArr.push(cUpPrevCloseCnt)
 
 	showStat()
@@ -399,16 +317,16 @@ function checkXStat(shortperiod, longperiod, stkNum) {  // Add stkNum parameter
 
 	// 添加返回值
 	if (curSWma > prevSWma) {
-		if (shortperiod == 3) { status3UpCnt = status3UpCnt + 1 }
-		if (shortperiod == 4) { status4UpCnt = status4UpCnt + 1 }
-		if (shortperiod == 5) { status5UpCnt = status5UpCnt + 1 }
-		if (shortperiod == 10) { status10UpCnt = status10UpCnt + 1 }
+		if (shortperiod == 3) { trend3UpCnt = trend3UpCnt + 1 }
+		if (shortperiod == 4) { trend4UpCnt = trend4UpCnt + 1 }
+		if (shortperiod == 5) { trend5UpCnt = trend5UpCnt + 1 }
+		if (shortperiod == 10) { trend10UpCnt = trend10UpCnt + 1 }
 		return '升穿';
 	} else {
-		if (shortperiod == 3) { status3DnCnt = status3DnCnt + 1 }
-		if (shortperiod == 4) { status4DnCnt = status4DnCnt + 1 }
-		if (shortperiod == 5) { status5DnCnt = status5DnCnt + 1 }
-		if (shortperiod == 10) { status10DnCnt = status10DnCnt + 1 }
+		if (shortperiod == 3) { trend3DnCnt = trend3DnCnt + 1 }
+		if (shortperiod == 4) { trend4DnCnt = trend4DnCnt + 1 }
+		if (shortperiod == 5) { trend5DnCnt = trend5DnCnt + 1 }
+		if (shortperiod == 10) { trend10DnCnt = trend10DnCnt + 1 }
 		return '跌穿';
 	}
 }
@@ -449,51 +367,51 @@ function showStat() {
                     <td>低: 差：<gr>${result[5]}</gr></td>
                 </tr>
                 <tr class="trend-section">
-                    <td>3日线升：<r>${status3UpCnt}</r></td>
+                    <td>3日线升：<r>${trend3UpCnt}</r></td>
                     <td>差：<r>${result[6]}</r></td>
-                    <td>3日线跌：<gr>${status3DnCnt}</gr></td>
+                    <td>3日线跌：<gr>${trend3DnCnt}</gr></td>
                     <td>差：<gr>${result[7]}</gr></td>
                 </tr>
                 <tr>
-                    <td>4日线升：<r>${status4UpCnt}</r></td>
+                    <td>4日线升：<r>${trend4UpCnt}</r></td>
                     <td>差：<r>${result[8]}</r></td>
-                    <td>4日线跌：<gr>${status4DnCnt}</gr></td>
+                    <td>4日线跌：<gr>${trend4DnCnt}</gr></td>
                     <td>差：<gr>${result[9]}</gr></td>
                 </tr>
                 <tr>
-                    <td>5日线升：<r>${status5UpCnt}</r></td>
+                    <td>5日线升：<r>${trend5UpCnt}</r></td>
                     <td>差：<r>${result[10]}</r></td>
-                    <td>5日线跌：<gr>${status5DnCnt}</gr></td>
+                    <td>5日线跌：<gr>${trend5DnCnt}</gr></td>
                     <td>差：<gr>${result[11]}</gr></td>
                 </tr>
                 <tr>
-                    <td>10日线升：<r>${status10UpCnt}</r></td>
+                    <td>10日线升：<r>${trend10UpCnt}</r></td>
                     <td>差：<r>${result[12]}</r></td>
-                    <td>10日线跌：<gr>${status10DnCnt}</gr></td>
+                    <td>10日线跌：<gr>${trend10DnCnt}</gr></td>
                     <td>差：<gr>${result[13]}</gr></td>
                 </tr>
                 <tr class="cross-section">
-                    <td>3日升穿6日：<r>${statusUpXCnt3}</r></td>
+                    <td>3日升穿6日：<r>${trendUpXCnt3}</r></td>
                     <td>差：<r>${result[14]}</r></td>
-                    <td>3日跌穿6日：<gr>${statusDnXCnt3}</gr></td>
+                    <td>3日跌穿6日：<gr>${trendDnXCnt3}</gr></td>
                     <td>差：<gr>${result[15]}</gr></td>
                 </tr>
                 <tr>
-                    <td>4日升穿10日：<r>${statusUpXCnt4}</r></td>
+                    <td>4日升穿10日：<r>${trendUpXCnt4}</r></td>
                     <td>差：<r>${result[16]}</r></td>
-                    <td>4日跌穿10日：<gr>${statusDnXCnt4}</gr></td>
+                    <td>4日跌穿10日：<gr>${trendDnXCnt4}</gr></td>
                     <td>差：<gr>${result[17]}</gr></td>
                 </tr>
                 <tr>
-                    <td>5日升穿10日：<r>${statusUpXCnt5}</r></td>
+                    <td>5日升穿10日：<r>${trendUpXCnt5}</r></td>
                     <td>差：<r>${result[18]}</r></td>
-                    <td>5日跌穿10日：<gr>${statusDnXCnt5}</gr></td>
+                    <td>5日跌穿10日：<gr>${trendDnXCnt5}</gr></td>
                     <td>差：<gr>${result[19]}</gr></td>
                 </tr>
                 <tr>
-                    <td>10日升穿20日：<r>${statusUpXCnt10}</r></td>
+                    <td>10日升穿20日：<r>${trendUpXCnt10}</r></td>
                     <td>差：<r>${result[20]}</r></td>
-                    <td>10日跌穿20日：<gr>${statusDnXCnt10}</gr></td>
+                    <td>10日跌穿20日：<gr>${trendDnXCnt10}</gr></td>
                     <td>差：<gr>${result[21]}</gr></td>
                 </tr>
                 <tr>
@@ -625,7 +543,7 @@ function plotChart(dataArray, chartId, label, color) {
 			}]
 		},
 		options: {
-			responsive: true,
+			responsive: false,
 			maintainAspectRatio: false,
 			scales: {
 				y: {
@@ -637,35 +555,121 @@ function plotChart(dataArray, chartId, label, color) {
 	});
 }
 
+function calculateWMA(prices, index, period) {
+    if (index < period - 1) {
+        throw new Error("Not enough data points for the given period.");
+    }
 
-// Function to process the next request in the queue
-async function processQueue() {
-	// return after loop completed
-	while (requestQueue.length > 0 || activeRequests > 0) {
-		console.log("requestQueue.length ", requestQueue.length)
-		if (activeRequests < MAX_CONCURRENT_REQUESTS && requestQueue.length > 0) {
-			activeRequests++;
-			const request = requestQueue.shift();
-			await request();
-			activeRequests--;
-		} else {
-			// Wait for a short time before checking the queue again
-			await new Promise(resolve => setTimeout(resolve, 10));
-		}
-	}
+    let weightedSum = 0;
+    let weightSum = 0;
+
+    for (let i = 0; i < period; i++) {
+        const weight = period - i; // Weights: 3, 2, 1 for period=3
+        weightedSum += prices[index - i] * weight;
+        weightSum += weight;
+    }
+
+    return weightedSum / weightSum;
 }
 
-// Main function to collect basic data
+
+// Start the process
 async function main() {
-	// fetchAllData --> processQueue -->
-	await fetchAllData()
-	compareAll()
-	//console.log("fetchAllData loop")
+  // fetchAllData --> processQueue -->
+  await fetchAllData()
 
+    stdArr = BaseObj["00388"].closes
+    totalDays = stdArr.length
+
+  for (let loopDay = 1; loopDay < totalDays; loopDay++) {
+    let uptotal = 0, dntotal = 0;
+    let wma3uptotal = 0, wma3dntotal = 0;
+    let gtPrevWma3total = 0, ltPrevWma3total = 0;
+    let u3X6total = 0, d3X6total = 0;
+    let u4X10total = 0, d4X10total = 0;
+    let u5X10total = 0, d5X10total = 0;
+    let u10X20total = 0, d10X20total = 0;
+
+    for (let stkPointer = 0; stkPointer < codeTable.length; stkPointer++) {
+
+      const closeArr = BaseObj[codeTable[stkPointer]].closes;
+      const curClose = closeArr[loopDay];
+      const prevClose = closeArr[loopDay - 1];
+
+      // Calculate WMAs
+      let wma3, wma4, wma5, wma6, wma10, wma20;
+      if (loopDay > 1) wma3 = calculateWMA(closeArr, loopDay, 3);
+      if (loopDay > 2) wma4 = calculateWMA(closeArr, loopDay, 4);
+      if (loopDay > 3) wma5 = calculateWMA(closeArr, loopDay, 5);
+      if (loopDay > 4) wma6 = calculateWMA(closeArr, loopDay, 6);
+      if (loopDay > 8) wma10 = calculateWMA(closeArr, loopDay, 10);
+      if (loopDay > 18) wma20 = calculateWMA(closeArr, loopDay, 20);
+
+      // Compare day up/down
+      if (curClose > prevClose) uptotal++;
+      if (curClose < prevClose) dntotal++;
+
+      // Compare with trendlines
+      if (loopDay > 1) {
+        if (curClose > wma3) wma3uptotal++;
+        if (curClose < wma3) wma3dntotal++;
+      }
+
+      if (loopDay > 2) {
+        const prevWma3 = calculateWMA(closeArr, loopDay - 1, 3);
+        if (wma3 > prevWma3) gtPrevWma3total++;
+        if (wma3 < prevWma3) ltPrevWma3total++;
+      }
+
+      if (loopDay > 4) {
+        if (wma3 > wma6) u3X6total++;
+        if (wma3 < wma6) d3X6total++;
+      }
+
+      if (loopDay > 8) {
+        if (wma4 > wma10) u4X10total++;
+        if (wma4 < wma10) d4X10total++;
+        if (wma5 > wma10) u5X10total++;
+        if (wma5 < wma10) d5X10total++;
+      }
+
+      if (loopDay > 18) {
+        if (wma10 > wma20) u10X20total++;
+        if (wma10 < wma20) d10X20total++;
+      }
+    }
+
+    // Push results to arrays
+    closeUpArr.push(uptotal);
+    closeDnArr.push(dntotal);
+    wma3UpArr.push(wma3uptotal);
+    wma3DnArr.push(wma3dntotal);
+    gtPrevWma3Arr.push(gtPrevWma3total);
+    ltPrevWma3Arr.push(ltPrevWma3total);
+    u3X6Arr.push(u3X6total);
+    d3X6Arr.push(d3X6total);
+    u4X10Arr.push(u4X10total);
+    d4X10Arr.push(d4X10total);
+    u5X10Arr.push(u5X10total);
+    d5X10Arr.push(d5X10total);
+    u10X20Arr.push(u10X20total);
+    d10X20Arr.push(d10X20total);
+  }
+  plotChart(closeUpArr, "closeUp", "closeUp", "#808080")
+  plotChart(closeUpArr, "closeUp", "closeUp", "#909080")
+  plotChart(closeDnArr, "closeDn", "closeDn", "#a08080")
+  plotChart(wma3UpArr, "wma3Up", "wma3Up", "#b08080")
+  plotChart(wma3DnArr, "wma3Dn", "wma3Dn", "#c08080")
+  plotChart(gtPrevWma3Arr, "gtPrevWma3", "gtPrevWma3", "#d08080")
+  plotChart(ltPrevWma3Arr, "ltPrevWma3", "ltPrevWma3", "#e08080")
+  plotChart(u3X6Arr, "u3X6", "u3X6", "#f08080")
+  plotChart(d3X6Arr, "d3X6", "d3X6", "#800080")
+  plotChart(u4X10Arr, "u4X10", "u4X10", "#801080")
+  plotChart(d4X10Arr, "d4X10", "d4X10", "#802080")
+  plotChart(u5X10Arr, "u5X10", "u5X10", "#803080")
+  plotChart(d5X10Arr, "d5X10", "d5X10", "#804080")
+  plotChart(u10X20Arr, "u10X20", "u10X20", "#806080")
+  plotChart(d10X20Arr, "d10X20", "d10X20", "#805080")
 }
+main()
 
-
-// Start the main process
-main();
-
-setInterval(updateChanges, 60000);

@@ -15,30 +15,30 @@ prevallResults = {};
 closepassArr = []
 highpassArr = []
 lowpassArr = []
-status3UpArr = []
+trend3UpArr = []
 cUpPrevCloseArr = []
 
 
 firstTime = false
 
 updcnt = 0
-status3UpCnt = 0
-status3DnCnt = 0
-status4UpCnt = 0
-status4DnCnt = 0
-status5UpCnt = 0
-status5DnCnt = 0
-status10UpCnt = 0
-status10DnCnt = 0
+trend3UpCnt = 0
+trend3DnCnt = 0
+trend4UpCnt = 0
+trend4DnCnt = 0
+trend5UpCnt = 0
+trend5DnCnt = 0
+trend10UpCnt = 0
+trend10DnCnt = 0
 
-statusUpXCnt3 = 0
-statusUpXCnt4 = 0
-statusUpXCnt5 = 0
-statusUpXCnt10 = 0
-statusDnXCnt3 = 0
-statusDnXCnt4 = 0
-statusDnXCnt5 = 0
-statusDnXCnt10 = 0
+trendUpXCnt3 = 0
+trendUpXCnt4 = 0
+trendUpXCnt5 = 0
+trendUpXCnt10 = 0
+trendDnXCnt3 = 0
+trendDnXCnt4 = 0
+trendDnXCnt5 = 0
+trendDnXCnt10 = 0
 
 highpassCnt = 0
 highFailCnt = 0
@@ -198,7 +198,7 @@ async function updateChanges() {
     if (closepassArr.length > 5) {
      plotChart(cUpPrevCloseArr, 'cUpPrevClose', 'Close over Prev Close', 'red');
      plotChart(closepassArr, 'closepass', 'Close Over 3 day trend', 'blue');
-     plotChart(status3UpArr, 'status3Up', '3 Day Trend Up', 'green');
+     plotChart(trend3UpArr, 'trend3Up', '3 Day Trend Up', 'pink');
      plotChart(highpassArr, 'highpass', 'High Over 3 day trend', 'orange');
      plotChart(lowpassArr, 'lowpass', 'Low Over 3 day trend', 'green');
     }
@@ -250,28 +250,28 @@ async function fetchSegments(url) {
 			}
 		});
 	} catch (error) {
-		console.error("Error fetching data:", error);
+		console.error("Error fetching data:", error, stknum);
 	}
 }
 
 function compareAll() {
-	status3UpCnt = 0
-	status3DnCnt = 0
-	status4UpCnt = 0
-	status4DnCnt = 0
-	status5UpCnt = 0
-	status5DnCnt = 0
-	status10UpCnt = 0
-	status10DnCnt = 0
+	trend3UpCnt = 0
+	trend3DnCnt = 0
+	trend4UpCnt = 0
+	trend4DnCnt = 0
+	trend5UpCnt = 0
+	trend5DnCnt = 0
+	trend10UpCnt = 0
+	trend10DnCnt = 0
 
-	statusUpXCnt3 = 0
-	statusUpXCnt4 = 0
-	statusUpXCnt5 = 0
-	statusUpXCnt10 = 0
-	statusDnXCnt3 = 0
-	statusDnXCnt4 = 0
-	statusDnXCnt5 = 0
-	statusDnXCnt10 = 0
+	trendUpXCnt3 = 0
+	trendUpXCnt4 = 0
+	trendUpXCnt5 = 0
+	trendUpXCnt10 = 0
+	trendDnXCnt3 = 0
+	trendDnXCnt4 = 0
+	trendDnXCnt5 = 0
+	trendDnXCnt10 = 0
 
 	highpassCnt = 0
 	highFailCnt = 0
@@ -292,15 +292,15 @@ function compareAll() {
 		const statusMsg5 = checkXStat(5, 10, codeTable[i]);
 		const statusMsg10 = checkXStat(10, 20, codeTable[i]);
 
-		if (statusMsg3.includes('升穿')) { statusUpXCnt3 = statusUpXCnt3 + 1 }
-		if (statusMsg4.includes('升穿')) { statusUpXCnt4 = statusUpXCnt4 + 1 }
-		if (statusMsg5.includes('升穿')) { statusUpXCnt5 = statusUpXCnt5 + 1 }
-		if (statusMsg10.includes('升穿')) { statusUpXCnt10 = statusUpXCnt10 + 1 }
+		if (statusMsg3.includes('升穿')) { trendUpXCnt3 = trendUpXCnt3 + 1 }
+		if (statusMsg4.includes('升穿')) { trendUpXCnt4 = trendUpXCnt4 + 1 }
+		if (statusMsg5.includes('升穿')) { trendUpXCnt5 = trendUpXCnt5 + 1 }
+		if (statusMsg10.includes('升穿')) { trendUpXCnt10 = trendUpXCnt10 + 1 }
 
-		if (statusMsg3.includes('跌穿')) { statusDnXCnt3 = statusDnXCnt3 + 1 }
-		if (statusMsg4.includes('跌穿')) { statusDnXCnt4 = statusDnXCnt4 + 1 }
-		if (statusMsg5.includes('跌穿')) { statusDnXCnt5 = statusDnXCnt5 + 1 }
-		if (statusMsg10.includes('跌穿')) { statusDnXCnt10 = statusDnXCnt10 + 1 }
+		if (statusMsg3.includes('跌穿')) { trendDnXCnt3 = trendDnXCnt3 + 1 }
+		if (statusMsg4.includes('跌穿')) { trendDnXCnt4 = trendDnXCnt4 + 1 }
+		if (statusMsg5.includes('跌穿')) { trendDnXCnt5 = trendDnXCnt5 + 1 }
+		if (statusMsg10.includes('跌穿')) { trendDnXCnt10 = trendDnXCnt10 + 1 }
 	}
 
 	allResults = {
@@ -311,23 +311,23 @@ function compareAll() {
 		lowpassCnt: lowpassCnt,
 		lowFailCnt: lowFailCnt,
 
-		status3UpCnt: status3UpCnt,
-		status3DnCnt: status3DnCnt,
-		status4UpCnt: status4UpCnt,
-		status4DnCnt: status4DnCnt,
-		status5UpCnt: status5UpCnt,
-		status5DnCnt: status5DnCnt,
-		status10UpCnt: status10UpCnt,
-		status10DnCnt: status10DnCnt,
+		trend3UpCnt: trend3UpCnt,
+		trend3DnCnt: trend3DnCnt,
+		trend4UpCnt: trend4UpCnt,
+		trend4DnCnt: trend4DnCnt,
+		trend5UpCnt: trend5UpCnt,
+		trend5DnCnt: trend5DnCnt,
+		trend10UpCnt: trend10UpCnt,
+		trend10DnCnt: trend10DnCnt,
 
-		statusUpXCnt3: statusUpXCnt3,
-		statusDnXCnt3: statusDnXCnt3,
-		statusUpXCnt4: statusUpXCnt4,
-		statusDnXCnt4: statusDnXCnt4,
-		statusUpXCnt5: statusUpXCnt5,
-		statusDnXCnt5: statusDnXCnt5,
-		statusUpXCnt10: statusUpXCnt10,
-		statusDnXCnt10: statusDnXCnt10,
+		trendUpXCnt3: trendUpXCnt3,
+		trendDnXCnt3: trendDnXCnt3,
+		trendUpXCnt4: trendUpXCnt4,
+		trendDnXCnt4: trendDnXCnt4,
+		trendUpXCnt5: trendUpXCnt5,
+		trendDnXCnt5: trendDnXCnt5,
+		trendUpXCnt10: trendUpXCnt10,
+		trendDnXCnt10: trendDnXCnt10,
 
 		cUpPrevClose: cUpPrevCloseCnt,
 		cDnPrevClose: cDnPrevCloseCnt,
@@ -336,7 +336,7 @@ function compareAll() {
 	closepassArr.push(closepassCnt)
 	highpassArr.push(highpassCnt)
 	lowpassArr.push(lowpassCnt)
-	status3UpArr.push(status3UpCnt)
+	trend3UpArr.push(trend3UpCnt)
 	cUpPrevCloseArr.push(cUpPrevCloseCnt)
 
 	showStat()
@@ -399,16 +399,16 @@ function checkXStat(shortperiod, longperiod, stkNum) {  // Add stkNum parameter
 
 	// 添加返回值
 	if (curSWma > prevSWma) {
-		if (shortperiod == 3) { status3UpCnt = status3UpCnt + 1 }
-		if (shortperiod == 4) { status4UpCnt = status4UpCnt + 1 }
-		if (shortperiod == 5) { status5UpCnt = status5UpCnt + 1 }
-		if (shortperiod == 10) { status10UpCnt = status10UpCnt + 1 }
+		if (shortperiod == 3) { trend3UpCnt = trend3UpCnt + 1 }
+		if (shortperiod == 4) { trend4UpCnt = trend4UpCnt + 1 }
+		if (shortperiod == 5) { trend5UpCnt = trend5UpCnt + 1 }
+		if (shortperiod == 10) { trend10UpCnt = trend10UpCnt + 1 }
 		return '升穿';
 	} else {
-		if (shortperiod == 3) { status3DnCnt = status3DnCnt + 1 }
-		if (shortperiod == 4) { status4DnCnt = status4DnCnt + 1 }
-		if (shortperiod == 5) { status5DnCnt = status5DnCnt + 1 }
-		if (shortperiod == 10) { status10DnCnt = status10DnCnt + 1 }
+		if (shortperiod == 3) { trend3DnCnt = trend3DnCnt + 1 }
+		if (shortperiod == 4) { trend4DnCnt = trend4DnCnt + 1 }
+		if (shortperiod == 5) { trend5DnCnt = trend5DnCnt + 1 }
+		if (shortperiod == 10) { trend10DnCnt = trend10DnCnt + 1 }
 		return '跌穿';
 	}
 }
@@ -449,51 +449,51 @@ function showStat() {
                     <td>低: 差：<gr>${result[5]}</gr></td>
                 </tr>
                 <tr class="trend-section">
-                    <td>3日线升：<r>${status3UpCnt}</r></td>
+                    <td>3日线升：<r>${trend3UpCnt}</r></td>
                     <td>差：<r>${result[6]}</r></td>
-                    <td>3日线跌：<gr>${status3DnCnt}</gr></td>
+                    <td>3日线跌：<gr>${trend3DnCnt}</gr></td>
                     <td>差：<gr>${result[7]}</gr></td>
                 </tr>
                 <tr>
-                    <td>4日线升：<r>${status4UpCnt}</r></td>
+                    <td>4日线升：<r>${trend4UpCnt}</r></td>
                     <td>差：<r>${result[8]}</r></td>
-                    <td>4日线跌：<gr>${status4DnCnt}</gr></td>
+                    <td>4日线跌：<gr>${trend4DnCnt}</gr></td>
                     <td>差：<gr>${result[9]}</gr></td>
                 </tr>
                 <tr>
-                    <td>5日线升：<r>${status5UpCnt}</r></td>
+                    <td>5日线升：<r>${trend5UpCnt}</r></td>
                     <td>差：<r>${result[10]}</r></td>
-                    <td>5日线跌：<gr>${status5DnCnt}</gr></td>
+                    <td>5日线跌：<gr>${trend5DnCnt}</gr></td>
                     <td>差：<gr>${result[11]}</gr></td>
                 </tr>
                 <tr>
-                    <td>10日线升：<r>${status10UpCnt}</r></td>
+                    <td>10日线升：<r>${trend10UpCnt}</r></td>
                     <td>差：<r>${result[12]}</r></td>
-                    <td>10日线跌：<gr>${status10DnCnt}</gr></td>
+                    <td>10日线跌：<gr>${trend10DnCnt}</gr></td>
                     <td>差：<gr>${result[13]}</gr></td>
                 </tr>
                 <tr class="cross-section">
-                    <td>3日升穿6日：<r>${statusUpXCnt3}</r></td>
+                    <td>3日升穿6日：<r>${trendUpXCnt3}</r></td>
                     <td>差：<r>${result[14]}</r></td>
-                    <td>3日跌穿6日：<gr>${statusDnXCnt3}</gr></td>
+                    <td>3日跌穿6日：<gr>${trendDnXCnt3}</gr></td>
                     <td>差：<gr>${result[15]}</gr></td>
                 </tr>
                 <tr>
-                    <td>4日升穿10日：<r>${statusUpXCnt4}</r></td>
+                    <td>4日升穿10日：<r>${trendUpXCnt4}</r></td>
                     <td>差：<r>${result[16]}</r></td>
-                    <td>4日跌穿10日：<gr>${statusDnXCnt4}</gr></td>
+                    <td>4日跌穿10日：<gr>${trendDnXCnt4}</gr></td>
                     <td>差：<gr>${result[17]}</gr></td>
                 </tr>
                 <tr>
-                    <td>5日升穿10日：<r>${statusUpXCnt5}</r></td>
+                    <td>5日升穿10日：<r>${trendUpXCnt5}</r></td>
                     <td>差：<r>${result[18]}</r></td>
-                    <td>5日跌穿10日：<gr>${statusDnXCnt5}</gr></td>
+                    <td>5日跌穿10日：<gr>${trendDnXCnt5}</gr></td>
                     <td>差：<gr>${result[19]}</gr></td>
                 </tr>
                 <tr>
-                    <td>10日升穿20日：<r>${statusUpXCnt10}</r></td>
+                    <td>10日升穿20日：<r>${trendUpXCnt10}</r></td>
                     <td>差：<r>${result[20]}</r></td>
-                    <td>10日跌穿20日：<gr>${statusDnXCnt10}</gr></td>
+                    <td>10日跌穿20日：<gr>${trendDnXCnt10}</gr></td>
                     <td>差：<gr>${result[21]}</gr></td>
                 </tr>
                 <tr>
