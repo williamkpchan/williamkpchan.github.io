@@ -10,7 +10,7 @@ const curr_date = new Date();
 const currentDate = curr_date.toISOString().split('T')[0];
 
 
-const BaseObj = {}; // This will store all the collected data
+const BaseObjD = {}; // This will store all the collected data
 
   // Initialize arrays (with proper declarations)
   const closeUpArr = new Array(1).fill(null);
@@ -28,7 +28,7 @@ const BaseObj = {}; // This will store all the collected data
   const u10X20Arr = new Array(19).fill(null);
   const d10X20Arr = new Array(19).fill(null);
 
-
+stdDArr = []
 trendline3 = []
 trendline4 = []
 trendline5 = []
@@ -75,7 +75,7 @@ function checkCodeLen(theCode) {
 		codewidth = theCode.length;
 		theCode = theCode.slice(codewidth - 5, codewidth);
 		codewidth = theCode.length;
-		url = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,100,qfq';
+		url = 'https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=hk' + theCode + ',day,,,63,qfq';
 		modifiedCode = "hk" + theCode;
 	} else {
 		if ((codewidth == 6) && !hsReservedCode.includes(theCode)) {
@@ -108,8 +108,8 @@ async function fetchKline(theCode, theurl) {
 		if (stkdata.data && stkdata.data[theCode]) {
 			const stkName = stkdata.data[theCode].qt[theCode][1];
 			const dataObj = stkdata.data[theCode].qfqday || stkdata.data[theCode].day;
-
 			const closeArr = [];
+			const dateArr = [];
 			const lastPointer = dataObj.length - 1;
 			const highValue = dataObj[lastPointer][3];
 			const lowValue = dataObj[lastPointer][4];
@@ -123,6 +123,7 @@ async function fetchKline(theCode, theurl) {
 
 			for (let i = 0; i < dataObj.length; i++) {
 				closeArr.push(Number(dataObj[i][2]));
+				dateArr.push(dataObj[i][0]);
 			}
 
 			return {
@@ -130,6 +131,7 @@ async function fetchKline(theCode, theurl) {
 				stkname: stkName,
 				lastDateValue: lastDate,
 				closes: closeArr,
+				date: dateArr,
 				high: highValue,
 				low: lowValue,
 			};
@@ -158,7 +160,7 @@ async function fetchAllData() {
 				console.warn(`Failed to fetch data for ${codeTable[i]}, skipping...`);
 				continue; // Skip this stock instead of breaking
 			}
-			BaseObj[codeTable[i]] = stockData;
+			BaseObjD[codeTable[i]] = stockData;
 		} catch (error) {
 			console.error(`Error fetching data for ${modifiedCode}:`, error);
 			continue; // Skip this stock instead of breaking
@@ -167,9 +169,9 @@ async function fetchAllData() {
 		await new Promise(resolve => setTimeout(resolve, 50));
 	}
 	console.log("fetchAllData...\nFinished!\n", showTime())
-	console.log("BaseObj length:", Object.keys(BaseObj).length)
+	console.log("BaseObjD length:", Object.keys(BaseObjD).length)
 
-	return Object.keys(BaseObj).length > 0 ? BaseObj : null; // Return BaseObj if any data was fetched
+	return Object.keys(BaseObjD).length > 0 ? BaseObjD : null; // Return BaseObjD if any data was fetched
 }
 
 function compareAll() {
@@ -262,9 +264,9 @@ function compareAll() {
 
 
 function checkHLC(stkNum) {
-	curHigh = BaseObj[stkNum].high;
-	curLow = BaseObj[stkNum].low;
-	closeArr = BaseObj[stkNum].closes
+	curHigh = BaseObjD[stkNum].high;
+	curLow = BaseObjD[stkNum].low;
+	closeArr = BaseObjD[stkNum].closes
 	curClose = closeArr[closeArr.length - 1];
 	prevClose = closeArr[closeArr.length - 2];
 
@@ -298,14 +300,14 @@ function checkHLC(stkNum) {
 }
 
 function checkXStat(shortperiod, longperiod, stkNum) {  // Add stkNum parameter
-	//console.log("BaseObj[stkNum] Object.keys: ", Object.keys(BaseObj[stkNum]))
+	//console.log("BaseObjD[stkNum] Object.keys: ", Object.keys(BaseObjD[stkNum]))
 
-	if (!BaseObj[stkNum]) {  // Add safety check
+	if (!BaseObjD[stkNum]) {  // Add safety check
 		console.warn(`Skipping checkXStat for ${stkNum}: no data available`);
 		return '';
 	}
 
-	closeArr = BaseObj[stkNum].closes  // Use the provided stock number
+	closeArr = BaseObjD[stkNum].closes  // Use the provided stock number
 	curPointer = closeArr.length - 1
 
 	const prevArray = closeArr.slice(0, curPointer - 1);
@@ -346,7 +348,7 @@ function showStat() {
         <div class="stat-table">
             <table>
                 <tr>
-                    <th colspan="4">${showDate()} ${showTime()} <r>lastDateValue</r> ${BaseObj["00388"].lastDateValue}</th>
+                    <th colspan="4">${showDate()} ${showTime()} <r>lastDateValue</r> ${BaseObjD["00388"].lastDateValue}</th>
                 </tr>
                 <tr>
                     <td><bpk>收</bpk>: 比3日线高：<r>${closepassCnt}</r></td>
@@ -517,11 +519,23 @@ function bollingerBands(data, period, multiplier) {
 
 
 function plotChart(dataArray, chartId, label, color) {
+ // <y>创建标题</y>
+
+
+ const img = document.createElement('img');
+ img.src = 'http://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=T&lang=1&titlestyle=1&vol=1&Indicator=9&indpara1=10&indpara2=1.6&indpara3=0&indpara4=0&indpara5=0&subChart1=3&ref1para1=5&ref1para2=10&ref1para3=3&scheme=3&com=100&chartwidth=800&chartheight=500&stockid=110000&period=7&type=1&logoStyle=1';
+
+ const title = document.createElement('pk');
+ //title.textContent = label + "<br>";
+ title.innerHTML = label + "<br>";
+
 	// Create canvas element if it doesn't exist
 	let chartContainer = document.getElementById(chartId);
 	if (!chartContainer) {
 		chartContainer = document.createElement('div');
 		chartContainer.id = chartId;
+		document.getElementById('chartOutput').appendChild(title);
+		document.getElementById('chartOutput').appendChild(img);
 		document.getElementById('chartOutput').appendChild(chartContainer);
 	}
 	chartContainer.innerHTML = '<canvas></canvas>';
@@ -532,7 +546,7 @@ function plotChart(dataArray, chartId, label, color) {
 	new Chart(ctx, {
 		type: 'line',
 		data: {
-			labels: dataArray.map((_, index) => `${index + 1}`),
+			labels: stdDArr,
 			datasets: [{
 				label: label,
 				data: dataArray,
@@ -578,7 +592,8 @@ async function main() {
   // fetchAllData --> processQueue -->
   await fetchAllData()
 
-    stdArr = BaseObj["00388"].closes
+    stdArr = BaseObjD["00388"].closes
+    stdDArr = BaseObjD["00388"].date
     totalDays = stdArr.length
 
   for (let loopDay = 1; loopDay < totalDays; loopDay++) {
@@ -592,7 +607,7 @@ async function main() {
 
     for (let stkPointer = 0; stkPointer < codeTable.length; stkPointer++) {
 
-      const closeArr = BaseObj[codeTable[stkPointer]].closes;
+      const closeArr = BaseObjD[codeTable[stkPointer]].closes;
       const curClose = closeArr[loopDay];
       const prevClose = closeArr[loopDay - 1];
 
@@ -655,21 +670,20 @@ async function main() {
     u10X20Arr.push(u10X20total);
     d10X20Arr.push(d10X20total);
   }
-  plotChart(closeUpArr, "closeUp", "closeUp", "#808080")
-  plotChart(closeUpArr, "closeUp", "closeUp", "#909080")
-  plotChart(closeDnArr, "closeDn", "closeDn", "#a08080")
-  plotChart(wma3UpArr, "wma3Up", "wma3Up", "#b08080")
-  plotChart(wma3DnArr, "wma3Dn", "wma3Dn", "#c08080")
-  plotChart(gtPrevWma3Arr, "gtPrevWma3", "gtPrevWma3", "#d08080")
-  plotChart(ltPrevWma3Arr, "ltPrevWma3", "ltPrevWma3", "#e08080")
-  plotChart(u3X6Arr, "u3X6", "u3X6", "#f08080")
-  plotChart(d3X6Arr, "d3X6", "d3X6", "#800080")
-  plotChart(u4X10Arr, "u4X10", "u4X10", "#801080")
-  plotChart(d4X10Arr, "d4X10", "d4X10", "#802080")
-  plotChart(u5X10Arr, "u5X10", "u5X10", "#803080")
-  plotChart(d5X10Arr, "d5X10", "d5X10", "#804080")
-  plotChart(u10X20Arr, "u10X20", "u10X20", "#806080")
-  plotChart(d10X20Arr, "d10X20", "d10X20", "#805080")
+  plotChart(closeUpArr, "closeUp", "收市升", "#909080")
+  plotChart(closeDnArr, "closeDn", "收市跌", "#a08080")
+  plotChart(wma3UpArr, "wma3Up", "三日线升", "#b08080")
+  plotChart(wma3DnArr, "wma3Dn", "三日线跌", "#c08080")
+  plotChart(gtPrevWma3Arr, "gtPrevWma3", "三日线上", "#d08080")
+  plotChart(ltPrevWma3Arr, "ltPrevWma3", "三日线下", "#e08080")
+  plotChart(u3X6Arr, "u3X6", "3上穿6", "#f08080")
+  plotChart(d3X6Arr, "d3X6", "3下穿6", "#800080")
+  plotChart(u4X10Arr, "u4X10", "4上穿10", "#801080")
+  plotChart(d4X10Arr, "d4X10", "4下穿10", "#802080")
+  plotChart(u5X10Arr, "u5X10", "5上穿10", "#803080")
+  plotChart(d5X10Arr, "d5X10", "5下穿10", "#804080")
+  plotChart(u10X20Arr, "u10X20", "10上穿20", "#806080")
+  plotChart(d10X20Arr, "d10X20", "10下穿20", "#805080")
 }
 main()
 

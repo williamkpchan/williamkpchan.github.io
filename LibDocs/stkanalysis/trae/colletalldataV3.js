@@ -50,6 +50,8 @@ closeFailCnt = 0
 cUpPrevCloseCnt = 0
 cDnPrevCloseCnt = 0
 
+timeArr = []
+
 // prepare basic materials
 const baseurl = "https://sqt.gtimg.cn/?q=";
 //   A stk       https://qt.gtimg.cn/?q=sh000001,sz000002 seems the same
@@ -112,6 +114,7 @@ async function fetchKline(theCode, theurl) {
 			const dataObj = stkdata.data[theCode].qfqday || stkdata.data[theCode].day;
 
 			const closeArr = [];
+			const dateArr = [];
 			const lastPointer = dataObj.length - 1;
 			const highValue = dataObj[lastPointer][3];
 			const lowValue = dataObj[lastPointer][4];
@@ -125,6 +128,7 @@ async function fetchKline(theCode, theurl) {
 
 			for (let i = 0; i < dataObj.length; i++) {
 				closeArr.push(Number(dataObj[i][2]));
+				dateArr.push(dataObj[i][0]);
 			}
 
 			return {
@@ -132,6 +136,7 @@ async function fetchKline(theCode, theurl) {
 				stkname: stkName,
 				lastDateValue: lastDate,
 				closes: closeArr,
+				date: dateArr,
 				high: highValue,
 				low: lowValue,
 			};
@@ -147,9 +152,6 @@ async function fetchAllData() {
 	let hasError = false;
 	console.log("fetchAllData...\nmay take long time!\nStart: ", showTime())
 	document.getElementById("dateAndTime").append("趋势统计表 总数：" + codeTable.length)
-
-	timearr = showTime().split(':')
-	timestr = timearr[0] + timearr[1]
 
 	for (let i = 0; i < codeTable.length; i++) {
 		const { modifiedCode, url } = checkCodeLen(codeTable[i]);
@@ -183,24 +185,26 @@ async function updateChanges() {
 	updcnt = updcnt + 1
 	console.log("updateChanges...", updcnt)
 
-	const timearr = showTime().split(':')
-	const timestr = timearr[0] + timearr[1]
+	const timestrarr = showTime().split(':')
+	const timestr = timestrarr[0] + timestrarr[1]
 	if (!(Number(timestr) > 925 && Number(timestr) < 1201 ||
 		Number(timestr) > 1259 && Number(timestr) < 1601)) {
 		document.getElementById("dateAndTime").innerHTML = "<lg>" + showDate() + "</lg> " + showTime() + "<k class='blinkred'> Market Closed</k>" + "<br> lastDateValue " + BaseObj["00388"].lastDateValue;
 		return
-	}
+	}else{
+		document.getElementById("dateAndTime").innerHTML = "<lg>" + showDate() + "</lg> " + showTime() + "<br> lastDateValue " + BaseObj["00388"].lastDateValue;
+     }
 	//console.log("updateInfo start", showTime())
 	await updateInfo()
 	//console.log("updateInfo complete ", showTime())
 	compareAll()
 
     if (closepassArr.length > 5) {
-     plotChart(cUpPrevCloseArr, 'cUpPrevClose', 'Close over Prev Close', 'red');
-     plotChart(closepassArr, 'closepass', 'Close Over 3 day trend', 'blue');
-     plotChart(trend3UpArr, 'trend3Up', '3 Day Trend Up', 'pink');
-     plotChart(highpassArr, 'highpass', 'High Over 3 day trend', 'orange');
-     plotChart(lowpassArr, 'lowpass', 'Low Over 3 day trend', 'green');
+     plotChart(cUpPrevCloseArr, 'cUpPrevClose', '比昨日升', 'red');
+     plotChart(closepassArr, 'closepass', '高过三日线', 'blue');
+     plotChart(trend3UpArr, 'trend3Up', '三日线升', 'pink');
+     plotChart(highpassArr, 'highpass', '高位比三日线高', 'orange');
+     plotChart(lowpassArr, 'lowpass', '低位比三日线高', 'green');
     }
 
 }
@@ -215,6 +219,11 @@ async function updateInfo() {
 		prevallResults = { ...allResults };
 		firstTime = false
 	}
+
+	timeStrarr = showTime().split(':')
+	timestr = timeStrarr[0] + timeStrarr[1]
+     timeArr.push(timestr)
+
 	for (let i = 0; i < urlReqStr.length; i++) {
 		await fetchSegments(urlReqStr[i]);
 	}
@@ -235,7 +244,7 @@ async function fetchSegments(url) {
 				const stockCode = columns[2];
 				const stknum = stockCode.replace("s_hk", "");
 
-				//console.log("extract: ", stknum)
+				if(stknum.length = 0) console.log("stknum.length = 0: ", stockCode)
 				const currentPrice = parseFloat(columns[35]);
 				//console.log("currentPrice: ", currentPrice)
 				BaseObj[stknum].high = parseFloat(columns[33]);
@@ -250,7 +259,7 @@ async function fetchSegments(url) {
 			}
 		});
 	} catch (error) {
-		console.error("Error fetching data:", error, stknum);
+		console.error("Error fetching data:", url);
 	}
 }
 
@@ -431,10 +440,16 @@ function showStat() {
                     <th colspan="4">${showDate()} ${showTime()} <r>lastDateValue</r> ${BaseObj["00388"].lastDateValue}</th>
                 </tr>
                 <tr>
+                    <td><bpk>收</bpk>比昨日升：<r>${cUpPrevCloseCnt}</r></td>
+                    <td>差：<r>${result[22]}</r></td>
+                    <td><bpk>收</bpk>比昨日跌：<gr>${cDnPrevCloseCnt}</gr></td>
+                    <td>差：<gr>${result[23]}</gr></td>
+                </tr>
+                <tr>
                     <td><bpk>收</bpk>: 比3日线高：<r>${closepassCnt}</r></td>
-                    <td><bpk>收</bpk>: 差：<r>${result[0]}</r></td>
+                    <td>差：<r>${result[0]}</r></td>
                     <td><bpk>收</bpk>: 比3日线低：<gr>${closeFailCnt}</gr></td>
-                    <td><bpk>收</bpk>: 差：<gr>${result[1]}</gr></td>
+                    <td>差：<gr>${result[1]}</gr></td>
                 </tr>
                 <tr>
                     <td>高: 比3日线高：<r>${highpassCnt}</r></td>
@@ -495,12 +510,6 @@ function showStat() {
                     <td>差：<r>${result[20]}</r></td>
                     <td>10日跌穿20日：<gr>${trendDnXCnt10}</gr></td>
                     <td>差：<gr>${result[21]}</gr></td>
-                </tr>
-                <tr>
-                    <td>比昨日升：<r>${cUpPrevCloseCnt}</r></td>
-                    <td>差：<r>${result[22]}</r></td>
-                    <td>比昨日跌：<gr>${cDnPrevCloseCnt}</gr></td>
-                    <td>差：<gr>${result[23]}</gr></td>
                 </tr>
             </table>
         </div>
@@ -599,11 +608,16 @@ function bollingerBands(data, period, multiplier) {
 
 
 function plotChart(dataArray, chartId, label, color) {
+     const title = document.createElement('pk');
+     //title.textContent = label + "<br>";
+     title.innerHTML = label + "<br>";
+
 	// Create canvas element if it doesn't exist
 	let chartContainer = document.getElementById(chartId);
 	if (!chartContainer) {
 		chartContainer = document.createElement('div');
 		chartContainer.id = chartId;
+		document.getElementById('chartOutput').appendChild(title);
 		document.getElementById('chartOutput').appendChild(chartContainer);
 	}
 	chartContainer.innerHTML = '<canvas></canvas>';
@@ -614,7 +628,7 @@ function plotChart(dataArray, chartId, label, color) {
 	new Chart(ctx, {
 		type: 'line',
 		data: {
-			labels: dataArray.map((_, index) => `${index + 1}`),
+			labels: timeArr,
 			datasets: [{
 				label: label,
 				data: dataArray,
@@ -659,6 +673,7 @@ async function processQueue() {
 async function main() {
 	// fetchAllData --> processQueue -->
 	await fetchAllData()
+
 	compareAll()
 	//console.log("fetchAllData loop")
 
