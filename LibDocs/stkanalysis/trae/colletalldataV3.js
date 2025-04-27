@@ -256,6 +256,8 @@ async function fetchSegments(url) {
 				closesArray[closesArray.length - 1] = currentPrice;
 
 				//console.log("stknum row extract finish: ", stknum)
+			}else{
+          		console.error("row string:", row);
 			}
 		});
 	} catch (error) {
