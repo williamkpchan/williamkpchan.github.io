@@ -68,6 +68,10 @@ for (let i = 0; i < chunks.length; i++) {
 	urlReqStr.push(baseurl + chunks[i].map(element => "r_hk" + element).join(","));
 }
 
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 
 function checkCodeLen(theCode) {
 	let codewidth = theCode.length;
@@ -100,6 +104,8 @@ function checkCodeLen(theCode) {
 
 async function fetchKline(theCode, theurl) {
 	try {
+          await delay(10); // Wait for 10ms
+
 		const response = await fetch(theurl);
 		if (!response.ok) {
 			throw new Error(`HTTP error! status: ${response.status}`);
@@ -184,6 +190,7 @@ async function fetchAllData() {
 async function updateChanges() {
 	updcnt = updcnt + 1
 	console.log("updateChanges...", updcnt)
+	document.getElementById("imgoutput").innerHTML ="<img src = 'https://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=T&lang=1&titlestyle=1&vol=1&Indicator=9&indpara1=22&indpara2=1.6&indpara3=0&indpara4=0&indpara5=0&subChart1=3&ref1para1=5&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&scheme=3&com=100&chartwidth=1150&chartheight=500&stockid=110000&period=5012&type=1&logoStyle=1'>"
 
 	const timestrarr = showTime().split(':')
 	const timestr = timestrarr[0] + timestrarr[1]
@@ -225,6 +232,7 @@ async function updateInfo() {
      timeArr.push(timestr)
 
 	for (let i = 0; i < urlReqStr.length; i++) {
+          await delay(10); // Wait for 10ms
 		await fetchSegments(urlReqStr[i]);
 	}
 	// process data
