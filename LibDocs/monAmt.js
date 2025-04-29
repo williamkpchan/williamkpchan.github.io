@@ -28,6 +28,7 @@ let downCounter = [];
 
 let freqTable = {};
 let prevfreqTable = {};
+let largeAmtTable = {};
 
   // prepare basic materials
   const baseurl = "https://sqt.gtimg.cn/?q=";
@@ -241,6 +242,20 @@ function addToFreqTable(obj, stknumber, stkname, counts, direction) {
 }
 
 // Function to generate an HTML table from the freqTable data sorted by upCounts or downCounts
+function showLargeAmtTable() {
+ // Convert the object to an array for sorting
+  const sortedArray = Object.values(largeAmtTable).sort((a, b) => b.amtRatio - a.amtRatio);
+
+// Create a string to display the sorted results
+  let displayContent = sortedArray.map(item => {
+    return `Ratio: ${item.amtRatio}  ${item.codeStr}`;
+  }).join('<br>');
+  totalStr = `<br>Total: ${sortedArray.length} <br>`
+// Display the sorted results in the div with ID amtNote
+  document.getElementById('amtNote').innerHTML = displayContent + totalStr;
+}
+
+// Function to generate an HTML table from the freqTable data sorted by upCounts or downCounts
 function generateTable(freqTable, sortBy) {
     // Convert the freqTable object into an array of objects
     const tableData = Object.keys(freqTable).map(key => ({ 
@@ -385,8 +400,8 @@ async function fetchDataChunks(url) {
         // Check if BaseObj has data for this stock code
         if (BaseObj[stknum] && BaseObj[stknum].avgAmt) {
           const currentAmt = parseFloat(columns[37]); // Current amount from the API
-          const todaypct = parseFloat(columns[32]); // Current amount from the API
-          const currentPrice = parseFloat(columns[3]); // Current amount from the API
+          const todaypct = parseFloat(columns[32]); 
+          const currentPrice = parseFloat(columns[3]); 
           const avgAmt = BaseObj[stknum].avgAmt; // Average amount from BaseObj
           const stkname = BaseObj[stknum].stockName
           const amtIdx = BaseObj[stknum].amtIdx
@@ -395,6 +410,9 @@ async function fetchDataChunks(url) {
 
           // Calculate the percentage
           const amtPercentage = Math.round((currentAmt / avgAmt)/100); // unit size diff
+
+          // check amtPercentage and alert
+          checkAmtPercentage(stknum, stkname, currentAmt, avgAmt, todaypct)
 
           // Calculate minute amtdiff
 
@@ -511,6 +529,18 @@ async function fetchDataChunks(url) {
   }
 }
 
+function checkAmtPercentage(stknum, stkname, currentAmt, avgAmt, todaypct){
+  amtRatio = Math.round(currentAmt/10000/avgAmt *100)
+  if(amtRatio>150 && todaypct > 0){
+          codeStr = `<o onclick="xunbao('` + stknum + `')">`+ stknum+" "+ stkname + "</o>"
+          largeAmtTable[stknum] = {
+            stknum: stknum,
+            amtRatio: amtRatio,
+            codeStr: codeStr,
+          };
+  }
+}
+
 function updateUniqueItems(elemId) {  // set unique items in history record
     let elem = $(elemId);
     let elemArr = elem.html().split(', ');
@@ -587,6 +617,7 @@ function updateHTML() {
 }
 
 function xunbao(xunbaocode) {
+       sessionStorage.setItem("randomcode", xunbaocode)
        localStorage.setItem("randomcode", xunbaocode)
        localStorage.setItem("otherCode", xunbaocode)
        localStorage.setItem("stkCode", xunbaocode)
@@ -657,6 +688,7 @@ async function updateInfo() {
 
   // Call the function to generate the freqTable
   generateTable(freqTable, 'difference')
+  showLargeAmtTable()
   newEle = upcount-dncount
   upDnDiffArr.push(newEle);
 
