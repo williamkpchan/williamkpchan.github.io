@@ -3,20 +3,12 @@ const BaseObj = {};
 const allResults = {};
 prevallResults = {};
 firstTime = false
-sortmode = false
+sortmode = 1
 upcount = 0
 dncount = 0
 
-// Initialize variables for data recording
-let upDnDiffArr = [];
-let zeroDiff = [];
-let upDnDiffMaArr10 = [];
-let upDnDiffMaArr20 = [];
-let upDnDiffMaArr40 = [];
-let upperBand = [];
-let lowerBand = [];
-let upperBWma = [];
-let lowerBWma = [];
+newUpList = []
+newDnList = []
 
 // Global array to store standard deviations
 const period = 10;
@@ -46,99 +38,6 @@ for (let i = 0; i < chunks.length; i++) {
 	urlReqStr.push(baseurl + chunks[i].map(element => "r_hk" + element).join(","));
 }
 
-// Get the canvas element for the chart
-const ctx = document.getElementById('ChartRecord').getContext('2d');
-console.log("\nUBWma ", upperBWma)
-const ChartRecord = new Chart(ctx, {
-	type: 'line',
-	data: {
-		labels: [],
-		datasets: [
-			{
-				label: 'upDnDiff',
-				data: upDnDiffArr,
-				borderColor: 'darkgreen', // Blue-green color
-				borderWidth: 1,
-				fill: false,
-				pointStyle: false,
-			},
-			{
-				label: 'EMA10',
-				data: upDnDiffMaArr10,
-				borderColor: 'yellow', // Blue-green color
-				borderWidth: 1,
-				fill: false,
-				pointStyle: false,
-			},
-			{
-				label: 'EMA20',
-				data: upDnDiffMaArr20,
-				borderColor: 'orange', // Blue-green color
-				borderWidth: 1,
-				fill: false,
-				pointStyle: false,
-			},
-			{
-				label: 'EMA40',
-				data: upDnDiffMaArr40,
-				borderColor: 'red', // Blue-green color
-				borderWidth: 1,
-				fill: false,
-				pointStyle: false,
-			},
-			{
-				label: 'stdU',
-				data: upperBand,
-				borderColor: 'purple',
-				borderWidth: 1,
-				fill: false,
-				pointStyle: false,
-			},
-			{
-				label: 'stdD',
-				data: lowerBand,
-				borderColor: 'purple',
-				borderWidth: 1,
-				fill: false,
-				pointStyle: false,
-			},
-			{
-				label: 'UBWma',
-				data: upperBWma,
-				borderColor: 'white',
-				borderWidth: 1,
-				fill: false,
-				pointStyle: false,
-			},
-			{
-				label: 'LBWma',
-				data: lowerBWma,
-				borderColor: 'white',
-				borderWidth: 1,
-				fill: false,
-				pointStyle: false,
-			},
-
-
-			{
-				label: 'zero',
-				data: zeroDiff,
-				borderColor: 'gray',
-				borderWidth: 1,
-				fill: false,
-				pointStyle: 'line', // Set the point shape
-			},
-		]
-	},
-	options: {
-		scales: {
-			y: {
-				beginAtZero: true,
-				display: true,
-			}
-		}
-	}
-});
 
 // queue
 
@@ -246,7 +145,6 @@ function addToFreqTable(obj, stknumber, stkname, counts, direction) {
 	}
 }
 
-// Function to generate an HTML table from the freqTable data sorted by upCounts or downCounts
 function showLargeAmtTable() {
 	// Convert the object to an array for sorting
 	sortedArray = Object.values(largeAmtTable).sort((a, b) => b.amtRatio - a.amtRatio);
@@ -270,6 +168,23 @@ function showLargeAmtTable() {
 	totalStr = `<br>Total: ${sortedArray.length} <br>`
 	// Display the sorted results in the div with ID amtNote
 	document.getElementById('dnAmtNote').innerHTML = displayContent + totalStr;
+
+
+     const newUp = document.getElementById('newUp');
+     newUp.innerHTML = ""
+     newUpList.forEach(item => {
+       const element = document.createElement('o'); // or any other element type
+       element.innerHTML = item; // or innerHTML if needed
+       newUp.appendChild(element);
+     });
+
+     const newDn = document.getElementById('newDn');
+     newDn.innerHTML = ""
+     newDnList.forEach(item => {
+       const element = document.createElement('gr'); // or any other element type
+       element.innerHTML = item; // or innerHTML if needed
+       newDn.appendChild(element);
+     });
 
 }
 
@@ -426,6 +341,7 @@ async function fetchDataChunks(url) {
 					const codeStr = `<o onclick="xunbao('` + columns[2] + `')">` + columns[2] + "</o>"
 					// console.log(stknum, stkname, currentPrice)
 
+
 					// Calculate the percentage
 					const amtPercentage = Math.round((currentAmt / avgAmt) / 100); // unit size diff
 
@@ -579,6 +495,7 @@ function checkAmtPercentage(stknum, stkname, currentAmt, avgAmt, todaypct) {
         // Update if exists, add if doesn't
         if (largeAmtTable[stknum]) {
             largeAmtTable[stknum].amtRatio = amtRatio; // Update the ratio
+            newUpList.push(codeStr)
         } else {
             largeAmtTable[stknum] = {
                 stknum: stknum,
@@ -595,6 +512,7 @@ function checkAmtPercentage(stknum, stkname, currentAmt, avgAmt, todaypct) {
         // Update if exists, add if doesn't
         if (largeAmtDnTable[stknum]) {
             largeAmtDnTable[stknum].amtRatio = amtRatio; // Update the ratio
+            newDnList.push(codeStr)
         } else {
             largeAmtDnTable[stknum] = {
                 stknum: stknum,
@@ -622,18 +540,26 @@ function countUniqueItems(elemId) {  // set unique items in history record
 
 // Function to update the HTML page with sorted data
 function updateHTML() {
-	if (sortmode == false) {
+	if (sortmode == 0) {
+		sortedResults = Object.keys(allResults).sort((a, b) => {
+			return allResults[b].pct - allResults[a].pct;
+		});
+
+	} else if (sortmode == 1) {
 		sortedResults = Object.keys(allResults).sort((a, b) => {
 			return allResults[b].pctdiff - allResults[a].pctdiff;
 		});
-		$('#mode').html("<y>转分钟金额排序</y>")
-	} else {
+
+	} else if (sortmode == 2) {
 		sortedResults = Object.keys(allResults).sort((a, b) => {
 			return allResults[b].amtdiff - allResults[a].amtdiff;
 		});
-		$('#mode').html("转分钟价差排序")
+
+	} else if (sortmode == 3) {
+		sortedResults = Object.keys(allResults).sort((a, b) => {
+			return allResults[b].amt - allResults[a].amt;
+		});
 	}
-	sortmode = !sortmode;
 
 	const tableBody = document.getElementById('stockTable').getElementsByTagName('tbody')[0];
 	tableBody.innerHTML = '';
@@ -728,6 +654,8 @@ async function updateChanges() {
 	sortmode = true
 	upcount = 0
 	dncount = 0
+
+
 	await updateInfo()
 }
 
@@ -754,24 +682,8 @@ async function updateInfo() {
 	// Call the function to generate the freqTable
 	generateTable(freqTable, 'difference')
 	showLargeAmtTable()
-	newEle = upcount - dncount
-	upDnDiffArr.push(newEle);
 
-	zeroDiff.push(0);
 
-	wma10 = Number(singleWMA(upDnDiffArr, 10))
-	wma20 = Number(singleWMA(upDnDiffArr, 20))
-	wma40 = Number(singleWMA(upDnDiffArr, 40))
-	upDnDiffMaArr10.push(wma10);
-	upDnDiffMaArr20.push(wma20);
-	upDnDiffMaArr40.push(wma40);
-
-	sdV = updateStandardDeviation(upDnDiffArr, 20) * 2 / 3;
-	upperBand.push(wma20 + sdV);
-	lowerBand.push(wma20 - sdV);
-
-	upperBWma.push(Number(singleWMA(upperBand, 20)));
-	lowerBWma.push(Number(singleWMA(lowerBand, 20)));
 	updateChart();
 }
 
@@ -810,14 +722,14 @@ function updateStandardDeviation(data, range) {
 }
 
 
+
+
 // Function to update chart
 function updateChart() {
-	// Update the chart data
-	timemark = showTime().split(':')
-	timemark = timemark[0] + timemark[1]
 
-	ChartRecord.data.labels.push(timemark);
-	ChartRecord.update();
+	const timestamp = new Date().getTime();
+	const imgSrc = `https://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=T&lang=1&titlestyle=1&vol=1&Indicator=9&indpara1=22&indpara2=1.6&indpara3=0&indpara4=0&indpara5=0&subChart1=3&ref1para1=5&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&scheme=3&com=100&chartwidth=1150&chartheight=500&stockid=110000&period=5012&type=1&logoStyle=1&_=${timestamp}`;
+	document.getElementById("imgoutput").innerHTML = `<img src="${imgSrc}" alt="Updated Chart">`;
 }
 
 

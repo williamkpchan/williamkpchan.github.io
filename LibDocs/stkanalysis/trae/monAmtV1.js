@@ -7,12 +7,13 @@ sortmode = false
 upcount = 0
 dncount = 0
 
+cDnCnt = 0
+cUpCnt = 0
+
+
 // Initialize variables for data recording
-let upDnDiffArr = [];
+let cUpCntArr = [];
 let zeroDiff = [];
-let upDnDiffMaArr10 = [];
-let upDnDiffMaArr20 = [];
-let upDnDiffMaArr40 = [];
 let upperBand = [];
 let lowerBand = [];
 let upperBWma = [];
@@ -49,14 +50,15 @@ for (let i = 0; i < chunks.length; i++) {
 // Get the canvas element for the chart
 const ctx = document.getElementById('ChartRecord').getContext('2d');
 console.log("\nUBWma ", upperBWma)
+console.log("\ncUpCntArr: ", cUpCntArr)
 const ChartRecord = new Chart(ctx, {
 	type: 'line',
 	data: {
 		labels: [],
 		datasets: [
 			{
-				label: 'upDnDiff',
-				data: upDnDiffArr,
+				label: 'cUpCnt',
+				data: cUpCntArr,
 				borderColor: 'darkgreen', // Blue-green color
 				borderWidth: 1,
 				fill: false,
@@ -64,7 +66,7 @@ const ChartRecord = new Chart(ctx, {
 			},
 			{
 				label: 'EMA10',
-				data: upDnDiffMaArr10,
+				data: cUpCntMaArr10,
 				borderColor: 'yellow', // Blue-green color
 				borderWidth: 1,
 				fill: false,
@@ -72,7 +74,7 @@ const ChartRecord = new Chart(ctx, {
 			},
 			{
 				label: 'EMA20',
-				data: upDnDiffMaArr20,
+				data: cUpCntMaArr20,
 				borderColor: 'orange', // Blue-green color
 				borderWidth: 1,
 				fill: false,
@@ -80,7 +82,7 @@ const ChartRecord = new Chart(ctx, {
 			},
 			{
 				label: 'EMA40',
-				data: upDnDiffMaArr40,
+				data: cUpCntMaArr40,
 				borderColor: 'red', // Blue-green color
 				borderWidth: 1,
 				fill: false,
@@ -102,38 +104,41 @@ const ChartRecord = new Chart(ctx, {
 				fill: false,
 				pointStyle: false,
 			},
-			{
-				label: 'UBWma',
-				data: upperBWma,
-				borderColor: 'white',
-				borderWidth: 1,
-				fill: false,
-				pointStyle: false,
-			},
-			{
-				label: 'LBWma',
-				data: lowerBWma,
-				borderColor: 'white',
-				borderWidth: 1,
-				fill: false,
-				pointStyle: false,
-			},
+			// BWma ignored here
+			//
+			//			{
+			//				label: 'UBWma',
+			//				data: upperBWma,
+			//				borderColor: 'white',
+			//				borderWidth: 1,
+			//				fill: false,
+			//				pointStyle: false,
+			//			},
+			//			{
+			//				label: 'LBWma',
+			//				data: lowerBWma,
+			//				borderColor: 'white',
+			//				borderWidth: 1,
+			//				fill: false,
+			//				pointStyle: false,
+			//			},
 
+			// zero line ignored here
+			//			{
+			//				label: 'zero',
+			//				data: zeroDiff,
+			//				borderColor: 'gray',
+			//				borderWidth: 1,
+			//				fill: false,
+			//				pointStyle: 'line', // Set the point shape
+			//			},
 
-			{
-				label: 'zero',
-				data: zeroDiff,
-				borderColor: 'gray',
-				borderWidth: 1,
-				fill: false,
-				pointStyle: 'line', // Set the point shape
-			},
 		]
 	},
 	options: {
 		scales: {
 			y: {
-				beginAtZero: true,
+				//				beginAtZero: false,
 				display: true,
 			}
 		}
@@ -198,8 +203,10 @@ async function collectdata(stknum) {
 		// Get the array
 		dateArray = stockData.map(row => row[0].slice(-2));
 		amtArray = stockData.map(row => Number(row[8]));
+		const closeArray = stockData.map(row => Number(row[2]));
 		const highArray = stockData.map(row => Number(row[3]));
 		const lowArray = stockData.map(row => Number(row[4]));
+		prevClose = closeArray[closeArray.length - 1];
 
 		// setup the base reference
 		// chk the array last day same as today
@@ -208,6 +215,7 @@ async function collectdata(stknum) {
 
 		if (dateArray[dateArray.length - 1] == day) { // if same, remove last element
 			amtArray = amtArray.slice(0, -1);
+			prevClose = closeArray[closeArray.length - 2];
 		}
 
 		const avgAmt = Math.round(averageOfLastN(amtArray, 5));
@@ -217,7 +225,7 @@ async function collectdata(stknum) {
 		const minL = Math.min(...lowArray);
 
 		// Store the result in BaseObj
-		BaseObj[stknum] = { stockName, avgAmt, maxH, minL, amtIdx };
+		BaseObj[stknum] = { stockName, avgAmt, maxH, minL, amtIdx, prevClose };
 	} catch (error) {
 		console.error(`Error ${stknum}:`, error);
 	}
@@ -249,7 +257,7 @@ function showLargeAmtTable() {
 	sortedArray = Object.values(largeAmtTable).sort((a, b) => b.amtRatio - a.amtRatio);
 
 	// Create a string to display the sorted results
-	let displayContent = sortedArray.map(item => {
+	displayContent = sortedArray.map(item => {
 		return `Ratio: ${item.amtRatio}  ${item.codeStr}`;
 	}).join('<br>');
 	totalStr = `<br>Total: ${sortedArray.length} <br>`
@@ -261,7 +269,7 @@ function showLargeAmtTable() {
 	sortedArray = Object.values(largeAmtDnTable).sort((a, b) => b.amtRatio - a.amtRatio);
 
 	// Create a string to display the sorted results
-	let displayContent = sortedArray.map(item => {
+	displayContent = sortedArray.map(item => {
 		return `Ratio: ${item.amtRatio}  ${item.codeStr}`;
 	}).join('<br>');
 	totalStr = `<br>Total: ${sortedArray.length} <br>`
@@ -332,7 +340,7 @@ function calcCurAmtPosition(amtArray) {
 function singleWMA(arr, n) {
 	arr = arr.map(Number); // Convert to Number
 	if (n > arr.length || n < 1) {
-		return 0;
+		return null;
 	}
 	let weightedSum = 0;
 	let weightSum = 0;
@@ -417,11 +425,15 @@ async function fetchDataChunks(url) {
 					const currentAmt = parseFloat(columns[37]); // Current amount from the API
 					const todaypct = parseFloat(columns[32]);
 					const currentPrice = parseFloat(columns[3]);
+
 					const avgAmt = BaseObj[stknum].avgAmt; // Average amount from BaseObj
 					const stkname = BaseObj[stknum].stockName
 					const amtIdx = BaseObj[stknum].amtIdx
+					const prevClose = BaseObj[stknum].prevClose
 					const codeStr = `<o onclick="xunbao('` + columns[2] + `')">` + columns[2] + "</o>"
 					// console.log(stknum, stkname, currentPrice)
+
+					comparePrevClose(currentPrice, prevClose)
 
 					// Calculate the percentage
 					const amtPercentage = Math.round((currentAmt / avgAmt) / 100); // unit size diff
@@ -545,61 +557,61 @@ async function fetchDataChunks(url) {
 }
 
 function checkAmtPercentage(stknum, stkname, currentAmt, avgAmt, todaypct) {
-    // Ensure largeAmtTable exists
-    if (!largeAmtTable) {
-        largeAmtTable = {};
-    }
+	// Ensure largeAmtTable exists
+	if (!largeAmtTable) {
+		largeAmtTable = {};
+	}
 
-    // Calculate ratio
-    const amtRatio = Math.round(currentAmt / 10000 / avgAmt * 100);
+	// Calculate ratio
+	const amtRatio = Math.round(currentAmt / 10000 / avgAmt * 100);
 
-    // Get current time
-    const now = new Date();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-    const systemClock = hours * 100 + minutes;
+	// Get current time
+	const now = new Date();
+	const hours = now.getHours();
+	const minutes = now.getMinutes();
+	const systemClock = hours * 100 + minutes;
 
-    // Define threshold conditions
-    const conditions = [
-        systemClock < 1000 && amtRatio > 70,
-        systemClock < 1100 && amtRatio > 80,
-        systemClock < 1200 && amtRatio > 90,
-        systemClock < 1400 && amtRatio > 100,
-        systemClock < 1500 && amtRatio > 110,
-        systemClock <= 1600 && amtRatio > 130
-    ];
+	// Define threshold conditions
+	const conditions = [
+		systemClock < 1000 && amtRatio > 70,
+		systemClock < 1100 && amtRatio > 80,
+		systemClock < 1200 && amtRatio > 90,
+		systemClock < 1400 && amtRatio > 100,
+		systemClock < 1500 && amtRatio > 110,
+		systemClock <= 1600 && amtRatio > 130
+	];
 
-    // Check if any condition is met and price is positive
-    if (conditions.some(condition => condition) && todaypct > 0) {
-        const codeStr = `<o onclick="xunbao('${stknum}')">${stknum} ${stkname}</o>`;
-        
-        // Update if exists, add if doesn't
-        if (largeAmtTable[stknum]) {
-            largeAmtTable[stknum].amtRatio = amtRatio; // Update the ratio
-        } else {
-            largeAmtTable[stknum] = {
-                stknum: stknum,
-                amtRatio: amtRatio,
-                codeStr: codeStr
-            };
-        }
-    }
+	// Check if any condition is met and price is positive
+	if (conditions.some(condition => condition) && todaypct > 0) {
+		const codeStr = `<o onclick="xunbao('${stknum}')">${stknum} ${stkname}</o>`;
 
-    // Check if any condition is met and price is negative
-    if (conditions.some(condition => condition) && todaypct < 0) {
-        const codeStr = `<o onclick="xunbao('${stknum}')">${stknum} ${stkname}</o>`;
-        
-        // Update if exists, add if doesn't
-        if (largeAmtDnTable[stknum]) {
-            largeAmtDnTable[stknum].amtRatio = amtRatio; // Update the ratio
-        } else {
-            largeAmtDnTable[stknum] = {
-                stknum: stknum,
-                amtRatio: amtRatio,
-                codeStr: codeStr
-            };
-        }
-    }
+		// Update if exists, add if doesn't
+		if (largeAmtTable[stknum]) {
+			largeAmtTable[stknum].amtRatio = amtRatio; // Update the ratio
+		} else {
+			largeAmtTable[stknum] = {
+				stknum: stknum,
+				amtRatio: amtRatio,
+				codeStr: codeStr
+			};
+		}
+	}
+
+	// Check if any condition is met and price is negative
+	if (conditions.some(condition => condition) && todaypct < 0) {
+		const codeStr = `<gr onclick="xunbao('${stknum}')">${stknum} ${stkname}</gr>`;
+
+		// Update if exists, add if doesn't
+		if (largeAmtDnTable[stknum]) {
+			largeAmtDnTable[stknum].amtRatio = amtRatio; // Update the ratio
+		} else {
+			largeAmtDnTable[stknum] = {
+				stknum: stknum,
+				amtRatio: amtRatio,
+				codeStr: codeStr
+			};
+		}
+	}
 }
 
 function updateUniqueItems(elemId) {  // set unique items in history record
@@ -725,6 +737,9 @@ async function updateChanges() {
 	sortmode = true
 	upcount = 0
 	dncount = 0
+	cDnCnt = 0
+	cUpCnt = 0
+
 	await updateInfo()
 }
 
@@ -751,19 +766,13 @@ async function updateInfo() {
 	// Call the function to generate the freqTable
 	generateTable(freqTable, 'difference')
 	showLargeAmtTable()
-	newEle = upcount - dncount
-	upDnDiffArr.push(newEle);
 
-	zeroDiff.push(0);
+	cUpCntArr.push(cUpCnt);
 
-	wma10 = Number(singleWMA(upDnDiffArr, 10))
-	wma20 = Number(singleWMA(upDnDiffArr, 20))
-	wma40 = Number(singleWMA(upDnDiffArr, 40))
-	upDnDiffMaArr10.push(wma10);
-	upDnDiffMaArr20.push(wma20);
-	upDnDiffMaArr40.push(wma40);
+	//zeroDiff.push(0);
 
-	sdV = updateStandardDeviation(upDnDiffArr, 20) * 2 / 3;
+
+	sdV = updateStandardDeviation(cUpCntArr, 20) * 2 / 3;
 	upperBand.push(wma20 + sdV);
 	lowerBand.push(wma20 - sdV);
 
@@ -807,17 +816,34 @@ function updateStandardDeviation(data, range) {
 }
 
 
+function comparePrevClose(currentPrice, prevClose) {
+	if (currentPrice > prevClose) {
+		cUpCnt++
+	}
+
+	// not used yet
+	//  }else{
+	//    cDnCnt++
+}
+
 // Function to update chart
 function updateChart() {
+	// Filter out null values from datasets
+	ChartRecord.data.datasets.forEach(dataset => {
+		dataset.data = dataset.data.map((value, index) => {
+			const label = ChartRecord.data.labels[index];
+			return value === null ? NaN : value; // Replace null with NaN
+		});
+	});
+
 	// Update the chart data
 	timemark = showTime().split(':')
 	timemark = timemark[0] + timemark[1]
 
 	ChartRecord.data.labels.push(timemark);
 	ChartRecord.update();
+
+	const timestamp = new Date().getTime();
+	const imgSrc = `https://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=T&lang=1&titlestyle=1&vol=1&Indicator=9&indpara1=22&indpara2=1.6&indpara3=0&indpara4=0&indpara5=0&subChart1=3&ref1para1=5&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&scheme=3&com=100&chartwidth=1150&chartheight=500&stockid=110000&period=5012&type=1&logoStyle=1&_=${timestamp}`;
+	document.getElementById("imgoutput").innerHTML = `<img src="${imgSrc}" alt="Updated Chart">`;
 }
-
-
-// Start the main process
-main();
-setInterval(updateChanges, 60000);
