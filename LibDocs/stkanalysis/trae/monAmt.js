@@ -198,10 +198,8 @@ async function collectdata(stknum) {
 		// Get the array
 		dateArray = stockData.map(row => row[0].slice(-2));
 		amtArray = stockData.map(row => Number(row[8]));
-		const closeArray = stockData.map(row => Number(row[2]));
 		const highArray = stockData.map(row => Number(row[3]));
 		const lowArray = stockData.map(row => Number(row[4]));
-		prevClose = closeArray[closeArray.length - 1];
 
 		// setup the base reference
 		// chk the array last day same as today
@@ -210,7 +208,6 @@ async function collectdata(stknum) {
 
 		if (dateArray[dateArray.length - 1] == day) { // if same, remove last element
 			amtArray = amtArray.slice(0, -1);
-			prevClose = closeArray[closeArray.length - 2];
 		}
 
 		const avgAmt = Math.round(averageOfLastN(amtArray, 5));
@@ -220,7 +217,7 @@ async function collectdata(stknum) {
 		const minL = Math.min(...lowArray);
 
 		// Store the result in BaseObj
-		BaseObj[stknum] = { stockName, avgAmt, maxH, minL, amtIdx, prevClose };
+		BaseObj[stknum] = { stockName, avgAmt, maxH, minL, amtIdx };
 	} catch (error) {
 		console.error(`Error ${stknum}:`, error);
 	}
@@ -252,7 +249,7 @@ function showLargeAmtTable() {
 	sortedArray = Object.values(largeAmtTable).sort((a, b) => b.amtRatio - a.amtRatio);
 
 	// Create a string to display the sorted results
-	displayContent = sortedArray.map(item => {
+	let displayContent = sortedArray.map(item => {
 		return `Ratio: ${item.amtRatio}  ${item.codeStr}`;
 	}).join('<br>');
 	totalStr = `<br>Total: ${sortedArray.length} <br>`
@@ -264,7 +261,7 @@ function showLargeAmtTable() {
 	sortedArray = Object.values(largeAmtDnTable).sort((a, b) => b.amtRatio - a.amtRatio);
 
 	// Create a string to display the sorted results
-	displayContent = sortedArray.map(item => {
+	let displayContent = sortedArray.map(item => {
 		return `Ratio: ${item.amtRatio}  ${item.codeStr}`;
 	}).join('<br>');
 	totalStr = `<br>Total: ${sortedArray.length} <br>`
@@ -590,7 +587,7 @@ function checkAmtPercentage(stknum, stkname, currentAmt, avgAmt, todaypct) {
 
     // Check if any condition is met and price is negative
     if (conditions.some(condition => condition) && todaypct < 0) {
-        const codeStr = `<gr onclick="xunbao('${stknum}')">${stknum} ${stkname}</gr>`;
+        const codeStr = `<o onclick="xunbao('${stknum}')">${stknum} ${stkname}</o>`;
         
         // Update if exists, add if doesn't
         if (largeAmtDnTable[stknum]) {
