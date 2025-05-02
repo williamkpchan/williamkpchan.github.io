@@ -601,7 +601,7 @@ function checkAllTrends(stkNum) {
   // 4. Return early if first condition fails
   if (curClose <= prevClose) return;
 
-  const periods = [3, 5, 8, 11, 14];
+  const periods = [3, 6, 9, 12, 15];
 
   // 4. Calculate all WMAs just once
   const currentWMAs = periods.map(period => 
@@ -610,8 +610,11 @@ function checkAllTrends(stkNum) {
   
   // Define which periods to compare (e.g., 3 vs 9, 6 vs 12)
   const comparisonPairs = [
-    { short: 3, long: 5 },  // Compare WMA(3) < WMA(9)
-    //{ short: 6, long: 9 }  // Compare WMA(6) < WMA(12)
+    { short: 3, long: 6 },
+    { short: 3, long: 9 },
+    { short: 3, long: 12 },
+    { short: 3, long: 15 },
+
   ];
 
   // Check selective increasing WMAs
@@ -634,7 +637,7 @@ function checkAllTrends(stkNum) {
   );
 
   // Only add if both selective WMA checks and trend are up
-  if (selectiveIncreasingWMAs && allTrendsUp) {
+  if (selectiveIncreasingWMAs) {
     const alltrendStr = `<o onclick="xunbao('${stkNum}')">${stkNum} ${stkname}</o><br>`;
     allUpList.push(alltrendStr);
     allUpCnt++;

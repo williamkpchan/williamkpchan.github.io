@@ -610,8 +610,10 @@ function checkAllTrends(stkNum) {
   
   // Define which periods to compare (e.g., 3 vs 9, 6 vs 12)
   const comparisonPairs = [
-    { short: 3, long: 5 },  // Compare WMA(3) < WMA(9)
-    //{ short: 6, long: 9 }  // Compare WMA(6) < WMA(12)
+    { short: 3, long: 6 },  // Compare WMA(3) < WMA(9)
+    { short: 3, long: 9 },
+    { short: 3, long: 12 },
+    { short: 3, long: 15 },
   ];
 
   // Check selective increasing WMAs
