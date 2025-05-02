@@ -490,35 +490,36 @@ function checkAmtPercentage(stknum, stkname, currentAmt, avgAmt, todaypct) {
 
     // Check if any condition is met and price is positive
     if (conditions.some(condition => condition) && todaypct > 0) {
-        const codeStr = `<o onclick="xunbao('${stknum}')">${stknum} ${stkname}</o>`;
+        const codeStr = `<o onclick="xunbao('${stknum}')">${stknum} ${stkname}</o>, `;
         
         // Update if exists, add if doesn't
         if (largeAmtTable[stknum]) {
             largeAmtTable[stknum].amtRatio = amtRatio; // Update the ratio
-            newUpList.push(codeStr)
         } else {
             largeAmtTable[stknum] = {
                 stknum: stknum,
                 amtRatio: amtRatio,
                 codeStr: codeStr
             };
+
+            newUpList.push(codeStr)
         }
     }
 
     // Check if any condition is met and price is negative
     if (conditions.some(condition => condition) && todaypct < 0) {
-        const codeStr = `<gr onclick="xunbao('${stknum}')">${stknum} ${stkname}</gr>`;
+        const codeStr = `<gr onclick="xunbao('${stknum}')">${stknum} ${stkname}</gr>, `;
         
         // Update if exists, add if doesn't
         if (largeAmtDnTable[stknum]) {
             largeAmtDnTable[stknum].amtRatio = amtRatio; // Update the ratio
-            newDnList.push(codeStr)
         } else {
             largeAmtDnTable[stknum] = {
                 stknum: stknum,
                 amtRatio: amtRatio,
                 codeStr: codeStr
             };
+            newDnList.push(codeStr)
         }
     }
 }
