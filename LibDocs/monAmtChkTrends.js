@@ -7,6 +7,9 @@ sortmode = 1
 upcount = 0
 dncount = 0
 
+allUpList = []
+allDnList = []
+
 newUpList = []
 newDnList = []
 
@@ -119,7 +122,7 @@ async function collectdata(stknum) {
 		const minL = Math.min(...lowArray);
 
 		// Store the result in BaseObj
-		BaseObj[stknum] = { stockName, avgAmt, maxH, minL, amtIdx, prevClose };
+		BaseObj[stknum] = { stockName, avgAmt, maxH, minL, amtIdx, prevClose, closeArray };
 	} catch (error) {
 		console.error(`Error ${stknum}:`, error);
 	}
@@ -144,6 +147,15 @@ function addToFreqTable(obj, stknumber, stkname, counts, direction) {
 		obj[key].downCounts += counts;
 	}
 }
+
+function showAllTrendsTable() {
+     allUpString = allUpList.join(', ');
+	document.getElementById('allTrendUpNote').innerHTML = allUpString;
+
+     allDnString = allDnList.join(', ');
+	document.getElementById('allTrendDnNote').innerHTML = allDnString;
+}
+
 
 function showLargeAmtTable() {
 	// Convert the object to an array for sorting
@@ -345,8 +357,13 @@ async function fetchDataChunks(url) {
 					// Calculate the percentage
 					const amtPercentage = Math.round((currentAmt / avgAmt) / 100); // unit size diff
 
+
 					// check amtPercentage and alert
 					checkAmtPercentage(stknum, stkname, currentAmt, avgAmt, todaypct)
+
+					// check checkAllUpTrends and checkAllDnTrends, and alert
+					checkAllUpTrends(stknum)
+					checkAllDnTrends(stknum)
 
 					// Calculate minute amtdiff
 
@@ -654,8 +671,7 @@ async function updateChanges() {
 	sortmode = true
 	upcount = 0
 	dncount = 0
-	newUpList = []
-	newDnList = []
+
 
 	await updateInfo()
 }
@@ -683,10 +699,87 @@ async function updateInfo() {
 	// Call the function to generate the freqTable
 	generateTable(freqTable, 'difference')
 	showLargeAmtTable()
-
+	showAllTrendsTable()
 
 	updateChart();
 }
+
+function checkAllUpTrends(stkNum) {
+    const curObj = BaseObj[stkNum];
+    const closeArr = curObj.closeArray;
+    const stkname = curObj.stkname;
+        
+    //  Extract current and previous close
+    const curClose = closeArr[closeArr.length - 1];
+    const prevClose = closeArr[closeArr.length - 2];
+    
+    //  Return early if first condition fails
+    if (curClose <= prevClose) return;
+    
+    //  Define periods to check
+    const periods = [3, 6, 9, 12, 15];
+    
+    //  Check all periods in a loop instead of nested ifs
+    const allTrendsUp = periods.every(period => {
+        const curSWma = calculateWeightedMovingAverage(closeArr, period);
+        const prevSWma = calculateWeightedMovingAverage(closeArr.slice(0, -1), period); // Using slice instead of undefined prevArray
+        return curSWma > prevSWma;
+    });
+    
+    //  Only add to list if all conditions met
+    if (allTrendsUp) {
+        const codeStr = `<o onclick="xunbao('${stkNum}')">${stkNum} ${stkname}</o>`;
+        allUpList.push(codeStr);
+    }
+}
+
+function checkAllDNTrends(stkNum) {
+    const curObj = BaseObj[stkNum];
+    const closeArr = curObj.closeArray;
+    const stkname = curObj.stkname;
+
+    //  Extract current and previous close
+    const curClose = closeArr[closeArr.length - 1];
+    const prevClose = closeArr[closeArr.length - 2];
+    
+    //  Return early if first condition fails
+    if (curClose >= prevClose) return;
+    
+    //  Define periods to check
+    const periods = [3, 6, 9, 12, 15];
+    
+    //  Check all periods in a loop instead of nested ifs
+    const allTrendsUp = periods.every(period => {
+        const curSWma = calculateWeightedMovingAverage(closeArr, period);
+        const prevSWma = calculateWeightedMovingAverage(closeArr.slice(0, -1), period); // Using slice instead of undefined prevArray
+        return curSWma < prevSWma;
+    });
+    
+    //  Only add to list if all conditions met
+    if (allTrendsUp) {
+        const codeStr = `<gr onclick="xunbao('${stkNum}')">${stkNum} ${stkname}</gr>`;
+        allDnList.push(codeStr);
+    }
+}
+
+function calculateWeightedMovingAverage(data, period, stkNum) {
+	if (data.length < period) {
+		console.log("stkNum: ", stkNum, "data.length: ", data.length, "period ", period)
+		throw new Error("Data array is shorter than the period. stkNum: ", stkNum);
+	}
+
+	const weights = Array.from({ length: period }, (_, i) => i + 1);
+	const weightSum = weights.reduce((a, b) => a + b, 0);
+
+	const recentData = data.slice(data.length - period);
+
+	const weightedSum = recentData.reduce((sum, value, index) => {
+		return sum + value * weights[index];
+	}, 0);
+
+	return weightedSum / weightSum;
+}
+
 
 // <y>标准差</y>
 function standardDeviation(data, period) {
