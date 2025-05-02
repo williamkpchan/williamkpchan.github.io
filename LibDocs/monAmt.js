@@ -80,7 +80,7 @@ async function collectdata(stknum) {
 	const stkcode = "hk" + stknum;
 	const url = "https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=" + stkcode + ",day,,,10,qfq";
 	//const url = `https://web.ifzq.gtimg.cn/appstock/app/hkfqkline/get?_var=kline_dayqfq&param=${stkcode},day,,,10,qfq`;
-
+console.log(".")
 	try {
 		const responseText = await $.get(url);
 		const jsonString = responseText.split("=")[1];
@@ -485,13 +485,13 @@ function checkAmtPercentage(stknum, stkname, currentAmt, avgAmt, todaypct) {
         systemClock < 1200 && amtRatio > 90,
         systemClock < 1400 && amtRatio > 100,
         systemClock < 1500 && amtRatio > 110,
-        systemClock <= 1600 && amtRatio > 130
+        systemClock <= 2359 && amtRatio > 130
     ];
 
     // Check if any condition is met and price is positive
     if (conditions.some(condition => condition) && todaypct > 0) {
         const codeStr = `<o onclick="xunbao('${stknum}')">${stknum} ${stkname}</o>, `;
-        
+console.log("largeamt ",stknum)
         // Update if exists, add if doesn't
         if (largeAmtTable[stknum]) {
             largeAmtTable[stknum].amtRatio = amtRatio; // Update the ratio
@@ -677,7 +677,7 @@ async function updateInfo() {
 	//console.log("check allResults value:",allResults["00388"])
 	//console.log("firstTime",firstTime)
 	updateHTML();
-	updnStr = " <lg>Up " + upcount + "</lg> <r>Dn " + dncount + "</r>"
+	updnStr = ' <span class="redbut"> <lg>Up ' + upcount + "</lg> <r>Dn " + dncount + "</r></span>"
 
 	$("#dateAndTime").html("<y>" + showDate() + "</y> " + showTime() + updnStr)
 
