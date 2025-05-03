@@ -443,6 +443,7 @@ function compareHLC(stkNum) {
 
 
 function xunbao(xunbaocode) {
+	sessionStorage.setItem("randomcode", xunbaocode)
 	localStorage.setItem("randomcode", xunbaocode)
 	window.open("../../Random Charts.html");
 	// locs = ["HIghLowTrend.html", "Random Charts.html", ]
