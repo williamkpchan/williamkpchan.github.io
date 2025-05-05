@@ -196,14 +196,14 @@ function main() {
 
 
 function showStat() {
-  plotArrays([highpassCntArr, lowpassCntArr, closepassCntArr], ['Hpass', 'Lpass','Cpass'])
-  plotArrays([highFailCntArr, lowFailCntArr, closeFailCntArr], ['HFail', 'LFail','CFail'])
+  plotArrays("高位数",[highpassCntArr, lowpassCntArr, closepassCntArr], ['Hpass', 'Lpass','Cpass'])
+  plotArrays("低位数",[highFailCntArr, lowFailCntArr, closeFailCntArr], ['HFail', 'LFail','CFail'])
 
-  plotArrays([status3UpCntArr, status4UpCntArr, status5UpCntArr, status10UpCntArr], ['3Up','4Up','5Up','10Up'])
-  plotArrays([status3DnCntArr, status4DnCntArr, status5DnCntArr, status10DnCntArr], ['3Dn','4Dn','5Dn','10Dn'])
+  plotArrays("高升数",[status3UpCntArr, status4UpCntArr, status5UpCntArr, status10UpCntArr], ['3Up','4Up','5Up','10Up'])
+  plotArrays("低走数",[status3DnCntArr, status4DnCntArr, status5DnCntArr, status10DnCntArr], ['3Dn','4Dn','5Dn','10Dn'])
 
-  plotArrays([statusUpXCnt3Arr, statusUpXCnt4Arr, statusUpXCnt5Arr, statusUpXCnt10Arr],['UpX3','UpX4','UpX5','UpX10'])
-  plotArrays([statusDnXCnt3Arr, statusDnXCnt4Arr, statusDnXCnt5Arr, statusDnXCnt10Arr],['DnX3','DnX4','DnX5','DnX10'])
+  plotArrays("上突破数",[statusUpXCnt3Arr, statusUpXCnt4Arr, statusUpXCnt5Arr, statusUpXCnt10Arr],['UpX3','UpX4','UpX5','UpX10'])
+  plotArrays("下突破数",[statusDnXCnt3Arr, statusDnXCnt4Arr, statusDnXCnt5Arr, statusDnXCnt10Arr],['DnX3','DnX4','DnX5','DnX10'])
 
 
 }
@@ -367,7 +367,7 @@ function xunbao(xunbaocode) {
 
 const colors = ['white', 'yellow', 'orange','red', 'blue', 'green', 'purple', 'brown']; // Array of colors for the lines
 
-function plotArrays(arrays, labels) {
+function plotArrays(title,arrays, labels) {
     // Create a canvas element to render the chart
     const canvas = document.createElement('canvas');
     const aspectRatio = 1.5; // 预设宽高比
@@ -398,6 +398,15 @@ function plotArrays(arrays, labels) {
       },
       options: {
           responsive: false,
+          plugins: {
+              title: {
+                  display: true,
+                  text: title,
+                  font: {
+                     size: 32
+                  }
+              },
+          },
           scales: {
               y: {
                   beginAtZero: false
