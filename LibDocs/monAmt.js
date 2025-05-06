@@ -3,7 +3,7 @@ const BaseObj = {};
 const allResults = {};
 prevallResults = {};
 firstTime = false
-sortmode = 1
+sortmode = 3
 upcount = 0
 dncount = 0
 
@@ -556,6 +556,11 @@ function updateHTML() {
 			return allResults[b].amtdiff - allResults[a].amtdiff;
 		});
 
+	} else if (sortmode == 4) {
+		sortedResults = Object.keys(allResults).sort((a, b) => {
+			return allResults[b].cPrice - allResults[a].cPrice;
+		});
+
 	} else if (sortmode == 3) {
 		sortedResults = Object.keys(allResults).sort((a, b) => {
 			return allResults[b].amt - allResults[a].amt;
@@ -618,15 +623,6 @@ function xunbao(xunbaocode) {
 	//  window.open("HIghLowTrend.html")
 }
 
-function chkKey() {
-	var testkey = getChar(event);
-	if (testkey == 't') { window.scrollTo(0, 0); }
-	if (testkey == 'q') { window.location = '#FreqTable'; }
-
-	else if (testkey == 'e') { window.scrollTo(0, document.body.scrollHeight); }
-	else if (testkey == 's') { updateHTML(); }
-	else { chkOtherKeys(testkey) }
-}
 
 function getChar(event) {
 	if (event.which != 0 && event.charCode != 0) {
@@ -652,7 +648,7 @@ async function updateChanges() {
 		document.getElementById("dateAndTime").innerHTML = "<lg>" + showDate() + "</lg> " + showTime() + "<o> Market Closed</o>";
 		return
 	}
-	sortmode = true
+	sortmode = 3
 	upcount = 0
 	dncount = 0
 	newUpList = []

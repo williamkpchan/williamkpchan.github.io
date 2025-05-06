@@ -800,7 +800,6 @@ function getChar(event) {
 
 
 
-
 // Start the main process
 main();
 
