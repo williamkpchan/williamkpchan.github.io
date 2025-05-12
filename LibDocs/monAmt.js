@@ -491,7 +491,7 @@ function checkAmtPercentage(stknum, stkname, currentAmt, avgAmt, todaypct) {
     // Check if any condition is met and price is positive
     if (conditions.some(condition => condition) && todaypct > 0) {
         const codeStr = `<o onclick="xunbao('${stknum}')">${stknum} ${stkname}</o>, `;
-console.log("largeamt ",stknum)
+
         // Update if exists, add if doesn't
         if (largeAmtTable[stknum]) {
             largeAmtTable[stknum].amtRatio = amtRatio; // Update the ratio
