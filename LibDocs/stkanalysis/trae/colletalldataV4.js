@@ -150,7 +150,7 @@ function checkCodeLen(theCode) {
 
 async function fetchKline(theCode, theurl) {
 	try {
-          await delay(10); // Wait for 10ms
+          await delay(100); // Wait
 
 		const response = await fetch(theurl);
 		if (!response.ok) {
@@ -197,7 +197,7 @@ async function fetchKline(theCode, theurl) {
 				prevClose: prevClose,
 			};
 		}
-		throw new Error(`No data found for ${theCode}`);
+		throw new Error(`data error ${theCode}: \nObject.keys: ${Object.keys(stkdata.data)}, \nObject.keys ${Object.keys(stkdata.data[theCode])} `);
 	} catch (error) {
 		console.error(`Error fetching data for ${theCode}:`, error);
 		return null;
@@ -708,13 +708,13 @@ function standardDeviation(data, period) {
 
 
 function plotChart(dataArray, chartId, label, color) {
-     const title = document.createElement('pk');
+     title = document.createElement('pk');
      //title.textContent = label + "<br>";
      maxvalue = Math.max(...dataArray)
      minvalue = Math.min(...dataArray)
      curvalue = dataArray[dataArray.length-1]
      relPos = Math.round((curvalue - minvalue)*100/(maxvalue - minvalue))
-     title.innerHTML = label + ` <md>最高: ${maxvalue} 最低: ${minvalue} 现在: ${curvalue} 相对位置: ${relPos}` +"</md><br>";
+     title.innerHTML = label + ` <md>最高: ${maxvalue} 最低: ${minvalue} <y>现在: ${curvalue}</y> 相对位置: ${relPos}` +"</md><br>";
 
 	// Create canvas element if it doesn't exist
 	let chartContainer = document.getElementById(chartId);

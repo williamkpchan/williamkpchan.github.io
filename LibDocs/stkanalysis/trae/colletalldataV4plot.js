@@ -297,12 +297,20 @@ async function updateChanges() {
 //     plotChart(lowfailArr, 'lowfail', '低位比三日线低', 'purple');
 //    }
 
-     plotBollingerBands(cUpPrevCloseArr, 5, 1, '现价比昨日升');
-     plotBollingerBands(closepassArr, 5, 1, '现价高过三日线');
-     plotBollingerBands(trend3UpArr, 5, 1, '三日线升');
-     plotBollingerBands(highpassArr, 5, 1, '高位比三日线高');
-     plotBollingerBands(lowpassArr, 5, 1, '低位比三日线高');
-     plotBollingerBands(lowfailArr, 5, 1, '低位比三日线低');
+//     plotBollingerBands(cUpPrevCloseArr, 5, 1, '现价比昨日升');
+//     plotBollingerBands(closepassArr, 5, 1, '现价高过三日线');
+//     plotBollingerBands(trend3UpArr, 5, 1, '三日线升');
+//     plotBollingerBands(highpassArr, 5, 1, '高位比三日线高');
+//     plotBollingerBands(lowpassArr, 5, 1, '低位比三日线高');
+//     plotBollingerBands(lowfailArr, 5, 1, '低位比三日线低');
+
+//   plotWmaChart(dataArray, chartId, label, color) {
+     plotWmaChart(cUpPrevCloseArr, 'c1','现价比昨日升', 'red');
+     plotWmaChart(closepassArr, 'c2','现价高过三日线', 'pink');
+     plotWmaChart(trend3UpArr, 'c3','三日线升', 'orange');
+     plotWmaChart(highpassArr, 'c4','高位比三日线高', 'brown');
+     plotWmaChart(lowpassArr, 'c5','低位比三日线高', 'cyan');
+     plotWmaChart(lowfailArr, 'c6','低位比三日线低', 'purple');
 
 }
 
@@ -681,6 +689,22 @@ function findDifferences(objA, objB) {
 	return differences;
 }
 
+// <y>加权移动平均 (WMA)</y>
+function weightedMovingAverage(data, period) {
+ const weights = Array.from({length: period}, (_, i) => period - i);
+ const wma = new Array(period - 1).fill(null); // <y>填充 null</y>
+ for (let i = period - 1; i < data.length; i++) {
+  let sum = 0;
+  let weightSum = 0;
+  for (let j = 0; j < period; j++) {
+   sum += data[i - j] * weights[j];
+   weightSum += weights[j];
+  }
+  wma.push(sum / weightSum);
+ }
+ return wma;
+}
+
 
 
 function calculateWeightedMovingAverage(data, period, stkNum) {
@@ -721,7 +745,7 @@ function plotChart(dataArray, chartId, label, color) {
      minvalue = Math.min(...dataArray)
      curvalue = dataArray[dataArray.length-1]
      relPos = Math.round((curvalue - minvalue)*100/(maxvalue - minvalue))
-     title.innerHTML = label + ` <md>最高: ${maxvalue} 最低: ${minvalue} 现在: ${curvalue} 相对位置: ${relPos}` +"</md><br>";
+     title.innerHTML = label + ` <md>最高: ${maxvalue} 最低: ${minvalue} 现在: ${curvalue} <y>相对位置: ${relPos}</y>` +"</md><br>";
 
 	// Create canvas element if it doesn't exist
 	let chartContainer = document.getElementById(chartId);
@@ -750,7 +774,11 @@ function plotChart(dataArray, chartId, label, color) {
 			}]
 		},
 		options: {
-			legend: { display: false },
+		  plugins: {
+		    legend: {
+		      display: false // This hides the entire legend
+		    }
+		  },
 			responsive: true,
 			maintainAspectRatio: false,
 			scales: {
@@ -785,7 +813,7 @@ function plotBollingerBands(data, period, multiplier, chartTitle) {
 
   // 创建标题
   const title = document.createElement('pk');
-  title.textContent = chartTitle + " " + thecode;
+  title.textContent = chartTitle;
   document.body.appendChild(title);
 
   // 动态创建画布
@@ -833,6 +861,7 @@ function plotBollingerBands(data, period, multiplier, chartTitle) {
       ]
     },
     options: {
+	 legend: { display: false },
       responsive: false,
       scales: {
         x: {
@@ -843,6 +872,158 @@ function plotBollingerBands(data, period, multiplier, chartTitle) {
     }
   });
 }
+
+function plotWmaChart(dataArray, chartId, label, color) {
+    // 创建标题元素
+    const title = document.createElement('pk');
+    const maxvalue = Math.max(...dataArray);
+    const minvalue = Math.min(...dataArray);
+    const curvalue = dataArray[dataArray.length - 1];
+    const relPos = Math.round((curvalue - minvalue) * 100 / (maxvalue - minvalue));
+    title.innerHTML = label + ` <md>最高: ${maxvalue} 最低: ${minvalue} <y>现在: ${curvalue}</y> 相对位置: ${relPos}</md><br>`;
+
+    // 创建图表容器（如果不存在）
+    let chartContainer = document.getElementById(chartId);
+    if (!chartContainer) {
+        chartContainer = document.createElement('div');
+        chartContainer.id = chartId;
+        document.getElementById('chartOutput').appendChild(title);
+        document.getElementById('chartOutput').appendChild(chartContainer);
+    } else {
+        // 清空容器但保留标题
+        chartContainer.innerHTML = '<canvas></canvas>';
+    }
+
+    // 获取画布上下文
+    const ctx = chartContainer.querySelector('canvas').getContext('2d');
+
+    // 准备数据集
+    const datasets = [{
+        label: label,
+        data: dataArray,
+        borderColor: color,
+        fill: false,
+        borderWidth: 1,
+        pointStyle: false,
+    }];
+
+    // 计算并添加 WMA 线和标准差带
+    const wmaPeriod = 5; // 用于标准差带的 WMA 周期
+    const stdDevMultiplier = 1; // 标准差倍数，通常使用2倍
+
+    if (dataArray.length >= wmaPeriod) {
+        // 计算 WMA 中心线
+        const wmaData = calculateWMALine(dataArray, wmaPeriod);
+        
+        // 计算标准差带
+        const { upperBand, lowerBand } = calculateStandardDeviationBands(dataArray, wmaData, wmaPeriod, stdDevMultiplier);
+        
+        // 添加 WMA 中心线
+        datasets.push({
+            label: `WMA${wmaPeriod}`,
+            data: wmaData,
+            borderColor: '#3357FF',
+            fill: false,
+            borderWidth: 1,
+            pointStyle: false,
+        });
+        
+        // 添加标准差带上轨
+        datasets.push({
+            label: `+${stdDevMultiplier}σ`,
+            data: upperBand,
+            borderColor: 'purple',
+            borderWidth: 1,
+            //borderDash: [5, 5],
+            pointStyle: false,
+            fill: false,
+        });
+        
+        // 添加标准差带下轨
+        datasets.push({
+            label: `- ${stdDevMultiplier}σ`,
+            data: lowerBand,
+            borderColor: 'purple',
+            borderWidth: 1,
+            //borderDash: [5, 5],
+            pointStyle: false,
+            fill: {
+                target: 'previous',
+                above: 'rgba(51, 87, 255, 0.1)', // 上轨和下轨之间填充半透明蓝色
+            },
+        });
+    }
+
+    // 创建图表
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: timeArr,
+            datasets: datasets
+        },
+        options: {
+            legend: { display: true },
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    min: minvalue * 0.95,
+                    max: maxvalue * 1.05
+                }
+            }
+        }
+    });
+}
+
+// 计算整条 WMA 线的数据
+function calculateWMALine(data, period) {
+    const result = [];
+    for (let i = 0; i < data.length; i++) {
+        if (i >= period - 1) {
+            const weights = Array.from({ length: period }, (_, j) => j + 1);
+            const weightSum = weights.reduce((a, b) => a + b, 0);
+            let weightedSum = 0;
+            for (let j = 0; j < period; j++) {
+                weightedSum += data[i - j] * weights[period - 1 - j];
+            }
+            result.push(weightedSum / weightSum);
+        } else {
+            result.push(null); // 数据不足时显示为 null
+        }
+    }
+    return result;
+}
+
+// 计算标准差带
+function calculateStandardDeviationBands(data, wmaData, period, multiplier) {
+    const upperBand = [];
+    const lowerBand = [];
+    
+    for (let i = 0; i < data.length; i++) {
+        if (i >= period - 1) {
+            // 计算窗口数据
+            const windowData = data.slice(i - period + 1, i + 1);
+            const windowWMA = wmaData[i];
+            
+            // 计算标准差
+            const mean = windowData.reduce((sum, value) => sum + value, 0) / period;
+            const variance = windowData.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) / period;
+            const stdDev = Math.sqrt(variance);
+            
+            // 计算上下带
+            upperBand.push(windowWMA + (stdDev * multiplier));
+            lowerBand.push(windowWMA - (stdDev * multiplier));
+        } else {
+            // 数据不足时显示为 null
+            upperBand.push(null);
+            lowerBand.push(null);
+        }
+    }
+    
+    return { upperBand, lowerBand };
+}
+
 
 // Function to process the next request in the queue
 async function processQueue() {
