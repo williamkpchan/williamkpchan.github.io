@@ -91,7 +91,6 @@ if (selectKey != null && selectKey != "" && selectKey.toLowerCase() === "a") {
     codeTable = codeTableH
 }
 
-console.log("systemMode: ",systemMode)
 console.log("codeTable.length: ",codeTable.length)
 
 for (let i = 0; i < codeTable.length; i += chunkSize) {
@@ -289,6 +288,9 @@ async function updateChanges() {
 	compareAll()
 
     if (closepassArr.length > 5) {
+     chartOutput = document.getElementById('chartOutput')
+     chartOutput.innerHTML = ""
+
      plotChart(cUpPrevCloseArr, 'cUpPrevClose', '现价比昨日升', 'red');
      plotChart(closepassArr, 'closepass', '现价高过三日线', 'blue');
      plotChart(trend3UpArr, 'trend3Up', '三日线升', 'pink');
@@ -786,14 +788,17 @@ async function main() {
 	compareAll()
 	//console.log("fetchAllData loop")
 
+	setInterval(updateChanges, 60000);
 }
 
 function chkKey() {
   var testkey = getChar(event);
   if(testkey == 't'){window.location = '#imgoutput';}
   else if(testkey == 'a'){window.location = '#output';}
+  else if(testkey == 's'){window.location = '#chartOutput';}
   else if(testkey == 'e'){window.location = '#shortcutKeys';}
   else if(testkey == '1'){removeFirstElement()}
+
   else{chkOtherKeys(testkey)} 
 }
 function getChar(event) {
@@ -824,4 +829,3 @@ function removeFirstElement() {
 // Start the main process
 main();
 
-setInterval(updateChanges, 60000);
