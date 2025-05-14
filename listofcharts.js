@@ -137,7 +137,7 @@ function reportIt(someMsg) { // show it on screen
 }
 function chkKey() { testkey = getChar(event);
   //if(testkey == 'c'){showChart();}
-  if(testkey == 'c'){window.open("Random Charts.html");}
+  if(testkey == 'c'){window.open("https://williamkpchan.github.io/LibDocs/Random Charts.html");}
 //  if(testkey == 'f'){ window.location = '#stkcodeid';  $('#stkcode').value =""; }
 
   if(testkey == 'h'){thisImgPCode= "&period=3"; showAllCharts();}
@@ -163,7 +163,7 @@ function chkKey() { testkey = getChar(event);
   if(testkey == 'r'){randomChartinList();} // random jmp to a chart
   if(testkey == 's'){xunbao(chartPtCode);}
   if(testkey == 't'){window.scrollTo(0,0);}
-  if(testkey == 'X'){window.open("Random Charts.html");}
+  if(testkey == 'X'){window.open("https://williamkpchan.github.io/LibDocs/Random Charts.html");}
   if(testkey == 'z'){topicpointer = 12; showstkList();}
 
   if(testkey == '.'){showNextPage();}
@@ -220,7 +220,7 @@ function xunbao(xunbaocode) {
   localStorage.setItem("randomcode", xunbaocode)
   localStorage.setItem("otherCode", xunbaocode)
   localStorage.setItem("stkCode", xunbaocode)
-  window.open("Random Charts.html");
+  window.open("https://williamkpchan.github.io/LibDocs/Random Charts.html");
 }
 
 function toACode(thecode) {
