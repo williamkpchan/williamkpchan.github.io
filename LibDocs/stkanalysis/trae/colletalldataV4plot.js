@@ -253,7 +253,7 @@ async function updateChanges() {
 	updcnt = updcnt + 1
      // Update image with timestamp to prevent caching
      const timestamp = new Date().getTime();
-     const imgSrc = `https://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=T&lang=1&titlestyle=1&vol=1&Indicator=9&indpara1=22&indpara2=1.6&indpara3=0&indpara4=0&indpara5=0&subChart1=3&ref1para1=5&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&scheme=3&com=100&chartwidth=1150&chartheight=500&stockid=110000&period=5012&type=1&logoStyle=1&_=${timestamp}`;
+     const imgSrc = `https://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=9&indpara1=22&indpara2=1.6&indpara3=0&indpara4=0&indpara5=0&subChart1=3&ref1para1=5&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&scheme=3&com=100&chartwidth=1150&chartheight=500&stockid=110000&period=5012&type=1&logoStyle=1&_=${timestamp}`;
      document.getElementById("imgoutput").innerHTML = `<img src="${imgSrc}" alt="Updated Chart">`;
 
 	const timestrarr = showTime().split(':')
@@ -288,22 +288,13 @@ async function updateChanges() {
 	//console.log("updateInfo complete ", showTime())
 	compareAll()
 
-//    if (closepassArr.length > 5) {
+    if (closepassArr.length > 5) {
+     chartOutput = document.getElementById('chartOutput')
+     chartOutput.innerHTML = ""
+
+
 //     plotChart(cUpPrevCloseArr, 'cUpPrevClose', '现价比昨日升', 'red');
-//     plotChart(closepassArr, 'closepass', '现价高过三日线', 'blue');
-//     plotChart(trend3UpArr, 'trend3Up', '三日线升', 'pink');
-//     plotChart(highpassArr, 'highpass', '高位比三日线高', 'orange');
-//     plotChart(lowpassArr, 'lowpass', '低位比三日线高', 'green');
-//     plotChart(lowfailArr, 'lowfail', '低位比三日线低', 'purple');
-//    }
-
 //     plotBollingerBands(cUpPrevCloseArr, 5, 1, '现价比昨日升');
-//     plotBollingerBands(closepassArr, 5, 1, '现价高过三日线');
-//     plotBollingerBands(trend3UpArr, 5, 1, '三日线升');
-//     plotBollingerBands(highpassArr, 5, 1, '高位比三日线高');
-//     plotBollingerBands(lowpassArr, 5, 1, '低位比三日线高');
-//     plotBollingerBands(lowfailArr, 5, 1, '低位比三日线低');
-
 //   plotWmaChart(dataArray, chartId, label, color) {
      plotWmaChart(cUpPrevCloseArr, 'c1','现价比昨日升', 'red');
      plotWmaChart(closepassArr, 'c2','现价高过三日线', 'pink');
@@ -311,7 +302,7 @@ async function updateChanges() {
      plotWmaChart(highpassArr, 'c4','高位比三日线高', 'brown');
      plotWmaChart(lowpassArr, 'c5','低位比三日线高', 'cyan');
      plotWmaChart(lowfailArr, 'c6','低位比三日线低', 'purple');
-
+    }
 }
 
 
@@ -745,14 +736,13 @@ function plotChart(dataArray, chartId, label, color) {
      minvalue = Math.min(...dataArray)
      curvalue = dataArray[dataArray.length-1]
      relPos = Math.round((curvalue - minvalue)*100/(maxvalue - minvalue))
-     title.innerHTML = label + ` <md>最高: ${maxvalue} 最低: ${minvalue} 现在: ${curvalue} <y>相对位置: ${relPos}</y>` +"</md><br>";
+     title.innerHTML = label + ` <md>最高: ${maxvalue} 最低: ${minvalue} <y>现在: ${curvalue} 相对位置:</y> <r>${relPos}</r>` +"</md><br>";
 
 	// Create canvas element if it doesn't exist
 	let chartContainer = document.getElementById(chartId);
 	if (!chartContainer) {
 		chartContainer = document.createElement('div');
 		chartContainer.id = chartId;
-		document.getElementById('chartOutput').appendChild(title);
 		document.getElementById('chartOutput').appendChild(chartContainer);
 	}
 	chartContainer.innerHTML = '<canvas></canvas>';
@@ -875,11 +865,11 @@ function plotBollingerBands(data, period, multiplier, chartTitle) {
 
 function plotWmaChart(dataArray, chartId, label, color) {
     // 创建标题元素
-    const title = document.createElement('pk');
-    const maxvalue = Math.max(...dataArray);
-    const minvalue = Math.min(...dataArray);
-    const curvalue = dataArray[dataArray.length - 1];
-    const relPos = Math.round((curvalue - minvalue) * 100 / (maxvalue - minvalue));
+    title = document.createElement('pk');
+    maxvalue = Math.max(...dataArray);
+    minvalue = Math.min(...dataArray);
+    curvalue = dataArray[dataArray.length - 1];
+    relPos = Math.round((curvalue - minvalue) * 100 / (maxvalue - minvalue));
     title.innerHTML = label + ` <md>最高: ${maxvalue} 最低: ${minvalue} <y>现在: ${curvalue}</y> 相对位置: ${relPos}</md><br>`;
 
     // 创建图表容器（如果不存在）
@@ -889,6 +879,7 @@ function plotWmaChart(dataArray, chartId, label, color) {
         chartContainer.id = chartId;
         document.getElementById('chartOutput').appendChild(title);
         document.getElementById('chartOutput').appendChild(chartContainer);
+        chartContainer.innerHTML = '<canvas></canvas>';
     } else {
         // 清空容器但保留标题
         chartContainer.innerHTML = '<canvas></canvas>';
@@ -909,7 +900,7 @@ function plotWmaChart(dataArray, chartId, label, color) {
 
     // 计算并添加 WMA 线和标准差带
     const wmaPeriod = 5; // 用于标准差带的 WMA 周期
-    const stdDevMultiplier = 1; // 标准差倍数，通常使用2倍
+    const stdDevMultiplier = 1.6; // 标准差倍数，通常使用2倍
 
     if (dataArray.length >= wmaPeriod) {
         // 计算 WMA 中心线
@@ -1054,6 +1045,8 @@ async function main() {
 	compareAll()
 	//console.log("fetchAllData loop")
 
+	setInterval(updateChanges, 60000);
+
 }
 
 function chkKey() {
@@ -1092,4 +1085,3 @@ function removeFirstElement() {
 // Start the main process
 main();
 
-setInterval(updateChanges, 60000);
