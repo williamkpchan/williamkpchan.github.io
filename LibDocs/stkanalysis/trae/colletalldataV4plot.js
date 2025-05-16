@@ -254,7 +254,7 @@ async function updateChanges() {
      // Update image with timestamp to prevent caching
      const timestamp = new Date().getTime();
      const imgSrc = `https://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=9&indpara1=22&indpara2=1.6&indpara3=0&indpara4=0&indpara5=0&subChart1=3&ref1para1=5&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&scheme=3&com=100&chartwidth=1150&chartheight=500&stockid=110000&period=5012&type=1&logoStyle=1&_=${timestamp}`;
-     document.getElementById("imgoutput").innerHTML = `<img src="${imgSrc}" alt="Updated Chart">`;
+     document.getElementById("imgoutput").innerHTML = `<img  onclick="xunbao('110000')" src="${imgSrc}" alt="Updated Chart">`;
 
 	const timestrarr = showTime().split(':')
 	const timestr = timestrarr[0] + timestrarr[1]
@@ -900,7 +900,7 @@ function plotWmaChart(dataArray, chartId, label, color) {
 
     // 计算并添加 WMA 线和标准差带
     const wmaPeriod = 5; // 用于标准差带的 WMA 周期
-    const stdDevMultiplier = 1.6; // 标准差倍数，通常使用2倍
+    const stdDevMultiplier = 1.8; // 标准差倍数，通常使用2倍
 
     if (dataArray.length >= wmaPeriod) {
         // 计算 WMA 中心线
@@ -1053,6 +1053,7 @@ function chkKey() {
   var testkey = getChar(event);
   if(testkey == 't'){window.location = '#imgoutput';}
   else if(testkey == 'a'){window.location = '#output';}
+  else if(testkey == 's'){window.location = '#chartOutput';}
   else if(testkey == 'e'){window.location = '#shortcutKeys';}
   else if(testkey == '1'){removeFirstElement()}
   else{chkOtherKeys(testkey)} 
@@ -1078,6 +1079,16 @@ function removeFirstElement() {
     }
 }
 
+function xunbao(xunbaocode) {
+	sessionStorage.setItem("randomcode", xunbaocode)
+	localStorage.setItem("randomcode", xunbaocode)
+	localStorage.setItem("otherCode", xunbaocode)
+	localStorage.setItem("stkCode", xunbaocode)
+
+	window.open("Random Charts.html");
+	// locs = ["HIghLowTrend.html", "Random Charts.html", ]
+	//  window.open("HIghLowTrend.html")
+}
 
 
 
