@@ -220,7 +220,7 @@ function xunbao(xunbaocode) {
   localStorage.setItem("randomcode", xunbaocode)
   localStorage.setItem("otherCode", xunbaocode)
   localStorage.setItem("stkCode", xunbaocode)
-  window.open("https://williamkpchan.github.io/LibDocs/Random Charts.html");
+  window.open(`https://williamkpchan.github.io/LibDocs/Random Charts.html?${xunbaocode}`);
 }
 
 function toACode(thecode) {
