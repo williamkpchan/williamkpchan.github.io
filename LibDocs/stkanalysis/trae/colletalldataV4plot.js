@@ -1085,7 +1085,7 @@ function xunbao(xunbaocode) {
 	localStorage.setItem("otherCode", xunbaocode)
 	localStorage.setItem("stkCode", xunbaocode)
 
-	window.open("Random Charts.html");
+	window.open("https://williamkpchan.github.io/LibDocs/Random Charts.html");
 	// locs = ["HIghLowTrend.html", "Random Charts.html", ]
 	//  window.open("HIghLowTrend.html")
 }
