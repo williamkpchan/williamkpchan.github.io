@@ -1,0 +1,160 @@
+<!--Client-side (HTML/JavaScript for Chrome)-->
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+ <title>Real-Time Data Chart</title>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+ <style>
+body{width:100%; font-family: Arial, sans-serif; margin: 20px; }
+  #chart-container { width: 80%; margin: 0 auto; }
+  #status { margin-top: 20px; padding: 10px; background: #f0f0f0; }
+  button { padding: 8px 16px; margin: 5px; cursor: pointer; color:white;}
+ </style>
+</head>
+<body>
+ <h1>Real-Time Data Visualization</h1>
+ <div>
+  <button id="clearBtn">Clear Chart</button>
+  <button id="reconnectBtn">Reconnect</button>
+ </div>
+ <div id="chart-container">
+  <canvas id="dataChart"></canvas>
+ </div>
+ <div id="status">Waiting for data from server...</div>
+
+ <script>
+  // Initialize data array
+  let dataPoints = [];
+  let ws;
+  
+  // Function to extract HH:MM:SS from ISO string
+  function formatTime(isoString) {
+   const date = new Date(isoString);
+   return date.toTimeString().split(' ')[0]; // Gets HH:MM:SS
+  }
+  
+  // Initialize Chart
+  const ctx = document.getElementById('dataChart').getContext('2d');
+  const chart = new Chart(ctx, {
+   type: 'line',
+   data: {
+    labels: [],
+    datasets: [{
+     label: 'Real-Time Data',
+     data: [],
+     borderColor: 'rgb(75, 192, 192)',
+     tension: 0.1,
+     fill: false
+    }]
+   },
+   options: {
+    responsive: true,
+    scales: {
+     y: {
+      beginAtZero: false
+     },
+     x: {
+      ticks: {
+       autoSkip: true,
+       maxRotation: 45,
+       minRotation: 45
+      }
+     }
+    }
+   }
+  });
+
+  function connectWebSocket() {
+   if (ws) {
+    ws.close();
+   }
+   
+   ws = new WebSocket(`ws://${window.location.hostname}:3000`);
+   
+   ws.onopen = () => {
+    document.getElementById('status').textContent = 'Connected to server. Waiting for data...';
+   };
+
+   ws.onmessage = (event) => {
+    const received = JSON.parse(event.data);
+    
+    if (received.command === 'stop') {
+     document.getElementById('status').textContent = 'Data collection stopped by server.';
+     ws.close();
+     return;
+    }
+    
+    if (received.type === 'init') {
+     // Initialize with historical data
+     dataPoints = received.data;
+     updateChartWithAllData();
+     document.getElementById('status').textContent = `Initialized with ${dataPoints.length} historical data points`;
+    } 
+    else if (received.type === 'update') {
+     // Add new data point
+     dataPoints.push(received.data);
+     updateChartWithLatestData(received.data);
+     document.getElementById('status').textContent = `Received data: ${received.data.value} at ${formatTime(received.data.timestamp)}`;
+    }
+   };
+
+   ws.onclose = () => {
+    document.getElementById('status').textContent += ' Connection closed.';
+   };
+
+   ws.onerror = (error) => {
+    document.getElementById('status').textContent = 'WebSocket error: ' + error.message;
+   };
+  }
+
+  function updateChartWithAllData() {
+   // Clear existing data
+   chart.data.labels = [];
+   chart.data.datasets[0].data = [];
+   
+   // Add all data points with simplified time
+   dataPoints.forEach(point => {
+    chart.data.labels.push(formatTime(point.timestamp));
+    chart.data.datasets[0].data.push(point.value);
+   });
+   
+   chart.update();
+  }
+
+  function updateChartWithLatestData(newData) {
+   // Add new data point with simplified time
+   chart.data.labels.push(formatTime(newData.timestamp));
+   chart.data.datasets[0].data.push(newData.value);
+   
+   // Keep only the last 20 points for better visibility
+   const maxPoints = 20;
+   if (chart.data.labels.length > maxPoints) {
+    chart.data.labels.shift();
+    chart.data.datasets[0].data.shift();
+   }
+   
+   chart.update();
+  }
+
+  // Button event listeners
+  document.getElementById('clearBtn').addEventListener('click', () => {
+   chart.data.labels = [];
+   chart.data.datasets[0].data = [];
+   chart.update();
+   document.getElementById('status').textContent = 'Chart cleared.';
+  });
+
+  document.getElementById('reconnectBtn').addEventListener('click', () => {
+   document.getElementById('status').textContent = 'Reconnecting...';
+   connectWebSocket();
+  });
+
+  // Initial connection
+  connectWebSocket();
+ </script>
+</body>
+</html>

@@ -899,7 +899,7 @@ function plotWmaChart(dataArray, chartId, label, color) {
     }];
 
     // 计算并添加 WMA 线和标准差带
-    const wmaPeriod = 5; // 用于标准差带的 WMA 周期
+    const wmaPeriod = 10; // 用于标准差带的 WMA 周期
     const stdDevMultiplier = 1.8; // 标准差倍数，通常使用2倍
 
     if (dataArray.length >= wmaPeriod) {
