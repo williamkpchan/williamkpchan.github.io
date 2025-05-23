@@ -150,7 +150,7 @@ function checkCodeLen(theCode) {
 
 async function fetchKline(theCode, theurl) {
 	try {
-          await delay(10); // Wait for 10ms
+          // await delay(5); // Wait for 10ms
 
 		const response = await fetch(theurl);
 		if (!response.ok) {
