@@ -398,7 +398,7 @@ function plotArrays(title,arrays, labels) {
       borderColor: colors[i % colors.length],
       backgroundColor: 'rgba(0, 0, 0, 0)',
       borderWidth: 1,
-      pointStyle: false,
+      pointStyle: true,
   }));
   
   // Create the chart
