@@ -124,40 +124,45 @@ optionsArray.forEach(optionText => {
  selectElement.appendChild(option); // Append the option to the select
 });
 
-function init() {
+function init(topicPtr) {
     listItem = ""
      for (variableName in window) { // list all window objects
         if (window[variableName] instanceof Array) { 
           listItem = listItem + ", " + variableName; 
         }
      }
-console.log("\n\nall array objects:\n", listItem)
-console.log("tipsListName: ", tipsListName)
+
   $("#totalLen").html(tipsListName+": "+questionList.length);
-  topicNo = questionList.length;
-  shuffle(questionList)
+
+     if (!Number.isInteger(Number(topicPtr))) {
+       topicNo = questionList.length;
+     } else {
+       topicNo = topicPtr;
+     }
+
+  //shuffle(questionList)
   showTopic()
 }
 
 function shuffle(array) {
  suffleTable = Array.from(Array(questionList.length).keys()) // cannot use eq sign
 
- if(shuffleSW){
-   currentIndex = array.length;
-   while (currentIndex != 0) {
-     randomIndex = Math.floor(Math.random() * currentIndex);
-     currentIndex--;
-     [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
-     [suffleTable[currentIndex], suffleTable[randomIndex]] = [suffleTable[randomIndex], suffleTable[currentIndex]];
-   }
- }else{
-   topicNo = Math.floor(Math.random()  * questionList.length)
- }
+ //if(shuffleSW){
+ //  currentIndex = array.length;
+ //  while (currentIndex != 0) {
+ //    randomIndex = Math.floor(Math.random() * currentIndex);
+ //    currentIndex--;
+ //    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+ //    [suffleTable[currentIndex], suffleTable[randomIndex]] = [suffleTable[randomIndex], suffleTable[currentIndex]];
+ //  }
+ //}else{
+ //  topicNo = Math.floor(Math.random()  * questionList.length)
+ //}
 }
 
 function showTopic() {
   topicNo = topicNo - 1;
-  if (topicNo < 0) { topicNo = questionList.length-1}
+  if (topicNo < 0) { topicNo = 2}
   actualID = suffleTable[topicNo]
 
   while(ignoreList.includes(actualID)){
@@ -168,6 +173,8 @@ function showTopic() {
 
   var pointer = topicNo;
   topic = questionList[pointer];
+  recordLast(pointer);
+
   tipsNamesubstr = tipsListName.substring(0, 7)
   if (tipsNamesubstr === "archive") {
     topic = lineHeader + topic + lineTail
@@ -220,6 +227,7 @@ function showPointerQue(pointer) {
   //document.querySelector('#question').innerHTML = topic;
   //document.querySelector('#questionsLeft').innerHTML = topicNo;
   //document.querySelector('body').focus();
+  recordLast(pointer);
   gototop();
 }
 
@@ -346,7 +354,7 @@ function chkKey() {
   else if(testkey == 'r'){randommyChoice();}
   else if(testkey == 's'){speak();}
   else if(testkey == 't'){gototop();}
-  else if(testkey == 'e'){window.location = '#myChoice'; window.scrollBy({ top: -100, behavior: 'smooth'});}
+  else if(testkey == 'e'){window.location = '#automode'; window.scrollBy({ top: -100, behavior: 'smooth'});}
   else{chkOtherKeys(testkey)} 
 }
 function getChar(event) {
@@ -361,16 +369,16 @@ function useChosen() {
   var myChoice = document.getElementById("myChoice");
   var choiceIndex = myChoice.selectedIndex;
   tipsListName = myChoice.options[choiceIndex].text // first to know the question name
-  loadArray(tipsListName)
+  loadArray(tipsListName, 2)
 }
 
 function randommyChoice() {
   ArrayPtr = Math.floor(Math.random() * optionsArray.length);
   tipsListName = myChoice.options[ArrayPtr].text // first to know the question name
-  loadArray(tipsListName)
+  loadArray(tipsListName, 2)
 }
 
-function loadArray(filename) {
+function loadArray(filename, topicPtr) {
   tipsListName = filename // update tipsListName to avoid entry from seel list name
   if(filename == "JavaScriptTips"){
     url = "JavaScriptTipsTab-starter/js/main.js"
@@ -404,7 +412,15 @@ console.log("\n\nurl ",url)
        } else{
          markList = localStorage.getItem(markListname).split(' ').map(Number);
        }
-       init()  // showTopic
+
+       // startup topicPtr
+       if (!Number.isInteger(Number(topicPtr))) {
+         topicNo = questionList.length;
+       } else {
+         topicNo = topicPtr;
+       }
+
+       init(Number(topicNo)+1)  // showTopic
        showmarkList(markList)
     };
 
@@ -470,7 +486,35 @@ $("body").on( "swipeleft", function( event ) {jpback();} );
 $("body").on( "swiperight", function( event ) {jpButClick();});
 $("img").click( "jpButClick()");
 
-randommyChoice()
+
+
+// record lastRecStr for next start up
+function recordLast(value) {
+console.log("value ",value)
+  lastRecStr = tipsListName+" "+ value
+  console.log("\n\nrecordLast lastRecStr ", lastRecStr)
+  localStorage.setItem("lastRec", lastRecStr)
+}
+
+
+// startup the process
+if (localStorage.getItem("lastRec") === null) {
+  console.log("lastRec i null")
+  randommyChoice();
+} else{
+  lastRec = localStorage.getItem("lastRec")
+console.log(lastRec)
+  tipsListName = lastRec.split(' ')[0];
+  actualID = lastRec.split(' ')[1];
+console.log("tipsListName ",tipsListName, " number ", actualID)
+  if(!Number.isInteger(Number(actualID))){
+    actualID = 20
+  }
+
+  loadArray(tipsListName, actualID)
+console.log("actualID ", actualID)
+  init(Number(actualID))
+}
 
 </script>
 
