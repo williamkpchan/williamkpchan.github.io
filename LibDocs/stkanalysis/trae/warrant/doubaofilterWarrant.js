@@ -2,6 +2,7 @@
 const fs = require('fs');
 const readline = require('readline');
 const cheerio = require('cheerio');
+const { exec } = require('child_process');
 
 // Create readline interface for user input
 const rl = readline.createInterface({
@@ -95,6 +96,17 @@ rl.question('Enter HTML file path (default: input.html): ', (filePath) => {
             console.error(`Error writing file: ${err.message}`);
           } else {
             console.log(`Filtered results saved to output.html (${tableData.length} records)`);
+
+            const outfile = 'output.html';
+            // Open the HTML file in Chrome
+            exec(`${outfile}`, (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`Error opening file in Chrome: ${error}`);
+                    return;
+                }
+                console.log('HTML file opened in Chrome.');
+            });
+
           }
         });
       });

@@ -437,5 +437,6 @@ var tipsList = [
 'fiat currency, by itself, has no value.\nIt is only valuable when it’s backed by, mostly, commodities.',
 'labor is impossible to quantify in standardized units. \nIt’s the “value-add” on top of the commodities.\nCommodities include oil, metals, grains, etc. \n',
 'A股升應該買A股 靈活應變',
+'公司回購，一是要低位托價，一是高位頂住沽售壓力。',
 ];
 economicsTips = tipsList
