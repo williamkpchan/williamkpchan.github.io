@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Visualization Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.4.0/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #0a3d2d;
+            color: #f0f0f0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        h1 {
+            font-size: 32px;
+            text-align: center;
+            margin-bottom: 30px;
+            color: #a8e063;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+        .panel {
+            background-color: #1e5f4b;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+        #message-area {
+            min-height: 100px;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #0a3d2d;
+            border-radius: 8px;
+            font-size: 20px;
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 12px 20px;
+            background-color: #a8e063;
+            color: #0a3d2d;
+            border: none;
+            border-radius: 6px;
+            font-size: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #8ec048;
+        }
+        /* Mermaid styles */
+        .mermaid .node rect, .mermaid .node circle, .mermaid .node ellipse {
+            fill: #0a3d2d !important;
+            stroke: #a8e063 !important;
+            stroke-width: 3px !important;
+        }
+        .mermaid .node text {
+            font-size: 26px !important;
+            fill: #f0f0f0 !important;
+            font-weight: 500 !important;
+        }
+        .mermaid .edgeLabel {
+            background-color: #1e5f4b !important;
+            padding: 8px !important;
+            border-radius: 6px !important;
+            font-size: 24px !important;
+            color: #f0f0f0 !important;
+        }
+        .mermaid .edgePath .path {
+            stroke: #a8e063 !important;
+            stroke-width: 4px !important;
+        }
+        .mermaid .cluster rect {
+            fill: #1e5f4b !important;
+            stroke: #a8e063 !important;
+            stroke-width: 3px !important;
+            rx: 12 !important;
+            ry: 12 !important;
+        }
+        .mermaid .cluster text {
+            fill: #f0f0f0 !important;
+            font-size: 28px !important;
+            font-weight: bold !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Data Visualization Dashboard</h1>
+        
+        <div class="dashboard">
+            <div class="panel">
+                <h2>Real-time Data Chart</h2>
+                <div class="chart-container">
+                    <canvas id="dataChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>System Flowchart</h2>
+                <div id="flowchart-container" class="mermaid">
+                    flowchart TD
+                        subgraph "Node.js Server"
+                            A[Start Server] --> B[Initialize Data Array]
+                            B --> C[Start WebSocket Server]
+                            C --> D[Listen for User Input]
+                            D --> E{Input Received?}
+                            E -->|Yes| F[Add Data to Array]
+                            F --> G[Broadcast Data to All Clients]
+                            E -->|No| D
+                            H[Listen for WebSocket Connections] --> I{New Connection?}
+                            I -->|Yes| J[Send Historical Data]
+                            J --> K[Add Client to Connection List]
+                            I -->|No| H
+                            L[Listen for Console Commands] --> M{Command Received?}
+                            M -->|Yes| N[Parse Command]
+                            N --> O[Save Data / Export Chart]
+                            M -->|No| L
+                        end
+                        
+                        subgraph "Chrome Browser"
+                            P[Connect to Server] --> Q[Receive Historical Data]
+                            Q --> R[Plot Initial Chart]
+                            S[Listen for New Data] --> T{Data Received?}
+                            T -->|Yes| U[Update Chart]
+                            T -->|No| S
+                            V[Listen for Commands] --> W{Command Received?}
+                            W -->|Yes| X[Execute Command]
+                            X --> Y[Display Message / Export Chart]
+                            W -->|No| V
+                        end
+                        
+                        Z[Browser Disconnects] --> AA[Server Removes Client]
+                        G --> S
+                        O --> V
+                </div>
+                <div class="controls">
+                    <button id="exportChartBtn">Export Flowchart</button>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>Message Area</h2>
+                <div id="message-area"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#0a3d2d',
+                secondaryColor: '#2c786c',
+                tertiaryColor: '#1e5f4b',
+                primaryTextColor: '#f0f0f0',
+                secondaryTextColor: '#f0f0f0',
+                accentColor: '#a8e063',
+                fontSize: '24px'
+            },
+            flowchart: {
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+
+        // WebSocket connection
+        const socket = new WebSocket(`ws://${window.location.hostname}:8080`);
+        let chart;
+        let messageArea = document.getElementById('message-area');
+
+        // Initialize chart
+        function initChart(data) {
+            const ctx = document.getElementById('dataChart').getContext('2d');
+            
+            // Extract labels and values
+            const labels = data.map(item => new Date(item.timestamp).toLocaleTimeString());
+            const values = data.map(item => parseFloat(item.value));
+            
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Data Values',
+                        data: values,
+                        backgroundColor: 'rgba(168, 224, 99, 0.2)',
+                        borderColor: 'rgba(168, 224, 99, 1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: 'rgba(168, 224, 99, 1)',
+                        pointRadius: 5,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#f0f0f0',
+                                font: {
+                                    size: 18
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#f0f0f0',
+                                font: {
+                                    size: 18
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#f0f0f0',
+                                font: {
+                                    size: 20
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update chart with new data
+        function updateChart(newData) {
+            if (!chart) return;
+            
+            // Add new data point
+            chart.data.labels.push(new Date(newData.timestamp).toLocaleTimeString());
+            chart.data.datasets[0].data.push(parseFloat(newData.value));
+            
+            // Limit to 50 data points for performance
+            if (chart.data.labels.length > 50) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+            
+            chart.update();
+        }
+
+        // Display message
+        function displayMessage(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const messageElement = document.createElement('div');
+            messageElement.innerHTML = `<strong>${timestamp}:</strong> ${message}`;
+            messageArea.prepend(messageElement);
+            
+            // Limit to 10 messages
+            if (messageArea.children.length > 10) {
+                messageArea.removeChild(messageArea.lastChild);
+            }
+        }
+
+        // Export flowchart as PNG
+        function exportFlowchart() {
+            try {
+                const svgElement = document.querySelector('.mermaid svg');
+                if (!svgElement) {
+                    displayMessage('Error: Flowchart not found');
+                    return;
+                }
+                
+                // Convert SVG to PNG
+                const svgData = new XMLSerializer().serializeToString(svgElement);
+                const canvas = document.createElement('canvas');
+                const img = new Image();
+                
+                img.onload = function() {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // Create download link
+                    const link = document.createElement('a');
+                    link.download = 'system_flowchart.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    
+                    displayMessage('✅ Flowchart exported as PNG');
+                };
+                
+                img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+            } catch (error) {
+                console.error('Export error:', error);
+                displayMessage('Error exporting flowchart: ' + error.message);
+            }
+        }
+
+        // WebSocket event handlers
+        socket.onopen = () => {
+            displayMessage('Connected to server');
+        };
+
+        socket.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                
+                switch (data.type) {
+                    case 'historicalData':
+                        displayMessage(`Received ${data.data.length} historical data points`);
+                        initChart(data.data);
+                        break;
+                        
+                    case 'newData':
+                        displayMessage(`New data received: ${data.data.value}`);
+                        updateChart(data.data);
+                        break;
+                        
+                    case 'command':
+                        if (data.command === 'exportChart') {
+                            exportFlowchart();
+                        }
+                        break;
+                        
+                    default:
+                        console.log('Unknown message type:', data.type);
+                }
+            } catch (error) {
+                console.error('Error processing message:', error);
+                displayMessage('Error receiving data from server');
+            }
+        };
+
+        socket.onclose = () => {
+            displayMessage('Connection to server closed');
+            setTimeout(() => {
+                window.location.reload(); // Auto-reload page on disconnect
+            }, 5000);
+        };
+
+        socket.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            displayMessage('WebSocket error occurred');
+        };
+
+        // Button event listeners
+        document.getElementById('exportChartBtn').addEventListener('click', () => {
+            exportFlowchart();
+            // Also send command to server to log the export
+            socket.send(JSON.stringify({ type: 'command', command: 'exportChart' }));
+        });
+    </script>
+</body>
+</html>

@@ -254,7 +254,7 @@ async function updateChanges() {
      // Update image with timestamp to prevent caching
      const timestamp = new Date().getTime();
      const imgSrc = `https://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=9&indpara1=22&indpara2=1.6&indpara3=0&indpara4=0&indpara5=0&subChart1=3&ref1para1=5&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&scheme=3&com=100&chartwidth=1150&chartheight=500&stockid=110000&period=5012&type=1&logoStyle=1&_=${timestamp}`;
-     document.getElementById("imgoutput").innerHTML = `<img  onclick="xunbao('110000')" src="${imgSrc}" alt="Updated Chart">`;
+     showInnerHTML("imgoutput", `<img  onclick="xunbao('110000')" src="${imgSrc}" alt="Updated Chart">`);
 
 	const timestrarr = showTime().split(':')
 	const timestr = timestrarr[0] + timestrarr[1]
@@ -263,11 +263,12 @@ async function updateChanges() {
 
         if (!(Number(timestr) > 925 && Number(timestr) < 1201 ||
              Number(timestr) > 1259 && Number(timestr) < 1601) ) {
-            document.getElementById("dateAndTime").innerHTML = "<lg>" + showDate() + "</lg> " + showTime() + "<k class='blinkred'> Market Closed</k>" + "<br> 上个交易日:" + lastDateChop;
+           showInnerHTML("dateAndTime", `"<lg>" ${showDate()} "</lg> " ${showTime()} "<k class='blinkred'> Market Closed</k>" "<br> 上个交易日:" ${lastDateChop}`)
+
             console.log("updateChanges...Market Closed! ", updcnt, ",",Number(timestr))
             return
         }else{
-            document.getElementById("dateAndTime").innerHTML = "<lg>" + showDate() + "</lg> " + showTime() + " 上个交易日 " + lastDateChop;
+            showInnerHTML("dateAndTime", `"<lg>" ${showDate()} "</lg> " ${showTime()} " 上个交易日 " ${lastDateChop}`);
             //console.log("updateChanges...", updcnt)
         }
 
@@ -275,12 +276,11 @@ async function updateChanges() {
 
         if (!(Number(timestr) > 930 && Number(timestr) < 1131 ||
              Number(timestr) > 1259 && Number(timestr) < 1501)) {
-            document.getElementById("dateAndTime").innerHTML = "<lg>" + showDate() + "</lg> " + showTime() + "<k class='blinkred'> Market Closed</k>" + "<br> 上个交易日: " + lastDateChop;
+            showInnerHTML("dateAndTime", `"<lg>" ${showDate()} "</lg> " ${showTime()} "<k class='blinkred'> Market Closed</k>" + "<br> 上个交易日: " ${lastDateChop}`);
             return
         }else{
-            document.getElementById("dateAndTime").innerHTML = "<lg>" + showDate() + "</lg> " + showTime() + " 上个交易日: " + lastDateChop;
+            showInnerHTML("dateAndTime", `"<lg>" ${showDate()} "</lg> " ${showTime()} " 上个交易日 " ${lastDateChop}`);
         }
-
      }
 
 	//console.log("updateInfo start", showTime())
@@ -902,12 +902,10 @@ function plotWmaChart(dataArray, chartId, label, color) {
     const wmaPeriod = 10; // 用于标准差带的 WMA 周期
     const stdDevMultiplier = 1.8; // 标准差倍数，通常使用2倍
 
-    if (dataArray.length >= wmaPeriod/2) {
+    if (dataArray.length >= wmaPeriod) {
         // 计算 WMA 中心线
         const wmaData = calculateWMALine(dataArray, wmaPeriod);
-        const wmaData2 = calculateWMALine(dataArray, wmaPeriod*2);
-        const wmaData4 = calculateWMALine(dataArray, wmaPeriod*4);
-
+        
         // 计算标准差带
         const { upperBand, lowerBand } = calculateStandardDeviationBands(dataArray, wmaData, wmaPeriod, stdDevMultiplier);
         
@@ -916,26 +914,6 @@ function plotWmaChart(dataArray, chartId, label, color) {
             label: `WMA${wmaPeriod}`,
             data: wmaData,
             borderColor: '#3357FF',
-            fill: false,
-            borderWidth: 1,
-            pointStyle: false,
-        });
-        
-        // 添加 WMA2 中心线
-        datasets.push({
-            label: `WMA${wmaPeriod*2}`,
-            data: wmaData2,
-            borderColor: '#6688FF',
-            fill: false,
-            borderWidth: 1,
-            pointStyle: false,
-        });
-        
-        // 添加 WMA4 中心线
-        datasets.push({
-            label: `WMA${wmaPeriod*4}`,
-            data: wmaData4,
-            borderColor: '#aa99FF',
             fill: false,
             borderWidth: 1,
             pointStyle: false,
@@ -1058,8 +1036,7 @@ async function processQueue() {
 // Main function to collect basic data
 async function main() {
      // init shortcut keys
-     document.getElementById("shortcutKeys").innerHTML = `快捷键: <lg>t</lg> 保力加图 <lg>a</lg> 数据表 <lg>e</lg> 底部 <lg>1</lg> 去掉首元素`;
-
+     showInnerHTML("shortcutKeys", `快捷键: <lg>t</lg> 保力加图 <lg>a</lg> 数据表 <lg>e</lg> 底部 <lg>1</lg> 去掉首元素`);
 
 	// fetchAllData --> processQueue -->
 	await fetchAllData()
