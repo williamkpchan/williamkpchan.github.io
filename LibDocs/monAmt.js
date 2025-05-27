@@ -148,6 +148,7 @@ function addToFreqTable(obj, stknumber, stkname, counts, direction) {
 function showLargeAmtTable() {
 	// Convert the object to an array for sorting
 	//sortedArray = Object.values(largeAmtTable).sort((a, b) => b.amtRatio - a.amtRatio);
+	sortedArray = Object.values(largeAmtTable)
 
 	// Create a string to display the sorted results
 	displayContent = sortedArray.map(item => {
