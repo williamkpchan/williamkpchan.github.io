@@ -13,7 +13,7 @@ function waitForTimeout(ms) {
 }
 
 async function getPinterestImages(url, maxScrolls) {
-  const browser = await puppeteer.launch({ headless: false });
+  const browser = await puppeteer.launch({ headless: true });
   const page = await browser.newPage();
   
   try {
@@ -93,7 +93,7 @@ async function autoScrollAndCollectImages(page, maxScrolls) {
     const newImagesCount = allImages.size - previousCount;
     console.log(`第 ${scrollCount+1}/${maxScrolls} 次滚动: 新增 ${newImagesCount} 张图片`);
 
-    if(newImagesCount==0){scrollCount = maxScrolls}
+    //if(newImagesCount==0){scrollCount = maxScrolls}
     // 滚动到页面底部
     await page.evaluate('window.scrollTo(0, document.body.scrollHeight)');
     // 等待页面加载新内容
