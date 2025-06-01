@@ -8,7 +8,9 @@ function waitForTimeout(ms) {
 
 // 从单个URL收集资源
 async function getPinterestImages(url, maxScrolls) {
-  const browser = await puppeteer.launch({ headless: true });
+  console.log("getPinterestImages: ", url)
+
+  const browser = await puppeteer.launch({ headless: false });
   const page = await browser.newPage();
   
   try {
@@ -150,6 +152,7 @@ async function main() {
       .map(url => url.trim())
       .filter(url => url && !url.startsWith('#')); // 过滤空行和注释
     
+console.log(urls)
     if (urls.length === 0) {
       console.log('未找到有效URL，请检查inputurls.txt文件');
       return;
