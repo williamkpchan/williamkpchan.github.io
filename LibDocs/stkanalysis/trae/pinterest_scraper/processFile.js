@@ -52,15 +52,12 @@ async function processFile() {
     console.log(`\n检测到 ${duplicateLines.length} 组重复行`);
     
     // 详细输出重复行信息
-    if (duplicateLines.length > 0) {
-      console.log("\n重复行详情:");
-      duplicateLines.forEach(([line, { indexes }]) => {
-        console.log(`内容: "${line}"`);
-        console.log(`行号: ${indexes.map(i => i + 1).join(', ')}`);
-        console.log(`出现次数: ${indexes.length}`);
-        console.log('---');
-      });
-    }
+    // if (duplicateLines.length > 0) {
+    //   console.log("\n重复行详情:");
+    //   duplicateLines.forEach(([line, { indexes }]) => {
+    //     console.log(`内容: "${line}"`);
+    //   });
+    // }
 
     // 收集需要删除的行索引
     const duplicateIndexes = new Set();
