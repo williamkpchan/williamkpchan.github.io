@@ -1,5 +1,6 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs').promises;
+const { exec } = require('child_process');
 
 // 完全兼容的等待函数
 function waitForTimeout(ms) {
@@ -210,6 +211,50 @@ body {
 </html>`;
 }
 
+function generateFilename(nameHeader) {
+    const timestamp = Date.now();
+    // Convert the timestamp to a Date object
+    const date = new Date(timestamp);
+
+    // Extract the year, month, and day components
+    const year = date.getFullYear().toString().slice(-2); // Get the last two digits of the year
+    let month = (date.getMonth() + 1).toString().padStart(2, '0'); // Month is zero-based
+    let day = date.getDate().toString().padStart(2, '0');
+    let hours = date.getHours().toString().padStart(2, '0');
+    let minutes = date.getMinutes().toString().padStart(2, '0');
+
+    // Combine the components to form YYMMDD format
+    const yymmdd_hhmm = `${year}${month}${day}_${hours}${minutes}`;
+    //const yymmdd = `${year}${month}${day}`;
+
+    const filePath = `nameHeader_${yymmdd_hhmm}.html`;
+    return filePath
+}
+
+
+function openFile(filePath) {
+  return new Promise((resolve, reject) => {
+    let command;
+    if (process.platform === 'win32') {
+      command = `start "" "${filePath}"`;
+    } else if (process.platform === 'darwin') {
+      command = `open "${filePath}"`;
+    } else {
+      command = `xdg-open "${filePath}"`;
+    }
+    exec(command, (error) => {
+      if (error) {
+        console.error(`无法自动打开文件: ${error.message}`);
+        console.log(`请手动打开文件: ${filePath}`);
+        reject(error);
+      } else {
+        console.log(`已在浏览器中打开结果文件: ${filePath}`);
+        resolve();
+      }
+    });
+  });
+}
+
 // 主函数
 async function main() {
 	try {
@@ -252,11 +297,12 @@ async function main() {
 
 		// 生成合并的HTML文件
 		const htmlContent = generateHtml(allResults);
-		const filePath = `PageResources_${Date.now()}.html`;
+		const filePath = generateFilename("batchScrap")
 
 		// 保存HTML文件
 		await fs.writeFile(filePath, htmlContent);
 		console.log(`\n所有结果已合并到 ${filePath}`);
+		await openFile(filePath);
 
 	} catch (error) {
 		console.error('执行脚本时发生错误:', error);
