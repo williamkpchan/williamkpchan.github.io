@@ -870,7 +870,7 @@ function plotWmaChart(dataArray, chartId, label, color) {
     minvalue = Math.min(...dataArray);
     curvalue = dataArray[dataArray.length - 1];
     relPos = Math.round((curvalue - minvalue) * 100 / (maxvalue - minvalue));
-    title.innerHTML = label + ` <md><o>最高:</o> ${maxvalue} <lg>最低:/lg> ${minvalue} <y>现在: </y><r>${curvalue} </r> <y>相对位置:</y> <r>${relPos}</r>` +"</md><br>";
+    title.innerHTML = label + ` <md><o>最高:</o> ${maxvalue} <lg>最低:</lg> ${minvalue} <y>现在: </y><r>${curvalue} </r> <y>相对位置:</y> <r>${relPos}</r>` +"</md><br>";
 
     // 创建图表容器（如果不存在）
     let chartContainer = document.getElementById(chartId);
