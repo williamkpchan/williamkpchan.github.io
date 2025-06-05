@@ -736,7 +736,7 @@ function plotChart(dataArray, chartId, label, color) {
      minvalue = Math.min(...dataArray)
      curvalue = dataArray[dataArray.length-1]
      relPos = Math.round((curvalue - minvalue)*100/(maxvalue - minvalue))
-     title.innerHTML = label + ` <md>最高: ${maxvalue} 最低: ${minvalue} <y>现在: </y><r>${curvalue}</r> 相对位置: <r>${relPos}</r>` +"</md><br>";
+     title.innerHTML = label + ` <md>最高: ${maxvalue} 最低: ${minvalue} 现在: <r>${curvalue}</r> 相对位置: <r>${relPos}</r>` +"</md><br>";
 
 	// Create canvas element if it doesn't exist
 	let chartContainer = document.getElementById(chartId);
@@ -870,7 +870,7 @@ function plotWmaChart(dataArray, chartId, label, color) {
     minvalue = Math.min(...dataArray);
     curvalue = dataArray[dataArray.length - 1];
     relPos = Math.round((curvalue - minvalue) * 100 / (maxvalue - minvalue));
-    title.innerHTML = label + ` <md>最高: ${maxvalue} 最低: ${minvalue} <y>现在: ${curvalue} 相对位置:</y> <r>${relPos}</r>` +"</md><br>";
+    title.innerHTML = label + ` <md><o>最高:</o> ${maxvalue} <lg>最低:/lg> ${minvalue} <y>现在: </y><r>${curvalue} </r> <y>相对位置:</y> <r>${relPos}</r>` +"</md><br>";
 
     // 创建图表容器（如果不存在）
     let chartContainer = document.getElementById(chartId);
@@ -1058,7 +1058,7 @@ async function processQueue() {
 // Main function to collect basic data
 async function main() {
      // init shortcut keys
-     document.getElementById("shortcutKeys").innerHTML = `快捷键: <lg>t</lg> 保力加图 <lg>a</lg> 数据表 <lg>e</lg> 底部 <lg>1</lg> 去掉首元素`;
+     document.getElementById("shortcutKeys").innerHTML = `快捷键: <lg>t</lg> 保力加图 <lg>a</lg> 数据表 <lg>s</lg> 数据趋势图 <lg>e</lg> 底部 <lg>1</lg> 去掉首元素`;
 
 
 	// fetchAllData --> processQueue -->
