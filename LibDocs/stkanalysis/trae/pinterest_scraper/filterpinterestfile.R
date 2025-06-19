@@ -9,15 +9,12 @@ cat(pink("make sure all imgs on one line of its own! and remove empty lines\n\n\
 
 filename = readline("enter filename without extension: ")
 wholePage = readLines(paste0(filename,".html"))
-wholePage = gsub("> .*", ">", wholePage)
+
+wholePage <- unlist(strsplit(wholePage, "<img"))
+wholePage = gsub("^ {1,}", "", wholePage)
+
+wholePage = wholePage[wholePage != ""]
 oldwholePageLen = length(wholePage)
-
-emptyLineIdx = grep("^\n", wholePage)
-if(length(emptyLineIdx)>0){
-  cat("\nemptyLine:", length(emptyLineIdx), "\n")
-  wholePage = wholePage[-emptyLineIdx]
-}
-
 
 cat("all wholePage ",length(wholePage))
 cat(red("\nfiltering...\n"))
@@ -40,7 +37,7 @@ if(length(smallImgIdx)>0){
   wholePage = wholePage[-smallImgIdx]
 }
 
-uniqueElements = unique(gsub("<img.*/", "", wholePage))
+uniqueElements = unique(gsub("src=.*/", "", wholePage))
 
 uniqueEleLen = length(uniqueElements)
 cat("\nuniqueElements length:",uniqueEleLen,"\n")
