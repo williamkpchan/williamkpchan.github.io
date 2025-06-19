@@ -389,8 +389,8 @@ function gotoNum() {
  ItemNum = prompt("goto Item Number: ", "");
  // tip = tipsList[ItemNum];
  // document.querySelector('.js-tip').innerHTML = tip;
- topicpointer = ItemNum;
- console.log("topicpointeraf: ", topicpointer)
+ topicpointer = Number(ItemNum);
+ console.log("gotoNum topicpointer: ", topicpointer)
  generateMsg();
 }
 
