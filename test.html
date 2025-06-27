@@ -1,0 +1,151 @@
+<base target="_blank"><html><head><title>防暑指导</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://williamkpchan.github.io/lazyload.min.js"></script>
+<script src='https://williamkpchan.github.io/mainscript.js'></script>
+<script src="https://williamkpchan.github.io/commonfunctions.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{width:80%;margin-left: 10%; font-size:24px;}
+img {max-width:100%; display: inline-block; margin-top: 2%;margin-bottom: 1%; border-radius:3px; background-color:#149;}
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/p-queue@7/dist/browser/index.min.js"></script>
+</head><body onkeypress="chkKey()"><center>
+<script> var showTopicNumber = false; var topicEnd = "<br>"; var bookid = "pppp"; var markerName = "h3, h4, o", minorTopic = 'minor, r' </script>
+<h2>WebSocket Communication between R Server and Chrome Client</h2>
+<center><div id="toc" class="toc"></div></center><br><br>
+<pre><br>
+
+Complete example showing how to:
+1. Set up a WebSocket server in R
+2. Continuously collect data from a URL
+3. Process the data and store results in a dataframe
+4. Send the data to a Chrome client
+5. Display the data as a chart in the browser
+
+<h3>R Server Side Code</h3>
+library(websocket)
+library(httr)
+library(jsonlite)
+
+# Create a dataframe to store results
+results_df <- data.frame(
+  timestamp = character(),
+  value = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Function to fetch and process data from URL
+fetch_data <- function() {
+  # Example: Fetch random data from an API
+  # Replace with your actual data source
+  response <- GET("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
+  data <- content(response, "parsed")
+  
+  # Process the data
+  current_time <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+  value <- data$bitcoin$usd
+  
+  # Add to dataframe
+  new_row <- data.frame(timestamp = current_time, value = value)
+  results_df <<- rbind(results_df, new_row)
+  
+  # Keep only last 100 entries
+  if (nrow(results_df) > 100) {
+    results_df <<- tail(results_df, 100)
+  }
+  
+  # Return latest data point
+  list(timestamp = current_time, value = value, all_data = results_df)
+}
+
+# WebSocket server
+start_websocket_server <- function() {
+  ws_server <- WebSocket$new("127.0.0.1", 8080)
+  
+  ws_server$onConnection(function(ws) {
+    cat("Client connected\n")
+    
+    # Send initial data
+    data <- fetch_data()
+    ws$send(toJSON(data))
+    
+    # Set up a timer to send updates every 2 seconds
+    timer <- later::later(
+      function() {
+        if (ws$readyState() == 1) {  # 1 = OPEN
+          data <- fetch_data()
+          ws$send(toJSON(data))
+          timer <<- later::later(repeatable, 2)
+        }
+      },
+      2
+    )
+    
+    repeatable <- function() {
+      if (ws$readyState() == 1) {
+        data <- fetch_data()
+        ws$send(toJSON(data))
+        timer <<- later::later(repeatable, 2)
+      }
+    }
+    
+    ws$onClose(function() {
+      cat("Client disconnected\n")
+      if (!is.null(timer)) later::destroy(timer)
+    })
+  })
+  
+  cat("WebSocket server running on ws://127.0.0.1:8080\n")
+  later::run_now()
+}
+
+# Start the server
+start_websocket_server()
+
+<h3>Chrome Client Side Code (HTML/JavaScript)</h3>
+
+
+
+<h3>How to Run This Example</h3>
+1. Save the R code to a file (e.g., `websocket_server.R`)
+2. Run the R script: `Rscript websocket_server.R`
+3. Save the HTML code to `client.html`
+4. Open `client.html` in Chrome
+5. You should see a real-time chart updating every 2 seconds with data from the R server
+
+<h3>Key Features</h3>
+
+1. <lg>R Server Side</lg>:
+- Uses `websocket` package to create a WebSocket server
+- Fetches data from a URL (Bitcoin price API in this example)
+- Stores historical data in a dataframe
+- Sends both latest data point and all historical data to client
+
+2. <lg>Chrome Client Side</lg>:
+- Connects to the R server via WebSocket
+- Uses Chart.js to visualize the data
+- Updates the chart in real-time as new data arrives
+
+You can modify the `fetch_data()` function to collect data from any URL or API you need. The example shows Bitcoin prices, but you can replace it with any data source.
+
+
+
+
+
+
+<!--section class="subtopic"></section-->
+<script src='https://williamkpchan.github.io/LibDocs/readbook.js'></script>
+<script>
+var lazyLoadInstance = new LazyLoad({
+ elements_selector: ".lazy"
+});
+
+
+</script>
+</center></bodlg>
+</html>
+

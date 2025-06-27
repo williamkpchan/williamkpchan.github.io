@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <title>Real-time Data Visualization</title>
+ <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+ <style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  #chart-container { width: 800px; height: 400px; margin: 20px auto; }
+ </style>
+</head>
+<body>
+ <h1>Real-time Data from R Server</h1>
+ <div id="chart-container">
+  <canvas id="dataChart"></canvas>
+ </div>
+ <div id="latest-value"></div>
+ 
+ <script>
+  // Connect to WebSocket server
+  const ws = new WebSocket("ws://127.0.0.1:8080");
+  
+  // Chart setup
+  const ctx = document.getElementById(\'dataChart\').getContext(\'2d\');
+  const chart = new Chart(ctx, {
+   type: \'line\',
+   data: {
+    labels: [],
+    datasets: [{
+     label: \'Value from R Server\',
+     data: [],
+     borderColor: \'rgb(75, 192, 192)\',
+     tension: 0.1,
+     fill: false
+    }]
+   },
+   options: {
+    responsive: true,
+    scales: {
+     x: {
+      title: {
+       display: true,
+       text: \'Time\'
+      }
+     },
+     y: {
+      title: {
+       display: true,
+       text: \'Value\'
+      }
+     }
+    }
+   }
+  });
+  
+  // Handle incoming messages
+  ws.onmessage = function(event) {
+   const data = JSON.parse(event.data);
+   
+   // Update latest value display
+   document.getElementById(\'latest-value\').innerHTML = 
+    `<p>Latest update at ${data.timestamp}: ${data.value}</p>`;
+   
+   // Update chart with all historical data
+   const allData = data.all_data;
+   chart.data.labels = allData.map(item => item.timestamp);
+   chart.data.datasets[0].data = allData.map(item => item.value);
+   chart.update();
+  };
+  
+  ws.onerror = function(error) {
+   console.error("WebSocket error:", error);
+  };
+  
+  ws.onclose = function() {
+   console.log("WebSocket connection closed");
+  };
+ </script>
+</body>
+</html>
