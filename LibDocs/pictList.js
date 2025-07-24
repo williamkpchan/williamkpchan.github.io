@@ -36457,6 +36457,7 @@ var tipsList = [
 '<img src="https://i.pinimg.com/originals/0d/3c/dc/0d3cdc9606489f682139854acfb7d05a.jpg">',
 '<img src="https://i.pinimg.com/564x/0e/4b/62/0e4b62ae01f019cdff6d74d158cde7f2.jpg">',
 '<img src="https://i.pinimg.com/originals/3e/73/6f/3e736f6e6a67bf32467f162a12a7b0ce.jpg">',
+'<img src="http://img7.banyuetan.org/group1/M00/03/EF/CpAAP2iARZWAWWJwAAPDLeQjNS4551.jpg">',
 
 ]
 pictList = tipsList;
