@@ -66,6 +66,9 @@ cat(red("remain elements:", length(newwholePage),"\n"))
 cat("\noriginal line number:",oldwholePageLen)
 cat("\nfinal line number:",length(newwholePage))
 
+newwholePage = gsub("^.*?http", "http",newwholePage)
+newwholePage = gsub('">.*', "",newwholePage)
+
 newfilename = paste0(filename, "filtered.html")
 sink(newfilename)
 cat(newwholePage, sep="\n")

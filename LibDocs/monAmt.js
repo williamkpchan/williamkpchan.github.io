@@ -174,16 +174,16 @@ function showLargeAmtTable() {
      const newUp = document.getElementById('newUp');
      newUp.innerHTML = ""
      newUpList.forEach(item => {
-       const element = document.createElement('o'); // or any other element type
+       element = document.createElement('o'); // or any other element type
        element.innerHTML = item; // or innerHTML if needed
        newUp.appendChild(element);
      });
 
      const newDn = document.getElementById('newDn');
      newDn.innerHTML = ""
-     newDnList.forEach(item => {
-       const element = document.createElement('gr'); // or any other element type
-       element.innerHTML = item; // or innerHTML if needed
+     newDnList.forEach(dnItem => {
+       element = document.createElement('gr'); // or any other element type
+       element.innerHTML = dnItem; // or innerHTML if needed
        newDn.appendChild(element);
      });
 
