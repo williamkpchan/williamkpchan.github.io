@@ -94,12 +94,16 @@ selectKey = prompt("select A or H ", "H");
 if (selectKey != null && selectKey != "" && selectKey.toLowerCase() === "a") {
     systemMode = "a"
     codeTable = codeTableA
-    document.getElementById("heading").innerHTML = "大趋势测量 <lg>A</lg>"
-    document.title = "A大趋势测量"
+    codeTablelen = codeTable.length
+    document.getElementById("heading").innerHTML = "大趋势测量 <lg>A</lg> " +codeTablelen
+    document.title = "A大趋势测量 "+codeTablelen
 
 }else{
     systemMode = "h"
     codeTable = codeTableH
+    codeTablelen = codeTable.length
+    document.getElementById("heading").innerHTML = "<r>HK</r>趋势测</lg> "+codeTablelen
+    document.title = "HK趋势测 "+codeTablelen
 }
 
 console.log("systemMode: ",systemMode)

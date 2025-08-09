@@ -278,8 +278,8 @@ async function main() {
 			: 50;
 
 		if (isNaN(maxScrolls) || maxScrolls <= 0) {
-			console.log('无效的滚动次数，使用默认值50');
-			maxScrolls = 50;
+			console.log('无效的滚动次数，使用默认值20');
+			maxScrolls = 20;
 		}
 
 		console.log(`设置最大滚动次数为: ${maxScrolls}`);
