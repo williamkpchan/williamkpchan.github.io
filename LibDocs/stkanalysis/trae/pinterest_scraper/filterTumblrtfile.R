@@ -1,4 +1,5 @@
-# filter pinterest file
+# filter tumblr file
+
 library(crayon)
 workFolder = "D:/Dropbox/Public/LibDocs/stkanalysis/trae/pinterest_scraper"
 setwd(workFolder)
@@ -28,25 +29,20 @@ oldwholePageLen = length(wholePage)
 cat("all wholePage ",length(wholePage))
 cat(red("\nfiltering...\n"))
 
-pngIdx = grep("\\.png", wholePage)
-cat("\npngIdx ",  length(pngIdx),"\n")
-if(length(pngIdx)>0){
-  wholePage = wholePage[-pngIdx]
-}
+#pngIdx = grep("\\.png", wholePage)
+#cat("\npngIdx ",  length(pngIdx),"\n")
+#if(length(pngIdx)>0){
+#  wholePage = wholePage[-pngIdx]
+#}
 
-videoIdx = grep("videos", wholePage)
-cat("\nvideoIdx ",  length(videoIdx),"\n")
-if(length(videoIdx)>0){
-  wholePage = wholePage[-videoIdx]
-}
+#videoIdx = grep("videos", wholePage)
+#cat("\nvideoIdx ",  length(videoIdx),"\n")
+#if(length(videoIdx)>0){
+#  wholePage = wholePage[-videoIdx]
+#}
 
-smallImgIdx = grep("75x75", wholePage)
-cat("\nsmallImgIdx ",  length(smallImgIdx),"\n")
-if(length(smallImgIdx)>0){
-  wholePage = wholePage[-smallImgIdx]
-}
 
-uniqueElements = unique(gsub("src=.*/", "", wholePage))
+uniqueElements = unique(gsub("/s\\d.*", "", wholePage))
 
 uniqueEleLen = length(uniqueElements)
 cat("\nuniqueElements length:",uniqueEleLen,"\n")
@@ -62,7 +58,7 @@ for(i in 1:uniqueEleLen){
   eleIdx = grep(seekEle, wholePage)
   cat(" common ele:", length(eleIdx),"")
 
-  eleIdx = eleIdx[-length(eleIdx)]
+  eleIdx = eleIdx[-length(eleIdx)]  # keep last one
   cat("remove ele:", length(eleIdx),"")
 
   removeIdx = c(removeIdx, eleIdx)
