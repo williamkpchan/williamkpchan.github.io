@@ -764,7 +764,9 @@ function plotChart(dataArray, chartId, label, color) {
      minvalue = Math.min(...dataArray)
      curvalue = dataArray[dataArray.length-1]
      relPos = Math.round((curvalue - minvalue)*100/(maxvalue - minvalue))
-     title.innerHTML = showDate() + showTime() + label + ` <md>最高: ${maxvalue} 最低: ${minvalue} 现在: <r>${curvalue}</r> 相对位置: <r>${relPos}</r>` +"</md><br>";
+     strengthIdx = Math.round(curvalue*100/codeTablelen)
+
+     title.innerHTML = showDate() + showTime() + label + ` <md>最高: ${maxvalue} 最低: ${minvalue} 现在: <r>${curvalue}</r> 相对位置: <r>${relPos}</r> 强弱指数: <md>strengthIdx</md>` +"</md><br>";
 
 	// Create canvas element if it doesn't exist
 	let chartContainer = document.getElementById(chartId);
