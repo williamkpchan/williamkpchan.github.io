@@ -582,7 +582,15 @@ function updateHTML() {
 		const cell7 = row.insertCell(6); // min amt chg
 		const cell8 = row.insertCell(7); // amtIdx
 
-		cell1.innerHTML = allResults[stockCode].code;
+		codeNum = allResults[stockCode].code.replace(/^.*?>/, '').replace(/<.*$/, '').trim();
+		isIncluded = highLightCode.some(element => codeNum.includes(element));
+
+		if(isIncluded){
+		  cell1.innerHTML = `<bm onclick="xunbao('`  + codeNum + `')">` + codeNum + '</bm>'
+		}else{
+		  cell1.innerHTML = allResults[stockCode].code;
+		}
+
 		cell2.textContent = allResults[stockCode].name;
 		cell3.textContent = allResults[stockCode].cPrice;
 
@@ -612,6 +620,11 @@ function updateHTML() {
 		cell8.textContent = allResults[stockCode].amtIdx;
 	});
 }
+
+function checkSubstringInArray(str, arr) {
+  return arr.some(element => str.includes(element));
+}
+
 
 function xunbao(xunbaocode) {
 	sessionStorage.setItem("randomcode", xunbaocode)
