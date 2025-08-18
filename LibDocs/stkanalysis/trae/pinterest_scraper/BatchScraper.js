@@ -275,7 +275,7 @@ async function main() {
 		// 获取最大滚动次数
 		const maxScrolls = process.argv[2]
 			? parseInt(process.argv[2], 10)
-			: 50;
+			: 100;
 
 		if (isNaN(maxScrolls) || maxScrolls <= 0) {
 			console.log('无效的滚动次数，使用默认值20');

@@ -764,9 +764,8 @@ function plotChart(dataArray, chartId, label, color) {
      minvalue = Math.min(...dataArray)
      curvalue = dataArray[dataArray.length-1]
      relPos = Math.round((curvalue - minvalue)*100/(maxvalue - minvalue))
-     strengthIdx = Math.round(curvalue*100/codeTablelen)
 
-     title.innerHTML = showDate() + showTime() + label + ` <md>最高: ${maxvalue} 最低: ${minvalue} 现在: <r>${curvalue}</r> 相对位置: <r>${relPos}</r> 强弱指数: <md>strengthIdx</md>` +"</md><br>";
+     title.innerHTML = showDate() + showTime() + label + ` <md>最高: ${maxvalue} 最低: ${minvalue} 现在: <r>${curvalue}</r> 相对位置: <r>${relPos}</r>` +"</md><br>";
 
 	// Create canvas element if it doesn't exist
 	let chartContainer = document.getElementById(chartId);
@@ -900,7 +899,9 @@ function plotWmaChart(dataArray, chartId, label, color) {
     minvalue = Math.min(...dataArray);
     curvalue = dataArray[dataArray.length - 1];
     relPos = Math.round((curvalue - minvalue) * 100 / (maxvalue - minvalue));
-    title.innerHTML = label + ` <md><o>最高:</o> ${maxvalue} <lg>最低:</lg> ${minvalue} <y>现在: </y><r>${curvalue} </r> <y>相对位置:</y> <r>${relPos}</r>` +"</md><br>";
+    strengthIdx = Math.round(curvalue*100/codeTablelen)
+
+    title.innerHTML = label + ` <md><o>最高:</o> ${maxvalue} <lg>最低:</lg> ${minvalue} <y>现在: </y><r>${curvalue} </r> <y>相对位置:</y> <r>${relPos}</r> 强弱指数: <md>strengthIdx</md>` +"</md><br>";
 
     // 创建图表容器（如果不存在）
     let chartContainer = document.getElementById(chartId);
@@ -1106,6 +1107,7 @@ function chkKey() {
   if(testkey == 't'){window.location = '#imgoutput';}
   else if(testkey == 'a'){window.location = '#output';}
   else if(testkey == 's'){window.location = '#chartOutput';}
+  else if(testkey == 'd'){window.location = '#chartOutput';}
   else if(testkey == 'e'){window.location = '#shortcutKeys';}
   else if(testkey == '1'){removeFirstElement()}
   else{chkOtherKeys(testkey)} 
