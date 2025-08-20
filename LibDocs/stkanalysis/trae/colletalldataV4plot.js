@@ -901,7 +901,7 @@ function plotWmaChart(dataArray, chartId, label, color) {
     relPos = Math.round((curvalue - minvalue) * 100 / (maxvalue - minvalue));
     strengthIdx = Math.round(curvalue*100/codeTablelen)
 
-    title.innerHTML = label + ` <md><o>最高:</o> ${maxvalue} <lg>最低:</lg> ${minvalue} <y>现在: </y><r>${curvalue} </r> <y>相对位置:</y> <r>${relPos}</r> 强弱指数: <md>${strengthIdx}</md>` +"</md><br>";
+    title.innerHTML = label + ` <md><o>最高:</o> ${maxvalue} <lg>最低:</lg> ${minvalue} <y>现在: </y><r>${curvalue} </r> <y>相对位置:</y> <r>${relPos}</r> 强弱指数: <o>${strengthIdx}</o>` +"</md><br>";
 
     // 创建图表容器（如果不存在）
     let chartContainer = document.getElementById(chartId);
