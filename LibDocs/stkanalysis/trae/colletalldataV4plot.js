@@ -938,6 +938,7 @@ function plotWmaChart(dataArray, chartId, label, color) {
         const wmaData = calculateWMALine(dataArray, wmaPeriod);
         const wmaData2 = calculateWMALine(dataArray, wmaPeriod*2);
         const wmaData4 = calculateWMALine(dataArray, wmaPeriod*4);
+        const wmaData8 = calculateWMALine(dataArray, wmaPeriod*8);
 
         // 计算标准差带
         const { upperBand, lowerBand } = calculateStandardDeviationBands(dataArray, wmaData, wmaPeriod, stdDevMultiplier);
@@ -966,7 +967,19 @@ function plotWmaChart(dataArray, chartId, label, color) {
         datasets.push({
             label: `WMA${wmaPeriod*4}`,
             data: wmaData4,
-            borderColor: '#aa99FF',
+            //borderColor: '#aa99FF',
+            borderColor: '#EEEEEE',
+            fill: false,
+            borderWidth: 1,
+            pointStyle: false,
+        });
+        
+        // 添加 WMA8 中心线
+        datasets.push({
+            label: `WMA${wmaPeriod*8}`,
+            data: wmaData8,
+            //borderColor: '#aa99FF',
+            borderColor: '#FFFFFF',
             fill: false,
             borderWidth: 1,
             pointStyle: false,
