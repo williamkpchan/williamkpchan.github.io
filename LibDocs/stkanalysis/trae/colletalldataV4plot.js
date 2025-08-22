@@ -968,7 +968,7 @@ function plotWmaChart(dataArray, chartId, label, color) {
             label: `WMA${wmaPeriod*4}`,
             data: wmaData4,
             //borderColor: '#aa99FF',
-            borderColor: '#EEEEEE',
+            borderColor: '#DDDDEE',
             fill: false,
             borderWidth: 1,
             pointStyle: false,
