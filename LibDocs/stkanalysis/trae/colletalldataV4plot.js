@@ -936,9 +936,10 @@ function plotWmaChart(dataArray, chartId, label, color) {
     if (dataArray.length >= wmaPeriod/2) {
         // 计算 WMA 中心线
         const wmaData = calculateWMALine(dataArray, wmaPeriod);
-        const wmaData2 = calculateWMALine(dataArray, wmaPeriod*2);
-        const wmaData4 = calculateWMALine(dataArray, wmaPeriod*4);
-        const wmaData8 = calculateWMALine(dataArray, wmaPeriod*8);
+        const wmaData15 = calculateWMALine(dataArray, wmaPeriod*1.5);
+        const wmaData20 = calculateWMALine(dataArray, wmaPeriod*2);
+        const wmaData25 = calculateWMALine(dataArray, wmaPeriod*2.5);
+        const wmaData30 = calculateWMALine(dataArray, wmaPeriod*3);
 
         // 计算标准差带
         const { upperBand, lowerBand } = calculateStandardDeviationBands(dataArray, wmaData, wmaPeriod, stdDevMultiplier);
@@ -953,20 +954,20 @@ function plotWmaChart(dataArray, chartId, label, color) {
             pointStyle: false,
         });
         
-        // 添加 WMA2 中心线
+        // 添加 WMA1.5 中心线
         datasets.push({
-            label: `WMA${wmaPeriod*2}`,
-            data: wmaData2,
+            label: `WMA${wmaPeriod*1.5}`,
+            data: wmaData15,
             borderColor: '#6688FF',
             fill: false,
             borderWidth: 1,
             pointStyle: false,
         });
         
-        // 添加 WMA4 中心线
+        // 添加 WMA2 中心线
         datasets.push({
-            label: `WMA${wmaPeriod*4}`,
-            data: wmaData4,
+            label: `WMA${wmaPeriod*2}`,
+            data: wmaData20,
             //borderColor: '#aa99FF',
             borderColor: '#DDDDEE',
             fill: false,
@@ -974,12 +975,23 @@ function plotWmaChart(dataArray, chartId, label, color) {
             pointStyle: false,
         });
         
-        // 添加 WMA8 中心线
+        // 添加 WMA2.5 中心线
         datasets.push({
-            label: `WMA${wmaPeriod*8}`,
-            data: wmaData8,
+            label: `WMA${wmaPeriod*2.5}`,
+            data: wmaData25,
             //borderColor: '#aa99FF',
             borderColor: '#FFFFFF',
+            fill: false,
+            borderWidth: 1,
+            pointStyle: false,
+        });
+        
+        // 添加 WMA3.0 中心线
+        datasets.push({
+            label: `WMA${wmaPeriod*3.0}`,
+            data: wmaData30,
+            //borderColor: '#aa99FF',
+            borderColor: 'yellow',
             fill: false,
             borderWidth: 1,
             pointStyle: false,
