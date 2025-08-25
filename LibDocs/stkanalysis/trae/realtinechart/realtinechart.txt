@@ -1,0 +1,222 @@
+to write a script using javascript and nodejs to collect data from a url, after extracting the data and put it in an array, then using another url to collect current value and append to the array, 
+
+repeat the loop every minute
+and after append data complete, calculate the wma value for different periods, the wma values will be stored in an array, the resulting values will be sent to an html page to plot the chart on screen
+
+design a flow chart and then desiggn different functional modules, note the data from the url may be delayed because of network delays
+
+
+We are going to design a system that:
+ 1. Fetches historical data from a URL and stores it in an array.
+ 2. Every minute, fetches the current value from another URL and appends it to the array.
+ 3. Calculates WMA (Weighted Moving Average) for different periods and stores them in arrays.
+ 4. Serves the data via an HTTP server to an HTML page that plots the charts.
+
+ We have to consider:
+ - Network delays: We'll use asynchronous programming and error handling.
+ - The data structure: We assume the data from the URLs is in a format we can parse (e.g., JSON, CSV, etc.). For this example, let's assume it's JSON.
+ - We'll use Express.js for the HTTP server and Socket.io for real-time updates if needed, but for simplicity, we'll use periodic updates via the client refreshing the data every minute.
+
+ Steps:
+ Modules:
+ 1. Data Collector Module:
+    - fetchHistoricalData(): Fetches initial historical data.
+    - startDataCollection(): Sets an interval to fetch current data every minute.
+ 2. Data Processing Module:
+    - calculateWMA(period, data): Calculates WMA for a given period and data array.
+ 3. HTTP Server Module:
+    - Serves the HTML page and the data via endpoints.
+ 4. Client-side JavaScript:
+    - Plots the chart using a library like Chart.js and periodically fetches new data.
+
+ However, note: The requirement is to send the resulting values to an HTML page. We can either:
+    a) Serve the HTML with the initial data and then use AJAX to update the chart every minute.
+    b) Use WebSockets for real-time updates (we'll use Socket.io for simplicity in real-time).
+ But the problem says: "the resulting values will be sent to an html page". We can do either, but let's use Socket.io for real-time updates.
+
+ Flow Chart:
+ [Start]
+   |
+   v
+ [Fetch Historical Data] -> [Store in Array]
+   |
+   v
+ [Start Timer: every minute] -> [Fetch Current Data] -> [Append to Array]
+   |
+   v
+ [Calculate WMA for different periods] -> [Store WMA values in arrays]
+   |
+   v
+ [Send updated data via WebSockets to client] --> [Update Chart]
+   |
+   [Repeat every minute]
+
+ Implementation:
+ We'll use:
+   - Node.js with Express and Socket.io
+   - node-fetch or axios for HTTP requests (we'll use axios, so install it)
+
+ Steps:
+ 1. Set up project: npm init, install express, socket.io, axios.
+ 2. Create server.js:
+    const express = require('express');
+    const http = require('http');
+    const socketIo = require('socket.io');
+    const axios = require('axios');
+    const app = express();
+    const server = http.createServer(app);
+    const io = socketIo(server);
+    // Data arrays
+    let historicalData = []; // Array of numbers or objects? Let's assume we are storing numbers for simplicity.
+    let wmaValues = {}; // Object to hold WMA arrays for different periods, e.g., { wma5: [], wma10: [] }
+    // URLs
+    const historicalDataUrl = 'http://example.com/historical';
+    const currentDataUrl = 'http://example.com/current';
+    // Function to fetch historical data
+    async function fetchHistoricalData() {
+        try {
+            const response = await axios.get(historicalDataUrl);
+            // Assume response.data is an array of numbers or an object that contains an array
+            historicalData = response.data; // Or response.data.prices, adjust accordingly
+            console.log('Historical data fetched:', historicalData.length);
+        } catch (error) {
+            console.error('Error fetching historical data:', error);
+        }
+    }
+    // Function to fetch current data
+    async function fetchCurrentData() {
+        try {
+            const response = await axios.get(currentDataUrl);
+            const currentValue = response.data; // Again, adjust according to the response structure
+            historicalData.push(currentValue);
+            console.log('Current data fetched and appended:', currentValue);
+        } catch (error) {
+            console.error('Error fetching current data:', error);
+        }
+    }
+    // Function to calculate WMA
+    // data: array of numbers
+    // period: integer
+    function calculateWMA(data, period) {
+        let weights = Array.from({length: period}, (_, i) => i + 1);
+        let totalWeight = weights.reduce((a, b) => a + b, 0);
+        let wma = [];
+        for (let i = period - 1; i < data.length; i++) {
+            let sum = 0;
+            for (let j = 0; j < period; j++) {
+                sum += data[i - j] * weights[j];
+            }
+            wma.push(sum / totalWeight);
+        }
+        return wma;
+    }
+    // Function to update all WMA periods we are interested in
+    function updateWMA() {
+        const periods = [5, 10, 20]; // Example periods
+        periods.forEach(period => {
+            if (historicalData.length >= period) {
+                wmaValues[`wma${period}`] = calculateWMA(historicalData, period);
+            }
+        });
+    }
+    // Start data collection
+    async function startDataCollection() {
+        await fetchHistoricalData();
+        // Calculate initial WMA
+        updateWMA();
+        // Then every minute, fetch current data and update WMA
+        setInterval(async () => {
+            await fetchCurrentData();
+            updateWMA();
+            // Emit the updated data to all connected clients
+            io.emit('dataUpdate', {
+                historicalData: historicalData,
+                wma: wmaValues
+            });
+        }, 60000); // 1 minute
+    }
+    // Serve the HTML page
+    app.get('/', (req, res) => {
+        res.sendFile(__dirname + '/index.html');
+    });
+    // Start server and data collection
+    server.listen(3000, () => {
+        console.log('Server running on port 3000');
+        startDataCollection();
+    });
+ 3. Create index.html:
+    We'll use Chart.js to plot the data. Include Chart.js and socket.io client.
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Real-time WMA Chart</title>
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    </head>
+    <body>
+        <canvas id="myChart" width="400" height="200"></canvas>
+        <script>
+            const socket = io();
+            const ctx = document.getElementById('myChart').getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [], // Will be filled with indices or timestamps if available
+                    datasets: [
+                        {
+                            label: 'Price',
+                            data: [],
+                            borderColor: 'rgb(75, 192, 192)',
+                            tension: 0.1
+                        },
+                        // We'll dynamically add WMA datasets
+                    ]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            // Function to add a dataset for a WMA period
+            function addWMADataset(period, data, color) {
+                chart.data.datasets.push({
+                    label: `WMA ${period}`,
+                    data: data,
+                    borderColor: color,
+                    tension: 0.1
+                });
+            }
+            // Listen for data updates from the server
+            socket.on('dataUpdate', (data) => {
+                // Update the chart data
+                // Note: We are assuming the historicalData is an array of numbers. If it's an array of objects, adjust accordingly.
+                chart.data.labels = Array.from({length: data.historicalData.length}, (_, i) => i);
+                chart.data.datasets[0].data = data.historicalData;
+                // Remove existing WMA datasets (except the first one which is Price)
+                chart.data.datasets = chart.data.datasets.filter(dataset => !dataset.label.startsWith('WMA'));
+                // Add updated WMA datasets
+                const colors = ['rgb(255, 99, 132)', 'rgb(54, 162, 235)', 'rgb(255, 205, 86)'];
+                let colorIndex = 0;
+                for (const [key, wmaData] of Object.entries(data.wma)) {
+                    const period = key.replace('wma', '');
+                    // We need to align the WMA data with the correct x indices (WMA data starts at index = period - 1)
+                    const alignedData = wmaData.map((value, index) => ({ x: index + parseInt(period) - 1, y: value }));
+                    addWMADataset(period, alignedData, colors[colorIndex++ % colors.length]);
+                }
+                chart.update();
+            });
+        </script>
+    </body>
+    </html>
+
+ Note: This is a simplified example. We assume that the historicalData is just an array of numbers. If it has timestamps, we should use them for the x-axis.
+ Also, note that the WMA calculation is done on the entire historicalData array every time. This might become inefficient for very large arrays. We might optimize by only calculating the latest WMA values and appending them, but for simplicity we recalculate all.
+
+ Considering network delays: We are using try-catch in the data fetching functions. If there's an error, we log it and continue. The data array remains unchanged.
+ Let's adjust the WMA calculation to work with the entire array and then in the chart, we align the WMA values starting at the index (period-1).
+ However, note: the WMA calculation returns an array of length (historicalData.length - period + 1). We are mapping each value to an x coordinate that starts at (period-1).
+ This code is a starting point and might need adjustments based on the actual data format from the URLs.
