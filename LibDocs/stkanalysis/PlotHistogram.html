@@ -1,0 +1,152 @@
+// JavaScript PlotHistogram with R Data Appending
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Histogram Visualization</title>
+  <link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+  canvas {max-width:80%;max-height:600px;}
+
+  </style>
+</head>
+<body>
+    <h1>Histogram Visualization</h1>
+      <canvas id="histogramChart"></canvas>
+      <button class="btn" onclick="updateHistogram()">Update Histogram</button>
+
+  <script>
+    // plotHistogram function implementation
+    function plotHistogram(title, tblData) {
+      // Convert string values to numbers
+      const numericData = tblData.map(value => {
+        // Handle cases where values might be strings with spaces
+        if (typeof value === 'string' && value.includes(' ')) {
+          return parseFloat(value.replace(' ', ''));
+        }
+        return parseFloat(value);
+      });
+      
+      // Calculate number of bins using Sturges' formula
+      //const numBins = Math.ceil(Math.log2(numericData.length) + 1);
+
+      const numBins = numericData.length + 1;
+      
+      // Find min and max values
+      const minVal = Math.min(...numericData);
+      const maxVal = Math.max(...numericData);
+      
+      // Calculate bin width
+      const binWidth = (maxVal - minVal) / numBins;
+      
+      // Initialize bins
+      const bins = Array(numBins).fill(0);
+      const binLabels = [];
+      
+      // Create bin labels
+      for (let i = 0; i < numBins; i++) {
+        const binStart = minVal + (i * binWidth);
+        const binEnd = binStart + binWidth;
+        binLabels.push(`${binStart.toFixed(1)} - ${binEnd.toFixed(1)}`);
+      }
+      
+      // Count values in each bin
+      numericData.forEach(value => {
+        let binIndex = Math.floor((value - minVal) / binWidth);
+        // Handle the case when value equals maxVal
+        if (binIndex === numBins) binIndex = numBins - 1;
+        bins[binIndex]++;
+      });
+      
+      // Get canvas context
+      const ctx = document.getElementById('histogramChart').getContext('2d');
+      
+      // Destroy previous chart if it exists
+      if (window.histogramChartInstance) {
+        window.histogramChartInstance.destroy();
+      }
+      
+      // Create new chart
+      window.histogramChartInstance = new Chart(ctx, {
+        type: 'bar',
+
+        data: {
+          labels: binLabels,
+          datasets: [{
+            label: `Frequency (${title})`,
+            data: bins,
+            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }]
+        },
+
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Frequency'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Value Bins'
+              }
+            }
+          },
+
+          plugins: {
+            title: {
+              display: true,
+              text: `Histogram for Dataset ${title}`,
+              font: {
+                size: 18
+              }
+            },
+
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `Frequency: ${context.raw}`;
+                }
+              }
+            }
+
+          }// end o plugins
+
+        }  // end of options
+      });  // end of create chart
+    }      // end of function
+
+
+    
+    // Initial data
+    //const initialData = ['39','22','15','14','11','14','15','14','20','14','21','21','22','21','23','13','16','26','24','25','21','21','26','29'];
+    const initialData = [4, 4, 5, 11, 7, 10, 11, 19, 21, 27, 31, 24, 28, 25, 33, 40, 35, 31, 32, 38, 41, 50, 40, 37, 52, 45, 41, 49, 43, 42, 58, 56, 49, 46, 46, 66, 52, 44, 57, 60, 66, 59, 47, 52, 55, 55, 52, 82, 50, 54, 64, 68, 56, 55, 70, 43, 78, 72, 70, 61, 57, 69, 68, 63, 65, 59, 61, 66, 65, 76, 69, 82, 75, 66, 76, 70, 69, 66, 64, 63, 52, 54, 61, 73, 49, 45, 45, 47, 31, 37, 40, 38, 26, 32, 22, 28, 23, 22, 66];
+
+    // Create initial histogram on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      plotHistogram("282828", initialData);
+    });
+    
+
+    // Function to update histogram with random data
+    function updateHistogram() {
+      const randomData = Array.from({length: 24}, () => 
+        Math.floor(Math.random() * 40 + 10).toString()
+      );
+      plotHistogram("Random", randomData);
+    }
+
+  </script>
+</body>
+</html>
+

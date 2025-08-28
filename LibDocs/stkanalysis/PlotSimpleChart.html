@@ -1,0 +1,187 @@
+// JavaScript PlotChart with R Data Appending
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PlotChart Visualization</title>
+  <link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+  canvas {max-width:80%;max-height:600px;}
+
+  </style>
+</head>
+<body>
+        <h2>Chart 1: Interactive View</h2>
+          <canvas id="chart"></canvas>
+
+          <button class="chart-btn active" data-chart="bar">Bar Chart</button>
+          <button class="chart-btn" data-chart="line">Line Chart</button>
+          <button class="chart-btn" data-chart="pie">Pie Chart</button>
+          <button class="chart-btn" data-chart="doughnut">Doughnut Chart</button>
+
+
+  <script>
+    // Sample data for demonstration
+    const sampleData = ['39','22','15','14','11','14','15','14','20','14','21','21','22','21','23','13','16','26','24','25','21','21','26','29'];
+    
+    // Convert string values to numbers
+    const numericData = sampleData.map(value => {
+      if (typeof value === 'string' && value.includes(' ')) {
+        return parseFloat(value.replace(' ', ''));
+      }
+      return parseFloat(value);
+    });
+    
+    // Chart instances
+    let chartInstance = null;
+    let chart2Instance = null;
+    
+    // plotChart function implementation
+    function plotChart(title, data, chartType, canvasId) {
+      // Convert string values to numbers if needed
+      const numericData = data.map(value => {
+        if (typeof value === 'string' && value.includes(' ')) {
+          return parseFloat(value.replace(' ', ''));
+        }
+        return parseFloat(value);
+      });
+      
+      // Get canvas context
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      
+      // Destroy previous chart if it exists
+      if (canvasId === 'chart' && chartInstance) {
+        chartInstance.destroy();
+      } else if (canvasId === 'chart2' && chart2Instance) {
+        chart2Instance.destroy();
+      }
+      
+      // Prepare data based on chart type
+      let chartData = {};
+      
+      if (chartType === 'pie' || chartType === 'doughnut' || chartType === 'polarArea') {
+        // For circular charts, we need to count frequencies
+        const frequencyMap = {};
+        numericData.forEach(value => {
+          frequencyMap[value] = (frequencyMap[value] || 0) + 1;
+        });
+        
+        chartData = {
+          labels: Object.keys(frequencyMap),
+          datasets: [{
+            data: Object.values(frequencyMap),
+            backgroundColor: [
+              '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+              '#9966FF', '#FF9F40', '#8ac6d1', '#ff6b6b',
+              '#339af0', '#51cf66', '#fcc419', '#ff922b'
+            ]
+          }]
+        };
+      } else if (chartType === 'radar') {
+        // For radar chart, use index as angle and value as radius
+        chartData = {
+          labels: numericData.map((_, i) => `Point ${i+1}`),
+          datasets: [{
+            label: 'Data Values',
+            data: numericData,
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+            pointBorderColor: '#fff',
+          }]
+        };
+      } else if (chartType === 'scatter') {
+        // For scatter chart, use index as x and value as y
+        chartData = {
+          datasets: [{
+            label: 'Data Points',
+            data: numericData.map((value, index) => ({x: index, y: value})),
+            backgroundColor: 'rgba(255, 99, 132, 0.7)',
+          }]
+        };
+      } else {
+        // For bar and line charts
+        chartData = {
+          labels: numericData.map((_, i) => `Value ${i+1}`),
+          datasets: [{
+            label: 'Data Values',
+            data: numericData,
+            backgroundColor: chartType === 'bar' ? 'rgba(54, 162, 235, 0.7)' : 'rgba(54, 162, 235, 0.1)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 2,
+            fill: chartType === 'line'
+          }]
+        };
+      }
+      
+      // Create chart
+      const chartInstance = new Chart(ctx, {
+        type: chartType,
+        data: chartData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: `${chartType.charAt(0).toUpperCase() + chartType.slice(1)} Chart - ${title}`,
+              font: {
+                size: 16
+              }
+            },
+            legend: {
+              position: 'top',
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `Value: ${context.raw}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+      
+      // Store chart instance
+      if (canvasId === 'chart') {
+        chartInstance = chartInstance;
+      } else if (canvasId === 'chart2') {
+        chart2Instance = chartInstance;
+      }
+      
+      return chartInstance;
+    }
+    
+    // Initialize charts with default types
+    document.addEventListener('DOMContentLoaded', function() {
+      plotChart('282828', numericData, 'bar', 'chart');
+      plotChart('282828', numericData, 'polarArea', 'chart2');
+      
+      // Add event listeners to chart buttons
+      document.querySelectorAll('.chart-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          const chartType = this.getAttribute('data-chart');
+          const chartId = this.closest('.chart-container').querySelector('.chart-box canvas').id;
+          
+          // Update active button
+          this.closest('.controls').querySelectorAll('.chart-btn').forEach(btn => {
+            btn.classList.remove('active');
+          });
+          this.classList.add('active');
+          
+          // Update chart
+          plotChart('282828', numericData, chartType, chartId);
+        });
+      });
+    });
+  </script>
+</body>
+</html>
