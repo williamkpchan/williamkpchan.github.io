@@ -269,10 +269,10 @@ async function updateChanges() {
      // Update image with timestamp to prevent caching
      const timestamp = new Date().getTime();
 
-     if(systemMode.toLowerCase() === "h") {
+     if(systemMode = "h"){
        imgSrc = `https://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=9&indpara1=22&indpara2=1.6&indpara3=0&indpara4=0&indpara5=0&subChart1=3&ref1para1=5&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&scheme=3&com=100&chartwidth=1150&chartheight=500&stockid=110000&period=5012&type=1&logoStyle=1&_=${timestamp}`;
        document.getElementById("imgoutput").innerHTML = `<img  onclick="xunbao('110000')" src="${imgSrc}" alt="Updated Chart">`;
-      } else if(systemMode.toLowerCase() === "a") {
+      }else if(systemMode = "a"){
        imgSrc = `https://charts.aastocks.com/servlet/Charts?fontsize=12&15MinDelay=F&lang=1&titlestyle=1&vol=1&Indicator=9&indpara1=22&indpara2=1.6&indpara3=0&indpara4=0&indpara5=0&subChart1=3&ref1para1=5&ref1para2=10&ref1para3=3&subChart2=3&ref2para1=12&ref2para2=26&ref2para3=9&scheme=3&com=100&chartwidth=1150&chartheight=500&stockid=000001.sh&period=5012&type=1&logoStyle=1&_=${timestamp}`;
        document.getElementById("imgoutput").innerHTML = `<img  onclick="xunbao('000001.sh')" src="${imgSrc}" alt="Updated Chart">`;
       }
