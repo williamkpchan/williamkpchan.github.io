@@ -938,8 +938,9 @@ function plotWmaChart(dataArray, chartId, label, color) {
         const wmaData = calculateWMALine(dataArray, wmaPeriod);
         const wmaData15 = calculateWMALine(dataArray, wmaPeriod*1.5);
         const wmaData20 = calculateWMALine(dataArray, wmaPeriod*2);
-        const wmaData25 = calculateWMALine(dataArray, wmaPeriod*3);
-        const wmaData30 = calculateWMALine(dataArray, wmaPeriod*4);
+        const wmaData30 = calculateWMALine(dataArray, wmaPeriod*3);
+        const wmaData50 = calculateWMALine(dataArray, wmaPeriod*5);
+        const wmaData80 = calculateWMALine(dataArray, wmaPeriod*8);
 
         // 计算标准差带
         const { upperBand, lowerBand } = calculateStandardDeviationBands(dataArray, wmaData, wmaPeriod, stdDevMultiplier);
@@ -974,24 +975,33 @@ function plotWmaChart(dataArray, chartId, label, color) {
             borderWidth: 1,
             pointStyle: false,
         });
-        
-        // 添加 WMA2.5 中心线
+
         datasets.push({
             label: `WMA${wmaPeriod*3}`,
-            data: wmaData25,
+            data: wmaData35,
             //borderColor: '#aa99FF',
             borderColor: '#FFFFFF',
             fill: false,
             borderWidth: 1,
             pointStyle: false,
         });
-        
-        // 添加 WMA3.0 中心线
+
         datasets.push({
-            label: `WMA${wmaPeriod*4}`,
-            data: wmaData30,
+            label: `WMA${wmaPeriod*5}`,
+            data: wmaData50,
             //borderColor: '#aa99FF',
             borderColor: 'yellow',
+            fill: false,
+            borderWidth: 1,
+            pointStyle: false,
+        });
+        
+        // 添加 WMA8.0 中心线
+        datasets.push({
+            label: `WMA${wmaPeriod*8}`,
+            data: wmaData80,
+            //borderColor: '#aa99FF',
+            borderColor: 'orange',
             fill: false,
             borderWidth: 1,
             pointStyle: false,
