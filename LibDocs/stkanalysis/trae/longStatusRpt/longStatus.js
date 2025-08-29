@@ -201,8 +201,14 @@ function main() {
 
       // append statusRpt
       lastIdx = highpassCntArr.length-1
-      $("#statusRpt").append( "wma3UpCnt: <r>" + wma3UpCnt + "</r><br>" + "wma3DnCnt: <lg>" + wma3DnCnt + "</lg>")
-	   showStat()
+      $("#statusRpt").append(
+       "wma3UpCnt: <r>" + wma3UpCnt + "</r>" +
+       " wma3DnCnt: <lg>" + wma3DnCnt + "</lg><br>" +
+       "closepassCnt: <r>" + closepassCntArr[lastIdx] + "</r>" +
+       " closeFailCnt: <lg>" + closeFailCntArr[lastIdx] + "</lg>"
+       )
+
+      showStat()
 	})();
 
 }
