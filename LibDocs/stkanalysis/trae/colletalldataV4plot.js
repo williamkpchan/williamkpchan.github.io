@@ -1114,7 +1114,7 @@ async function processQueue() {
 // Main function to collect basic data
 async function main() {
      // init shortcut keys
-     document.getElementById("shortcutKeys").innerHTML = `快捷键: <lg>t</lg> 保力加图 <lg>a</lg> 数据表 <lg>s</lg> 数据趋势图 <lg>e</lg> 底部 <lg>1</lg> 去掉首元素`;
+     document.getElementById("shortcutKeys").innerHTML = `<i class="redbut">快捷键:</i> <lg>t</lg> 保力加图 <lg>a</lg> 数据表 <lg>s</lg> 数据趋势图 <lg>e</lg> 底部 <lg>1</lg> 去掉首元素`;
 
 
 	// fetchAllData --> processQueue -->
