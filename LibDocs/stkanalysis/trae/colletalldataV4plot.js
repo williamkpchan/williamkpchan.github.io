@@ -582,7 +582,7 @@ function showStat() {
         <div class="stat-table">
             <table>
                 <tr>
-                    <th colspan="4">${showDate()} ${showTime()} <r>上个交易日 </r> ${lastDateChop} Record Length: ${closepassArr.length}</th>
+                    <th colspan="4">${showDate()} ${showTime()} <r>上个交易日 </r> ${lastDateChop} <o>强弱指数: ${Math.round(cUpPrevCloseCnt*100/codeTablelen)}</o> Record Length: ${closepassArr.length}</th>
                 </tr>
                 <tr>
                     <td><bpk>收</bpk>比昨日升：<r>${cUpPrevCloseCnt}</r></td>
