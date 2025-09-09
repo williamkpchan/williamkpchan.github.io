@@ -1142,8 +1142,9 @@ function chkKey() {
   var testkey = getChar(event);
   if(testkey == 't'){window.location = '#imgoutput'; window.scrollBy(0, -100);}
   else if(testkey == 'a'){window.location = '#output';}
-  else if(testkey == 's'){window.location = '#chartOutput';}
-  else if(testkey == 'd'){window.location = '#chartOutput';}
+  else if(testkey == 's'){window.location = '#c1';}
+  else if(testkey == 'd'){window.location = '#c2';}
+  else if(testkey == 'f'){window.location = '#c3';}
   else if(testkey == 'e'){window.location = '#shortcutKeys';}
   else if(testkey == '1'){removeFirstElement()}
   else{chkOtherKeys(testkey)} 
