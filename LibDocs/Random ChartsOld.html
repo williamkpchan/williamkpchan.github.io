@@ -564,7 +564,7 @@ function showTO(stkcode) {
     codewidth = stkcode.length; //update to be used later
   }
 console.log("stkcode ",stkcode)
-  urladdr = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + stkcode + ',day,,,100,qfq';
+  urladdr = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=' + stkcode + ',day,,,60,qfq';
   var script = document.createElement('script');
   script.onload = function() {
     $("#turnover").html("Turnover: ");
@@ -619,8 +619,7 @@ plotAmtBollingerBands(amtArr, dateArr, 3, 1, "成交比例 ", stkcode, stockName
 
 // A stk ["2024-11-01", "7.40", "7.35", "8.20", "6.90", "5483674"]
 // open 7.4  close 7.35 high 8.2 low 6.9
-
-    for(i=(newObj.length-15); i<newObj.length;i++){
+    for(i=49;i<newObj.length;i++){
       thedate = newObj[i][0];  // date
       if(codewidth == 5){
         theAmtIdx = 8;
@@ -641,6 +640,7 @@ plotAmtBollingerBands(amtArr, dateArr, 3, 1, "成交比例 ", stkcode, stockName
         }
 
       theamt = theamt.toString().replace(/\B(?=(\d{4})+(?!\d))/g, ",");
+
       $("#turnover").append( theamt,"w ");
     }
     theH = Number(newObj[newObj.length-1][3]);  // High
@@ -1008,10 +1008,10 @@ function setupAll() {
      alert("setup complete!")
 }
 
-// find weightedMovingAverage
+// <y>加权移动平均 (WMA)</y>
 function weightedMovingAverage(data, period) {
  const weights = Array.from({length: period}, (_, i) => period - i);
- const wma = new Array(period - 1).fill(null); // <y>fill null</y>
+ const wma = new Array(period - 1).fill(null); // <y>填充 null</y>
  for (let i = period - 1; i < data.length; i++) {
   let sum = 0;
   let weightSum = 0;
@@ -1024,9 +1024,9 @@ function weightedMovingAverage(data, period) {
  return wma;
 }
 
-// find standardDeviation
+// <y>标准差</y>
 function standardDeviation(data, period) {
- const std = new Array(period - 1).fill(null); // <y>fill null</y>
+ const std = new Array(period - 1).fill(null); // <y>填充 null</y>
  for (let i = period - 1; i < data.length; i++) {
   const avg = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period;
   const variance = data.slice(i - period + 1, i + 1).reduce((a, b) => a + Math.pow(b - avg, 2), 0) / period;
@@ -1035,7 +1035,7 @@ function standardDeviation(data, period) {
  return std;
 }
 
-// find bollingerBands
+// <y>计算保力加通道</y>
 function bollingerBands(data, period, multiplier) {
  const wmaL1 = weightedMovingAverage(data, period);
  const wmaL2 = weightedMovingAverage(data, period*2);
@@ -1050,96 +1050,32 @@ function bollingerBands(data, period, multiplier) {
  return { wmaL1, wmaL2, wmaL3, wmaL4, wmaL5, upperBand, lowerBand, std };
 }
 
-// Calculate EMA (Exponential Moving Average)
-function exponentialMovingAverage(data, period) {
-    const k = 2 / (period + 1);
-    const ema = new Array(period - 1).fill(null);
-    
-    // Calculate SMA for the first value
-    let sma = data.slice(0, period).reduce((a, b) => a + b, 0) / period;
-    ema.push(sma);
-    
-    // Calculate EMA for remaining values
-    for (let i = period; i < data.length; i++) {
-        ema.push(data[i] * k + ema[i - 1] * (1 - k));
-    }
-    
-    return ema;
-}
-
-// Calculate MACD
-function calculateMACD(data, fastPeriod = 7, slowPeriod = 10, signalPeriod = 3) {
-    const fastEMA = exponentialMovingAverage(data, fastPeriod);
-    const slowEMA = exponentialMovingAverage(data, slowPeriod);
-    
-    // Calculate MACD line
-    const macdLine = fastEMA.map((fast, i) => {
-        if (fast === null || slowEMA[i] === null) return null;
-        return fast - slowEMA[i];
-    });
-    
-    // Calculate Signal line (EMA of MACD line)
-    const signalLine = exponentialMovingAverage(
-        macdLine.filter(val => val !== null), 
-        signalPeriod
-    );
-    
-    // Pad signalLine with nulls to match macdLine length
-    const paddedSignalLine = [...new Array(macdLine.length - signalLine.length).fill(null), ...signalLine];
-    
-    // Calculate Histogram
-    const histogram = macdLine.map((macd, i) => {
-        if (macd === null || paddedSignalLine[i] === null) return null;
-        return macd - paddedSignalLine[i];
-    });
-    
-    return {
-        macdLine,
-        signalLine: paddedSignalLine,
-        histogram
-    };
-}
-
-// plotBollingerBands
 function plotBollingerBands(data, dateArr, period, multiplier, chartTitle, stockName) {
-
+    // 计算保力加通道数据
     const bands = bollingerBands(data, period, multiplier);
-    const macd = calculateMACD(data);
 
+    // 创建标题
     const title = document.createElement('pk');
     title.innerHTML = chartTitle + " " + thecode +" "+stockName+ '&emsp;<a href=#top target="_self"><b>&#8679;</b></a><br>';
     document.body.appendChild(title);
 
-    // Create container for both charts
-    const container = document.createElement('div');
-    container.style.display = 'flex';
-    container.style.flexDirection = 'column';
-    container.style.gap = '20px';
-    document.body.appendChild(container);
+    // 动态创建画布
+    const canvas = document.createElement('canvas');
+    const aspectRatio = 1.6; // 预设宽高比
+    const containerWidth = document.body.clientWidth; // 获取页面宽度
+    canvas.style.width = '100%';
+    canvas.width = containerWidth;
+    canvas.height = containerWidth / aspectRatio; 
+    document.body.appendChild(canvas);
 
-    // Create canvas for Bollinger Bands
-    const canvasBB = document.createElement('canvas');
-    const aspectRatio = 2;
-    const containerWidth = document.body.clientWidth;
-    canvasBB.style.width = '100%';
-    canvasBB.width = containerWidth;
-    canvasBB.height = containerWidth / aspectRatio;
-    container.appendChild(canvasBB);
+    // 获取画布上下文
+    const ctx = canvas.getContext('2d');
 
-    // Create canvas for MACD
-    const canvasMACD = document.createElement('canvas');
-    canvasMACD.style.width = '100%';
-    canvasMACD.width = containerWidth;
-    canvasMACD.height = containerWidth / (aspectRatio * 2); // Smaller height for MACD
-    container.appendChild(canvasMACD);
-
-    const ctxBB = canvasBB.getContext('2d');
-    const ctxMACD = canvasMACD.getContext('2d');
-
-    // Plot Bollinger Bands chart
-    new Chart(ctxBB, {
+    // 绘制图表
+    new Chart(ctx, {
         type: 'line',
         data: {
+            //labels: Array.from({ length: data.length }, (_, i) => i + 1),
             labels: dateArr,
             datasets: [
                 {
@@ -1206,6 +1142,7 @@ function plotBollingerBands(data, dateArr, period, multiplier, chartTitle, stock
                     borderWidth: 1,
                     pointStyle: false,
                 },
+
             ]
         },
         options: {
@@ -1224,69 +1161,6 @@ function plotBollingerBands(data, dateArr, period, multiplier, chartTitle, stock
                         display: false,
                         text: 'Price'
                     }
-                }
-            }
-        }
-    });
-
-    // Plot MACD chart
-    new Chart(ctxMACD, {
-        type: 'line',
-        data: {
-            labels: dateArr,
-            datasets: [
-                {
-                    label: 'MACD Line',
-                    data: macd.macdLine,
-                    borderColor: 'blue',
-                    fill: false,
-                    borderWidth: 1,
-                    pointStyle: false,
-                },
-                {
-                    label: 'Signal Line',
-                    data: macd.signalLine,
-                    borderColor: 'red',
-                    fill: false,
-                    borderWidth: 1,
-                    pointStyle: false,
-                },
-                {
-                    label: 'MACD Histogram',
-                    data: macd.histogram,
-                    borderColor: 'yellow',
-                    backgroundColor: macd.histogram.map(val => 
-                        val >= 0 ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 0, 0, 0.3)'
-                    ),
-                    fill: true,
-                    borderWidth: 1,
-                    pointStyle: false,
-                    type: 'bar'
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                x: {
-                    display: true,
-                    title: {
-                        display: true,
-                        text: 'Time'
-                    }
-                },
-                y: {
-                    display: true,
-                    title: {
-                        display: true,
-                        text: 'MACD'
-                    }
-                }
-            },
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'MACD (7, 10, 3)'
                 }
             }
         }
