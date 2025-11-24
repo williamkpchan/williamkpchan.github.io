@@ -10,6 +10,7 @@ var notvisitedList = [...Array(ImgList.length).keys()];
   //script.src = 'https://cdn.jsdelivr.net/npm/vanilla-lazyload@13.0.1/dist/lazyload.min.js';
   //script.onload = function() {lazyLoadInstance.update();}
   //document.getElementsByTagName('head')[0].appendChild(script);
+var totalLength = notvisitedList.length
 
 function makeTOC(theStr, index) {
   var topic = theStr.match(patt1)[0];
@@ -44,6 +45,8 @@ function chkKey() {
   else if(testkey == "r"){ randomWL();}
   else if(testkey == "5"){ randomWL();}
   else if(testkey == "s"){ showMov();}
+  else if(testkey == "i"){ initWaitList();}
+  else if(testkey == "h"){ help();}
   else if(testkey == "0"){ showMov();}
   else if(testkey == "w"){ setwaitListSize();}
   else if(testkey == 't'){window.location = '#toc';
@@ -177,11 +180,11 @@ var waitListSizeName = "waitListBuf"
 window[waitListSizeName] = window["bookid"] + " waitSize" // waitListSize is variable name now
 
 if (localStorage.getItem(waitListBuf) === null) {
-    localStorage.setItem(waitListBuf, 10)
-    waitListSize = 10
+    localStorage.setItem(waitListBuf, 30)
+    waitListSize = 30
 }else{
     waitListSize = parseInt(localStorage.getItem(waitListBuf))
-    if(waitListSize == 0){ waitListSize = 10 }
+    if(waitListSize == 0){ waitListSize = 30 }
 }
 
 // init waitingList
@@ -195,6 +198,41 @@ if (localStorage.getItem(waitingList) === null) {
     if(waitList == [0]){ initWaitList() }
 }
 
+function help() {
+  $("#mustWatch").css('width', '120%');
+  $("#mustWatch").append(`<pre><br>
+    快捷键: 
+    r, 5 跳任意书签 R, 跳任意题目 b, 4 前一题目 f, 6 下一题目
+    t, 8 目录顶 l, 2 目录底 7 目录中部
+    T 网页顶 e 网页底 m 必看
+    K 设特定书签 k 跳到特定书签
+    多书签管理- R 跳任意书签; + 目前题目加入书签; - 目前题目删除书签; a 手动书签
+    按space 继续往下
+    b backward 4 backward
+    e end
+    f foreward 6 foreward
+    l last
+    2 end
+    7 top
+    m #mustWatch
+    p pause
+    c continU
+    r randomWL 5 randomWL
+    s showMov
+    i initWaitList
+    h help
+    0 showMov
+    w setwaitListSize
+    t top 8 top T top
+    K bookmark k bookmark
+    R randomFlip
+    + addtoWL - rvFmWL
+    a askNum
+    </pre>`
+  );
+  window.location = '#mustWatch';
+}
+
 function initWaitList() {
     // generate random pointers
     waitList = Array(waitListSize).fill().map(() => Math.round(Math.random() * totalLength))
@@ -203,10 +241,10 @@ function initWaitList() {
 }
 
 function setwaitListSize() {
-    thecode = prompt("Current buffer size: " + waitListSize + ", Set new buffer size: ", "");
-    if (thecode != null && thecode != "") {
-      localStorage.setItem(waitListBuf, thecode)
-      waitListSize = parseInt(thecode)
+    bufSize = prompt("Current buffer size: " + waitListSize + ", Set new buffer size: ", "");
+    if (bufSize != null && bufSize != "") {
+      localStorage.setItem(waitListBuf, bufSize)
+      waitListSize = parseInt(bufSize)
     }else{
       return;
     }
@@ -214,15 +252,15 @@ function setwaitListSize() {
 
 function initWaitList() {
     // generate random pointers
-    waitList = Array(10).fill().map(() => Math.round(Math.random() * ImgList.length))
+    waitList = Array(30).fill().map(() => Math.round(Math.random() * ImgList.length))
     waitList = [...new Set(waitList)]    // set unique
     localStorage.setItem(waitingList, waitList)
 }
 
 function randomWL() {
   pointerList = waitList
-  if(waitList.length > 10){
-    pointerList.splice(10, (pointerList.length - 10));
+  if(waitList.length > 30){
+    pointerList.splice(30, (pointerList.length - 30));
   }
   newPointer = pointerList[Math.floor(Math.random() * pointerList.length)];
   while(newPointer == topicpointer){
@@ -278,6 +316,6 @@ retstr = ' '.repeat(80);
 randomWL();
 changeImg();
 
-$("#mustWatch").append('<pre><br><span class="silver">快捷键: <br>r, 5 跳任意书签 R, 跳任意题目 b, 4 前一题目 f, 6 下一题目<br><br>t, 8 目录顶 l, 2 目录底 7 目录中部<br><br>T 网页顶 e 网页底 m 必看<br><br>K 设特定书签 k 跳到特定书签</span><br>多书签管理- R 跳任意书签; + 目前题目加入书签; - 目前题目删除书签; a 手动书签<br>按space 继续往下</pre>');
+$("#mustWatch").append('<pre>help</pre>');
 
 
