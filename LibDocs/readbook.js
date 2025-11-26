@@ -153,7 +153,7 @@ if(typeof(topicEnd) == 'undefined'){ topicEnd = "<br>";}
 
 if(markerName != "h0"){
 
-  if(inclTxt != ""){
+  if(typeof inclTxt !== 'undefined' && inclTxt != ""){
     markerName = markerName + ":contains('" + inclTxt + "')"
     console.log("markerName: ", markerName)
   }
