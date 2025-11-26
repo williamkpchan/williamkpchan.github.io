@@ -153,6 +153,11 @@ if(typeof(topicEnd) == 'undefined'){ topicEnd = "<br>";}
 
 if(markerName != "h0"){
 
+  if(inclTxt != ""){
+    markerName = markerName + ":contains('" + inclTxt + "')"
+    console.log("markerName: ", markerName)
+  }
+
   $(markerName).each(function(i) {
       // prepare for the toc
       var topic = $(this), topicNumber = i; topicLength = topicNumber +1;
