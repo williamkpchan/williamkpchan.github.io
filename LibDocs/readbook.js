@@ -151,6 +151,7 @@ elapseTIme = 1500
 
 if(typeof(topicEnd) == 'undefined'){ topicEnd = "<br>";}
 
+console.log("markerName: ", markerName)
 if(markerName != "h0"){
 
   if(typeof inclTxt !== 'undefined' && inclTxt != ""){
