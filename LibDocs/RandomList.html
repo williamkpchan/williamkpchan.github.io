@@ -53,6 +53,11 @@ video { width: 100%;}
   select option { font-size: 18px, line-height: 60%;}
   sf {font-size: 70%}
 }
+#question {
+  user-select: none;
+  cursor: pointer;
+}
+
 </style>
 </head>
 
@@ -94,7 +99,7 @@ video { width: 100%;}
 <button onclick=window.scrollTo(0,Number(document.body.scrollHeight/2))>half</button>
 <button onclick=window.scrollTo(0,Number(document.body.scrollHeight*3/4))>3 quad</button>
 <button onclick=seekListName();><r>seekListName</r></button>
-<button onclick=join3Tips();><y>join3Tips</y></button>
+<button onclick=joinMultiTips();><y>joinMultiTips</y></button>
 
 <br>
 <div id="markLst"></div>
@@ -164,32 +169,96 @@ function shuffle(array) {
  //}
 }
 
-function randPtr() {  // random a topic pointer
-  const randomPtr = Math.floor(Math.random() * questionList.length);
-  return randomPtr;
+function randPtr(arrayName) {
+  if (arrayName.length === 0) {
+    throw new Error("Cannot select random index from an empty array");
+  }
+  return Math.floor(Math.random() * arrayName.length);
 }
 
-function join3Tips() { // join 3 poynters
-  const finalArray = [];
-  for (let i = 0; i < 3; i++) { // Declare i with let
-    let onePtr = randPtr();
-    
-    // Avoid potential infinite loop - add safety check
-    let attempts = 0;
-    while(onePtr < 8 && attempts < 100) { 
-      onePtr = randPtr();
-      attempts++;
-    }
-    
-    // Check if we found a valid pointer
-    if (onePtr >= 8) {
-      finalArray.push(questionList[onePtr]);
-    }
+function randMultiPtr(arrayName, count) {
+  if (arrayName.length === 0) {
+    throw new Error("Cannot select random elements from an empty array");
   }
   
-  // Convert array to string for display
+  // If more elements are requested than available, adjust count.
+  count = Math.min(count, arrayName.length);
+
+  // Fisher-Yates Shuffle Algorithm
+  const shuffledArray = arrayName.slice(); // Create a shallow copy
+  for (let i = shuffledArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledArray[i], shuffledArray[j]] = [shuffledArray[j], shuffledArray[i]]; // Swap elements
+  }
+
+  return shuffledArray.slice(0, count); // Return the first 'count' elements
+}
+
+function joinMultiTips() {
+  let finalArray = []; // ✅ use 'let' because we reassign
+  finalArray = finalArray.concat(randMultiPtr(色调, 3));
+  finalArray = finalArray.concat(randMultiPtr(构图, 1));
+  finalArray = finalArray.concat(randMultiPtr(紋理, 3));
+  //finalArray = finalArray.concat(randMultiPtr(风格, 1));
+  finalArray = finalArray.concat(randMultiPtr(算法, 2));
+  finalArray = finalArray.concat(randMultiPtr(物件, 4));
+  finalArray = finalArray.concat(randMultiPtr(场景, 2));
+
   const finalString = finalArray.join(', ');
   document.querySelector('#question').innerHTML = finalString;
+}
+
+
+function copyTipContent() {
+  const questionEl = document.querySelector('#question');
+  if (!questionEl) {
+    console.error('#question element not found');
+    return;
+  }
+
+  // Get text content (ignores HTML tags)
+  const textToCopy = questionEl.textContent || questionEl.innerText || '';
+
+  if (!textToCopy.trim()) {
+    console.warn('No text to copy in #question');
+    return;
+  }
+
+  // Modern clipboard API (secure, works in most browsers)
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      console.log('✅ Text copied to clipboard:', textToCopy);
+      // Optional: show visual feedback
+      // e.g., flash a message or change background briefly
+    }).catch(err => {
+      console.error('Failed to copy using Clipboard API:', err);
+      fallbackCopyTextToClipboard(textToCopy); // Fallback for older browsers
+    });
+  } else {
+    // Fallback for very old browsers (e.g., Safari < 13.1, old iOS)
+    fallbackCopyTextToClipboard(textToCopy);
+  }
+}
+
+// Fallback using temporary textarea
+function fallbackCopyTextToClipboard(text) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';  // Avoid scrolling to bottom
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    const success = document.execCommand('copy');
+    if (success) {
+      console.log('✅ Text copied via fallback method');
+    } else {
+      console.error('❌ execCommand("copy") failed');
+    }
+  } catch (err) {
+    console.error('Fallback copy failed:', err);
+  }
+  document.body.removeChild(textarea);
 }
 
 
@@ -200,12 +269,12 @@ function setupTripleClick() {
     let clickTimer;
 
     document.addEventListener('click', function(e) {
-        const jsTipElement = document.querySelector('.js-tip');
-        console.log('.js-tip element:', jsTipElement);
+        const jsTipElement = document.querySelector('#question');
+        console.log('#question:', jsTipElement);
         
-        if (jsTipElement && e.target.closest('.js-tip')) {
+        if (jsTipElement && e.target.closest('#question')) {
             clickCount++;
-            console.log("✅ Click INSIDE .js-tip! Count:", clickCount);
+            console.log("✅ Click INSIDE #question! Count:", clickCount);
             
             clearTimeout(clickTimer);
             clickTimer = setTimeout(() => {
@@ -227,7 +296,7 @@ function setupTripleClick() {
 
 
 function showCopyFeedback() {
-  const tipElement = document.querySelector('.js-tip');
+  const tipElement = document.querySelector('#question');
   const originalBackground = tipElement.style.backgroundColor;
   
   // Flash effect
@@ -311,7 +380,7 @@ function showTopic() {
   document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, setting up triple click...');
     setupTripleClick();
-    //showTopic(); // Make sure this creates the .js-tip element
+    //showTopic(); // Make sure this creates the #question element
   });
 
 
