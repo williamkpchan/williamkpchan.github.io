@@ -193,6 +193,96 @@ function join3Tips() { // join 3 poynters
 }
 
 
+// Triple-click functionality
+
+function setupTripleClick() {
+    let clickCount = 0;
+    let clickTimer;
+
+    document.addEventListener('click', function(e) {
+        const jsTipElement = document.querySelector('.js-tip');
+        console.log('.js-tip element:', jsTipElement);
+        
+        if (jsTipElement && e.target.closest('.js-tip')) {
+            clickCount++;
+            console.log("✅ Click INSIDE .js-tip! Count:", clickCount);
+            
+            clearTimeout(clickTimer);
+            clickTimer = setTimeout(() => {
+                clickCount = 0;
+            }, 500);
+            
+            if (clickCount === 3) {
+                console.log('🎯 TRIPLE CLICK DETECTED!');
+                copyTipContent();
+                clickCount = 0;
+                clearTimeout(clickTimer);
+            }
+        } else {
+            clickCount = 0;
+        }
+    });
+}
+
+
+
+function showCopyFeedback() {
+  const tipElement = document.querySelector('.js-tip');
+  const originalBackground = tipElement.style.backgroundColor;
+  
+  // Flash effect
+  tipElement.style.backgroundColor = '#4CAF50';
+  tipElement.style.transition = 'background-color 0.3s';
+  
+  setTimeout(() => {
+    tipElement.style.backgroundColor = originalBackground;
+  }, 300);
+  
+  // Optional: Show a temporary message
+  const feedback = document.createElement('div');
+  feedback.textContent = '✓ Copied to clipboard!';
+  feedback.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #4CAF50;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 5px;
+    z-index: 1000;
+    font-family: Arial, sans-serif;
+  `;
+  document.body.appendChild(feedback);
+  
+  setTimeout(() => {
+    document.body.removeChild(feedback);
+  }, 1000);
+}
+
+// Fallback for older browsers
+function fallbackCopyText(text) {
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  textArea.style.cssText = 'position: fixed; left: -9999px; opacity: 0;';
+  document.body.appendChild(textArea);
+  textArea.select();
+  textArea.setSelectionRange(0, 99999); // For mobile devices
+  
+  try {
+    const successful = document.execCommand('copy');
+    if (successful) {
+      showCopyFeedback();
+      console.log('✅ Content copied to clipboard (fallback)!');
+    } else {
+      alert('❌ Failed to copy content. Please copy manually.');
+    }
+  } catch (err) {
+    alert('❌ Copy failed. Please copy manually: ' + text);
+  }
+  
+  document.body.removeChild(textArea);
+}
+
 function showTopic() {
   topicNo = topicNo - 1;
   if (topicNo < 0) { topicNo = questionList.length-1}
@@ -216,6 +306,15 @@ function showTopic() {
   document.querySelector('#question').innerHTML = topic;
   document.querySelector('#questionsLeft').innerHTML = topicNo+1;
   $("#automode").html(topicNo+1)
+
+  // Wait for DOM to be fully loaded before setting up event listeners
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, setting up triple click...');
+    setupTripleClick();
+    //showTopic(); // Make sure this creates the .js-tip element
+  });
+
+
 
   document.querySelector('body').focus();
   gototop()
