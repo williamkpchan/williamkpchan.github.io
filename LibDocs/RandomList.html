@@ -88,6 +88,7 @@ video { width: 100%;}
 <button onclick=autojp()><lg>autoF</lg></button>
 <button onclick=findkeyword() class="redbut"><r>findkey</r></button>
 <button onclick=joinMultiTips();><y>joinMultiTips</y></button>
+<button onclick=createSearchSelectionButton();><pk>SearchKey</pk></button>
 </div><br>
 <span class="normalsize">select card box:</span>
 <select id="myChoice" onchange="useChosen()"></select>
@@ -124,6 +125,7 @@ actualID = ""
 questionList = []
 shuffleSW = false
 let intervalId;
+fixedSelections = {}
 
 const selectElement = document.getElementById('myChoice');
 optionsArray.forEach(optionText => {
@@ -200,22 +202,488 @@ function randMultiPtr(arrayName, count, addEmptyElements = 0) {
   return shuffledArray.slice(0, count);
 }
 
-function joinMultiTips() {
-  let finalArray = []; // use 'let' because we reassign
-  finalArray = finalArray.concat(randMultiPtr(色调, 色调cnt, Number.parseInt(t2i[0].色调.length*10/100) ));
-  finalArray = finalArray.concat(randMultiPtr(构图, 构图cnt, Number.parseInt(t2i[0].构图.length*33/100) ));
-  finalArray = finalArray.concat(randMultiPtr(紋理, 紋理cnt, Number.parseInt(t2i[0].紋理.length*10/100) ));
-  finalArray = finalArray.concat(randMultiPtr(风格, 风格cnt, Number.parseInt(t2i[0].风格.length*50/100) ));
-  finalArray = finalArray.concat(randMultiPtr(算法, 算法cnt, Number.parseInt(t2i[0].算法.length*10/100) ));
-  finalArray = finalArray.concat(randMultiPtr(形容词, 形容词cnt, Number.parseInt(t2i[0].形容词.length*50/100) ));
-  finalArray = finalArray.concat(randMultiPtr(物件, 物件cnt, Number.parseInt(t2i[0].物件.length*10/100) ));
-  finalArray = finalArray.concat(randMultiPtr(场景, 场景cnt, Number.parseInt(t2i[0].场景.length*15/100) ));
-//finalArray = finalArray.concat(randMultiPtr(样式, 样式cnt, Number.parseInt(t2i[0].样式.length*500/100) ));
+// Function to search items by keyword and display results
+function searchAndSelectItems() {
+  const categories = {
+    色调: t2i[0].色调,
+    构图: t2i[0].构图,
+    紋理: t2i[0].紋理,
+    风格: t2i[0].风格,
+    算法: t2i[0].算法,
+    物件: t2i[0].物件,
+    形容词: t2i[0].形容词,
+    场景: t2i[0].场景
+  };
+  
+  // Create search UI
+  let html = `
+    <div id="searchSelectionUI">
+      <h3 style="margin-top: 0;">搜索并选择固定项目</h3>
+        <input type="text" id="searchKeyword" placeholder="输入关键词"> <button onclick="performSearch()" style="cursor: pointer;">搜索</button> <button onclick="clearSearch()" style="cursor: pointer;">清空</button>
+      <y id="searchResults">输入关键词并点击搜索</y>
+      <pk id="selectedItemsPreview" style="display: none;">已选择的项目:</pk> <r id="selectedItemsList"></r></pk>
+        <button onclick="confirmSearchSelections()">确认并生成</button> <button onclick="cancelSearchSelections()">取消</button> <button onclick="viewAllIndices()">查看所有索引</button>
+    </div>
+  `;
+  
+  // Display the UI in #question area
+  const questionDiv = document.querySelector('#question');
+  if (questionDiv) {
+    questionDiv.innerHTML = html;
+  }
+  
+  // Store selected items globally
+  window.selectedSearchItems = [];
+  
+  // Perform search function
+  window.performSearch = function() {
+    const keyword = document.querySelector('#searchKeyword').value.trim();
+    const resultsDiv = document.querySelector('#searchResults');
+    
+    if (!keyword) {
+      resultsDiv.innerHTML = '<p>请输入搜索关键词</p>';
+      return;
+    }
+    
+    const searchResults = [];
+    
+    // Search through all categories
+    for (const [category, items] of Object.entries(categories)) {
+      items.forEach((item, index) => {
+        if (item.toLowerCase().includes(keyword.toLowerCase())) {
+          searchResults.push({
+            category: category,
+            index: index,
+            text: item
+          });
+        }
+      });
+    }
+    
+    // Display results
+    if (searchResults.length === 0) {
+      resultsDiv.innerHTML = `<p>未找到包含"${keyword}"的项目</p>`;
+    } else {
+      let resultsHtml = `<p>找到 ${searchResults.length} 个结果:</p>`;
+      searchResults.forEach((result, i) => {
+        const isSelected = window.selectedSearchItems.some(sel => 
+          sel.category === result.category && sel.index === result.index
+        );
 
-   finalString = finalArray.join(', ').replace(/,(\s*,)+/g, ', ');
-   finalString = finalArray.join(', ').replace(/,(\s*,)+/g, ', ');
-  document.querySelector('#question').innerHTML = finalString;
+        resultsHtml += `<label> <input type="checkbox" id="searchResult_${i}" data-category="${result.category}" 
+            data-index="${result.index}" data-text="${result.text.replace(/"/g, '&quot;')}" ${isSelected ? 'checked' : ''}
+            onchange="toggleSearchItem(${i})"> <strong>${result.category}[${result.index}]</strong> ${result.text} </label> `;
+      });
+      
+      resultsDiv.innerHTML = resultsHtml;
+    }
+  };
+  
+  // Toggle item selection
+  window.toggleSearchItem = function(resultIndex) {
+    const checkbox = document.querySelector(`#searchResult_${resultIndex}`);
+    if (!checkbox) return;
+    
+    const category = checkbox.getAttribute('data-category');
+    const index = parseInt(checkbox.getAttribute('data-index'));
+    const text = checkbox.getAttribute('data-text');
+    
+    const item = { category: category, index: index, text: text };
+    
+    if (checkbox.checked) {
+      // Add if not already selected
+      const exists = window.selectedSearchItems.some(sel => 
+        sel.category === category && sel.index === index
+      );
+      if (!exists) {
+        window.selectedSearchItems.push(item);
+      }
+    } else {
+      // Remove if selected
+      window.selectedSearchItems = window.selectedSearchItems.filter(sel => 
+        !(sel.category === category && sel.index === index)
+      );
+    }
+    
+    // Update preview
+    updateSelectedPreview();
+  };
+  
+  // Update selected items preview
+  function updateSelectedPreview() {
+    const previewDiv = document.querySelector('#selectedItemsPreview');
+    const listDiv = document.querySelector('#selectedItemsList');
+    
+    if (window.selectedSearchItems.length === 0) {
+      previewDiv.style.display = 'none';
+    } else {
+      previewDiv.style.display = 'block';
+      
+      // Group by category
+      const grouped = {};
+      window.selectedSearchItems.forEach(item => {
+        if (!grouped[item.category]) {
+          grouped[item.category] = [];
+        }
+        grouped[item.category].push(item);
+      });
+      
+      let listHtml = '';
+      for (const [category, items] of Object.entries(grouped)) {
+        listHtml += `<div>`;
+        listHtml += `<strong>${category}:</strong> `;
+        listHtml += items.map(item => 
+          `[${item.index}] ${item.text.substring(0, 40)}${item.text.length > 40 ? '...' : ''}`
+        ).join(', ');
+        listHtml += `</div>`;
+      }
+      
+      listDiv.innerHTML = listHtml;
+    }
+  }
+  
+  // Clear search
+  window.clearSearch = function() {
+    document.querySelector('#searchKeyword').value = '';
+    document.querySelector('#searchResults').innerHTML = 
+      '<p>输入关键词并点击搜索</p>';
+  };
+  
+  // View all indices
+  window.viewAllIndices = function() {
+    const resultsDiv = document.querySelector('#searchResults');
+    let allItems = [];
+    
+    for (const [category, items] of Object.entries(categories)) {
+      items.forEach((item, index) => {
+        allItems.push({
+          category: category,
+          index: index,
+          text: item
+        });
+      });
+    }
+    
+    let resultsHtml = `<p>所有项目 (${allItems.length} 个):</p>`;
+    
+    // Sort by category and index
+    allItems.sort((a, b) => {
+      if (a.category === b.category) {
+        return a.index - b.index;
+      }
+      return a.category.localeCompare(b.category);
+    });
+    
+    allItems.forEach((result, i) => {
+      const isSelected = window.selectedSearchItems.some(sel => 
+        sel.category === result.category && sel.index === result.index
+      );
+      
+      resultsHtml += `
+        <div>
+          <label>
+            <input type="checkbox" 
+                   id="allItem_${i}" 
+                   data-category="${result.category}" 
+                   data-index="${result.index}"
+                   data-text="${result.text.replace(/"/g, '&quot;')}"
+                   ${isSelected ? 'checked' : ''}
+                   onchange="toggleAllItem(${i})">
+            <div>
+              <span style="color: #2196F3; font-weight: bold;">${result.category}[${result.index}]:</span>
+              <span style="color: #333; margin-left: 5px;">${result.text.substring(0, 60)}${result.text.length > 60 ? '...' : ''}</span>
+            </div>
+          </label>
+        </div>
+      `;
+    });
+    
+    resultsDiv.innerHTML = resultsHtml;
+    
+    // Update toggle function for all items
+    window.toggleAllItem = function(itemIndex) {
+      const checkbox = document.querySelector(`#allItem_${itemIndex}`);
+      if (!checkbox) return;
+      
+      const category = checkbox.getAttribute('data-category');
+      const index = parseInt(checkbox.getAttribute('data-index'));
+      const text = checkbox.getAttribute('data-text');
+      
+      const item = { category: category, index: index, text: text };
+      
+      if (checkbox.checked) {
+        const exists = window.selectedSearchItems.some(sel => 
+          sel.category === category && sel.index === index
+        );
+        if (!exists) {
+          window.selectedSearchItems.push(item);
+        }
+      } else {
+        window.selectedSearchItems = window.selectedSearchItems.filter(sel => 
+          !(sel.category === category && sel.index === index)
+        );
+      }
+      
+      updateSelectedPreview();
+    };
+  };
+  
+  // Confirm selections and generate
+  window.confirmSearchSelections = function() {
+    // Convert selected items to fixedSelections format
+    let fixedSelections = {};
+    
+    window.selectedSearchItems.forEach(item => {
+      if (!fixedSelections[item.category]) {
+        fixedSelections[item.category] = [];
+      }
+      if (!fixedSelections[item.category].includes(item.index)) {
+        fixedSelections[item.category].push(item.index);
+      }
+    });
+    
+    // Call joinMultiTips with fixed selections
+    joinMultiTips(fixedSelections);
+    
+    // Clean up global variables
+    delete window.selectedSearchItems;
+    delete window.performSearch;
+    delete window.toggleSearchItem;
+    delete window.clearSearch;
+    delete window.viewAllIndices;
+    delete window.confirmSearchSelections;
+    delete window.cancelSearchSelections;
+  };
+  
+  // Cancel and use random selections
+  window.cancelSearchSelections = function() {
+    joinMultiTips(); // Call with no fixed selections
+    
+    // Clean up global variables
+    delete window.selectedSearchItems;
+    delete window.performSearch;
+    delete window.toggleSearchItem;
+    delete window.clearSearch;
+    delete window.viewAllIndices;
+    delete window.confirmSearchSelections;
+    delete window.cancelSearchSelections;
+  };
 }
+
+// Update joinMultiTips function to show selection summary
+function joinMultiTips(fixedSelections = {}) {
+  let finalArray = [];
+  
+  // Show selection summary
+  showFixedSelectionsSummary(fixedSelections);
+  
+  // Original joinMultiTips logic (simplified for example)
+  function addSelections(category, categoryKey, randomCnt, percent) {
+    let selections = [];
+    let fixedIndices = [];
+    
+    if (fixedSelections[categoryKey] && fixedSelections[categoryKey].length > 0) {
+      fixedIndices = fixedSelections[categoryKey]
+        .filter(idx => idx >= 0 && idx < category.length);
+      
+      fixedIndices.forEach(idx => {
+        selections.push(category[idx]);
+      });
+    }
+    
+    const randomNeeded = Math.max(0, randomCnt - fixedIndices.length);
+    
+    if (randomNeeded > 0) {
+      const availableIndices = Array.from({length: category.length}, (_, i) => i)
+        .filter(i => !fixedIndices.includes(i));
+      
+      const randomSelections = getRandomItems(category, availableIndices, randomNeeded);
+      selections = selections.concat(randomSelections);
+    }
+    
+    if (selections.length > randomCnt) {
+      selections = selections.slice(0, randomCnt);
+    }
+    
+    return selections;
+  }
+  
+  function getRandomItems(arr, availableIndices, count) {
+    if (availableIndices.length === 0 || count <= 0) return [];
+    const shuffled = [...availableIndices].sort(() => Math.random() - 0.5);
+    const selectedIndices = shuffled.slice(0, Math.min(count, shuffled.length));
+    return selectedIndices.map(idx => arr[idx]);
+  }
+
+  // Apply selections
+  finalArray = finalArray.concat(addSelections(色调, '色调', 色调cnt, 10));
+  finalArray = finalArray.concat(addSelections(构图, '构图', 构图cnt, 33));
+  finalArray = finalArray.concat(addSelections(紋理, '紋理', 紋理cnt, 10));
+  finalArray = finalArray.concat(addSelections(风格, '风格', 风格cnt, 50));
+  finalArray = finalArray.concat(addSelections(算法, '算法', 算法cnt, 10));
+  finalArray = finalArray.concat(addSelections(形容词, '形容词', 形容词cnt, 50));
+  finalArray = finalArray.concat(addSelections(物件, '物件', 物件cnt, 10));
+  finalArray = finalArray.concat(addSelections(场景, '场景', 场景cnt, 15));
+
+  let finalString = finalArray.join(', ').replace(/,(\s*,)+/g, ', ');
+  document.querySelector('#question').innerHTML = `${finalString}`;
+  return finalArray;
+}
+
+// Function to show fixed selections summary
+function showFixedSelectionsSummary(fixedSelections) {
+  const categories = {
+    色调: t2i[0].色调,
+    构图: t2i[0].构图,
+    紋理: t2i[0].紋理,
+    风格: t2i[0].风格,
+    算法: t2i[0].算法,
+    物件: t2i[0].物件,
+    形容词: t2i[0].形容词,
+    场景: t2i[0].场景
+  };
+  
+  let summaryHtml = ''
+  let hasSelections = false;
+  
+  for (const [category, indices] of Object.entries(fixedSelections)) {
+    if (indices && indices.length > 0 && categories[category]) {
+      hasSelections = true;
+      summaryHtml += `<div style="margin-top: 8px;">`;
+      summaryHtml += `<strong>${category}:</strong> `;
+      
+      const items = indices.map(idx => {
+        if (idx >= 0 && idx < categories[category].length) {
+          const text = categories[category][idx];
+          return `[${idx}] ${text.substring(0, 40)}${text.length > 40 ? '...' : ''}`;
+        }
+        return `[${idx}] (无效索引)`;
+      }).join(', ');
+      
+      summaryHtml += items;
+      summaryHtml += `</div>`;
+    }
+  }
+
+  // Insert the summary before #question if it exists
+  const questionDiv = document.querySelector('#question');
+  if (questionDiv && questionDiv.parentNode) {
+    const existingSummary = document.querySelector('#fixedSelectionsSummary');
+    if (existingSummary) {
+      existingSummary.remove();
+    }
+    
+    // Insert the new summary
+    questionDiv.insertAdjacentHTML('beforebegin', summaryHtml);
+  }
+}
+
+// Create a button to trigger the search interface
+function createSearchSelectionButton() {
+  const button = document.createElement('button');
+  button.textContent = '🔍 搜索';
+
+  button.onmouseover = function() {
+    this.style.transform = 'translateY(-2px)';
+    this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+  };
+  
+  button.onmouseout = function() {
+    this.style.transform = 'translateY(0)';
+    this.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+  };
+  
+  button.onclick = searchAndSelectItems;
+  
+  // Insert the button before the #question element
+  const questionDiv = document.querySelector('#question');
+  if (questionDiv && questionDiv.parentNode) {
+    const existingButton = document.querySelector('#searchSelectionBtn');
+    if (!existingButton) {
+      button.id = 'searchSelectionBtn';
+      questionDiv.parentNode.insertBefore(button, questionDiv);
+    }
+  }
+  
+  return button;
+}
+
+
+  
+
+
+function joinMultiTipsOrig(fixedSelections = {}) {
+  let finalArray = []; // use 'let' because we reassign
+
+  // Helper function to add fixed selections first, then random ones
+  function addSelections(category, categoryKey, randomCnt, percent) {
+    let selections = [];
+    
+    // Add fixed selections if provided for this category
+    if (fixedSelections[categoryKey] && fixedSelections[categoryKey].length > 0) {
+      // Ensure fixed selections are valid indices
+      const fixedIndices = fixedSelections[categoryKey].filter(idx => 
+        idx >= 0 && idx < category.length
+      );
+      
+      // Add the fixed items
+      fixedIndices.forEach(idx => {
+        selections.push(category[idx]);
+      });
+      
+      // Remove fixed items from consideration for random selection
+      const availableIndices = Array.from({length: category.length}, (_, i) => i)
+        .filter(i => !fixedIndices.includes(i));
+      
+      // If we need more random selections beyond fixed ones
+      if (randomCnt > fixedIndices.length) {
+        const randomNeeded = randomCnt - fixedIndices.length;
+        const randomSelections = randMultiPtrFromIndices(category, availableIndices, randomNeeded, percent);
+        selections = selections.concat(randomSelections);
+      }
+    } else {
+      // No fixed selections, use original random logic
+      selections = randMultiPtr(category, randomCnt, Number.parseInt(category.length * percent / 100));
+    }
+    
+    return selections;
+  }
+
+  // Modified version of randMultiPtr that works with specific indices
+  function randMultiPtrFromIndices(arr, indices, count, percent) {
+    // This is a simplified version - you'll need to adapt your actual randMultiPtr logic
+    // For now, just select random items from the available indices
+    const shuffled = [...indices].sort(() => 0.5 - Math.random());
+    const selectedIndices = shuffled.slice(0, Math.min(count, indices.length));
+    return selectedIndices.map(idx => arr[idx]);
+  }
+
+  // Apply selections for each category
+  finalArray = finalArray.concat(addSelections(色调, '色调', 色调cnt, 10));
+  finalArray = finalArray.concat(addSelections(构图, '构图', 构图cnt, 33));
+  finalArray = finalArray.concat(addSelections(紋理, '紋理', 紋理cnt, 10));
+  finalArray = finalArray.concat(addSelections(风格, '风格', 风格cnt, 50));
+  finalArray = finalArray.concat(addSelections(算法, '算法', 算法cnt, 10));
+  finalArray = finalArray.concat(addSelections(形容词, '形容词', 形容词cnt, 50));
+  finalArray = finalArray.concat(addSelections(物件, '物件', 物件cnt, 10));
+  finalArray = finalArray.concat(addSelections(场景, '场景', 场景cnt, 15));
+
+  // Clean up the final string
+  finalString = finalArray.join(', ').replace(/,(\s*,)+/g, ', ');
+  document.querySelector('#question').innerHTML = finalString;
+  return finalArray;
+}
+
+// Example of how to use with fixed selections:
+// const fixedSelections = {
+//   色调: [0, 1], // Must include items at index 0 and 1 from 色调 array
+//   构图: [2],    // Must include item at index 2 from 构图 array
+//   风格: [0]     // Must include item at index 0 from 风格 array
+// };
+// joinMultiTips(fixedSelections);
+
+// Original function call without fixed selections still works:
+// joinMultiTips();
 
 
 function copyTipContent() {
