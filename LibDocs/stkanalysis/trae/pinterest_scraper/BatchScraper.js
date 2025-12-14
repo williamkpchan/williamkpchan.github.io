@@ -1,6 +1,7 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs').promises;
 const { exec } = require('child_process');
+console.log("input url from: inputurls.txt\n")
 
 // 完全兼容的等待函数
 function waitForTimeout(ms) {
