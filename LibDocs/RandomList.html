@@ -87,7 +87,7 @@ video { width: 100%;}
 
 <button onclick=autojp()><lg>autoF</lg></button>
 <button onclick=findkeyword() class="redbut"><r>findkey</r></button>
-<button onclick=joinMultiTips();><y>joinMultiTips</y></button>
+<button onclick=joinMultiTips(fixedSelections);><y>joinMultiTips</y></button>
 <button onclick=createSearchSelectionButton();><pk>SearchKey</pk></button>
 </div><br>
 <span class="normalsize">select card box:</span>
@@ -429,32 +429,48 @@ function searchAndSelectItems() {
   };
   
   // Confirm selections and generate
-  window.confirmSearchSelections = function() {
-    // Convert selected items to fixedSelections format
-    let fixedSelections = {};
-    
-    window.selectedSearchItems.forEach(item => {
-      if (!fixedSelections[item.category]) {
-        fixedSelections[item.category] = [];
-      }
-      if (!fixedSelections[item.category].includes(item.index)) {
-        fixedSelections[item.category].push(item.index);
-      }
-    });
-    
-    // Call joinMultiTips with fixed selections
-    joinMultiTips(fixedSelections);
-    
-    // Clean up global variables
-    delete window.selectedSearchItems;
-    delete window.performSearch;
-    delete window.toggleSearchItem;
-    delete window.clearSearch;
-    delete window.viewAllIndices;
-    delete window.confirmSearchSelections;
-    delete window.cancelSearchSelections;
-  };
+// Inside searchAndSelectItems function, update the confirmSearchSelections function:
+window.confirmSearchSelections = function() {
+  // Convert selected items to fixedSelections format
+  let formattedSelections = {};
   
+  window.selectedSearchItems.forEach(item => {
+    if (!formattedSelections[item.category]) {
+      formattedSelections[item.category] = [];
+    }
+    // Only add the index if it's not already in the array
+    if (!formattedSelections[item.category].includes(item.index)) {
+      formattedSelections[item.category].push(item.index);
+    }
+  });
+  
+  // Store in the global fixedSelections variable
+  fixedSelections = formattedSelections;
+  
+  // Show the summary of what was selected
+  // showFixedSelectionsSummary(formattedSelections);
+  
+  // Now call joinMultiTips with the formatted selections
+  setTimeout(() => {
+    joinMultiTips(formattedSelections);
+  }, 100); // Small delay to ensure UI updates first
+  
+  // Clean up global variables
+  delete window.selectedSearchItems;
+  delete window.performSearch;
+  delete window.toggleSearchItem;
+  delete window.clearSearch;
+  delete window.viewAllIndices;
+  delete window.confirmSearchSelections;
+  delete window.cancelSearchSelections;
+  
+  // Remove the search UI
+  const searchUI = document.querySelector('#searchSelectionUI');
+  if (searchUI) {
+    searchUI.remove();
+  }
+};
+
   // Cancel and use random selections
   window.cancelSearchSelections = function() {
     joinMultiTips(); // Call with no fixed selections
@@ -475,7 +491,7 @@ function joinMultiTips(fixedSelections = {}) {
   let finalArray = [];
   
   // Show selection summary
-  showFixedSelectionsSummary(fixedSelections);
+  // showFixedSelectionsSummary(fixedSelections);
   
   // Original joinMultiTips logic (simplified for example)
   function addSelections(category, categoryKey, randomCnt, percent) {
