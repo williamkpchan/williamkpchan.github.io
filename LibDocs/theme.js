@@ -71,6 +71,6 @@ function mixItems(ItemNum) {
   const questionDiv = document.querySelector('#question');
   questionDiv.innerHTML = finalArray;
 }
-reptString = "themeLen: "+ theme.length
-document.querySelector('#schRst').innerHTML = reptString;
+lenString = "themeLen: "+ theme.length
+document.querySelector('#schRst').innerHTML = lenString;
 mixItems(2);
