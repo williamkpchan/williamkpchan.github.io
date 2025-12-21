@@ -65,11 +65,8 @@ var theme = [
 // Function to mix items and display results
 function mixItems() {
   finalArray = randomSelectAndJoin(theme)
-  let html = `<button onclick="mixItems();">Mix Items</button>\n`;
-    // Display the UI in #question area
   const questionDiv = document.querySelector('#question');
-
-  questionDiv.innerHTML = html + finalArray;
+  questionDiv.innerHTML = finalArray;
 }
 
 mixItems();
