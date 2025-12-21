@@ -63,10 +63,13 @@ var theme = [
 ];
 
 // Function to mix items and display results
-function mixItems() {
-  finalArray = randomSelectAndJoin(theme)
+function mixItems(ItemNum) {
+  console.log("ItemNum: ",ItemNum)
+  finalArray = ""
+  finalArray = randomSelectAndJoin(theme, ItemNum)
   const questionDiv = document.querySelector('#question');
   questionDiv.innerHTML = finalArray;
 }
-
-mixItems();
+reptString = "themeLen: "+ theme.length
+document.querySelector('#schRst').innerHTML = reptString;
+mixItems(2);
