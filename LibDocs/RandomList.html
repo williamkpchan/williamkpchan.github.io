@@ -264,7 +264,7 @@ function searchAndSelectItems() {
     if (searchResults.length === 0) {
       resultsDiv.innerHTML = `<p>未找到包含"${keyword}"的项目</p>`;
     } else {
-      let resultsHtml = `<p>找到 ${searchResults.length} 个结果:</p>`;
+      let resultsHtml = 
       searchResults.forEach((result, i) => {
         const isSelected = window.selectedSearchItems.some(sel => 
           sel.category === result.category && sel.index === result.index
@@ -428,35 +428,38 @@ function searchAndSelectItems() {
     };
   };
   
-  // Confirm selections and generate
-// Inside searchAndSelectItems function, update the confirmSearchSelections function:
+// Confirm selections and generate
 window.confirmSearchSelections = function() {
-  // Convert selected items to fixedSelections format
-  let formattedSelections = {};
+  // Store selected items in local variable before cleanup
+  const selectedItemsCopy = [...window.selectedItems];
   
-  window.selectedSearchItems.forEach(item => {
-    if (!formattedSelections[item.category]) {
-      formattedSelections[item.category] = [];
-    }
+  // Convert selected items to fixedSelections format
+  let formattedSelections = {
+    theme: []
+  };
+  
+  selectedItemsCopy.forEach(item => {
     // Only add the index if it's not already in the array
-    if (!formattedSelections[item.category].includes(item.index)) {
-      formattedSelections[item.category].push(item.index);
+    if (!formattedSelections.theme.includes(item.index)) {
+      formattedSelections.theme.push(item.index);
     }
   });
   
-  // Store in the global fixedSelections variable
-  fixedSelections = formattedSelections;
+  // Store in the global fixedSelections variable (assuming it exists globally)
+  if (typeof fixedSelections !== 'undefined') {
+    fixedSelections = formattedSelections;
+  }
   
-  // Show the summary of what was selected
-  // showFixedSelectionsSummary(formattedSelections);
-  
-  // Now call joinMultiTips with the formatted selections
   setTimeout(() => {
-    joinMultiTips(formattedSelections);
+      // Alternative: call combineWithRandom with first selected item
+      // Use the local copy instead of window.selectedItems
+      if (selectedItemsCopy.length > 0) {
+        combineWithRandom(selectedItemsCopy[0].text);
+      }
   }, 100); // Small delay to ensure UI updates first
   
   // Clean up global variables
-  delete window.selectedSearchItems;
+  delete window.selectedItems;
   delete window.performSearch;
   delete window.toggleSearchItem;
   delete window.clearSearch;
@@ -470,6 +473,7 @@ window.confirmSearchSelections = function() {
     searchUI.remove();
   }
 };
+
 
   // Cancel and use random selections
   window.cancelSearchSelections = function() {
@@ -1226,8 +1230,8 @@ console.log("tipsListName ",tipsListName, " number ", actualID)
 
   loadArray(tipsListName, actualID)
 
-    mainFrameDiv = document.querySelector('.mainFrame');
-    mixButton = `<button onclick="mixItems(2);">Mix2Items</button><button onclick="mixItems(3);">Mix3Items</button>\n`;
+  mainFrameDiv = document.querySelector('.mainFrame');
+  mixButton = `<button onclick="searchKeywords();"><r>searchKey</r></button><button onclick="mixItems(2);">Mix2Items</button><button onclick="mixItems(3);">Mix3Items</button>\n`;
   addButton();
   init(Number(actualID))
 }
@@ -1242,6 +1246,288 @@ function addButton() {
     console.log("mainFrameDiv.innerHTML aft",mainFrameDiv.innerHTML)
     mainFrameDiv.innerHTML = mainFrameDiv.innerHTML.replace(mixButton, '' );
   }
+}
+
+// Search for keywords in the theme array
+function searchKeywords() {
+  // Create search UI
+  let html = `
+    <div id="searchSelectionUI">
+      <y>搜索并选择固定项目</y>
+        <input type="text" id="searchKeyword" placeholder="输入关键词"> <button onclick="performSearch()" style="cursor: pointer;">搜索</button> <button onclick="clearSearch()" style="cursor: pointer;">清空</button>
+      <y id="searchResults">输入关键词并点击搜索</y>
+      <pk id="selectedItemsPreview" style="display: none;">已选择的项目:</pk> <r id="selectedItemsList"></r> <button onclick="confirmSearchSelections()">确认并生成</button> <button onclick="cancelSearchSelections()">取消</button> <button onclick="viewAllIndices()">查看所有索引</button>
+    </div>
+  `;
+  
+  // Display the UI in #question area
+  const questionDiv = document.querySelector('#question');
+  if (questionDiv) {
+    questionDiv.innerHTML = html;
+  }
+  
+  // Store selected items globally
+  window.selectedItems = [];
+  
+  // Perform search function
+  window.performSearch = function() {
+    const keyword = document.querySelector('#searchKeyword').value.trim();
+    const resultsDiv = document.querySelector('#searchResults');
+    
+    if (!keyword) {
+      resultsDiv.innerHTML = '<p>请输入搜索关键词</p>';
+      return;
+    }
+    
+    const searchTerm = keyword.toLowerCase();
+    const searchResults = theme.filter(item => 
+        item.toLowerCase().includes(searchTerm)
+    );
+
+    // Display results
+    if (searchResults.length === 0) {
+      resultsDiv.innerHTML = `<p>未找到包含"${keyword}"的项目</p>`;
+    } else {
+      let resultsHtml = `<p>找到 ${searchResults.length} 个结果:</p>`;
+      searchResults.forEach((result, i) => {
+        const actualIndex = theme.findIndex(item => item === result);
+        const isSelected = window.selectedItems.some(sel => 
+          sel.index === actualIndex
+        );
+
+        resultsHtml += `<label> <input type="checkbox" id="searchResult_${i}" data-index="${actualIndex}" data-text="${result.replace(/"/g, '&quot;')}" ${isSelected ? 'checked' : ''}
+            onchange="toggleSearchItem(${i}, ${actualIndex})"> <strong>索引[${actualIndex}]</strong> ${result} </label><br>`;
+      });
+      
+      resultsDiv.innerHTML = resultsHtml;
+    }
+  };
+  
+  // Toggle item selection
+  window.toggleSearchItem = function(resultIndex, actualIndex) {
+    const checkbox = document.querySelector(`#searchResult_${resultIndex}`);
+    if (!checkbox) return;
+    
+    const index = parseInt(actualIndex);
+    const text = checkbox.getAttribute('data-text');
+    
+    const item = { index: index, text: text };
+    
+    if (checkbox.checked) {
+      // Add if not already selected
+      const exists = window.selectedItems.some(sel => 
+        sel.index === index
+      );
+      if (!exists) {
+        window.selectedItems.push(item);
+      }
+    } else {
+      // Remove if selected
+      window.selectedItems = window.selectedItems.filter(sel => 
+        !(sel.index === index)
+      );
+    }
+    
+    // Update preview
+    updateSelectedPreview();
+  };
+  
+  // Update selected items preview
+  function updateSelectedPreview() {
+    const previewDiv = document.querySelector('#selectedItemsPreview');
+    const listDiv = document.querySelector('#selectedItemsList');
+    
+    if (window.selectedItems.length === 0) {
+      previewDiv.style.display = 'none';
+      listDiv.innerHTML = '';
+    } else {
+      previewDiv.style.display = 'block';
+      
+      let listHtml = '';
+      window.selectedItems.forEach(item => {
+        listHtml += `<div>`;
+        listHtml += `[${item.index}] ${item.text.substring(0, 40)}${item.text.length > 40 ? '...' : ''}`;
+        listHtml += `</div>`;
+      });
+      
+      listDiv.innerHTML = listHtml;
+    }
+  }
+  
+  // Clear search
+  window.clearSearch = function() {
+    document.querySelector('#searchKeyword').value = '';
+    document.querySelector('#searchResults').innerHTML = 
+      '<p>输入关键词并点击搜索</p>';
+  };
+  
+  // View all indices
+  window.viewAllIndices = function() {
+    const resultsDiv = document.querySelector('#searchResults');
+    let allItems = [];
+    
+    theme.forEach((item, index) => {
+      allItems.push({
+        index: index,
+        text: item
+      });
+    });
+    
+    let resultsHtml = `<p>所有项目 (${allItems.length} 个):</p>`;
+
+    allItems.forEach((result, i) => {
+      const isSelected = window.selectedItems.some(sel => 
+        sel.index === result.index
+      );
+      
+      resultsHtml += `
+        <div>
+          <label>
+            <input type="checkbox" 
+                   id="allItem_${i}" 
+                   data-index="${result.index}"
+                   data-text="${result.text.replace(/"/g, '&quot;')}"
+                   ${isSelected ? 'checked' : ''}
+                   onchange="toggleAllItem(${i}, ${result.index})">
+            <div>
+              <span style="color: #2196F3; font-weight: bold;">[${result.index}]:</span>
+              <span style="color: #333; margin-left: 5px;">${result.text.substring(0, 60)}${result.text.length > 60 ? '...' : ''}</span>
+            </div>
+          </label>
+        </div>
+      `;
+    });
+    
+    resultsDiv.innerHTML = resultsHtml;
+    
+    // Update toggle function for all items
+    window.toggleAllItem = function(itemIndex, actualIndex) {
+      const checkbox = document.querySelector(`#allItem_${itemIndex}`);
+      if (!checkbox) return;
+      
+      const index = parseInt(actualIndex);
+      const text = checkbox.getAttribute('data-text');
+      
+      const item = { index: index, text: text };
+      
+      if (checkbox.checked) {
+        const exists = window.selectedItems.some(sel => 
+          sel.index === index
+        );
+        if (!exists) {
+          window.selectedItems.push(item);
+        }
+      } else {
+        window.selectedItems = window.selectedItems.filter(sel => 
+          !(sel.index === index)
+        );
+      }
+      
+      updateSelectedPreview();
+    };
+  };
+  
+  // Confirm selections and combine with random
+  window.confirmSearchSelections = function() {
+    // Store selected items in local variable
+    const selectedItemsCopy = [...window.selectedItems];
+    
+    if (selectedItemsCopy.length === 0) {
+      alert('请先选择至少一个项目');
+      return;
+    }
+    
+    // Clean up first
+    cleanupSearchFunctions();
+    
+    // Combine each selected item with a random other item
+    selectedItemsCopy.forEach((item, index) => {
+      setTimeout(() => {
+        const result = combineWithRandom(item.text);
+        // Display the result
+        if (result) {
+          const resultDiv = document.createElement('div');
+          resultDiv.innerHTML = `${result}`;
+          document.querySelector('#question').appendChild(resultDiv);
+        }
+      }, index * 100); // Stagger the results for better display
+    });
+  };
+
+  // Cancel and use random selections
+  window.cancelSearchSelections = function() {
+    // Clean up first
+    cleanupSearchFunctions();
+    
+    // Just combine two random items from the theme
+    if (theme.length >= 2) {
+      const randomIndex1 = Math.floor(Math.random() * theme.length);
+      let randomIndex2;
+      do {
+        randomIndex2 = Math.floor(Math.random() * theme.length);
+      } while (randomIndex2 === randomIndex1 && theme.length > 1);
+      
+      const result = combineWithRandom(theme[randomIndex1]);
+      if (result) {
+        const resultDiv = document.createElement('div');
+        resultDiv.innerHTML = `<p>随机组合结果: ${result}</p>`;
+        document.querySelector('#question').appendChild(resultDiv);
+      }
+    } else {
+      alert('主题数组中至少需要2个项目才能进行组合');
+    }
+  };
+}
+
+// Helper function to clean up
+function cleanupSearchFunctions() {
+  // Clean up global variables
+  delete window.selectedItems;
+  delete window.performSearch;
+  delete window.toggleSearchItem;
+  delete window.clearSearch;
+  delete window.viewAllIndices;
+  delete window.confirmSearchSelections;
+  delete window.cancelSearchSelections;
+  delete window.toggleAllItem;
+  
+  // Remove the search UI
+  const searchUI = document.querySelector('#searchSelectionUI');
+  if (searchUI) {
+    searchUI.remove();
+  }
+}
+
+// The original combineWithRandom function
+function combineWithRandom(selectedString) {
+    if (!selectedString || typeof selectedString !== 'string') {
+        console.log('Please provide a valid selected string');
+        return null;
+    }
+    
+    // Check if the selected string exists in the theme array
+    if (!theme.includes(selectedString)) {
+        console.log('Selected string not found in theme array');
+        return null;
+    }
+    
+    // Filter out the selected string from possible random choices
+    const otherOptions = theme.filter(item => item !== selectedString);
+    
+    if (otherOptions.length === 0) {
+        console.log('No other options available to combine with');
+        return selectedString;
+    }
+    
+    // Randomly select another string
+    const randomIndex = Math.floor(Math.random() * otherOptions.length);
+    const randomString = otherOptions[randomIndex];
+    
+    // Join the two strings
+    const combined = `${selectedString} + ${randomString}`;
+    
+    console.log('Combined result:', combined);
+    return combined;
 }
 
 
