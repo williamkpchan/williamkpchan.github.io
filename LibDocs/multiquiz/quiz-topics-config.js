@@ -10,6 +10,13 @@ window.quizTopicsConfig = {
     isExternal: true,
     source: 'External File'
 },
+'AITips': {
+    id: 'AITips',
+    name: 'AITips',
+    url: 'quiz-AITips.js',
+    isExternal: true,
+    source: 'External File'
+},
 'science': {
     id: 'science',
     name: 'Science',
