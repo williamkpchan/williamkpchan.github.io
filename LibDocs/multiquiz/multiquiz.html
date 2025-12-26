@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .question {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+        }
+        .answers {
+            margin: 20px 0;
+        }
+        .answer-option {
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .answer-option:hover {
+            background: #e9e9e9;
+        }
+        .answer-option.selected {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+        .correct {
+            background: #c8e6c9 !important;
+            border-color: #4caf50 !important;
+        }
+        .incorrect {
+            background: #ffcdd2 !important;
+            border-color: #f44336 !important;
+        }
+        button {
+            padding: 10px 15px;
+            background: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin: 2px;
+        }
+        button:hover {
+            background: #1976d2;
+        }
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        button.secondary {
+            background: #6c757d;
+        }
+        button.secondary:hover {
+            background: #5a6268;
+        }
+        button.success {
+            background: #28a745;
+        }
+        button.success:hover {
+            background: #218838;
+        }
+        .stats {
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .stats-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .stats-label {
+            font-weight: bold;
+            color: #333;
+        }
+        .stats-value {
+            color: #2196f3;
+            font-weight: bold;
+        }
+        .feedback {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .correct-feedback {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+        .incorrect-feedback {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+        .topic-selector {
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+        }
+        .topic-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .topic-dropdown {
+            flex: 1;
+            min-width: 200px;
+        }
+        .topic-dropdown select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .topic-info {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .error {
+            color: #dc3545;
+            padding: 10px;
+            background: #f8d7da;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .refresh-topics-btn {
+            background: #17a2b8;
+        }
+        .refresh-topics-btn:hover {
+            background: #138496;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Quiz System</h1>
+        
+        <div class="topic-selector" id="topic-selector">
+            <div class="stats-label">Select Quiz Topic:</div>
+            <div class="topic-controls">
+                <div class="topic-dropdown">
+                    <select id="topic-select">
+                        <option value="">Loading topics...</option>
+                    </select>
+                </div>
+                <button id="switch-topic-btn" disabled>Switch Topic</button>
+                <button id="refresh-topics-btn" class="refresh-topics-btn">Refresh Topics</button>
+            </div>
+            <div class="topic-info" id="topic-info">
+                Current topic: <span id="current-topic">General Knowledge</span>
+                • Questions: <span id="topic-question-count">0</span>
+                • Source: <span id="topic-source">Built-in</span>
+            </div>
+        </div>
+        
+        <div class="stats" id="stats">
+            <div class="stats-item">
+                <span class="stats-label">Total:</span>
+                <span class="stats-value" id="total-questions">0</span>
+            </div>
+            <div class="stats-item">
+                <span class="stats-label">Correct:</span>
+                <span class="stats-value" id="correct-count">0</span>
+            </div>
+            <div class="stats-item">
+                <span class="stats-label">Pool Size:</span>
+                <span class="stats-value" id="pool-size">0</span>
+                <button id="adjust-pool-btn" class="secondary">Adjust</button>
+            </div>
+            <div class="stats-item">
+                <span class="stats-label">Available:</span>
+                <span class="stats-value" id="available-count">0</span>
+            </div>
+        </div>
+
+        <div id="quiz-area" style="display: none;">
+            <div class="question" id="question">Question will appear here...</div>
+            
+            <div class="answers" id="answers">
+                <!-- Answer options will be generated here -->
+            </div>
+            
+            <div id="feedback"></div>
+            
+            <div id="controls">
+                <button id="submit-btn" disabled>Submit Answer</button>
+                <button id="next-btn" style="display: none;">Next Question</button>
+            </div>
+        </div>
+        
+        <div id="start-area">
+            <button id="start-btn">Start Quiz</button>
+            <button id="reset-btn" class="secondary">Reset Current Topic</button>
+            <button id="load-custom-btn" class="success">Load Custom Quiz</button>
+        </div>
+    </div>
+
+    <!-- Modal for adjusting pool size -->
+    <div id="pool-modal" class="modal">
+        <div class="modal-content">
+            <h3>Adjust Quiz Pool Size</h3>
+            <p>Current pool size: <span id="current-pool-size">0</span></p>
+            <p>Maximum possible: <span id="max-pool-size">0</span></p>
+            <div class="pool-control">
+                <input type="number" id="new-pool-size" min="1" max="100" value="10">
+                <button id="set-pool-btn">Set Pool Size</button>
+            </div>
+            <div class="modal-buttons">
+                <button id="close-pool-modal-btn" class="secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for loading custom quiz -->
+    <div id="custom-quiz-modal" class="modal">
+        <div class="modal-content">
+            <h3>Load Custom Quiz</h3>
+            <div id="custom-quiz-loading" class="loading" style="display: none;">
+                Loading custom quiz file...
+            </div>
+            <div id="custom-quiz-error" class="error" style="display: none;"></div>
+            <p>Enter URL of a quiz file (.js extension):</p>
+            <input type="text" id="custom-quiz-url" placeholder="https://example.com/quiz-science.js" style="width: 100%; padding: 8px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px;">
+            <p style="font-size: 0.9em; color: #666; margin: 10px 0;">
+                The file should export a JavaScript array named "quizData" with format:<br>
+                ["Question?\\tAnswer", "Question2?\\tAnswer2", ...]
+            </p>
+            <div class="modal-buttons">
+                <button id="load-external-btn">Load from URL</button>
+                <button id="close-custom-modal-btn" class="secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default quiz data
+        let defaultQuizData = [
+            "What is the capital of France?\tParis",
+            "What is 2 + 2?\t4",
+            "What color is the sky?\tBlue",
+            "What is the largest planet?\tJupiter",
+            "Who wrote Hamlet?\tShakespeare",
+            "What is H2O?\tWater",
+            "How many continents are there?\t7",
+            "What is the square root of 64?\t8",
+            "What year did WWII end?\t1945",
+            "What is the fastest land animal?\tCheetah"
+        ];
+
+        // Available quiz topics - will be loaded from external file
+        let quizTopics = {
+            'general': {
+                id: 'general',
+                name: 'General Knowledge',
+                data: defaultQuizData,
+                isExternal: false,
+                source: 'Built-in'
+            }
+        };
+
+        // Current quiz data
+        let quizData = [...defaultQuizData];
+        let currentTopic = 'general';
+
+        // LocalStorage keys (topic-specific)
+        const GRADE_KEY_PREFIX = 'quiz_grade_';
+        const POOL_KEY_PREFIX = 'quiz_pool_';
+        const POOL_SIZE_KEY_PREFIX = 'quiz_pool_size_';
+        const CURRENT_TOPIC_KEY = 'current_quiz_topic';
+        const TOPICS_CONFIG_KEY = 'quiz_topics_config_url';
+
+        // Initialize data structures
+        let gradeSheet = [];
+        let quizPool = [];
+        let poolSize = 10;
+        let currentQuestionIndex = -1;
+        let selectedAnswer = null;
+        let correctAnswerIndex = -1;
+        let canSelectAnswer = true;
+
+        // Configuration
+        const DEFAULT_TOPICS_CONFIG_URL = 'quiz-topics-config.js';
+
+        // Get topic-specific localStorage keys
+        function getTopicKeys(topic) {
+            return {
+                grade: `${GRADE_KEY_PREFIX}${topic}`,
+                pool: `${POOL_KEY_PREFIX}${topic}`,
+                poolSize: `${POOL_SIZE_KEY_PREFIX}${topic}`
+            };
+        }
+
+        // Load topics configuration from external file
+        async function loadTopicsConfig(url = DEFAULT_TOPICS_CONFIG_URL) {
+            console.log(`Loading topics configuration from: ${url}`);
+            
+            try {
+                // Fetch the JavaScript file
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const jsContent = await response.text();
+                
+                // Create a temporary script element to execute the JavaScript
+                const script = document.createElement('script');
+                script.textContent = jsContent;
+                document.head.appendChild(script);
+                document.head.removeChild(script);
+                
+                // Check if quizTopicsConfig was loaded
+                if (typeof window.quizTopicsConfig === 'undefined') {
+                    throw new Error('quizTopicsConfig object not found in the loaded file');
+                }
+                
+                if (typeof window.quizTopicsConfig !== 'object') {
+                    throw new Error('quizTopicsConfig is not an object');
+                }
+                
+                // Merge with default topics (keeping the general topic)
+                const mergedTopics = {
+                    'general': quizTopics.general // Keep the default
+                };
+                
+                // Add all topics from config
+                Object.keys(window.quizTopicsConfig).forEach(topicId => {
+                    mergedTopics[topicId] = window.quizTopicsConfig[topicId];
+                });
+                
+                quizTopics = mergedTopics;
+                
+                console.log(`Successfully loaded ${Object.keys(quizTopics).length} topics from config`);
+                return true;
+                
+            } catch (error) {
+                console.error('Error loading topics configuration:', error);
+                // Keep using default topics
+                return false;
+            }
+        }
+
+        // Populate topic dropdown
+        function populateTopicDropdown() {
+            const select = document.getElementById('topic-select');
+            select.innerHTML = '';
+            
+            // Sort topics by name for better UX
+            const sortedTopics = Object.keys(quizTopics)
+                .map(id => ({ id, name: quizTopics[id].name }))
+                .sort((a, b) => a.name.localeCompare(b.name));
+            
+            // Add options
+            sortedTopics.forEach(topic => {
+                const option = document.createElement('option');
+                option.value = topic.id;
+                option.textContent = topic.name;
+                if (topic.id === currentTopic) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+            
+            // Enable switch button if there are topics
+            document.getElementById('switch-topic-btn').disabled = select.options.length === 0;
+        }
+
+        // Initialize the system
+        async function initializeSystem() {
+            // Load current topic
+            const savedTopic = localStorage.getItem(CURRENT_TOPIC_KEY);
+            if (savedTopic && quizTopics[savedTopic]) {
+                currentTopic = savedTopic;
+            }
+            
+            // Load topics configuration
+            const configUrl = localStorage.getItem(TOPICS_CONFIG_KEY) || DEFAULT_TOPICS_CONFIG_URL;
+            await loadTopicsConfig(configUrl);
+            
+            // Populate dropdown
+            populateTopicDropdown();
+            
+            // Update topic display
+            updateTopicDisplay();
+            
+            // Load quiz data for current topic
+            await loadQuizDataForTopic(currentTopic);
+            
+            // Now initialize the quiz system with the loaded data
+            initializeQuizSystem();
+        }
+
+        // Load quiz data for a specific topic
+        async function loadQuizDataForTopic(topic) {
+            const topicInfo = quizTopics[topic];
+            
+            if (!topicInfo) {
+                console.error(`Topic ${topic} not found`);
+                return;
+            }
+            
+            // Update current topic display
+            document.getElementById('current-topic').textContent = topicInfo.name;
+            document.getElementById('topic-source').textContent = topicInfo.source || (topicInfo.isExternal ? 'External' : 'Built-in');
+            
+            if (topicInfo.isExternal && topicInfo.url && !topicInfo.isCustom) {
+                // Load external quiz file
+                try {
+                    await loadExternalQuiz(topicInfo.url, topic);
+                } catch (error) {
+                    console.error(`Failed to load quiz for topic ${topic}:`, error);
+                    // Fall back to default if available
+                    if (topicInfo.data && topicInfo.data.length > 0) {
+                        quizData = [...topicInfo.data];
+                    } else {
+                        // Switch to general knowledge as fallback
+                        currentTopic = 'general';
+                        quizData = [...quizTopics.general.data];
+                        updateTopicDisplay();
+                        populateTopicDropdown();
+                    }
+                }
+            } else if (topicInfo.isCustom && topicInfo.data) {
+                // Use custom quiz data
+                quizData = [...topicInfo.data];
+            } else {
+                // Use built-in data
+                quizData = [...topicInfo.data];
+            }
+            
+            // Update topic info
+            document.getElementById('topic-question-count').textContent = quizData.length;
+        }
+
+        // Load external quiz file
+        async function loadExternalQuiz(url, topic) {
+            console.log(`Loading external quiz from: ${url}`);
+            
+            try {
+                // Fetch the JavaScript file
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const jsContent = await response.text();
+                
+                // Create a temporary script element to execute the JavaScript
+                const script = document.createElement('script');
+                script.textContent = jsContent;
+                document.head.appendChild(script);
+                document.head.removeChild(script);
+                
+                // Check if quizData was loaded
+                if (typeof window.quizData === 'undefined') {
+                    throw new Error('quizData array not found in the loaded file');
+                }
+                
+                if (!Array.isArray(window.quizData)) {
+                    throw new Error('quizData is not an array');
+                }
+                
+                // Validate quiz data format
+                const isValid = window.quizData.every(item => {
+                    return typeof item === 'string' && item.includes('\t');
+                });
+                
+                if (!isValid) {
+                    throw new Error('Invalid quiz data format. Each item should be "question\\tanswer"');
+                }
+                
+                // Store the loaded data
+                quizTopics[topic].data = [...window.quizData];
+                quizData = [...window.quizData];
+                
+                console.log(`Successfully loaded ${quizData.length} questions from ${url}`);
+                return true;
+                
+            } catch (error) {
+                console.error('Error loading external quiz:', error);
+                throw error;
+            }
+        }
+
+        // Load custom quiz from URL
+        async function loadCustomQuizFromUrl(url) {
+            showLoading(true);
+            hideError();
+            
+            try {
+                // Validate URL
+                if (!url || !url.trim()) {
+                    throw new Error('Please enter a URL');
+                }
+                
+                if (!url.endsWith('.js')) {
+                    console.warn('URL does not end with .js, attempting to load anyway');
+                }
+                
+                // Generate a unique ID for custom topic
+                const customId = 'custom_' + Date.now();
+                
+                // Fetch and load the quiz
+                await loadExternalQuiz(url, customId);
+                
+                // Add as new topic
+                quizTopics[customId] = {
+                    id: customId,
+                    name: `Custom (${quizData.length} questions)`,
+                    data: [...quizData],
+                    isExternal: true,
+                    isCustom: true,
+                    source: 'Custom URL'
+                };
+                
+                // Switch to custom topic
+                switchTopic(customId);
+                
+                // Update dropdown
+                populateTopicDropdown();
+                
+                // Close modal
+                hideCustomQuizModal();
+                showLoading(false);
+                
+                alert(`Successfully loaded ${quizData.length} questions from custom quiz!`);
+                
+            } catch (error) {
+                showError(`Failed to load quiz: ${error.message}`);
+                showLoading(false);
+            }
+        }
+
+        // Initialize the quiz system with current data
+        function initializeQuizSystem() {
+            const keys = getTopicKeys(currentTopic);
+            
+            loadFromLocalStorage(keys);
+            
+            // Load pool size
+            const savedPoolSize = localStorage.getItem(keys.poolSize);
+            if (savedPoolSize) {
+                poolSize = parseInt(savedPoolSize);
+                if (isNaN(poolSize) || poolSize < 1) {
+                    poolSize = Math.min(10, quizData.length);
+                }
+            }
+            
+            // Initialize grade sheet if empty or length mismatch
+            if (gradeSheet.length === 0 || gradeSheet.length !== quizData.length) {
+                gradeSheet = new Array(quizData.length).fill(-1);
+                saveGradeSheet(keys);
+            }
+            
+            // Initialize quiz pool if empty or wrong size
+            if (quizPool.length === 0 || quizPool.length > poolSize) {
+                rebuildQuizPool();
+                saveQuizPool(keys);
+            }
+            
+            updateStats();
+        }
+
+        // Load data from localStorage for specific topic
+        function loadFromLocalStorage(keys) {
+            try {
+                const gradeData = localStorage.getItem(keys.grade);
+                const poolData = localStorage.getItem(keys.pool);
+                
+                if (gradeData) {
+                    gradeSheet = JSON.parse(gradeData);
+                } else {
+                    gradeSheet = [];
+                }
+                
+                if (poolData) {
+                    quizPool = JSON.parse(poolData);
+                } else {
+                    quizPool = [];
+                }
+            } catch (e) {
+                console.error("Error loading from localStorage:", e);
+                gradeSheet = [];
+                quizPool = [];
+            }
+        }
+
+        // Save grade sheet to localStorage
+        function saveGradeSheet(keys) {
+            try {
+                localStorage.setItem(keys.grade, JSON.stringify(gradeSheet));
+            } catch (e) {
+                console.error("Error saving grade sheet:", e);
+            }
+        }
+
+        // Save quiz pool to localStorage
+        function saveQuizPool(keys) {
+            try {
+                localStorage.setItem(keys.pool, JSON.stringify(quizPool));
+            } catch (e) {
+                console.error("Error saving quiz pool:", e);
+            }
+        }
+
+        // Save pool size to localStorage
+        function savePoolSize(keys) {
+            try {
+                localStorage.setItem(keys.poolSize, poolSize.toString());
+            } catch (e) {
+                console.error("Error saving pool size:", e);
+            }
+        }
+
+        // Rebuild quiz pool based on current grades
+        function rebuildQuizPool() {
+            let allIndices = Array.from({length: quizData.length}, (_, i) => i);
+            
+            const wrongAnswers = allIndices.filter(index => gradeSheet[index] === 0);
+            const unanswered = allIndices.filter(index => gradeSheet[index] === -1);
+            const correctAnswers = allIndices.filter(index => gradeSheet[index] === 1);
+            
+            quizPool = [...wrongAnswers, ...unanswered, ...correctAnswers];
+            quizPool = quizPool.slice(0, poolSize);
+        }
+
+        // Update statistics display
+        function updateStats() {
+            const totalCorrect = gradeSheet.filter(grade => grade === 1).length;
+            const availableForQuiz = quizPool.filter(index => gradeSheet[index] === 0).length;
+            
+            document.getElementById('total-questions').textContent = quizData.length;
+            document.getElementById('correct-count').textContent = totalCorrect;
+            document.getElementById('pool-size').textContent = quizPool.length;
+            document.getElementById('available-count').textContent = availableForQuiz;
+        }
+
+        // Update topic display
+        function updateTopicDisplay() {
+            const topicInfo = quizTopics[currentTopic];
+            if (topicInfo) {
+                document.getElementById('current-topic').textContent = topicInfo.name;
+                document.getElementById('topic-source').textContent = topicInfo.source || (topicInfo.isExternal ? 'External' : 'Built-in');
+            }
+        }
+
+        // Switch to a different topic
+        async function switchTopic(topic) {
+            if (topic === currentTopic) return;
+            
+            console.log(`Switching from ${currentTopic} to ${topic}`);
+            
+            // Save current topic state
+            const currentKeys = getTopicKeys(currentTopic);
+            saveGradeSheet(currentKeys);
+            saveQuizPool(currentKeys);
+            savePoolSize(currentKeys);
+            
+            // Update current topic
+            currentTopic = topic;
+            localStorage.setItem(CURRENT_TOPIC_KEY, topic);
+            
+            // Update dropdown selection
+            const select = document.getElementById('topic-select');
+            select.value = topic;
+            
+            // Update display
+            updateTopicDisplay();
+            
+            // Load new topic data
+            await loadQuizDataForTopic(topic);
+            
+            // Reset quiz state
+            currentQuestionIndex = -1;
+            selectedAnswer = null;
+            correctAnswerIndex = -1;
+            canSelectAnswer = true;
+            
+            // Initialize with new data
+            initializeQuizSystem();
+            
+            // Hide quiz area if it's showing
+            document.getElementById('quiz-area').style.display = 'none';
+            document.getElementById('start-area').style.display = 'block';
+            
+            console.log(`Switched to topic: ${quizTopics[topic].name}`);
+        }
+
+        // Show/hide loading indicator
+        function showLoading(show) {
+            document.getElementById('custom-quiz-loading').style.display = show ? 'block' : 'none';
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.getElementById('custom-quiz-error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        // Hide error message
+        function hideError() {
+            document.getElementById('custom-quiz-error').style.display = 'none';
+        }
+
+        // Show custom quiz modal
+        function showCustomQuizModal() {
+            document.getElementById('custom-quiz-modal').style.display = 'flex';
+            document.getElementById('custom-quiz-url').value = '';
+            hideError();
+            showLoading(false);
+        }
+
+        // Hide custom quiz modal
+        function hideCustomQuizModal() {
+            document.getElementById('custom-quiz-modal').style.display = 'none';
+        }
+
+        // Show pool modal
+        function showPoolModal() {
+            const keys = getTopicKeys(currentTopic);
+            const savedPoolSize = localStorage.getItem(keys.poolSize);
+            const currentSize = savedPoolSize ? parseInt(savedPoolSize) : poolSize;
+            
+            document.getElementById('current-pool-size').textContent = currentSize;
+            document.getElementById('max-pool-size').textContent = quizData.length;
+            document.getElementById('new-pool-size').value = currentSize;
+            document.getElementById('new-pool-size').max = quizData.length;
+            
+            document.getElementById('pool-modal').style.display = 'flex';
+        }
+
+        // Hide pool modal
+        function hidePoolModal() {
+            document.getElementById('pool-modal').style.display = 'none';
+        }
+
+        // Adjust pool size
+        function adjustPoolSize() {
+            const input = document.getElementById('new-pool-size');
+            const newSize = parseInt(input.value);
+            const keys = getTopicKeys(currentTopic);
+            
+            if (isNaN(newSize) || newSize < 1 || newSize > quizData.length) {
+                alert(`Please enter a number between 1 and ${quizData.length}`);
+                return;
+            }
+            
+            poolSize = newSize;
+            savePoolSize(keys);
+            
+            rebuildQuizPool();
+            saveQuizPool(keys);
+            
+            updateStats();
+            hidePoolModal();
+            
+            alert(`Quiz pool size set to ${poolSize} for current topic.`);
+        }
+
+        // Refresh topics from config
+        async function refreshTopics() {
+            console.log('Refreshing topics configuration...');
+            
+            const configUrl = localStorage.getItem(TOPICS_CONFIG_KEY) || DEFAULT_TOPICS_CONFIG_URL;
+            const success = await loadTopicsConfig(configUrl);
+            
+            if (success) {
+                populateTopicDropdown();
+                alert(`Successfully refreshed topics. Now have ${Object.keys(quizTopics).length} topics available.`);
+            } else {
+                alert('Failed to refresh topics. Using existing configuration.');
+            }
+        }
+
+        // Quiz functions
+        function getAvailableQuestionIndices() {
+            return quizPool.filter(index => gradeSheet[index] <1);
+        }
+
+        function selectRandomQuestion() {
+            const availableIndices = getAvailableQuestionIndices();
+            
+            if (availableIndices.length === 0) {
+                const unansweredIndices = quizPool.filter(index => gradeSheet[index] === -1);
+                if (unansweredIndices.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * unansweredIndices.length);
+                    return unansweredIndices[randomIndex];
+                }
+                
+                if (quizPool.length === 0) return -1;
+                const randomIndex = Math.floor(Math.random() * quizPool.length);
+                    return quizPool[randomIndex];
+            }
+            
+            const randomIndex = Math.floor(Math.random() * availableIndices.length);
+            return availableIndices[randomIndex];
+        }
+
+        function getWrongAnswers(correctAnswer, excludedIndex) {
+            const wrongAnswers = [];
+            const usedIndices = new Set([excludedIndex]);
+            
+            while (wrongAnswers.length < 4) {
+                const randomIndex = Math.floor(Math.random() * quizData.length);
+                
+                if (!usedIndices.has(randomIndex)) {
+                    const [_, answer] = quizData[randomIndex].split('\t');
+                    if (answer !== correctAnswer && !wrongAnswers.includes(answer)) {
+                        wrongAnswers.push(answer);
+                        usedIndices.add(randomIndex);
+                    }
+                }
+            }
+            
+            return wrongAnswers;
+        }
+
+        function prepareAnswerOptions(questionIndex) {
+            const [question, correctAnswer] = quizData[questionIndex].split('\t');
+            const wrongAnswers = getWrongAnswers(correctAnswer, questionIndex);
+            
+            const allAnswers = [correctAnswer, ...wrongAnswers];
+            
+            for (let i = allAnswers.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [allAnswers[i], allAnswers[j]] = [allAnswers[j], allAnswers[i]];
+            }
+            
+            const correctIndex = allAnswers.indexOf(correctAnswer);
+            
+            return {
+                question: question,
+                answers: allAnswers,
+                correctIndex: correctIndex
+            };
+        }
+
+        function handleAnswerSelection(index) {
+            if (!canSelectAnswer) return;
+            
+            document.querySelectorAll('.answer-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            const selectedOption = document.querySelector(`.answer-option[data-index="${index}"]`);
+            if (selectedOption) {
+                selectedOption.classList.add('selected');
+                selectedAnswer = index;
+                document.getElementById('submit-btn').disabled = false;
+            }
+        }
+
+        function displayQuestion(questionIndex) {
+            currentQuestionIndex = questionIndex;
+            selectedAnswer = null;
+            canSelectAnswer = true;
+            
+            const data = prepareAnswerOptions(questionIndex);
+            correctAnswerIndex = data.correctIndex;
+            
+            document.getElementById('question').textContent = data.question;
+            
+            const answersContainer = document.getElementById('answers');
+            answersContainer.innerHTML = '';
+            
+            data.answers.forEach((answer, index) => {
+                const answerDiv = document.createElement('div');
+                answerDiv.className = 'answer-option';
+                answerDiv.textContent = `${index + 1}. ${answer}`;
+                answerDiv.dataset.index = index;
+                
+                answerDiv.addEventListener('click', () => {
+                    handleAnswerSelection(index);
+                });
+                
+                answersContainer.appendChild(answerDiv);
+            });
+            
+            document.getElementById('submit-btn').disabled = true;
+            document.getElementById('submit-btn').style.display = 'block';
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('feedback').innerHTML = '';
+            document.getElementById('quiz-area').style.display = 'block';
+        }
+
+        function handleSubmitAnswer() {
+            if (selectedAnswer === null || selectedAnswer === undefined) {
+                alert("Please select an answer first!");
+                return;
+            }
+            
+            const isCorrect = selectedAnswer === correctAnswerIndex;
+            const keys = getTopicKeys(currentTopic);
+            
+            gradeSheet[currentQuestionIndex] = isCorrect ? 1 : 0;
+            saveGradeSheet(keys);
+            
+            if (!isCorrect) {
+                const currentIndexInPool = quizPool.indexOf(currentQuestionIndex);
+                if (currentIndexInPool > -1) {
+                    quizPool.splice(currentIndexInPool, 1);
+                    
+                    if (quizPool.length < poolSize) {
+                        quizPool.push(currentQuestionIndex);
+                    } else {
+                        quizPool.shift();
+                        quizPool.push(currentQuestionIndex);
+                    }
+                    
+                    saveQuizPool(keys);
+                }
+            }
+            
+            const feedbackDiv = document.getElementById('feedback');
+            if (isCorrect) {
+                feedbackDiv.innerHTML = `<div class="feedback correct-feedback">Correct! Well done!</div>`;
+            } else {
+                const [_, correctAnswer] = quizData[currentQuestionIndex].split('\t');
+                feedbackDiv.innerHTML = `<div class="feedback incorrect-feedback">
+                    Incorrect. The correct answer is: ${correctAnswer}
+                </div>`;
+            }
+            
+            const answerOptions = document.querySelectorAll('.answer-option');
+            answerOptions.forEach((option, index) => {
+                if (index === correctAnswerIndex) {
+                    option.classList.add('correct');
+                } else if (index === selectedAnswer && !isCorrect) {
+                    option.classList.add('incorrect');
+                }
+                option.style.pointerEvents = 'none';
+            });
+            
+            canSelectAnswer = false;
+            document.getElementById('submit-btn').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'block';
+            
+            updateStats();
+        }
+
+        function nextQuestion() {
+            const nextQuestionIndex = selectRandomQuestion();
+            
+            if (nextQuestionIndex === -1) {
+                alert('No more questions available!');
+                return;
+            }
+            
+            displayQuestion(nextQuestionIndex);
+        }
+
+        function resetQuizData() {
+            if (confirm(`Are you sure you want to reset all data for "${quizTopics[currentTopic].name}"?`)) {
+                const keys = getTopicKeys(currentTopic);
+                
+                try {
+                    localStorage.removeItem(keys.grade);
+                    localStorage.removeItem(keys.pool);
+                    localStorage.removeItem(keys.poolSize);
+                } catch (e) {
+                    console.error("Error clearing localStorage:", e);
+                }
+                
+                initializeQuizSystem();
+                
+                document.getElementById('quiz-area').style.display = 'none';
+                document.getElementById('start-area').style.display = 'block';
+                
+                alert('Quiz data has been reset for current topic!');
+            }
+        }
+
+        // Initialize the system when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("Initializing quiz system...");
+            initializeSystem();
+            
+            // Set up event listeners
+            document.getElementById('start-btn').addEventListener('click', () => {
+                const nextQuestionIndex = selectRandomQuestion();
+                if (nextQuestionIndex !== -1) {
+                    displayQuestion(nextQuestionIndex);
+                    document.getElementById('start-area').style.display = 'none';
+                } else {
+                    alert('No questions available!');
+                }
+            });
+            
+            document.getElementById('submit-btn').addEventListener('click', handleSubmitAnswer);
+            document.getElementById('next-btn').addEventListener('click', nextQuestion);
+            document.getElementById('reset-btn').addEventListener('click', resetQuizData);
+            document.getElementById('adjust-pool-btn').addEventListener('click', showPoolModal);
+            document.getElementById('load-custom-btn').addEventListener('click', showCustomQuizModal);
+            document.getElementById('set-pool-btn').addEventListener('click', adjustPoolSize);
+            document.getElementById('close-pool-modal-btn').addEventListener('click', hidePoolModal);
+            document.getElementById('load-external-btn').addEventListener('click', () => {
+                const url = document.getElementById('custom-quiz-url').value.trim();
+                loadCustomQuizFromUrl(url);
+            });
+            document.getElementById('close-custom-modal-btn').addEventListener('click', hideCustomQuizModal);
+            document.getElementById('switch-topic-btn').addEventListener('click', () => {
+                const select = document.getElementById('topic-select');
+                const selectedTopic = select.value;
+                if (selectedTopic && selectedTopic !== currentTopic) {
+                    switchTopic(selectedTopic);
+                }
+            });
+            document.getElementById('refresh-topics-btn').addEventListener('click', refreshTopics);
+            
+            // Close modals when clicking outside
+            document.getElementById('pool-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'pool-modal') hidePoolModal();
+            });
+            
+            document.getElementById('custom-quiz-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'custom-quiz-modal') hideCustomQuizModal();
+            });
+            
+            console.log("Quiz system initialized");
+        });
+    </script>
+</body>
+</html>
