@@ -2162,7 +2162,7 @@ window.quizData = [
 "create havoc, recreate, to recreate for a new generation, creative-minded, creating from whole cloth, Applying all their creativity	制造严重破坏, 重建 再创造, 重新创造新的一代, 创意头脑, 从头到脚创建, 发挥他们所有的创造力",
 "mollify, mollified	安抚 使平静 抚慰, 使平静 抚慰 缓和的 pacify, appease, solace, comfort, consolation, relief, conciliate, placate, propitiate, reconcile",
 "knew so little about	知道的很少",
-"recalls, recalled its ambassador, recall vote, recall by popular vote, 回忆 收回 罢免 撤销 废止, 召回大使, 罢免投票, 投票罢免 remember, memorize, think, remind, recollect",
+"recalls, recalled its ambassador, recall vote, recall by popular vote	回忆 收回 罢免 撤销 废止, 召回大使, 罢免投票, 投票罢免 remember, memorize, think, remind, recollect",
 "keep on driving in that direction	继续朝那个方向开车",
 "cheer, cheer up, wild cheers, cheerful smile, cheerful and confident, cheering storm, steadfast good cheer, to cheers & jeers, cheery tone, cheerleader, cheerleading, her own cheering section	赞扬 喝采 加油 鼓励 鼓舞, 振奋, 热烈的欢呼, 愉快的微笑, 得意洋洋, 鼓舞风暴, 整天笑呵呵的样子, 欢呼和嘲笑, 愉快的语气, 啦啦队队长, 支持, 她自己的啦啦队 jolly, acclaim, praise, applause, ovation",
 "Scotch tape, red tape, cut red tape, with more red tape, tape dispencer, caught in red tape	膠帶, 官样文章 繁文缛节, 简化手续 削减繁文缛节, 繁文缛节, 胶紙座, 陷入繁文缛节",
@@ -13953,5 +13953,5 @@ window.quizData = [
 "futsal, futsal league	室内五人制足球, 室内五人制足球联赛",
 "puts weight behind Gaza crisis resolution	支持加沙危机的解决",
 "cadence	抑扬顿挫 起落 终止 节拍",
-"explosive volatility, trade with autocracies in the volatile Middle East does not breach them 爆炸性波动 不稳定性, 在动荡的中东独裁政府贸易不违反他们",
+"explosive volatility, trade with autocracies in the volatile Middle East does not breach them	爆炸性波动 不稳定性, 在动荡的中东独裁政府贸易不违反他们",
 ];
