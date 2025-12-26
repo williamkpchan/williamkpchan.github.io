@@ -114,6 +114,7 @@
             color: #2e7d32;
         }
         .incorrect-feedback {
+            font-size: 1.5em;
             background: #000000;
             color: #c62828;
         }
@@ -177,6 +178,10 @@
             <div class="stats-item">
                 <span class="stats-label">Available:</span>
                 <span class="stats-value" id="available-count">0</span>
+            </div>
+            <div class="stats-item">
+                <span class="stats-label">Current #:</span>
+                <span class="stats-value" id="current-position">-</span>
             </div>
         </div>
 
@@ -14176,6 +14181,7 @@ const quizData = [
 "explosive volatility, trade with autocracies in the`volatile Middle East does not breach them 爆炸性波动 不稳定性, 在动荡的中东独裁政府贸易不违反他们",
 ];
 
+
         // LocalStorage keys
         const GRADE_KEY = 'quiz_grade_sheet';
         const POOL_KEY = 'quiz_pool';
@@ -14226,6 +14232,9 @@ const quizData = [
                 quizPool = quizPool.slice(0, poolSize);
                 saveQuizPool();
             }
+            
+            // Reset current question index to -1 (no question shown)
+            currentQuestionIndex = -1;
             
             updateStats();
         }
@@ -14280,39 +14289,76 @@ const quizData = [
         // Update statistics display
         function updateStats() {
             const totalCorrect = gradeSheet.filter(grade => grade === 1).length;
-            const availableForQuiz = quizPool.filter(index => gradeSheet[index] === 0).length;
+            
+            // Only count wrong answers from top portion of pool
+            const topPoolIndices = quizPool.slice(0, poolSize);
+            const availableForQuiz = topPoolIndices.filter(index => gradeSheet[index] === 0).length;
             
             document.getElementById('total-questions').textContent = quizData.length;
             document.getElementById('correct-count').textContent = totalCorrect;
             document.getElementById('pool-size').textContent = quizPool.length;
             document.getElementById('available-count').textContent = availableForQuiz;
+            
+            // Update current question position display (1-based)
+            const currentPositionDisplay = document.getElementById('current-position');
+            if (currentQuestionIndex !== -1) {
+                currentPositionDisplay.textContent = currentQuestionIndex + 1; // Convert to 1-based
+            } else {
+                currentPositionDisplay.textContent = '-';
+            }
         }
 
-        // Get indices of questions with grade 0 (wrong answers)
+        // Get indices of questions with grade 0 (wrong answers) - only from top portion of pool
         function getAvailableQuestionIndices() {
-            return quizPool.filter(index => gradeSheet[index] === 0);
+            // Only consider the first (poolSize) questions in the quizPool
+            const topPoolIndices = quizPool.slice(0, poolSize);
+            // Filter to get only wrong answers from the top portion
+            return topPoolIndices.filter(index => gradeSheet[index] < 1);
         }
 
-        // Select a random question from available pool
-        function selectRandomQuestion() {
+        // Select a random question from available pool (excluding current if it was wrong)
+        function selectRandomQuestion(excludeCurrent = false) {
             const availableIndices = getAvailableQuestionIndices();
             
-            if (availableIndices.length === 0) {
-                // If no questions with grade 0, use all unanswered questions from pool
-                const unansweredIndices = quizPool.filter(index => gradeSheet[index] === -1);
-                if (unansweredIndices.length > 0) {
-                    const randomIndex = Math.floor(Math.random() * unansweredIndices.length);
-                    return unansweredIndices[randomIndex];
-                }
-                
-                // If all questions have been answered, return random from pool
-                if (quizPool.length === 0) return -1;
-                const randomIndex = Math.floor(Math.random() * quizPool.length);
-                return quizPool[randomIndex];
+            // Filter out current question if needed
+            let filteredIndices = availableIndices;
+            if (excludeCurrent && currentQuestionIndex !== -1) {
+                filteredIndices = availableIndices.filter(index => index !== currentQuestionIndex);
             }
             
-            const randomIndex = Math.floor(Math.random() * availableIndices.length);
-            return availableIndices[randomIndex];
+            if (filteredIndices.length === 0) {
+                // If no questions with grade 0 in top pool, check for unanswered in top pool
+                const topPoolIndices = quizPool.slice(0, poolSize);
+                let candidateIndices = topPoolIndices.filter(index => gradeSheet[index] === -1);
+                
+                if (excludeCurrent && currentQuestionIndex !== -1) {
+                    candidateIndices = candidateIndices.filter(index => index !== currentQuestionIndex);
+                }
+                
+                if (candidateIndices.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * candidateIndices.length);
+                    return candidateIndices[randomIndex];
+                }
+                
+                // If no unanswered in top pool, use all questions from top pool
+                if (topPoolIndices.length === 0) return -1;
+                
+                let poolCandidates = [...topPoolIndices];
+                if (excludeCurrent && currentQuestionIndex !== -1) {
+                    poolCandidates = poolCandidates.filter(index => index !== currentQuestionIndex);
+                }
+                
+                if (poolCandidates.length === 0) {
+                    // If excluding current leaves no questions, return the current one anyway
+                    return currentQuestionIndex;
+                }
+                
+                const randomIndex = Math.floor(Math.random() * poolCandidates.length);
+                return poolCandidates[randomIndex];
+            }
+            
+            const randomIndex = Math.floor(Math.random() * filteredIndices.length);
+            return filteredIndices[randomIndex];
         }
 
         // Get four random wrong answers (different from the correct one)
@@ -14414,6 +14460,9 @@ const quizData = [
             
             // Show quiz area
             document.getElementById('quiz-area').style.display = 'block';
+            
+            // Update stats to show current position
+            updateStats();
         }
 
         // Handle answer submission
@@ -14456,7 +14505,7 @@ const quizData = [
             } else {
                 const [_, correctAnswer] = quizData[currentQuestionIndex].split('\t');
                 feedbackDiv.innerHTML = `<div class="feedback incorrect-feedback">
-                    Incorrect. The correct answer is: ${correctAnswer}
+                    Incorrect. The correct answer is: <br>${correctAnswer}
                 </div>`;
             }
             
@@ -14480,43 +14529,25 @@ const quizData = [
             
             updateStats();
         }
-// Start next question
-function nextQuestion() {
-    // Get the current question's grade
-    const currentGrade = gradeSheet[currentQuestionIndex];
-    
-    // If the current question was answered wrong, find a different question
-    if (currentGrade === 0) {
-        // Find all available questions except the current one
-        const allIndices = Array.from({length: quizData.length}, (_, i) => i);
-        const availableForQuiz = allIndices.filter(index => 
-            (gradeSheet[index] === 0 || gradeSheet[index] === -1) && 
-            index !== currentQuestionIndex
-        );
-        
-        if (availableForQuiz.length === 0) {
-            // If no other questions, show the current one
-            const nextQuestionIndex = selectRandomQuestion();
+
+        // Start next question
+        function nextQuestion() {
+            // Get the current question's grade
+            const currentGrade = gradeSheet[currentQuestionIndex];
+            
+            // If the current question was answered wrong, exclude it from next selection
+            const excludeCurrent = (currentGrade === 0);
+            
+            const nextQuestionIndex = selectRandomQuestion(excludeCurrent);
+            
             if (nextQuestionIndex === -1) {
                 alert('No more questions available!');
                 return;
             }
+            
             displayQuestion(nextQuestionIndex);
-        } else {
-            // Select a random question from available ones (excluding current)
-            const randomIndex = Math.floor(Math.random() * availableForQuiz.length);
-            displayQuestion(availableForQuiz[randomIndex]);
         }
-    } else {
-        // For correct answers, use the normal selection
-        const nextQuestionIndex = selectRandomQuestion();
-        if (nextQuestionIndex === -1) {
-            alert('No more questions available!');
-            return;
-        }
-        displayQuestion(nextQuestionIndex);
-    }
-}
+
         // Reset all quiz data
         function resetQuizData() {
             if (confirm('Are you sure you want to reset all quiz data?')) {
