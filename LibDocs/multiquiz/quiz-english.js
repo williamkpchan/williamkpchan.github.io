@@ -1,5 +1,5 @@
 // Sample quiz data - in real scenario, this would come from an external source
-const quizData = [
+window.quizData = [
 "antique, antiquated and wrong, defends antiquated laws, antiquarian, antiquarian bookseller	陳舊的 过时的, 过时的和错误的, 捍卫过时的法律, 古文物研究者 收集古文物者 古文物研究的, 古籍书店 obsolete, archaic, belated, unhip, corny",
 "AOB	Any Other Business 其他事项",
 "arcane, arcana, arcana of the debate	神秘 隐藏的, 奥秘 秘密 秘方 艰深的知识, 辩论的秘密 奥秘 secret, hidden cryptic, mysterious, latent, secret formula, secret recipe, secrets or mysteries",

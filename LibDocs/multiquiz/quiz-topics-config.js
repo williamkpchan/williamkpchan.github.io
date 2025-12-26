@@ -10,8 +10,6 @@ window.quizTopicsConfig = {
     isExternal: true,
     source: 'External File'
 },
-
-
 'science': {
     id: 'science',
     name: 'Science',
