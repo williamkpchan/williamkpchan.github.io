@@ -3,6 +3,20 @@
 // Add new topics here without modifying the main HTML file
 
 window.quizTopicsConfig = {
+'javascript': {
+    id: 'javascript',
+    name: 'javascript',
+    url: 'quiz-javascript.js',
+    isExternal: true,
+    source: 'External File'
+},
+'health': {
+    id: 'health',
+    name: 'health',
+    url: 'quiz-health.js',
+    isExternal: true,
+    source: 'External File'
+},
 'RNotes': {
     id: 'RNotes',
     name: 'RNotes',
