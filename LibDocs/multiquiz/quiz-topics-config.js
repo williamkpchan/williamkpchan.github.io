@@ -3,6 +3,13 @@
 // Add new topics here without modifying the main HTML file
 
 window.quizTopicsConfig = {
+'proverbs': {
+    id: 'proverbs',
+    name: 'proverbs',
+    url: 'quiz-proverbs.js',
+    isExternal: true,
+    source: 'External File'
+},
 'javascript': {
     id: 'javascript',
     name: 'javascript',
