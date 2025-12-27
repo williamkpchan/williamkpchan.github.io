@@ -3,6 +3,13 @@
 // Add new topics here without modifying the main HTML file
 
 window.quizTopicsConfig = {
+'RNotes': {
+    id: 'RNotes',
+    name: 'RNotes',
+    url: 'quiz-RNotes.js',
+    isExternal: true,
+    source: 'External File'
+},
 'english': {
     id: 'english',
     name: 'english',
