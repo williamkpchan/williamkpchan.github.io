@@ -3379,7 +3379,7 @@ console.log(t2i[0].色调[0]); // 访问数组中的对象及其内部元素 输
 
 色调cnt = 2; 构图cnt = 1; 紋理cnt = 1;
 样式cnt = 0; 风格cnt = 1; 算法cnt = 1;
-物件cnt = 2; 形容词cnt = 1; 场景cnt = 1; 
+物件cnt = 1; 形容词cnt = 1; 场景cnt = 1; 
 
 const reptString = "色调 " + t2i[0].色调.length + " 构图 " + t2i[0].构图.length + " 紋理 " + t2i[0].紋理.length + " 风格 " + t2i[0].风格.length + " 样式 " + t2i[0].样式.length + " 算法 " + t2i[0].算法.length + " 物件 " + t2i[0].物件.length + " 形容词 " + t2i[0].形容词.length + " 场景 " + t2i[0].场景.length +
 "<br>selection: 色调:" + 色调cnt + "构图:" + 构图cnt + "紋理:" + 紋理cnt + "风格:" + 风格cnt + "算法:" + 算法cnt + "形容词:" + 形容词cnt + "物件:" + 物件cnt + "场景:" + 场景cnt + "样式:" + 样式cnt
