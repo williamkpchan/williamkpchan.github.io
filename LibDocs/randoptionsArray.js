@@ -5,5 +5,5 @@ const optionsArray = [
 '人情世故','品德教育','networkTips','MedicalTips','pictList','语文Tips','人物',
 '古文观止','中醫Notes','gittips','cssTips','记忆方法','nodejsServerTips',
 'HTMLNotesTips','MySQLTips','technoTips','managementTips','sublimetext','AiTips',
-'windowsNotes','CNotes','excelnotes','t2i','theme','longtheme',
+'windowsNotes','CNotes','excelnotes','t2i','theme','longtheme','female',
 ]
