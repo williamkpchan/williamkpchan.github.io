@@ -547,3 +547,15 @@ var longtheme = [
 '黄昏时分，一栋略显老旧的九十年代风格的居民楼，极具时代特色的建筑装饰，楼道内镂空的花纹墙面，楼下的巷弄，路口杂货店和大树，路边停放的车辆，营造的出充满生活气息，令人怀念的氛围，生动而真实 Stone staircase covered with vibrant autumn leaves in shades of yellow, orange, and brown, surrounding green foliage, serene, picturesque, natural beauty, tranquil atmosphere, autumn scene',
 '黑色, 六色, 螺旋, 无限细节的图形, delicate detail, 动物, 桥旁种植翠柳与山间灌丛等郁郁葱葱的绿色植物, 一只白色拟人兔子和一只白色拟人兔子在地里采摘南瓜 南瓜有藤 地里各种蔬菜水果 笑脸相迎 茂密的树 ，树木上有绿色小屋，屋顶长满青苔，屋子旁一颗长满青苔藤蔓大树，夏日微风轻拂，花草摇曳，头顶白云飘飘 飞鸟掠过，远处青山如黛，田野绿草茂密',
 ];
+
+function randomLongString() {  
+  randomT2iElement = t2i[0].色调[Math.floor(Math.random() * t2i[0].色调.length)];  
+  longString = longtheme[Math.floor(Math.random() * longtheme.length)];  
+  longString = longString.concat(randomT2iElement);  
+  document.querySelector('#question').innerHTML = longString;
+}
+
+  mainFrameDiv = document.querySelector('.mainFrame');
+  mixButton = `<button onclick="randomLongString();"><r>addColor</r></button>\n`;
+  mainFrameDiv.innerHTML = mainFrameDiv.innerHTML.replace(mixButton, '' );
+  mainFrameDiv.innerHTML += mixButton
