@@ -548,8 +548,17 @@ var longtheme = [
 '黑色, 六色, 螺旋, 无限细节的图形, delicate detail, 动物, 桥旁种植翠柳与山间灌丛等郁郁葱葱的绿色植物, 一只白色拟人兔子和一只白色拟人兔子在地里采摘南瓜 南瓜有藤 地里各种蔬菜水果 笑脸相迎 茂密的树 ，树木上有绿色小屋，屋顶长满青苔，屋子旁一颗长满青苔藤蔓大树，夏日微风轻拂，花草摇曳，头顶白云飘飘 飞鸟掠过，远处青山如黛，田野绿草茂密',
 ];
 
+// Get two unique random elements
+function getTwoRandomTones() {
+  const tones = t2i[0].色调;
+  const shuffled = [...tones].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, 2);
+}
+
 function randomLongString() {  
-  randomT2iElement = t2i[0].色调[Math.floor(Math.random() * t2i[0].色调.length)];  
+  //randomT2iElement = t2i[0].色调[Math.floor(Math.random() * t2i[0].色调.length)];  
+  randomT2iElement = getTwoRandomTones()
+console.log(randomT2iElement)
   longString = " "+longtheme[Math.floor(Math.random() * longtheme.length)];  
   longString = randomT2iElement.concat(longString);  
   document.querySelector('#question').innerHTML = longString;
