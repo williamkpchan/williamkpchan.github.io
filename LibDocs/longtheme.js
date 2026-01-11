@@ -550,8 +550,8 @@ var longtheme = [
 
 function randomLongString() {  
   randomT2iElement = t2i[0].色调[Math.floor(Math.random() * t2i[0].色调.length)];  
-  longString = longtheme[Math.floor(Math.random() * longtheme.length)];  
-  longString = longString.concat(randomT2iElement);  
+  longString = " "+longtheme[Math.floor(Math.random() * longtheme.length)];  
+  longString = randomT2iElement.concat(longString);  
   document.querySelector('#question').innerHTML = longString;
 }
 
