@@ -560,9 +560,9 @@ function randomLongString() {
   document.querySelector('#question').innerHTML = longString;
 }
   mainFrameDiv = document.querySelector('.mainFrame');
-  mixButton = `<button onclick="randomLongString();"><r>addColor</r></button>\n`;
-  mainFrameDiv.innerHTML = mainFrameDiv.innerHTML.replace(mixButton, '' );
-  mainFrameDiv.innerHTML += mixButton
+  longButton = `<button onclick="randomLongString();"><pk>mixLong</pk></button>\n`;
+  mainFrameDiv.innerHTML = mainFrameDiv.innerHTML.replace(longButton, '' );
+  mainFrameDiv.innerHTML += longButton
 try {
   // Try to use t2i
   const tones = t2i[0].色调;
