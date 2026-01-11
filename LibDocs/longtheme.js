@@ -553,10 +553,10 @@ function getTwoRandomTones() { // Get two unique random elements
   return shuffled.slice(0, 2);
 }
 function randomLongString() {  
-  //randomT2iElement = t2i[0].色调[Math.floor(Math.random() * t2i[0].色调.length)];  
-  randomT2iElement = getTwoRandomTones()
-  longString = " "+longtheme[Math.floor(Math.random() * longtheme.length)];  
-  longString = randomT2iElement.concat(longString);  
+  textureElement = t2i[0].紋理[Math.floor(Math.random() * t2i[0].紋理.length)];  
+  t2iTone = getTwoRandomTones()
+  longString = " " + longtheme[Math.floor(Math.random() * longtheme.length)];  
+  longString = t2iTone.concat(textureElement).concat(longString);  
   document.querySelector('#question').innerHTML = longString;
 }
   mainFrameDiv = document.querySelector('.mainFrame');
@@ -571,4 +571,3 @@ try {
   loadArray("t2i", 2)
   randomLongString()
 }
-
