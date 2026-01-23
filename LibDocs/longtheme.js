@@ -784,14 +784,14 @@ function getRandomObjs() { // Get 1 unique random elements
   const shuffled = [...tones].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, 1);
 }
-function randomLongString() {  
-  textureElement = " " + t2i[0].紋理[Math.floor(Math.random()  t2i[0].紋理.length)];  
-  //objElement = " " + t2i[0].物件[Math.floor(Math.random()  t2i[0].物件.length)];  
+function randomLongString() {
+  textureElement = " " + t2i[0].紋理[Math.floor(Math.random() * t2i[0].紋理.length)];
+  //objElement = " " + t2i[0].物件[Math.floor(Math.random() * t2i[0].物件.length)];
 
   t2iTone = getRandomObjs()
-  longString = " " + longtheme[Math.floor(Math.random()  longtheme.length)];  
-  longString = t2iTone.concat(textureElement).concat(longString);  
-  //longString = t2iTone.concat(textureElement).concat(objElement).concat(longString);  
+  longString = " " + longtheme[Math.floor(Math.random() * longtheme.length)];
+  longString = t2iTone.concat(textureElement).concat(longString);
+  //longString = t2iTone.concat(textureElement).concat(objElement).concat(longString);
   document.querySelector('#question').innerHTML = longString;
 }
   mainFrameDiv = document.querySelector('.mainFrame');
