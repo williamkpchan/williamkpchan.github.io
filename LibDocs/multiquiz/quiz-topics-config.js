@@ -66,5 +66,12 @@ window.quizTopicsConfig = {
     isExternal: true,
     source: 'External File'
 },
+'music': {
+    id: 'music',
+    name: 'music',
+    url: 'quiz-music.js',
+    isExternal: true,
+    source: 'External File'
+},
 // Add more topics as needed...
 };
