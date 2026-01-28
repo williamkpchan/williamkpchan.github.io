@@ -16,7 +16,7 @@ window.quizData = [
  "Accelerando (accel.)	逐渐加快速度",
  "Ritardando (rit.) / Rallentando (rall.)	逐渐减慢速度",
  "A tempo	恢复原速",
-"音乐记谱术语	主要源自意大利语，已成为国际通用音乐语言",
+"音乐记谱术语:	主要源自意大利语，已成为国际通用音乐语言",
  "Staff & Notation Systems	谱表与记谱系统",
  "Staff / Stave	Staff 五线谱 五条平行线",
  "Clef	Clef 谱号 确定音高位置",
