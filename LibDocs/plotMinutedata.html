@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Minute Standard Deviation Chart</title>
+<link rel="stylesheet" href="https://williamkpchan.github.io/maincss.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+
+<style>
+#dateTime {  text-align: left;}
+#cmtNote, #instruction, #message{display:none;}
+select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
+</style>
+
+</head>
+<body onkeypress="chkKey()">
+<center>
+
+<div id="lastValues"></div>
+</center><span id="nextbutton" class="randomBut gold bordred1 borRad10" onclick="jpforward()">Next</span>
+<span onclick="$('#instruction').toggle();">commands🎌 </span>
+
+<div id="dateTime" style="margin-left:5%;" class="lime"> </div>
+<pre id="instruction">
+commands:
+ l loadLineData, paste data array to redraw chart with std dev
+ c askforCode, A stk start with sh of sz, eg sh000001
+ C open Random Charts.html
+ f jpforward
+ b jpback
+ r jprandom
+ L askList, enter a CodeList
+ i chgIntv
+ w askWidth
+5 lines: data, WAve5, WAve10, sd+, sd-
+</pre>
+<pre id="message"></pre>
+<script>
+      if (localStorage.getItem("randomcode") != null) {
+        theCode = localStorage.randomcode;
+      }else{theCode = "HSI"}
+
+      if (localStorage.getItem("minutePeriod") != null) {
+        intv5 = parseInt(localStorage.minutePeriod);
+      }else{intv5 = 100}
+      
+      titleText = "";
+      if (localStorage.getItem("datawidth") != null) {
+        datawidth = parseInt(localStorage.datawidth);
+      }else{datawidth = 1600}
+
+      function askforCode() {
+        theCode = prompt("Code Number:", "");
+        if (theCode != null && theCode != ""){
+          collectStkData(theCode)
+          storeCode(theCode)
+        }
+      }
+
+      function askWidth() {
+          var theWidth = prompt("Chart Width:", "");
+          if (theWidth != null && theWidth != "") {
+              datawidth = parseInt(theWidth);
+
+              if(typeof(Storage) !== "undefined") {
+                localStorage.datawidth = datawidth;
+              }
+              collectStkData(theCode);
+          }
+      }
+
+      function collectStkData(theCode) {
+          codewidth = theCode.length
+          if((theCode == "HSI")|(theCode == "110000")){
+            theurl = 'https://web.ifzq.gtimg.cn/appstock/app/day/query?code=hk' + theCode
+          }else{
+            if(codewidth <= 5){
+              theCode = "00000"+theCode;
+              codewidth = theCode.length;
+              theCode = theCode.slice(codewidth-5, codewidth);
+              codewidth = theCode.length; //update to be used later
+              theurl = 'https://web.ifzq.gtimg.cn/appstock/app/day/query?code=hk' + theCode
+            }else{
+              //codewidth = theCode.length
+              //theCode = theCode.slice(codewidth-9, codewidth)
+              //theCode = theCode.slice(7, 9) + theCode.slice(0, 6);
+              codewidth = theCode.length; //update to be used later
+              if((codewidth == 6) && !hsReservedCode.includes(theCode)){
+                 if (theCode.charAt(0) == "6"){
+                    theCode = "sh"+theCode; 
+                 }else{
+                    theCode = "sz"+theCode
+                 }
+                 theStartCode = theCode
+                 theurl = 'https://web.ifzq.gtimg.cn/appstock/app/day/query?_var=fdays_data_' + theCode + '&code=' + theCode
+              }else if(codewidth == 9){
+                 theCode = theCode.substring(7, 9) + theCode.substring(0, 6);
+                 theStartCode = theCode
+                 theurl = 'https://web.ifzq.gtimg.cn/appstock/app/day/query?_var=fdays_data_' + theCode + '&code=' + theCode
+
+              }else{
+                theurl = 'https://web.ifzq.gtimg.cn/appstock/app/day/query?_var=fdays_data_' + theCode + '&code=' + theCode
+              }
+            }
+          }
+      
+ 	theStartCode = theCode;
+	thestkdata = [];
+	thedrawdata = [];
+	closeLst = [];
+
+     function chkKey() {
+       var testkey = getChar(event);
+       if(testkey == 'l'){loadLineData();}
+       if(testkey == 'c'){askforCode();}
+       if(testkey == 'C'){storeCode(theCode); window.open("Random Charts.html");}
+       if(testkey == ','){storeCode(theCode); window.open("mlinechart.html");}
+       if(testkey == 'f'){jpforward();}
+       if(testkey == ']'){jpforward();}
+       if(testkey == 'b'){jpback();}
+       if(testkey == '['){jpback();}
+       if(testkey == 'r'){jprandom();}
+       if(testkey == 'i'){chgIntv();}
+       if(testkey == 'L'){askList()}
+       if(testkey == 'w'){askWidth()}
+       if(testkey == '0'){storeCode('sh000001');collectStkData('sh000001');}
+       if(testkey == '3'){storeCode('sz399001');collectStkData('sz399001');}
+       if(testkey == '1'){storeCode('HSI');collectStkData('HSI');}
+       if(testkey == 'X'){storeCode(theCode); window.open("Random Charts.html");}
+       if(testkey == 'D'){useAHDiff();}
+       if(testkey == 'a'){useAttentionList();}
+       if(testkey == 'e'){useAETFList();}
+       if(testkey == 'A'){useActiveList();}
+       if(testkey == 'H'){useHistoryList();}
+       if(testkey == 't'){jpTo0();}
+       if(testkey == '+'){addToquickCodeList();}
+       if(testkey == 'Q'){usequickCodeList();}
+
+     }
+     function getChar(event) {
+       if (event.which!=0 && event.charCode!=0) {
+         return String.fromCharCode(event.which)   // the rest
+       } else {
+         return null // special key
+       }
+     }
+
+	function loadLineData() {
+      var dataArr = prompt("Enter Line Data seperated by space:", "");
+      if (dataArr != null && dataArr != "") {
+        dataArrArr = dataArr.split(' ');
+
+        stkpriceDataArr = dataArrArr.map(Number);
+        redraw()
+      }
+     }
+
+
+
+
+    function storeCode(aCode) {
+        if(typeof(Storage) !== "undefined") {
+            localStorage.randomcode = aCode;
+        }
+        theCode = aCode;
+    }
+
+    function chgIntv() {
+        intv = prompt("intv5 value:", "");
+        if (theCode != null && intv5 != ""){
+          intv5 = parseInt(intv);
+          localStorage.setItem("minutePeriod", intv5);
+          redraw(theCode)
+        }
+    }
+
+function showDateTime() {
+    var theDateTime = showDate() +" "+ showTime();
+    cmtCode = theCode // use another name not to interfere other parts
+    var cmtcodewidth = cmtCode.length
+    if(cmtcodewidth <= 5){
+      cmtCode = "00000"+cmtCode;
+      cmtcodewidth = cmtCode.length;
+      cmtCode = cmtCode.slice(cmtcodewidth-5, cmtcodewidth);
+    }
+    else if(cmtcodewidth == 8){ cmtCode = cmtCode.slice(2, 8); }
+    else if(cmtcodewidth == 9){ cmtCode = cmtCode.slice(0, 6); }
+    commentName = "j" + cmtCode;
+
+    CommentListNames = Object.keys(theCommentList); // extract the names from comments
+    // to show comments
+    if(CommentListNames.includes(commentName)){
+      cmtLocation = CommentListNames.indexOf(commentName);
+      commentTxt = theCommentList[Object.keys(theCommentList)[cmtLocation]]
+    }else{commentTxt = "No data!";}
+
+    document.getElementById("dateTime").innerHTML = "";
+    document.getElementById("dateTime").innerHTML = theDateTime  + " <span class='orange'>" + commentTxt + "</span>";
+}
+
+
+    function showTime() {
+	let d = new Date();
+	let y=d.getFullYear().toString().substr(-2);
+	let mo=d.toLocaleString('default', { month: 'short' });
+	let da=d.getDate();
+	let secs=d.getSeconds();
+	let mins=d.getMinutes();
+	let hr=d.getHours();
+	let timemsg=da+mo+y+" "+FormatNumberLength(hr) +":" + FormatNumberLength(mins) + ":"+ FormatNumberLength(secs)
+	return(timemsg)
+    }
+
+    function FormatNumberLength(num) {
+		let r = "" + num;
+		while (r.length < 2) { r = "0" + r;}
+		return r;
+    }
+
+
+    collectStkData(theCode);
+</script>
+</body>
+</html>
