@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -25,13 +26,6 @@ select {border-radius:10px; font-size:20px;background-color:black; color:brown;}
     margin: 0 auto;
 }
 .macd-container {
-    position: relative;
-    width: 100%;
-    max-width: 100vw;
-    height: 300px;
-    margin: 0 auto;
-}
-.stochastic-container {
     position: relative;
     width: 100%;
     max-width: 100vw;
@@ -80,7 +74,7 @@ html, body {
 }
 
 /* Chart container that always fits */
-.chart-container, .macd-container, .stochastic-container {
+.chart-container, .macd-container  {
     position: relative;
     width: 100%;
     max-width: 100%;
@@ -93,7 +87,7 @@ html, body {
 }
 
 /* Canvas element inside */
-.chart-container canvas, .macd-container canvas, .stochastic-container canvas {
+.chart-container canvas, .macd-container canvas {
     display: block;
     width: 100% !important;
     height: 100% !important;
@@ -113,9 +107,6 @@ html, body {
 <div class="macd-container">
     <canvas id="macdCvs" width="1800" height="300">[No canvas support]</canvas>
 </div>
-<div class="stochastic-container">
-    <canvas id="stochasticCvs" width="1800" height="300">[No canvas support]</canvas>
-</div>
 <div id="lastValues"></div>
 <div class="period-control">
     <span>EMA Periods: </span>
@@ -124,21 +115,12 @@ html, body {
     <input type="number" id="ema180" value="600" min="200" max="900" step="50"">
     <input type="number" id="ema240" value="700" min="200" max="900" step="50"">
     <input type="number" id="ema300" value="800" min="200" max="900" step="50"">
-<br>
     <span style="margin-left:20px;">MACD: Fast</span>
     <input type="number" id="macdFast" value="350" min="100" max="900" step="50"">
     <span>Slow</span>
     <input type="number" id="macdSlow" value="400" min="200" max="900" step="50"">
     <span>Signal</span>
     <input type="number" id="macdSignal" value="200" min="100" max="400" step="50"">
-<br>
-    <span style="margin-left:20px;">Stochastic:</span>
-    <span>%K</span>
-    <input type="number" id="stochK" value="300" min="5" max="30" step="1"">
-    <span>%D</span>
-    <input type="number" id="stochD" value="400" min="2" max="10" step="1"">
-    <span>Slowing</span>
-    <input type="number" id="stochSlowing" value="150" min="1" max="10" step="1"">
     <button onclick="updatePeriods()" style="margin-left:10px;">Update</button>
 </div>
 </center><span id="nextbutton" class="randomBut gold bordred1 borRad10" onclick="jpforward()">Next</span>
@@ -148,7 +130,7 @@ html, body {
 <select id="selectList" onchange="assignList()"></select>
 <span onclick="$('#message').toggle();">messages🎌 </span>
 <span class="goldbut red blueblackgrad" onclick=askforCode()>尋寶</span>
-addList: SHIFT L
+
 <div id="dateTime" style="margin-left:5%;" class="lime"> </div>
 <pre id="instruction">
 commands:
@@ -180,18 +162,12 @@ commands:
       stkPointer = 0;
       let myChart = null;
       let macdChart = null;
-      let stochasticChart = null;
       
       // EMA and MACD period variables
       let emaPeriods = [400, 500, 600, 700, 800];
       let macdFast = 350;
       let macdSlow = 400;
       let macdSignal = 200;
-      
-      // Stochastic period variables
-      let stochK = 300;
-      let stochD = 400;
-      let stochSlowing = 150;
 
       if (localStorage.getItem("randomcode") != null) {
         theCode = localStorage.randomcode;
@@ -238,12 +214,6 @@ commands:
           macdFast = parseInt(document.getElementById('macdFast').value);
           macdSlow = parseInt(document.getElementById('macdSlow').value);
           macdSignal = parseInt(document.getElementById('macdSignal').value);
-          
-          // Update stochastic periods
-          stochK = parseInt(document.getElementById('stochK').value);
-          stochD = parseInt(document.getElementById('stochD').value);
-          stochSlowing = parseInt(document.getElementById('stochSlowing').value);
-          
           redraw();
       }
 
@@ -474,77 +444,6 @@ commands:
          
          return { macdLine, signalLine, histogram };
      }
-     
-     function calculateStochastic(data, kPeriod, dPeriod, slowing) {
-         // Since we only have close prices, we'll simulate high/low with price variations
-         // In a real implementation, you would use actual high/low data
-         
-         let rawK = new Array(data.length).fill(null);
-         let smoothedK = new Array(data.length).fill(null);
-         let dLine = new Array(data.length).fill(null);
-         
-         if (data.length < kPeriod) return { kLine: rawK, dLine: dLine };
-         
-         // Calculate %K
-         for (let i = kPeriod - 1; i < data.length; i++) {
-             let periodHigh = -Infinity;
-             let periodLow = Infinity;
-             
-             // Find highest high and lowest low in the period
-             for (let j = i - kPeriod + 1; j <= i; j++) {
-                 // Simulate high as price + 0.2% and low as price - 0.2%
-                 // This is a simplification - ideally you'd use actual high/low data
-                 let simulatedHigh = data[j] * 1.002;
-                 let simulatedLow = data[j] * 0.998;
-                 
-                 periodHigh = Math.max(periodHigh, simulatedHigh);
-                 periodLow = Math.min(periodLow, simulatedLow);
-             }
-             
-             // Calculate %K
-             if (periodHigh !== periodLow) {
-                 rawK[i] = 100 * (data[i] - periodLow) / (periodHigh - periodLow);
-             } else {
-                 rawK[i] = 50;
-             }
-         }
-         
-         // Apply slowing (moving average of rawK)
-         if (slowing > 1) {
-             for (let i = kPeriod + slowing - 2; i < data.length; i++) {
-                 let sum = 0;
-                 let count = 0;
-                 for (let j = i - slowing + 1; j <= i; j++) {
-                     if (rawK[j] !== null) {
-                         sum += rawK[j];
-                         count++;
-                     }
-                 }
-                 if (count > 0) {
-                     smoothedK[i] = sum / count;
-                 }
-             }
-         } else {
-             smoothedK = [...rawK];
-         }
-         
-         // Calculate %D (moving average of %K)
-         for (let i = kPeriod + slowing + dPeriod - 2; i < data.length; i++) {
-             let sum = 0;
-             let count = 0;
-             for (let j = i - dPeriod + 1; j <= i; j++) {
-                 if (smoothedK[j] !== null) {
-                     sum += smoothedK[j];
-                     count++;
-                 }
-             }
-             if (count > 0) {
-                 dLine[i] = sum / count;
-             }
-         }
-         
-         return { kLine: smoothedK, dLine: dLine };
-     }
 
      function redraw() {
         intv10 = 2*intv5
@@ -563,9 +462,6 @@ commands:
         
         // Calculate MACD
         const macd = calculateMACD(stkpriceDataArr, macdFast, macdSlow, macdSignal);
-        
-        // Calculate Stochastic
-        const stochastic = calculateStochastic(stkpriceDataArr, stochK, stochD, stochSlowing);
         
         // Create labels for x-axis (time periods)
         const labels = Array.from({length: stkpriceDataArr.length}, (_, i) => i + 1);
@@ -706,7 +602,6 @@ commands:
 
         drawchart(labels, mydata, theMin, theMax, titleText);
         drawMACD(labels, macd);
-        drawStochastic(labels, stochastic);
      }
 
     function drawMACD(labels, macdData) {
@@ -745,7 +640,7 @@ commands:
                         type: 'line',
                         borderColor: 'white',
                         backgroundColor: 'transparent',
-                        borderWidth: 1,
+                        borderWidth: 1.5,
                         fill: false,
                         tension: 0.1,
                         pointRadius: 0,
@@ -758,7 +653,7 @@ commands:
                         type: 'line',
                         borderColor: 'red',
                         backgroundColor: 'transparent',
-                        borderWidth: 1,
+                        borderWidth: 1.5,
                         fill: false,
                         tension: 0.1,
                         pointRadius: 0,
@@ -790,131 +685,6 @@ commands:
                         position: 'right',
                         grid: { color: '#002010' },
                         ticks: { color: '#ccc' }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { 
-                            display: false  // Hide x-axis labels to match main chart
-                        }
-                    }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                }
-            }
-        });
-    }
-
-    function drawStochastic(labels, stochData) {
-        const ctx = document.getElementById('stochasticCvs').getContext('2d');
-        
-        // Destroy existing chart if it exists
-        if (stochasticChart) {
-            stochasticChart.destroy();
-        }
-        
-        // Create overbought/oversold areas
-        const overbought = new Array(labels.length).fill(80);
-        const oversold = new Array(labels.length).fill(20);
-        const midLine = new Array(labels.length).fill(50);
-        
-        // Create Stochastic chart
-        stochasticChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Overbought (80)',
-                        data: overbought,
-                        borderColor: 'rgba(255,0,0,0.3)',
-                        backgroundColor: 'transparent',
-                        borderWidth: 1,
-                        borderDash: [5, 5],
-                        fill: false,
-                        pointRadius: 0,
-                        tension: 0,
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: 'Oversold (20)',
-                        data: oversold,
-                        borderColor: 'rgba(0,255,0,0.3)',
-                        backgroundColor: 'transparent',
-                        borderWidth: 1,
-                        borderDash: [5, 5],
-                        fill: false,
-                        pointRadius: 0,
-                        tension: 0,
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: 'Mid Line (50)',
-                        data: midLine,
-                        borderColor: 'rgba(255,255,255,0.2)',
-                        backgroundColor: 'transparent',
-                        borderWidth: 1,
-                        borderDash: [2, 2],
-                        fill: false,
-                        pointRadius: 0,
-                        tension: 0,
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: `%K (${stochK}, ${stochSlowing})`,
-                        data: stochData.kLine,
-                        borderColor: 'white',
-                        backgroundColor: 'transparent',
-                        borderWidth: 1,
-                        fill: false,
-                        tension: 0.1,
-                        pointRadius: 0,
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: `%D (${stochD})`,
-                        data: stochData.dLine,
-                        borderColor: 'yellow',
-                        backgroundColor: 'transparent',
-                        borderWidth: 1,
-                        fill: false,
-                        tension: 0.1,
-                        pointRadius: 0,
-                        yAxisID: 'y'
-                    }
-                ]
-            },
-            options: {
-                responsive: false,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: `Stochastic (${stochK}, ${stochD}, ${stochSlowing})`,
-                        color: 'grey',
-                        font: { size: 16 }
-                    },
-                    legend: {
-                        display: true,
-                        labels: { color: '#ccc' }
-                    },
-                    tooltip: {
-                        enabled: false
-                    }
-                },
-                scales: {
-                    y: {
-                        position: 'right',
-                        min: 0,
-                        max: 100,
-                        grid: { color: '#002010' },
-                        ticks: { 
-                            color: '#ccc',
-                            callback: function(value) {
-                                return value + '%';
-                            }
-                        }
                     },
                     x: {
                         grid: { display: false },
@@ -1149,7 +919,6 @@ function showDateTime() {
           },
           scales: {
             y: {
-              position: 'right',
               min: yMin,
               max: yMax,
               grid: {
@@ -1163,7 +932,7 @@ function showDateTime() {
                 }
               },
               title: {
-                display: false,
+                display: true,
                 text: 'Value',
                 color: '#ccc'
               }
