@@ -2659,22 +2659,109 @@ var theme = [
 '黝黑陡峭岩壁上，覆盖着浓密油亮的深绿色苔藓与蕨类植物，如翡翠绒毯般铺满岩缝。多层叠落的瀑布从数百米崖顶垂落，主瀑如奔腾白龙顺着岩壁褶皱俯冲而下，撞击岩石碎成漫天飞沫；两侧细流如银丝般贴着植被缓缓流淌，在绿意中划出细腻白痕。深绿色峡湾海面泛着细碎涟漪与白色泡沫，湿润雨雾在山间游走，远处峰峦晕染成淡灰色剪影，偶尔穿透云层的阳光在水幕折射出细碎光斑',
 '龟背竹、绿萝等 完整的浅绿菩提叶（叶片舒展无褶皱，仅保留清晰主叶脉），垫在画面底部中央，菩提叶上，迷你人偶（着素色棉麻衣物，神态放松）,盘腿坐于微型棉麻垫上，手持比掌心小的线装书,人偶旁放1个微型原木小几，几上摆1个指甲盖大的白瓷茶杯 晴朗无云的天空 干裂的土地 枯黄杂草的小山坡',
 ];
-if (t2i[0].场景.length > 1) { theme = [...theme, ...t2i[0].场景]; }
+
+
+// Function to load script with Promise
+function loadScript(url) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = url;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
+        document.body.appendChild(script);
+    });
+}
+
+// Function to randomly select and join items from array
+function randomSelectAndJoin(arr, count) {
+    if (!arr || arr.length === 0) return '';
+    
+    // Create a copy of the array to avoid modifying original
+    const shuffled = [...arr];
+    
+    // Fisher-Yates shuffle
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    
+    // Take first 'count' items and join them
+    return shuffled.slice(0, Math.min(count, shuffled.length)).join(', ');
+}
+
 // Function to mix items and display results
 function mixItems(ItemNum) {
- console.log("ItemNum: ",ItemNum)
- finalArray = ""
- finalArray = randomSelectAndJoin(theme, ItemNum)
- if(finalArray.length>800){
-   console.log("finalArray.length>800 ", finalArray.length)
-   finalArray = "<r>" + finalArray + "</r>"
- }
- const questionDiv = document.querySelector('#question');
- questionDiv.innerHTML = finalArray;
+    console.log("ItemNum: ", ItemNum);
+    let finalArray = randomSelectAndJoin(theme, ItemNum);
+    
+    if (finalArray.length > 800) {
+        console.log("finalArray.length>800 ", finalArray.length);
+        finalArray = "<r>" + finalArray + "</r>";
+    }
+    
+    const questionDiv = document.querySelector('#question');
+    if (questionDiv) {
+        questionDiv.innerHTML = finalArray;
+    } else {
+        console.error('#question element not found');
+    }
 }
-lenString = "themeLen: "+ theme.length
-document.querySelector('#schRst').innerHTML = lenString;
-mixItems(2);
+
+// Main initialization function using async/await
+async function initializeTheme() {
+    try {
+        // Check if t2i is not defined
+        if (typeof t2i === 'undefined') {
+            console.log('Loading t2i.js...');
+            await loadScript('t2i.js');
+            console.log('t2i.js loaded successfully');
+        }
+        
+        // Now t2i is guaranteed to be loaded
+        // Safely check if t2i exists and has the expected structure
+        if (typeof t2i !== 'undefined' && 
+            t2i[0] && 
+            t2i[0].场景 && 
+            t2i[0].场景.length > 1) {
+            
+            console.log('Extending theme with t2i scenes...');
+            theme = [...theme, ...t2i[0].场景];
+        } else {
+            console.log('t2i scenes not available or insufficient, using original theme only');
+        }
+        
+    } catch (error) {
+        console.error('Error loading t2i.js:', error.message);
+        console.log('Continuing with original theme');
+    } finally {
+        // Update theme length display
+        const schRst = document.querySelector('#schRst');
+        if (schRst) {
+            schRst.innerHTML = "themeLen: " + theme.length;
+        } else {
+            console.error('#schRst element not found');
+        }
+        
+        // Mix items after theme is fully updated
+        mixItems(2);
+    }
+}
+
+// Start the initialization when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeTheme);
+} else {
+    // DOM is already loaded, start immediately
+    initializeTheme();
+}
+
+// Optional: Export for use in other modules if needed
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { theme, mixItems, initializeTheme };
+}
+
+
 //# reload rstudio first!!! filter longtheme	sourceName = "D:/Dropbox/Public/LibDocs/longtheme.js"	source = readLines(sourceName)	startIdx = 2	endIdx = grep("^];",source) -1	t2i = source[startIdx:endIdx]	t2inchar <- nchar(t2i)	# print indices where nchar >180	long_indices <- order(nchar(t2i), decreasing = TRUE)	long_indices = long_indices+1 # do not forget the first line	cat("\nlongest lines character length: ",nchar(t2i[head(long_indices)]))	cat("\nlongest lines index: ",head(long_indices))
 //# reload rstudio first!!! filter long strings	sourceName = "D:/Dropbox/Public/LibDocs/theme.js"	source = readLines(sourceName)	startIdx = 2	endIdx = grep("^];",source) -1	t2i = source[startIdx:endIdx]	t2inchar <- nchar(t2i)	# print indices where nchar >180	long_indices <- order(nchar(t2i), decreasing = TRUE)	filtered_indices <- long_indices[nchar(t2i[long_indices]) >180]	cat("Total long number >180: ",length(filtered_indices), "")	# Print results	allrealIdx = as.numeric() # keep record for next action	for(idx in filtered_indices) {	 realIdx = idx + startIdx-1	 allrealIdx = c(allrealIdx, realIdx)	 cat("Index:", realIdx, " Length:", nchar(t2i[idx]), " ")	}	cat("\n")	sink("C:/Users/User/Desktop/longStrings.txt")	 cat(t2i[filtered_indices], sep="\n")	sink()	source[allrealIdx] = "\n"	newsource = source[-allrealIdx]	sink("C:/Users/User/Desktop/origReplaced.txt")	 cat(newsource, sep="\n")	sink()	cat("\n\n\npls update theme.js before next opertions")
 //# reload rstudio first!!! filter short strings	sourceName = "D:/Dropbox/Public/LibDocs/theme.js"	source = readLines(sourceName)	startIdx = 2	endIdx = grep("^];",source)-1	t2i = source[startIdx:endIdx]	t2inchar <- nchar(t2i)	# print indices where nchar <90	shortest_indices <- order(nchar(t2i), decreasing = FALSE)	filtered_indices <- shortest_indices[nchar(t2i[shortest_indices]) <90]	cat("Total number <90: ",length(filtered_indices), "")	# Print results	allrealIdx = as.numeric() # keep record for next action	for(idx in filtered_indices) {	 realIdx = idx + startIdx-1	 allrealIdx = c(allrealIdx, realIdx)	 cat("Index:", realIdx, " Length:", nchar(t2i[idx]), " ")	}	cat("\n")	sink("C:/Users/User/Desktop/shortStrings.txt")	 cat(paste0("  ",t2i[filtered_indices]), sep="\n")	sink()	source[allrealIdx] = "\n"	newsource = source[-allrealIdx]	sink("C:/Users/User/Desktop/origReplaced.txt")	 cat(newsource, sep="\n")	sink()	cat("\n\n\npls update theme.js before next opertions")

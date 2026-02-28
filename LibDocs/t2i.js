@@ -850,7 +850,7 @@ var t2i = [
   物件: [
   '螺旋式向内收缩的漩涡结构，类似地质层理或宇宙星云',
   '由无数弯曲、起伏的带状结构交织而成，边缘呈波浪状起伏',
-  '中心为深蓝色的圆形空洞，被橙红与金色的炽热光晕包裹'
+  '中心为深蓝色的圆形空洞，被橙红与金色的炽热光晕包裹',
   '女性侧身微笑，双眼轻闭，卷发自然垂落，姿态温婉柔和',
   '留声机为复古喇叭造型，音符呈流动的曲线状环绕于画面下方',
   '人物主体居中，装饰元素分布于画面左下及右下，形成视觉平衡',
@@ -2658,7 +2658,6 @@ var t2i = [
   '写实白墙黑瓦江南小红屋民居，五彩秋树（黄、橙、红等色树叶，环绕民居，层林尽染），山间薄雾（朦胧弥漫，笼罩村落与黄色的远山，营造空灵意境），层叠远山（隐于雾中，色调淡远，增添幽深感）',
   '写实质感、蓝色主色调、神秘静谧,多彩小鱼',
   '写实造型搭配写实质感，炯炯有神的棕色眼睛形成生动表情',
-  '写实风格',
   '写实风格暗黑，中世纪建筑，广角远景，历史感，场景符合年代要求，场景描绘（雨天街道、马车、马匹、人物、雨伞、树木），氛围营造（复古、热闹、潮湿），展现历史时期城市街道的生活画面',
   '写实风格风光摄影，秋季高原秘境，曲流、彩林、雪峰与霞光晨雾构成绝美画面，展现出高原河谷在秋日的层次与大气，如同一幅立体的秋河壮景油画',
   '写实风格，古遗迹黄昏景观，画面中有古老的石质建筑遗迹',
@@ -2671,9 +2670,8 @@ var t2i = [
   '军机巡航',
   '军绿白色渐变小笔刷发光，光线追踪',
   '农村土地里全部是机器人干活 加上各种农作物 加上无人机 利用激光农用除草虫车',
-  '农村庭院',
+  '农村庭院,写实风格,农田',
   '农村菜园里，倾盆大雨，一块香蕉树地，大大的叶子很茂盛，有几个串绿香蕉挂在树上，香蕉上也挂着露珠，其中有几根香蕉已经黄了',
-  '农田',
   '冬天的落影像，一片树林的影子被火红的模糊夕阳拉得很长，投在地上，天空中有少量云彩被模糊夕阳染成红色，整体画面静谧而富有层次感 大地色系',
   '冬天的落影像，一片树林的影子被火红的模糊夕阳拉得很长，投在地上，天空中有少量云彩被模糊夕阳染成红色，整体画面静谧而富有层次感',
   '冬季时银装素裹',
@@ -6736,7 +6734,7 @@ console.log(t2i[0].色调[0]); // 访问数组中的对象及其内部元素 输
 样式cnt = 0; 风格cnt = 1; 算法cnt = 1;
 物件cnt = 1; 形容词cnt = 1; 场景cnt = 1; 
 
-const reptString = "色调 " + t2i[0].色调.length + " 构图 " + t2i[0].构图.length + " 紋理 " + t2i[0].紋理.length + " 风格 " + t2i[0].风格.length + " 样式 " + t2i[0].样式.length + " 算法 " + t2i[0].算法.length + " 物件 " + t2i[0].物件.length + " 形容词 " + t2i[0].形容词.length + " 场景 " + t2i[0].场景.length +
+let t2ireptString = "色调 " + t2i[0].色调.length + " 构图 " + t2i[0].构图.length + " 紋理 " + t2i[0].紋理.length + " 风格 " + t2i[0].风格.length + " 样式 " + t2i[0].样式.length + " 算法 " + t2i[0].算法.length + " 物件 " + t2i[0].物件.length + " 形容词 " + t2i[0].形容词.length + " 场景 " + t2i[0].场景.length +
 "<br>selection: 色调:" + 色调cnt + "构图:" + 构图cnt + "紋理:" + 紋理cnt + "风格:" + 风格cnt + "算法:" + 算法cnt + "形容词:" + 形容词cnt + "物件:" + 物件cnt + "场景:" + 场景cnt + "样式:" + 样式cnt
-document.querySelector('#schRst').innerHTML = reptString;
+document.querySelector('#schRst').innerHTML = t2ireptString;
 //r program: source = readLines("D:/Dropbox/Public/LibDocs/t2i.js")	startIdx = 1235	endIdx = 4888	t2i = source[startIdx:endIdx]	t2inchar <- nchar(t2i)	# print indices where nchar > 100	longest_indices <- order(nchar(t2i), decreasing = TRUE)	filtered_indices <- longest_indices[nchar(t2i[longest_indices]) > 100]	cat("Total number > 100: ",length(filtered_indices), "")	# Print results	allrealIdx = as.numeric() # keep record for next action	for(idx in filtered_indices) {	  realIdx = idx + startIdx-1	  allrealIdx = c(allrealIdx, realIdx)	  cat("Index:", realIdx, " Length:", nchar(t2i[idx]), " ")	}	sink("C:/Users/User/Desktop/longStrings.txt")	  cat(t2i[filtered_indices], sep="\n")	sink()	source[allrealIdx] = "\n"	sink("C:/Users/User/Desktop/replaced.txt")	  cat(source, sep="\n")	sink()
