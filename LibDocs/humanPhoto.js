@@ -319,7 +319,7 @@ var humanPhoto = [
    '焦急等待炒饭/烧烤，或大口吃面，额头冒汗。',
    '用筷子夹着肉在红油里涮，蘸酱料。',
    '揉面，撒面粉，面粉飞扬的瞬间，给蛋糕裱花。',
-   '把脸埋进半个西瓜里用勺子挖，汁水沾满脸。',
+   '把脸埋进半个西瓜里用勺子挖',
    '将食材装入坛中，按压，密封。',
    '手冲咖啡（水流注下的瞬间），拉花（手部稳定动作）。',
    '举杯庆祝，给老人夹菜，小孩伸手够菜。',
@@ -800,9 +800,9 @@ var humanPhoto = [
 场景 = humanPhoto[0].场景; 氛围 = humanPhoto[0].氛围; 质感 = humanPhoto[0].质感
 
 if(typeof t2i !== 'undefined'){
-  构图 = [...构图, ...t2i[0].构图];
-  场景 = [...场景, ...t2i[0].场景];
-  质感 = [...紋理, ...t2i[0].紋理];
+  humanPhoto[0].构图 = [...构图, ...t2i[0].构图];
+  humanPhoto[0].场景 = [...场景, ...t2i[0].场景];
+  humanPhoto[0].质感 = [...质感, ...t2i[0].紋理];
 }
 
 
@@ -820,34 +820,37 @@ function selectRandomHumanPhotoElements() {
     console.error('humanPhoto is empty or not defined');
     return null;
   }
-  
+
   const photoData = humanPhoto[0];
   const selectedElements = {};
-  
+
   // Randomly select one element from each array
   for (const [key, array] of Object.entries(photoData)) {
     if (Array.isArray(array) && array.length > 0) {
       const randomIndex = Math.floor(Math.random() * array.length);
+console.log("array.length: ",array.length," randomIndex: ", randomIndex)
+
       selectedElements[key] = {
         index: randomIndex,
         value: array[randomIndex],
         totalCount: array.length
       };
+console.log("selectedElements[key]: ", selectedElements[key])
     }
   }
-  
+
   return selectedElements;
 }
 
 // Function to display the selected elements
 function displayRandomSelection() {
   const selection = selectRandomHumanPhotoElements();
-  
+
   if (!selection) return;
-  
+
   // Create a single continuous string without line breaks
   let displayString = '';
-  
+
   for (const [key, data] of Object.entries(selection)) {
     displayString += `${data.value}`;
   }
