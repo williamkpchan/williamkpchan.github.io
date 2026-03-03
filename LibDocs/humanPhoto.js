@@ -799,12 +799,20 @@ var humanPhoto = [
 构图 = humanPhoto[0].构图; 人物 = humanPhoto[0].人物; 动作 = humanPhoto[0].动作
 场景 = humanPhoto[0].场景; 氛围 = humanPhoto[0].氛围; 质感 = humanPhoto[0].质感
 
-人物cnt = 1; 构图cnt = 1; 动作cnt = 1;
-场景cnt = 1; 氛围cnt = 1; 质感cnt = 1;
+if(typeof t2i !== 'undefined'){
+  构图 = [...构图, ...t2i[0].构图];
+  场景 = [...场景, ...t2i[0].场景];
+  质感 = [...紋理, ...t2i[0].紋理];
+}
 
-let humanPhotoreptString = "人物 " + humanPhoto[0].人物.length + " 构图 " + humanPhoto[0].构图.length + " 动作 " + humanPhoto[0].动作.length + " 氛围 " + humanPhoto[0].氛围.length + " 场景 " + humanPhoto[0].场景.length + " 质感 " + humanPhoto[0].质感.length +
-"<br>selection: 人物:" + 人物cnt + "构图:" + 构图cnt + "动作:" + 动作cnt + "氛围:" + 氛围cnt + "质感:" + 质感cnt
+
+humanPhotoreptString = "人物 " + humanPhoto[0].人物.length + " 构图 " + humanPhoto[0].构图.length + " 动作 " + humanPhoto[0].动作.length + " 氛围 " + humanPhoto[0].氛围.length + " 场景 " + humanPhoto[0].场景.length + " 质感 " + humanPhoto[0].质感.length
+
 document.querySelector('#schRst').innerHTML = humanPhotoreptString;
+
+newString = " 构图 " + 构图.length + " 场景 " + 场景.length + " 质感 " + 质感.length
+console.log("newString ",newString)
+document.querySelector('#schRst').innerHTML = newString;
 
 function selectRandomHumanPhotoElements() {
   // Check if humanPhoto exists and has data
@@ -858,11 +866,7 @@ function displayRandomSelection() {
   return selection;
 }
 
-if(t2i){
-  构图 = [...构图, ...t2i[0].构图];
-  场景 = [...场景, ...t2i[0].场景];
-  质感 = [...紋理, ...t2i[0].紋理];
-}
+
 
 // Call the function to display random selection
 displayRandomSelection();
