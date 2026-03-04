@@ -796,23 +796,36 @@ var humanPhoto = [
  '构图,人物,动作,场景,氛围,质感',
 ];
 
-构图 = humanPhoto[0].构图; 人物 = humanPhoto[0].人物; 动作 = humanPhoto[0].动作
-场景 = humanPhoto[0].场景; 氛围 = humanPhoto[0].氛围; 质感 = humanPhoto[0].质感
+showStat("humanPhoto ")
 
 if(typeof t2i !== 'undefined'){
   humanPhoto[0].构图 = [...构图, ...t2i[0].构图];
   humanPhoto[0].场景 = [...场景, ...t2i[0].场景];
-  humanPhoto[0].质感 = [...质感, ...t2i[0].紋理];
+  humanPhoto[0].质感 = [...t2i[0].紋理];
+  showStat("t2i ")
+}
+
+if(typeof theme !== 'undefined'){
+  humanPhoto[0].场景 = [...场景, ...theme];
+  showStat("theme ")
+}
+
+if (typeof female !== 'undefined' && female[0]) {
+  if (female[0].人物) { humanPhoto[0].人物 = [...(humanPhoto[0].人物 || []), ...female[0].人物]; }
+  if (female[0].场景构图) { humanPhoto[0].场景 = [...(humanPhoto[0].场景 || []), ...female[0].场景构图]; }
+  if (female[0].姿势) { humanPhoto[0].姿势 = [...female[0].姿势]; }
+  if (female[0].光影特效) { humanPhoto[0].氛围 = [...(humanPhoto[0].氛围 || []), ...female[0].光影特效]; }
+  if (female[0].色彩) { humanPhoto[0].色彩 = [...female[0].色彩]; }
+  showStat("female ")
 }
 
 
-humanPhotoreptString = "人物 " + humanPhoto[0].人物.length + " 构图 " + humanPhoto[0].构图.length + " 动作 " + humanPhoto[0].动作.length + " 氛围 " + humanPhoto[0].氛围.length + " 场景 " + humanPhoto[0].场景.length + " 质感 " + humanPhoto[0].质感.length
-
-document.querySelector('#schRst').innerHTML = humanPhotoreptString;
-
-newString = " 构图 " + 构图.length + " 场景 " + 场景.length + " 质感 " + 质感.length
-console.log("newString ",newString)
-document.querySelector('#schRst').innerHTML = newString;
+function showStat(lable) {
+  document.querySelector('#schRst').innerHTML += "<br>" + lable +
+    Object.keys(humanPhoto[0])
+      .map(key => `${key} ${humanPhoto[0][key].length}`)
+      .join(' ');
+}
 
 function selectRandomHumanPhotoElements() {
   // Check if humanPhoto exists and has data
@@ -828,14 +841,12 @@ function selectRandomHumanPhotoElements() {
   for (const [key, array] of Object.entries(photoData)) {
     if (Array.isArray(array) && array.length > 0) {
       const randomIndex = Math.floor(Math.random() * array.length);
-console.log("array.length: ",array.length," randomIndex: ", randomIndex)
 
       selectedElements[key] = {
         index: randomIndex,
         value: array[randomIndex],
         totalCount: array.length
       };
-console.log("selectedElements[key]: ", selectedElements[key])
     }
   }
 
