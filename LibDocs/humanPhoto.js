@@ -798,30 +798,34 @@ var humanPhoto = [
 
 showStat("humanPhoto ")
 
-if(typeof t2i !== 'undefined'){
-  humanPhoto[0].构图 = [...构图, ...t2i[0].构图];
-  humanPhoto[0].场景 = [...场景, ...t2i[0].场景];
-  humanPhoto[0].质感 = [...t2i[0].紋理];
-  showStat("t2i ")
+if (typeof t2i !== 'undefined' && t2i[0]) {
+  if (t2i[0].构图) { humanPhoto[0].构图 = [...new Set([...(humanPhoto[0].构图 || []), ...t2i[0].构图])]; }
+  if (t2i[0].场景) { humanPhoto[0].场景 = [...new Set([...(humanPhoto[0].场景 || []), ...t2i[0].场景])]; }
+  if (t2i[0].质感) { humanPhoto[0].质感 = [...new Set([...t2i[0].质感])]; }
+  if (t2i[0].紋理) { humanPhoto[0].紋理 = [...new Set([...t2i[0].紋理])]; }
+  if (t2i[0].物件) { humanPhoto[0].物件 = [...new Set([...t2i[0].物件])]; }
+  if (t2i[0].色调) { humanPhoto[0].色彩 = [...new Set([...t2i[0].色调])]; }
+  showStat("+t2i ")
 }
 
 if(typeof theme !== 'undefined'){
-  humanPhoto[0].场景 = [...场景, ...theme];
-  showStat("theme ")
+  humanPhoto[0].场景 = [...new Set([...场景, ...theme])];
+  showStat("+theme ")
 }
 
 if (typeof female !== 'undefined' && female[0]) {
-  if (female[0].人物) { humanPhoto[0].人物 = [...(humanPhoto[0].人物 || []), ...female[0].人物]; }
-  if (female[0].场景构图) { humanPhoto[0].场景 = [...(humanPhoto[0].场景 || []), ...female[0].场景构图]; }
-  if (female[0].姿势) { humanPhoto[0].姿势 = [...female[0].姿势]; }
-  if (female[0].光影特效) { humanPhoto[0].氛围 = [...(humanPhoto[0].氛围 || []), ...female[0].光影特效]; }
-  if (female[0].色彩) { humanPhoto[0].色彩 = [...female[0].色彩]; }
-  showStat("female ")
+  if (female[0].人物) { humanPhoto[0].人物 = [...new Set([...(humanPhoto[0].人物 || []), ...female[0].人物])]; }
+  if (female[0].场景构图) { humanPhoto[0].场景 = [...new Set([...(humanPhoto[0].场景 || []), ...female[0].场景构图])]; }
+  if (female[0].姿势) { humanPhoto[0].姿势 = [...new Set([...female[0].姿势])]; }
+  if (female[0].光影特效) { humanPhoto[0].氛围 = [...new Set([...(humanPhoto[0].氛围 || []), ...female[0].光影特效])]; }
+  if (female[0].色彩) { humanPhoto[0].色彩 = [...new Set([...(humanPhoto[0].色彩 || []), ...female[0].色彩])]; }
+  showStat("+female ")
 }
 
+showStat("=humanPhoto ")
 
 function showStat(lable) {
-  document.querySelector('#schRst').innerHTML += "<br>" + lable +
+  document.querySelector('#schRst').innerHTML += "<br>" + lable + ": " +
     Object.keys(humanPhoto[0])
       .map(key => `${key} ${humanPhoto[0][key].length}`)
       .join(' ');
@@ -863,7 +867,7 @@ function displayRandomSelection() {
   let displayString = '';
 
   for (const [key, data] of Object.entries(selection)) {
-    displayString += `${data.value}`;
+    displayString += `${data.value} `;
   }
 
   // Update the HTML element
