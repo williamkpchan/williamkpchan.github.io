@@ -824,13 +824,6 @@ if (typeof female !== 'undefined' && female[0]) {
 
 showStat("=humanPhoto ")
 
-function showStat(lable) {
-  document.querySelector('#schRst').innerHTML += "<br>" + lable + ": " +
-    Object.keys(humanPhoto[0])
-      .map(key => `${key} ${humanPhoto[0][key].length}`)
-      .join(' ');
-}
-
 function selectRandomHumanPhotoElements() {
   // Check if humanPhoto exists and has data
   if (!humanPhoto || humanPhoto.length === 0) {
@@ -884,6 +877,13 @@ function displayRandomSelection() {
   return selection;
 }
 
+// showStat
+function showStat(lable) {
+  document.querySelector('#schRst').innerHTML += "<br>" + lable + ": " +
+    Object.keys(humanPhoto[0])
+      .map(key => `${key} ${humanPhoto[0][key].length}`)
+      .join(' ');
+}
 
 
 // Call the function to display random selection
